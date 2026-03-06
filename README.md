@@ -5,10 +5,17 @@ Bienvenue sur le dépôt principal de **FoodKing SaaS**, une solution complète 
 ## Stack Technique
 - **Backend / Core** : Laravel 9 (PHP 8.1+)
 - **Frontend Admin/Caisse** : Vue 3 + Vuex + Vue Router
-- **Frontend Kiosk** : Flutter (App Mobile/Tablet)
-- **Base de données** : MySQL 8+
+- **Base de données** : MySQL 8+ (Ou SQLite pour les tests auto)
 - **Build / Assets** : Laravel Mix (NPM/Node 18+)
 - **Temps Réel** : Firebase Cloud Messaging (FCM) + Event Bus
+
+### ⛔ Ce dépôt ne contient pas...
+- **Le front-end du Kiosk (Flutter ou natif)**. Le code mobile/tablette du Kiosk n'est pas versionné ici. Ce dépôt ne fournit que l'**API Backend** (Sanctum/REST) servant le Kiosk. Le code Flutter se trouve dans le dossier racine `projet kiosk/`.
+- **Les Apps Client & Livreur**. Le code de ces applications se trouve dans le dossier racine `FoodKing/source-code/`.
+- Les builds compilés publics (le code est dans ressources/js, à vous de build).
+
+### 🚧 État Actuel
+- **Validation locale avant SaaS** : Le projet a été restructuré pour la production. L'accent est mis sur l'isolation backend, la sécurité de l'API par capacités (`kiosk:order`), et les tests QA.
 
 ## Installation Rapide
 

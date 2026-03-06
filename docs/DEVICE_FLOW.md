@@ -8,7 +8,7 @@ L'écosystème **FoodKing SaaS** s'articule autour de plusieurs appareils (écra
   - L'admin crée une machine dans le dashboard.
   - La borne se loggue (`username`/`password`) pour générer un Token Sanctum.
   - La borne reste connectée tant qu'elle est autorisée (`is_login`, `status`).
-  - Elle n'accède qu'à l'API `/api/v1/frontend/`.
+  - Elle n'accède qu'à l'API `/api/frontend/` (Lecture seule du Store, Écriture pour créer Orders) et possède l'ability stricte `['kiosk:order']`.
 
 ## 2. POS (Caisse / Web Backend)
 - **Utilisateur** : Caissier ou Manager (Authentification Admin standard).

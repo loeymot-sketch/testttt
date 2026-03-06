@@ -69,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => env('TIMEZONE'),
+    'timezone' => env('TIMEZONE') ?: 'UTC',
 
     /*
     |--------------------------------------------------------------------------
@@ -194,7 +194,6 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        SantiGraviano\LaravelMercadoPago\Providers\MercadoPagoServiceProvider::class,
     ],
 
     /*
@@ -210,7 +209,6 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'ExampleClass' => App\Example\ExampleClass::class,
-        'MP' => SantiGraviano\LaravelMercadoPago\Facades\MP::class,
     ])->toArray(),
 
 ];

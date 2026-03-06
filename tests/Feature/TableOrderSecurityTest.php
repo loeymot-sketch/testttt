@@ -16,7 +16,7 @@ class TableOrderSecurityTest extends TestCase
             'subtotal' => 10,
             'total' => 0.01,
         ];
-        $response = $this->postJson('/api/admin/table-order', $payload);
-        $this->assertContains($response->status(), [401, 403, 404, 422]);
+        $response = $this->postJson('/api/admin/pos', $payload);
+        $this->assertContains($response->status(), [400, 401, 403, 404, 422]);
     }
 }

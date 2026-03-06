@@ -19,170 +19,95 @@ class PaymentGatewayTableSeederVersionOne extends Seeder
 
     public array $gateways = [
         [
-            "name"    => "Cash On Delivery",
-            "slug"    => "cash-on-delivery",
-            "misc"    => null,
-            "status"  => Activity::ENABLE,
+            "name" => "Cash On Delivery",
+            "slug" => "cash-on-delivery",
+            "misc" => null,
+            "status" => Activity::ENABLE,
             "options" => [],
         ],
         [
-            "name"    => "Credit",
-            "slug"    => "credit",
-            "misc"    => null,
-            "status"  => Activity::ENABLE,
+            "name" => "Credit",
+            "slug" => "credit",
+            "misc" => null,
+            "status" => Activity::ENABLE,
             "options" => [],
         ],
         [
-            "name"    => "Paypal",
-            "slug"    => "paypal",
-            "misc"    => null,
-            "status"  => Activity::DISABLE,
+            "name" => "Paypal",
+            "slug" => "paypal",
+            "misc" => null,
+            "status" => Activity::DISABLE,
             "options" => [
                 [
-                    "option"     => 'paypal_app_id',
-                    "type"       => InputType::TEXT,
+                    "option" => 'paypal_app_id',
+                    "type" => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'paypal_client_id',
-                    "type"       => InputType::TEXT,
+                    "option" => 'paypal_client_id',
+                    "type" => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'paypal_client_secret',
-                    "type"       => InputType::TEXT,
+                    "option" => 'paypal_client_secret',
+                    "type" => InputType::TEXT,
                     "activities" => ''
                 ],
                 [
-                    "option"     => 'paypal_mode',
-                    "type"       => InputType::SELECT,
+                    "option" => 'paypal_mode',
+                    "type" => InputType::SELECT,
                     "activities" => [
                         GatewayMode::SANDBOX => 'sandbox',
-                        GatewayMode::LIVE    => 'live'
+                        GatewayMode::LIVE => 'live'
                     ]
                 ],
                 [
-                    "option"     => 'paypal_status',
-                    "value"      => Activity::DISABLE,
-                    "type"       => InputType::SELECT,
+                    "option" => 'paypal_status',
+                    "value" => Activity::DISABLE,
+                    "type" => InputType::SELECT,
                     "activities" => [
-                        Activity::ENABLE  => "enable",
+                        Activity::ENABLE => "enable",
                         Activity::DISABLE => "disable",
                     ]
                 ],
             ]
         ],
         [
-            "name"    => "Stripe",
-            "slug"    => "stripe",
-            "misc"    => [
-                'input'  => ['stripe.stripeInput.blade.php'],
-                'js'     => ['stripe.stripeJs.blade.php'],
+            "name" => "Stripe",
+            "slug" => "stripe",
+            "misc" => [
+                'input' => ['stripe.stripeInput.blade.php'],
+                'js' => ['stripe.stripeJs.blade.php'],
                 'submit' => true
             ],
-            "status"  => Activity::DISABLE,
+            "status" => Activity::DISABLE,
             "options" => [
                 [
-                    "option"     => 'stripe_key',
-                    "type"       => InputType::TEXT,
+                    "option" => 'stripe_key',
+                    "type" => InputType::TEXT,
                     "activities" => ''
 
                 ],
                 [
-                    "option"     => 'stripe_secret',
-                    "type"       => InputType::TEXT,
+                    "option" => 'stripe_secret',
+                    "type" => InputType::TEXT,
                     "activities" => ''
 
                 ],
                 [
-                    "option"     => 'stripe_mode',
-                    "type"       => InputType::SELECT,
+                    "option" => 'stripe_mode',
+                    "type" => InputType::SELECT,
                     "activities" => [
                         GatewayMode::SANDBOX => 'sandbox',
-                        GatewayMode::LIVE    => 'live'
+                        GatewayMode::LIVE => 'live'
                     ]
                 ],
                 [
-                    "option"     => 'stripe_status',
-                    "value"      => Activity::DISABLE,
-                    "type"       => InputType::SELECT,
+                    "option" => 'stripe_status',
+                    "value" => Activity::DISABLE,
+                    "type" => InputType::SELECT,
                     "activities" => [
-                        Activity::ENABLE  => "enable",
-                        Activity::DISABLE => "disable",
-                    ]
-                ],
-            ]
-        ]
-    ];    [
-            "name"    => "MyFatoorah",
-            "slug"    => "myfatoorah",
-            "misc"    => null,
-            "status"  => Activity::DISABLE,
-            "options" => [
-                [
-                    "option"     => 'myfatoorah_api_key',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'myfatoorah_mode',
-                    "type"       => InputType::SELECT,
-                    "activities" => [
-                        GatewayMode::SANDBOX => 'sandbox',
-                        GatewayMode::LIVE    => 'live'
-                    ]
-                ],
-                [
-                    "option"     => 'myfatoorah_status',
-                    "value"      => Activity::DISABLE,
-                    "type"       => InputType::SELECT,
-                    "activities" => [
-                        Activity::ENABLE  => "enable",
-                        Activity::DISABLE => "disable",
-                    ]
-                ],
-            ]
-        ],
-        [
-            "name"    => "EasyPaisa",
-            "slug"    => "easypaisa",
-            "misc"    => null,
-            "status"  => Activity::DISABLE,
-            "options" => [
-                [
-                    "option"     => 'easypaisa_store_id',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_hash_key',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_username',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_password',
-                    "type"       => InputType::TEXT,
-                    "activities" => ''
-                ],
-                [
-                    "option"     => 'easypaisa_mode',
-                    "type"       => InputType::SELECT,
-                    "activities" => [
-                        GatewayMode::SANDBOX => 'sandbox',
-                        GatewayMode::LIVE    => 'live'
-                    ]
-                ],
-                [
-                    "option"     => 'easypaisa_status',
-                    "value"      => Activity::DISABLE,
-                    "type"       => InputType::SELECT,
-                    "activities" => [
-                        Activity::ENABLE  => "enable",
+                        Activity::ENABLE => "enable",
                         Activity::DISABLE => "disable",
                     ]
                 ],
@@ -194,9 +119,9 @@ class PaymentGatewayTableSeederVersionOne extends Seeder
     {
         foreach ($this->gateways as $gateway) {
             $payment = PaymentGateway::create([
-                'name'   => $gateway['name'],
-                'slug'   => $gateway['slug'],
-                'misc'   => json_encode($gateway['misc']),
+                'name' => $gateway['name'],
+                'slug' => $gateway['slug'],
+                'misc' => json_encode($gateway['misc']),
                 'status' => $gateway['status']
             ]);
 
@@ -210,11 +135,11 @@ class PaymentGatewayTableSeederVersionOne extends Seeder
         if (!blank($options)) {
             foreach ($options as $option) {
                 GatewayOption::create([
-                    'model_id'   => $id,
+                    'model_id' => $id,
                     'model_type' => 'App\Models\PaymentGateway',
-                    'option'     => $option['option'],
-                    'value'      => $option['value'] ?? "",
-                    'type'       => $option['type'],
+                    'option' => $option['option'],
+                    'value' => $option['value'] ?? "",
+                    'type' => $option['type'],
                     'activities' => json_encode($option['activities']),
                 ]);
             }

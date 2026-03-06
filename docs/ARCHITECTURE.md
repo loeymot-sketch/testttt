@@ -27,3 +27,35 @@ Le système propage les changements :
 
 ### 5. Frontend (Vue 3)
 Dans `resources/js`, l'application administrateur complète (Dashboard, POS, Commandes, Coupons). Buildé par *Laravel Mix* via `webpack.mix.js`.
+
+---
+
+## Modèle des Flux (Diagramme de Modules)
+
+```mermaid
+graph TD
+    A[Kiosk Flutter] -->|API REST Sanctum| B(FrontendOrderService)
+    C[Web POS Vue3] -->|API REST Sanctum| D(OrderService)
+    B --> E[(MySQL)]
+    D --> E
+    E -->|Event/Job| F{Firebase Push}
+    F -->|Notif| G[KDS / Cuisine]
+    F -->|Notif Websocket| H[Order Status Screen]
+```
+
+---
+
+## 🛑 Zones Gelées (Ce qui NE DOIT PAS être touché)
+
+Pour la phase actuelle d'audit/refactor pre-SaaS, les modules suivants sont **GELÉS** et ne doivent faire l'objet d'aucune modification de logique interne :
+
+1. **Gateways de Paiement Restantes** (`Stripe`, `Paypal`, `Credit`). Les controllers et helpers associés sont en stand-by.
+2. **Push Notifications Subsystem** (`app/Services/PushNotificationService`). Le code Firebase natif est très lié au flux hérité Guzzle.
+3. **Module Analytics Admin** (`Admin/DashboardController` et sous-modules complexes) : Ne nécessite aucune modif pour la stabilité cœur.
+4. **Delivery Boy Logic** : Tant que le routing et l'assignement manuel n'est pas utilisé activement.
+
+## 🔗 Dépendances Critiques
+Si ces dépendances sont modifiées, le projet cassera :
+- **Laravel Sanctum** : Gère les `capabilities` essentielles liées à la matrice AUTHZ (Kiosk vs Admin).
+- **Spatie Permission** : Gère la fine granularité `Manager/Chef`.
+- **Laravel Mix** : Construit Vue 3. Ne PAS migrer vers Vite dans l'immédiat.

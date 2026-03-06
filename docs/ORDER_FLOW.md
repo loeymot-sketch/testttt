@@ -4,8 +4,8 @@ Ce document décrit le cycle de vie complet d'une commande FoodKing SaaS, de la 
 
 ## 1. Création (PENDING)
 - **Point d'entrée** : Client sur le Frontend Web, App Mobile, ou Kiosk.
-- **Route** : `POST /api/v1/frontend/order` (ou `tableOrderStore` pour les tables).
-- **Sécurité** : 
+- **Route** : `POST /api/frontend/order` (ou `tableOrderStore` pour les tables).
+- **Sécurité (Invariant)** : 
   - Le frontend envoie un JSON avec les identifiants d'items. 
   - Le `FrontendOrderService` et `OrderService` ignorent les prix du JSON et les **recalculent** en fonction de la BDD (`Item`, `ItemVariation`, `ItemExtra`).
 - **Validation** : Création d'un enregistrement `FrontendOrder` en statut `PENDING`. Si une `kiosk_machine` est connectée, elle attache son `branch_id`.
@@ -30,6 +30,11 @@ Ce document décrit le cycle de vie complet d'une commande FoodKing SaaS, de la 
 ## 6. Livraison (DELIVERED)
 - **Dernière étape** : Le caissier marque la commande comme terminée. Les données alimentent le `DashboardController` pour le Dashboard Boss (statistiques).
 
-## Diagramme d'État
+## Diagramme d'État Autorisé (Transitions)
 `PENDING` -> `ACCEPT` -> `PREPARING` -> `PREPARED` -> `DELIVERED`
 (Ou `CANCELED` à tout moment par erreur)
+
+> [!CAUTION]
+> **Transitions Interdites** :
+> - Un ticket `PENDING` (non payé) ne peut pas sauter à `PREPARED` ou `DELIVERED`.
+> - Un ticket `CANCELED` ne peut pas ressusciter en `ACCEPT`.
