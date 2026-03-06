@@ -1,0 +1,746 @@
+/* ============================================
+   POS WIZARD - Multi-step ordering flow
+   Style McDonald's / Borne de commande
+   ============================================ */
+
+.pos-wizard {
+    padding: 0 24px 24px;
+}
+
+/* -- Main Item Header -- */
+.wizard-item-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: #FFF;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    border: 1px solid #EFF0F6;
+}
+
+.wizard-item-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.wizard-item-info {
+    flex: 1;
+}
+
+.wizard-item-info h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    line-height: 1.2;
+}
+
+.wizard-item-price {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E93C3C;
+    margin: 0;
+}
+
+/* -- Premium Progress Bar with Labels -- */
+.wizard-progress-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 24px;
+    padding: 8px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.wizard-progress-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.wizard-progress-bar .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 60px;
+    flex: 0 0 auto;
+}
+
+.wizard-progress-bar .step-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #F0F0F8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 2px solid #E0E0EC;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.wizard-progress-bar .step-item.active .step-icon {
+    background: linear-gradient(135deg, #E93C3C, #FF6B81);
+    border-color: #E93C3C;
+    box-shadow: 0 4px 15px rgba(233, 60, 60, 0.3);
+    transform: scale(1.15);
+}
+
+.wizard-progress-bar .step-item.done .step-icon {
+    background: #43C6AC;
+    border-color: #43C6AC;
+}
+
+.wizard-progress-bar .step-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #A0A0B0;
+    margin-top: 4px;
+    text-align: center;
+    max-width: 70px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wizard-progress-bar .step-item.active .step-label {
+    color: #E93C3C;
+    font-weight: 700;
+}
+
+.wizard-progress-bar .step-item.done .step-label {
+    color: #43C6AC;
+}
+
+.wizard-progress-bar .step-line {
+    position: absolute;
+    top: 19px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #E0E0EC;
+    z-index: 1;
+}
+
+.wizard-progress-bar .step-line.done {
+    background: #43C6AC;
+}
+
+/* -- Running Total -- */
+.wizard-running-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    margin: 16px 0 0;
+    background: linear-gradient(135deg, #1B1B3A, #2D2B55);
+    border-radius: 14px;
+    color: #FFF;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-running-total span:first-child {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+.wizard-running-total .run-total-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #43C6AC;
+}
+
+/* -- Step Container -- */
+.wizard-step {
+    display: none;
+    animation: wizardFadeIn 0.3s ease;
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+@keyframes wizardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* -- Step Header -- */
+.wizard-step-header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.wizard-step-header h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin: 0 0 4px;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-step-header p {
+    font-size: 12px;
+    color: #8E8EA9;
+    margin: 0;
+}
+
+/* =============================================
+   VIANDE STEP
+   ============================================= */
+.wizard-viande-counter-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.viande-total {
+    background: #F0F0FF;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    transition: all 0.3s;
+}
+
+.viande-total.complete {
+    background: #E8FFF5;
+    color: #43C6AC;
+}
+
+.viande-complete-badge {
+    font-size: 13px;
+    font-weight: 600;
+    color: #43C6AC;
+    animation: wizardFadeIn 0.3s ease;
+}
+
+.wizard-viande-list {
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 0 4px;
+}
+
+.wizard-viande-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    border: 2px solid #EFF0F6;
+    background: #FAFAFF;
+    transition: all 0.2s ease;
+}
+
+.wizard-viande-row.active {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+}
+
+.viande-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.viande-emoji {
+    font-size: 22px;
+}
+
+.viande-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+}
+
+.viande-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.viande-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #E93C3C;
+    background: white;
+    color: #E93C3C;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.viande-btn:hover:not(.disabled) {
+    background: #E93C3C;
+    color: white;
+}
+
+.viande-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #ccc;
+    color: #ccc;
+}
+
+.viande-count {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B1B3A;
+    min-width: 20px;
+    text-align: center;
+    font-family: 'Rubik', sans-serif;
+}
+
+/* =============================================
+   SAUCE STEP (multi-select)
+   ============================================= */
+.wizard-sauce-info {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.sauce-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Rubik', sans-serif;
+}
+
+.sauce-badge.free {
+    background: #E8FFF5;
+    color: #43C6AC;
+}
+
+.sauce-badge.paid {
+    background: #FFF0F0;
+    color: #E93C3C;
+}
+
+.sauce-frites-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin-bottom: 8px;
+    font-family: 'Rubik', sans-serif;
+}
+
+.sauce-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+}
+
+/* -- Option Cards Grid -- */
+.wizard-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.wizard-options::-webkit-scrollbar {
+    width: 4px;
+}
+
+.wizard-options::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
+}
+
+/* -- Option Card (radio & checkbox) -- */
+.wizard-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 8px;
+    border-radius: 14px;
+    border: 2px solid #EFF0F6;
+    background: #FAFAFF;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    min-height: 70px;
+    user-select: none;
+}
+
+.wizard-option:hover {
+    border-color: #FFB3B3;
+    background: #FFF5F5;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(233, 60, 60, 0.08);
+}
+
+.wizard-option.selected {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+    box-shadow: 0 3px 12px rgba(233, 60, 60, 0.15);
+}
+
+.wizard-option .option-icon {
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.wizard-option .option-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B1B3A;
+    line-height: 1.3;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-option .option-price {
+    font-size: 11px;
+    color: #8E8EA9;
+    margin-top: 3px;
+}
+
+.wizard-option .option-price.paid {
+    color: #E93C3C;
+    font-weight: 600;
+}
+
+.wizard-option .option-price.free {
+    color: #43C6AC;
+    font-weight: 600;
+}
+
+/* Addon images */
+.wizard-option .option-icon.has-img {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 4px;
+}
+
+.wizard-option .option-icon.has-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.wizard-option .check-mark {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.wizard-option.selected .check-mark {
+    background: #E93C3C;
+    color: white;
+}
+
+.wizard-option:not(.selected) .check-mark {
+    border: 2px solid #D9DBE9;
+    background: white;
+    color: transparent;
+}
+
+/* Sauce option: multi-select style badge */
+.wizard-option.sauce-opt.selected .check-mark {
+    background: #E93C3C;
+    color: white;
+}
+
+/* -- Garnitures: pre-checked style -- */
+.wizard-option.garniture.selected {
+    border-color: #43C6AC;
+    background: linear-gradient(135deg, #F0FFF8, #E8FFF5);
+}
+
+.wizard-option.garniture.selected .check-mark {
+    background: #43C6AC;
+}
+
+.wizard-option.garniture:hover {
+    border-color: #43C6AC;
+    background: #F0FFF8;
+}
+
+/* -- Menu Combo Section -- */
+.wizard-menu-question {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.wizard-menu-question h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin-bottom: 24px;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-menu-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.wizard-menu-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 18px 16px;
+    border-radius: 16px;
+    border: 2px solid #EFF0F6;
+    background: white;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.wizard-menu-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.wizard-menu-btn.yes:hover,
+.wizard-menu-btn.yes.selected {
+    border-color: #43C6AC;
+    background: linear-gradient(135deg, #E8FFF5, #F0FFF8);
+}
+
+.wizard-menu-btn.no:hover,
+.wizard-menu-btn.no.selected {
+    border-color: #FF6B81;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+}
+
+.wizard-menu-btn .menu-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.wizard-menu-btn .menu-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-menu-btn .menu-desc {
+    font-size: 11px;
+    color: #8E8EA9;
+    margin-top: 4px;
+}
+
+/* -- Collapse for individual addons -- */
+.wizard-individual-addons {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.wizard-individual-addons.open {
+    max-height: 400px;
+}
+
+/* -- Navigation Buttons -- */
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #F2F2F7;
+}
+
+.wizard-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Rubik', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.wizard-btn-back {
+    background: white;
+    color: #E93C3C;
+    border: 2px solid #E93C3C;
+}
+
+.wizard-btn-back:hover {
+    background: #FFF5F5;
+}
+
+.wizard-btn-next {
+    background: linear-gradient(135deg, #E93C3C, #FF6B81);
+    color: white;
+    box-shadow: 0 4px 15px rgba(233, 60, 60, 0.3);
+}
+
+.wizard-btn-next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(233, 60, 60, 0.4);
+}
+
+.wizard-btn-cart {
+    background: linear-gradient(135deg, #43C6AC, #52D3B8);
+    color: white;
+    box-shadow: 0 4px 15px rgba(67, 198, 172, 0.3);
+    font-size: 15px;
+    padding: 14px 32px;
+}
+
+.wizard-btn-cart:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(67, 198, 172, 0.4);
+}
+
+.wizard-btn-skip {
+    background: transparent;
+    color: #8E8EA9;
+    font-size: 12px;
+    padding: 10px 16px;
+}
+
+.wizard-btn-skip:hover {
+    color: #1B1B3A;
+}
+
+/* -- Recap Section -- */
+.wizard-recap {
+    background: #FAFAFF;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.wizard-recap-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+}
+
+.wizard-recap-row .label {
+    color: #8E8EA9;
+    font-weight: 500;
+}
+
+.wizard-recap-row .value {
+    font-weight: 600;
+    max-width: 60%;
+    text-align: right;
+}
+
+.wizard-recap-row.total {
+    border-top: 2px solid #EFF0F6;
+    margin-top: 8px;
+    padding-top: 10px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* -- Quantity in recap -- */
+.wizard-quantity {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.wizard-qty-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #E93C3C;
+    background: white;
+    color: #E93C3C;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.wizard-qty-btn:hover {
+    background: #E93C3C;
+    color: white;
+}
+
+.wizard-qty-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1B1B3A;
+    min-width: 30px;
+    text-align: center;
+    font-family: 'Rubik', sans-serif;
+}
+
+/* -- Instruction textarea -- */
+.wizard-instruction textarea {
+    width: 100%;
+    height: 60px;
+    border: 1.5px solid #D9DBE9;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'Rubik', sans-serif;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.wizard-instruction textarea:focus {
+    border-color: #E93C3C;
+    outline: none;
+}
+
+.wizard-instruction textarea::placeholder {
+    color: #B0B0C8;
+}

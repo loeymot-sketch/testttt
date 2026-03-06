@@ -1,0 +1,20 @@
+# Sécurité & Falsification (Security Notes)
+
+Le projet **FoodKing SaaS** possède de nombreux contrôles côté serveur gérant des transactions financières et logistiques vitales. Ce document liste les mesures critiques en place.
+
+## 1. Intégrité des Données (Pricing & Cash)
+- **Recalcul Forcé (Single Source of Truth)** : Toutes les routes `POST` créant des commandes (que ce soit pour le Kiosk `FrontendOrderService` ou la table `OrderService::tableOrderStore`) **ignorent** les prix, options et `total` présents dans le payload JSON du client. Les données sont validées et recalculées mathématiquement après une requête en Base de Données (`Item::find()`). Impossible de payer 0.01€ en modifiant la requête réseau.
+- **Discount & Coupons** : Pareil pour la réduction. Elle est évaluée par le backend selon les conditions du coupon (pourcentage + limite max, ou valeur fixe) par le `CouponService`.
+
+## 2. Transition de Statut
+- Seul certains flux directionnels sont autorisés lors de la modification des états (e.g., Un client ne peut pas se livrer `DELIVERED` seul depuis le web).
+- Protection du KDS : Un chef de la branche A ne peut pas passer à `PREPARED` une commande de la branche B.
+
+## 3. Protection Base de Données (Concurrency)
+- **Race Condition** : En pleine heure de pointe, la génération séquentielle alphanumérique des tickets `queue_number` (`A015`, `A016`) risque le chevauchement (deadlock). Ce phénomène est géré par la requête InnoDB `lockForUpdate()` forçant les transactions d'écriture à passer l'une après l'autre.
+
+## 4. Audit Trail
+- Les actions sensibles menées par les caissiers (e.g. Forcer une annulation) sont historisées avec l'`User ID` et l'`Order ID` dans la table `action_logs` pour les audits Manager / Dashboard Boss.
+
+## 5. Rate Limiting
+- Les APIs Frontend Kiosk / Mobile sont protégées par le middleware natif `ThrottleRequests` configuré à e.g `200 appels / minute`.
