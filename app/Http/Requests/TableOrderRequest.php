@@ -29,21 +29,21 @@ class TableOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'dining_table_id'  => ['required', 'numeric'],
-            'customer_id'      => ['required', 'numeric'],
-            'branch_id'        => ['required', 'numeric'],
-            'subtotal'         => ['required', 'numeric'],
-            'discount'         => ['nullable', 'numeric'],
-            'delivery_charge'  => ['nullable'],
-            'total'            => ['required', 'numeric'],
-            'order_type'       => ['required', 'numeric'],
+            'dining_table_id' => ['required', 'numeric'],
+            'customer_id' => ['required', 'numeric'],
+            'branch_id' => ['required', 'numeric'],
+            'subtotal' => ['required', 'numeric'],
+            'discount' => ['nullable', 'numeric'],
+            'delivery_charge' => ['nullable'],
+            'total' => ['required', 'numeric'],
+            'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
-            'address_id'       => ['nullable'],
-            'delivery_time'    => ['nullable'],
-            'coupon_id'        => ['nullable', 'numeric'],
-            'source'           => ['required', 'numeric'],
-            'token'            => ['nullable', 'numeric'],
-            'items'            => ['required', 'json', new ValidJsonOrder]
+            'address_id' => ['nullable'],
+            'delivery_time' => ['nullable'],
+            'coupon_id' => ['nullable', 'numeric'],
+            'source' => ['required', 'numeric'],
+            'token' => ['nullable', 'string'],
+            'items' => ['required', 'json', new ValidJsonOrder]
         ];
     }
 

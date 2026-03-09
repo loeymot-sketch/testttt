@@ -179,7 +179,7 @@ class OrderService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_by') ?? 'desc';
 
-            return Order::where('delivery_boy_id', $user->id)->where('order_type', "!=", OrderType::POS)->where(
+            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', "!=", OrderType::POS)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
@@ -216,7 +216,7 @@ class OrderService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_by') ?? 'desc';
 
-            return Order::where('order_type', "!=", OrderType::POS)->where('delivery_boy_id', Auth::user()->id)->where(
+            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where('delivery_boy_id', Auth::user()->id)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
@@ -344,6 +344,13 @@ class OrderService
                 SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => $request->status]);
                 SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => $request->status]);
                 SendOrderPush::dispatch(['order_id' => $this->order->id, 'status' => $request->status]);
+
+                \App\Models\ActionLog::create([
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande Web/App',
+                    'resource' => 'Commande #' . $this->order->order_serial_no,
+                    'details' => 'Auteur: ' . (Auth::check() ? Auth::user()->name : 'Client anonyme'),
+                ]);
             });
             return $this->order;
         } catch (Exception $exception) {
@@ -404,6 +411,7 @@ class OrderService
                             'item_extra_total' => $item->item_extra_total,
                             'total_price' => $item->total_price,
                         ];
+                        $realSubtotal += $item->total_price;
                         $totalTax = $totalTax + $taxPrice;
                         $i++;
                     }
@@ -474,6 +482,13 @@ class OrderService
                         ]);
                     }
                 }
+
+                \App\Models\ActionLog::create([
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande POS',
+                    'resource' => 'Commande #' . $this->order->order_serial_no,
+                    'details' => 'Créée via Point de Vente',
+                ]);
             });
             return $this->order;
         } catch (Exception $exception) {
@@ -568,7 +583,22 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
+                $today = date('Y-m-d');
+                $maxQueueObj = \App\Models\Order::where('branch_id', $this->order->branch_id)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('queue_number')
+                    ->lockForUpdate()
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $nextQueueNum = 1;
+                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $matches)) {
+                    $nextQueueNum = intval($matches[1]) + 1;
+                }
+                $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
+
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
+                $this->order->queue_number = $queueNumber;
                 $this->order->total_tax = $totalTax;
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -601,6 +631,13 @@ class OrderService
                 SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
+
+                \App\Models\ActionLog::create([
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande sur Table',
+                    'resource' => 'Commande #' . $this->order->order_serial_no,
+                    'details' => 'Créée via QR Code Dine-in',
+                ]);
             });
             return $this->order;
         } catch (Exception $exception) {
@@ -813,6 +850,14 @@ class OrderService
             } else {
                 $order->payment_status = $request->payment_status;
                 $order->save();
+
+                \App\Models\ActionLog::create([
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Statut paiement modifié',
+                    'resource' => 'Commande #' . $order->order_serial_no,
+                    'details' => 'Statut paiement mis à jour (' . $request->payment_status . ')',
+                ]);
+
                 return $order;
             }
         } catch (Exception $exception) {

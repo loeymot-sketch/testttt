@@ -27,6 +27,11 @@ class OrderPushNotificationBuilder
     public function send(): void
     {
         if (!blank($this->order)) {
+            // Source 10 = Kiosk. No push notifications for anonymous kiosk orders to prevent spamming the tablets.
+            if ($this->order->source == 10) {
+                return;
+            }
+
             $user = User::find($this->order->user_id);
             if (!blank($user)) {
                 if (!blank($user->web_token) || !blank($user->device_token)) {

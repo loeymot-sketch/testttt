@@ -29,28 +29,28 @@ class OrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'branch_id'        => request('order_type') == OrderType::DELIVERY ? ['nullable', 'numeric'] : ['required', 'numeric'],
-            'subtotal'         => ['required', 'numeric'],
-            'discount'         => ['nullable', 'numeric'],
-            'delivery_charge'  => request('order_type') === OrderType::DELIVERY ? [
+            'branch_id' => request('order_type') == OrderType::DELIVERY ? ['nullable', 'numeric'] : ['required', 'numeric'],
+            'subtotal' => ['required', 'numeric'],
+            'discount' => ['nullable', 'numeric'],
+            'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'numeric'
             ] : ['nullable'],
-            'total'            => ['required', 'numeric'],
-            'order_type'       => ['required', 'numeric'],
+            'total' => ['required', 'numeric'],
+            'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
-            'address_id'       => request('order_type') === OrderType::DELIVERY ? [
+            'address_id' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'numeric'
             ] : ['nullable'],
-            'delivery_time'    => request('order_type') === OrderType::DELIVERY ? [
+            'delivery_time' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'string'
             ] : ['nullable'],
-            'coupon_id'        => ['nullable', 'numeric'],
-            'source'           => ['required', 'numeric'],
-            'token'            => ['nullable', 'numeric'],
-            'items'            => ['required', 'json', new ValidJsonOrder]
+            'coupon_id' => ['nullable', 'numeric'],
+            'source' => ['required', 'numeric'],
+            'token' => ['nullable', 'string'],
+            'items' => ['required', 'json', new ValidJsonOrder]
         ];
     }
 

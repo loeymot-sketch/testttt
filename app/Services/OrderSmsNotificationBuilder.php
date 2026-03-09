@@ -20,13 +20,18 @@ class OrderSmsNotificationBuilder
     public function __construct($orderId, $status)
     {
         $this->orderId = $orderId;
-        $this->status  = $status;
-        $this->order   = FrontendOrder::find($orderId);
+        $this->status = $status;
+        $this->order = FrontendOrder::find($orderId);
     }
 
     public function send()
     {
         if (!blank($this->order)) {
+            // Source 10 = Kiosk Machine. No SMS for Kiosk orders to prevent spam.
+            if ($this->order->source == 10) {
+                return;
+            }
+
             $user = User::find($this->order->user_id);
             if (!blank($user)) {
                 if ($user->phone) {
@@ -69,7 +74,7 @@ class OrderSmsNotificationBuilder
     {
         try {
             $smsManagerService = new SmsManagerService();
-            $smsService        = new SmsService();
+            $smsService = new SmsService();
             if ($smsService->gateway() && $smsManagerService->gateway($smsService->gateway())->status()) {
                 $smsManagerService->gateway($smsService->gateway())->send($code, $phone, $message);
             }

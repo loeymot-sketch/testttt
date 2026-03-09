@@ -60,7 +60,18 @@ class KioskMachineLoginController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            // Identifier les machines potentiellement rattachées à cet user pour reset leur état de login
+            $kiosks = KioskMachine::where('user_id', $user->id)->get();
+            foreach ($kiosks as $k) {
+                $k->update(['is_login' => Ask::NO]);
+            }
+            if ($user->currentAccessToken()) {
+                $user->currentAccessToken()->delete();
+            }
+        }
+
         return new JsonResponse([
             'message' => trans('all.message.logout_success')
         ], 200);

@@ -32,11 +32,11 @@ class ItemCategoryService
     public function list(PaginateRequest $request)
     {
         try {
-            $requests    = $request->all();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
+            $requests = $request->all();
+            $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType   = $request->get('order_type') ?? 'desc';
+            $orderType = $request->get('order_type') ?? 'desc';
 
             return ItemCategory::with('media')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
@@ -54,8 +54,8 @@ class ItemCategoryService
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -107,9 +107,15 @@ class ItemCategoryService
             if (!blank($checkItem)) {
                 $itemCategory->delete();
             } else {
-                DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                $itemCategory->delete();
-                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+                if (DB::getDriverName() === 'sqlite') {
+                    DB::statement('PRAGMA foreign_keys=0');
+                    $itemCategory->delete();
+                    DB::statement('PRAGMA foreign_keys=1');
+                } else {
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                    $itemCategory->delete();
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+                }
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

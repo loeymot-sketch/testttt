@@ -169,7 +169,7 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
@@ -760,6 +760,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/featured-items', [FrontendItemController::class, 'featuredItems']);
         Route::get('/popular-items', [FrontendItemController::class, 'mostPopularItems']);
         Route::get('/details/{item}', [FrontendItemController::class, 'itemDetails']);
+        Route::get('/upsell/{item}', [FrontendItemController::class, 'upsell']);
     });
 
     Route::prefix('item-category')->name('item-category.')->group(function () {
@@ -810,6 +811,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{order}', [FrontendDeliveryBoyOrderController::class, 'show']);
         Route::get('/count', [FrontendDeliveryBoyOrderController::class, 'orderCount']);
         Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus']);
+    });
+
+    Route::prefix('loyalty')->name('loyalty.')->group(function () {
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check']);
+        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register']);
+        Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
+        Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem']);
+        Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
+        Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
     });
 });
 

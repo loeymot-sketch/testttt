@@ -26,7 +26,7 @@ class TableOrderTokenRequest extends FormRequest
     {
 
         return [
-            'token' => ['required', 'numeric'],
+            'token' => ['required', 'string'],
         ];
     }
 }

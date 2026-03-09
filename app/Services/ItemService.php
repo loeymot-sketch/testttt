@@ -39,11 +39,11 @@ class ItemService
     public function list(PaginateRequest $request)
     {
         try {
-            $requests    = $request->all();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
+            $requests = $request->all();
+            $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType   = $request->get('order_type') ?? 'desc';
+            $orderType = $request->get('order_type') ?? 'desc';
 
             return Item::with('media', 'category', 'tax')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
@@ -65,8 +65,8 @@ class ItemService
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -76,11 +76,11 @@ class ItemService
     public function simpleList(PaginateRequest $request)
     {
         try {
-            $requests    = $request->all();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
+            $requests = $request->all();
+            $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType   = $request->get('order_type') ?? 'desc';
+            $orderType = $request->get('order_type') ?? 'desc';
 
             return Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
@@ -102,8 +102,8 @@ class ItemService
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -145,14 +145,14 @@ class ItemService
                     $item->addMedia($request->image)->toMediaCollection('item');
                 }
                 if ($request->variations) {
-                    $variationIdsArray    = [];
+                    $variationIdsArray = [];
                     $variationDeleteArray = [];
-                    $oldVariations        = $item->variations->pluck('id')->toArray();
+                    $oldVariations = $item->variations->pluck('id')->toArray();
                     foreach (json_decode($request->variations, true) as $variation) {
                         if (isset($variation['id'])) {
                             $variationIdsArray[] = $variation['id'];
                             ItemVariation::where('id', $variation['id'])->update([
-                                'name'             => $variation['name'],
+                                'name' => $variation['name'],
                                 'price' => $variation['price'],
                             ]);
                         } else {
@@ -173,7 +173,7 @@ class ItemService
                     }
                 }
             });
-            return Item::find($item->id);
+            return $item->refresh();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
@@ -233,7 +233,7 @@ class ItemService
     public function featuredItems()
     {
         try {
-            return Item::with('media','category','offer')->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])->inRandomOrder()->limit(8)->get();
+            return Item::with('media', 'category', 'offer')->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])->inRandomOrder()->limit(8)->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -243,7 +243,7 @@ class ItemService
     public function mostPopularItems()
     {
         try {
-            return Item::with('media', 'category','offer')->withCount('orders')->where(['status' => Status::ACTIVE])->orderBy('orders_count', 'desc')->limit(6)->get();
+            return Item::with('media', 'category', 'offer')->withCount('orders')->where(['status' => Status::ACTIVE])->orderBy('orders_count', 'desc')->limit(6)->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -253,13 +253,13 @@ class ItemService
     public function itemReport(PaginateRequest $request)
     {
         try {
-            $requests    = $request->all();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
+            $requests = $request->all();
+            $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             return Item::with('category')->withCount('orders')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date'])  && isset($requests['to_date'])) {
+                if (isset($requests['from_date']) && isset($requests['to_date'])) {
                     $first_date = date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date  = date('Y-m-d', strtotime($requests['to_date']));
+                    $last_date = date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('created_at', '>=', $first_date)->whereDate(
                         'created_at',
                         '<=',
@@ -281,8 +281,8 @@ class ItemService
                     }
                 }
             })->orderBy('orders_count', 'desc')->$method(
-                $methodValue
-            );
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
