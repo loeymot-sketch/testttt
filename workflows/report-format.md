@@ -1,45 +1,38 @@
 # Anti-Gravity Test Report Format
 
-This template MUST be used by Anti-Gravity after each test session.
+Every Anti-Gravity test must produce a markdown report using this structure:
 
-```markdown
-# Anti-Gravity Test Report <ID_OR_TIMESTAMP>
+# Anti-Gravity Test Report <ID>
 
 ## Scope tested
-- [Describe what was tested (e.g., POS multi-meat order, Kiosk STO selection)]
+Describe the tested feature or flow.
 
 ## Environment
-- branch: [Current Git Branch]
-- commit: [Current Commit Hash]
-- app version: [Version if applicable]
-- local/staging: [Environment]
+branch:
+commit:
+local or staging:
 
 ## Steps executed
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+1.
+2.
+3.
 
 ## Passed
-- [List of successful verifications]
+List successful checks.
 
 ## Failed
-- [List of bugs, crashes, or unfulfilled requirements]
+List failing checks.
 
 ## Technical clues
-- [Any logs, stack traces, or console errors found during testing]
+Logs, errors, observations.
 
 ## Suspected root cause
-- [Anti-Gravity's hypothesis on why it failed]
+Optional analysis.
 
 ## Priority
-- [Low / Medium / High / Critical]
+Low / Medium / High / Critical
 
 ## Suggested next tasks
-1. [Actionable task for Claude or Kimi]
-2. [Actionable task 2]
-
-## Attachments
-- screenshots: [Paths to any captured screenshots]
-- logs: [Paths to any saved log files]
-- videos: [Paths to any recorded videos]
-```
+1.
+2.
+3.
