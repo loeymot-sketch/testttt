@@ -11,7 +11,7 @@ class OrderFlowTest extends TestCase
     public function test_order_without_auth_returns_401()
     {
         $response = $this->postJson('/api/frontend/order', []);
-        $this->assertContains($response->status(), [401, 404, 200]);
+        $response->assertStatus(401);
     }
 
     public function test_order_price_recalculated_server_side()
@@ -55,16 +55,19 @@ class OrderFlowTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/api/frontend/order', $payload);
 
-        // Si la commande réussit
-        if ($response->status() === 201 || $response->status() === 200) {
+        // La validation finale sur ce payload (subtotal = 0.01 au lieu de calculé) échoue en 400 Bad Request
+        $this->assertTrue(in_array($response->status(), [200, 201, 400]), "La commande a échoué avec le statut " . $response->status());
+
+        if (in_array($response->status(), [200, 201])) {
             $orderId = $response->json('data.id') ?? $response->json('id');
-            if ($orderId) {
-                $order = \App\Models\Order::find($orderId);
-                // On vérifie que le backend a ignoré le 0.01 et a forcé les 10€ de la base
-                $this->assertEquals(10, $order->subtotal);
-            }
+            $this->assertNotNull($orderId, "L'ID de la commande est manquant dans la réponse JSON.");
+
+            $order = \App\Models\Order::find($orderId);
+            // On vérifie que le backend a ignoré le 0.01 et a forcé les 10€ de la base
+            $this->assertEquals(10, $order->subtotal, "Le prix falsifié a été accepté par le serveur au lieu du prix SOT.");
         } else {
-            $this->assertTrue(true, "Route non accessible directement mais validation logique.");
+            // Le serveur a bloqué intelligemment la falsification (HTTP 400)
+            $this->assertEquals(400, $response->status());
         }
     }
 
@@ -100,7 +103,7 @@ class OrderFlowTest extends TestCase
             'status' => 14
         ]);
 
-        // Doit être rejeté (business constraint)
-        $this->assertNotEquals(200, $response->status());
+        // Doit être rejeté formellement (business constraint violation : 400 Bad Request)
+        $this->assertTrue(in_array($response->status(), [400, 403, 422]), "La transition d'état illégale n'a pas été bloquée (Statut: " . $response->status() . ")");
     }
 }

@@ -13,12 +13,12 @@ This folder stores the operational memory of the AI-assisted development workflo
 
 ## Workflow
 
-1. Anti-Gravity tests the application and writes a report
-2. Claude reads the latest report and produces a plan
-3. Claude or Kimi implement the assigned work
-4. An execution summary is written
-5. Anti-Gravity retests
-6. Human validates and starts the next cycle
+The mandatory cycle is:
+1. Claude thinks (Planning)
+2. Kimi builds (Implementation)
+3. Claude reviews (Review execution)
+4. Anti-Gravity tests (QA/Retest)
+5. Human validates (Approval)
 
 ## Naming
 Use clear names:

@@ -80,7 +80,7 @@ This repository follows a strict multi-agent operating loop.
 2. Kimi builds
 3. Claude reviews
 4. Anti-Gravity tests
-5. Human validates and decides the next cycle
+5. Human validates
 
 ### Report flow
 - Anti-Gravity writes QA reports to `reports/antigravity/`
