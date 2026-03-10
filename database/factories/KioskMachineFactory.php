@@ -18,8 +18,8 @@ class KioskMachineFactory extends Factory
     {
         return [
             'machine_id' => fake()->unique()->numerify('KIOSK-###'),
-            'branch_id' => Branch::factory(),
-            'user_id' => User::factory(),
+            'branch_id' => \Database\Factories\BranchFactory::new(),
+            'user_id' => \Database\Factories\UserFactory::new(),
             'username' => fake()->unique()->userName(),
             'password' => bcrypt('password123'),
             'is_login' => \App\Enums\Ask::NO,

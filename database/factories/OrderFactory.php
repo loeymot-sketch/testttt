@@ -18,8 +18,8 @@ class OrderFactory extends Factory
     {
         return [
             'order_serial_no' => strtoupper(fake()->unique()->bothify('ORD-####-??')),
-            'user_id' => User::factory(),
-            'branch_id' => Branch::factory(),
+            'user_id' => \Database\Factories\UserFactory::new(),
+            'branch_id' => \Database\Factories\BranchFactory::new(),
             'order_type' => 5, // Takeaway
             'subtotal' => fake()->randomFloat(2, 5, 50),
             'total' => fake()->randomFloat(2, 5, 50),

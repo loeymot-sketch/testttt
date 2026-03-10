@@ -24,8 +24,8 @@ class ItemFactory extends Factory
             'description' => fake()->sentence(),
             'price' => fake()->randomFloat(2, 3, 25),
             'discount_price' => null,
-            'item_category_id' => ItemCategory::factory(),
-            'tax_id' => Tax::factory(),
+            'item_category_id' => \Database\Factories\ItemCategoryFactory::new(),
+            'tax_id' => \Database\Factories\TaxFactory::new(),
             'status' => 1,
         ];
     }

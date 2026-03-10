@@ -20,21 +20,23 @@ abstract class TestCase extends BaseTestCase
      */
     protected function seedMinimalSettings(): void
     {
-        if (!Schema::hasTable('settings')) {
+        $table = config('settings.repositories.database.table', 'settings');
+
+        if (!Schema::hasTable($table)) {
             return;
         }
 
-        if (DB::table('settings')->count() > 0) {
+        if (DB::table($table)->count() > 0) {
             return;
         }
 
-        DB::table('settings')->insert([
-            ['type' => 'site_title', 'value' => 'FoodKing Test', 'created_at' => now(), 'updated_at' => now()],
-            ['type' => 'favicon_logo', 'value' => null, 'created_at' => now(), 'updated_at' => now()],
-            ['type' => 'site_logo', 'value' => null, 'created_at' => now(), 'updated_at' => now()],
-            ['type' => 'currency', 'value' => 'EUR', 'created_at' => now(), 'updated_at' => now()],
-            ['type' => 'currency_symbol', 'value' => '€', 'created_at' => now(), 'updated_at' => now()],
-            ['type' => 'order_prefix', 'value' => 'FK', 'created_at' => now(), 'updated_at' => now()],
+        DB::table($table)->insert([
+            ['key' => 'site_title', 'payload' => json_encode('FoodKing Test'), 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'favicon_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'site_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'currency', 'payload' => json_encode('EUR'), 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'currency_symbol', 'payload' => json_encode('€'), 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'order_prefix', 'payload' => json_encode('FK'), 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 }
