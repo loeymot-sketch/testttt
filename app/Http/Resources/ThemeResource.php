@@ -27,7 +27,7 @@ class ThemeResource extends JsonResource
     {
         return [
             "theme_logo"         => $this->themeImage('theme_logo')->logo,
-            "theme_favicon_logo" => $this->themeImage('theme_favicon_logo')->faviconLogo,
+            "theme_favicon_logo" => $this->themeImage('theme_favicon_logo')?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png'),
             "theme_footer_logo"  => $this->themeImage('theme_footer_logo')->footerLogo,
         ];
     }

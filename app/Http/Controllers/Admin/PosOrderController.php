@@ -37,6 +37,7 @@ class PosOrderController extends AdminController
     public function index(
         PaginateRequest $request
     ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        abort_unless(auth()->user()?->can('pos-orders'), 403);
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {

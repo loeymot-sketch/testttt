@@ -43,7 +43,7 @@ class PaymentController extends Controller
                 'company'         => $company,
                 'logo'            => $logo,
                 'currency'        => $currency,
-                'faviconLogo'     => $faviconLogo,
+                'faviconLogo'     => $faviconLogo ?? (object)['faviconLogo' => asset('images/theme/theme-favicon-logo.png')],
                 'paymentGateways' => $paymentGateways,
                 'order'           => $order,
                 'creditAmount'    => AppLibrary::currencyAmountFormat($order?->user?->balance),
@@ -94,7 +94,7 @@ class PaymentController extends Controller
             return view('paymentSuccess', [
                 'company'     => $company,
                 'logo'        => $logo,
-                'faviconLogo' => $faviconLogo,
+                'faviconLogo' => $faviconLogo ?? (object)['faviconLogo' => asset('images/theme/theme-favicon-logo.png')],
                 'order'       => $order,
             ]);
         }

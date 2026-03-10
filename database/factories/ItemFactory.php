@@ -23,7 +23,6 @@ class ItemFactory extends Factory
             'slug' => Str::slug($name) . '-' . fake()->unique()->numerify('###'),
             'description' => fake()->sentence(),
             'price' => fake()->randomFloat(2, 3, 25),
-            'discount_price' => null,
             'item_category_id' => \Database\Factories\ItemCategoryFactory::new(),
             'tax_id' => \Database\Factories\TaxFactory::new(),
             'status' => 1,

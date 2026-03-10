@@ -45,7 +45,7 @@ class SettingResource extends JsonResource
             "site_guest_login"                     => $this->info['site_guest_login'],
             'theme_logo'                           => $this->themeImage('theme_logo')->logo,
             'theme_footer_logo'                    => $this->themeImage('theme_footer_logo')->footerLogo,
-            'theme_favicon_logo'                   => $this->themeImage('theme_favicon_logo')->faviconLogo,
+            'theme_favicon_logo'                   => $this->themeImage('theme_favicon_logo')?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png'),
             'otp_type'                             => $this->info['otp_type'],
             'otp_digit_limit'                      => $this->info['otp_digit_limit'],
             'otp_expire_time'                      => $this->info['otp_expire_time'],
