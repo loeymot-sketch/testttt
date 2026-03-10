@@ -9,19 +9,24 @@ class OSSReadOnlyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_oss_system_is_read_only()
+    public function test_oss_system_is_strictly_read_only()
     {
-        // OSS = Order Status Screen (L'écran qui montre les numéros de ticket aux clients)
-        // Normalement accessible via apiKey
-
-        $response = $this->withHeaders([
+        // OSS Token should exclusively permit GET on specific OSS feeds.
+        $headers = [
             'Accept' => 'application/json',
-            'x-api-key' => '123456' // clé standard par défaut
-        ])->postJson('/api/admin/oss-order/fake-action', [
-                    'status' => 'DELIVERED'
-                ]);
+            'x-api-key' => '123456' // standard api key
+        ];
 
-        // L'écran client ne doit RIEN pouvoir envoyer en POST vers les routes OSS.
-        $this->assertEquals(405, $response->status()); // La route ne supporte pas POST (Method Not Allowed), prouvant read-only
+        // Try POST
+        $responsePost = $this->withHeaders($headers)
+            ->postJson('/api/admin/oss-order/fake-action', ['status' => 'DELIVERED']);
+
+        $this->assertEquals(405, $responsePost->status());
+
+        // Try PUT
+        $responsePut = $this->withHeaders($headers)
+            ->putJson('/api/admin/order/1', ['status' => 'DELIVERED']);
+
+        $this->assertTrue(in_array($responsePut->status(), [401, 403, 405]));
     }
 }

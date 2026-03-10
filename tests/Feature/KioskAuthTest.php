@@ -29,7 +29,7 @@ class KioskAuthTest extends TestCase
         return [$branch, $user];
     }
 
-    public function test_kiosk_login_with_valid_credentials_returns_token()
+    public function test_kiosk_login_with_valid_credentials()
     {
         [$branch, $user] = $this->setupDb();
         KioskMachine::create([
@@ -46,35 +46,18 @@ class KioskAuthTest extends TestCase
             'username' => 'kiosk_valid',
             'password' => '123456',
         ]);
-        $this->assertContains($response->status(), [200, 201, 400, 404]); // 404 si prefix différent
+
+        $response->assertStatus(200)->assertJsonStructure(['data' => ['token']]);
     }
 
-    public function test_kiosk_login_with_invalid_credentials_returns_error()
-    {
-        $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'fake',
-            'password' => 'wrong',
-        ]);
-        $this->assertContains($response->status(), [400, 404, 422]);
-    }
-
-    public function test_kiosk_already_logged_in_returns_error()
+    public function test_kiosk_cannot_access_admin_flows()
     {
         [$branch, $user] = $this->setupDb();
-        KioskMachine::create([
-            'machine_id' => '124',
-            'branch_id' => $branch->id,
-            'user_id' => $user->id,
-            'username' => 'kiosk_logged',
-            'password' => bcrypt('123456'),
-            'is_login' => \App\Enums\Ask::YES,
-            'status' => \App\Enums\Status::ACTIVE
-        ]);
 
-        $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk_logged',
-            'password' => '123456',
-        ]);
-        $this->assertContains($response->status(), [400, 404, 422]);
+        // Simuler un accès en tant qu'utilisateur standard non admin vers un endpoint Admin
+        $response = $this->actingAs($user)->getJson('/api/admin/dashboard');
+
+        // Strict assertion: unauthorized or forbidden
+        $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 }

@@ -1,30 +1,28 @@
 # Cartographie par Appareil (Device Flow)
 
-L'écosystème **FoodKing SaaS** s'articule autour de plusieurs appareils (écrans physiques).
+L'écosystème FoodKing s'articule autour de multiples appareils physiques ou virtuels. La cohérence entre eux est critique pour le Restaurant.
 
 ## 1. Kiosk (Borne Interactive)
-- **Utilisateur** : Machine autonome authentifiée via `KioskMachineController`.
-- **Mécanique** :
-  - L'admin crée une machine dans le dashboard.
-  - La borne se loggue (`username`/`password`) pour générer un Token Sanctum.
-  - La borne reste connectée tant qu'elle est autorisée (`is_login`, `status`).
-  - Elle n'accède qu'à l'API `/api/frontend/` (Lecture seule du Store, Écriture pour créer Orders) et possède l'ability stricte `['kiosk:order']`.
+- **Acteur** : Client du restaurant (Non-loggué, mais utilise une machine reconnue).
+- **Source of Truth Locale** : Panier temporaire en mémoire Vue/Flutter.
+- **Écriture** : Envoie un Payload `OrderRequest` via `POST /api/frontend/order`.
+- **Lecture** : Récupère la carte via `/api/frontend/item`.
+- **Limites** : Ne peut modifier aucune commande une fois soumise.
 
 ## 2. POS (Caisse / Web Backend)
-- **Utilisateur** : Caissier ou Manager (Authentification Admin standard).
-- **Mécanique** :
-  - Gère les flux globaux : crée des `PosOrder`, gère l'état `PENDING` -> `ACCEPT`.
-  - Reçoit des bips Firebase lorsqu'une borne Kiosk passe une commande.
+- **Acteur** : Caissier (Humain, Authentifié `Manager`).
+- **Source of Truth** : Backend direct.
+- **Écriture** : Force les statuts, crée des commandes manuellement, applique des remises (`TableOrder`, `PosOrder`).
+- **Lecture** : Écoute les WebSockets Firebase pour les entrées Kiosk.
+- **Limites** : Limité à sa propre succursale (`branch_id`) sauf si compte `Admin`.
 
 ## 3. KDS (Kitchen Display System)
-- **Utilisateur** : Cuisinier.
-- **Mécanique** :
-  - Écran passif-actif situé en cuisine. Se connecte avec des droits d'admin.
-  - Ne voit QUE les commandes de sa succursale (`branch_id`).
-  - Transition de `ACCEPT` -> `PREPARING` -> `PREPARED`.
+- **Acteur** : Brigade de Cuisine (Authentifié `Chef`).
+- **Écriture** : Met à jour `OrderStatus` de `ACCEPT` -> `PREPARING` -> `PREPARED`.
+- **Lecture** : Liste en temps réel des commandes envoyées par la caisse.
+- **Flux Interdit** : Un Chef ne peut pas ajouter un produit ou éditer un prix sur le ticket.
 
-## 4. Status Screen (Écran Client File d'attente)
-- **Utilisateur** : Clients (Public).
-- **Mécanique** :
-  - Lit les informations via Websockets / Firebase (Event Bus).
-  - Affiche les numéros de tickets de `queue_number` en temps réel.
+## 4. Status Screen (Écran Client File d'attente / OSS)
+- **Acteur** : Passif (Écran public au-dessus du comptoir).
+- **Écriture** : AUCUNE. (Lecture Seule stricte).
+- **Lecture** : Connecté via Pusher/Websockets, reçoit les `queue_number` en `PREPARING` et `PREPARED`.

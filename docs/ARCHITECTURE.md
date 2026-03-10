@@ -45,17 +45,26 @@ graph TD
 
 ---
 
-## 🛑 Zones Gelées (Ce qui NE DOIT PAS être touché)
+## 🛑 Zones Gelées (Ce qu'il NE FAUT PAS toucher sans plan)
 
-Pour la phase actuelle d'audit/refactor pre-SaaS, les modules suivants sont **GELÉS** et ne doivent faire l'objet d'aucune modification de logique interne :
+Pour la phase actuelle de fiabilisation multi-agents, les modules suivants sont **GELÉS** et ne doivent faire l'objet d'aucune modification de logique interne :
 
-1. **Gateways de Paiement Restantes** (`Stripe`, `Paypal`, `Credit`). Les controllers et helpers associés sont en stand-by.
+1. **Gateways de Paiement Restantes** (`Stripe`, `Paypal`, `Credit`). Les controllers et helpers associés sont fermés.
 2. **Push Notifications Subsystem** (`app/Services/PushNotificationService`). Le code Firebase natif est très lié au flux hérité Guzzle.
-3. **Module Analytics Admin** (`Admin/DashboardController` et sous-modules complexes) : Ne nécessite aucune modif pour la stabilité cœur.
-4. **Delivery Boy Logic** : Tant que le routing et l'assignement manuel n'est pas utilisé activement.
+3. **Module Analytics Admin** (`Admin/DashboardController` et sous-modules complexes).
+4. **Delivery Boy Logic**.
 
-## 🔗 Dépendances Critiques
-Si ces dépendances sont modifiées, le projet cassera :
-- **Laravel Sanctum** : Gère les `capabilities` essentielles liées à la matrice AUTHZ (Kiosk vs Admin).
-- **Spatie Permission** : Gère la fine granularité `Manager/Chef`.
-- **Laravel Mix** : Construit Vue 3. Ne PAS migrer vers Vite dans l'immédiat.
+### Core Scope Actuel (Actif)
+La phase actuelle d'intervention se limite EXCLUSIVEMENT à :
+- **Backend API Core** (Validation JSON, Models)
+- **Auth Kiosk** (Tokens Sanctum, Abilities d'isolation)
+- **Ordering Encoders** (`OrderService`, Prices integrity)
+- **KDS** (Écran Cuisine)
+- **OSS** (Écran Client Waiter)
+- **Reporting & Boucle QA Multi-Agents**
+
+## 🔗 Dépendances Critiques & Inter-Modules
+Si ces dépendances sont modifiées, l'architecture globale cassera :
+- **Laravel Sanctum** : Gère les `capabilities` essentielles liées à la matrice AUTHZ. Le Kiosk dépend de clés Sanctum avec des abilities réduites. Ne pas dériver sur JWT.
+- **Spatie Permission** : Gère la fine granularité d'accès `Manager/Chef`. Fortement encodé dans les Helpers.
+- **Pusher / WebSockets** : La brique qui lie OSS, KDS et POS. Toute modification de payload event doit s'accompagner d'une rétro-compatibilité stricte.

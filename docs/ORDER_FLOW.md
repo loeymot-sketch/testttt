@@ -1,40 +1,37 @@
 # Flux de Commande (Order Flow)
 
-Ce document décrit le cycle de vie complet d'une commande FoodKing SaaS, de la création par un client à la remise physique.
+Ce document décrit le cycle de vie complet d'une commande FoodKing SaaS, de la création par un client à la remise physique, avec les règles strictes de lecture/écriture.
+
+## Source of Truth
+**La base de données MySQL + l'Entity `OrderService`** constituent l'unique Source of Truth (SOT) pour l'état d'un ticket et de son prix. Les appareils locaux (Kiosk, App) ne font qu'émettre des intentions.
+
+---
 
 ## 1. Création (PENDING)
-- **Point d'entrée** : Client sur le Frontend Web, App Mobile, ou Kiosk.
-- **Route** : `POST /api/frontend/order` (ou `tableOrderStore` pour les tables).
-- **Sécurité (Invariant)** : 
-  - Le frontend envoie un JSON avec les identifiants d'items. 
-  - Le `FrontendOrderService` et `OrderService` ignorent les prix du JSON et les **recalculent** en fonction de la BDD (`Item`, `ItemVariation`, `ItemExtra`).
-- **Validation** : Création d'un enregistrement `FrontendOrder` en statut `PENDING`. Si une `kiosk_machine` est connectée, elle attache son `branch_id`.
+- **Qui écrit** : Client (App Web), Client (Kiosk).
+- **Qui lit** : Caissier (POS).
+- **Action** : Soumission d'une requète `/api/frontend/order`. Le serveur crée `FrontendOrder` et ignore les prix du client.
+- **Notification** : Push Firebase vers le POS.
 
-## 2. Notification (Events)
-- Des jobs asynchrones (`SendOrderMail`, `SendOrderGotPush`) sont dispatchés.
-- Firebase alerte le **POS (Caisse)** qu'une commande est en attente.
+## 2. Paiement (ACCEPT)
+- **Qui écrit** : Caissier (POS).
+- **Qui lit** : Cuisine (KDS), Client (OSS).
+- **Action** : Le caissier valide le règlement (Cash/CB) et bascule à `ACCEPT`.
+- **Transitions interdites** : Impossible de passer à `ACCEPT` si le total ne correspond pas ou si le client annule au Kiosk.
 
-## 3. Paiement (ACCEPT)
-- **Point d'entrée** : Le caissier sur `Admin/OnlineOrder` ou `Admin/POS`.
-- **Validation** : Le caissier encaisse le paiement (Cash/CB) et change le statut à `ACCEPT`.
-- **Action** : La commande passe dans la file de la cuisine.
+## 3. Cuisine (PREPARING)
+- **Qui écrit** : Cuisinier (KDS).
+- **Qui lit** : Client (OSS), Caissier (POS).
+- **Action** : La commande apparait sur l'écran cuisine, le Chef appuie sur "Préparer". 
+- **Transitions interdites** : Un Kiosk ne peut pas déclencher cet état. Impossible de revenir à `PENDING`.
 
-## 4. Cuisine (PREPARING)
-- **Point d'entrée** : L'écran en cuisine (**KDS** - Kitchen Display System).
-- **Action** : Le cuisinier filtre par sa succursale (`branch_id`) et marque la commande comme `PREPARING`. 
-- **Notification** : Le client voit son ticket clignoter sur le `StatusScreen`.
+## 4. Prêt à Servir (PREPARED)
+- **Qui écrit** : Cuisinier (KDS).
+- **Qui lit** : Caissier (POS), Client (OSS).
+- **Action** : Le plat est sur le comptoir. Le KDS alerte le système (bip sonore + clignotement OSS).
 
-## 5. Prêt à Servir (PREPARED)
-- **Action** : Le KDS bascule à `PREPARED`. Notification push et sonore au Frontend client (le Kiosk bipe).
-
-## 6. Livraison (DELIVERED)
-- **Dernière étape** : Le caissier marque la commande comme terminée. Les données alimentent le `DashboardController` pour le Dashboard Boss (statistiques).
-
-## Diagramme d'État Autorisé (Transitions)
-`PENDING` -> `ACCEPT` -> `PREPARING` -> `PREPARED` -> `DELIVERED`
-(Ou `CANCELED` à tout moment par erreur)
-
-> [!CAUTION]
-> **Transitions Interdites** :
-> - Un ticket `PENDING` (non payé) ne peut pas sauter à `PREPARED` ou `DELIVERED`.
-> - Un ticket `CANCELED` ne peut pas ressusciter en `ACCEPT`.
+## 5. Livraison (DELIVERED)
+- **Qui écrit** : Caissier (POS).
+- **Qui lit** : Admin (Dashboard/Analytics).
+- **Action** : Remis au client. Le ticket sort du flux de production (Archivage).
+- **Transitions interdites** : Action bloquée pour le KDS et le Client. Impossible de revenir à `PREPARING` une fois livré.

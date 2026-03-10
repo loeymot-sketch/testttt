@@ -2,17 +2,17 @@
 
 Ce document décrit les permissions, middlewares et limites imposées à chaque acteur interagissant avec l'API Restaurant/SaaS. Il sert de contrat de référence pour tout refactoring IAM.
 
-| Acteur | Mode d'Auth | Routes autorisées | Actions autorisées | Actions interdites |
-|---|---|---|---|---|
-| **Admin System** | Sanctum (`auth:sanctum`) + `isAdmin` | `/api/admin/*` | CRUD complet The Boss, dashboard analytique global, config gateway. | — |
-| **Manager/Caissier** | Sanctum + Rôle (`Spatie`) | `/api/admin/pos*`<br>`/api/admin/online-order*` | Créer des POS/Online orders, changer statut `PENDING`→`ACCEPT`, gérer clients. | Modifier configuration globale système, supprimer branches entières. |
-| **Borne Kiosk (Machine)** | Sanctum KioskToken<br>Ability: `['kiosk:order']` | `/api/frontend/*` | Créer des commandes `PENDING`, lister les items du menu (`/item-category`). | Interdit d'accéder à `/api/admin/*`. Modifier infos de compte (pas d'UUID user réel associé). |
-| **Chef Cuisine (KDS)** | Sanctum + Rôle | `/api/admin/kds-order/*` | Voir la liste des commandes payées (`ACCEPT`→`PREPARING`→`PREPARED`) de SA succursale exclusive. | Voir les données d'une autre succursale. Sauter des étapes (e.g., livrer un ticket non payé). |
-| **Client Frontend / Mobile** | Sanctum (`auth:sanctum`) | `/api/frontend/order`<br>`/api/frontend/address` | Créer une commande, gérer profil client, gérer adresses persos. | Choisir le statut final de la commande, imposer un prix falsifié en JSON. Passer en cuisine. |
-| **Visiteur Public** | `apiKey` middleware | `/api/frontend/item*`<br>`/api/frontend/setting` | Lire le catalogue, la config frontend de base, la liste des restaurants. | Toute action de type POST/PUT/DELETE. |
+| Acteur | Token | Routes autorisées | Routes interdites |
+|---|---|---|---|
+| **Admin System** | Sanctum + Rôle `Admin` | `/api/admin/*` | — |
+| **Manager/Caissier** | Sanctum + Rôle `Manager` | `/api/admin/pos*`, `/api/admin/online-order*` | Modifier config globale, supprimer des succursales complètes. |
+| **Borne Kiosk** | Sanctum (`kioskToken`) | `/api/frontend/*` (uniquement création) | **Totalement interdit** : `/api/admin/*`. Modifier infos compte. |
+| **Chef (KDS)** | Sanctum + Rôle `Chef` | `/api/admin/kds-order/*` | Voir une autre succursale. Rejeter un encaissement POS. |
+| **Client / App** | Sanctum (Normal) | `/api/frontend/order`, `/api/frontend/address` | Imposer un prix JSON. Marquer la commande comme `DELIVERED`. |
+| **OSS Screen** | api-key uniquement | `/api/admin/oss-order` (Lecture) | Toute route POST, PUT, DELETE. Accès aux prix. |
 
-## Middlewares Critiques
-- `installed` : L'app doit avoir le fichier `storage/installed`.
-- `apiKey` : Empêche un curl externe non autorisé sur le front public via l'header `x-api-key`.
-- `auth:sanctum` : Protège l'accès utilisateur actif.
-- `VerifyKioskToken` (Implicite via les Token Abilities Laravel) : Barricade qui interdit l'échappatoire d'une borne vers le module comptabilité admin (Dashboard Boss).
+## Invariants de Sécurité
+- L'app doit avoir le fichier `storage/installed` pour démarrer.
+- Le middleware `apiKey` filtre les requêtes publiques pour éviter le web scraping agressif.
+- Le Token des bornes Kiosks (`KioskMachine`) possède des "abilities" restreintes (`['kiosk:order']`) au niveau du driver Sanctum qui bloque nativement les échappatoires vers l'Admin.
+- Les validations JSON pour la prise de commande NE DOIVENT JAMAIS accepter les totaux envoyés par les clients ; le backend utilise sa propre **Source of Truth** (DB).
