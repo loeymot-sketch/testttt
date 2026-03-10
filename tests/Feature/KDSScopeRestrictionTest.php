@@ -10,6 +10,12 @@ class KDSScopeRestrictionTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+    }
+
     public function test_kds_cannot_access_global_settings()
     {
         $user = User::factory()->create(['username' => 'kdsuser_' . uniqid()]);

@@ -4,6 +4,7 @@
 /storage/app/public/
 /storage/framework/
 /storage/logs/
+/storage/debugbar/
 .env
 .env.backup
 .env.testing
@@ -17,3 +18,7 @@ Homestead.json
 Homestead.yaml
 *.log
 .DS_Store
+# Scripts de stress-test et fichiers temporaires à la racine
+stress_test_kds.php
+test_order_simulate.php
+avis\ d\'expert\ .md

@@ -12,6 +12,12 @@ class KioskAuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+    }
+
     private function setupDb()
     {
         $branch = Branch::updateOrCreate(['id' => 1], [
