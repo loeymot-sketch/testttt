@@ -1,14 +1,17 @@
 Read:
 - the latest Anti-Gravity report
-- workflows/task-routing.md
-- project documentation in docs/
+- the relevant docs in `docs/`
+- `AGENTS.md`
+- `workflows/task-routing.md`
+- `workflows/qa-loop.md`
 
-Analyze the issue.
+Your task:
+- identify likely root causes
+- explain risk level
+- identify affected modules
+- propose the smallest correct fix
+- split work into atomic tasks
+- mark each task as CLAUDE or KIMI
+- write the result to `reports/planning/`
 
-Produce a structured implementation plan.
-
-Split tasks into:
-- reasoning tasks (Claude)
-- implementation tasks (Kimi)
-
-Write the plan in reports/planning/.
+Do not implement unless explicitly instructed.

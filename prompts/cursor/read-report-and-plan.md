@@ -1,11 +1,11 @@
-Read the latest file from reports/antigravity/.
+Read the latest report from `reports/antigravity/`.
 
-Analyze the reported problems.
+Then:
+1. summarize the issue clearly
+2. identify likely affected modules
+3. determine whether the issue needs Claude-style reasoning first
+4. produce a plan in `reports/planning/`
+5. split the work into small tasks
+6. label each task as CLAUDE or KIMI according to `workflows/task-routing.md`
 
-Create a structured task plan.
-
-Write the plan in reports/planning/.
-
-Split the work into small tasks and indicate which tasks should go to:
-- Claude
-- Kimi
+Do not implement yet unless explicitly asked.

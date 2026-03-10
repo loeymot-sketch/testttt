@@ -1,16 +1,17 @@
-# Anti-Gravity Test Report Format
+# Anti-Gravity Report Format
 
-Every Anti-Gravity test must produce a markdown report using this structure:
+Every Anti-Gravity test report must follow this structure.
 
 # Anti-Gravity Test Report <ID>
 
 ## Scope tested
-Describe the tested feature or flow.
+Describe the tested feature, flow, screen, or use case.
 
 ## Environment
-branch:
-commit:
-local or staging:
+- branch:
+- commit:
+- local or staging:
+- app version:
 
 ## Steps executed
 1.
@@ -18,21 +19,34 @@ local or staging:
 3.
 
 ## Passed
-List successful checks.
+- list working behavior
 
 ## Failed
-List failing checks.
+- list failing behavior
 
 ## Technical clues
-Logs, errors, observations.
+- logs
+- errors
+- timing
+- visual clues
+- API inconsistencies
+- state inconsistencies
 
 ## Suspected root cause
-Optional analysis.
+Optional but useful technical hypothesis.
 
 ## Priority
-Low / Medium / High / Critical
+- Low
+- Medium
+- High
+- Critical
 
 ## Suggested next tasks
 1.
 2.
 3.
+
+## Attachments
+- screenshots
+- videos
+- logs
