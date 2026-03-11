@@ -1,10 +1,5 @@
 ---
-description: 
-alwaysApply: true
----
-
----
-description: 
+description: AI Operating Instructions — FoodKing SaaS
 alwaysApply: true
 ---
 
@@ -74,6 +69,15 @@ Responsibilities:
 - Structured QA reporting
 - Only invoked when Claude's plan specifies "Anti-Gravity test"
 
+### Bugbot (Passive Diff Scanner — NO authority)
+Responsibilities:
+- Automatically scans PR diffs for bugs, security issues, regressions, edge cases
+- Writes findings ONLY to `reports/review/bugbot-latest.md`
+- NEVER autonomous — generates a file and stops
+- NEVER communicates directly with Kimi or Anti-Gravity
+- NEVER makes architectural decisions
+- Governed strictly by `.cursor/BUGBOT.md`
+
 ### Cursor
 Orchestration environment
 
@@ -84,12 +88,22 @@ Orchestration environment
 2. **Claude** analyzes and writes plan in `reports/planning/latest.md`
    - Plan MUST specify test type: "Kimi-test" / "Anti-Gravity" / "No-test"
 3. **Human** validates plan (GO / MODIFY / STOP)
-4. **Kimi** implements following the plan
-5. **Kimi** executes tests if plan says "Kimi-test" (PHPUnit, Jest, etc.)
-6. **Kimi** writes execution summary in `reports/execution/latest.md` with test results
-7. **Claude** reviews implementation and test results
-8. **Claude** writes review in `reports/review/latest.md` with verdict: APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY
-9. **Human** validates final result
+4. **Kimi** MUST check FIRST: does `reports/review/bugbot-latest.md` exist?
+   - **YES** → Kimi **notifies the Human** with:
+     `ℹ️ Bugbot findings detected in reports/review/bugbot-latest.md — Claude review needed (ask Claude to fix when ready).`
+     Then Kimi **continues normally to step 5** without stopping.
+   - **NO** → Kimi continues normally to step 5
+5. **Kimi** implements following Claude's plan
+6. **Kimi** executes tests if plan says "Kimi-test" (PHPUnit, Jest, etc.)
+7. **Kimi** writes execution summary in `reports/execution/latest.md` with test results
+8. **Bugbot** (if PR exists) scans the diff → writes `reports/review/bugbot-latest.md` passively
+9. **Claude** reads `reports/review/bugbot-latest.md` (when Human convokes Claude) and decides:
+   - `ACCEPT` → not blocking, writes verdict in `reports/review/latest.md`
+   - `REQUEST_FIX` → writes a minimal correction plan for Kimi
+   - `ESCALATE` → invokes Anti-Gravity (only Claude can do this)
+10. **Claude** writes final review in `reports/review/latest.md` with verdict: APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY
+11. **Kimi** deletes `reports/review/bugbot-latest.md` only after Claude writes `APPROVED` verdict
+12. **Human** validates final result
 
 ### Anti-Gravity Cycle (10% of cases - critical tests only)
 1. **Claude's plan** specifies "Anti-Gravity test" OR **Claude's review** says "NEEDS_ANTIGRAVITY"
@@ -193,7 +207,9 @@ Orchestration environment
 - Execution summary goes to `reports/execution/latest.md` (with test results if applicable)
 - Review output goes to `reports/review/latest.md` (with verdict)
 - QA findings come from `reports/antigravity/latest.md` (only when Anti-Gravity is invoked)
+- **Bugbot findings** go to `reports/review/bugbot-latest.md` (passive, read only by Claude)
 - Use the report format defined in `workflows/report-format.md`
+- See `.cursor/BUGBOT.md` for Bugbot operating rules
 
 ## Behavior in uncertainty
 - If docs and code disagree, say so explicitly.

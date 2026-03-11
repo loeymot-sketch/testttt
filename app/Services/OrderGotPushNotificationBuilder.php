@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Enums\Role;
 use App\Enums\SwitchBox;
+use App\Models\Order;
 use App\Models\FrontendOrder;
 use App\Models\NotificationAlert;
 use App\Enums\OrderType;
@@ -20,7 +21,8 @@ class OrderGotPushNotificationBuilder
     public function __construct($orderId)
     {
         $this->orderId = $orderId;
-        $this->order = FrontendOrder::find($orderId);
+        // [SECURITY FIX P0-003] Try Order table first (POS orders), fallback to FrontendOrder (Web/App)
+        $this->order = Order::find($orderId) ?? FrontendOrder::find($orderId);
     }
 
     public function send(): void

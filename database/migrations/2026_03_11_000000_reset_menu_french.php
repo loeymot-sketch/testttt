@@ -18,30 +18,47 @@ return new class extends Migration
     {
         echo "\n=== EMERGENCY MENU RESET - Le Grill House ===\n";
         
-        // Disable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // [FIX] SQLite-compatible foreign key handling
+        $driver = DB::getDriverName();
         
-        // Truncate all menu-related tables
-        DB::table('item_addons')->truncate();
-        echo "✓ Truncated item_addons\n";
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         
-        DB::table('item_extras')->truncate();
-        echo "✓ Truncated item_extras\n";
+        // Truncate all menu-related tables (delete for SQLite compatibility)
+        if ($driver === 'sqlite') {
+            DB::table('item_addons')->delete();
+            DB::table('item_extras')->delete();
+            DB::table('item_variations')->delete();
+            DB::table('item_attributes')->delete();
+            DB::table('items')->delete();
+            DB::table('item_categories')->delete();
+            // Reset SQLite sequences
+            DB::statement("DELETE FROM sqlite_sequence WHERE name IN ('items', 'item_categories', 'item_addons', 'item_extras', 'item_variations', 'item_attributes');");
+        } else {
+            DB::table('item_addons')->truncate();
+            DB::table('item_extras')->truncate();
+            DB::table('item_variations')->truncate();
+            DB::table('item_attributes')->truncate();
+            DB::table('items')->truncate();
+            DB::table('item_categories')->truncate();
+        }
         
-        DB::table('item_variations')->truncate();
-        echo "✓ Truncated item_variations\n";
-        
-        DB::table('item_attributes')->truncate();
-        echo "✓ Truncated item_attributes\n";
-        
-        DB::table('items')->truncate();
-        echo "✓ Truncated items\n";
-        
-        DB::table('item_categories')->truncate();
-        echo "✓ Truncated item_categories\n";
+        echo "✓ Purged item_addons\n";
+        echo "✓ Purged item_extras\n";
+        echo "✓ Purged item_variations\n";
+        echo "✓ Purged item_attributes\n";
+        echo "✓ Purged items\n";
+        echo "✓ Purged item_categories\n";
         
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
         
         echo "✅ All menu tables purged successfully\n";
         echo "Run: php artisan db:seed --class=MenuSeeder\n";

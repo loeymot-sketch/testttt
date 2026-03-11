@@ -396,7 +396,7 @@ class MenuSeeder extends Seeder
             $categoryId = $this->categoryIds[$categorySlug];
 
             foreach ($items as $itemData) {
-                $this->createItem($itemData, $categoryId);
+                $this->createItem($itemData, $categoryId, $categorySlug); // [BUG-WIZ FIX] Pass categorySlug
                 $itemCount++;
             }
         }
@@ -409,8 +409,9 @@ class MenuSeeder extends Seeder
      *
      * @param array $data
      * @param int $categoryId
+     * @param string $categorySlug
      */
-    protected function createItem(array $data, int $categoryId): void
+    protected function createItem(array $data, int $categoryId, string $categorySlug = ''): void
     {
         // Create the item
         $item = Item::create([
@@ -443,7 +444,7 @@ class MenuSeeder extends Seeder
 
         // Add supplements/extras (for most items except simple ones)
         if (!isset($data['is_frites']) || !$data['is_frites']) {
-            $this->attachSupplements($item);
+            $this->attachSupplements($item, $categorySlug); // [BUG-WIZ FIX] Pass categorySlug
         }
 
         // Special handling for frites
@@ -536,27 +537,44 @@ class MenuSeeder extends Seeder
      * Attach supplements/extras to an item
      *
      * @param Item $item
+     * @param string $categorySlug
      */
-    protected function attachSupplements(Item $item): void
+    protected function attachSupplements(Item $item, string $categorySlug = ''): void
     {
-        // Add regular supplements
-        foreach ($this->config['supplements'] as $name => $price) {
-            ItemExtra::create([
-                'item_id' => $item->id,
-                'name'    => $name,
-                'price'   => $price,
-                'status'  => 1,
-            ]);
+        // [BUG-WIZ-001/002 FIX] Categories that should NOT have food supplements
+        $noSupplementCategories = [
+            'ojja', 'omelettes', 'nos-salades', 'nos-desserts',
+            'nos-boissons', 'frites-accompagnements', 'chicken-tenders'
+        ];
+
+        // [BUG-WIZ-001 FIX] Categories that should have extra sauce options
+        // Only Tacos, Sandwichs, Burgers need "Sauce supplémentaire" in extras
+        $hasSauceExtras = in_array($categorySlug, ['nos-tacos', 'nos-sandwichs', 'nos-burgers']);
+
+        // Add regular supplements only for appropriate categories
+        if (!in_array($categorySlug, $noSupplementCategories)) {
+            foreach ($this->config['supplements'] as $name => $price) {
+                ItemExtra::create([
+                    'item_id' => $item->id,
+                    'name'    => $name,
+                    'price'   => $price,
+                    'status'  => 1,
+                ]);
+            }
         }
 
-        // Add extra sauce options
-        foreach ($this->config['sauces'] as $sauce) {
-            ItemExtra::create([
-                'item_id' => $item->id,
-                'name'    => "Sauce supplémentaire: {$sauce}",
-                'price'   => $this->config['supplement_sauce_price'],
-                'status'  => 1,
-            ]);
+        // Add extra sauce options ONLY for specific categories (not for everyone)
+        if ($hasSauceExtras) {
+            foreach ($this->config['sauces'] as $sauce) {
+                if ($sauce !== 'Sans Sauce') { // Don't offer "Sauce suppl: Sans Sauce"
+                    ItemExtra::create([
+                        'item_id' => $item->id,
+                        'name'    => "Sauce supplémentaire: {$sauce}",
+                        'price'   => $this->config['supplement_sauce_price'],
+                        'status'  => 1,
+                    ]);
+                }
+            }
         }
     }
 

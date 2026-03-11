@@ -26,7 +26,7 @@ class ItemExtraResource extends JsonResource
             'convert_price' => AppLibrary::convertAmountFormat($this->price),
             'status' => $this->status,
             // [SPRINT-8] Ajout pour le wizard kiosk — images et badge NOUVEAU
-            'thumb' => $this->thumb,
+            'thumb' => $this->thumb ?? null,
             'is_new' => (bool) ($this->is_new ?? false),
             'item' => optional($this->item)->name,
         ];

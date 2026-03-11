@@ -28,7 +28,7 @@ class ItemVariationResource extends JsonResource
             'caution' => $this->caution,
             'status' => $this->status,
             // [SPRINT-8] Images et badge NOUVEAU pour les cartes wizard kiosk
-            'thumb' => $this->thumb,
+            'thumb' => $this->thumb ?? null,
             'is_new' => (bool) ($this->is_new ?? false),
             'item' => optional($this->item)->name,
             'item_attribute' => optional($this->itemAttribute)->name,

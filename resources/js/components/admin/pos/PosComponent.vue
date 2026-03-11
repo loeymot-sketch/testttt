@@ -652,9 +652,13 @@ export default {
                 order_type: 'asc',
                 status: statusEnum.ACTIVE,
             }).then((res) => {
-                this.checkoutProps.form.customer_id = res.data.data[1].id;
-                this.address.form.user_id = res.data.data[1].id;
-                this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                // [FIX API-BUG-001] Safe access: use 2nd user (Walking Customer) if exists, else 1st
+                if (res.data.data && res.data.data.length > 0) {
+                    var walkingCustomer = res.data.data.length > 1 ? res.data.data[1] : res.data.data[0];
+                    this.checkoutProps.form.customer_id = walkingCustomer.id;
+                    this.address.form.user_id = walkingCustomer.id;
+                    this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                }
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;

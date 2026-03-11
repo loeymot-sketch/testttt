@@ -169,6 +169,7 @@ export default {
             this.$props.props.form.pos_payment_note = "";
         },
         confirmOrder: function () {
+            this.loading.isActive = true; // [BUG-PAY-001 FIX] Prevent double-click
             try {
                 // Fix: Lire directement depuis le DOM pour éviter le problème de binding Vue.js
                 if (this.$props.props.form.pos_payment_method === this.posPaymentMethodEnum.CASH) {

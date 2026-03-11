@@ -744,3 +744,197 @@
 .wizard-instruction textarea::placeholder {
     color: #B0B0C8;
 }
+
+/* =============================================
+   [P1] MENU CHOICE - 3 Options
+   ============================================= */
+.wizard-menu-choice-container {
+    padding: 10px 0;
+}
+
+.menu-choice-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin-bottom: 24px;
+}
+
+.wizard-menu-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.menu-choice-card {
+    border: 2px solid #E5E5F0;
+    border-radius: 16px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: white;
+}
+
+.menu-choice-card:hover {
+    border-color: #C5C5E0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.menu-choice-card.selected {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+    box-shadow: 0 4px 15px rgba(233, 60, 60, 0.15);
+}
+
+.menu-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.menu-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1B1B3A;
+    margin-bottom: 6px;
+}
+
+.menu-card-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #E93C3C;
+    margin-bottom: 6px;
+}
+
+.menu-choice-card.selected .menu-card-price {
+    color: #E93C3C;
+}
+
+.menu-card-desc {
+    font-size: 11px;
+    color: #8E8EA9;
+    line-height: 1.3;
+}
+
+/* =============================================
+   [P1] FRITES OPTIONS
+   ============================================= */
+.wizard-frites-options-container {
+    padding: 10px 0;
+}
+
+.frites-section {
+    margin-bottom: 28px;
+}
+
+.frites-section:last-child {
+    margin-bottom: 0;
+}
+
+.frites-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.frites-size-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.frites-option {
+    border: 2px solid #E5E5F0;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.frites-option:hover {
+    border-color: #C5C5E0;
+}
+
+.frites-option.selected {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+    box-shadow: 0 4px 12px rgba(233, 60, 60, 0.12);
+}
+
+.frites-opt-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1B1B3A;
+}
+
+.frites-opt-price {
+    font-size: 12px;
+    color: #8E8EA9;
+    font-weight: 500;
+}
+
+.frites-opt-price.upgrade {
+    color: #E93C3C;
+    font-weight: 700;
+}
+
+.frites-option.selected .frites-opt-label {
+    color: #E93C3C;
+}
+
+/* =============================================
+   [P1] BOISSON CHOICE
+   ============================================= */
+.wizard-boisson-container {
+    padding: 10px 0;
+}
+
+.boisson-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+    color: #1B1B3A;
+    margin-bottom: 20px;
+}
+
+.wizard-options.boisson-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.wizard-option.boisson-opt {
+    padding: 14px 10px;
+    border: 2px solid #E5E5F0;
+    border-radius: 12px;
+    background: white;
+    transition: all 0.25s ease;
+}
+
+.wizard-option.boisson-opt:hover {
+    border-color: #C5C5E0;
+    transform: translateY(-1px);
+}
+
+.wizard-option.boisson-opt.selected {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+    box-shadow: 0 4px 12px rgba(233, 60, 60, 0.12);
+}
+
+.wizard-option.boisson-opt .option-name {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.wizard-option.boisson-opt.selected .option-name {
+    color: #E93C3C;
+}

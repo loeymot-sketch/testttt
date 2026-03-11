@@ -14,7 +14,14 @@ class OrderStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // [SECURITY FIX P0-002] Only authenticated users with proper permissions can change order status
+        if (!auth()->check()) {
+            return false;
+        }
+        
+        // Check if user has admin, manager, or kitchen role
+        $user = auth()->user();
+        return $user->hasAnyRole(['Admin', 'Manager', 'Chef', 'Cashier']);
     }
 
     /**
