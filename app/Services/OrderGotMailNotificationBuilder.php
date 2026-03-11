@@ -27,32 +27,16 @@ class OrderGotMailNotificationBuilder
     public function send()
     {
         if (!blank($this->order)) {
-            $emailAllAdmins = User::role(Role::ADMIN)->where(['branch_id' => 0])->whereNotNull('email')->get();
-            $emailBranchAdmins = User::role(Role::ADMIN)->where(['branch_id' => $this->order->branch_id])->whereNotNull('email')->get();
-            $emailBranchManagers = User::role(Role::BRANCH_MANAGER)->where(['branch_id' => $this->order->branch_id])->whereNotNull('email')->get();
-
-            $i = 0;
-            $emailArray = [];
-            if (!blank($emailAllAdmins)) {
-                foreach ($emailAllAdmins as $emailAllAdmin) {
-                    $emailArray[$i] = $emailAllAdmin->email;
-                    $i++;
-                }
-            }
-
-            if (!blank($emailBranchAdmins)) {
-                foreach ($emailBranchAdmins as $emailBranchAdmin) {
-                    $emailArray[$i] = $emailBranchAdmin->email;
-                    $i++;
-                }
-            }
-
-            if (!blank($emailBranchManagers)) {
-                foreach ($emailBranchManagers as $emailBranchManager) {
-                    $emailArray[$i] = $emailBranchManager->email;
-                    $i++;
-                }
-            }
+            // Combined single query for all recipients
+            $emailArray = User::where(function ($query) {
+                $query->where(function ($q) {
+                    $q->role('Admin')->where('branch_id', 0);
+                })->orWhere(function ($q) {
+                    $q->role('Admin')->where('branch_id', $this->order->branch_id);
+                })->orWhere(function ($q) {
+                    $q->role('Branch Manager')->where('branch_id', $this->order->branch_id);
+                });
+            })->whereNotNull('email')->pluck('email')->unique()->values()->toArray();
 
             if (count($emailArray) > 0) {
                 try {

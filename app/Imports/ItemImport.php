@@ -77,7 +77,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
 
     private function getCategoryId($categoryName): int|null
     {
-        $category = ItemCategory::where(DB::raw('LOWER(name)'), 'LIKE', '%' . strtolower($categoryName) . '%')->first();
+        $category = ItemCategory::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($categoryName) . '%'])->first();
         if ($category) {
             return $category->id;
         }

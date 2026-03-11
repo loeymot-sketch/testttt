@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $company['company_name']  }}</title>
-    <link rel="icon" href="{{ $faviconLogo->faviconLogo }}">
+    <link rel="icon" href="{{ $faviconLogo?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/css/style.css') }}">
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap">
@@ -16,7 +16,7 @@
 
 <div class="py-14 px-4 w-full max-w-2xl mx-auto flex flex-col items-center justify-center">
     <a href="{{ route('home') }}" class="w-36 mb-8">
-        <img class="w-full" src="{{ $logo->logo }}" alt="logo">
+        <img class="w-full" src="{{ $logo?->logo ?? asset('images/theme/theme-logo.png') }}" alt="logo">
     </a>
 
     <img class="w-full max-w-[120px] mb-3" src="{{ asset('images/default/payment-success.gif') }}" alt="success">

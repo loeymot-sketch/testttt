@@ -1,52 +1,43 @@
-# Anti-Gravity Report Format
+---
+description: Format imposé pour tous les rapports QA Anti-Gravity
+alwaysApply: true
+---
 
-Every Anti-Gravity test report must follow this structure.
+# Format de Rapport Anti-Gravity Requis
 
-# Anti-Gravity Test Report <ID>
+Pour chaque test exécuté de bout-en-bout (E2E), l'agent Anti-Gravity DOIT documenter ses résultats en suivant EXACTEMENT la structure ci-dessous.
 
-## Scope tested
-Describe the tested feature, flow, screen, or use case.
+L'objectif est d'avoir une uniformité parfaite, test par test, dans les rapports générés sous `reports/antigravity/`.
 
-## Environment
-- branch:
-- commit:
-- local or staging:
-- app version:
+---
 
-## Steps executed
-1.
-2.
-3.
+### Test {ID}: {Nom du test}
+**Status:** ✅ PASS / ❌ FAIL
+**Date:** {timestamp}
+**Agent:** Anti-Gravity
 
-## Passed
-- list working behavior
+**Prérequis:**
+- {liste des conditions initiales : data, auth, écran ouvert...}
 
-## Failed
-- list failing behavior
+**Étapes exécutées:**
+1. {étape détaillée 1}
+2. {étape détaillée 2}
+3. {étape détaillée 3}
 
-## Technical clues
-- logs
-- errors
-- timing
-- visual clues
-- API inconsistencies
-- state inconsistencies
+**Résultat attendu:**
+- {ce que le système est censé faire selon les BUSINESS_RULES et l'ARCHITECTURE}
 
-## Suspected root cause
-Optional but useful technical hypothesis.
+**Résultat observé:**
+- {ce qui s'est réellement passé lors de l'exécution du test}
 
-## Priority
-- Low
-- Medium
-- High
-- Critical
+**Différences:**
+- {S'il y a un écart entre attendu et observé, le détailler ici. Sinon, écrire "Aucune"}
 
-## Suggested next tasks
-1.
-2.
-3.
+**Captures/Logs:**
+- {Chemin absolu vers les screenshots (.png/.webp), fichiers vidéos, ou logs console interceptés}
 
-## Attachments
-- screenshots
-- videos
-- logs
+**Verdict:**
+- PASS: {Si tous les critères sont OK}
+- FAIL: {Si échec, description de l'échec et potentiellement la cause technique devinée}
+
+---

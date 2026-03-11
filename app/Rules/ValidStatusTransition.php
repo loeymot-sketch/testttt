@@ -67,7 +67,7 @@ class ValidStatusTransition implements Rule
             case OrderStatus::REJECTED:
             case OrderStatus::RETURNED:
                 // Si l'utilisateur est un Admin, on autorise la récupération depuis un état terminal
-                if (auth()->check() && auth()->user()->hasRole(\App\Enums\Role::ADMIN)) {
+                if (auth()->check() && auth()->user()->hasRole('Admin')) {
                     return true;
                 }
                 return false;

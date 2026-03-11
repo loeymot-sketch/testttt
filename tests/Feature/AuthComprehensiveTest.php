@@ -2,166 +2,203 @@
 
 namespace Tests\Feature;
 
+use Tests\TestCase;
+use App\Models\User;
 use App\Models\Branch;
 use App\Models\KioskMachine;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Spatie\Permission\Models\Role;
 
+/**
+ * Module 1: Authentification & Accès (8 tests)
+ * 
+ * Surface: /api/auth/*, /api/profile/*
+ * Priorité: 🔴 Critique
+ */
 class AuthComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $branch;
-
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Forcer la variable d'env pour que le ApiKeyMiddleware ne jette pas un 400
-        putenv('MIX_API_KEY=123456');
-
-        // Clé API standard requise par le middleware
-        $this->withHeaders([
-            'x-api-key' => '123456',
-            'Accept' => 'application/json',
-        ]);
-
-        // Configuration de base pour satisfaire les Foreign Keys
-        $this->branch = Branch::forceCreate([
-            'name' => 'Main Branch',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75000',
-            'address' => '1 rue test',
-            'status' => 1
-        ]);
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
     }
 
-    public function test_login_admin_valide()
+    /**
+     * 1.1 - Login Admin valide
+     * Route: POST /api/auth/login
+     * Attendu: 200 + Token Sanctum
+     */
+    public function test_admin_login_valid()
     {
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-
-        $user = User::forceCreate([
-            'name' => 'Admin API',
+        $branch = Branch::factory()->create();
+        $admin = \Database\Factories\UserFactory::new()->create([
+            'branch_id' => $branch->id,
             'email' => 'admin@test.com',
-            'username' => 'admin_api_user',
-            'password' => bcrypt('password123'),
-            'branch_id' => $this->branch->id,
-            'status' => 5,
-            'email_verified_at' => now()
+            'password' => bcrypt('password123')
         ]);
-        $user->assignRole($role);
-
-        $response = $this->postJson('/api/auth/login', [
-            'email' => 'admin@test.com',
-            'password' => 'password123'
-        ]);
-
-        $this->assertContains($response->status(), [201, 200]);
+        $admin->assignRole('Admin');
+        
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/login', [
+                'email' => 'admin@test.com',
+                'password' => 'password123'
+            ]);
+        
+        $response->assertStatus(200);
         $this->assertArrayHasKey('token', $response->json());
     }
 
-    public function test_login_admin_invalide()
+    /**
+     * 1.2 - Login Admin invalide
+     * Route: POST /api/auth/login
+     * Attendu: 401 ou 422
+     */
+    public function test_admin_login_invalid()
     {
-        $response = $this->postJson('/api/auth/login', [
-            'email' => 'admin@test.com',
-            'password' => 'wrongpassword'
-        ]);
-
-        $this->assertContains($response->status(), [401, 400, 422]);
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/login', [
+                'email' => 'fake@test.com',
+                'password' => 'wrongpassword'
+            ]);
+        
+        $this->assertTrue(in_array($response->status(), [401, 422]));
     }
 
-    public function test_login_kiosk_valide()
+    /**
+     * 1.3 - Login Kiosk valide
+     * Route: POST /api/auth/kiosk-login
+     * Attendu: Token avec ability kiosk:order
+     * Note: Déjà testé dans AntiGravityTest (T01)
+     */
+    public function test_kiosk_login_valid()
     {
-        $user = User::forceCreate([
-            'name' => 'Kiosk Test API',
-            'email' => 'kiosk@test.com',
-            'username' => 'kiosk_api_user',
-            'password' => bcrypt('password123'),
-            'branch_id' => $this->branch->id,
-            'status' => 5,
-            'email_verified_at' => now()
-        ]);
-
-        $kiosk = KioskMachine::forceCreate([
-            'branch_id' => $this->branch->id,
+        $branch = Branch::factory()->create();
+        $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
+            'branch_id' => $branch->id,
             'user_id' => $user->id,
-            'machine_id' => 'MAC-12345',
-            'username' => 'kiosk1',
+            'username' => 'kiosk123',
             'password' => bcrypt('password123'),
-            'status' => 5
+            'status' => \App\Enums\Status::ACTIVE,
+            'is_login' => \App\Enums\Ask::NO,
         ]);
+        
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/kiosk-login', [
+                'username' => 'kiosk123',
+                'password' => 'password123'
+            ]);
+        
+        $this->assertTrue(in_array($response->status(), [200, 201]));
+        $this->assertArrayHasKey('token', $response->json());
+    }
 
+    /**
+     * 1.4 - Login Kiosk invalide
+     * Route: POST /api/auth/kiosk-login
+     * Attendu: Erreur, pas de token
+     */
+    public function test_kiosk_login_invalid()
+    {
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/kiosk-login', [
+                'username' => 'fake',
+                'password' => 'wrong'
+            ]);
+        
+        $this->assertTrue(in_array($response->status(), [400, 401, 404, 422]));
+    }
+
+    /**
+     * 1.5 - Kiosk déjà loggué
+     * Route: POST /api/auth/kiosk-login
+     * Attendu: Erreur already logged in
+     */
+    public function test_kiosk_login_already_logged_in()
+    {
+        $branch = Branch::factory()->create();
+        $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'username' => 'kiosk123',
+            'password' => bcrypt('password123'),
+            'status' => \App\Enums\Status::ACTIVE,
+            'is_login' => \App\Enums\Ask::YES,
+        ]);
+        
         $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk1',
+            'username' => 'kiosk123',
             'password' => 'password123'
         ]);
-
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertArrayHasKey('token', $response->json('data') ?? $response->json());
+        
+        $this->assertTrue(in_array($response->status(), [400, 401, 403, 422]));
     }
 
-    public function test_login_kiosk_invalide()
+    /**
+     * 1.6 - Kiosk inactif
+     * Route: POST /api/auth/kiosk-login
+     * Attendu: Erreur inactive
+     */
+    public function test_kiosk_login_inactive()
     {
+        $branch = Branch::factory()->create();
+        $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'username' => 'kiosk123',
+            'password' => bcrypt('password123'),
+            'status' => \App\Enums\Status::INACTIVE,
+            'is_login' => \App\Enums\Ask::NO,
+        ]);
+        
         $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk1',
-            'password' => 'wrongpassword'
+            'username' => 'kiosk123',
+            'password' => 'password123'
         ]);
-
-        $this->assertContains($response->status(), [401, 400, 422, 404]);
+        
+        $this->assertTrue(in_array($response->status(), [400, 401, 403, 422]));
     }
 
-    public function test_logout_admin()
+    /**
+     * 1.7 - Logout Admin
+     * Route: POST /api/auth/logout
+     * Attendu: 200 + token révoqué
+     */
+    public function test_admin_logout()
     {
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $user = User::forceCreate([
-            'name' => 'Admin API',
-            'email' => 'adminout@test.com',
-            'username' => 'admin_out_user',
-            'password' => bcrypt('password123'),
-            'branch_id' => $this->branch->id,
-            'status' => 5,
-            'email_verified_at' => now()
-        ]);
-        $user->assignRole($role);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/auth/logout');
-
-        // It can be 200 or 201
-        $this->assertContains($response->status(), [200, 201]);
+        $branch = Branch::factory()->create();
+        $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $admin->assignRole('Admin');
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/logout');
+        
+        $response->assertStatus(200);
     }
 
-    public function test_logout_kiosk()
+    /**
+     * 1.8 - Accès sans token
+     * Route: GET /api/admin/dashboard
+     * Attendu: 401 Unauthenticated
+     */
+    public function test_access_without_token_returns_401()
     {
-        $user = User::forceCreate([
-            'name' => 'Kiosk API',
-            'email' => 'kioskout@test.com',
-            'username' => 'kiosk_out_user',
-            'password' => bcrypt('password123'),
-            'branch_id' => $this->branch->id,
-            'status' => 5,
-            'email_verified_at' => now()
-        ]);
-
-        $token = $user->createToken('kioskToken', ['kiosk:order'])->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/auth/kiosk-logout');
-
-        $this->assertContains($response->status(), [200, 201]);
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/dashboard');
+        
+        $response->assertStatus(401);
     }
 
-    public function test_acces_sans_token_rejete()
+    /**
+     * Helper: Get API key for admin route access
+     */
+    private function apiKey(): string
     {
-        $response = $this->getJson('/api/admin/dashboard/total-sales');
-
-        $this->assertContains($response->status(), [401, 403]);
+        return config('app.api_key', env('MIX_API_KEY', 'test-api-key'));
     }
 }

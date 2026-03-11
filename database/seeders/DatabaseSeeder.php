@@ -4,6 +4,25 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 
+/**
+ * ============================================================================
+ * DATABASE SEEDER - FOODKING
+ * ============================================================================
+ *
+ * This seeder initializes the database with all required data.
+ * NOTE: Menu seeding is handled separately by MenuSeeder - the single source
+ * of truth for French menu items.
+ *
+ * To seed the menu:
+ *   php artisan menu:create
+ *
+ * To reset the menu:
+ *   php artisan menu:reset
+ *
+ * DEPRECATED: ItemCategoryTableSeeder, ItemTableSeeder (English seeders removed)
+ * USE INSTEAD: MenuSeeder (French only)
+ * ============================================================================
+ */
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -13,6 +32,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        // Core system seeders (required for operation)
         $this->call(MenuTableSeeder::class);
         $this->call(MenuTemplateTableSeeder::class);
         $this->call(MenuSectionTableSeeder::class);
@@ -37,29 +57,59 @@ class DatabaseSeeder extends Seeder
         $this->call(LicenseTableSeeder::class);
         $this->call(KioskMachineTableSeeder::class);
 
+        // Content seeders
         $this->call(SocialMediaTableSeeder::class);
         $this->call(AnalyticTableSeeder::class);
         $this->call(TaxTableSeeder::class);
         $this->call(PageTableSeeder::class);
         $this->call(SliderTableSeeder::class);
-        $this->call(ItemCategoryTableSeeder::class);
-        $this->call(ItemAttributeTableSeeder::class);
+
+        // =========================================================================
+        // MENU SEEDING - SINGLE SOURCE OF TRUTH
+        // =========================================================================
+        // USE: MenuSeeder ONLY - It handles categories, items, attributes,
+        //      variations, extras, and addons in ONE atomic operation.
+        //
+        // Commands:
+        //   php artisan menu:create  - Create menu (fails if exists)
+        //   php artisan menu:reset   - Purge and recreate
+        //   php artisan menu:verify  - Validate French integrity
+        //
+        // DEPRECATED (BLOCKED from execution):
+        //   - ItemCategoryTableSeeder (deleted)
+        //   - ItemTableSeeder (deleted)
+        //   - GrillHouseMenuSeeder (deprecated, throws exception)
+        //   - CompleteFrenchMenuSeeder (deprecated, throws exception)
+        //   - ItemExtraTableSeeder (deprecated, throws exception)
+        //   - ItemVariationTableSeeder (deprecated, throws exception)
+        //   - ItemAddonTableSeeder (deprecated, throws exception)
+        //   - ItemAttributeTableSeeder (not needed, handled by MenuSeeder)
+        // =========================================================================
+        $this->call(MenuSeeder::class);
         $this->call(TimeSlotTableSeeder::class);
         $this->call(PaymentGatewayDataTableSeeder::class);
-        $this->call(ItemTableSeeder::class);
-        $this->call(ItemVariationTableSeeder::class);
-        $this->call(ItemExtraTableSeeder::class);
-        $this->call(ItemAddonTableSeeder::class);
+
+        // Related item structures (variations, extras, addons)
+        // These are now seeded by MenuSeeder - kept for compatibility
+        // $this->call(ItemVariationTableSeeder::class);
+        // $this->call(ItemExtraTableSeeder::class);
+        // $this->call(ItemAddonTableSeeder::class);
+
+        // Promotions and offers
         $this->call(OfferTableSeeder::class);
         $this->call(OfferItemTableSeeder::class);
         $this->call(CouponTableSeeder::class);
-        $this->call(OrderTableSeeder::class);
-        $this->call(OrderItemTableSeeder::class);
-        $this->call(OrderCouponTableSeeder::class);
-        $this->call(OrderAddressTableSeeder::class);
-        $this->call(TransactionTableSeeder::class);
-        $this->call(KdsOrderTableSeeder::class);
-        $this->call(OrderTableSeederVersionTwo::class);
+
+        // Order data (optional - for demo purposes)
+        // $this->call(OrderTableSeeder::class);
+        // $this->call(OrderItemTableSeeder::class);
+        // $this->call(OrderCouponTableSeeder::class);
+        // $this->call(OrderAddressTableSeeder::class);
+        // $this->call(TransactionTableSeeder::class);
+        // $this->call(KdsOrderTableSeeder::class);
+        // $this->call(OrderTableSeederVersionTwo::class);
+
+        // Communication
         $this->call(PushNotificationTableSeeder::class);
         $this->call(MessageTableSeeder::class);
         $this->call(MessageHistoryTableSeeder::class);

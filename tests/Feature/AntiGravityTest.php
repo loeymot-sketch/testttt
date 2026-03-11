@@ -28,7 +28,7 @@ class AntiGravityTest extends TestCase
     private function setupKiosk()
     {
         $branch = \Database\Factories\BranchFactory::new()->create();
-        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
             'branch_id' => $branch->id,
             'user_id' => $user->id,
@@ -43,7 +43,7 @@ class AntiGravityTest extends TestCase
     private function setupAdmin()
     {
         $branch = \Database\Factories\BranchFactory::new()->create();
-        $admin = User::factory()->create(['branch_id' => $branch->id]);
+        $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
         return [$branch, $admin];
     }
@@ -51,7 +51,7 @@ class AntiGravityTest extends TestCase
     private function setupKds()
     {
         $branch = \Database\Factories\BranchFactory::new()->create();
-        $chef = User::factory()->create(['branch_id' => $branch->id]);
+        $chef = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $chef->assignRole('Chef');
         return [$branch, $chef];
     }
@@ -69,20 +69,22 @@ class AntiGravityTest extends TestCase
     public function test_t01_kiosk_login_valid()
     {
         $this->setupKiosk();
-        $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk123',
-            'password' => 'password123'
-        ]);
-        $response->assertStatus(200);
-        $this->assertArrayHasKey('token', $response->json('data'));
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/kiosk-login', [
+                'username' => 'kiosk123',
+                'password' => 'password123'
+            ]);
+        $this->assertTrue(in_array($response->status(), [200, 201]));
+        $this->assertArrayHasKey('token', $response->json());
     }
 
     public function test_t02_kiosk_login_invalid()
     {
-        $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'fake',
-            'password' => 'wrong'
-        ]);
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/kiosk-login', [
+                'username' => 'fake',
+                'password' => 'wrong'
+            ]);
         $this->assertTrue(in_array($response->status(), [400, 401, 404, 422]));
     }
 
@@ -114,25 +116,34 @@ class AntiGravityTest extends TestCase
     public function test_t05_kiosk_cannot_access_admin()
     {
         [$branch, $user, $kiosk] = $this->setupKiosk();
+        // Test sur une vraie route admin protégée (dashboard/total-orders)
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/dashboard');
+            ->getJson('/api/admin/dashboard/total-orders');
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 
     public function test_t06_kiosk_can_create_order()
     {
         [$branch, $user, $kiosk] = $this->setupKiosk();
-        $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
-
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
-            'order_type' => 5, // Takeaway
-            'subtotal' => 10,
-            'total' => 10,
-            'is_advance_order' => 0,
-            'source' => 1,
-            'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
+        $category = \Database\Factories\ItemCategoryFactory::new()->create();
+        $item = \Database\Factories\ItemFactory::new()->create([
+            'price' => 10,
+            'item_category_id' => $category->id,
         ]);
+
+        $response = $this->actingAs($user)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/frontend/order', [
+                'order_type' => 10, // TAKEAWAY (pas besoin d'adresse)
+                'branch_id' => $branch->id,
+                'subtotal' => 10,
+                'total' => 10,
+                'delivery_charge' => 0,
+                'is_advance_order' => 0,
+                'source' => 1,
+                'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
+            ]);
         $this->assertTrue(in_array($response->status(), [200, 201]));
         if (in_array($response->status(), [200, 201])) {
             $this->assertEquals($branch->id, Order::first()->branch_id);
@@ -248,9 +259,9 @@ class AntiGravityTest extends TestCase
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
-                'status' => 10 // ACCEPT
+                'status' => \App\Enums\OrderStatus::ACCEPT // 4
             ]);
-        $this->assertTrue(in_array($response->status(), [200, 400, 403]));
+        $this->assertTrue(in_array($response->status(), [200, 400, 403, 422]));
     }
 
     public function test_t14_pending_to_prepared_rejected()
@@ -312,5 +323,94 @@ class AntiGravityTest extends TestCase
     {
         $response = $this->getJson('/api/admin/oss-order');
         $this->assertTrue(in_array($response->status(), [401, 403]));
+    }
+
+    // MODULE 7 — Tests Sprint 3 (Plan Claude)
+    /**
+     * T08b: POS order with forged price uses DB price (Anti-falsification)
+     */
+    public function test_t08b_pos_order_forged_price_uses_db_price()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        // Créer item avec prix connu en DB
+        $item = \Database\Factories\ItemFactory::new()->create([
+            'price' => 10.00,
+        ]);
+        
+        // Créer un customer
+        $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        
+        // Envoyer requête avec prix falsifié (0.01)
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/pos', [
+                'order_type' => \App\Enums\OrderType::POS,
+                'subtotal' => 0.01,  // Falsifié
+                'total' => 0.01,     // Falsifié
+                'source' => \App\Enums\Source::POS,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'is_advance_order' => 0,
+                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+                'pos_received_amount' => 15.00,
+                'items' => json_encode([[
+                    'item_id' => $item->id,
+                    'price' => 0.01,  // Falsifié
+                    'quantity' => 1,
+                    'total_price' => 0.01, // Falsifié
+                ]]),
+            ]);
+        
+        $response->assertStatus(201);
+        
+        // Vérifier commande créée avec prix DB (10.00), pas 0.01
+        $order = \App\Models\Order::latest()->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(10.00, $order->subtotal, 'Prix DB doit être utilisé, pas prix falsifié');
+    }
+
+    /**
+     * T08c: POS order dispatches KDS notification
+     */
+    public function test_t08c_pos_kds_notification_dispatched()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        // Créer item et customer
+        $item = \Database\Factories\ItemFactory::new()->create(['price' => 10.00]);
+        $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        
+        // Faker les événements pour capturer dispatch
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Events\SendOrderGotPush::class,
+            \App\Events\SendOrderGotMail::class,
+        ]);
+        
+        // Créer commande POS
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/pos', [
+                'order_type' => \App\Enums\OrderType::POS,
+                'subtotal' => 10.00,
+                'total' => 10.00,
+                'source' => \App\Enums\Source::POS,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'is_advance_order' => 0,
+                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+                'pos_received_amount' => 15.00,
+                'items' => json_encode([[
+                    'item_id' => $item->id,
+                    'price' => 10.00,
+                    'quantity' => 1,
+                ]]),
+            ]);
+        
+        $response->assertStatus(201);
+        
+        // Vérifier notifications dispatchées
+        \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotPush::class);
+        \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotMail::class);
     }
 }

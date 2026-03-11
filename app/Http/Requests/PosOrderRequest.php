@@ -29,7 +29,7 @@ class PosOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => ['nullable', 'string'],
+            'token' => ['nullable', 'string', 'numeric'],
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             'subtotal' => ['required', 'numeric'],

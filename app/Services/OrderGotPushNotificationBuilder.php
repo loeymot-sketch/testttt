@@ -26,73 +26,29 @@ class OrderGotPushNotificationBuilder
     public function send(): void
     {
         if (!blank($this->order)) {
-            $fcmWebDeviceTokenAllAdmins = User::role(Role::ADMIN)->where(['branch_id' => 0])->whereNotNull('web_token')->get();
-            $fcmWebDeviceTokenBranchAdmins = User::role(Role::ADMIN)->where(['branch_id' => $this->order->branch_id])->whereNotNull('web_token')->get();
-            $fcmWebDeviceTokenBranchManagers = User::role(Role::BRANCH_MANAGER)->where(['branch_id' => $this->order->branch_id])->whereNotNull('web_token')->get();
-            $fcmWebDeviceTokenPosOperators = User::role(Role::POS_OPERATOR)->where(['branch_id' => $this->order->branch_id])->whereNotNull('web_token')->get();
-
-            $fcmMobileDeviceTokenAllAdmins = User::role(Role::ADMIN)->where(['branch_id' => 0])->whereNotNull('device_token')->get();
-            $fcmMobileDeviceTokenBranchAdmins = User::role(Role::ADMIN)->where(['branch_id' => $this->order->branch_id])->whereNotNull('device_token')->get();
-            $fcmMobileDeviceTokenBranchManagers = User::role(Role::BRANCH_MANAGER)->where(['branch_id' => $this->order->branch_id])->whereNotNull('device_token')->get();
-            $fcmMobileDeviceTokenPosOperators = User::role(Role::POS_OPERATOR)->where(['branch_id' => $this->order->branch_id])->whereNotNull('device_token')->get();
-
-            $i = 0;
-            $fcmTokenArray = [];
-            if (!blank($fcmWebDeviceTokenAllAdmins)) {
-                foreach ($fcmWebDeviceTokenAllAdmins as $fcmWebDeviceTokenAllAdmin) {
-                    $fcmTokenArray[$i] = $fcmWebDeviceTokenAllAdmin->web_token;
-                    $i++;
+            // Combined single query for all FCM tokens (web and mobile)
+            $fcmTokenArray = User::where(function ($query) {
+                $query->where(function ($q) {
+                    $q->role('Admin')->where('branch_id', 0);
+                })->orWhere(function ($q) {
+                    $q->role('Admin')->where('branch_id', $this->order->branch_id);
+                })->orWhere(function ($q) {
+                    $q->role('Branch Manager')->where('branch_id', $this->order->branch_id);
+                })->orWhere(function ($q) {
+                    $q->role('POS Operator')->where('branch_id', $this->order->branch_id);
+                });
+            })->where(function ($q) {
+                $q->whereNotNull('web_token')->orWhereNotNull('device_token');
+            })->get()->flatMap(function ($user) {
+                $tokens = [];
+                if ($user->web_token) {
+                    $tokens[] = $user->web_token;
                 }
-            }
-
-            if (!blank($fcmWebDeviceTokenBranchAdmins)) {
-                foreach ($fcmWebDeviceTokenBranchAdmins as $fcmWebDeviceTokenBranchAdmin) {
-                    $fcmTokenArray[$i] = $fcmWebDeviceTokenBranchAdmin->web_token;
-                    $i++;
+                if ($user->device_token) {
+                    $tokens[] = $user->device_token;
                 }
-            }
-
-            if (!blank($fcmWebDeviceTokenBranchManagers)) {
-                foreach ($fcmWebDeviceTokenBranchManagers as $fcmWebDeviceTokenBranchManager) {
-                    $fcmTokenArray[$i] = $fcmWebDeviceTokenBranchManager->web_token;
-                    $i++;
-                }
-            }
-
-            if (!blank($fcmWebDeviceTokenPosOperators)) {
-                foreach ($fcmWebDeviceTokenPosOperators as $fcmWebDeviceTokenPosOperator) {
-                    $fcmTokenArray[$i] = $fcmWebDeviceTokenPosOperator->web_token;
-                    $i++;
-                }
-            }
-
-            if (!blank($fcmMobileDeviceTokenAllAdmins)) {
-                foreach ($fcmMobileDeviceTokenAllAdmins as $fcmMobileDeviceTokenAllAdmin) {
-                    $fcmTokenArray[$i] = $fcmMobileDeviceTokenAllAdmin->device_token;
-                    $i++;
-                }
-            }
-
-            if (!blank($fcmMobileDeviceTokenBranchAdmins)) {
-                foreach ($fcmMobileDeviceTokenBranchAdmins as $fcmMobileDeviceTokenBranchAdmin) {
-                    $fcmTokenArray[$i] = $fcmMobileDeviceTokenBranchAdmin->device_token;
-                    $i++;
-                }
-            }
-
-            if (!blank($fcmMobileDeviceTokenBranchManagers)) {
-                foreach ($fcmMobileDeviceTokenBranchManagers as $fcmMobileDeviceTokenBranchManager) {
-                    $fcmTokenArray[$i] = $fcmMobileDeviceTokenBranchManager->device_token;
-                    $i++;
-                }
-            }
-
-            if (!blank($fcmMobileDeviceTokenPosOperators)) {
-                foreach ($fcmMobileDeviceTokenPosOperators as $fcmMobileDeviceTokenPosOperator) {
-                    $fcmTokenArray[$i] = $fcmMobileDeviceTokenPosOperator->device_token;
-                    $i++;
-                }
-            }
+                return $tokens;
+            })->unique()->values()->toArray();
 
             if (count($fcmTokenArray) > 0) {
                 try {

@@ -122,7 +122,10 @@ class ItemService
                     $this->item->addMedia($request->image)->toMediaCollection('item');
                 }
                 if ($request->variations) {
-                    $this->item->variations()->createMany(json_decode($request->variations, true));
+                    $variations = $this->safeJsonDecode($request->variations, true);
+                    if ($variations !== null) {
+                        $this->item->variations()->createMany($variations);
+                    }
                 }
             });
             return $this->item;
@@ -148,7 +151,11 @@ class ItemService
                     $variationIdsArray = [];
                     $variationDeleteArray = [];
                     $oldVariations = $item->variations->pluck('id')->toArray();
-                    foreach (json_decode($request->variations, true) as $variation) {
+                    $decodedVariations = $this->safeJsonDecode($request->variations, true);
+                    if ($decodedVariations === null) {
+                        throw new Exception('Invalid variations JSON format', 422);
+                    }
+                    foreach ($decodedVariations as $variation) {
                         if (isset($variation['id'])) {
                             $variationIdsArray[] = $variation['id'];
                             ItemVariation::where('id', $variation['id'])->update([
@@ -292,5 +299,17 @@ class ItemService
     public function itemDetails(Item $item)
     {
         return $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras');
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json, bool $assoc = false): mixed
+    {
+        if (empty($json)) {
+            return $assoc ? [] : null;
+        }
+        $decoded = json_decode($json, $assoc);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : ($assoc ? [] : null);
     }
 }

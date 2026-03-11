@@ -17,7 +17,7 @@
     const razorpayTotalAmount = '<?= $order->total ?>';
     const razorpayCurrencyCode = '<?= $currency->code ?>';
     const razorpayCompany = '<?= $company['company_name'] ?>';
-    const razorpayLogo = '<?= $logo->logo ?>';
+    const razorpayLogo = '<?= $logo?->logo ?? asset("images/theme/theme-logo.png") ?>';
     const razorpayUserName = '<?= $order->user?->name ?>';
     const razorpayUserEmail = '<?= $order->user?->email ?>';
     const razorpayPayLink = '<?= route('payment.store', ['order' => $order]) ?>';

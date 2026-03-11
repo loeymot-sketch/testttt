@@ -116,7 +116,7 @@ class FrontendOrderService
                 $i = 0;
                 $totalTax = 0;
                 $itemsArray = [];
-                $requestItems = json_decode($request->items);
+                $requestItems = $this->safeJsonDecode($request->items);
                 $items = Item::get()->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
 
@@ -154,18 +154,18 @@ class FrontendOrderService
                         $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
                         $itemsArray[$i] = [
                             'order_id' => $this->frontendOrder->id,
-                            'branch_id' => $item->branch_id,
+                            'branch_id' => $this->frontendOrder->branch_id,
                             'item_id' => $item->item_id,
                             'quantity' => $item->quantity,
-                            'discount' => (float) $item->discount,
+                            'discount' => (float) ($item->discount ?? 0),
                             'tax_name' => $taxName,
                             'tax_rate' => $taxRate,
                             'tax_type' => $taxType,
                             'tax_amount' => $taxPrice,
                             'price' => $itemPrice,
-                            'item_variations' => json_encode($item->item_variations),
-                            'item_extras' => json_encode($item->item_extras),
-                            'instruction' => $item->instruction,
+                            'item_variations' => json_encode($item->item_variations ?? []),
+                            'item_extras' => json_encode($item->item_extras ?? []),
+                            'instruction' => $item->instruction ?? null,
                             'item_variation_total' => $calcVariationTotal,
                             'item_extra_total' => $calcExtraTotal,
                             'total_price' => $verifiedTotalPrice,
@@ -310,5 +310,17 @@ class FrontendOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json): mixed
+    {
+        if (empty($json)) {
+            return [];
+        }
+        $decoded = json_decode($json);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

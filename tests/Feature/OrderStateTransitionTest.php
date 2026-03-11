@@ -13,7 +13,7 @@ class OrderStateTransitionTest extends TestCase
 
     public function test_invalid_order_state_transition_is_rejected()
     {
-        $user = User::factory()->create(['username' => 'testuser_' . uniqid()]);
+        $user = \Database\Factories\UserFactory::new()->create(['username' => 'testuser_' . uniqid()]);
 
         // Simulation d'une tentative de passer directement de PENDING à DELIVERED via le KDS
         $response = $this->actingAs($user)->postJson('/api/admin/kds-order/change-status/1', [

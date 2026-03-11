@@ -28,8 +28,8 @@ class OrderItemResource extends JsonResource
             'quantity'                         => $this->quantity,
             'discount'                         => AppLibrary::currencyAmountFormat($this->discount),
             'price'                            => AppLibrary::currencyAmountFormat($this->price),
-            'item_variations'                  => json_decode($this->item_variations),
-            'item_extras'                      => json_decode($this->item_extras),
+            'item_variations'                  => $this->safeJsonDecode($this->item_variations),
+            'item_extras'                      => $this->safeJsonDecode($this->item_extras),
             'item_variation_currency_total'    => AppLibrary::currencyAmountFormat($this->item_variation_total),
             'item_extra_currency_total'        => AppLibrary::currencyAmountFormat($this->item_extra_total),
             'total_convert_price'              => AppLibrary::convertAmountFormat($this->total_price),
@@ -42,5 +42,17 @@ class OrderItemResource extends JsonResource
             'tax_currency_amount'              => AppLibrary::currencyAmountFormat($this->tax_amount),
             'total_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->total_price - $this->tax_amount),
         ];
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json): mixed
+    {
+        if (empty($json)) {
+            return [];
+        }
+        $decoded = json_decode($json);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

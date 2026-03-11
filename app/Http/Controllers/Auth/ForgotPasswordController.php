@@ -83,8 +83,9 @@ class ForgotPasswordController extends Controller
             ['token', $request->post('code')],
         ]);
 
-        if ($check->exists()) {
-            $difference = Carbon::now()->diffInSeconds($check->first()->created_at);
+        $checkRecord = $check->first();
+        if ($checkRecord) {
+            $difference = Carbon::now()->diffInSeconds($checkRecord->created_at);
 
             if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
                 return new JsonResponse([
@@ -116,12 +117,18 @@ class ForgotPasswordController extends Controller
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->post('email'));
+        $user = User::where('email', $request->post('email'))->first();
+        if (!$user) {
+            return new JsonResponse([
+                'errors' => ['email' => [trans('all.message.user_not_found')]]
+            ], 404);
+        }
+
         $user->update([
             'password' => Hash::make($request->post('password'))
         ]);
 
-        $this->token = $user->first()->createToken('auth_token')->plainTextToken;
+        $this->token = $user->createToken('auth_token')->plainTextToken;
 
         return new JsonResponse([
             'message' => "Your password has been reset",

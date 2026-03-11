@@ -25,41 +25,23 @@ class OrderGotSmsNotificationBuilder
     public function send()
     {
         if (!blank($this->order)) {
-            $smsAllAdmins = User::role(Role::ADMIN)->where(['branch_id' => 0])->whereNotNull('phone')->get();
-            $smsBranchAdmins = User::role(Role::ADMIN)->where(['branch_id' => $this->order->branch_id])->whereNotNull('phone')->get();
-            $smsBranchManagers = User::role(Role::BRANCH_MANAGER)->where(['branch_id' => $this->order->branch_id])->whereNotNull('phone')->get();
-
-            $i = 0;
-            $smsArrays = [];
-            if (!blank($smsAllAdmins)) {
-                foreach ($smsAllAdmins as $smsAllAdmin) {
-                    $smsArrays[$i] = [
-                        'code' => $smsAllAdmin->country_code,
-                        'phone' => $smsAllAdmin->phone,
-                    ];
-                    $i++;
-                }
-            }
-
-            if (!blank($smsBranchAdmins)) {
-                foreach ($smsBranchAdmins as $smsBranchAdmin) {
-                    $smsArrays[$i] = [
-                        'code' => $smsBranchAdmin->country_code,
-                        'phone' => $smsBranchAdmin->phone,
-                    ];
-                    $i++;
-                }
-            }
-
-            if (!blank($smsBranchManagers)) {
-                foreach ($smsBranchManagers as $smsBranchManager) {
-                    $smsArrays[$i] = [
-                        'code' => $smsBranchManager->country_code,
-                        'phone' => $smsBranchManager->phone,
-                    ];
-                    $i++;
-                }
-            }
+            // Combined single query for all SMS recipients
+            $smsArrays = User::where(function ($query) {
+                $query->where(function ($q) {
+                    $q->role('Admin')->where('branch_id', 0);
+                })->orWhere(function ($q) {
+                    $q->role('Admin')->where('branch_id', $this->order->branch_id);
+                })->orWhere(function ($q) {
+                    $q->role('Branch Manager')->where('branch_id', $this->order->branch_id);
+                });
+            })->whereNotNull('phone')->get()->map(function ($user) {
+                return [
+                    'code' => $user->country_code,
+                    'phone' => $user->phone,
+                ];
+            })->unique(function ($item) {
+                return $item['code'] . $item['phone'];
+            })->values()->toArray();
 
             if (count($smsArrays) > 0) {
                 try {

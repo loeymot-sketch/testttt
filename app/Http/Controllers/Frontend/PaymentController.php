@@ -41,9 +41,9 @@ class PaymentController extends Controller
         if (blank($order->transaction) && $order->payment_status === PaymentStatus::UNPAID) {
             return view('payment', [
                 'company'         => $company,
-                'logo'            => $logo,
+                'logo'            => (object)['logo' => $logo?->logo ?? asset('images/theme/theme-logo.png')],
                 'currency'        => $currency,
-                'faviconLogo'     => $faviconLogo ?? (object)['faviconLogo' => asset('images/theme/theme-favicon-logo.png')],
+                'faviconLogo'     => (object)['faviconLogo' => $faviconLogo?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png')],
                 'paymentGateways' => $paymentGateways,
                 'order'           => $order,
                 'creditAmount'    => AppLibrary::currencyAmountFormat($order?->user?->balance),
@@ -93,8 +93,8 @@ class PaymentController extends Controller
         if (!blank($order->transaction)) {
             return view('paymentSuccess', [
                 'company'     => $company,
-                'logo'        => $logo,
-                'faviconLogo' => $faviconLogo ?? (object)['faviconLogo' => asset('images/theme/theme-favicon-logo.png')],
+                'logo'        => (object)['logo' => $logo?->logo ?? asset('images/theme/theme-logo.png')],
+                'faviconLogo' => (object)['faviconLogo' => $faviconLogo?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png')],
                 'order'       => $order,
             ]);
         }

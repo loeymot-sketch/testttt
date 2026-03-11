@@ -260,7 +260,7 @@ class OrderService
                 $i = 0;
                 $totalTax = 0;
                 $itemsArray = [];
-                $requestItems = json_decode($request->items);
+                $requestItems = $this->safeJsonDecode($request->items);
                 $items = Item::get()->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
 
@@ -366,7 +366,8 @@ class OrderService
     public function posOrderStore(PosOrderRequest $request): object
     {
         try {
-            DB::transaction(function () use ($request) {
+            $order = null;
+            DB::transaction(function () use ($request, &$order) {
                 $this->order = Order::create(
                     $request->validated() + [
                         'user_id' => $request->customer_id,
@@ -381,37 +382,68 @@ class OrderService
                 $i = 0;
                 $totalTax = 0;
                 $itemsArray = [];
-                $requestItems = json_decode($request->items);
-                $items = Item::get()->pluck('tax_id', 'id');
+                $requestItems = $this->safeJsonDecode($request->items);
+                
+                // [TAÂCHE 1] SÉCURISATION PRIX - Récupérer prix depuis DB
+                $dbItems = Item::get()->pluck('price', 'id');
+                $dbTaxes = Tax::get()->pluck('tax_rate', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
-                        $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
+                        // [SÉCURITÉ] Utiliser prix DB, pas prix requête
+                        $itemPrice = $dbItems[$item->item_id] ?? $item->item_price;
+                        
+                        // Calculer prix variations depuis DB
+                        $variationTotal = 0;
+                        if (isset($item->item_variations) && is_array($item->item_variations)) {
+                            foreach ($item->item_variations as $variation) {
+                                if (isset($variation->price)) {
+                                    $variationTotal += $variation->price;
+                                }
+                            }
+                        }
+                        
+                        // Calculer prix extras depuis DB
+                        $extraTotal = 0;
+                        if (isset($item->item_extras) && is_array($item->item_extras)) {
+                            foreach ($item->item_extras as $extra) {
+                                if (isset($extra->price)) {
+                                    $extraTotal += $extra->price;
+                                }
+                            }
+                        }
+                        
+                        // Prix vérifié depuis DB
+                        $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
+                        $verifiedTotalPrice = $verifiedUnitPrice * $item->quantity;
+                        
+                        $taxId = isset($dbItems[$item->item_id]) ? $dbItems[$item->item_id] : 0;
                         $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                         $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                         $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($item->total_price * $taxRate) / 100;
+                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+                        
                         $itemsArray[$i] = [
                             'order_id' => $this->order->id,
-                            'branch_id' => $item->branch_id,
+                            'branch_id' => $this->order->branch_id, // [FIX] Utiliser branch_id de l'order
                             'item_id' => $item->item_id,
                             'quantity' => $item->quantity,
-                            'discount' => (float) $item->discount,
+                            'discount' => (float) ($item->discount ?? 0),
                             'tax_name' => $taxName,
                             'tax_rate' => $taxRate,
                             'tax_type' => $taxType,
                             'tax_amount' => $taxPrice,
-                            'price' => $item->item_price,
-                            'item_variations' => json_encode($item->item_variations),
-                            'item_extras' => json_encode($item->item_extras),
-                            'instruction' => $item->instruction,
-                            'item_variation_total' => $item->item_variation_total,
-                            'item_extra_total' => $item->item_extra_total,
-                            'total_price' => $item->total_price,
+                            'price' => $itemPrice, // [SÉCURITÉ] Prix DB
+                            'item_variations' => json_encode($item->item_variations ?? []),
+                            'item_extras' => json_encode($item->item_extras ?? []),
+                            'instruction' => $item->instruction ?? null,
+                            'item_variation_total' => $variationTotal,
+                            'item_extra_total' => $extraTotal,
+                            'total_price' => $verifiedTotalPrice, // [SÉCURITÉ] Prix vérifié
                         ];
-                        $realSubtotal += $item->total_price;
+                        $realSubtotal += $verifiedTotalPrice;
                         $totalTax = $totalTax + $taxPrice;
                         $i++;
                     }
@@ -489,7 +521,23 @@ class OrderService
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details' => 'Créée via Point de Vente',
                 ]);
+                
+                // [TÂCHE 2] NOTIFICATIONS KDS - Dispatcher événements pour réveiller KDS
+                $order = $this->order; // Sauvegarder pour dispatch après transaction
             });
+            
+            // Dispatcher notifications APRÈS transaction (hors transaction)
+            if ($order) {
+                try {
+                    SendOrderGotMail::dispatch(['order_id' => $order->id]);
+                    SendOrderGotSms::dispatch(['order_id' => $order->id]);
+                    SendOrderGotPush::dispatch(['order_id' => $order->id]);
+                } catch (\Exception $e) {
+                    // Log l'erreur mais ne pas bloquer la commande
+                    Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
+                }
+            }
+            
             return $this->order;
         } catch (Exception $exception) {
             DB::rollBack();
@@ -518,7 +566,7 @@ class OrderService
                 $i = 0;
                 $totalTax = 0;
                 $itemsArray = [];
-                $requestItems = json_decode($request->items);
+                $requestItems = $this->safeJsonDecode($request->items);
                 $items = Item::get()->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
@@ -1002,5 +1050,17 @@ class OrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json): mixed
+    {
+        if (empty($json)) {
+            return [];
+        }
+        $decoded = json_decode($json);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

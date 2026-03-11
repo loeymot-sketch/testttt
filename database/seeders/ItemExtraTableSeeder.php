@@ -2,385 +2,48 @@
 
 namespace Database\Seeders;
 
-
-use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Database\Seeder;
-use App\Models\ItemExtra;
-use App\Enums\Status;
 
+/**
+ * ============================================================================
+ * ⚠️  DEPRECATED - DO NOT USE - BLOCKED
+ * ============================================================================
+ *
+ * This seeder is DEPRECATED and BLOCKED from execution.
+ *
+ * REASON: Contains English menu data that conflicts with French menu structure.
+ *
+ * USE INSTEAD: MenuSeeder (database/seeders/MenuSeeder.php)
+ *              or artisan commands:
+ *              - php artisan menu:create
+ *              - php artisan menu:reset
+ *              - php artisan menu:verify
+ *
+ * The MenuSeeder is now the SINGLE SOURCE OF TRUTH for French menu items.
+ * It sources data from config/menu.php which is the centralized configuration.
+ *
+ * ============================================================================
+ */
 class ItemExtraTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      *
      * @return void
+     * @throws \Exception
      */
     public function run()
     {
-        $envService = new EnvEditor();
-        if ($envService->getValue('DEMO')) {
-            ItemExtra::insert([
-                [
-                    'item_id'    => 6,
-                    'name'       => 'Add Tomato',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 6,
-                    'name'       => 'Add Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 6,
-                    'name'       => 'Add Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 6,
-                    'name'       => 'Add Patty',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 7,
-                    'name'       => 'Add Tomato',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 7,
-                    'name'       => 'Add Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 7,
-                    'name'       => 'Add Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 8,
-                    'name'       => 'Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 8,
-                    'name'       => 'Bacon',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 8,
-                    'name'       => 'BBQ Sauce',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 9,
-                    'name'       => 'Add Tomato',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 9,
-                    'name'       => 'Add Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 9,
-                    'name'       => 'Add Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 9,
-                    'name'       => 'Add Patty',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 10,
-                    'name'       => 'Add Tomato',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 10,
-                    'name'       => 'Add Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 10,
-                    'name'       => 'Add Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 10,
-                    'name'       => 'Add Patty',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 11,
-                    'name'       => 'Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 11,
-                    'name'       => 'Bacon',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 11,
-                    'name'       => 'BBQ Sauce',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 12,
-                    'name'       => 'Vegan Cheddar Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 12,
-                    'name'       => 'Vegan American Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 12,
-                    'name'       => 'Extra Plant-Based Bacon',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 12,
-                    'name'       => 'Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 13,
-                    'name'       => 'Vegan Cheddar Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 13,
-                    'name'       => 'Vegan American Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 13,
-                    'name'       => 'Extra Plant-Based Bacon',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 13,
-                    'name'       => 'Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 14,
-                    'name'       => 'Vegan Cheddar Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 14,
-                    'name'       => 'Vegan American Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 15,
-                    'name'       => 'Vegan Cheddar Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 15,
-                    'name'       => 'Vegan American Cheese',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 15,
-                    'name'       => 'Lettuce',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 26,
-                    'name'       => 'Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 26,
-                    'name'       => 'Mushrooms',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 27,
-                    'name'       => 'Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 27,
-                    'name'       => 'Mushrooms',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 28,
-                    'name'       => 'Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 28,
-                    'name'       => 'Mushrooms',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 29,
-                    'name'       => 'Onion',
-                    'price'      => '.50',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 29,
-                    'name'       => 'Mushrooms',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 31,
-                    'name'       => 'Avocado',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 31,
-                    'name'       => 'Bacon',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-                [
-                    'item_id'    => 31,
-                    'name'       => 'Chilli fries',
-                    'price'      => '1.00',
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ],
-            ]);
-        }
+        throw new \Exception(
+            "CRITICAL ERROR: ItemExtraTableSeeder is DEPRECATED and BLOCKED.\n" .
+            "This seeder contains English menu data that would corrupt the French menu.\n" .
+            "\n" .
+            "USE INSTEAD:\n" .
+            "  - php artisan menu:create  (create French menu)\n" .
+            "  - php artisan menu:reset   (reset French menu)\n" .
+            "  - php artisan menu:verify  (verify French integrity)\n" .
+            "\n" .
+            "The MenuSeeder is the ONLY authorized seeder for menu items."
+        );
     }
 }

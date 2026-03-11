@@ -76,13 +76,16 @@ class OtpManagerService
             $otp = DB::table('otps')->where([
                 ['phone', $request->post('phone')],
                 ['token', $request->post('token')],
-            ]);
-            if ($otp->exists()) {
-                $difference = Carbon::now()->diffInSeconds($otp->first()->created_at);
+            ])->first();
+            if ($otp) {
+                $difference = Carbon::now()->diffInSeconds($otp->created_at);
                 if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
                     throw new Exception(trans('all.message.code_is_expired'), 422);
                 } else {
-                    $otp->delete();
+                    DB::table('otps')->where([
+                        ['phone', $request->post('phone')],
+                        ['token', $request->post('token')],
+                    ])->delete();
                     return true;
                 }
             } else {

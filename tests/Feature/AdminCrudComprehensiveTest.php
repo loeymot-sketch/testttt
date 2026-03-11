@@ -2,404 +2,438 @@
 
 namespace Tests\Feature;
 
-use App\Models\Branch;
+use Tests\TestCase;
 use App\Models\User;
-use App\Models\ItemCategory;
+use App\Models\Branch;
 use App\Models\Item;
-use App\Models\Tax;
+use App\Models\ItemCategory;
 use App\Models\Coupon;
 use App\Models\DiningTable;
 use App\Models\KioskMachine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
+/**
+ * Module 2: CRUD Admin Complet (20 tests)
+ * 
+ * Surface: /api/admin/setting/*, /api/admin/item/*, /api/admin/branch/*, etc.
+ * Priorité: 🟡 Haute
+ */
 class AdminCrudComprehensiveTest extends TestCase
 {
-    use RefreshDatabase, WithoutMiddleware;
-
-    protected $admin;
-    protected $branch;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        putenv('MIX_API_KEY=123456');
-        config(['app.api_key' => '123456']);
-        config(['media-library.image_driver' => 'gd']);
-
-        $this->withHeaders([
-            'x-api-key' => '123456',
-            'Accept' => 'application/json',
-        ]);
-
-        $this->branch = Branch::forceCreate([
-            'name' => 'Main Branch',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75000',
-            'address' => '1 rue test',
-            'status' => 1
-        ]);
-
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permissions = [
-            'settings',
-            'items_create',
-            'items_edit',
-            'items_delete',
-            'items_show',
-            'items',
-            'coupons_create',
-            'coupons_edit',
-            'coupons_delete',
-            'coupons_show',
-            'coupons',
-            'dining_tables_create',
-            'dining_tables_edit',
-            'dining_tables_delete',
-            'dining_tables_show',
-            'dining-tables'
-        ];
-
-        $perms = [];
-        foreach ($permissions as $p) {
-            $perms[] = Permission::create(['name' => $p, 'guard_name' => 'web']);
-        }
-        $role->givePermissionTo($perms);
-
-        $this->admin = User::forceCreate([
-            'name' => 'Admin API',
-            'email' => 'admin@test.com',
-            'username' => 'admin_api_user',
-            'password' => bcrypt('password123'),
-            'branch_id' => $this->branch->id,
-            'status' => 5,
-            'email_verified_at' => now()
-        ]);
-        $this->admin->assignRole($role);
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
     }
 
-    // --- 2A. Gestion des Produits (Items) ---
-
-    public function test_create_item()
+    private function setupAdmin()
     {
-        $tax = Tax::forceCreate(['name' => 'TVA', 'code' => 'TVA', 'tax_rate' => 20, 'type' => 5, 'status' => 1]);
-        $category = ItemCategory::forceCreate(['name' => 'Burger', 'slug' => 'burger', 'status' => 1]);
-
-        $payload = [
-            'name' => 'Cheeseburger',
-            'item_category_id' => $category->id,
-            'tax_id' => $tax->id,
-            'item_type' => 5, // Non-veg
-            'price' => 12.50,
-            'is_featured' => 5,
-            'order' => 1,
-            'status' => 5 // Active
-        ];
-
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/item', $payload);
-
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('items', ['name' => 'Cheeseburger']);
+        $branch = \Database\Factories\BranchFactory::new()->create();
+        $admin = \Database\Factories\UserFactory::new()->create([]);
+        $admin->assignRole('Admin');
+        return [$branch, $admin];
     }
 
-    public function test_list_items()
+    private function apiKey(): string
     {
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/item');
-        $this->assertEquals(200, $response->status());
+        return config('app.api_key', env('MIX_API_KEY', 'test-api-key'));
     }
 
-    public function test_show_item()
+    // ==================== 2A. GESTION DES PRODUITS (Items) ====================
+
+    /**
+     * 2.1 - Lister les items
+     * Route: GET /api/admin/setting/item
+     */
+    public function test_admin_can_list_items()
     {
-        $tax = Tax::forceCreate(['name' => 'TVA', 'code' => 'TVA', 'tax_rate' => 20, 'type' => 5, 'status' => 1]);
-        $category = ItemCategory::forceCreate(['name' => 'Burger', 'slug' => 'burger', 'status' => 1]);
-        $createResponse = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/item', [
-            'name' => 'Item Test Show',
-            'item_category_id' => $category->id,
-            'tax_id' => $tax->id,
-            'item_type' => 5,
-            'price' => 15,
-            'is_featured' => 5,
-            'order' => 1,
-            'status' => 5,
-            'description' => 'Test show'
+        [$branch, $admin] = $this->setupAdmin();
+        $item = \Database\Factories\ItemFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/setting/item');
+        
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 2.2 - Créer un item
+     * Route: POST /api/admin/setting/item
+     */
+    public function test_admin_can_create_item()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $category = \Database\Factories\ItemCategoryFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/setting/item', [
+                'name' => 'Test Item',
+                'price' => 10.99,
+                'category_id' => $category->id,
+                
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('items', ['name' => 'Test Item']);
+    }
+
+    /**
+     * 2.3 - Voir un item
+     * Route: GET /api/admin/setting/item/show/{id}
+     */
+    public function test_admin_can_view_item()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $item = \Database\Factories\ItemFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson("/api/admin/setting/item/show/{$item->id}");
+        
+        $response->assertStatus(200);
+        $response->assertJsonFragment(['id' => $item->id]);
+    }
+
+    /**
+     * 2.4 - Modifier un item (prix)
+     * Route: PUT /api/admin/setting/item/{id}
+     */
+    public function test_admin_can_update_item_price()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $item = \Database\Factories\ItemFactory::new()->create([
+            
+            'price' => 10.00
         ]);
-        if (!in_array($createResponse->status(), [200, 201])) {
-            dump($createResponse->json());
-        }
-        $itemId = $createResponse->json('data.id');
-
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/item/show/' . $itemId);
-        $this->assertContains($response->status(), [200, 422]); // 422 si Spatie Media library throws Exception in Resource
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->putJson("/api/admin/setting/item/{$item->id}", [
+                'name' => $item->name,
+                'price' => 15.99,
+                'category_id' => $item->category_id,
+                
+                'status' => $item->status,
+            ]);
+        
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'price' => 15.99]);
     }
 
-    public function test_update_item()
+    /**
+     * 2.5 - Supprimer un item
+     * Route: DELETE /api/admin/setting/item/{id}
+     */
+    public function test_admin_can_delete_item()
     {
-        $tax = Tax::forceCreate(['name' => 'TVA', 'code' => 'TVA', 'tax_rate' => 20, 'type' => 5, 'status' => 1]);
-        $category = ItemCategory::forceCreate(['name' => 'Burger', 'slug' => 'burger', 'status' => 1]);
-        $item = Item::create([
-            'name' => 'Item Test Old',
-            'slug' => 'item-test-old',
-            'item_category_id' => $category->id,
-            'tax_id' => $tax->id,
-            'price' => 15,
-            'status' => 5
+        [$branch, $admin] = $this->setupAdmin();
+        $item = \Database\Factories\ItemFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->deleteJson("/api/admin/setting/item/{$item->id}");
+        
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('items', ['id' => $item->id]);
+    }
+
+    // ==================== 2B. GESTION DES CATÉGORIES ====================
+
+    /**
+     * 2.6 - Lister catégories
+     * Route: GET /api/admin/setting/item-category
+     */
+    public function test_admin_can_list_categories()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $category = \Database\Factories\ItemCategoryFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/setting/item-category');
+        
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 2.7 - Créer une catégorie
+     * Route: POST /api/admin/setting/item-category
+     */
+    public function test_admin_can_create_category()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/setting/item-category', [
+                'name' => 'Test Category',
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('item_categories', ['name' => 'Test Category']);
+    }
+
+    /**
+     * 2.8 - Supprimer une catégorie
+     * Route: DELETE /api/admin/setting/item-category/{id}
+     */
+    public function test_admin_can_delete_category()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $category = \Database\Factories\ItemCategoryFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->deleteJson("/api/admin/setting/item-category/{$category->id}");
+        
+        $response->assertStatus(200);
+    }
+
+    // ==================== 2C. GESTION DES SUCCURSALES (Branches) ====================
+
+    /**
+     * 2.9 - Lister les branches
+     * Route: GET /api/admin/setting/branch
+     */
+    public function test_admin_can_list_branches()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/setting/branch');
+        
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 2.10 - Créer une branche
+     * Route: POST /api/admin/setting/branch
+     */
+    public function test_admin_can_create_branch()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/setting/branch', [
+                'name' => 'Test Branch',
+                'email' => 'branch@test.com',
+                'phone' => '+33123456789',
+                'address' => '123 Test Street',
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('branches', ['name' => 'Test Branch']);
+    }
+
+    /**
+     * 2.11 - Modifier une branche
+     * Route: PUT /api/admin/setting/branch/{id}
+     */
+    public function test_admin_can_update_branch()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->putJson("/api/admin/setting/branch/{$branch->id}", [
+                'name' => 'Updated Branch Name',
+                'email' => $branch->email,
+                'phone' => $branch->phone,
+                'address' => $branch->address,
+                'status' => $branch->status,
+            ]);
+        
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('branches', ['id' => $branch->id, 'name' => 'Updated Branch Name']);
+    }
+
+    /**
+     * 2.12 - Supprimer une branche
+     * Route: DELETE /api/admin/setting/branch/{id}
+     */
+    public function test_admin_can_delete_branch()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $newBranch = \Database\Factories\BranchFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->deleteJson("/api/admin/setting/branch/{$newBranch->id}");
+        
+        $response->assertStatus(200);
+    }
+
+    // ==================== 2D. GESTION DES COUPONS ====================
+
+    /**
+     * 2.13 - Créer un coupon
+     * Route: POST /api/admin/coupon
+     */
+    public function test_admin_can_create_coupon()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/coupon', [
+                'name' => 'TEST10',
+                'code' => 'TEST10',
+                'discount' => 10,
+                'discount_type' => \App\Enums\CouponDiscountType::PERCENTAGE,
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('coupons', ['code' => 'TEST10']);
+    }
+
+    /**
+     * 2.14 - Lister les coupons
+     * Route: GET /api/admin/coupon
+     */
+    public function test_admin_can_list_coupons()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $coupon = \Database\Factories\CouponFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/coupon');
+        
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 2.15 - Supprimer un coupon
+     * Route: DELETE /api/admin/coupon/{id}
+     */
+    public function test_admin_can_delete_coupon()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $coupon = \Database\Factories\CouponFactory::new()->create();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->deleteJson("/api/admin/coupon/{$coupon->id}");
+        
+        $response->assertStatus(200);
+    }
+
+    // ==================== 2E. GESTION DES TABLES (Dine-In) ====================
+
+    /**
+     * 2.16 - Créer une table
+     * Route: POST /api/admin/dining-table
+     */
+    public function test_admin_can_create_dining_table()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/dining-table', [
+                'name' => 'Table 1',
+                'size' => 4,
+                
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('dining_tables', ['name' => 'Table 1']);
+    }
+
+    /**
+     * 2.17 - Lister les tables
+     * Route: GET /api/admin/dining-table
+     */
+    public function test_admin_can_list_dining_tables()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $table = \Database\Factories\DiningTableFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->getJson('/api/admin/dining-table');
+        
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 2.18 - Supprimer une table
+     * Route: DELETE /api/admin/dining-table/{id}
+     */
+    public function test_admin_can_delete_dining_table()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $table = \Database\Factories\DiningTableFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->deleteJson("/api/admin/dining-table/{$table->id}");
+        
+        $response->assertStatus(200);
+    }
+
+    // ==================== 2F. GESTION DES BORNES KIOSK ====================
+
+    /**
+     * 2.19 - Créer une borne
+     * Route: POST /api/admin/setting/kiosk-machine
+     */
+    public function test_admin_can_create_kiosk_machine()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $kioskUser = \Database\Factories\UserFactory::new()->create([]);
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/admin/setting/kiosk-machine', [
+                'name' => 'Kiosk Test',
+                'username' => 'kioskx123',
+                'password' => 'password123',
+                
+                'user_id' => $kioskUser->id,
+                'status' => \App\Enums\Status::ACTIVE,
+            ]);
+        
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('kiosk_machines', ['name' => 'Kiosk Test']);
+    }
+
+    /**
+     * 2.20 - Désactiver une borne
+     * Route: POST /api/admin/setting/kiosk-machine/change-status/{id}
+     */
+    public function test_admin_can_change_kiosk_machine_status()
+    {
+        [$branch, $admin] = $this->setupAdmin();
+        $kioskUser = \Database\Factories\UserFactory::new()->create([]);
+        $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
+            
+            'user_id' => $kioskUser->id,
+            'status' => \App\Enums\Status::ACTIVE,
         ]);
-
-        $response = $this->actingAs($this->admin, 'sanctum')->putJson('/api/admin/item/' . $item->id, [
-            'name' => 'Item Test New',
-            'item_category_id' => $category->id,
-            'tax_id' => $tax->id,
-            'item_type' => 5,
-            'price' => 20,
-            'is_featured' => 5,
-            'order' => 1,
-            'status' => 5,
-            'description' => 'Test Desc'
+        
+        $response = $this->actingAs($admin)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson("/api/admin/setting/kiosk-machine/change-status/{$kiosk->id}", [
+                'status' => \App\Enums\Status::INACTIVE,
+            ]);
+        
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('kiosk_machines', [
+            'id' => $kiosk->id,
+            'status' => \App\Enums\Status::INACTIVE,
         ]);
-        $this->assertContains($response->status(), [200, 201, 422]);
     }
-
-    public function test_delete_item()
-    {
-        $tax = Tax::forceCreate(['name' => 'TVA', 'code' => 'TVA', 'tax_rate' => 20, 'type' => 5, 'status' => 1]);
-        $category = ItemCategory::forceCreate(['name' => 'Burger', 'slug' => 'burger', 'status' => 1]);
-        $item = Item::forceCreate([
-            'name' => 'Delete Me',
-            'slug' => 'delete-me',
-            'item_category_id' => $category->id,
-            'tax_id' => $tax->id,
-            'price' => 10,
-            'status' => 5
-        ]);
-
-        $response = $this->actingAs($this->admin, 'sanctum')->deleteJson('/api/admin/item/' . $item->id);
-        $this->assertContains($response->status(), [202, 422]);
-        // $this->assertDatabaseMissing('items', ['id' => $item->id]);
-    }
-
-    // --- 2B. Gestion des Catégories ---
-
-    public function test_create_category()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/setting/item-category', [
-            'name' => 'Pizza',
-            'description' => 'A category for pizza',
-            'status' => 5
-        ]);
-
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('item_categories', ['name' => 'Pizza']);
-    }
-
-    public function test_list_categories()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/setting/item-category');
-        $this->assertEquals(200, $response->status());
-    }
-
-    public function test_delete_category()
-    {
-        $category = ItemCategory::forceCreate(['name' => 'Temp Cat', 'slug' => 'temp-cat', 'status' => 5]);
-        $response = $this->actingAs($this->admin, 'sanctum')->deleteJson('/api/admin/setting/item-category/' . $category->id);
-        $this->assertContains($response->status(), [200, 202]);
-    }
-
-    // --- 2C. Gestion des Branches ---
-
-    public function test_create_branch()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/setting/branch', [
-            'name' => 'New Branch',
-            'email' => 'newbranch@test.com',
-            'phone' => '123456789',
-            'latitude' => '48.8566',
-            'longitude' => '2.3522',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75001',
-            'address' => '2 rue test',
-            'status' => 5
-        ]);
-
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('branches', ['name' => 'New Branch']);
-    }
-
-    public function test_list_branches()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/setting/branch');
-        $this->assertEquals(200, $response->status());
-    }
-
-    public function test_update_branch()
-    {
-        $branch = Branch::forceCreate([
-            'name' => 'Old Branch',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75000',
-            'address' => '1 rue test',
-            'status' => 1
-        ]);
-
-        $response = $this->actingAs($this->admin, 'sanctum')->putJson('/api/admin/setting/branch/' . $branch->id, [
-            'name' => 'Updated Branch',
-            'email' => 'updated@test.com',
-            'phone' => '123456789',
-            'latitude' => '48.8566',
-            'longitude' => '2.3522',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75001',
-            'address' => '2 rue test',
-            'status' => 5
-        ]);
-
-        $this->assertContains($response->status(), [200, 201]);
-    }
-
-    public function test_delete_branch()
-    {
-        $branch = Branch::forceCreate([
-            'name' => 'Delete Branch',
-            'city' => 'Paris',
-            'state' => 'IDF',
-            'zip_code' => '75000',
-            'address' => '1 rue test',
-            'status' => 1
-        ]);
-        $response = $this->actingAs($this->admin, 'sanctum')->deleteJson('/api/admin/setting/branch/' . $branch->id);
-        $this->assertContains($response->status(), [200, 202, 422]); // 422 si la branche est liée à autre chose => OK ça passe le auth
-    }
-
-    // --- 2D. Gestion des Coupons ---
-
-    public function test_create_coupon()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/coupon', [
-            'name' => 'SUMMER SALE',
-            'code' => 'SUMMER20',
-            'discount_type' => 5, // Percentage
-            'discount' => 20,
-            'limit_per_user' => 1,
-            'maximum_discount' => 50,
-            'minimum_order' => 30,
-            'start_date' => now()->format('Y-m-d'),
-            'end_date' => now()->addDays(5)->format('Y-m-d'),
-            'is_featured' => 5,
-            'image' => \Illuminate\Http\Testing\File::image('coupon.jpg')
-        ]);
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('coupons', ['code' => 'SUMMER20']);
-    }
-
-    public function test_list_coupons()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/coupon');
-        $this->assertEquals(200, $response->status());
-    }
-
-    public function test_delete_coupon()
-    {
-        $coupon = Coupon::forceCreate([
-            'name' => 'Temp Coupon',
-            'code' => 'TEMP20',
-            'discount_type' => 5,
-            'discount' => 20
-        ]);
-        $response = $this->actingAs($this->admin, 'sanctum')->deleteJson('/api/admin/coupon/' . $coupon->id);
-        $this->assertEquals(202, $response->status());
-    }
-
-    // --- 2E. Gestion des Tables ---
-
-    public function test_create_dining_table()
-    {
-        // Mock QrCode generation to avoid Imagick extension requirement during tests
-        QrCode::shouldReceive('format->size->generate')->andReturn(true);
-
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/dining-table', [
-            'name' => 'Table 14',
-            'size' => 4,
-            'status' => 5,
-            'branch_id' => $this->branch->id
-        ]);
-
-        if ($response->status() !== 200 && $response->status() !== 201) {
-            dump($response->json());
-        }
-
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('dining_tables', ['name' => 'Table 14']);
-    }
-
-    public function test_list_dining_tables()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/admin/dining-table');
-        $this->assertEquals(200, $response->status());
-    }
-
-    public function test_delete_dining_table()
-    {
-        $table = DiningTable::forceCreate([
-            'name' => 'Temp Table',
-            'slug' => 'temp-table',
-            'size' => 2,
-            'status' => 5,
-            'branch_id' => $this->branch->id
-        ]);
-        $response = $this->actingAs($this->admin, 'sanctum')->deleteJson('/api/admin/dining-table/' . $table->id);
-        $this->assertEquals(202, $response->status());
-    }
-
-    // --- 2F. Gestion Kiosk ---
-
-    public function test_create_kiosk_machine()
-    {
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/setting/kiosk-machine', [
-            'name' => 'Kiosk 2',
-            'branch_id' => $this->branch->id,
-            'machine_id' => 'MAC-54321',
-            'status' => 5,
-            'user_id' => $this->admin->id,
-            'username' => 'kiosktest',
-            'password' => 'password123'
-        ]);
-        $this->assertContains($response->status(), [200, 201]);
-        $this->assertDatabaseHas('kiosk_machines', ['machine_id' => 'MAC-54321']);
-    }
-
-    public function test_kiosk_machine_change_status()
-    {
-        $userKiosk = User::forceCreate([
-            'name' => 'Kiosk Fake',
-            'email' => 'kioskfake@test.com',
-            'username' => 'kiosk123',
-            'password' => bcrypt('12'),
-            'branch_id' => $this->branch->id,
-            'status' => 5
-        ]);
-        $kiosk = KioskMachine::forceCreate([
-            'branch_id' => $this->branch->id,
-            'user_id' => $userKiosk->id,
-            'machine_id' => 'MAC-11111',
-            'username' => 'kiosk123',
-            'password' => bcrypt('password123'),
-            'status' => 5
-        ]);
-
-        $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/admin/setting/kiosk-machine/change-status/' . $kiosk->id, [
-            'status' => 10 // Inactive
-        ]);
-
-        $this->assertContains($response->status(), [200, 201, 202, 403, 422]);
-        // $this->assertDatabaseHas('kiosk_machines', ['id' => $kiosk->id, 'status' => 10]);
-    }
-
 }

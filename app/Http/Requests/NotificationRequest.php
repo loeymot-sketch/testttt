@@ -41,7 +41,8 @@ class NotificationRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if (empty(request('notification_fcm_json_file'))) {
-                $notification = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first()->file;
+                $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+                $notification = $notificationSetting?->file;
                 if (empty($notification)) {
                     $validator->errors()->add('notification_fcm_json_file', 'The file field is required');
                 }

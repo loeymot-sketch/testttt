@@ -1,0 +1,658 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
+use App\Models\ItemCategory;
+use App\Models\Item;
+use App\Models\ItemAttribute;
+use App\Models\ItemVariation;
+use App\Models\ItemExtra;
+use App\Models\ItemAddon;
+
+/**
+ * ============================================================================
+ * MENU SEEDER - SINGLE SOURCE OF TRUTH
+ * ============================================================================
+ *
+ * This is the ONLY authorized seeder for menu items.
+ * ALL other menu seeders are DEPRECATED and should NOT be used.
+ *
+ * Features:
+ * - Prevents duplicate runs (idempotent)
+ * - Purges all old data before seeding
+ * - Creates ONLY French menu items
+ * - Prices in EUR only (€)
+ * - No DEMO mode check - always runs
+ * - Verifies French integrity after creation
+ *
+ * Usage:
+ *   php artisan db:seed --class=MenuSeeder
+ *
+ * DEPRECATED: ItemTableSeeder, ItemCategoryTableSeeder, GrillHouseMenuSeeder
+ * USE INSTEAD: This MenuSeeder class ONLY
+ * ============================================================================
+ */
+class MenuSeeder extends Seeder
+{
+    /**
+     * Configuration from config/menu.php
+     */
+    protected array $config;
+
+    /**
+     * Created category IDs mapping
+     */
+    protected array $categoryIds = [];
+
+    /**
+     * Created addon item IDs
+     */
+    protected array $addonIds = [];
+
+    /**
+     * Item attributes
+     */
+    protected ?ItemAttribute $attrViande1 = null;
+    protected ?ItemAttribute $attrViande2 = null;
+    protected ?ItemAttribute $attrViande3 = null;
+    protected ?ItemAttribute $attrViande4 = null;
+    protected ?ItemAttribute $attrSauce = null;
+    protected ?ItemAttribute $attrCrudite = null;
+
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function run(): void
+    {
+        $this->config = Config::get('menu');
+
+        echo "=== MENU SEEDER - Le Grill House ===\n";
+        echo "Restaurant: {$this->config['restaurant']['name']}\n";
+        echo "Locale: {$this->config['locale']} | Currency: {$this->config['currency']}\n";
+        echo "====================================\n\n";
+
+        // Step 1: Pre-flight checks
+        $this->runPreflightChecks();
+
+        // Step 2: Check for English contamination (warning only, don't throw)
+        // $this->checkForEnglishContamination(); // Disabled - auto-purge instead
+
+        // Step 3: Check if menu already exists
+        $menuExists = $this->menuExists();
+        $englishContaminated = $this->isEnglishContaminated();
+        
+        if ($menuExists && !$englishContaminated) {
+            echo "✅ French menu already exists and is valid. Skipping...\n";
+            return;
+        }
+        
+        if ($englishContaminated) {
+            echo "🚨 ENGLISH MENU DETECTED! Force purging...\n";
+        }
+
+        // Step 4: Purge all existing menu data
+        $this->purgeExistingData();
+
+        // Step 5: Create categories
+        $this->createCategories();
+
+        // Step 6: Create item attributes
+        $this->createAttributes();
+
+        // Step 7: Create addon items (upsell)
+        $this->createAddons();
+
+        // Step 8: Create menu items
+        $this->createItems();
+
+        // Step 9: Verify French integrity
+        $this->verifyFrenchIntegrity();
+
+        echo "\n✅ Menu seeding completed successfully!\n";
+        echo "====================================\n";
+    }
+
+    /**
+     * Run pre-flight validation checks
+     *
+     * @throws \Exception
+     */
+    protected function runPreflightChecks(): void
+    {
+        echo "Running pre-flight checks...\n";
+
+        // Verify config exists
+        if (empty($this->config)) {
+            throw new \Exception('CRITICAL: config/menu.php not found or empty!');
+        }
+
+        // Verify French locale
+        if ($this->config['locale'] !== 'fr') {
+            throw new \Exception('CRITICAL: Locale must be "fr" (French)!');
+        }
+
+        // Verify EUR currency
+        if ($this->config['currency'] !== 'EUR') {
+            throw new \Exception('CRITICAL: Currency must be "EUR" (Euro)!');
+        }
+
+        // Verify categories exist
+        if (empty($this->config['categories'])) {
+            throw new \Exception('CRITICAL: No categories defined in config!');
+        }
+
+        // Verify items exist
+        if (empty($this->config['items'])) {
+            throw new \Exception('CRITICAL: No items defined in config!');
+        }
+
+        // Verify protection settings
+        if (!($this->config['protection']['block_english_items'] ?? false)) {
+            throw new \Exception('CRITICAL: block_english_items must be true in config!');
+        }
+
+        echo "✓ Pre-flight checks passed\n\n";
+    }
+
+    /**
+     * Check for existing English menu contamination
+     *
+     * @throws \Exception
+     */
+    protected function checkForEnglishContamination(): void
+    {
+        echo "Checking for English menu contamination...\n";
+
+        $englishPatterns = [
+            'Appetizer', 'Burger', 'Sandwich', 'Chicken', 'Beef', 'Seafood',
+            'Salad', 'Soup', 'Side', 'Beverage', 'Drink', 'Dessert',
+            'Flame Grill', 'Veggie', 'Plant Based', 'House Special',
+            'Entree', 'Zoop', 'Order', 'Add ', 'BBQ', 'Bacon', 'Vegan',
+            'Regular', 'Large', 'Medium', 'Small', 'pcs', 'Pack'
+        ];
+
+        // Check categories
+        $categories = ItemCategory::all();
+        foreach ($categories as $cat) {
+            foreach ($englishPatterns as $pattern) {
+                if (stripos($cat->name, $pattern) !== false) {
+                    throw new \Exception("CRITICAL: Database contains English category '{$cat->name}'. Run 'php artisan menu:reset' to purge.");
+                }
+            }
+        }
+
+        // Check items
+        $items = Item::all();
+        foreach ($items as $item) {
+            foreach ($englishPatterns as $pattern) {
+                if (stripos($item->name, $pattern) !== false) {
+                    throw new \Exception("CRITICAL: Database contains English item '{$item->name}'. Run 'php artisan menu:reset' to purge.");
+                }
+            }
+        }
+
+        echo "✓ No English contamination detected\n\n";
+    }
+
+    /**
+     * Check if database contains English menu items
+     *
+     * @return bool
+     */
+    protected function isEnglishContaminated(): bool
+    {
+        $englishPatterns = [
+            'Appetizer', 'Burger', 'Sandwich', 'Chicken', 'Beef', 'Seafood',
+            'Salad', 'Soup', 'Side', 'Beverage', 'Drink', 'Dessert',
+            'Flame Grill', 'Veggie', 'Plant Based', 'House Special',
+            'Entree', 'Zoop', 'Order', 'Add ', 'BBQ', 'Bacon', 'Vegan',
+            'Regular', 'Large', 'Medium', 'Small', 'pcs', 'Pack',
+            'Dumplings', 'Egg Roll', 'Wonton', 'Spring Roll'
+        ];
+
+        // Check categories
+        $categories = ItemCategory::all();
+        foreach ($categories as $cat) {
+            foreach ($englishPatterns as $pattern) {
+                if (stripos($cat->name, $pattern) !== false) {
+                    echo "  ⚠️ Found English category: '{$cat->name}'\n";
+                    return true;
+                }
+            }
+        }
+
+        // Check items
+        $items = Item::all();
+        foreach ($items as $item) {
+            foreach ($englishPatterns as $pattern) {
+                if (stripos($item->name, $pattern) !== false) {
+                    echo "  ⚠️ Found English item: '{$item->name}'\n";
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if menu already exists
+     *
+     * @return bool
+     */
+    protected function menuExists(): bool
+    {
+        $existingCategories = ItemCategory::count();
+        $existingItems = Item::count();
+
+        echo "Checking existing menu data...\n";
+        echo "  - Existing categories: {$existingCategories}\n";
+        echo "  - Existing items: {$existingItems}\n";
+
+        // If we have French categories, menu likely exists
+        if ($existingCategories > 0) {
+            $frenchCategories = ItemCategory::where('name', 'like', '%Tacos%')
+                ->orWhere('name', 'like', '%Sandwich%')
+                ->orWhere('name', 'like', '%Burger%')
+                ->count();
+
+            if ($frenchCategories > 0) {
+                echo "  - Found French categories: {$frenchCategories}\n";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Purge all existing menu-related data
+     */
+    protected function purgeExistingData(): void
+    {
+        echo "\nPurging existing menu data...\n";
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        // Delete in correct order to avoid constraint issues
+        DB::table('item_addons')->truncate();
+        echo "  ✓ Truncated item_addons\n";
+
+        DB::table('item_extras')->truncate();
+        echo "  ✓ Truncated item_extras\n";
+
+        DB::table('item_variations')->truncate();
+        echo "  ✓ Truncated item_variations\n";
+
+        DB::table('item_attributes')->truncate();
+        echo "  ✓ Truncated item_attributes\n";
+
+        DB::table('items')->truncate();
+        echo "  ✓ Truncated items\n";
+
+        DB::table('item_categories')->truncate();
+        echo "  ✓ Truncated item_categories\n";
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        echo "✓ All menu data purged\n\n";
+    }
+
+    /**
+     * Create categories from config
+     */
+    protected function createCategories(): void
+    {
+        echo "Creating categories...\n";
+
+        foreach ($this->config['categories'] as $category) {
+            $cat = ItemCategory::create([
+                'name'        => $category['name'],
+                'slug'        => Str::slug($category['name']),
+                'description' => $category['description'] ?? null,
+                'status'      => $this->config['settings']['status_active'],
+                'sort'        => $category['sort'],
+            ]);
+
+            $this->categoryIds[Str::slug($category['name'])] = $cat->id;
+            echo "  ✓ Created: {$category['name']}\n";
+        }
+
+        echo "✓ Created " . count($this->config['categories']) . " categories\n\n";
+    }
+
+    /**
+     * Create item attributes (Viandes, Sauces, Crudités)
+     */
+    protected function createAttributes(): void
+    {
+        echo "Creating item attributes...\n";
+
+        $this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => 1]);
+        $this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => 1]);
+        $this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => 1]);
+        $this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => 1]);
+        $this->attrSauce = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => 1]);
+        $this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => 1]);
+
+        echo "  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4\n";
+        echo "  ✓ Created: Sauce (1ère Gratuite)\n";
+        echo "  ✓ Created: Garnitures\n";
+        echo "✓ Attributes created\n\n";
+    }
+
+    /**
+     * Create addon items (upsell items)
+     */
+    protected function createAddons(): void
+    {
+        echo "Creating addon items (upsell)...\n";
+
+        // Use Snacking category for addon items
+        $addonCategoryId = $this->categoryIds['frites-accompagnements']
+            ?? $this->categoryIds['nos-boissons']
+            ?? reset($this->categoryIds);
+
+        foreach ($this->config['addons'] as $addon) {
+            $item = Item::create([
+                'name'             => $addon['name'],
+                'slug'             => Str::slug($addon['name']),
+                'item_category_id' => $addonCategoryId,
+                'price'            => $addon['price'],
+                'description'      => 'Upsell item',
+                'status'           => 1,
+                'tax_id'           => $this->config['settings']['default_tax_id'],
+            ]);
+
+            $this->addonIds[Str::slug($addon['name'])] = $item->id;
+            echo "  ✓ Created addon: {$addon['name']} ({$addon['price']}€)\n";
+        }
+
+        echo "✓ Created " . count($this->config['addons']) . " addon items\n\n";
+    }
+
+    /**
+     * Create all menu items from config
+     */
+    protected function createItems(): void
+    {
+        echo "Creating menu items...\n";
+
+        $itemCount = 0;
+
+        foreach ($this->config['items'] as $categorySlug => $items) {
+            if (!isset($this->categoryIds[$categorySlug])) {
+                echo "  ⚠️  Skipping unknown category: {$categorySlug}\n";
+                continue;
+            }
+
+            $categoryId = $this->categoryIds[$categorySlug];
+
+            foreach ($items as $itemData) {
+                $this->createItem($itemData, $categoryId);
+                $itemCount++;
+            }
+        }
+
+        echo "✓ Created {$itemCount} menu items\n\n";
+    }
+
+    /**
+     * Create a single item with all its variations and extras
+     *
+     * @param array $data
+     * @param int $categoryId
+     */
+    protected function createItem(array $data, int $categoryId): void
+    {
+        // Create the item
+        $item = Item::create([
+            'name'             => $data['name'],
+            'slug'             => Str::slug($data['name']),
+            'item_category_id' => $categoryId,
+            'price'            => $data['price'],
+            'description'      => $data['description'] ?? '',
+            'status'           => 1,
+            'tax_id'           => $this->config['settings']['default_tax_id'],
+        ]);
+
+        // Attach addons
+        $this->attachAddons($item);
+
+        // Add meat variations if applicable
+        if ($data['viandes'] > 0) {
+            $this->attachMeatVariations($item, $data['viandes']);
+        }
+
+        // Add sauce variations if applicable
+        if ($data['has_sauce']) {
+            $this->attachSauceVariations($item, $data['sauce_special'] ?? null);
+        }
+
+        // Add crudité variations if applicable
+        if ($data['has_crudites']) {
+            $this->attachCruditeVariations($item);
+        }
+
+        // Add supplements/extras (for most items except simple ones)
+        if (!isset($data['is_frites']) || !$data['is_frites']) {
+            $this->attachSupplements($item);
+        }
+
+        // Special handling for frites
+        if (isset($data['is_frites']) && $data['is_frites']) {
+            $this->attachFritesExtras($item);
+        }
+
+        echo "  ✓ {$data['name']} ({$data['price']}€)\n";
+    }
+
+    /**
+     * Attach addon items to an item
+     *
+     * @param Item $item
+     */
+    protected function attachAddons(Item $item): void
+    {
+        foreach ($this->addonIds as $addonId) {
+            ItemAddon::create([
+                'item_id'       => $item->id,
+                'addon_item_id' => $addonId,
+            ]);
+        }
+    }
+
+    /**
+     * Attach meat variations to an item
+     *
+     * @param Item $item
+     * @param int $count
+     */
+    protected function attachMeatVariations(Item $item, int $count): void
+    {
+        $meats = $this->config['meats'];
+        $attributes = [$this->attrViande1, $this->attrViande2, $this->attrViande3, $this->attrViande4];
+
+        for ($i = 0; $i < $count && $i < 4; $i++) {
+            foreach ($meats as $meat) {
+                ItemVariation::create([
+                    'item_id'           => $item->id,
+                    'item_attribute_id' => $attributes[$i]->id,
+                    'name'              => $meat,
+                    'price'             => 0.00,
+                    'status'            => 1,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Attach sauce variations to an item
+     *
+     * @param Item $item
+     * @param array|null $specialSauces
+     */
+    protected function attachSauceVariations(Item $item, ?array $specialSauces = null): void
+    {
+        $sauces = $specialSauces ?? $this->config['sauces'];
+
+        foreach ($sauces as $sauce) {
+            ItemVariation::create([
+                'item_id'           => $item->id,
+                'item_attribute_id' => $this->attrSauce->id,
+                'name'              => $sauce,
+                'price'             => 0.00,
+                'status'            => 1,
+            ]);
+        }
+    }
+
+    /**
+     * Attach crudité variations to an item
+     *
+     * @param Item $item
+     */
+    protected function attachCruditeVariations(Item $item): void
+    {
+        foreach ($this->config['crudites'] as $crudite) {
+            ItemVariation::create([
+                'item_id'           => $item->id,
+                'item_attribute_id' => $this->attrCrudite->id,
+                'name'              => $crudite,
+                'price'             => 0.00,
+                'status'            => 1,
+            ]);
+        }
+    }
+
+    /**
+     * Attach supplements/extras to an item
+     *
+     * @param Item $item
+     */
+    protected function attachSupplements(Item $item): void
+    {
+        // Add regular supplements
+        foreach ($this->config['supplements'] as $name => $price) {
+            ItemExtra::create([
+                'item_id' => $item->id,
+                'name'    => $name,
+                'price'   => $price,
+                'status'  => 1,
+            ]);
+        }
+
+        // Add extra sauce options
+        foreach ($this->config['sauces'] as $sauce) {
+            ItemExtra::create([
+                'item_id' => $item->id,
+                'name'    => "Sauce supplémentaire: {$sauce}",
+                'price'   => $this->config['supplement_sauce_price'],
+                'status'  => 1,
+            ]);
+        }
+    }
+
+    /**
+     * Attach extras specifically for frites
+     *
+     * @param Item $item
+     */
+    protected function attachFritesExtras(Item $item): void
+    {
+        // Add sauce options
+        foreach ($this->config['sauces'] as $sauce) {
+            ItemExtra::create([
+                'item_id' => $item->id,
+                'name'    => "Sauce {$sauce}",
+                'price'   => $this->config['supplement_sauce_price'],
+                'status'  => 1,
+            ]);
+        }
+
+        // Add cheddar option based on frite size
+        $cheddarPrice = str_contains($item->name, 'Grande') ? 1.50 : 1.00;
+        ItemExtra::create([
+            'item_id' => $item->id,
+            'name'    => 'Cheddar fondu',
+            'price'   => $cheddarPrice,
+            'status'  => 1,
+        ]);
+    }
+
+    /**
+     * Verify French integrity of the created menu
+     */
+    protected function verifyFrenchIntegrity(): void
+    {
+        echo "\nVerifying French integrity...\n";
+
+        $errors = [];
+
+        // Check 1: All categories should be French
+        $categories = ItemCategory::all();
+        foreach ($categories as $cat) {
+            // Check for English words
+            $englishWords = ['Appetizer', 'Burger', 'Sandwich', 'Chicken', 'Beef', 'Seafood', 'Salad', 'Soup', 'Side', 'Beverage', 'Drink'];
+            foreach ($englishWords as $word) {
+                if (stripos($cat->name, $word) !== false) {
+                    $errors[] = "Category '{$cat->name}' contains English word: {$word}";
+                }
+            }
+        }
+
+        // Check 2: All items should have EUR prices (no $ signs in names/descriptions)
+        $items = Item::all();
+        $dollarSignCount = $items->filter(fn($item) => str_contains($item->name, '$'))->count();
+        if ($dollarSignCount > 0) {
+            $errors[] = "{$dollarSignCount} items contain dollar signs";
+        }
+
+        // Check 3: All prices should be reasonable (between 0.50 and 50.00 EUR)
+        $invalidPrices = $items->filter(fn($item) => $item->price < 0.50 || $item->price > 50.00)->count();
+        if ($invalidPrices > 0) {
+            $errors[] = "{$invalidPrices} items have suspicious prices";
+        }
+
+        // Check 4: Count summary
+        echo "  - Categories: " . ItemCategory::count() . "\n";
+        echo "  - Items: " . Item::count() . "\n";
+        echo "  - Item Attributes: " . ItemAttribute::count() . "\n";
+        echo "  - Item Variations: " . ItemVariation::count() . "\n";
+        echo "  - Item Extras: " . ItemExtra::count() . "\n";
+        echo "  - Item Addons: " . ItemAddon::count() . "\n";
+
+        if (empty($errors)) {
+            echo "✓ French integrity verified - NO ISSUES FOUND\n";
+        } else {
+            echo "\n⚠️  INTEGRITY WARNINGS:\n";
+            foreach ($errors as $error) {
+                echo "  - {$error}\n";
+            }
+        }
+    }
+
+    /**
+     * Get menu statistics
+     *
+     * @return array
+     */
+    public static function getStats(): array
+    {
+        return [
+            'categories'   => ItemCategory::count(),
+            'items'        => Item::count(),
+            'attributes'   => ItemAttribute::count(),
+            'variations'   => ItemVariation::count(),
+            'extras'       => ItemExtra::count(),
+            'addons'       => ItemAddon::count(),
+        ];
+    }
+}

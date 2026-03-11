@@ -68,8 +68,11 @@ class FirebaseService
 
     function getAccessToken()
     {
-
-        $keyFilePath = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first()->file;
+        $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+        if (!$notificationSetting || !$notificationSetting->file) {
+            throw new Exception('FCM JSON file setting not found');
+        }
+        $keyFilePath = $notificationSetting->file;
         $parsed_url = parse_url($keyFilePath);
 
         if (isset($parsed_url['path'])) {

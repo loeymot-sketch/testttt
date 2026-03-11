@@ -80,9 +80,13 @@ return [
     | by the translation service provider. You are free to set this value
     | to any of the locales which will be supported by the application.
     |
+    | ⚠️  WARNING: DO NOT CHANGE - French locale required for FoodKing project
+    | This application is specifically designed for the French market.
+    | Changing this will break menu seeding and French localization.
+    |
     */
 
-    'locale' => 'en',
+    'locale' => 'fr', // DO NOT CHANGE - French locale required
 
     /*
     |--------------------------------------------------------------------------

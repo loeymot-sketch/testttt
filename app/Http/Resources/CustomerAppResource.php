@@ -27,8 +27,8 @@ class CustomerAppResource extends JsonResource
     {
         return [
             "customer_app_name"               => $this->info['customer_app_name'],
-            "customer_app_logo"               => $this->appImage('customer_app_logo')->logo,
-            "customer_app_splash_screen_logo" => $this->appImage('customer_app_splash_screen_logo')->splashScreenLogo,
+            "customer_app_logo"               => $this->appImage('customer_app_logo')?->logo ?? asset('images/customer-app/logo.png'),
+            "customer_app_splash_screen_logo" => $this->appImage('customer_app_splash_screen_logo')?->splashScreenLogo ?? asset('images/customer-app/splash.png'),
         ];
     }
 

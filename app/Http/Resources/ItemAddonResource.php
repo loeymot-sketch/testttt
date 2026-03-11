@@ -54,7 +54,7 @@ class ItemAddonResource extends JsonResource
             "addon_item_convert_price"       => AppLibrary::convertAmountFormat(optional($this->addonItem)->price),
             "addon_item_currency_price"      => AppLibrary::currencyAmountFormat(optional($this->addonItem)->price),
             'addon_item_status'              => optional($this->addonItem)->status,
-            'variations'                     => json_decode($this->addon_item_variation),
+            'variations'                     => $this->safeJsonDecode($this->addon_item_variation),
             'variation_total'                => optional($this->variation)->price,
             "variation_total_flat_price"     => AppLibrary::flatAmountFormat(optional($this->variation)->price),
             "variation_total_convert_price"  => AppLibrary::convertAmountFormat(optional($this->variation)->price),
@@ -80,7 +80,11 @@ class ItemAddonResource extends JsonResource
             return [$variation->id => $variation];
         });
         if ($this->addon_item_variation) {
-            $variations = (object) json_decode($this->addon_item_variation, true);
+            $decoded = json_decode($this->addon_item_variation, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                return (object)['price' => 0, 'name' => []];
+            }
+            $variations = (object) $decoded;
             $price      = 0;
             $name       = [];
             foreach ($variations as $variation) {
@@ -98,5 +102,18 @@ class ItemAddonResource extends JsonResource
                 'name'  => $name
             ];
         }
+        return (object)['price' => 0, 'name' => []];
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json): mixed
+    {
+        if (empty($json)) {
+            return [];
+        }
+        $decoded = json_decode($json);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

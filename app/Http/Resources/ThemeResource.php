@@ -26,9 +26,9 @@ class ThemeResource extends JsonResource
     public function toArray($request) : array
     {
         return [
-            "theme_logo"         => $this->themeImage('theme_logo')->logo,
+            "theme_logo"         => $this->themeImage('theme_logo')?->logo ?? asset('images/theme/theme-logo.png'),
             "theme_favicon_logo" => $this->themeImage('theme_favicon_logo')?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png'),
-            "theme_footer_logo"  => $this->themeImage('theme_footer_logo')->footerLogo,
+            "theme_footer_logo"  => $this->themeImage('theme_footer_logo')?->footerLogo ?? asset('images/theme/theme-footer-logo.png'),
         ];
     }
 

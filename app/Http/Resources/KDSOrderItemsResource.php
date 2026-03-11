@@ -19,9 +19,21 @@ class KDSOrderItemsResource extends JsonResource
             'item_id'         => $this->item_id,
             'item_name'       => $this->orderItem?->name,
             'quantity'        => $this->quantity,
-            'item_variations' => json_decode($this->item_variations),
-            'item_extras'     => json_decode($this->item_extras),
+            'item_variations' => $this->safeJsonDecode($this->item_variations),
+            'item_extras'     => $this->safeJsonDecode($this->item_extras),
             'instruction'     => $this->instruction,
         ];
+    }
+
+    /**
+     * Safely decode JSON with error checking
+     */
+    private function safeJsonDecode(?string $json): mixed
+    {
+        if (empty($json)) {
+            return [];
+        }
+        $decoded = json_decode($json);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

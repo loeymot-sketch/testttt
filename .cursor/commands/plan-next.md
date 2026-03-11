@@ -1,4 +1,4 @@
-Read the latest report from `reports/antigravity/`.
+Read `reports/antigravity/latest.md` (always the most recent Anti-Gravity report).
 
 Then:
 - summarize the issue
@@ -6,9 +6,11 @@ Then:
 - produce a technical plan
 - split into small tasks
 - mark each task as CLAUDE or KIMI
-- write the result to `reports/planning/`
+- write the result to `reports/planning/latest.md`
 
 Use:
 - `AGENTS.md`
 - the docs in `docs/`
 - `workflows/task-routing.md`.
+
+Note: Historical reports are available in `reports/antigravity/report-XXX.md` but are not automatically loaded.

@@ -134,7 +134,10 @@ class BranchService
             $userLongitude = $request->input('longitude');
 
             foreach ($branches as $branch) {
-                $zoneData = json_decode(json_decode($branch->zone, true), true);
+                $zoneData = $this->safeJsonDecode($branch->zone);
+                if ($zoneData === null || !is_array($zoneData)) {
+                    continue;
+                }
 
                 if ($this->isPointInPolygon($zoneData, $userLatitude, $userLongitude)) {
                     return $branch;
@@ -187,8 +190,8 @@ class BranchService
             $userLatitude = $request->input('latitude');
             $userLongitude = $request->input('longitude');
             if ($branch) {
-                $zoneData = json_decode(json_decode($branch->zone, true), true);
-                if ($this->isPointInPolygon($zoneData, $userLatitude, $userLongitude)) {
+                $zoneData = $this->safeJsonDecode($branch->zone);
+                if ($zoneData !== null && is_array($zoneData) && $this->isPointInPolygon($zoneData, $userLatitude, $userLongitude)) {
                     return $branch;
                 }
             }
@@ -197,5 +200,28 @@ class BranchService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Safely decode JSON with error checking (handles double-encoded JSON)
+     */
+    private function safeJsonDecode(?string $json): ?array
+    {
+        if (empty($json)) {
+            return null;
+        }
+        // Try decoding once
+        $decoded = json_decode($json, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return null;
+        }
+        // Handle double-encoded JSON
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return null;
+            }
+        }
+        return is_array($decoded) ? $decoded : null;
     }
 }

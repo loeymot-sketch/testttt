@@ -33,24 +33,28 @@ abstract class TestCase extends BaseTestCase
         }
 
         DB::table($table)->insert([
-            ['key' => 'site_title', 'payload' => json_encode('FoodKing Test'), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'favicon_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'site_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'currency', 'payload' => json_encode('EUR'), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'currency_symbol', 'payload' => json_encode('€'), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'order_prefix', 'payload' => json_encode('FK'), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'order_setup_food_preparation_time', 'payload' => json_encode(30), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'order_setup_takeaway', 'payload' => json_encode(1), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'order_setup_delivery', 'payload' => json_encode(1), 'created_at' => now(), 'updated_at' => now()],
+            // Site settings (group = 'site')
+            ['key' => 'site_title', 'payload' => json_encode('FoodKing Test'), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'favicon_logo', 'payload' => json_encode(null), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'site_logo', 'payload' => json_encode(null), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'site_copyright', 'payload' => json_encode('© 2026 FoodKing'), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            // Currency settings (group = 'site')
+            ['key' => 'currency', 'payload' => json_encode('EUR'), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'currency_symbol', 'payload' => json_encode('€'), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            // Order setup settings (group = 'order_setup')
+            ['key' => 'order_prefix', 'payload' => json_encode('FK'), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'order_setup_food_preparation_time', 'payload' => json_encode(30), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'order_setup_takeaway', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'order_setup_delivery', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            // Company settings required for notifications (group = 'company')
+            ['key' => 'company_name', 'payload' => json_encode('FoodKing Test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_email', 'payload' => json_encode('test@foodking.com'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_phone', 'payload' => json_encode('+33123456789'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            // Theme settings (ThemeSetting model uses 'settings' table, not 'theme_settings') (group = 'theme')
+            ['key' => 'theme_favicon_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'theme_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'theme_footer_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
         ]);
-
-        // Seed theme_settings to prevent 'faviconLogo on null' crash in notification builders
-        if (Schema::hasTable('theme_settings') && DB::table('theme_settings')->count() === 0) {
-            DB::table('theme_settings')->insert([
-                ['key' => 'theme_favicon_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
-                ['key' => 'theme_logo',         'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
-            ]);
-        }
     }
 
     /**
