@@ -263,32 +263,59 @@ class OrderService
                 $requestItems = $this->safeJsonDecode($request->items);
                 
                 // [SECURITY FIX P0-001] Get prices from database for verification
-                $dbItems = Item::get()->pluck('price', 'id');
+                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                $dbItems = Item::select('id', 'price')
+                    ->whereIn('id', $requestedItemIds)
+                    ->pluck('price', 'id');
                 $dbTaxes = Tax::get()->pluck('tax_rate', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
-                        // [SECURITY FIX P0-001] Use DB price, not client-provided price
-                        $itemPrice = $dbItems[$item->item_id] ?? $item->item_price;
+                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
+                        if (!isset($dbItems[$item->item_id])) {
+                            throw new \InvalidArgumentException(
+                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                422
+                            );
+                        }
+                        $itemPrice = $dbItems[$item->item_id]; // ← prix TOUJOURS depuis la DB
                         
-                        // Calculate verified variations and extras from DB
+                        // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
                         $variationTotal = 0;
                         if (isset($item->item_variations) && is_array($item->item_variations)) {
                             foreach ($item->item_variations as $variation) {
-                                if (isset($variation->price)) {
-                                    $variationTotal += $variation->price;
+                                $varId = $variation->id ?? null;
+                                if (!$varId) continue;
+                                
+                                $dbVar = \App\Models\ItemVariation::find($varId);
+                                if (!$dbVar) {
+                                    throw new \InvalidArgumentException(
+                                        "Variation ID {$varId} introuvable.",
+                                        422
+                                    );
                                 }
+                                $variationTotal += (float) $dbVar->price;
                             }
                         }
                         
+                        // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
                         $extraTotal = 0;
                         if (isset($item->item_extras) && is_array($item->item_extras)) {
                             foreach ($item->item_extras as $extra) {
-                                if (isset($extra->price)) {
-                                    $extraTotal += $extra->price;
+                                $extraId = $extra->id ?? null;
+                                if (!$extraId) continue;
+                                
+                                $dbExt = \App\Models\ItemExtra::find($extraId);
+                                if (!$dbExt) {
+                                    throw new \InvalidArgumentException(
+                                        "Extra ID {$extraId} introuvable.",
+                                        422
+                                    );
                                 }
+                                $extraTotal += (float) $dbExt->price;
                             }
                         }
                         
@@ -417,33 +444,59 @@ class OrderService
                 $requestItems = $this->safeJsonDecode($request->items);
                 
                 // [TAÂCHE 1] SÉCURISATION PRIX - Récupérer prix depuis DB
-                $dbItems = Item::get()->pluck('price', 'id');
+                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                $dbItems = Item::select('id', 'price')
+                    ->whereIn('id', $requestedItemIds)
+                    ->pluck('price', 'id');
                 $dbTaxes = Tax::get()->pluck('tax_rate', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
-                        // [SÉCURITÉ] Utiliser prix DB, pas prix requête
-                        $itemPrice = $dbItems[$item->item_id] ?? $item->item_price;
+                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
+                        if (!isset($dbItems[$item->item_id])) {
+                            throw new \InvalidArgumentException(
+                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                422
+                            );
+                        }
+                        $itemPrice = $dbItems[$item->item_id]; // ← prix TOUJOURS depuis la DB
                         
-                        // Calculer prix variations depuis DB
+                        // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
                         $variationTotal = 0;
                         if (isset($item->item_variations) && is_array($item->item_variations)) {
                             foreach ($item->item_variations as $variation) {
-                                if (isset($variation->price)) {
-                                    $variationTotal += $variation->price;
+                                $varId = $variation->id ?? null;
+                                if (!$varId) continue;
+                                
+                                $dbVar = \App\Models\ItemVariation::find($varId);
+                                if (!$dbVar) {
+                                    throw new \InvalidArgumentException(
+                                        "Variation ID {$varId} introuvable.",
+                                        422
+                                    );
                                 }
+                                $variationTotal += (float) $dbVar->price;
                             }
                         }
                         
-                        // Calculer prix extras depuis DB
+                        // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
                         $extraTotal = 0;
                         if (isset($item->item_extras) && is_array($item->item_extras)) {
                             foreach ($item->item_extras as $extra) {
-                                if (isset($extra->price)) {
-                                    $extraTotal += $extra->price;
+                                $extraId = $extra->id ?? null;
+                                if (!$extraId) continue;
+                                
+                                $dbExt = \App\Models\ItemExtra::find($extraId);
+                                if (!$dbExt) {
+                                    throw new \InvalidArgumentException(
+                                        "Extra ID {$extraId} introuvable.",
+                                        422
+                                    );
                                 }
+                                $extraTotal += (float) $dbExt->price;
                             }
                         }
                         
@@ -599,16 +652,26 @@ class OrderService
                 $totalTax = 0;
                 $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                $items = Item::get()->pluck('tax_id', 'id');
+                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                $items = Item::select('id', 'tax_id')
+                    ->whereIn('id', $requestedItemIds)
+                    ->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
 
-                        // [PHASE 7] SECURISATION P0 Falsification TableOrder
+                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
                         $dbItem = Item::find($item->item_id);
-                        $itemPrice = $dbItem ? $dbItem->price : $item->item_price;
+                        if (!$dbItem) {
+                            throw new \InvalidArgumentException(
+                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                422
+                            );
+                        }
+                        $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
                         $calcVariationTotal = 0;
                         if (!empty($item->item_variations)) {
@@ -737,7 +800,7 @@ class OrderService
                 if ($order->user_id == Auth::user()->id) {
                     return $order;
                 } else {
-                    return [];
+                    abort(403, 'Access denied: you do not have permission to access this order.');
                 }
             } else {
                 return $order;
@@ -757,7 +820,7 @@ class OrderService
             if ($order->user_id == $user->id) {
                 return $order->load('transaction', 'orderItems', 'branch', 'user');
             } else {
-                return [];
+                abort(403, 'Access denied: you do not have permission to access this order.');
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -774,7 +837,7 @@ class OrderService
             if ($order->delivery_boy_id == Auth::user()->id) {
                 return $order;
             } else {
-                return [];
+                abort(403, 'Access denied: you do not have permission to access this order.');
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -791,7 +854,7 @@ class OrderService
             if ($order->delivery_boy_id == $user->id) {
                 return $order;
             } else {
-                return [];
+                abort(403, 'Access denied: you do not have permission to access this order.');
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -864,7 +927,7 @@ class OrderService
                             app(PaymentService::class)->cashBack(
                                 $order,
                                 'credit',
-                                rand(111111111111111, 99999999999999)
+                                'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
                     }
@@ -888,7 +951,7 @@ class OrderService
                         app(PaymentService::class)->cashBack(
                             $order,
                             'credit',
-                            rand(111111111111111, 99999999999999)
+                            'TXN-' . \Illuminate\Support\Str::random(12)
                         );
                     }
                 }
@@ -925,7 +988,7 @@ class OrderService
                     $order->save();
                     return $order;
                 } else {
-                    return [];
+                    abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
             } else {
                 $order->payment_status = $request->payment_status;
@@ -956,7 +1019,7 @@ class OrderService
                     $order->save();
                     return $order;
                 } else {
-                    return [];
+                    abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
             } else {
                 $order->token = $request->token;
@@ -984,7 +1047,7 @@ class OrderService
                     SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
                     return $order;
                 } else {
-                    return [];
+                    abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
             } else {
                 $order->delivery_boy_id = $request->delivery_boy_id;

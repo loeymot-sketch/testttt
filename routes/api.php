@@ -123,25 +123,38 @@ Route::match(['get', 'post'], '/login', function () {
 Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed']);
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
-    Route::post('/login', [LoginController::class, 'login']);
+    // [SEC-02] Rate limiting — 5 tentatives par minute
+    Route::post('/login', [LoginController::class, 'login'])
+        ->middleware('throttle:5,1');
 
-    Route::post('/kiosk-login', [KioskMachineLoginController::class, 'login']);
+    Route::post('/kiosk-login', [KioskMachineLoginController::class, 'login'])
+        ->middleware('throttle:5,1');
 
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
-        Route::post('/', [ForgotPasswordController::class, 'forgotPassword']);
-        Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode']);
-        Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+        // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
+        Route::post('/', [ForgotPasswordController::class, 'forgotPassword'])
+            ->middleware('throttle:3,60');
+        Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
+            ->middleware('throttle:5,1');
+        Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
+            ->middleware('throttle:5,1');
     });
 
     Route::prefix('signup')->name('signup.')->group(function () {
-        Route::post('/otp', [SignupController::class, 'otp']);
-        Route::post('/verify', [SignupController::class, 'verify']);
-        Route::post('/register', [SignupController::class, 'register']);
+        // [SEC-02] Rate limiting — 10 inscriptions par minute
+        Route::post('/otp', [SignupController::class, 'otp'])
+            ->middleware('throttle:10,1');
+        Route::post('/verify', [SignupController::class, 'verify'])
+            ->middleware('throttle:10,1');
+        Route::post('/register', [SignupController::class, 'register'])
+            ->middleware('throttle:10,1');
     });
 
     Route::prefix('guest-signup')->name('guest-signup.')->group(function () {
-        Route::post('/otp', [GuestSignupController::class, 'otp']);
-        Route::post('/verify', [GuestSignupController::class, 'verify']);
+        Route::post('/otp', [GuestSignupController::class, 'otp'])
+            ->middleware('throttle:10,1');
+        Route::post('/verify', [GuestSignupController::class, 'verify'])
+            ->middleware('throttle:10,1');
     });
 
     Route::middleware('auth:sanctum')->group(function () {

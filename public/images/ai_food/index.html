@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Roi Tacos - Saint Quentin en Yvelines</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><a href="#accueil">Accueil</a></li>
+                    <li class="logo">
+                        <img src="images/logo.png" alt="Le Roi Tacos">
+                    </li>
+                    <li><a href="#menu">Menu</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <section id="accueil" class="hero">
+        <div class="hero-image" style="background-image: url('images/banniere_attractive.png');">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Le Roi Tacos</h1>
+                    <p>Savourez nos délicieux tacos, sandwichs et bien plus encore</p>
+                    <div class="fresh-ingredients">
+                        <i class="fas fa-leaf"></i> Tous nos ingrédients sont frais
+                    </div>
+                    <div class="cta-buttons">
+                        <a href="https://www.ubereats.com/fr/store/le-roi-tacos-saint-quentin-en-yvelines/e4r1pWIxQ_uAHKRUpUC5ig" class="btn btn-primary uber-btn" target="_blank">
+                            <i class="fas fa-bicycle"></i> Commander sur Uber Eats
+                            <div class="rating-badge uber">
+                                <i class="fab fa-uber"></i> 4.7
+                            </div>
+                        </a>
+                        <a href="tel:0130434016" class="btn btn-secondary">
+                            <i class="fas fa-phone"></i> Nous contacter
+                            <div class="rating-badge google">
+                                <i class="fab fa-google"></i> 4.5
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="menu" class="menu-section">
+        <div class="container">
+            <h2>Notre Menu</h2>
+            <div class="menu-tabs">
+                <button class="tab-btn active" data-category="tacos">Tacos</button>
+                <button class="tab-btn" data-category="sandwichs">Sandwichs</button>
+                <button class="tab-btn" data-category="paninis">Paninis</button>
+                <button class="tab-btn" data-category="desserts">Desserts</button>
+                <button class="tab-btn" data-category="boissons">Boissons</button>
+            </div>
+            
+            <div class="menu-items">
+                <!-- Le contenu du menu sera chargé dynamiquement via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2>Nous trouver</h2>
+            <div class="contact-info">
+                <div class="address">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>5 Parv. des Sources, 78180 Montigny-le-Bretonneux</p>
+                </div>
+                <div class="phone">
+                    <i class="fas fa-phone"></i>
+                    <p><a href="tel:0130434016">01 30 43 40 16</a></p>
+                </div>
+                <div class="hours">
+                    <i class="fas fa-clock"></i>
+                    <div class="hours-list">
+                        <h3>Horaires d'ouverture</h3>
+                        <ul>
+                            <li><span>Lundi</span> <span>11:00–23:00</span></li>
+                            <li><span>Mardi</span> <span>11:00–23:00</span></li>
+                            <li><span>Mercredi</span> <span>11:00–23:00</span></li>
+                            <li><span>Jeudi</span> <span>11:00–23:00</span></li>
+                            <li><span>Vendredi</span> <span>11:00–23:00</span></li>
+                            <li><span>Samedi</span> <span>11:00–23:00</span></li>
+                            <li><span>Dimanche</span> <span>11:00–23:00</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="map">
+                <!-- La carte Google Maps sera intégrée ici -->
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2629.0092728695287!2d2.0255340765906287!3d48.77651167132636!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e683c5b6694bb5%3A0x400f81c5e6955a0!2s5%20Parvis%20des%20Sources%2C%2078180%20Montigny-le-Bretonneux!5e0!3m2!1sfr!2sfr!4v1748357231646!5m2!1sfr!2sfr" 
+                    width="100%" 
+                    height="100%" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="images/logo.png" alt="Le Roi Tacos">
+                </div>
+                <div class="footer-contact">
+                    <h3>Contact</h3>
+                    <p><i class="fas fa-map-marker-alt"></i> 5 Parv. des Sources, 78180 Montigny-le-Bretonneux</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:0130434016">01 30 43 40 16</a></p>
+                </div>
+                <div class="footer-hours">
+                    <h3>Horaires</h3>
+                    <p>Ouvert tous les jours</p>
+                    <p>11:00 - 23:00</p>
+                </div>
+                <div class="footer-social">
+                    <h3>Suivez-nous</h3>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2025 Le Roi Tacos. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -77,6 +77,7 @@ export default {
                 isActive: false,
             },
             searchItem: "",
+            scrollHandler: null,
             enums: {
                 activityEnum: activityEnum,
             },
@@ -103,8 +104,8 @@ export default {
         }
     },
     mounted() {
-
-        window.addEventListener('scroll', () => {
+        // [FIX-FRONT-03] Memory leak fix: store handler reference for cleanup
+        this.scrollHandler = () => {
             const resetRoutes = [
                 'table.tableOrder.details',
                 'table.page',
@@ -121,7 +122,8 @@ export default {
                     this.$refs.ffHeader.classList.remove('active');
                 }
             }
-        });
+        };
+        window.addEventListener('scroll', this.scrollHandler);
 
 
         this.loading.isActive = true;
@@ -151,6 +153,13 @@ export default {
         }).catch((err) => {
             this.loading.isActive = false;
         });
+    },
+    beforeUnmount() {
+        // [FIX-FRONT-03] Memory leak fix: remove scroll event listener
+        if (this.scrollHandler) {
+            window.removeEventListener('scroll', this.scrollHandler);
+            this.scrollHandler = null;
+        }
     },
     methods: {
         changeLanguage: function (id, code) {

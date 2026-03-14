@@ -106,8 +106,8 @@
                                     <label
                                         :class="temp.item_variations.variations[variation.item_attribute_id] === variation.id ? 'active' : ''"
                                         :for="variation.item_attribute_id + '-' + variation.name"
-                                        class="variation-margin-right w-full h-[52px] cursor-pointer py-2 px-3 gap-2 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
-                                        <div class="custom-radio sm">
+                                        class="variation-margin-right w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
+                                        <div class="custom-radio sm flex-shrink-0">
                                             <input :value="variation.id"
                                                 @click="changeVariation(variation.item_attribute_id, variation.id, variation.name, variation.convert_price)"
                                                 v-model="temp.item_variations.variations[variation.item_attribute_id]"
@@ -115,7 +115,8 @@
                                                 class="custom-radio-field">
                                             <span class="custom-radio-span"></span>
                                         </div>
-                                        <div>
+                                        <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <div class="flex-1 min-w-0">
                                             <h3 class="block capitalize text-xs text-heading">
                                                 {{ textShortener(variation.name, 15) }}</h3>
                                             <h4 v-if="variation.price > 0"
@@ -135,15 +136,16 @@
                         <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
                             <SwiperSlide v-for="extra in item.extras" :key="extra" class="!w-fit !relative">
                                 <label :for="extra.id + extra.name"
-                                    class="extra w-full h-[52px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
-                                    <div class="custom-checkbox w-3 h-3">
+                                    class="extra w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
+                                    <div class="custom-checkbox w-3 h-3 flex-shrink-0">
                                         <input :id="extra.id + extra.name"
                                             @change.prevent="changeExtra($event, extra.id, extra.name)"
                                             :value="extra.id" type="checkbox" class="custom-checkbox-field">
                                         <i
                                             class="fa-solid fa-check custom-checkbox-icon leading-[9px] text-[9px] rounded-[3px]"></i>
                                     </div>
-                                    <div>
+                                    <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
+                                    <div class="flex-1 min-w-0">
                                         <h3 class="block capitalize mb-1 text-xs text-heading">
                                             {{ textShortener(extra.name, 15) }}</h3>
                                         <h4 class="block text-xs font-medium text-heading">+{{

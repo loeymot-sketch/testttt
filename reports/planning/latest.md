@@ -1,150 +1,176 @@
-> **AI NAVIGATION NOTICE**
-> This file is always the copy of the latest Claude planning document.
-> Source document: plan-009.md
-> Date: 2026-03-10
->
-> **AGENTS MUST READ THIS FILE**, not the numbered plans.
-> The numbered plans (plan-001.md, plan-002.md, etc.) remain available for historical traceability but are not automatically loaded into AI context.
+# PLAN KIMI — FIX PERMANENT Menu Vide POS
+**Émetteur :** Claude (Architecte)  
+**Destinataire :** KIMI (Builder)  
+**Date :** 12 Mars 2026  
+**Source :** Audit profond `database/seeders/MenuSeeder.php` + `app/Services/ItemService.php`
 
 ---
 
-# Plan 009 — Sprint 6 : Fix Définitif T05/T06 (faviconLogo + group seeding)
+## 🔴 DIAGNOSTIC ROOT CAUSE (Claude Certifié)
 
-## Date
-2026-03-10
+**Bug :** Le menu POS est vide à chaque fois que le Seeder est exécuté.
 
-## Auteur
-Claude (Lead Architect & Planning Agent)
+**Pourquoi :** `MenuSeeder.php` utilise le bon config pour les **catégories** seulement (L320). Pour les 14 autres entités — Items, Attributs, Extras, Variations — il hardcode `'status' => 1`. Or `Status::ACTIVE = 5`. Donc dès qu'un seed est relancé, tous les items tombent à status=1 et `ItemService::simpleList()` ne les retourne plus.
 
-## Contexte
-Score actuel : **16/18**. Les 2 tests restants (T05 et T06) crashent avec `Attempt to read property "faviconLogo" on null`.
-
-## Analyse Root Cause (Claude)
-
-Après audit complet de la chaîne d'exécution, deux causes racines distinctes ont été identifiées :
-
-### Cause 1 — Seeding sans `group` (Root Cause Principale)
-
-Le package `smartisan/laravel-settings` filtre **obligatoirement** par la colonne `group` dans toutes ses requêtes SQL (voir `DatabaseRepository.php` ligne 154 : `->where('group', $group)`).
-
-Notre `TestCase::seedMinimalSettings()` insère toutes les rows avec `group = null`. Cela signifie que :
-- `Settings::group('theme')->all()` retourne un tableau vide
-- `Settings::group('company')->all()` retourne un tableau vide
-- `Settings::group('order_setup')->all()` retourne un tableau vide
-- etc.
-
-Quand `SettingResource::toArray()` accède à `$this->info['company_name']` (ligne 29), si le tableau est vide, PHP lève une `ErrorException: Undefined array key "company_name"`. Cette exception, non catchée dans le `Handler.php` (qui ne gère pas `ErrorException`), remonte jusqu'au `parent::render()` de Laravel qui peut rendre une vue HTML — et cette vue HTML peut contenir `$faviconLogo->faviconLogo` sans null-safe.
-
-**Fix requis** : Ajouter la colonne `group` correcte à chaque row dans `TestCase::seedMinimalSettings()`.
-
-### Cause 2 — Blade views non null-safe (Bug de Production)
-
-Les 3 Blade views suivantes accèdent à `$faviconLogo->faviconLogo` sans opérateur null-safe :
-- `resources/views/payment.blade.php` ligne 10
-- `resources/views/paymentSuccess.blade.php` ligne 8
-- `resources/views/paymentGateways/cashfree/cashfreeJs.blade.php` ligne 10
-
-`PaymentController` passe maintenant `(object)['faviconLogo' => ...]` donc ces vues sont protégées en pratique, mais si jamais `$faviconLogo` est `null` (ex: erreur en amont), le crash se produit. Ce sont des bugs de production latents.
-
-**Fix requis** : Utiliser `$faviconLogo?->faviconLogo ?? ''` dans ces 3 vues.
-
-### Cause 3 — SettingResource accès direct sans null-coalescing (Bug de Production)
-
-`SettingResource::toArray()` accède directement à `$this->info['company_name']`, `$this->info['company_email']`, etc. sans `?? null` ou `?? ''`. Si le tableau est vide (groupe non trouvé), PHP lève une `ErrorException`.
-
-**Fix requis** : Ajouter `?? null` à chaque accès de tableau dans `SettingResource::toArray()`.
-
----
-
-## Tâches pour Kimi
-
-### Task 1 — Fix `TestCase::seedMinimalSettings()` : ajouter la colonne `group`
-
-**Fichier** : `tests/TestCase.php`
-
-**Changement** : Dans la méthode `seedMinimalSettings()`, ajouter la colonne `'group'` à chaque row insérée avec la valeur correcte correspondant au groupe `smartisan/settings` attendu.
-
-Mapping des groupes :
-- `site_title`, `favicon_logo`, `site_logo`, `site_copyright` → `group = 'site'`
-- `currency`, `currency_symbol` → `group = 'site'`
-- `order_prefix`, `order_setup_food_preparation_time`, `order_setup_takeaway`, `order_setup_delivery` → `group = 'order_setup'`
-- `company_name`, `company_email`, `company_phone` → `group = 'company'`
-- `theme_favicon_logo`, `theme_logo`, `theme_footer_logo` → `group = 'theme'`
-
-**Avant** (exemple pour theme_favicon_logo) :
-```php
-['key' => 'theme_favicon_logo', 'payload' => json_encode(null), 'created_at' => now(), 'updated_at' => now()],
+```
+MenuSeeder.php       →  items créés avec status=1   ← BUG SOURCE
+ItemService           →  filtre pas status (pass-through)
+POS Frontend (Vue)  →  demande items avec status=5 (ACTIVE)
+Résultat            →  0 items retournés → menu vide
 ```
 
-**Après** :
+---
+
+## 🔧 PLAN D'ACTION KIMI — 3 Étapes
+
+### Étape 1 — Ajouter `use App\Enums\Status;` en tête de fichier
+
+**Fichier :** `database/seeders/MenuSeeder.php`  
+**Ligne 14** (après les autres `use` statements) :
+
 ```php
-['key' => 'theme_favicon_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
+// AVANT : pas de use Status
+use App\Models\ItemAddon;
+
+// APRÈS : ajouter
+use App\Models\ItemAddon;
+use App\Enums\Status;  // ← AJOUTER ICI
 ```
 
-Kimi doit vérifier les groupes réels en lisant `database/seeders/ThemeTableSeeder.php`, `database/seeders/CompanyTableSeeder.php`, `database/seeders/SiteTableSeeder.php`, `database/seeders/OrderSetupTableSeeder.php` pour confirmer les noms de groupes exacts utilisés en production.
+---
 
-### Task 2 — Fix Blade views : null-safe sur `$faviconLogo`
+### Étape 2 — Remplacer TOUTES les occurrences de `'status' => 1` par `'status' => Status::ACTIVE`
 
-**Fichiers** :
-- `resources/views/payment.blade.php`
-- `resources/views/paymentSuccess.blade.php`
-- `resources/views/paymentGateways/cashfree/cashfreeJs.blade.php`
+**Lignes à modifier : L338, L339, L340, L341, L342, L343, L370, L424, L524, L546, L564, L594, L607, L627, L637**
 
-**Changement** : Remplacer `{{ $faviconLogo->faviconLogo }}` par `{{ $faviconLogo?->faviconLogo ?? '' }}` dans chaque fichier.
-
-Note : En Blade PHP, `?->` est supporté depuis PHP 8. Vérifier que le projet utilise PHP 8+.
-
-### Task 3 — Fix `SettingResource::toArray()` : null-coalescing sur les accès tableau
-
-**Fichier** : `app/Http/Resources/SettingResource.php`
-
-**Changement** : Ajouter `?? null` à chaque accès `$this->info['key']` pour éviter les `ErrorException: Undefined array key` si un groupe de settings est absent en test.
-
-**Exemple** :
-```php
-// Avant
-'company_name' => $this->info['company_name'],
-
-// Après
-'company_name' => $this->info['company_name'] ?? null,
+Commande grep pour localiser :
+```bash
+grep -n "'status' => 1" database/seeders/MenuSeeder.php
 ```
 
-Appliquer ce pattern à **toutes** les clés de `$this->info[...]` dans `toArray()`.
+**Remplacement global :**
+```bash
+# NE PAS UTILISER sed car il écrase toutes les occurrences
+# Corriger manuellement chaque 'status' => 1
+# en 'status' => Status::ACTIVE
+```
+
+**Exemple de correction :**
+```php
+// AVANT (L338-343) — createAttributes()
+$this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => 1]);
+$this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => 1]);
+$this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => 1]);
+$this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => 1]);
+$this->attrSauce   = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => 1]);
+$this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => 1]);
+
+// APRÈS
+$this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => Status::ACTIVE]);
+$this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => Status::ACTIVE]);
+$this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => Status::ACTIVE]);
+$this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => Status::ACTIVE]);
+$this->attrSauce   = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => Status::ACTIVE]);
+$this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => Status::ACTIVE]);
+```
+
+> ⚠️ IMPORTANT KIMI : Ne pas modifier `'status' => $this->config['settings']['status_active']` (L320). C'est déjà correct.
 
 ---
 
-## Ordre d'exécution recommandé
+### Étape 3 — Mettre à jour `config/menu.php` pour que `status_active` soit cohérent
 
-1. **Task 1 en premier** (fix seeding) — c'est la root cause principale
-2. **Task 3** (fix SettingResource) — défense en profondeur si le seeding est incomplet
-3. **Task 2** (fix Blade views) — bug de production latent, moins urgent pour les tests
+**Fichier :** `config/menu.php`
+
+```bash
+# Vérifier la valeur actuelle
+grep -n "status_active" config/menu.php
+```
+
+**Si la valeur est 1, la corriger à 5 :**
+```php
+// AVANT
+'settings' => [
+    'status_active' => 1,   // ← FAUX
+    ...
+]
+
+// APRÈS
+'settings' => [
+    'status_active' => \App\Enums\Status::ACTIVE,  // = 5
+    ...
+]
+```
 
 ---
 
-## Risques
+## ✅ TESTS OBLIGATOIRES KIMI
 
-- **Task 1** : Risque faible. Ajouter `group` au seeding ne casse rien. Si les noms de groupes sont incorrects, les settings ne seront toujours pas trouvés — mais l'erreur sera différente (plus de crash, juste des valeurs null).
-- **Task 3** : Risque faible. Ajouter `?? null` ne change pas le comportement en production (les clés existent toujours en prod). Cela rend le code plus défensif en test.
-- **Task 2** : Risque nul. Les Blade views ne sont pas appelées par les tests T05/T06.
+### Test 1 — Vérifier le Seeder corrigé
+```bash
+# Relancer le seeder (le seeder purge et re-crée)
+php artisan db:seed --class=MenuSeeder
+
+# Vérifier le compte des items ACTIFS (doit retourner 53+)
+php artisan tinker --execute="\App\Models\Item::where('status', 5)->count();"
+# ATTENDU: > 0 (53 minimum)
+
+# Vérifier aussi les attributs
+php artisan tinker --execute="\App\Models\ItemAttribute::where('status', 5)->count();"
+# ATTENDU: > 0
+```
+
+### Test 2 — Vérifier l'API POS sans token
+```bash
+php artisan tinker --execute="
+\$admin = \App\Models\User::first();
+\$token = auth()->login(\$admin);
+echo 'Admin ID: ' . \$admin->id . PHP_EOL;
+echo 'Item count (status=5): ' . \App\Models\Item::where('status', 5)->count() . PHP_EOL;
+echo 'Item count (status=1): ' . \App\Models\Item::where('status', 1)->count() . ' (doit être 0)' . PHP_EOL;
+"
+```
+
+### Test 3 — Vérifier que le Seeder est idempotent
+```bash
+# Deuxième run du seeder (ne doit pas re-créer si français existe)
+php artisan db:seed --class=MenuSeeder
+# ATTENDU: "✅ French menu already exists and is valid. Skipping..."
+```
 
 ---
 
-## Tests suggérés
+## 📄 Protocole de Retour KIMI → Claude
 
-Après implémentation, Anti-Gravity doit :
-1. Relancer la suite complète `AntiGravityTest`
-2. Vérifier que T05 retourne 401 ou 403 (pas 500)
-3. Vérifier que T06 retourne 200 ou 201 (pas 500)
-4. Confirmer que les 16 tests déjà verts restent verts
+Écrire dans `reports/execution/latest.md` :
 
----
+```markdown
+# FIX Menu Vide POS — Exécution KIMI
 
-## Fichiers à modifier
+## Lignes corrigées dans MenuSeeder.php
+- [ ] use App\Enums\Status; ajouté (ligne X)
+- [ ] status => 1 → Status::ACTIVE sur L338 (attrViande1)
+- [ ] status => 1 → Status::ACTIVE sur L339 (attrViande2)
+- [ ] status => 1 → Status::ACTIVE sur L340 (attrViande3)
+- [ ] status => 1 → Status::ACTIVE sur L341 (attrViande4)
+- [ ] status => 1 → Status::ACTIVE sur L342 (attrSauce)
+- [ ] status => 1 → Status::ACTIVE sur L343 (attrCrudite)
+- [ ] status => 1 → Status::ACTIVE sur L370 (createAddons)
+- [ ] status => 1 → Status::ACTIVE sur L424 (createItems)
+- [ ] status => 1 → Status::ACTIVE sur L524 (variation)
+- [ ] status => 1 → Status::ACTIVE sur L546 (variation)
+- [ ] status => 1 → Status::ACTIVE sur L564 (variation)
+- [ ] status => 1 → Status::ACTIVE sur L594 (extras)
+- [ ] status => 1 → Status::ACTIVE sur L607 (extras)
+- [ ] status => 1 → Status::ACTIVE sur L627 (extras)
+- [ ] status => 1 → Status::ACTIVE sur L637 (extras)
 
-| Fichier | Type de changement |
-|---|---|
-| `tests/TestCase.php` | Ajouter colonne `group` au seeding |
-| `app/Http/Resources/SettingResource.php` | Null-coalescing sur accès tableau |
-| `resources/views/payment.blade.php` | Null-safe sur `$faviconLogo` |
-| `resources/views/paymentSuccess.blade.php` | Null-safe sur `$faviconLogo` |
-| `resources/views/paymentGateways/cashfree/cashfreeJs.blade.php` | Null-safe sur `$faviconLogo` |
+## config/menu.php
+- [ ] status_active = 5 (ou Status::ACTIVE) confirmé
+
+## Tests
+- [ ] Seeder relancé → résultat console
+- [ ] Item::where('status', 5)->count() → XXX items
+- [ ] Item::where('status', 1)->count() → 0 items
+- [ ] Deuxième run seeder → "Skipping..."
+```

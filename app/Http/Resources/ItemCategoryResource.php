@@ -16,13 +16,15 @@ class ItemCategoryResource extends JsonResource
     public function toArray($request) : array
     {
         return [
-            'id'          => $this->id,
-            'name'        => $this->name,
-            'slug'        => $this->slug,
-            'description' => $this->description === null ? '' : $this->description,
-            'status'      => $this->status,
-            'thumb'       => $this->thumb,
-            'cover'       => $this->cover
+            'id'              => $this->id,
+            'name'            => $this->name,
+            'slug'            => $this->slug,
+            'description'     => $this->description === null ? '' : $this->description,
+            'status'          => $this->status,
+            'thumb'           => $this->thumb,
+            'cover'           => $this->cover,
+            'wizard_template' => $this->wizard_template ?? 'simple',
+            'has_menu'        => (bool)($this->has_menu ?? false),
         ];
     }
 }

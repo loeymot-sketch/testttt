@@ -148,11 +148,24 @@ export default {
                 this.$store.dispatch('login', this.form).then((res) => {
                     this.loading.isActive = false;
                     alertService.success(res.data.message);
+
+                    // [LOGIN-02] Redirection intelligente selon le profil
+                    const defaultPermission = res.data?.defaultPermission;
+                    const defaultMenu = res.data?.defaultMenu;
+
                     if (this.carts.length > 0) {
                         router.push({ name: "frontend.checkout" });
+                    } else if (defaultPermission?.url) {
+                        // Staff : redirection vers leur espace de travail
+                        router.push('/admin/' + defaultPermission.url);
+                    } else if (defaultMenu?.url) {
+                        // Fallback sur le menu par défaut
+                        router.push('/admin/' + defaultMenu.url);
                     } else {
+                        // Client ou fallback : home
                         router.push({ name: "frontend.home" });
                     }
+
                     setTimeout(() => {
                         appService.recursiveRouter(routes, this.permission);
                     }, 1000);

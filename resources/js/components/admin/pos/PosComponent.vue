@@ -49,8 +49,8 @@
 
 
     <div id="pos-cart"
-        class="db-pos-cartDiv fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[85px] ltr:md:right-5 rtl:md:left-5 md:w-[322px] lg:w-[305px] xl:w-[360px] md:h-[calc(100dvh-85px)] md:rounded-lg overflow-y-auto thin-scrolling bg-white">
-        <div class="p-4">
+        class="db-pos-cartDiv fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[85px] ltr:md:right-5 rtl:md:left-5 md:w-[322px] lg:w-[305px] xl:w-[360px] md:h-[calc(100dvh-85px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
+        <div class="p-4 flex-shrink-0">
             <div class="md:hidden text-right mb-3">
                 <button class="db-pos-cartCls" @click="closeCanvas('pos-cart')">
                     <i class="lab-close-circle-line font-fill-danger lab-font-size-24"></i>
@@ -70,9 +70,9 @@
                     <i class="fa-solid fa-circle-plus text-white"></i>
                 </div>
             </div>
-            <input v-on:keypress="onlyNumber($event)"
+            <input
                 class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9] mb-3"
-                type="number" id="token" v-model="checkoutProps.form.token" :placeholder="$t('label.token_no')" />
+                type="text" id="token" v-model="checkoutProps.form.token" :placeholder="$t('label.token_no')" />
 
             <div class="p-3 pt-2 rounded-lg border border-[#D9DBE9]">
                 <h4 class="text-sm font-medium mb-3">{{ $t('label.select_order_type') }}</h4>
@@ -175,7 +175,7 @@
 
 
         </div>
-        <div class="max-h-[calc(100dvh_-_550px)] md:max-h-[calc(100dvh_-_600px)] h-auto thin-scrolling">
+        <div class="flex-1 min-h-0 overflow-y-auto thin-scrolling border-t border-[#EFF0F6]">
 
         <table class="w-full">
             <thead class="bg-[#FFEDF4]">
@@ -200,14 +200,17 @@
                         </button>
                     </td>
                     <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
-                        <p v-if="Object.keys(cart.item_variations.variations).length !== 0">
+                        <div class="flex gap-2 items-start">
+                            <img v-if="cart.image" :src="cart.image" class="w-10 h-10 rounded-md object-cover flex-shrink-0" />
+                            <div>
+                                <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
+                                <p v-if="Object.keys(cart.item_variations.variations).length !== 0">
                             <span v-for="(variation, variationName, index) in cart.item_variations.names">
-                                <span class="capitalize text-[10px] leading-4 font-rubik text-heading">{{
+                                <span class="capitalize text-xs leading-4 font-rubik text-heading">{{
                                     variationName
                                     }}:
                                     &nbsp;</span>
-                                <span class="capitalize text-[10px] leading-4 font-rubik">{{ variation }}
+                                <span class="capitalize text-xs leading-4 font-rubik">{{ variation }}
                                     <span v-if="index + 1 < Object.keys(cart.item_variations.names).length">,
                                         &nbsp;</span>
                                 </span>
@@ -215,10 +218,10 @@
                         </p>
                         <ul v-if="cart.item_extras.extras.length > 0 || cart.instruction !== ''">
                             <li v-if="cart.item_extras.extras.length > 0" class="leading-4">
-                                <span class="capitalize text-[10px] leading-4 font-rubik text-heading">
+                                <span class="capitalize text-xs leading-4 font-rubik text-heading">
                                     {{ $t('label.extras') }}:
                                 </span>
-                                <p class="capitalize text-[10px] leading-4 font-rubik">
+                                <p class="capitalize text-xs leading-4 font-rubik">
                                     <span v-for="(extra, index) in cart.item_extras.names">
                                         {{ extra }}
                                         <span v-if="index + 1 < cart.item_extras.extras.length">, &nbsp;</span>
@@ -226,14 +229,16 @@
                                 </p>
                             </li>
                             <li v-if="cart.instruction !== ''" class="leading-4">
-                                <span class="capitalize text-[10px] leading-4 font-rubik text-heading">
+                                <span class="capitalize text-xs leading-4 font-rubik text-heading">
                                     {{ $t('label.instruction') }}:
                                 </span>
-                                <span class="capitalize text-[10px] leading-4 font-rubik">
+                                <span class="capitalize text-xs leading-4 font-rubik">
                                     {{ cart.instruction }}
                                 </span>
                             </li>
                         </ul>
+                            </div>
+                        </div>
                     </td>
                     <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
                         <div class="flex items-center indec-group">
@@ -257,7 +262,7 @@
             </tbody>
         </table>
         </div>
-        <div class="p-4">
+        <div class="p-4 flex-shrink-0 bg-white border-t border-[#EFF0F6] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <div class="flex h-[38px]" v-if="carts.length > 0">
                 <div class="dropdown-group">
                     <button
@@ -316,11 +321,11 @@
                             setting.site_currency_position)
                     }}</span>
                 </li>
-                <li class="flex items-center justify-between">
-                    <span class="text-sm font-medium font-rubik capitalize leading-6 text-[#2E2F38]">
+                <li class="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
+                    <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
                         {{ $t("label.total") }}
                     </span>
-                    <span class="text-sm font-medium font-rubik capitalize leading-6 text-[#2E2F38]">
+                    <span class="text-base font-bold font-rubik leading-6 text-primary">
                         {{
                             currencyFormat((subtotal + checkoutProps.form.delivery_charge) - posDiscount,
                                 setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,

@@ -27,6 +27,17 @@ Toute modification d'une surface métier exige que vous lanciez d'abord `php art
 - Ne modifiez JAMAIS une migration existante déjà jouée. Créez une nouvelle migration (`php artisan make:migration add_xyz_to_table`).
 - Conservez les Foreign Keys rigoureuses existantes dans le SQLite de test. (Le test fail si un `user_id` est manquant sur un Order, respectez cela).
 
+### D. Commandes bloquantes en sandbox (Anti-Gravity, agents)
+En environnement sandbox, **ne pas exécuter** :
+- `cat .env` ou `grep APP_ENV .env` — accès restreint aux fichiers ignorés
+- `php artisan db:seed --class=MenuSeeder` — connexion MySQL bloquée
+
+**À la place :**
+- Pour valider le MenuSeeder : `php artisan test --filter=MenuSeederTest` (SQLite in-memory)
+- Pour la structure .env : `cat .env.example | grep APP_ENV`
+
+Voir `reports/antigravity/AUDIT_BLOCAGE_COMMANDES_20260312.md` pour le détail.
+
 ## 3. Style & Conventions (Standard Laravel)
 
 - **Controllers** : Fins (Gèrent la Request JSOn, la Response, l'Auth HTTP).

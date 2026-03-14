@@ -23,6 +23,11 @@ class NormalItemResource extends JsonResource
             "id" => $this->id,
             "name" => $this->name,
             "category_name" => optional($this->category)->name,
+            // [PLAN_12 ARCH-02] Config wizard depuis la catégorie
+            "wizard_template" => optional($this->category)->wizard_template ?? 'simple',
+            "has_menu" => optional($this->category)->has_menu ?? false,
+            "default_menu_kiosk" => optional($this->category)->default_menu_kiosk ?? false,
+            "sauce_included_menu" => optional($this->category)->sauce_included_menu ?? false,
             "slug" => $this->slug,
             "flat_price" => AppLibrary::flatAmountFormat($this->price),
             "convert_price" => AppLibrary::convertAmountFormat($this->price),

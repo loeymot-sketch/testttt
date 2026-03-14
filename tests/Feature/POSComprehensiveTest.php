@@ -49,9 +49,9 @@ class POSComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
+        // [PLAN_05 FIX] Retirer branch_id (colonne inexistante sur items)
         $item = \Database\Factories\ItemFactory::new()->create([
-            'branch_id' => $branch->id,
-            'category_id' => $category->id,
+            'item_category_id' => $category->id,
             'price' => 10.00,
         ]);
         
@@ -199,9 +199,10 @@ class POSComprehensiveTest extends TestCase
         
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/pos-order/export');
+            ->get('/api/admin/pos-order/export');
         
-        $this->assertTrue(in_array($response->status(), [200, 404]));
+        // [PLAN_05 FIX] BinaryFileResponse n'a pas de méthode status()
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 404]));
     }
 
     /**

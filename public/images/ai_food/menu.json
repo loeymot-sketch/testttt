@@ -1,0 +1,164 @@
+{
+  "categories": [
+    {
+      "name": "Menus tacos",
+      "items": [
+        {
+          "name": "Menu Tacos Viande",
+          "price": "9,50 €",
+          "description": "Tacos avec viande au choix, frites, sauce et boisson"
+        },
+        {
+          "name": "Menu Tacos Poulet",
+          "price": "9,50 €",
+          "description": "Tacos avec poulet croustillant, frites, sauce et boisson"
+        },
+        {
+          "name": "Menu Tacos Mixte",
+          "price": "10,50 €",
+          "description": "Tacos avec viande et poulet, frites, sauce et boisson"
+        }
+      ]
+    },
+    {
+      "name": "Tacos",
+      "items": [
+        {
+          "name": "Tacos Simple Viande",
+          "price": "6,50 €",
+          "description": "Tacos avec viande au choix, frites et sauce"
+        },
+        {
+          "name": "Tacos Simple Poulet",
+          "price": "6,50 €",
+          "description": "Tacos avec poulet croustillant, frites et sauce"
+        },
+        {
+          "name": "Tacos Double Viande",
+          "price": "8,50 €",
+          "description": "Tacos avec double portion de viande, frites et sauce"
+        },
+        {
+          "name": "Tacos Double Poulet",
+          "price": "8,50 €",
+          "description": "Tacos avec double portion de poulet, frites et sauce"
+        },
+        {
+          "name": "Tacos Mixte",
+          "price": "8,50 €",
+          "description": "Tacos avec viande et poulet, frites et sauce"
+        }
+      ]
+    },
+    {
+      "name": "Menus sandwichs",
+      "items": [
+        {
+          "name": "Menu Sandwich Kebab",
+          "price": "8,50 €",
+          "description": "Sandwich kebab avec viande, légumes, sauce et boisson"
+        },
+        {
+          "name": "Menu Sandwich Poulet",
+          "price": "8,50 €",
+          "description": "Sandwich avec poulet, légumes, sauce et boisson"
+        }
+      ]
+    },
+    {
+      "name": "Sandwichs",
+      "items": [
+        {
+          "name": "Sandwich Kebab",
+          "price": "5,50 €",
+          "description": "Sandwich avec viande kebab, salade, tomates, oignons et sauce"
+        },
+        {
+          "name": "Sandwich Poulet",
+          "price": "5,50 €",
+          "description": "Sandwich avec poulet, salade, tomates, oignons et sauce"
+        },
+        {
+          "name": "Sandwich Royal",
+          "price": "6,50 €",
+          "description": "Sandwich avec viande kebab, fromage, salade, tomates, oignons et sauce"
+        }
+      ]
+    },
+    {
+      "name": "Paninis",
+      "items": [
+        {
+          "name": "Panini Fromage",
+          "price": "5,00 €",
+          "description": "Panini avec fromage fondu"
+        },
+        {
+          "name": "Panini Jambon Fromage",
+          "price": "5,50 €",
+          "description": "Panini avec jambon et fromage fondu"
+        },
+        {
+          "name": "Panini Kebab",
+          "price": "6,00 €",
+          "description": "Panini avec viande kebab et fromage fondu"
+        },
+        {
+          "name": "Panini Poulet",
+          "price": "6,00 €",
+          "description": "Panini avec poulet et fromage fondu"
+        }
+      ]
+    },
+    {
+      "name": "Desserts",
+      "items": [
+        {
+          "name": "Tiramisu",
+          "price": "3,50 €",
+          "description": "Dessert italien à base de mascarpone et biscuits"
+        },
+        {
+          "name": "Mousse au Chocolat",
+          "price": "3,50 €",
+          "description": "Mousse au chocolat onctueuse"
+        },
+        {
+          "name": "Tarte aux Pommes",
+          "price": "3,50 €",
+          "description": "Tarte aux pommes maison"
+        }
+      ]
+    },
+    {
+      "name": "Boissons",
+      "items": [
+        {
+          "name": "Coca-Cola",
+          "price": "2,00 €",
+          "description": "Canette 33cl"
+        },
+        {
+          "name": "Fanta",
+          "price": "2,00 €",
+          "description": "Canette 33cl"
+        },
+        {
+          "name": "Sprite",
+          "price": "2,00 €",
+          "description": "Canette 33cl"
+        },
+        {
+          "name": "Eau Minérale",
+          "price": "1,50 €",
+          "description": "Bouteille 50cl"
+        }
+      ]
+    }
+  ],
+  "contact": {
+    "address": "Saint-Quentin-en-Yvelines",
+    "phone": "01 23 45 67 89",
+    "uber_eats": "https://www.ubereats.com/fr/store/le-roi-tacos-saint-quentin-en-yvelines/e4r1pWIxQ_uAHKRUpUC5ig"
+  }
+}

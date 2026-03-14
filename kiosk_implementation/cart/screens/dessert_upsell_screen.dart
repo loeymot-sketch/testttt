@@ -160,13 +160,14 @@ class _DessertUpsellScreenState extends State<DessertUpsellScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 40.w),
                         child: Column(
                           children: [
-                            // Title with cake emoji
+                            // Title with cake icon
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  '🍰',
-                                  style: TextStyle(fontSize: 48.sp),
+                                Icon(
+                                  Icons.cake,
+                                  size: 48.sp,
+                                  color: AppColors.primaryColor,
                                 ),
                                 SizedBox(width: 16.w),
                                 Text(

@@ -39,10 +39,7 @@ class ForgotPasswordController extends Controller
                 $verify->delete();
             }
 
-            $this->pin = rand(
-                pow(10, (int)Settings::group('otp')->get('otp_digit_limit') - 1),
-                pow(10, (int)Settings::group('otp')->get('otp_digit_limit')) - 1
-            );
+            $this->pin = random_int(100000, 999999);
 
             $password_reset = DB::table('password_resets')->insert([
                 'email'      => $request->post('email'),

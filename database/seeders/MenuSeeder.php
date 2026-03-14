@@ -12,6 +12,7 @@ use App\Models\ItemAttribute;
 use App\Models\ItemVariation;
 use App\Models\ItemExtra;
 use App\Models\ItemAddon;
+use App\Enums\Status;
 
 /**
  * ============================================================================
@@ -62,6 +63,7 @@ class MenuSeeder extends Seeder
     protected ?ItemAttribute $attrViande4 = null;
     protected ?ItemAttribute $attrSauce = null;
     protected ?ItemAttribute $attrCrudite = null;
+    protected ?ItemAttribute $attrPain = null;  // [UI/UX Sprint 4] Type de Pain pour Sandwichs
 
     /**
      * Run the database seeds.
@@ -274,33 +276,60 @@ class MenuSeeder extends Seeder
 
     /**
      * Purge all existing menu-related data
+     * [AUDIT FIX] SQLite-compatible for sandbox/CI (no MySQL required)
      */
     protected function purgeExistingData(): void
     {
         echo "\nPurging existing menu data...\n";
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // [BUG-WIZ FIX] Purge Spatie Media models first since truncate() bypasses Eloquent events
+        try {
+            \Spatie\MediaLibrary\MediaCollections\Models\Media::where('model_type', 'App\Models\Item')
+                ->orWhere('model_type', 'App\Models\ItemCategory')
+                ->delete();
+            echo "  ✓ Purged legacy media from database\n";
+        } catch (\Exception $e) {
+            echo "  ⚠️ Could not purge legacy media\n";
+        }
+
+        $driver = DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
 
         // Delete in correct order to avoid constraint issues
-        DB::table('item_addons')->truncate();
-        echo "  ✓ Truncated item_addons\n";
+        if ($driver === 'sqlite') {
+            DB::table('item_addons')->delete();
+            DB::table('item_extras')->delete();
+            DB::table('item_variations')->delete();
+            DB::table('item_attributes')->delete();
+            DB::table('items')->delete();
+            DB::table('item_categories')->delete();
+            DB::statement("DELETE FROM sqlite_sequence WHERE name IN ('items', 'item_categories', 'item_addons', 'item_extras', 'item_variations', 'item_attributes');");
+        } else {
+            DB::table('item_addons')->truncate();
+            DB::table('item_extras')->truncate();
+            DB::table('item_variations')->truncate();
+            DB::table('item_attributes')->truncate();
+            DB::table('items')->truncate();
+            DB::table('item_categories')->truncate();
+        }
 
-        DB::table('item_extras')->truncate();
-        echo "  ✓ Truncated item_extras\n";
+        echo "  ✓ Purged item_addons\n";
+        echo "  ✓ Purged item_extras\n";
+        echo "  ✓ Purged item_variations\n";
+        echo "  ✓ Purged item_attributes\n";
+        echo "  ✓ Purged items\n";
+        echo "  ✓ Purged item_categories\n";
 
-        DB::table('item_variations')->truncate();
-        echo "  ✓ Truncated item_variations\n";
-
-        DB::table('item_attributes')->truncate();
-        echo "  ✓ Truncated item_attributes\n";
-
-        DB::table('items')->truncate();
-        echo "  ✓ Truncated items\n";
-
-        DB::table('item_categories')->truncate();
-        echo "  ✓ Truncated item_categories\n";
-
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         echo "✓ All menu data purged\n\n";
     }
@@ -335,16 +364,18 @@ class MenuSeeder extends Seeder
     {
         echo "Creating item attributes...\n";
 
-        $this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => 1]);
-        $this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => 1]);
-        $this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => 1]);
-        $this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => 1]);
-        $this->attrSauce = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => 1]);
-        $this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => 1]);
+        $this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => Status::ACTIVE]);
+        $this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => Status::ACTIVE]);
+        $this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => Status::ACTIVE]);
+        $this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => Status::ACTIVE]);
+        $this->attrSauce = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => Status::ACTIVE]);
+        $this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => Status::ACTIVE]);
+        $this->attrPain = ItemAttribute::create(['name' => 'Type de Pain', 'status' => Status::ACTIVE]);  // [UI/UX Sprint 4]
 
         echo "  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4\n";
         echo "  ✓ Created: Sauce (1ère Gratuite)\n";
         echo "  ✓ Created: Garnitures\n";
+        echo "  ✓ Created: Type de Pain\n";  // [UI/UX Sprint 4]
         echo "✓ Attributes created\n\n";
     }
 
@@ -367,10 +398,11 @@ class MenuSeeder extends Seeder
                 'item_category_id' => $addonCategoryId,
                 'price'            => $addon['price'],
                 'description'      => 'Upsell item',
-                'status'           => 1,
+                'status'           => Status::ACTIVE,
                 'tax_id'           => $this->config['settings']['default_tax_id'],
             ]);
 
+            $this->attachItemImage($item, Str::slug($addon['name']), 'addons');
             $this->addonIds[Str::slug($addon['name'])] = $item->id;
             echo "  ✓ Created addon: {$addon['name']} ({$addon['price']}€)\n";
         }
@@ -420,7 +452,7 @@ class MenuSeeder extends Seeder
             'item_category_id' => $categoryId,
             'price'            => $data['price'],
             'description'      => $data['description'] ?? '',
-            'status'           => 1,
+            'status'           => Status::ACTIVE,
             'tax_id'           => $this->config['settings']['default_tax_id'],
         ]);
 
@@ -442,6 +474,11 @@ class MenuSeeder extends Seeder
             $this->attachCruditeVariations($item);
         }
 
+        // [UI/UX Sprint 4] Add bread type variations for sandwichs
+        if ($categorySlug === 'nos-sandwichs') {
+            $this->attachPainVariations($item);
+        }
+
         // Add supplements/extras (for most items except simple ones)
         if (!isset($data['is_frites']) || !$data['is_frites']) {
             $this->attachSupplements($item, $categorySlug); // [BUG-WIZ FIX] Pass categorySlug
@@ -452,7 +489,39 @@ class MenuSeeder extends Seeder
             $this->attachFritesExtras($item);
         }
 
+        // Attach product image from config
+        $this->attachItemImage($item, $item->slug, 'items');
+
         echo "  ✓ {$data['name']} ({$data['price']}€)\n";
+    }
+
+    /**
+     * Attach image to item from config/menu_images.php if file exists
+     *
+     * @param Item $item
+     * @param string $slug
+     * @param string $configKey 'items' or 'addons'
+     */
+    protected function attachItemImage(Item $item, string $slug, string $configKey = 'items'): void
+    {
+        $images = Config::get("menu_images.{$configKey}", []);
+        $basePath = Config::get('menu_images.base_path', 'images/menu');
+        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+
+        $filename = $images[$slug] ?? $defaultFile;
+        $fullPath = public_path("{$basePath}/{$filename}");
+
+        if (!file_exists($fullPath)) {
+            $fullPath = public_path("{$basePath}/{$defaultFile}");
+        }
+
+        if (file_exists($fullPath)) {
+            try {
+                $item->addMedia($fullPath)->preservingOriginal()->toMediaCollection('item');
+            } catch (\Exception $e) {
+                // Silent fail - item will use fallback thumb/cover
+            }
+        }
     }
 
     /**
@@ -488,7 +557,7 @@ class MenuSeeder extends Seeder
                     'item_attribute_id' => $attributes[$i]->id,
                     'name'              => $meat,
                     'price'             => 0.00,
-                    'status'            => 1,
+                    'status'            => Status::ACTIVE,
                 ]);
             }
         }
@@ -510,7 +579,7 @@ class MenuSeeder extends Seeder
                 'item_attribute_id' => $this->attrSauce->id,
                 'name'              => $sauce,
                 'price'             => 0.00,
-                'status'            => 1,
+                'status'            => Status::ACTIVE,
             ]);
         }
     }
@@ -528,7 +597,27 @@ class MenuSeeder extends Seeder
                 'item_attribute_id' => $this->attrCrudite->id,
                 'name'              => $crudite,
                 'price'             => 0.00,
-                'status'            => 1,
+                'status'            => Status::ACTIVE,
+            ]);
+        }
+    }
+
+    /**
+     * Attach bread type variations to an item (Pain/Galette)
+     * [UI/UX Sprint 4] New step for sandwichs
+     *
+     * @param Item $item
+     */
+    protected function attachPainVariations(Item $item): void
+    {
+        $painTypes = ['Pain', 'Galette'];
+        foreach ($painTypes as $painType) {
+            ItemVariation::create([
+                'item_id'           => $item->id,
+                'item_attribute_id' => $this->attrPain->id,
+                'name'              => $painType,
+                'price'             => 0.00,
+                'status'            => Status::ACTIVE,
             ]);
         }
     }
@@ -558,7 +647,7 @@ class MenuSeeder extends Seeder
                     'item_id' => $item->id,
                     'name'    => $name,
                     'price'   => $price,
-                    'status'  => 1,
+                    'status'  => Status::ACTIVE,
                 ]);
             }
         }
@@ -571,7 +660,7 @@ class MenuSeeder extends Seeder
                         'item_id' => $item->id,
                         'name'    => "Sauce supplémentaire: {$sauce}",
                         'price'   => $this->config['supplement_sauce_price'],
-                        'status'  => 1,
+                        'status'  => Status::ACTIVE,
                     ]);
                 }
             }
@@ -591,7 +680,7 @@ class MenuSeeder extends Seeder
                 'item_id' => $item->id,
                 'name'    => "Sauce {$sauce}",
                 'price'   => $this->config['supplement_sauce_price'],
-                'status'  => 1,
+                'status'  => Status::ACTIVE,
             ]);
         }
 
@@ -601,7 +690,7 @@ class MenuSeeder extends Seeder
             'item_id' => $item->id,
             'name'    => 'Cheddar fondu',
             'price'   => $cheddarPrice,
-            'status'  => 1,
+            'status'  => Status::ACTIVE,
         ]);
     }
 

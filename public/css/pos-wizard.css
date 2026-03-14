@@ -164,23 +164,45 @@
 /* -- Step Container -- */
 .wizard-step {
     display: none;
-    animation: wizardFadeIn 0.3s ease;
+    animation: wizardSlideIn 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .wizard-step.active {
     display: block;
 }
 
-@keyframes wizardFadeIn {
+/* Forward navigation: slide from right */
+@keyframes wizardSlideIn {
     from {
         opacity: 0;
-        transform: translateX(20px);
+        transform: translateX(28px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
     }
+}
+
+/* Back navigation: slide from left */
+.wizard-step.active.slide-back {
+    animation: wizardSlideBack 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes wizardSlideBack {
+    from {
+        opacity: 0;
+        transform: translateX(-28px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Legacy alias */
+@keyframes wizardFadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 /* -- Step Header -- */
@@ -451,6 +473,82 @@
     height: 100%;
     object-fit: contain;
     border-radius: 6px;
+}
+
+/* Images produits (sauces, suppléments, etc.) */
+.wizard-option .option-img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* [UI/UX Sprint 4] Micro icons for sauces/garnitures - compact mode */
+.wizard-option .option-img-micro {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.wizard-option .option-icon-micro {
+    font-size: 16px;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.wizard-option.micro-opt {
+    padding: 6px 8px;
+    font-size: 11px;
+    min-height: 30px;
+}
+
+.wizard-option.micro-opt .option-name {
+    font-size: 10px;
+}
+
+.wizard-option.micro-opt .option-price {
+    font-size: 9px;
+}
+
+/* Hidden options for "Voir Plus" collapse */
+.wizard-option.hidden-opt,
+.wizard-viande-row.hidden-opt {
+    display: none !important;
+}
+
+.wizard-options.expanded .wizard-option.hidden-opt {
+    display: flex;
+}
+
+.wizard-viande-list.expanded .wizard-viande-row.hidden-opt {
+    display: flex !important;
+}
+
+.btn-voir-plus {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: #F5F5FA;
+    border: 1px dashed #D0D0E0;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6E6E8A;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.btn-voir-plus:hover {
+    background: #EBEBF5;
+    border-color: #B0B0C8;
+    color: #1B1B3A;
 }
 
 .wizard-option .check-mark {
@@ -793,6 +891,15 @@
     margin-bottom: 12px;
 }
 
+.menu-card-icon .option-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin: 0 auto 12px;
+    display: block;
+}
+
 .menu-card-name {
     font-size: 14px;
     font-weight: 600;
@@ -937,4 +1044,339 @@
 
 .wizard-option.boisson-opt.selected .option-name {
     color: #E93C3C;
+}
+/* =============================================
+   [UI/UX IMPROVEMENTS — Phase 8]
+   Added: directional animations, selection pulse,
+   enhanced recap, better running total, option card
+   micro-interactions, cashier speed optimizations
+   ============================================= */
+
+/* -- Running Total: animate on price change -- */
+.wizard-running-total {
+    transition: background 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.wizard-running-total .run-total-value {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: inline-block;
+}
+
+.wizard-running-total.price-bump .run-total-value {
+    animation: priceBump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes priceBump {
+    0%   { transform: scale(1); color: #43C6AC; }
+    40%  { transform: scale(1.25); color: #FFE87A; }
+    100% { transform: scale(1); color: #43C6AC; }
+}
+
+/* -- Option Card: selection pulse/ripple effect -- */
+.wizard-option {
+    overflow: hidden;
+    will-change: transform;
+}
+
+.wizard-option::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(233, 60, 60, 0);
+    transition: background 0.15s ease;
+    pointer-events: none;
+}
+
+.wizard-option:active::after {
+    background: rgba(233, 60, 60, 0.08);
+}
+
+.wizard-option.selected {
+    transform: translateY(0px);
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Check icon animation */
+.wizard-option.selected .check-mark {
+    animation: checkPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes checkPop {
+    0%   { transform: scale(0) rotate(-10deg); }
+    70%  { transform: scale(1.2) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* -- Garniture card: toggle deselect animation -- */
+.wizard-option.garniture:not(.selected) .check-mark {
+    background: white;
+    border-color: #D9DBE9;
+    transition: all 0.2s ease;
+}
+
+/* -- Viande row: subtle ring on active -- */
+.wizard-viande-row.active {
+    box-shadow: 0 0 0 2px rgba(233, 60, 60, 0.2);
+}
+
+.wizard-viande-row {
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+/* -- Button: faster feedback on tap/click -- */
+.wizard-btn {
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform, box-shadow;
+}
+
+.wizard-btn:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+.wizard-btn-next:active {
+    box-shadow: 0 2px 8px rgba(233, 60, 60, 0.25) !important;
+}
+
+.wizard-btn-cart:active {
+    box-shadow: 0 2px 8px rgba(67, 198, 172, 0.25) !important;
+}
+
+/* -- Step header: sharper and more visible -- */
+.wizard-step-header h3 {
+    font-size: 18px;
+    letter-spacing: -0.2px;
+}
+
+.wizard-step-header p {
+    font-size: 12.5px;
+    opacity: 0.72;
+}
+
+/* -- Progress bar: smoother step transitions -- */
+.wizard-progress-bar .step-icon {
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.wizard-progress-bar .step-item.done .step-icon {
+    animation: stepDone 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes stepDone {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+.wizard-progress-bar .step-line {
+    transition: background 0.4s ease;
+}
+
+/* -- Recap section: significantly improved legibility -- */
+.wizard-recap {
+    background: linear-gradient(135deg, #FAFAFF, #F6F6FF);
+    border: 1px solid #EFF0F6;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.wizard-recap-row {
+    border-bottom: 1px solid rgba(239, 240, 246, 0.7);
+    padding: 8px 2px;
+    transition: background 0.15s ease;
+}
+
+.wizard-recap-row:last-child {
+    border-bottom: none;
+}
+
+.wizard-recap-row:hover {
+    background: rgba(233, 60, 60, 0.03);
+    border-radius: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.wizard-recap-row .label {
+    font-size: 12px;
+    gap: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.wizard-recap-row .value {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Total row: more prominent */
+.wizard-recap-row.total {
+    background: linear-gradient(135deg, #1B1B3A, #2D2B55);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    color: white;
+}
+
+.wizard-recap-row.total .label {
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+}
+
+.wizard-recap-row.total .value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #43C6AC;
+    letter-spacing: -0.5px;
+}
+
+/* -- Menu choice card: bigger hit area, clearer pricing -- */
+.menu-choice-card {
+    position: relative;
+}
+
+.menu-card-price {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.menu-choice-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 22px;
+    height: 22px;
+    background: #E93C3C;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* -- Frites options: cleaner diff display -- */
+.frites-opt-price.upgrade::before {
+    content: '↑ ';
+}
+
+/* -- Sauce badge: slightly larger for readability -- */
+.sauce-badge {
+    font-size: 12.5px;
+    padding: 6px 18px;
+}
+
+/* -- Instruction textarea: larger input area -- */
+.wizard-instruction textarea {
+    height: 72px;
+    font-size: 13px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wizard-instruction textarea:focus {
+    border-color: #E93C3C;
+    box-shadow: 0 0 0 3px rgba(233, 60, 60, 0.1);
+}
+
+/* -- Quantity buttons: larger tap targets -- */
+.wizard-qty-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    transition: all 0.15s ease;
+}
+
+.wizard-qty-btn:active {
+    transform: scale(0.9);
+    background: #E93C3C;
+    color: white;
+}
+
+/* -- Skip button: more discoverable -- */
+.wizard-btn-skip {
+    color: #A0A0B0;
+    font-size: 12.5px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(160, 160, 176, 0.5);
+}
+
+.wizard-btn-skip:hover {
+    color: #6E6E8A;
+    text-decoration-color: rgba(110, 110, 138, 0.8);
+}
+
+/* -- Nav container: slight lift shadow -- */
+.wizard-nav {
+    background: white;
+    border-radius: 0 0 16px 16px;
+    padding: 16px 0 4px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* -- Viande complete badge: celebratory pulse -- */
+.viande-complete-badge {
+    animation: badgePulse 0.5s ease;
+}
+
+@keyframes badgePulse {
+    0%   { opacity: 0; transform: scale(0.7); }
+    60%  { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Wizard Step Badge (PLAN_07 UX-03) ── */
+.wizard-step-badge {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(233, 60, 60, 0.09);
+    border: 1.5px solid rgba(233, 60, 60, 0.25);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-family: 'Rubik', sans-serif;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.step-badge-current {
+    font-size: 15px;
+    font-weight: 800;
+    color: #E93C3C;
+}
+
+.step-badge-sep {
+    font-size: 11px;
+    color: #C0C0C0;
+    margin: 0 2px;
+}
+
+.step-badge-total {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6E6E8A;
+}
+
+/* -- Responsive: compact mode for smaller modals -- */
+@media (max-height: 700px) {
+    .wizard-options {
+        max-height: 240px;
+    }
+    .wizard-viande-list {
+        max-height: 260px;
+    }
+    .wizard-step-header {
+        margin-bottom: 14px;
+    }
+    .wizard-step-header h3 {
+        font-size: 15px;
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use App\Enums\Status;
+use Illuminate\Support\Facades\Config;
 use Spatie\MediaLibrary\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -50,6 +51,15 @@ class Item extends Model implements HasMedia
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
             return $item->getUrl('thumb');
+        }
+        // Fallback: images depuis config/menu_images.php (améliore visuel POS)
+        $images = Config::get('menu_images.items', []) + Config::get('menu_images.addons', []);
+        $basePath = Config::get('menu_images.base_path', 'images/menu');
+        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $filename = $images[$this->slug] ?? $defaultFile;
+        $fullPath = public_path("{$basePath}/{$filename}");
+        if (file_exists($fullPath)) {
+            return asset("{$basePath}/{$filename}");
         }
         return asset('images/item/thumb.png');
     }

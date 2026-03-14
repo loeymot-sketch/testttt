@@ -22,6 +22,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Images des Catégories (onglets POS)
+    |--------------------------------------------------------------------------
+    | Clé = slug de la catégorie
+    */
+    'categories' => [
+        'nos-tacos'                 => 'tacos.png',
+        'nos-sandwichs'             => 'sandwich_terminator.png',
+        'nos-burgers'               => 'cheeseburger.png',
+        'nos-assiettes'             => 'assiette_poulet.png',
+        'ojja'                      => 'ojja.png',
+        'omelettes'                 => 'omelette.png',
+        'nos-salades'               => 'salade_cesar.png',
+        'chicken-tenders'           => 'chicken_wings.png',
+        'frites-accompagnements'    => 'frites.png',
+        'nos-desserts'              => 'tiramisu.png',
+        'nos-boissons'              => 'coca_cola.png',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Images des Items (produits principaux)
     |--------------------------------------------------------------------------
     | Clé = slug de l'item (Str::slug du nom)

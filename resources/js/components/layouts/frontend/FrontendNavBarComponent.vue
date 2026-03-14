@@ -253,7 +253,7 @@ export default {
                 url: ""
             },
             searchItem: "",
-
+            scrollHandler: null,
         }
     },
     computed: {
@@ -286,7 +286,8 @@ export default {
         }
     },
     mounted() {
-        window.addEventListener('scroll', () => {
+        // [FIX-FRONT-02] Memory leak fix: store handler reference for cleanup
+        this.scrollHandler = () => {
             const resetRoutes = [
                 'frontend.myOrder',
                 'frontend.editProfile',
@@ -312,7 +313,8 @@ export default {
                     this.$refs.ffHeader.classList.remove('active');
                 }
             }
-        });
+        };
+        window.addEventListener('scroll', this.scrollHandler);
 
         this.currentRoute = this.$route.path;
         this.loading.isActive = true;
@@ -393,6 +395,14 @@ export default {
         }).catch((err) => {
             this.loading.isActive = false;
         });
+    },
+
+    beforeUnmount() {
+        // [FIX-FRONT-02] Memory leak fix: remove scroll event listener
+        if (this.scrollHandler) {
+            window.removeEventListener('scroll', this.scrollHandler);
+            this.scrollHandler = null;
+        }
     },
 
     methods: {

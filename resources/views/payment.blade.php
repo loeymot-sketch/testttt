@@ -6,7 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $company['company_name'] }}</title>
+    <!-- [PLAN_04 MA-001] Null-safe company name -->
+    <title>{{ $company['company_name'] ?? config('app.name', 'Restaurant') }}</title>
     <link rel="icon" href="{{ $faviconLogo?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/css/style.css') }}">
     <link rel="stylesheet"

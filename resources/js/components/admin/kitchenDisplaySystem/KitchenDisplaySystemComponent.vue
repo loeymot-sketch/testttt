@@ -37,12 +37,20 @@
                     </span>
                   </p>
                 </span>
-                <span class="flex gap-1" v-if="orderItem.instruction">
-                  <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.instruction') }}:
-                  </h3>
-                  <p class="text-xs font-normal font-client capitalize text-[#6E7191]">{{ orderItem.instruction }}
-                  </p>
-                </span>
+                <!-- [PLAN_06 D-010] Instructions parsées en sections colorées -->
+                <div v-if="orderItem.instruction" class="kds-instruction-parsed mt-1">
+                  <div v-for="(section, key) in parseInstruction(orderItem.instruction)" :key="key"
+                    v-if="section && key !== 'raw'" 
+                    :class="['kds-section', 'kds-' + key]">
+                    <span class="kds-icon">{{ getSectionIcon(key) }}</span>
+                    <span class="kds-label">{{ getSectionLabel(key) }}:</span>
+                    <span class="kds-value">{{ section }}</span>
+                  </div>
+                  <div v-if="parseInstruction(orderItem.instruction).raw" class="kds-section kds-raw">
+                    <span class="kds-icon">📝</span>
+                    <span class="kds-value">{{ parseInstruction(orderItem.instruction).raw }}</span>
+                  </div>
+                </div>
               </div>
               <div
                 class="text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">{{
@@ -233,12 +241,19 @@
                             </span>
                           </p>
                         </li>
-                        <li class="flex gap-1" v-if="item.instruction !== ''">
-                          <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
-                            $t('label.instruction')
-                          }}:</h3>
-                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">{{ item.instruction }}
-                          </p>
+                        <!-- [PLAN_06 D-010] Instructions parsées en sections colorées -->
+                        <li class="kds-instruction-parsed mt-1" v-if="item.instruction && item.instruction !== ''">
+                          <div v-for="(section, key) in parseInstruction(item.instruction)" :key="key"
+                            v-if="section && key !== 'raw'" 
+                            :class="['kds-section', 'kds-' + key]">
+                            <span class="kds-icon">{{ getSectionIcon(key) }}</span>
+                            <span class="kds-label">{{ getSectionLabel(key) }}:</span>
+                            <span class="kds-value">{{ section }}</span>
+                          </div>
+                          <div v-if="parseInstruction(item.instruction).raw" class="kds-section kds-raw">
+                            <span class="kds-icon">📝</span>
+                            <span class="kds-value">{{ parseInstruction(item.instruction).raw }}</span>
+                          </div>
                         </li>
                       </div>
                     </div>
@@ -500,10 +515,75 @@ export default {
     },
     toggleFilter(index) {
       if (this.expandedFilter === index) {
-        this.expandedFilter = null; // Collapse if the same button is clicked
+        this.expandedFilter = null;
       } else {
-        this.expandedFilter = index; // Expand the clicked button
+        this.expandedFilter = index;
       }
+    },
+
+    // [PLAN_06 D-010] Parser l'instruction wizard en sections structurées
+    parseInstruction(instruction) {
+      if (!instruction || typeof instruction !== 'string') {
+        return { raw: null, viandes: null, supplements: null, formule: null, sauces: null, garnitures: null, note: null };
+      }
+
+      const sections = {
+        viandes: null,
+        supplements: null,
+        formule: null,
+        sauces: null,
+        garnitures: null,
+        note: null,
+        raw: null,
+      };
+
+      const patterns = {
+        viandes: /VIANDES?:\s*([^.]+)/i,
+        supplements: /SUPPL[ÉE]MENTS?:\s*([^.]+)/i,
+        formule: /FORMULE:\s*([^.]+)/i,
+        sauces: /SAUCES?:\s*([^.]+)/i,
+        garnitures: /GARNITURES?:\s*([^.]+)/i,
+        note: /NOTE:\s*([^.]+)/i,
+      };
+
+      let hasStructured = false;
+      Object.keys(patterns).forEach(key => {
+        const match = instruction.match(patterns[key]);
+        if (match) {
+          sections[key] = match[1].trim();
+          hasStructured = true;
+        }
+      });
+
+      if (!hasStructured) {
+        sections.raw = instruction;
+      }
+
+      return sections;
+    },
+
+    getSectionIcon(key) {
+      const icons = {
+        viandes: '🥩',
+        supplements: '➕',
+        formule: '🍟',
+        sauces: '🥄',
+        garnitures: '🥬',
+        note: '💬',
+      };
+      return icons[key] || '📋';
+    },
+
+    getSectionLabel(key) {
+      const labels = {
+        viandes: 'Viandes',
+        supplements: 'Suppléments',
+        formule: 'Formule',
+        sauces: 'Sauces',
+        garnitures: 'Garnitures',
+        note: 'Note',
+      };
+      return labels[key] || key;
     },
   },
   beforeUnmount() {
@@ -513,3 +593,81 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* [PLAN_06 D-010] KDS — Sections d'instruction colorées */
+.kds-instruction-parsed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.kds-section {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kds-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.kds-label {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.kds-value {
+  font-weight: 400;
+  flex: 1;
+}
+
+.kds-viandes {
+  background: #FDE8E8;
+  border-left: 3px solid #E74C3C;
+  color: #922B21;
+}
+
+.kds-supplements {
+  background: #FFF3CD;
+  border-left: 3px solid #FFC107;
+  color: #7B6E00;
+}
+
+.kds-formule {
+  background: #D1ECF1;
+  border-left: 3px solid #17A2B8;
+  color: #0C6674;
+}
+
+.kds-sauces {
+  background: #E8F5E9;
+  border-left: 3px solid #4CAF50;
+  color: #2E7D32;
+}
+
+.kds-garnitures {
+  background: #F1F8E9;
+  border-left: 3px solid #8BC34A;
+  color: #33691E;
+}
+
+.kds-note {
+  background: #F5F5F5;
+  border-left: 3px solid #9E9E9E;
+  color: #555;
+  font-style: italic;
+}
+
+.kds-raw {
+  background: #FFF;
+  border-left: 3px solid #CCC;
+  color: #333;
+}
+</style>

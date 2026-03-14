@@ -41,7 +41,19 @@ class KitchenDisplaySystemOrderService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_by') ?? 'desc';
 
-            return Order::with('orderItems')->whereIn('status', [OrderStatus::ACCEPT, OrderStatus::PREPARING, OrderStatus::PREPARED])->where('branch_id', auth()->user()->branch_id)->where(function ($query) {
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            $query = Order::with('orderItems')
+                ->whereIn('status', [OrderStatus::ACCEPT, OrderStatus::PREPARING, OrderStatus::PREPARED]);
+
+            // [FIX BUG-KDS-SYNC] Admin users have branch_id=0 → show all branches.
+            // Branch-specific staff see only their own branch.
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            // [FIX-FRONT-05] Pagination KDS: limiter à 50 commandes actives maximum
+            return $query->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) {
@@ -66,7 +78,9 @@ class KitchenDisplaySystemOrderService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->get();
+            })->orderBy($orderColumn, $orderType)
+            ->limit(50)  // Max 50 commandes actives sur un KDS
+            ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

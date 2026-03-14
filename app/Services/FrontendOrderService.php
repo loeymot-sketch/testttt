@@ -117,15 +117,25 @@ class FrontendOrderService
                 $totalTax = 0;
                 $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                $items = Item::get()->pluck('tax_id', 'id');
+                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                $items = Item::select('id', 'tax_id')
+                    ->whereIn('id', $requestedItemIds)
+                    ->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
 
                 $realSubtotal = 0;
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
-                        // SECURE PRICING HACK FIX
+                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
                         $dbItem = Item::find($item->item_id);
-                        $itemPrice = $dbItem ? $dbItem->price : $item->item_price;
+                        if (!$dbItem) {
+                            throw new \InvalidArgumentException(
+                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                422
+                            );
+                        }
+                        $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
                         $calcVariationTotal = 0;
                         if (!empty($item->item_variations)) {
@@ -294,7 +304,7 @@ class FrontendOrderService
                             app(PaymentService::class)->cashBack(
                                 $frontendOrder,
                                 'credit',
-                                rand(111111111111111, 99999999999999)
+                                'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
                         SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);

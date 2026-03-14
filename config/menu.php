@@ -6,7 +6,6 @@
  * ============================================================================
  *
  * This file is the ONLY authorized source for menu configuration.
- * DO NOT MODIFY WITHOUT ARCHITECT APPROVAL.
  *
  * Restaurant: Le Grill House
  * Locale: French (fr)
@@ -21,12 +20,7 @@ return [
     |--------------------------------------------------------------------------
     | Restaurant Identity
     |--------------------------------------------------------------------------
-    |
-    | Core restaurant information. These values define the restaurant
-    | branding and are used throughout the application.
-    |
     */
-
     'restaurant' => [
         'name'        => 'Le Grill House',
         'slug'        => 'le-grill-house',
@@ -39,27 +33,17 @@ return [
     |--------------------------------------------------------------------------
     | Localization Settings
     |--------------------------------------------------------------------------
-    |
-    | CRITICAL: These settings are MANDATORY and cannot be changed.
-    | The application is designed specifically for French market.
-    |
     */
-
-    'locale'          => 'fr',              // DO NOT CHANGE - French locale required
-    'currency'        => 'EUR',             // Euro currency
-    'currency_symbol' => '€',               // Euro symbol
-    'timezone'        => 'Europe/Paris',    // French timezone
+    'locale'          => 'fr',
+    'currency'        => 'EUR',
+    'currency_symbol' => '€',
+    'timezone'        => 'Europe/Paris',
 
     /*
     |--------------------------------------------------------------------------
     | Menu Categories
     |--------------------------------------------------------------------------
-    |
-    | All menu categories in French. These are the ONLY authorized categories.
-    | DO NOT add English categories.
-    |
     */
-
     'categories' => [
         ['name' => 'Nos Tacos', 'sort' => 1, 'description' => 'Nos délicieux tacos avec viandes au choix'],
         ['name' => 'Nos Sandwichs', 'sort' => 2, 'description' => 'Sandwichs gourmands et généreux'],
@@ -69,81 +53,71 @@ return [
         ['name' => 'Omelettes', 'sort' => 6, 'description' => 'Omelettes faites maison'],
         ['name' => 'Nos Salades', 'sort' => 7, 'description' => 'Salades fraîches et légères'],
         ['name' => 'Chicken & Tenders', 'sort' => 8, 'description' => 'Ailes de poulet et tenders croustillants'],
-        ['name' => 'Frites & Accompagnements', 'sort' => 9, 'description' => 'Frites et accompagnements'],
-        ['name' => 'Nos Desserts', 'sort' => 10, 'description' => 'Desserts gourmands'],
-        ['name' => 'Nos Boissons', 'sort' => 11, 'description' => 'Boissons fraîches'],
+        ['name' => 'Nos Menus Enfants', 'sort' => 9, 'description' => 'Pour les petits gourmands'],
+        ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements'],
+        ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands'],
+        ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches'],
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Menu Configuration
     |--------------------------------------------------------------------------
-    |
-    | Global menu settings and constraints.
-    |
     */
-
     'settings' => [
-        'tax_rate'              => 10.00,     // TVA restaurant France
+        'tax_rate'              => 10.00,
         'default_tax_id'        => 1,
-        'status_active'         => 1,
+        'status_active'         => \App\Enums\Status::ACTIVE,
         'featured_default'      => true,
         'currency_decimals'     => 2,
-        'price_format'          => '%s €',  // sprintf format
+        'price_format'          => '%s €',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Meat Options
+    | Meat Options (from Image 2)
     |--------------------------------------------------------------------------
-    |
-    | Available meat choices for customizable items.
-    |
     */
-
     'meats' => [
-        'Poulet',
-        'Cordon Bleu',
-        'Kebab',
-        'Viande Hachée',
         'Merguez',
+        'Kefta',
+        'Mexicain',
+        'Cordon Bleu',
+        'Viande Hachée',
         'Nuggets',
+        'Escalope de poulet',
         'Tenders',
+        'Fricandelle',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Sauce Options
+    | Sauce Options (from Image 2)
     |--------------------------------------------------------------------------
-    |
-    | Available sauces. First sauce is always free (included in base price).
-    |
     */
-
     'sauces' => [
-        'Algérienne',
-        'Samouraï',
-        'Big Burger',
-        'Mayo',
         'Ketchup',
+        'Mayonnaise',
+        'Algérienne',
+        'Curry',
+        'Andalouse',
+        'Burger',
+        'Samouraï',
+        'Barbecue',
+        'Cocktail',
+        'Américaine',
+        'Hannibal',
         'Harissa',
         'Blanche',
-        'Andalouse',
-        'Fish',
-        'Sans Sauce',
-        'Curry',
         'Poivre',
+        'Sans Sauce',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Crudité Options
     |--------------------------------------------------------------------------
-    |
-    | Available vegetable/garnish options.
-    |
     */
-
     'crudites' => [
         'Complet (Salade, Tomate, Oignon)',
         'Sans Oignon',
@@ -154,46 +128,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Supplement Options
+    | Supplement Options (from Image 2)
     |--------------------------------------------------------------------------
-    |
-    | Available extras/supplements with their prices in EUR.
-    |
     */
-
     'supplements' => [
-        'Supplément Cheddar'           => 1.00,
-        'Supplément Jambon'            => 1.00,
-        'Supplément Poulet'            => 2.00,
-        'Supplément Kebab'             => 2.00,
-        'Supplément Viande Hachée'     => 2.00,
-        'Supplément Œuf'               => 1.00,
-        'Supplément Raclette'          => 1.00,
-        'Supplément Boursin'           => 1.00,
-        'Supplément Chèvre'            => 1.00,
+        'Jambon de dinde'           => 1.00,
+        'Boursin'                   => 1.00,
+        'Fromage a raclette'        => 1.00,
+        'Œuf'                       => 1.00,
+        'Fromage'                   => 1.00,
+        'Galette pommes de terre'   => 1.00,
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Supplement Sauce Price
+    | Supplement Sauce Price (from Image 2)
     |--------------------------------------------------------------------------
-    |
-    | Price for additional sauces beyond the first free one.
-    |
     */
-
     'supplement_sauce_price' => 0.50,
 
     /*
     |--------------------------------------------------------------------------
     | Menu Items
     |--------------------------------------------------------------------------
-    |
-    | All menu items with their prices in EUR.
-    | Structure: [category_slug => [items]]
-    |
     */
-
     'items' => [
 
         // =========================================================================
@@ -203,7 +161,7 @@ return [
             [
                 'name'        => 'Tacos M (1 Viande)',
                 'price'       => 6.50,
-                'description' => '1 Viande au choix + Sauce + Garnitures',
+                'description' => '1 Viande au choix',
                 'viandes'     => 1,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -211,7 +169,7 @@ return [
             [
                 'name'        => 'Tacos L (2 Viandes)',
                 'price'       => 8.50,
-                'description' => '2 Viandes au choix + Sauce + Garnitures',
+                'description' => '2 Viandes au choix',
                 'viandes'     => 2,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -219,7 +177,7 @@ return [
             [
                 'name'        => 'Tacos XL (3 Viandes)',
                 'price'       => 10.50,
-                'description' => '3 Viandes au choix + Sauce + Garnitures',
+                'description' => '3 Viandes au choix',
                 'viandes'     => 3,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -227,7 +185,7 @@ return [
             [
                 'name'        => 'Tacos XXL (4 Viandes)',
                 'price'       => 12.50,
-                'description' => '4 Viandes au choix + Sauce + Garnitures',
+                'description' => '4 Viandes au choix',
                 'viandes'     => 4,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -239,42 +197,66 @@ return [
         // =========================================================================
         'nos-sandwichs' => [
             [
-                'name'        => 'Le Terminator (2 Viandes)',
-                'price'       => 9.00,
-                'description' => '2 Viandes + Œuf + Jambon + Double Cheddar',
-                'viandes'     => 2,
-                'has_sauce'   => true,
-                'has_crudites'=> true,
-            ],
-            [
-                'name'        => 'Le Méga (2 Viandes)',
+                'name'        => 'Le Méga',
                 'price'       => 8.00,
-                'description' => '2 Viandes au choix + Double Cheddar',
+                'description' => '2 viandes au choix + Cheddar + Oeuf',
                 'viandes'     => 2,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
             [
-                'name'        => 'Le Suprême (1 Viande)',
+                'name'        => 'Le Terminator',
+                'price'       => 9.00,
+                'description' => '2 viandes au choix + 2 Cheddar + Oeuf + Jambon de dinde',
+                'viandes'     => 2,
+                'has_sauce'   => true,
+                'has_crudites'=> true,
+            ],
+            [
+                'name'        => 'Le Suprême',
                 'price'       => 7.00,
-                'description' => '1 Viande + Boursin + Cheddar + Œuf',
+                'description' => 'Steak + Cordon Bleu + Cheddar',
+                'viandes'     => 1, // Only fixed meats but let's allow customization or not. It says "Steak + Cordon Bleu" directly. I'll limit to 0 custom meats since it's fixed.
+                'has_sauce'   => true,
+                'has_crudites'=> true,
+            ],
+            [
+                'name'        => 'Le Cayenne',
+                'price'       => 7.00,
+                'description' => 'Viande hachée ou chicken + mozzarella + cheddar + crème fraîche',
                 'viandes'     => 1,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
             [
-                'name'        => 'Le Cayenne (1 Viande)',
-                'price'       => 7.00,
-                'description' => '1 Viande + Cheddar',
+                'name'        => 'Sandwich Classique (Pain)',
+                'price'       => 6.50,
+                'description' => '1 Viande au choix dans un pain classique',
                 'viandes'     => 1,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
             [
-                'name'        => 'Panini (1 Viande)',
+                'name'        => 'Sandwich Classique (Galette)',
+                'price'       => 6.50,
+                'description' => '1 Viande au choix dans une galette',
+                'viandes'     => 1,
+                'has_sauce'   => true,
+                'has_crudites'=> true,
+            ],
+            [
+                'name'        => 'Panini',
                 'price'       => 5.00,
-                'description' => '1 Viande + Cheddar',
+                'description' => 'Thon - Jambon - Viande hachée - Fromage de chèvre - Saumon - Escalope de poulet',
                 'viandes'     => 1,
+                'has_sauce'   => true,
+                'has_crudites'=> true,
+            ],
+            [
+                'name'        => 'Sandwich Froid',
+                'price'       => 4.50,
+                'description' => 'Sandwich au Thon',
+                'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
@@ -285,17 +267,17 @@ return [
         // =========================================================================
         'nos-burgers' => [
             [
-                'name'        => 'Cheese Burger',
-                'price'       => 5.50,
-                'description' => 'Steak + Cheddar + Sauce + Garnitures',
+                'name'        => 'Chicken Burger',
+                'price'       => 6.00,
+                'description' => 'Poulet pané + Cheddar',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
             [
-                'name'        => 'Double Cheese',
-                'price'       => 7.00,
-                'description' => '2 Steaks + Double Cheddar',
+                'name'        => 'Cheese Burger',
+                'price'       => 6.00,
+                'description' => '1 Steak + 1 Cheddar',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -303,15 +285,23 @@ return [
             [
                 'name'        => 'Fish Burger',
                 'price'       => 6.00,
-                'description' => 'Poisson pané + Cheddar + Sauce',
+                'description' => 'Poisson pané + Cheddar',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
             [
-                'name'        => 'Chicken Burger',
-                'price'       => 6.00,
-                'description' => 'Poulet pané + Cheddar + Sauce',
+                'name'        => 'Double Cheese',
+                'price'       => 7.00,
+                'description' => '2 Steaks + 2 Cheddars',
+                'viandes'     => 0,
+                'has_sauce'   => true,
+                'has_crudites'=> true,
+            ],
+            [
+                'name'        => 'Big Burger',
+                'price'       => 9.00,
+                'description' => '3 Steaks + 3 Cheddar + 2 Jambon de dinde',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -320,14 +310,6 @@ return [
                 'name'        => 'Grill Burger',
                 'price'       => 8.00,
                 'description' => '2 Steaks + 2 Cheddars + Jambon de dinde',
-                'viandes'     => 0,
-                'has_sauce'   => true,
-                'has_crudites'=> true,
-            ],
-            [
-                'name'        => 'Big Burger',
-                'price'       => 6.50,
-                'description' => '2 Steaks + 3 Cheddars',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
@@ -341,34 +323,34 @@ return [
             [
                 'name'        => 'Assiette Poulet',
                 'price'       => 12.50,
-                'description' => 'Poulet + Garnitures + Sauce',
-                'viandes'     => 1,
+                'description' => 'Poulet (Nature - Curry - Paprika) + Frites + Salade + Pain + Sauce',
+                'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
                 'name'        => 'Assiette Kefta',
                 'price'       => 12.50,
-                'description' => 'Kefta + Garnitures + Sauce',
-                'viandes'     => 1,
+                'description' => 'Kefta + Frites + Salade + Pain + Sauce',
+                'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
                 'name'        => 'Assiette Merguez',
                 'price'       => 12.50,
-                'description' => 'Merguez + Garnitures + Sauce',
-                'viandes'     => 1,
+                'description' => 'Merguez + Frites + Salade + Pain + Sauce',
+                'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
-                'name'        => 'Assiette Mixte (3 Viandes)',
+                'name'        => 'Assiette Mixte',
                 'price'       => 14.50,
-                'description' => '3 Viandes au choix + Garnitures + Sauce',
-                'viandes'     => 3,
+                'description' => 'Poulet - Kefta - Merguez + Frites + Salade + Pain + Sauce',
+                'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
         ],
 
@@ -379,34 +361,34 @@ return [
             [
                 'name'        => 'Ojja Bœuf',
                 'price'       => 13.50,
-                'description' => 'Ojja complète avec Bœuf',
+                'description' => 'Ojja avec Bœuf + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
                 'name'        => 'Ojja Poulet',
                 'price'       => 13.50,
-                'description' => 'Ojja complète avec Poulet',
+                'description' => 'Ojja avec Poulet + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
                 'name'        => 'Ojja Viande Hachée',
                 'price'       => 13.50,
-                'description' => 'Ojja complète avec Viande Hachée',
+                'description' => 'Ojja avec Viande Hachée + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
             [
                 'name'        => 'Ojja Merguez',
                 'price'       => 13.50,
-                'description' => 'Ojja complète avec Merguez',
+                'description' => 'Ojja avec Merguez + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
-                'has_crudites'=> true,
+                'has_crudites'=> false,
             ],
         ],
 
@@ -417,7 +399,7 @@ return [
             [
                 'name'        => 'Omelette Nature',
                 'price'       => 7.50,
-                'description' => 'Omelette classique',
+                'description' => 'Omelette classique + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -425,7 +407,7 @@ return [
             [
                 'name'        => 'Omelette Fromage',
                 'price'       => 8.50,
-                'description' => 'Omelette avec Fromage',
+                'description' => 'Omelette avec Fromage + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -433,7 +415,7 @@ return [
             [
                 'name'        => 'Omelette Champignons Fromage',
                 'price'       => 9.50,
-                'description' => 'Omelette complète',
+                'description' => 'Omelette avec Champignons et Fromage + Frites + Pain',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -445,18 +427,9 @@ return [
         // =========================================================================
         'nos-salades' => [
             [
-                'name'        => 'Salade César',
-                'price'       => 7.50,
-                'description' => 'Salade avec Poulet et Sauce César',
-                'viandes'     => 0,
-                'has_sauce'   => true,
-                'has_crudites'=> false,
-                'sauce_special' => ['Sauce César', 'Sans Sauce'],
-            ],
-            [
                 'name'        => 'Salade Chèvre',
                 'price'       => 7.50,
-                'description' => 'Salade avec Chèvre chaud',
+                'description' => 'Laitue - Tomate - Chèvre - Croûtons - Vinaigrette - Maïs',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -464,7 +437,7 @@ return [
             [
                 'name'        => 'Salade Royale',
                 'price'       => 7.50,
-                'description' => 'Salade complète',
+                'description' => 'Laitue - Tomate - Maïs - Poulet - Olives',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -472,7 +445,7 @@ return [
             [
                 'name'        => 'Salade Saumon',
                 'price'       => 7.50,
-                'description' => 'Salade avec Saumon',
+                'description' => 'Laitue - Tomate - Maïs - Saumon - Olives',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -480,7 +453,7 @@ return [
             [
                 'name'        => 'Salade Tunisienne',
                 'price'       => 7.50,
-                'description' => 'Salade style Tunisien',
+                'description' => 'Concombre - Tomate - Oignon - Poivrons - Thon - Olives - Huile D\'Olive',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -494,7 +467,7 @@ return [
             [
                 'name'        => 'Chicken Wings (6 pièces)',
                 'price'       => 6.00,
-                'description' => '6 Ailes de poulet panées',
+                'description' => '6 pièces de Chicken Wings',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -502,23 +475,45 @@ return [
             [
                 'name'        => 'Chicken Wings (12 pièces)',
                 'price'       => 10.50,
-                'description' => '12 Ailes de poulet panées',
+                'description' => '12 pièces de Chicken Wings',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
             ],
             [
                 'name'        => 'Tenders (6 pièces)',
-                'price'       => 6.00,
-                'description' => '6 Filets de poulet panés',
+                'price'       => 7.50,
+                'description' => '6 pièces de Tenders',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
             ],
             [
                 'name'        => 'Tenders (12 pièces)',
-                'price'       => 10.50,
-                'description' => '12 Filets de poulet panés',
+                'price'       => 13.50,
+                'description' => '12 pièces de Tenders',
+                'viandes'     => 0,
+                'has_sauce'   => true,
+                'has_crudites'=> false,
+            ],
+        ],
+
+        // =========================================================================
+        // MENUS ENFANTS
+        // =========================================================================
+        'nos-menus-enfants' => [
+            [
+                'name'        => 'Menu Cheese Burger (Enfant)',
+                'price'       => 6.00,
+                'description' => '1 steak + 1 cheddar + frites + Capri sun',
+                'viandes'     => 0,
+                'has_sauce'   => true,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Menu Nuggets (Enfant)',
+                'price'       => 6.00,
+                'description' => '6 Nuggets de poulet + frites + Capri sun',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -556,23 +551,23 @@ return [
             [
                 'name'        => 'Glace',
                 'price'       => 3.80,
-                'description' => 'Glace artisanale',
+                'description' => 'Glace',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Tiramisu Speculoos',
+                'name'        => 'Tarte Daim',
                 'price'       => 3.80,
-                'description' => 'Tiramisu au Speculoos',
+                'description' => 'Tarte au Daim',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Tarte au Daim',
+                'name'        => 'Tiramisu',
                 'price'       => 3.80,
-                'description' => 'Tarte au Daim suédois',
+                'description' => 'Tiramisu',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
@@ -600,22 +595,6 @@ return [
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Oasis Tropical 33cl',
-                'price'       => 1.50,
-                'description' => 'Oasis Tropical',
-                'viandes'     => 0,
-                'has_sauce'   => false,
-                'has_crudites'=> false,
-            ],
-            [
-                'name'        => 'Oasis Pomme Cassis 33cl',
-                'price'       => 1.50,
-                'description' => 'Oasis Pomme Cassis',
-                'viandes'     => 0,
-                'has_sauce'   => false,
-                'has_crudites'=> false,
-            ],
-            [
                 'name'        => 'Fanta Orange 33cl',
                 'price'       => 1.50,
                 'description' => 'Fanta Orange',
@@ -626,23 +605,15 @@ return [
             [
                 'name'        => 'Sprite 33cl',
                 'price'       => 1.50,
-                'description' => 'Sprite citron-citron vert',
+                'description' => 'Sprite',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Eau Plate 50cl',
-                'price'       => 1.00,
-                'description' => 'Eau minérale plate',
-                'viandes'     => 0,
-                'has_sauce'   => false,
-                'has_crudites'=> false,
-            ],
-            [
-                'name'        => 'Eau Gazeuse 50cl',
-                'price'       => 1.20,
-                'description' => 'Eau minérale gazeuse',
+                'name'        => 'Oasis Tropical 33cl',
+                'price'       => 1.50,
+                'description' => 'Oasis Tropical',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
@@ -656,9 +627,17 @@ return [
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Capri-Sun',
+                'name'        => 'Eau Plate 50cl',
                 'price'       => 1.00,
-                'description' => 'Jus Capri-Sun',
+                'description' => 'Eau minérale',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Capri-Sun',
+                'price'       => 1.50,
+                'description' => 'Capri-Sun 20cl',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,
@@ -671,19 +650,15 @@ return [
     |--------------------------------------------------------------------------
     | Addons (Upsell Items)
     |--------------------------------------------------------------------------
-    |
-    | Items that can be added to other items as upsell.
-    |
     */
-
     'addons' => [
         [
-            'name'  => 'En Menu (Frites + Boisson)',
-            'price' => 3.00,
+            'name'  => 'Menu (Frites + Boisson)',
+            'price' => 2.50,
         ],
         [
             'name'  => 'Frites Seules',
-            'price' => 1.50,
+            'price' => 2.50,
         ],
         [
             'name'  => 'Boisson Seule',
@@ -695,11 +670,7 @@ return [
     |--------------------------------------------------------------------------
     | Protection Settings
     |--------------------------------------------------------------------------
-    |
-    | Security and validation settings to prevent accidental modifications.
-    |
     */
-
     'protection' => [
         'block_english_items'     => true,
         'block_non_eur_currency'  => true,

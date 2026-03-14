@@ -92,13 +92,13 @@ class GuestSignupController extends Controller
             $name = "Guest User";
             $user = User::create([
                 'name'              => $name,
-                'username'          => Str::slug($name) . rand(11111, 99999),
+                'username'          => Str::slug($name) . \Illuminate\Support\Str::random(5),
                 'phone'             => $array['phone'],
                 'country_code'      => $array['code'],
                 'branch_id'         => 0,
                 'email_verified_at' => Carbon::now()->getTimestamp(),
                 'is_guest'          => Ask::YES,
-                'password'          => Hash::make(rand(111111, 999999))
+                'password'          => Hash::make(\Illuminate\Support\Str::random(10))
             ]);
             $user->assignRole(EnumRole::CUSTOMER);
         }

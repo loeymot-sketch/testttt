@@ -39,6 +39,8 @@ class ItemResource extends JsonResource
             "cover"            => $this->cover,
             "preview"          => $this->preview,
             "category_name"    => optional($this->category)->name,
+            "wizard_template"  => optional($this->category)->wizard_template ?? 'simple',
+            "has_menu"         => (bool)(optional($this->category)->has_menu ?? false),
             "category"         => new ItemCategoryResource($this->category),
             "tax"              => new TaxResource($this->tax),
             "variations"       => $this->variations->groupBy('item_attribute_id'),
