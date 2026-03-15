@@ -33,6 +33,11 @@ class AddressController extends Controller
 
     public function show(Address $address)
     {
+        // [SECURITY FIX] IDOR Prevention - Verify ownership
+        if ($address->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access to this address');
+        }
+        
         try {
             return new AddressResource($address);
         } catch (Exception $exception) {
@@ -51,6 +56,11 @@ class AddressController extends Controller
 
     public function update(AddressRequest $request, Address $address)
     {
+        // [SECURITY FIX] IDOR Prevention - Verify ownership
+        if ($address->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access to this address');
+        }
+        
         try {
             return new AddressResource($this->addressService->update($request, $address));
         } catch (Exception $exception) {
@@ -60,6 +70,11 @@ class AddressController extends Controller
 
     public function destroy(Address $address)
     {
+        // [SECURITY FIX] IDOR Prevention - Verify ownership
+        if ($address->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access to this address');
+        }
+        
         try {
             $this->addressService->destroy($address);
             return response('', 202);

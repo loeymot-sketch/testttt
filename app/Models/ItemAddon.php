@@ -16,7 +16,7 @@ class ItemAddon extends Model
         'id'                   => 'integer',
         'item_id'              => 'integer',
         'addon_item_id'        => 'integer',
-        'addon_item_variation' => 'string',
+        'addon_item_variation' => 'array',
     ];
 
     public function item()

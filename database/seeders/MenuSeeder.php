@@ -342,16 +342,19 @@ class MenuSeeder extends Seeder
         echo "Creating categories...\n";
 
         foreach ($this->config['categories'] as $category) {
+            // [BUG-4 FIX] Include wizard_template and has_menu from config
             $cat = ItemCategory::create([
-                'name'        => $category['name'],
-                'slug'        => Str::slug($category['name']),
-                'description' => $category['description'] ?? null,
-                'status'      => $this->config['settings']['status_active'],
-                'sort'        => $category['sort'],
+                'name'            => $category['name'],
+                'slug'            => Str::slug($category['name']),
+                'description'     => $category['description'] ?? null,
+                'status'          => $this->config['settings']['status_active'],
+                'sort'            => $category['sort'],
+                'wizard_template' => $category['wizard_template'] ?? 'simple',
+                'has_menu'        => $category['has_menu'] ?? false,
             ]);
 
             $this->categoryIds[Str::slug($category['name'])] = $cat->id;
-            echo "  ✓ Created: {$category['name']}\n";
+            echo "  ✓ Created: {$category['name']} (template: {$cat->wizard_template})\n";
         }
 
         echo "✓ Created " . count($this->config['categories']) . " categories\n\n";

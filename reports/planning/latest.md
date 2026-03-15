@@ -1,176 +1,79 @@
-# PLAN KIMI — FIX PERMANENT Menu Vide POS
-**Émetteur :** Claude (Architecte)  
-**Destinataire :** KIMI (Builder)  
-**Date :** 12 Mars 2026  
-**Source :** Audit profond `database/seeders/MenuSeeder.php` + `app/Services/ItemService.php`
+# PLAN DIRECTEUR MVP — FoodKing POS + KDS + Borne
+
+**Architecte :** Claude (Lead)  
+**Date :** 10 Mars 2026  
+**Statut :** SPRINT 21 — Wizard Logic: Sauces, Frites, Supplements (IMPLEMENTATION PHASE)
 
 ---
 
-## 🔴 DIAGNOSTIC ROOT CAUSE (Claude Certifié)
+## Dernier Sprint Actif
 
-**Bug :** Le menu POS est vide à chaque fois que le Seeder est exécuté.
+**[📋 Sprint 21 — Wizard Logic: Sauces, Frites, Supplements](./sprint_21_plan.md)**  
+**Statut:** IMPLEMENTED (en attente validation E2E)  
+**Agent d'implémentation:** Kimi  
 
-**Pourquoi :** `MenuSeeder.php` utilise le bon config pour les **catégories** seulement (L320). Pour les 14 autres entités — Items, Attributs, Extras, Variations — il hardcode `'status' => 1`. Or `Status::ACTIVE = 5`. Donc dès qu'un seed est relancé, tous les items tombent à status=1 et `ItemService::simpleList()` ne les retourne plus.
+### Bugs corrigés dans Sprint 21
 
-```
-MenuSeeder.php       →  items créés avec status=1   ← BUG SOURCE
-ItemService           →  filtre pas status (pass-through)
-POS Frontend (Vue)  →  demande items avec status=5 (ACTIVE)
-Résultat            →  0 items retournés → menu vide
-```
-
----
-
-## 🔧 PLAN D'ACTION KIMI — 3 Étapes
-
-### Étape 1 — Ajouter `use App\Enums\Status;` en tête de fichier
-
-**Fichier :** `database/seeders/MenuSeeder.php`  
-**Ligne 14** (après les autres `use` statements) :
-
-```php
-// AVANT : pas de use Status
-use App\Models\ItemAddon;
-
-// APRÈS : ajouter
-use App\Models\ItemAddon;
-use App\Enums\Status;  // ← AJOUTER ICI
-```
+| ID | Sévérité | Description | Fichier |
+|----|----------|-------------|---------|
+| S21-1 | CRITICAL | `individualAddons` jamais écrit dans l'instruction KDS | `pos-wizard.js` buildWizardInstruction() |
+| S21-2 | HIGH | `addonTotal` non multiplié par `itemQuantity` (prix faux pour qty>1) | `pos-wizard.js` calculateRunningTotal() |
+| S21-3 | MEDIUM | Sandwich sans cheddar/grande frites (upsells manquants) | `pos-wizard.js` renderSupplementsMenuStep() |
+| S21-6 | LOW | Carte "Boisson Seule" jamais rendue | `pos-wizard.js` renderMenuChoiceStep() |
 
 ---
 
-### Étape 2 — Remplacer TOUTES les occurrences de `'status' => 1` par `'status' => Status::ACTIVE`
+## Historique des Sprints (validés)
 
-**Lignes à modifier : L338, L339, L340, L341, L342, L343, L370, L424, L524, L546, L564, L594, L607, L627, L637**
-
-Commande grep pour localiser :
-```bash
-grep -n "'status' => 1" database/seeders/MenuSeeder.php
-```
-
-**Remplacement global :**
-```bash
-# NE PAS UTILISER sed car il écrase toutes les occurrences
-# Corriger manuellement chaque 'status' => 1
-# en 'status' => Status::ACTIVE
-```
-
-**Exemple de correction :**
-```php
-// AVANT (L338-343) — createAttributes()
-$this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => 1]);
-$this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => 1]);
-$this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => 1]);
-$this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => 1]);
-$this->attrSauce   = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => 1]);
-$this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => 1]);
-
-// APRÈS
-$this->attrViande1 = ItemAttribute::create(['name' => 'Viande 1', 'status' => Status::ACTIVE]);
-$this->attrViande2 = ItemAttribute::create(['name' => 'Viande 2', 'status' => Status::ACTIVE]);
-$this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => Status::ACTIVE]);
-$this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => Status::ACTIVE]);
-$this->attrSauce   = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => Status::ACTIVE]);
-$this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => Status::ACTIVE]);
-```
-
-> ⚠️ IMPORTANT KIMI : Ne pas modifier `'status' => $this->config['settings']['status_active']` (L320). C'est déjà correct.
+| Sprint | Contenu | Statut |
+|--------|---------|--------|
+| Sprint 14 | Authorization roles, N+1 queries, IDOR fixes, pos-wizard refactor | ✅ COMPLETED |
+| Sprint 15 | Wizard pain/boisson sync, manual discount logic, category seeding | ✅ COMPLETED |
+| Sprint 16 | POS UI bugs, pos-wizard data scope fixes | ✅ COMPLETED |
+| Sprint 17 | ReferenceError fix, N+1 queries in pos/table order store | ✅ COMPLETED |
+| Sprint 18 | Nullish coalescing operator for menu addon prices | ✅ COMPLETED |
+| Sprint 19 | Wizard logic: boisson lookup, supplements_menu, hasFrites, sauce frites, parseInt NaN | ✅ COMPLETED |
+| Sprint 20 | KDS instruction gaps: SANS garnitures, sauceSingle, accompagnement | ✅ COMPLETED |
+| Sprint 21 | Wizard logic: sauces, frites, supplements (S21-1/2/3/6) | 🔄 IMPLEMENTED |
 
 ---
 
-### Étape 3 — Mettre à jour `config/menu.php` pour que `status_active` soit cohérent
+## Point d'entrée pour agents
 
-**Fichier :** `config/menu.php`
+**Pour Kimi (implémentation):**
+1. Lire ce fichier (`latest.md`)
+2. Lire le sprint assigné (`sprint_21_plan.md`)
+3. Implémenter UNIQUEMENT les tâches du sprint
+4. Exécuter les tests spécifiés
+5. Écrire le résumé dans `reports/execution/latest.md`
 
-```bash
-# Vérifier la valeur actuelle
-grep -n "status_active" config/menu.php
-```
-
-**Si la valeur est 1, la corriger à 5 :**
-```php
-// AVANT
-'settings' => [
-    'status_active' => 1,   // ← FAUX
-    ...
-]
-
-// APRÈS
-'settings' => [
-    'status_active' => \App\Enums\Status::ACTIVE,  // = 5
-    ...
-]
-```
+**Pour Anti-Gravity (QA):**
+1. Lire ce fichier (`latest.md`)
+2. Lire le sprint en cours (`sprint_21_plan.md`)
+3. Exécuter le test checklist du sprint
+4. Rédiger le rapport dans `reports/antigravity/latest.md`
 
 ---
 
-## ✅ TESTS OBLIGATOIRES KIMI
+## Règles de coordination
 
-### Test 1 — Vérifier le Seeder corrigé
-```bash
-# Relancer le seeder (le seeder purge et re-crée)
-php artisan db:seed --class=MenuSeeder
-
-# Vérifier le compte des items ACTIFS (doit retourner 53+)
-php artisan tinker --execute="\App\Models\Item::where('status', 5)->count();"
-# ATTENDU: > 0 (53 minimum)
-
-# Vérifier aussi les attributs
-php artisan tinker --execute="\App\Models\ItemAttribute::where('status', 5)->count();"
-# ATTENDU: > 0
-```
-
-### Test 2 — Vérifier l'API POS sans token
-```bash
-php artisan tinker --execute="
-\$admin = \App\Models\User::first();
-\$token = auth()->login(\$admin);
-echo 'Admin ID: ' . \$admin->id . PHP_EOL;
-echo 'Item count (status=5): ' . \App\Models\Item::where('status', 5)->count() . PHP_EOL;
-echo 'Item count (status=1): ' . \App\Models\Item::where('status', 1)->count() . ' (doit être 0)' . PHP_EOL;
-"
-```
-
-### Test 3 — Vérifier que le Seeder est idempotent
-```bash
-# Deuxième run du seeder (ne doit pas re-créer si français existe)
-php artisan db:seed --class=MenuSeeder
-# ATTENDU: "✅ French menu already exists and is valid. Skipping..."
-```
+- **Claude** = architecture, raisonnement, debugging, planification
+- **Kimi** = implémentation localisée, UI, CRUD, patches limités
+- **Anti-Gravity** = QA, tests E2E, rapports de validation
+- **Humain** = décision finale, validation staging
 
 ---
 
-## 📄 Protocole de Retour KIMI → Claude
+## Sécurité et gels
 
-Écrire dans `reports/execution/latest.md` :
+### Modules gelés (ne pas toucher sans instruction explicite)
+- Stripe/PayPal payment gateway
+- Delivery Boy module
+- Analytics/Reporting
+- ValidStatusTransition (règles métier critiques)
 
-```markdown
-# FIX Menu Vide POS — Exécution KIMI
-
-## Lignes corrigées dans MenuSeeder.php
-- [ ] use App\Enums\Status; ajouté (ligne X)
-- [ ] status => 1 → Status::ACTIVE sur L338 (attrViande1)
-- [ ] status => 1 → Status::ACTIVE sur L339 (attrViande2)
-- [ ] status => 1 → Status::ACTIVE sur L340 (attrViande3)
-- [ ] status => 1 → Status::ACTIVE sur L341 (attrViande4)
-- [ ] status => 1 → Status::ACTIVE sur L342 (attrSauce)
-- [ ] status => 1 → Status::ACTIVE sur L343 (attrCrudite)
-- [ ] status => 1 → Status::ACTIVE sur L370 (createAddons)
-- [ ] status => 1 → Status::ACTIVE sur L424 (createItems)
-- [ ] status => 1 → Status::ACTIVE sur L524 (variation)
-- [ ] status => 1 → Status::ACTIVE sur L546 (variation)
-- [ ] status => 1 → Status::ACTIVE sur L564 (variation)
-- [ ] status => 1 → Status::ACTIVE sur L594 (extras)
-- [ ] status => 1 → Status::ACTIVE sur L607 (extras)
-- [ ] status => 1 → Status::ACTIVE sur L627 (extras)
-- [ ] status => 1 → Status::ACTIVE sur L637 (extras)
-
-## config/menu.php
-- [ ] status_active = 5 (ou Status::ACTIVE) confirmé
-
-## Tests
-- [ ] Seeder relancé → résultat console
-- [ ] Item::where('status', 5)->count() → XXX items
-- [ ] Item::where('status', 1)->count() → 0 items
-- [ ] Deuxième run seeder → "Skipping..."
+### Vérification obligatoire avant DONE
+```bash
+php artisan test
+# Doit retourner 0 failures, 0 errors
 ```

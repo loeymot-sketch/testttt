@@ -42,6 +42,7 @@ class ItemRequest extends FormRequest
             'status'           => ['required', 'numeric', 'max:24'],
             'order'            => ['required', 'numeric'],
             'variations'       => ['nullable', 'json'],
+            'extras'           => ['nullable', 'json'],
             'image'            => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }

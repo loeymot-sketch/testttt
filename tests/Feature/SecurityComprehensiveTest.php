@@ -56,7 +56,6 @@ class SecurityComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $customer = \Database\Factories\UserFactory::new()->create([
             'branch_id' => $branch->id,
-            'role' => \App\Enums\Role::CUSTOMER,
         ]);
         $customer->assignRole('Customer');
         return [$branch, $customer];
@@ -111,8 +110,7 @@ class SecurityComprehensiveTest extends TestCase
             ->postJson('/api/admin/setting/item', [
                 'name' => 'Hacked Item',
                 'price' => 0.01,
-                'category_id' => $category->id,
-                'branch_id' => $branch->id,
+                'item_category_id' => $category->id,
             ]);
         
         $this->assertTrue(in_array($response->status(), [401, 403]));
@@ -126,8 +124,7 @@ class SecurityComprehensiveTest extends TestCase
         [$branch, $user, $kiosk] = $this->setupKiosk();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $item = \Database\Factories\ItemFactory::new()->create([
-            'branch_id' => $branch->id,
-            'category_id' => $category->id,
+            'item_category_id' => $category->id,
             'price' => 10.00,
         ]);
         
@@ -136,8 +133,7 @@ class SecurityComprehensiveTest extends TestCase
             ->putJson("/api/admin/setting/item/{$item->id}", [
                 'name' => $item->name,
                 'price' => 0.01, // Prix falsifié
-                'category_id' => $item->category_id,
-                'branch_id' => $branch->id,
+                'item_category_id' => $item->item_category_id,
             ]);
         
         $this->assertTrue(in_array($response->status(), [401, 403]));
@@ -203,8 +199,7 @@ class SecurityComprehensiveTest extends TestCase
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $item = \Database\Factories\ItemFactory::new()->create([
-            'branch_id' => $branch->id,
-            'category_id' => $category->id,
+            'item_category_id' => $category->id,
             'price' => 10.00, // Prix réel en DB
         ]);
         

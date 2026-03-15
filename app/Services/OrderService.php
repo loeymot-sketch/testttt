@@ -76,7 +76,13 @@ class OrderService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_by') ?? 'desc';
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')->where(function ($query) use ($requests) {
+            return Order::with([
+                'transaction',
+                'orderItems.item.media',
+                'orderItems.item.category',
+                'branch',
+                'user'
+            ])->where(function ($query) use ($requests) {
                 if (isset($requests['from_date']) && isset($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date = Date('Y-m-d', strtotime($requests['to_date']));
@@ -272,6 +278,31 @@ class OrderService
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
+                // [PERF-02] Bulk-load toutes les variations et extras avant la boucle
+                $variationIds = collect($requestItems)
+                    ->pluck('item_variations')
+                    ->flatten(1)
+                    ->pluck('id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $extraIds = collect($requestItems)
+                    ->pluck('item_extras')
+                    ->flatten(1)
+                    ->pluck('id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $dbVariations = !empty($variationIds) 
+                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                    : collect();
+                
+                $dbExtras = !empty($extraIds)
+                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                    : collect();
+
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
                         // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
@@ -283,14 +314,14 @@ class OrderService
                         }
                         $itemPrice = $dbItems[$item->item_id]; // ← prix TOUJOURS depuis la DB
                         
-                        // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
+                        // [PERF-02] Calculer prix variations depuis collection pre-chargée
                         $variationTotal = 0;
                         if (isset($item->item_variations) && is_array($item->item_variations)) {
                             foreach ($item->item_variations as $variation) {
                                 $varId = $variation->id ?? null;
                                 if (!$varId) continue;
                                 
-                                $dbVar = \App\Models\ItemVariation::find($varId);
+                                $dbVar = $dbVariations[$varId] ?? null;
                                 if (!$dbVar) {
                                     throw new \InvalidArgumentException(
                                         "Variation ID {$varId} introuvable.",
@@ -301,14 +332,14 @@ class OrderService
                             }
                         }
                         
-                        // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
+                        // [PERF-02] Calculer prix extras depuis collection pre-chargée
                         $extraTotal = 0;
                         if (isset($item->item_extras) && is_array($item->item_extras)) {
                             foreach ($item->item_extras as $extra) {
                                 $extraId = $extra->id ?? null;
                                 if (!$extraId) continue;
                                 
-                                $dbExt = \App\Models\ItemExtra::find($extraId);
+                                $dbExt = $dbExtras[$extraId] ?? null;
                                 if (!$dbExt) {
                                     throw new \InvalidArgumentException(
                                         "Extra ID {$extraId} introuvable.",
@@ -446,9 +477,22 @@ class OrderService
                 // [TAÂCHE 1] SÉCURISATION PRIX - Récupérer prix depuis DB
                 // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
                 $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $dbItems = Item::select('id', 'price')
+                $dbItems = Item::select('id', 'price', 'tax_id')
                     ->whereIn('id', $requestedItemIds)
-                    ->pluck('price', 'id');
+                    ->get()
+                    ->keyBy('id');
+
+                // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
+                $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+
+                $dbVariations = !empty($variationIds)
+                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                    : collect();
+                $dbExtras = !empty($extraIds)
+                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                    : collect();
+
                 $dbTaxes = Tax::get()->pluck('tax_rate', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
@@ -462,16 +506,17 @@ class OrderService
                                 422
                             );
                         }
-                        $itemPrice = $dbItems[$item->item_id]; // ← prix TOUJOURS depuis la DB
-                        
+                        $itemPrice = (float) $dbItems[$item->item_id]->price; // ← prix TOUJOURS depuis la DB
+
                         // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
+                        // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
                         $variationTotal = 0;
                         if (isset($item->item_variations) && is_array($item->item_variations)) {
                             foreach ($item->item_variations as $variation) {
                                 $varId = $variation->id ?? null;
                                 if (!$varId) continue;
-                                
-                                $dbVar = \App\Models\ItemVariation::find($varId);
+
+                                $dbVar = $dbVariations[$varId] ?? null;
                                 if (!$dbVar) {
                                     throw new \InvalidArgumentException(
                                         "Variation ID {$varId} introuvable.",
@@ -481,15 +526,16 @@ class OrderService
                                 $variationTotal += (float) $dbVar->price;
                             }
                         }
-                        
+
                         // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
+                        // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
                         $extraTotal = 0;
                         if (isset($item->item_extras) && is_array($item->item_extras)) {
                             foreach ($item->item_extras as $extra) {
                                 $extraId = $extra->id ?? null;
                                 if (!$extraId) continue;
-                                
-                                $dbExt = \App\Models\ItemExtra::find($extraId);
+
+                                $dbExt = $dbExtras[$extraId] ?? null;
                                 if (!$dbExt) {
                                     throw new \InvalidArgumentException(
                                         "Extra ID {$extraId} introuvable.",
@@ -504,7 +550,7 @@ class OrderService
                         $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
                         $verifiedTotalPrice = $verifiedUnitPrice * $item->quantity;
                         
-                        $taxId = isset($dbItems[$item->item_id]) ? $dbItems[$item->item_id] : 0;
+                        $taxId = isset($dbItems[$item->item_id]) ? ($dbItems[$item->item_id]->tax_id ?? 0) : 0;
                         $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                         $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                         $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
@@ -558,6 +604,7 @@ class OrderService
                 $this->order->total_tax = $totalTax;
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
+                // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
                 $calculatedDiscount = 0;
                 if ($request->coupon_id > 0) {
                     $coupon = \App\Models\Coupon::find($request->coupon_id);
@@ -571,6 +618,13 @@ class OrderService
                             $calculatedDiscount = $coupon->discount;
                         }
                     }
+                } elseif ($request->discount > 0) {
+                    // Discount manuel saisi par le cashier - valider qu'il ne dépasse pas le subtotal
+                    $manualDiscount = (float) $request->discount;
+                    if ($manualDiscount <= $realSubtotal) {
+                        $calculatedDiscount = $manualDiscount;
+                    }
+                    // Si discount > subtotal, on ignore (ne pas appliquer de remise négative)
                 }
 
                 $this->order->subtotal = $realSubtotal;
@@ -652,11 +706,26 @@ class OrderService
                 $totalTax = 0;
                 $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
+
                 // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
                 $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $items = Item::select('id', 'tax_id')
+                $dbItems = Item::select('id', 'price', 'tax_id')
                     ->whereIn('id', $requestedItemIds)
-                    ->pluck('tax_id', 'id');
+                    ->get()
+                    ->keyBy('id');
+                $items = $dbItems->pluck('tax_id', 'id');
+
+                // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
+                $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+
+                $dbVariations = !empty($variationIds)
+                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                    : collect();
+                $dbExtras = !empty($extraIds)
+                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                    : collect();
+
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                 $realSubtotal = 0;
 
@@ -664,7 +733,8 @@ class OrderService
                     foreach ($requestItems as $item) {
 
                         // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                        $dbItem = Item::find($item->item_id);
+                        // [BUG-CRIT-2 FIX] Utiliser $dbItems déjà bulk-loadé
+                        $dbItem = $dbItems[$item->item_id] ?? null;
                         if (!$dbItem) {
                             throw new \InvalidArgumentException(
                                 "Item ID {$item->item_id} introuvable. Commande rejetée.",
@@ -673,19 +743,23 @@ class OrderService
                         }
                         $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
+                        // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
                         $calcVariationTotal = 0;
                         if (!empty($item->item_variations)) {
                             foreach ($item->item_variations as $var) {
-                                $dbVar = \App\Models\ItemVariation::find($var->id ?? 0);
+                                $varId = $var->id ?? 0;
+                                $dbVar = $dbVariations[$varId] ?? null;
                                 if ($dbVar)
                                     $calcVariationTotal += $dbVar->price;
                             }
                         }
 
+                        // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
                         $calcExtraTotal = 0;
                         if (!empty($item->item_extras)) {
                             foreach ($item->item_extras as $ext) {
-                                $dbExt = \App\Models\ItemExtra::find($ext->id ?? 0);
+                                $extId = $ext->id ?? 0;
+                                $dbExt = $dbExtras[$extId] ?? null;
                                 if ($dbExt)
                                     $calcExtraTotal += $dbExt->price;
                             }
@@ -745,6 +819,7 @@ class OrderService
                 $this->order->total_tax = $totalTax;
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
+                // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
                 $calculatedDiscount = 0;
                 if ($request->coupon_id > 0) {
                     $coupon = \App\Models\Coupon::find($request->coupon_id);
@@ -758,6 +833,13 @@ class OrderService
                             $calculatedDiscount = $coupon->discount;
                         }
                     }
+                } elseif ($request->discount > 0) {
+                    // Discount manuel saisi par le cashier - valider qu'il ne dépasse pas le subtotal
+                    $manualDiscount = (float) $request->discount;
+                    if ($manualDiscount <= $realSubtotal) {
+                        $calculatedDiscount = $manualDiscount;
+                    }
+                    // Si discount > subtotal, on ignore (ne pas appliquer de remise négative)
                 }
 
                 $this->order->subtotal = $realSubtotal;

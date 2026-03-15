@@ -385,6 +385,7 @@ export default {
             this.temp.total_price = 0;
             this.temp.instruction = "";
             this.addons = {};
+            this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities
 
             const modalDiv = this.$refs.itemVariationModal;
             modalDiv?.classList?.remove("active");
@@ -608,6 +609,7 @@ export default {
                     this.temp.total_price = 0;
                     this.temp.instruction = "";
                     this.addons = {};
+                    this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities after add to cart
                     this.itemArrays = [];
 
                     alertService.success(this.$t('message.add_to_cart'));
@@ -622,7 +624,7 @@ export default {
                 this.temp.instruction = val.slice(0, 190);
                 this.instructionError = this.$t("message.special_instructions_limit");
             }
-            if (val.length < 190) {
+            if (val.length <= 190) { // [BUG-A7 FIX] Clear error at exactly 190 chars too
                 this.instructionError = "";
             }
         }

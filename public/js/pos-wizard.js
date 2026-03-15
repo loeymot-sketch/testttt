@@ -15,6 +15,16 @@
     'use strict';
 
     /* ==============================
+       UTILS — Normalisation
+       ============================== */
+    function normalizeStr(str) {
+        return (str || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    /* ==============================
        ONLY RUN ON POS PAGE
        ============================== */
     if (!window.location.pathname.includes('/admin/pos')) return;
@@ -22,19 +32,20 @@
     /* ==============================
        STATE
        ============================== */
-    var lastItemData = null;
-    var wizardEl = null;
-    var originalBody = null;
-    var currentStep = 0;
-    var steps = [];
-    var selections = {};
-    var itemQuantity = 1;
-    var instructionText = '';
+    let lastItemData = null;
+    let wizardItemData = null; // [BUG-W1 FIX] Store item data for buildWizardInstruction()
+    let wizardEl = null;
+    let originalBody = null;
+    let currentStep = 0;
+    let steps = [];
+    let selections = {};
+    let itemQuantity = 1;
+    let instructionText = '';
 
     /* ==============================
        CONFIG — VIANDES DISPONIBLES
        ============================== */
-    var VIANDES = [
+    const VIANDES = [
         { key: 'merguez', name: 'Merguez', emoji: '🌶️' },
         { key: 'kefta', name: 'Kefta', emoji: '🥩' },
         { key: 'poulet', name: 'Poulet', emoji: '🍗' },
@@ -50,7 +61,7 @@
     /* ==============================
        CONFIG — SAUCES COMPLETES
        ============================== */
-    var ALL_SAUCES = [
+    const ALL_SAUCES = [
         { key: 'ketchup', name: 'Ketchup', emoji: '🍅' },
         { key: 'mayonnaise', name: 'Mayonnaise', emoji: '🥚' },
         { key: 'algerienne', name: 'Algérienne', emoji: '🌶️' },
@@ -70,12 +81,12 @@
         { key: 'sans_sauce', name: 'Sans sauce', emoji: '🚫' }
     ];
 
-    var SAUCE_EXTRA_PRICE = 0.50;
+    const SAUCE_EXTRA_PRICE = 0.50;
 
     /* ==============================
        CONFIG — SUPPLEMENTS
        ============================== */
-    var SUPPLEMENT_EMOJIS = {
+    const SUPPLEMENT_EMOJIS = {
         'oeuf': '🥚', 'œuf': '🥚', 'fromage': '🧀', 'raclette': '🫕',
         'boursin': '🧀', 'jambon': '🥓', 'jambon de dinde': '🥓',
         'mozzarella': '🧀', 'galette': '🥔', 'steak': '🥩', 'poulet': '🍗',
@@ -84,12 +95,12 @@
         'default': '➕'
     };
 
-    var GARNITURE_EMOJIS = {
+    const GARNITURE_EMOJIS = {
         'salade': '🥬', 'tomate': '🍅', 'oignon': '🧅', 'oignons': '🧅',
         'riz': '🍚', 'frites': '🍟', 'default': '🥗'
     };
 
-    var ADDON_EMOJIS = {
+    const ADDON_EMOJIS = {
         'frites': '🍟', 'coca-cola': '🥤', 'coca': '🥤',
         'orangina': '🍊', 'eau': '💧', 'jus': '🧃',
         'boisson': '🥤', 'default': '🍽️'
@@ -156,11 +167,11 @@
      */
     function detectViandeCount(name) {
         if (!name) return 0;
-        var n = name.toLowerCase();
+        let n = normalizeStr(name);
         if (!n.includes('tacos')) return 0;
 
         // Try to extract number from parentheses: "(3 viande)"
-        var match = n.match(/\((\d+)\s*viande/);
+        let match = n.match(/\((\d+)\s*viande/);
         if (match) return parseInt(match[1]);
 
         // Try XXL first (before XL)
@@ -187,15 +198,15 @@
         }
         
         // [PLAN_12 ARCH-02] Fallback legacy: string matching sur category_name
-        var cat = (data.category_name || data.item_category_name || '').toLowerCase();
-        var name = (data.name || '').toLowerCase();
+        let cat = normalizeStr(data.category_name || data.item_category_name || '');
+        let name = normalizeStr(data.name || '');
 
         // DOM fallback only if API data is empty
         if (!cat) {
-            var activeTab = document.querySelector(
+            let activeTab = document.querySelector(
                 '.db-product-filter.active, .nav-link.active .tab-title, [class*="tab"].active'
             );
-            if (activeTab) cat = (activeTab.innerText || activeTab.textContent || '').toLowerCase();
+            if (activeTab) cat = normalizeStr(activeTab.innerText || activeTab.textContent || '');
         }
 
         console.log('[POS-WIZARD] detectCategory (fallback):', { apiCat: data.category_name || data.item_category_name, domCat: cat, name: data.name });
@@ -266,10 +277,15 @@
         if (selections.menuChoice === 'full') return true;  // Menu complet
         if (selections.menuChoice === 'frites') return true;  // Frites seules [P1]
         if (selections.individualAddons) {
-            var menuStep = steps.find(function (s) { return s.type === 'menu'; });
+            // [W-7 FIX] Include supplements_menu step for Sandwich/Burger flow
+            var menuStep = steps.find(function (s) {
+                return s.type === 'menu' || s.type === 'supplements_menu';
+            });
             if (menuStep) {
-                for (var i = 0; i < menuStep.items.length; i++) {
-                    var addon = menuStep.items[i];
+                // [W-7 FIX] Support both menuStep.items (menu flow) and menuStep.menuItems (supplements_menu flow)
+                var items = menuStep.items || menuStep.menuItems || [];
+                for (var i = 0; i < items.length; i++) {
+                    var addon = items[i];
                     if (addon.name.toLowerCase().includes('frite') && selections.individualAddons[addon.id]) {
                         return true;
                     }
@@ -500,13 +516,32 @@
 
         // === Step: Suppléments + Menu (Sandwich/Burger - combined) ===
         if (allowed.indexOf('supplements_menu') !== -1) {
+            // [BUG-W4 FIX] Find menu addon to get correct price (don't hardcode €3.00)
+            var menuAddon = addonItems.find(function (a) {
+                return a.name.toLowerCase().includes('menu');
+            });
+            var fritesAddon = addonItems.find(function (a) {
+                return a.name.toLowerCase().includes('frites');
+            });
+            var boissonAddon = addonItems.find(function (a) {
+                return a.name.toLowerCase().includes('boisson') ||
+                       a.name.toLowerCase().includes('coca') ||
+                       a.name.toLowerCase().includes('fanta') ||
+                       a.name.toLowerCase().includes('sprite');
+            });
+
             s.push({
                 type: 'supplements_menu',
                 label: 'Suppléments & Menu',
                 subtitle: 'Ajoutez des extras et choisissez votre formule',
                 paidItems: paidExtras,
                 menuItems: addonItems,
-                sauceItems: sauceList.filter(function (item) { return item.name.toLowerCase() !== 'sans sauce'; })
+                sauceItems: sauceList.filter(function (item) { return item.name.toLowerCase() !== 'sans sauce'; }),
+                // [BUG-W4 FIX] Include menu prices from DB
+                // [BUG-W4b FIX] Use ?? instead of || to allow price = 0 without fallback override
+                menuComplet: menuAddon ? { label: 'Menu Complet', price: menuAddon.price ?? 3.00 } : { label: 'Menu Complet', price: 3.00 },
+                fritesSeules: fritesAddon ? { label: 'Frites Seules', price: fritesAddon.price ?? 2.50 } : null,
+                boissonSeule: boissonAddon ? { label: 'Boisson Seule', price: boissonAddon.price ?? 1.50 } : null
             });
             selections.supplements = {};
             selections.menuChoice = null;
@@ -631,18 +666,22 @@
             });
 
             // [P1] Step: boisson_choice — Choix boisson (visible si menu complet ou boisson seule)
-            s.push({
-                type: 'boisson_choice',
-                label: 'Boisson',
-                subtitle: 'Choisissez votre boisson',
-                showCondition: 'hasBoisson',
-                boissonItems: addonItems.filter(function (a) {
-                    var name = a.name.toLowerCase();
-                    return (name.includes('boisson') || name.includes('coca') || name.includes('fanta') ||
-                        name.includes('sprite') || name.includes('jus') || name.includes('eau')) &&
-                        !name.includes('frite');
-                })
+            // [BUG-W5 FIX] Only add boisson_choice step if there are actual boisson items
+            var boissonItems = addonItems.filter(function (a) {
+                var name = a.name.toLowerCase();
+                return (name.includes('boisson') || name.includes('coca') || name.includes('fanta') ||
+                    name.includes('sprite') || name.includes('jus') || name.includes('eau')) &&
+                    !name.includes('frite');
             });
+            if (boissonItems.length > 0) {
+                s.push({
+                    type: 'boisson_choice',
+                    label: 'Boisson',
+                    subtitle: 'Choisissez votre boisson',
+                    showCondition: 'hasBoisson',
+                    boissonItems: boissonItems
+                });
+            }
 
             // Init selections avec valeurs par défaut
             selections.menuChoice = 'none';  // Par défaut: pas de formule (user doit choisir)
@@ -932,8 +971,11 @@
             extra += (selections.sauceFritesOrder.length - 1) * SAUCE_EXTRA_PRICE;
         }
         // Addons — [FIX] Support both legacy 'menu' AND new 'menu_choice' step types
+        // [W-6 FIX] Also support 'supplements_menu' step type for Sandwich/Burger flow
         var addonTotal = 0;
-        var menuStep = steps.find(function (s) { return s.type === 'menu' || s.type === 'menu_choice'; });
+        var menuStep = steps.find(function (s) {
+            return s.type === 'menu' || s.type === 'menu_choice' || s.type === 'supplements_menu';
+        });
         if (menuStep) {
             // New menu_choice format (Sprint 4+)
             if (selections.menuChoice === 'full' && menuStep.menuComplet) {
@@ -945,8 +987,9 @@
             } else if (selections.menuChoice === 'full' && menuStep.items) {
                 // Legacy fallback
                 menuStep.items.forEach(function (a) { addonTotal += a.price; });
-            } else if (selections.individualAddons && menuStep.items) {
-                menuStep.items.forEach(function (a) {
+            } else if (selections.individualAddons && (menuStep.items || menuStep.menuItems)) {
+                var addonItems = menuStep.items || menuStep.menuItems;
+                addonItems.forEach(function (a) {
                     if (selections.individualAddons[a.id]) addonTotal += a.price;
                 });
             }
@@ -954,7 +997,8 @@
             if (selections.fritesGrande) addonTotal += 1.00;
             if (selections.fritesCheddar) addonTotal += 1.00;
         }
-        return (basePrice + extra) * itemQuantity + addonTotal;
+        // [S21-2 FIX] addonTotal must be multiplied by itemQuantity — formule price applies per item
+        return (basePrice + extra + addonTotal) * itemQuantity;
     }
 
     // ---- SAUCE SINGLE (radio — omelettes, snacking) ----
@@ -1049,7 +1093,18 @@
         h += '<div class="menu-card-desc">Juste les frites</div>';
         h += '</div>';
 
-        // Option 3: Non merci
+        // [S21-6 FIX] Option 3: Boisson Seule (was built in step but never rendered)
+        if (step.boissonSeule) {
+            var selBoisson = selections.menuChoice === 'boisson' ? ' selected' : '';
+            h += '<div class="menu-choice-card' + selBoisson + '" data-action="menu-choice" data-value="boisson">';
+            h += '<div class="menu-card-icon">' + renderOptionIcon(step.boissonSeule.thumb, '🥤') + '</div>';
+            h += '<div class="menu-card-name">' + step.boissonSeule.name + '</div>';
+            h += '<div class="menu-card-price">+' + fmtPrice(step.boissonSeule.price) + '</div>';
+            h += '<div class="menu-card-desc">Juste la boisson</div>';
+            h += '</div>';
+        }
+
+        // Option 4: Non merci
         var selNone = selections.menuChoice === 'none' ? ' selected' : '';
         h += '<div class="menu-choice-card' + selNone + '" data-action="menu-choice" data-value="none">';
         h += '<div class="menu-card-icon">🚫</div>';
@@ -1425,10 +1480,12 @@
             h += '<div class="wizard-menu-options">';
 
             // Full menu option
+            // [BUG-W4 FIX] Use menuComplet.price from DB instead of hardcoded €3.00
+            var menuPrice = (step.menuComplet && step.menuComplet.price) ? step.menuComplet.price.toFixed(2) : '3.00';
             h += '<div class="wizard-menu-card' + (selections.menuChoice === 'full' ? ' selected' : '') + '" data-menu="full">';
             h += '<div class="menu-icon">🍟🥤</div>';
             h += '<div class="menu-name">Menu Complet</div>';
-            h += '<div class="menu-price">+€3.00</div>';
+            h += '<div class="menu-price">+€' + menuPrice + '</div>';
             h += '<div class="menu-desc">Frites + Boisson</div>';
             h += '</div>';
 
@@ -1451,12 +1508,37 @@
             h += '</div>';
             h += '</div>';
 
-            // INLINE: Sauce Frites (visible only if frites selected)
+            // INLINE: Frites Options (visible only if frites selected) — [S21-3 FIX] Cheddar & Grande for Sandwich flow
             var fritesSelected = selections.menuChoice === 'full' ||
                 (selections.individualAddons && step.menuItems.some(function (a) {
                     return selections.individualAddons[a.id] && a.name.toLowerCase().includes('frite');
                 }));
 
+            h += '<div class="frites-options-inline' + (fritesSelected ? ' visible' : '') + '">';
+            h += '<h5>🍟 Options pour vos frites</h5>';
+            h += '<div class="wizard-frites-options compact">';
+            // Grande portion toggle
+            h += '<div class="wizard-option frites-opt' + (selections.fritesGrande ? ' selected' : '') + '" data-action="frites-size" data-value="grande">';
+            h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+            h += '<span class="option-name">Grande Portion (+€1.00)</span>';
+            h += '</div>';
+            h += '<div class="wizard-option frites-opt' + (!selections.fritesGrande ? ' selected' : '') + '" data-action="frites-size" data-value="normal">';
+            h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+            h += '<span class="option-name">Portion Normale (incluse)</span>';
+            h += '</div>';
+            // Cheddar toggle
+            h += '<div class="wizard-option frites-opt' + (selections.fritesCheddar ? ' selected' : '') + '" data-action="frites-cheddar" data-value="yes">';
+            h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+            h += '<span class="option-name">Avec Cheddar Fondu (+€1.00)</span>';
+            h += '</div>';
+            h += '<div class="wizard-option frites-opt' + (!selections.fritesCheddar ? ' selected' : '') + '" data-action="frites-cheddar" data-value="no">';
+            h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+            h += '<span class="option-name">Sans Cheddar (inclus)</span>';
+            h += '</div>';
+            h += '</div>';
+            h += '</div>';
+
+            // INLINE: Sauce Frites (visible only if frites selected)
             h += '<div class="sauce-frites-inline' + (fritesSelected ? ' visible' : '') + '">';
             h += '<h5>🍟 Sauce pour vos frites</h5>';
             var sauceFCount = selections.sauceFritesOrder ? selections.sauceFritesOrder.length : 0;
@@ -1865,7 +1947,7 @@
 
         // Total
         var unitPrice = basePrice + totalExtra;
-        var total = (unitPrice * itemQuantity) + addonTotal;
+        var total = (unitPrice + addonTotal) * itemQuantity;
         h += '<div class="wizard-recap-row total"><span class="label">Total</span><span class="value">' +
             fmtPrice(total) + '</span></div>';
 
@@ -1933,6 +2015,26 @@
             }
         }
 
+        // [BUG-1 FIX] Pain selection (sandwich only) - Include bread type in KDS instruction
+        if (selections.pain) {
+            var painVariation = null;
+            // Find pain variation from wizardItemData.variations (grouped by attribute) [BUG-W1 FIX]
+            if (wizardItemData && wizardItemData.variations) {
+                Object.values(wizardItemData.variations).forEach(function (group) {
+                    if (Array.isArray(group)) {
+                        group.forEach(function (v) {
+                            if (v.id === selections.pain) {
+                                painVariation = v;
+                            }
+                        });
+                    }
+                });
+            }
+            if (painVariation) {
+                parts.push('PAIN: ' + painVariation.name);
+            }
+        }
+
         // Sauce principale (première sauce dans sauceOrder)
         if (selections.sauceOrder && selections.sauceOrder.length > 0) {
             var allSauceItems = [];
@@ -1963,22 +2065,58 @@
             }
         }
 
-        // Garnitures
-        if (selections.garnitures) {
-            var garnNames = [];
-            Object.keys(selections.garnitures).forEach(function (id) {
-                if (selections.garnitures[id]) {
-                    // Chercher le nom dans les étapes
-                    steps.forEach(function (s) {
-                        if (s.garnitureItems) {
-                            var g = s.garnitureItems.find(function (gg) { return String(gg.id) === String(id); });
-                            if (g) garnNames.push(g.name);
-                        }
-                    });
+        // [G1 FIX] sauceSingle for omelette/snacking
+        if (selections.sauceSingle) {
+            var sauceSingleStep = steps.find(function (s) { return s.type === 'sauce_single'; });
+            if (sauceSingleStep && sauceSingleStep.items) {
+                var sauceSingleItem = sauceSingleStep.items.find(function (ss) {
+                    return ss.id === selections.sauceSingle;
+                });
+                if (sauceSingleItem) {
+                    parts.push('SAUCE: ' + sauceSingleItem.name);
                 }
+            }
+        }
+
+        // Garnitures
+        // [BUG-GARN-1+2 FIX] Garnitures: emit both SANS: (excluded) and GARNITURES: (included)
+        // Also search freeItems (perso step for Tacos) AND garnitureItems AND items
+        if (selections.garnitures) {
+            var allGarnItems = [];
+            steps.forEach(function (s) {
+                // [BUG-GARN-2 FIX] Search freeItems (perso step) AND garnitureItems AND items
+                var items = s.garnitureItems || s.freeItems || (s.type === 'garnitures' ? s.items : null) || [];
+                items.forEach(function (g) {
+                    if (!allGarnItems.find(function (x) { return x.id === g.id; })) {
+                        allGarnItems.push(g);
+                    }
+                });
             });
-            if (garnNames.length > 0) {
-                parts.push('GARNITURES: ' + garnNames.join(', '));
+            var garnIncluded = [];
+            var garnExcluded = [];
+            allGarnItems.forEach(function (g) {
+                if (selections.garnitures[g.id] === true) garnIncluded.push(g.name);
+                else if (selections.garnitures[g.id] === false) garnExcluded.push(g.name);
+            });
+            // [BUG-GARN-1 FIX] Emit SANS: for excluded garnitures
+            if (garnExcluded.length > 0) {
+                parts.push('SANS: ' + garnExcluded.join(', '));
+            }
+            if (garnIncluded.length > 0) {
+                parts.push('GARNITURES: ' + garnIncluded.join(', '));
+            }
+        }
+
+        // [G2 FIX] Accompagnement for assiettes (riz/frites/salade)
+        if (selections.accompagnement) {
+            var accompStep = steps.find(function (s) { return s.type === 'sauce_accompagnement'; });
+            if (accompStep && accompStep.accompItems) {
+                var accompItem = accompStep.accompItems.find(function (a) {
+                    return a.id === selections.accompagnement;
+                });
+                if (accompItem) {
+                    parts.push('ACCOMPAGNEMENT: ' + accompItem.name);
+                }
             }
         }
 
@@ -2006,6 +2144,33 @@
                 parts.push('FORMULE: Frites Seules');
             } else if (selections.menuChoice === 'boisson') {
                 parts.push('FORMULE: Boisson Seule');
+            } else if (selections.menuChoice === 'individual' && selections.individualAddons) {
+                // [S21-1 FIX] Handle individual addons (e.g., Frites Seules, Boisson Seule selected individually)
+                var indNames = [];
+                var menuStep = steps.find(function (s) { return s.type === 'supplements_menu' || s.type === 'menu'; });
+                var addonItems = menuStep ? (menuStep.menuItems || menuStep.items) : null;
+                if (addonItems) {
+                    addonItems.forEach(function (a) {
+                        if (selections.individualAddons[a.id]) {
+                            indNames.push(a.name);
+                        }
+                    });
+                }
+                if (indNames.length > 0) {
+                    parts.push('FORMULE: ' + indNames.join(', '));
+                }
+            }
+
+            // [BUG-2 FIX] Include specific boisson name in KDS instruction
+            // [W-4 FIX] Look for boissonItems on boisson_choice step, not menu_choice
+            if (selections.boissonChoice && selections.boissonChoice !== 'none') {
+                var boissonStep = steps.find(function (s) { return s.type === 'boisson_choice'; });
+                if (boissonStep && boissonStep.boissonItems) {
+                    var boissonItem = boissonStep.boissonItems.find(function (b) { return b.id === selections.boissonChoice; });
+                    if (boissonItem) {
+                        parts.push('BOISSON: ' + boissonItem.name);
+                    }
+                }
             }
         }
 
@@ -2020,10 +2185,16 @@
         // Sauce frites
         if (selections.sauceFritesOrder && selections.sauceFritesOrder.length > 0) {
             var sfStep = steps.find(function (s) { return s.type === 'sauce_frites'; });
+            // [W-8 FIX] Fallback: look for sauceItems in supplements_menu step
+            var sfItems = (sfStep && sfStep.items) ? sfStep.items : null;
+            if (!sfItems) {
+                var suppStep = steps.find(function (s) { return s.type === 'supplements_menu'; });
+                if (suppStep && suppStep.sauceItems) sfItems = suppStep.sauceItems;
+            }
             var sfNames = [];
-            if (sfStep && sfStep.items) {
+            if (sfItems) {
                 selections.sauceFritesOrder.forEach(function (id) {
-                    var sauce = sfStep.items.find(function (ss) { return ss.id === id; });
+                    var sauce = sfItems.find(function (ss) { return ss.id === id; });
                     if (sauce) sfNames.push(sauce.name);
                 });
             }
@@ -2081,6 +2252,66 @@
             });
         }
 
+        // [BUG-1 FIX] Sync pain variation (sandwich) - Click the pain/galette radio
+        // [W-10 FIX] Handle both integer IDs (DB variations) and string IDs (fallback 'pain'/'galette')
+        if (selections.pain) {
+            var painRadios = originalBody.querySelectorAll('.custom-radio-field');
+            painRadios.forEach(function (radio) {
+                var parsedVal = parseInt(radio.value);
+                var isMatch = isNaN(parsedVal) ? radio.value === selections.pain : parsedVal === selections.pain;
+                if (isMatch) {
+                    radio.click();
+                }
+            });
+            var painSelects = originalBody.querySelectorAll('select');
+            painSelects.forEach(function (sel) {
+                var opts = sel.querySelectorAll('option');
+                opts.forEach(function (opt) {
+                    if (parseInt(opt.value) === selections.pain) {
+                        sel.value = opt.value;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            });
+        }
+
+        // 2b. Sync extra sauces (index 1+) as extras checkboxes
+        // Extra sauces are stored as ItemExtra named "Sauce supplémentaire: X" in DB
+        if (selections.sauceOrder && selections.sauceOrder.length > 1) {
+            var extraSauceIds = selections.sauceOrder.slice(1); // all sauces after the 1st
+
+            // Find the sauce names for these IDs
+            var allSauceItems = [];
+            steps.forEach(function (step) {
+                if (step.sauceItems) allSauceItems = allSauceItems.concat(step.sauceItems);
+                if (step.items && (step.type === 'sauce' || step.type === 'sauce_frites')) {
+                    allSauceItems = allSauceItems.concat(step.items);
+                }
+            });
+
+            extraSauceIds.forEach(function (sauceId) {
+                var sauce = allSauceItems.find(function (s) { return s.id === sauceId; });
+                if (!sauce) return;
+
+                // Find the extra checkbox for "Sauce supplémentaire: {sauce.name}"
+                var extraCheckboxes = originalBody.querySelectorAll('.extra .custom-checkbox-field');
+                extraCheckboxes.forEach(function (cb) {
+                    // The extra checkbox value is the extra ID
+                    // We need to find the extra whose name matches "Sauce supplémentaire: {sauce.name}"
+                    var label = cb.closest('.extra')
+                        ? cb.closest('.extra').querySelector('label, span, .option-name')
+                        : null;
+                    if (label) {
+                        var labelText = (label.textContent || '').toLowerCase();
+                        var sauceName = (sauce.name || '').toLowerCase();
+                        if (labelText.includes('sauce suppl') && labelText.includes(sauceName)) {
+                            if (!cb.checked) cb.click();
+                        }
+                    }
+                });
+            });
+        }
+
         // 3. Check/uncheck extras
         var extraCheckboxes = originalBody.querySelectorAll('.extra .custom-checkbox-field');
         var allSelectedExtras = {};
@@ -2130,9 +2361,13 @@
 
         // 4. Click addon cards
         // [FIX] Support both legacy 'menu' AND new 'menu_choice' step types
+        // [W-6 FIX] Also support 'supplements_menu' step type for Sandwich/Burger flow
         var addonCards = originalBody.querySelectorAll('.addon');
-        var menuStep = steps.find(function (s) { return s.type === 'menu' || s.type === 'menu_choice'; });
+        var menuStep = steps.find(function (s) {
+            return s.type === 'menu' || s.type === 'menu_choice' || s.type === 'supplements_menu';
+        });
         if (menuStep && addonCards.length > 0) {
+            var menuAddonItems = menuStep.items || menuStep.menuItems || [];
             if (selections.menuChoice === 'full') {
                 // Menu complet: click ALL addon cards
                 addonCards.forEach(function (card) {
@@ -2140,24 +2375,50 @@
                     if (!isSelected) card.click();
                 });
             } else if (selections.menuChoice && selections.menuChoice !== 'none') {
-                // Frites seules or Boisson seule: match by name
+                // Frites seules / Boisson seule / individual: robust matching by name + id fallback
                 addonCards.forEach(function (card, index) {
-                    var addon = menuStep.items ? menuStep.items[index] : null;
-                    if (!addon) return;
+                    var addon = menuAddonItems[index] || null;
                     var shouldBeSelected = false;
-                    var addonName = (addon.name || '').toLowerCase();
+                    var addonName = (addon && addon.name ? addon.name : (card.getAttribute('data-addon-name') || '')).toLowerCase();
                     if (selections.menuChoice === 'frites' && addonName.includes('frite')) {
                         shouldBeSelected = true;
                     }
                     if (selections.menuChoice === 'boisson' && (addonName.includes('boisson') || addonName.includes('coca'))) {
                         shouldBeSelected = true;
                     }
-                    if (selections.individualAddons && selections.individualAddons[addon.id]) {
+                    if (addon && selections.individualAddons && selections.individualAddons[addon.id]) {
                         shouldBeSelected = true;
+                    }
+                    // Fallback: name-based match for individualAddons when DOM order differs from menuAddonItems
+                    if (!shouldBeSelected && selections.individualAddons && menuAddonItems.length > 0) {
+                        var selectedNames = menuAddonItems
+                            .filter(function (a) { return selections.individualAddons[a.id]; })
+                            .map(function (a) { return (a.name || '').toLowerCase(); });
+                        shouldBeSelected = selectedNames.some(function (name) {
+                            return name && addonName && addonName.includes(name.split(' ')[0]);
+                        });
                     }
                     var isSelected = card.closest('.selected, [class*="primary"]') !== null;
                     if (shouldBeSelected && !isSelected) card.click();
                 });
+            }
+        }
+
+        // [W-5 FIX] Sync boissonChoice to Vue modal addon cards
+        if (selections.boissonChoice && selections.boissonChoice !== 'none') {
+            var boissonStepSync = steps.find(function (s) { return s.type === 'boisson_choice'; });
+            if (boissonStepSync && boissonStepSync.boissonItems) {
+                var boissonItemSync = boissonStepSync.boissonItems.find(function (b) { return b.id === selections.boissonChoice; });
+                if (boissonItemSync) {
+                    var boissonAddonCards = originalBody.querySelectorAll('.addon[data-addon-id]');
+                    boissonAddonCards.forEach(function (card) {
+                        var addonName = (card.getAttribute('data-addon-name') || '').toLowerCase();
+                        if (addonName.includes(boissonItemSync.name.toLowerCase().split(' ')[0])) {
+                            var isSelected = card.closest('.selected, [class*="primary"]') !== null;
+                            if (!isSelected) card.click();
+                        }
+                    });
+                }
             }
         }
 
@@ -2190,6 +2451,9 @@
        ============================== */
     function openWizard(modal) {
         if (!lastItemData) return;
+
+        // [BUG-W1 FIX] Store item data for buildWizardInstruction()
+        wizardItemData = lastItemData;
 
         var modalDialog = modal.querySelector('.modal-dialog');
         originalBody = modal.querySelector('.modal-body');
@@ -2468,8 +2732,8 @@
             else card.classList.remove('selected');
         });
 
-        // [P1] Update frites options
-        wizardEl.querySelectorAll('.frites-option').forEach(function (opt) {
+        // [P1] Update frites options — [S21-3a FIX] Include .frites-opt inline elements
+        wizardEl.querySelectorAll('.frites-option, .frites-opt').forEach(function (opt) {
             var action = opt.getAttribute('data-action');
             var value = opt.getAttribute('data-value');
             var isSelected = false;
@@ -2509,6 +2773,20 @@
 
             if (fritesSelected) sauceFritesInline.classList.add('visible');
             else sauceFritesInline.classList.remove('visible');
+        }
+
+        // [S21-3 FIX] 8b. Toggle frites options inline visibility (for Sandwich/Burger flow)
+        var fritesOptionsInline = wizardEl.querySelector('.frites-options-inline');
+        if (fritesOptionsInline) {
+            var fritesSelectedOpts = (selections.menuChoice === 'full') ||
+                (selections.individualAddons && wizardEl.querySelectorAll('.wizard-menu-card[data-addon-id]').length > 0 &&
+                    Array.from(wizardEl.querySelectorAll('.wizard-menu-card[data-addon-id]')).some(function (card) {
+                        var id = parseInt(card.getAttribute('data-addon-id'));
+                        var name = card.querySelector('.menu-name');
+                        return selections.individualAddons[id] && name && name.innerText.toLowerCase().includes('frite');
+                    }));
+            if (fritesSelectedOpts) fritesOptionsInline.classList.add('visible');
+            else fritesOptionsInline.classList.remove('visible');
         }
 
         // [NEW SPRINT 4] 9. Update sauce info headers in combined steps
@@ -2629,7 +2907,9 @@
         wizardEl.querySelectorAll('.wizard-option[data-type="pain"]').forEach(function (opt) {
             opt.addEventListener('click', function () {
                 var id = this.getAttribute('data-id');
-                selections.pain = id;
+                // [W-9 FIX] Keep string ID for fallback pain items ('pain', 'galette') instead of NaN
+                var parsedId = parseInt(id);
+                selections.pain = isNaN(parsedId) ? id : parsedId;
                 updateWizardUI();
             });
         });
@@ -2820,7 +3100,7 @@
                     var stepIndex = steps.findIndex(function (s) { return s.type === gotoStep; });
                     if (stepIndex >= 0) {
                         currentStep = stepIndex;
-                        updateWizardUI();
+                        refreshWizard(); // [BUG-W3 FIX] Re-render step content, not just update UI
                     }
                 }
             });
@@ -2926,9 +3206,19 @@
 
                 var observer = new MutationObserver(function () {
                     if (modal.classList.contains('active') && !wizardEl) {
-                        setTimeout(function () {
-                            openWizard(modal);
-                        }, 400);
+                        // [BUG-6 FIX] Retry loop instead of fixed 400ms timeout
+                        // Waits for lastItemData to be populated by XHR interceptor
+                        var retries = 0;
+                        var tryOpen = function () {
+                            if (lastItemData) {
+                                openWizard(modal);
+                            } else if (retries < 10) {
+                                retries++;
+                                setTimeout(tryOpen, 100);
+                            }
+                            // else: fallback to original modal if data never arrives
+                        };
+                        setTimeout(tryOpen, 100);
                     } else if (!modal.classList.contains('active') && wizardEl) {
                         closeWizard();
                     }

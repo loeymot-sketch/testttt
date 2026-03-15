@@ -1,0 +1,499 @@
+/**
+ * KIOSK WIZARD — Standards tactiles pour borne automatique
+ * 
+ * Ce fichier CSS définit les standards tactiles pour l'interface
+ * utilisateur du wizard borne. Tous les éléments interactifs
+ * respectent les normes d'accessibilité tactile.
+ * 
+ * Standards appliqués:
+ * - Boutons: min 64px × 64px
+ * - Espacement entre boutons: min 16px
+ * - Font size: min 18px pour lisibilité à distance
+ * - Contraste élevé pour écrans extérieurs
+ */
+
+/* ============================================
+   VARIABLES CSS
+   ============================================ */
+:root {
+  --kiosk-primary: #E93C3C;
+  --kiosk-primary-dark: #d43535;
+  --kiosk-success: #43C6AC;
+  --kiosk-bg: #F8F9FA;
+  --kiosk-card-bg: #FFFFFF;
+  --kiosk-border: #EFF0F6;
+  --kiosk-text: #1a1a2e;
+  --kiosk-text-muted: #666666;
+  --kiosk-touch-min: 64px;
+  --kiosk-spacing: 16px;
+  --kiosk-radius: 16px;
+  --kiosk-radius-lg: 20px;
+  --kiosk-font-normal: 18px;
+  --kiosk-font-large: 24px;
+  --kiosk-font-xl: 32px;
+}
+
+/* ============================================
+   BOUTONS TACTILES
+   ============================================ */
+
+/* Base tactile button */
+.kiosk-touch-btn {
+  min-width: var(--kiosk-touch-min);
+  min-height: var(--kiosk-touch-min);
+  font-size: var(--kiosk-font-normal);
+  border-radius: var(--kiosk-radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-touch-btn:active {
+  transform: scale(0.98);
+}
+
+/* Primary button */
+.kiosk-touch-btn-primary {
+  background: var(--kiosk-primary);
+  color: white;
+  padding: 0 48px;
+}
+
+.kiosk-touch-btn-primary:hover {
+  background: var(--kiosk-primary-dark);
+}
+
+.kiosk-touch-btn-primary:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Secondary button */
+.kiosk-touch-btn-secondary {
+  background: white;
+  border: 2px solid var(--kiosk-primary);
+  color: var(--kiosk-primary);
+  padding: 0 32px;
+}
+
+.kiosk-touch-btn-secondary:hover {
+  background: #FFF0F0;
+}
+
+/* ============================================
+   OPTIONS / CARTES DE SÉLECTION
+   ============================================ */
+
+.kiosk-touch-option {
+  min-height: 80px;
+  padding: var(--kiosk-spacing);
+  border-radius: var(--kiosk-radius);
+  border: 3px solid var(--kiosk-border);
+  background: var(--kiosk-card-bg);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.kiosk-touch-option:active {
+  transform: scale(0.98);
+}
+
+.kiosk-touch-option.selected {
+  border-color: var(--kiosk-primary);
+  background: #FFF0F0;
+  box-shadow: 0 4px 20px rgba(233, 60, 60, 0.15);
+}
+
+.kiosk-touch-option.selected-success {
+  border-color: var(--kiosk-success);
+  background: #F0FDF4;
+}
+
+/* ============================================
+   ESPACEMENTS
+   ============================================ */
+
+.kiosk-touch-spacing {
+  gap: var(--kiosk-spacing);
+}
+
+.kiosk-touch-spacing-lg {
+  gap: 24px;
+}
+
+.kiosk-touch-padding {
+  padding: var(--kiosk-spacing);
+}
+
+.kiosk-touch-padding-lg {
+  padding: 24px;
+}
+
+/* ============================================
+   TYPOGRAPHIE
+   ============================================ */
+
+.kiosk-text-large {
+  font-size: var(--kiosk-font-large);
+  font-weight: 700;
+}
+
+.kiosk-text-xl {
+  font-size: var(--kiosk-font-xl);
+  font-weight: 800;
+}
+
+.kiosk-text-normal {
+  font-size: var(--kiosk-font-normal);
+}
+
+.kiosk-text-small {
+  font-size: 14px;
+}
+
+/* ============================================
+   CONTRASTE ÉLEVÉ (pour écrans extérieurs)
+   ============================================ */
+
+.kiosk-high-contrast {
+  color: var(--kiosk-text);
+}
+
+.kiosk-high-contrast-muted {
+  color: var(--kiosk-text-muted);
+}
+
+.kiosk-price-highlight {
+  color: var(--kiosk-primary);
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   CARTES ET CONTENEURS
+   ============================================ */
+
+.kiosk-card {
+  background: var(--kiosk-card-bg);
+  border-radius: var(--kiosk-radius-lg);
+  border: 2px solid var(--kiosk-border);
+  padding: var(--kiosk-spacing);
+}
+
+.kiosk-card-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   INPUTS ET FORMULAIRES TACTILES
+   ============================================ */
+
+.kiosk-input {
+  min-height: var(--kiosk-touch-min);
+  font-size: var(--kiosk-font-normal);
+  padding: 0 var(--kiosk-spacing);
+  border-radius: var(--kiosk-radius);
+  border: 2px solid var(--kiosk-border);
+  background: white;
+}
+
+.kiosk-input:focus {
+  border-color: var(--kiosk-primary);
+  outline: none;
+}
+
+/* ============================================
+   NAVIGATION PAR ÉTAPES
+   ============================================ */
+
+.kiosk-step-indicator {
+  display: flex;
+  gap: 8px;
+  padding: var(--kiosk-spacing);
+  overflow-x: auto;
+}
+
+.kiosk-step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.kiosk-step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--kiosk-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--kiosk-text-muted);
+}
+
+.kiosk-step-dot.active .kiosk-step-number {
+  background: var(--kiosk-primary);
+  color: white;
+}
+
+.kiosk-step-dot.done .kiosk-step-number {
+  background: var(--kiosk-success);
+  color: white;
+}
+
+.kiosk-step-label {
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--kiosk-text-muted);
+  white-space: nowrap;
+}
+
+.kiosk-step-dot.active .kiosk-step-label {
+  color: var(--kiosk-primary);
+  font-weight: 600;
+}
+
+/* ============================================
+   COMPTERS +/-
+   ============================================ */
+
+.kiosk-counter {
+  display: flex;
+  align-items: center;
+  gap: var(--kiosk-spacing);
+}
+
+.kiosk-counter-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 2px solid var(--kiosk-primary);
+  background: white;
+  color: var(--kiosk-primary);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-counter-btn:active {
+  transform: scale(0.95);
+  background: #FFF0F0;
+}
+
+.kiosk-counter-btn:disabled {
+  border-color: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.kiosk-counter-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--kiosk-text);
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ============================================
+   BADGES ET LABELS
+   ============================================ */
+
+.kiosk-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kiosk-badge-success {
+  background: var(--kiosk-success);
+  color: white;
+}
+
+.kiosk-badge-primary {
+  background: var(--kiosk-primary);
+  color: white;
+}
+
+.kiosk-badge-muted {
+  background: var(--kiosk-border);
+  color: var(--kiosk-text-muted);
+}
+
+/* ============================================
+   IMAGES ET EMOJIS
+   ============================================ */
+
+.kiosk-item-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.kiosk-item-img-lg {
+  width: 120px;
+  height: 120px;
+}
+
+.kiosk-emoji {
+  font-size: 36px;
+}
+
+.kiosk-emoji-lg {
+  font-size: 48px;
+}
+
+/* ============================================
+   GRILLES TACTILES
+   ============================================ */
+
+.kiosk-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--kiosk-spacing);
+}
+
+.kiosk-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes kiosk-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.kiosk-animate-pulse {
+  animation: kiosk-pulse 2s infinite;
+}
+
+@keyframes kiosk-fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kiosk-animate-fadeIn {
+  animation: kiosk-fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   UTILITAIRES
+   ============================================ */
+
+.kiosk-flex {
+  display: flex;
+}
+
+.kiosk-flex-col {
+  flex-direction: column;
+}
+
+.kiosk-items-center {
+  align-items: center;
+}
+
+.kiosk-justify-center {
+  justify-content: center;
+}
+
+.kiosk-justify-between {
+  justify-content: space-between;
+}
+
+.kiosk-flex-1 {
+  flex: 1;
+}
+
+.kiosk-text-center {
+  text-align: center;
+}
+
+.kiosk-hidden {
+  display: none !important;
+}
+
+/* ============================================
+   RESPONSIVE (pour différentes tailles de bornes)
+   ============================================ */
+
+/* Petite borne (10") */
+@media (max-width: 800px) {
+  :root {
+    --kiosk-font-normal: 16px;
+    --kiosk-font-large: 20px;
+    --kiosk-touch-min: 56px;
+  }
+  
+  .kiosk-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Grande borne (24"+) */
+@media (min-width: 1200px) {
+  :root {
+    --kiosk-font-normal: 20px;
+    --kiosk-font-large: 28px;
+    --kiosk-font-xl: 36px;
+    --kiosk-touch-min: 72px;
+    --kiosk-spacing: 20px;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITÉ
+   ============================================ */
+
+/* Focus visible pour navigation au clavier */
+.kiosk-touch-btn:focus-visible,
+.kiosk-touch-option:focus-visible,
+.kiosk-counter-btn:focus-visible {
+  outline: 3px solid var(--kiosk-primary);
+  outline-offset: 2px;
+}
+
+/* Réduction des animations si demandé */
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-animate-pulse,
+  .kiosk-animate-fadeIn {
+    animation: none;
+  }
+  
+  .kiosk-touch-btn,
+  .kiosk-touch-option,
+  .kiosk-counter-btn {
+    transition: none;
+  }
+}
+
+/* Contraste élevé */
+@media (prefers-contrast: high) {
+  :root {
+    --kiosk-border: #000000;
+    --kiosk-text: #000000;
+    --kiosk-text-muted: #333333;
+  }
+  
+  .kiosk-touch-option {
+    border-width: 4px;
+  }
+}

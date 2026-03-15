@@ -447,7 +447,8 @@
         <i class="lab lab-bag-2 lab-font-size-13 text-white"></i>
         <span class="text-base font-medium font-rubik text-white">
             {{ totalItems() }} {{ $t('label.items') }} - {{
-                currencyFormat(subtotal - posDiscount,
+                // [BUG-A3 FIX] Include delivery_charge in mobile total (match cart panel)
+                currencyFormat((subtotal + checkoutProps.form.delivery_charge) - posDiscount,
                     setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
                     setting.site_currency_position)
             }}
@@ -492,6 +493,7 @@ export default {
             loading: {
                 isActive: false,
             },
+            company: {},
             order: {},
             discount: null,
             checkoutProps: {
@@ -670,16 +672,6 @@ export default {
             });
 
             this.loading.isActive = true;
-            this.$store.dispatch("company/lists").then((res) => {
-                this.company.name = res.data.data.company_name;
-                this.company.email = res.data.data.company_email;
-                this.company.phone = res.data.data.company_phone;
-                this.company.address = res.data.data.company_address;
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
-            this.loading.isActive = true;
             this.$store
                 .dispatch("diningTable/lists", {
                     order_column: 'id',
@@ -696,6 +688,13 @@ export default {
             this.$store
                 .dispatch("company/lists")
                 .then((companyRes) => {
+                    // [BUG-A1 FIX] Populate company data from response
+                    this.company.name = companyRes.data.data.company_name;
+                    this.company.email = companyRes.data.data.company_email;
+                    this.company.phone = companyRes.data.data.company_phone;
+                    this.company.address = companyRes.data.data.company_address;
+                    this.company.country_code = companyRes.data.data.company_country_code;
+
                     this.$store
                         .dispatch(
                             "countryCode/show",
@@ -715,6 +714,17 @@ export default {
 
         } catch (err) {
             this.loading.isActive = false;
+        }
+
+        // Vérifier si un panier a été restauré depuis localStorage
+        const restoredFromStorage = this.$store.getters['posCart/restoredFromStorage'];
+        if (restoredFromStorage && this.$store.getters['posCart/lists'].length > 0) {
+            // Afficher une notification — utiliser le système d'alerte existant
+            // alertService est un import de module, pas une propriété d'instance
+            alertService.info(
+                this.$t('message.cart_restored') || 'Panier restauré de la session précédente. Vérifiez les articles.'
+            );
+            this.$store.dispatch('posCart/acknowledgeRestore');
         }
 
     },
@@ -894,6 +904,7 @@ export default {
                 });
                 return totalItem;
             }
+            return 0; // [BUG-A5 FIX] Return 0 when cart is empty
         },
         phoneNumber(e) {
             return appService.phoneNumber(e);

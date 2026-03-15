@@ -102,6 +102,7 @@ class FrontendOrderService
                 $kiosk = \App\Models\KioskMachine::where('user_id', Auth::user()->id)->first();
                 if ($kiosk) {
                     $validatedRequest['branch_id'] = $kiosk->branch_id;
+                    $validatedRequest['order_type'] = OrderType::KIOSK;  // [SPRINT 9] Forcer le type borne
                 }
 
                 $this->frontendOrder = FrontendOrder::create(
@@ -117,18 +118,48 @@ class FrontendOrderService
                 $totalTax = 0;
                 $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
-                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $items = Item::select('id', 'tax_id')
-                    ->whereIn('id', $requestedItemIds)
-                    ->pluck('tax_id', 'id');
                 $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
 
                 $realSubtotal = 0;
+                
+                // [PERF-02] Bulk-load toutes les items, variations et extras avant la boucle
+                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                $dbItems = Item::select('id', 'price', 'tax_id')
+                    ->whereIn('id', $requestedItemIds)
+                    ->get()
+                    ->keyBy('id');
+                
+                // Extraire tax_id pour compatibilité avec code existant
+                $items = $dbItems->pluck('tax_id', 'id');
+                
+                $variationIds = collect($requestItems)
+                    ->pluck('item_variations')
+                    ->flatten(1)
+                    ->pluck('id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $extraIds = collect($requestItems)
+                    ->pluck('item_extras')
+                    ->flatten(1)
+                    ->pluck('id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $dbVariations = !empty($variationIds)
+                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                    : collect();
+                
+                $dbExtras = !empty($extraIds)
+                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                    : collect();
+                
                 if (!blank($requestItems)) {
                     foreach ($requestItems as $item) {
                         // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                        $dbItem = Item::find($item->item_id);
+                        $dbItem = $dbItems[$item->item_id] ?? null;
                         if (!$dbItem) {
                             throw new \InvalidArgumentException(
                                 "Item ID {$item->item_id} introuvable. Commande rejetée.",
@@ -137,18 +168,21 @@ class FrontendOrderService
                         }
                         $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
+                        // [PERF-02] Calculer prix variations depuis collection pre-chargée
                         $calcVariationTotal = 0;
                         if (!empty($item->item_variations)) {
                             foreach ($item->item_variations as $var) {
-                                $dbVar = \App\Models\ItemVariation::find($var->id ?? 0);
+                                $dbVar = $dbVariations[$var->id ?? 0] ?? null;
                                 if ($dbVar)
                                     $calcVariationTotal += $dbVar->price;
                             }
                         }
+                        
+                        // [PERF-02] Calculer prix extras depuis collection pre-chargée
                         $calcExtraTotal = 0;
                         if (!empty($item->item_extras)) {
                             foreach ($item->item_extras as $ext) {
-                                $dbExt = \App\Models\ItemExtra::find($ext->id ?? 0);
+                                $dbExt = $dbExtras[$ext->id ?? 0] ?? null;
                                 if ($dbExt)
                                     $calcExtraTotal += $dbExt->price;
                             }

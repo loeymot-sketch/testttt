@@ -23,7 +23,6 @@ class KitchenDisplaySystemOrderService
         'branch_id',
         'order_type',
         'status',
-        'kitchen_status',
         'source'
     ];
 
@@ -113,7 +112,17 @@ class KitchenDisplaySystemOrderService
     public function OrderItems()
     {
         try {
-            $orders = Order::with('orderItems')->where('status', OrderStatus::PREPARING)->where('branch_id', auth()->user()->branch_id)->where(function ($query) {
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            $query = Order::with('orderItems')
+                ->where('status', OrderStatus::PREPARING);
+
+            // Admin bypass: branch_id=0 sees all branches
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            $orders = $query->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) {
@@ -135,7 +144,8 @@ class KitchenDisplaySystemOrderService
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();
-                $firstItem['quantity'] = $groupedItems->count() > 1 && !$firstItem['instruction'] ? $groupedItems->sum('quantity') : $firstItem['quantity'];
+                // [B-2 FIX] Always sum quantities — items with same instruction are already grouped separately
+                $firstItem['quantity'] = $groupedItems->sum('quantity');
                 return $firstItem;
             })->values();
             return $mergedItems;

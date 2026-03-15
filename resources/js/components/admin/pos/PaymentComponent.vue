@@ -196,7 +196,7 @@ export default {
                         this.$props.props.form.delivery_time = null;
                         this.$props.props.form.delivery_charge = null;
                         this.$props.props.form.total = 0;
-                        this.$props.props.form.order_type = orderTypeEnum.DINING_TABLE;
+                        this.$props.props.form.order_type = orderTypeEnum.TAKEAWAY; // [BUG-A2 FIX] Reset to TAKEAWAY instead of DINING_TABLE
                         this.$props.props.form.is_advance_order = isAdvanceOrderEnum.NO;
                         this.$props.props.form.source = sourceEnum.POS;
                         this.$props.props.form.address_id = null;

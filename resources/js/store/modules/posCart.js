@@ -1,16 +1,58 @@
 import _ from "lodash";
 import activityEnum from "../../enums/modules/activityEnum";
-import orderTypeEnum from "../../enums/modules/orderTypeEnum";
 
+// Clé localStorage pour le panier POS
+const POS_CART_KEY = 'pos_cart_v1';
+const POS_CART_TTL_MS = 2 * 60 * 60 * 1000; // 2 heures
+
+function saveCartToStorage(state) {
+    try {
+        localStorage.setItem(POS_CART_KEY, JSON.stringify({
+            lists: state.lists,
+            subtotal: state.subtotal,
+            discount: state.discount,
+            savedAt: Date.now()
+        }));
+    } catch (e) {
+        // localStorage peut être indisponible (mode privé, quota dépassé)
+        console.warn('[posCart] localStorage save failed:', e);
+    }
+}
+
+function loadCartFromStorage() {
+    try {
+        const raw = localStorage.getItem(POS_CART_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || !data.savedAt) return null;
+        // Expirer après 2h
+        if (Date.now() - data.savedAt > POS_CART_TTL_MS) {
+            localStorage.removeItem(POS_CART_KEY);
+            return null;
+        }
+        return data;
+    } catch (e) {
+        return null;
+    }
+}
+
+function clearCartFromStorage() {
+    try {
+        localStorage.removeItem(POS_CART_KEY);
+    } catch (e) {}
+}
 
 export const posCart = {
     namespaced: true,
-    state: {
-        lists: [],
-        subtotal: 0,
-        discount: 0,
-        orderType: null
-    },
+    state: (function() {
+        const saved = loadCartFromStorage();
+        return {
+            lists: saved ? saved.lists : [],
+            subtotal: saved ? saved.subtotal : 0,
+            discount: saved ? saved.discount : 0,
+            restoredFromStorage: saved && saved.lists.length > 0
+        };
+    })(),
     getters: {
         lists: function (state) {
             return state.lists;
@@ -21,8 +63,8 @@ export const posCart = {
         discount: function (state) {
             return state.discount;
         },
-        orderType: function (state) {
-            return state.orderType;
+        restoredFromStorage: function (state) {
+            return state.restoredFromStorage || false;
         }
     },
     actions: {
@@ -48,6 +90,9 @@ export const posCart = {
         },
         resetCart: function (context) {
             context.commit('resetCart');
+        },
+        acknowledgeRestore: function (context) {
+            context.commit('acknowledgeRestore');
         },
     },
     mutations: {
@@ -95,8 +140,14 @@ export const posCart = {
                                 if (variationAndExtraChecker.includes(false)) {
                                     newChecker.push(false);
                                 } else {
-                                    newChecker.push(true);
-                                    state.lists[listKey].quantity += pay.quantity;
+                                    // [V-1 FIX] Check instruction before merging — different instructions = separate items
+                                    var sameInstruction = (state.lists[listKey].instruction || '') === (pay.instruction || '');
+                                    if (sameInstruction) {
+                                        newChecker.push(true);
+                                        state.lists[listKey].quantity += pay.quantity;
+                                    } else {
+                                        newChecker.push(false);
+                                    }
                                 }
                                 variationAndExtraChecker = [];
                             } else {
@@ -131,6 +182,8 @@ export const posCart = {
                     }
                 });
             }
+            saveCartToStorage(state);
+            state.restoredFromStorage = false; // Reset flag après première modification
         },
         subtotal: function (state) {
             if (state.lists.length > 0) {
@@ -143,6 +196,7 @@ export const posCart = {
             } else {
                 state.subtotal = 0;
             }
+            saveCartToStorage(state);
         },
         quantity: function (state, payload) {
             if (payload.status === "increment") {
@@ -157,19 +211,27 @@ export const posCart = {
             } else {
                 state.lists[payload.id].quantity = payload.status;
             }
+            saveCartToStorage(state);
         },
         deleteCartItem: function (state, payload) {
             if (payload.status === "decrement") {
                 state.lists.splice(payload.id,1);
             }
+            saveCartToStorage(state);
         },
         discount: function (state, payload) {
             state.discount = payload;
+            saveCartToStorage(state);
         },
         resetCart: function (state) {
             state.lists = [];
             state.subtotal = 0;
             state.discount = 0;
+            clearCartFromStorage();
+            state.restoredFromStorage = false;
+        },
+        acknowledgeRestore: function (state) {
+            state.restoredFromStorage = false;
         }
     },
 };

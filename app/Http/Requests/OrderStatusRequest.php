@@ -21,7 +21,7 @@ class OrderStatusRequest extends FormRequest
         
         // Check if user has admin, manager, or kitchen role
         $user = auth()->user();
-        return $user->hasAnyRole(['Admin', 'Manager', 'Chef', 'Cashier']);
+        return $user->hasAnyRole(['Admin', 'Branch Manager', 'Chef', 'POS Operator']);
     }
 
     /**

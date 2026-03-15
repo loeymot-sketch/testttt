@@ -45,18 +45,19 @@ return [
     |--------------------------------------------------------------------------
     */
     'categories' => [
-        ['name' => 'Nos Tacos', 'sort' => 1, 'description' => 'Nos délicieux tacos avec viandes au choix'],
-        ['name' => 'Nos Sandwichs', 'sort' => 2, 'description' => 'Sandwichs gourmands et généreux'],
-        ['name' => 'Nos Burgers', 'sort' => 3, 'description' => 'Burgers maison 100% frais'],
-        ['name' => 'Nos Assiettes', 'sort' => 4, 'description' => 'Assiettes complètes avec garnitures'],
-        ['name' => 'Ojja', 'sort' => 5, 'description' => 'Ojja traditionnelle'],
-        ['name' => 'Omelettes', 'sort' => 6, 'description' => 'Omelettes faites maison'],
-        ['name' => 'Nos Salades', 'sort' => 7, 'description' => 'Salades fraîches et légères'],
-        ['name' => 'Chicken & Tenders', 'sort' => 8, 'description' => 'Ailes de poulet et tenders croustillants'],
-        ['name' => 'Nos Menus Enfants', 'sort' => 9, 'description' => 'Pour les petits gourmands'],
-        ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements'],
-        ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands'],
-        ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches'],
+        // [BUG-4 FIX] Added wizard_template and has_menu for proper POS wizard flow
+        ['name' => 'Nos Tacos', 'sort' => 1, 'description' => 'Nos délicieux tacos avec viandes au choix', 'wizard_template' => 'tacos', 'has_menu' => true],
+        ['name' => 'Nos Sandwichs', 'sort' => 2, 'description' => 'Sandwichs gourmands et généreux', 'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Nos Burgers', 'sort' => 3, 'description' => 'Burgers maison 100% frais', 'wizard_template' => 'burger', 'has_menu' => true],
+        ['name' => 'Nos Assiettes', 'sort' => 4, 'description' => 'Assiettes complètes avec garnitures', 'wizard_template' => 'assiette', 'has_menu' => false],
+        ['name' => 'Ojja', 'sort' => 5, 'description' => 'Ojja traditionnelle', 'wizard_template' => 'simple', 'has_menu' => false],
+        ['name' => 'Omelettes', 'sort' => 6, 'description' => 'Omelettes faites maison', 'wizard_template' => 'omelette', 'has_menu' => false],
+        ['name' => 'Nos Salades', 'sort' => 7, 'description' => 'Salades fraîches et légères', 'wizard_template' => 'salade', 'has_menu' => false],
+        ['name' => 'Chicken & Tenders', 'sort' => 8, 'description' => 'Ailes de poulet et tenders croustillants', 'wizard_template' => 'snacking', 'has_menu' => false],
+        ['name' => 'Nos Menus Enfants', 'sort' => 9, 'description' => 'Pour les petits gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
+        ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements', 'wizard_template' => 'simple', 'has_menu' => false],
+        ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
+        ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches', 'wizard_template' => 'simple', 'has_menu' => false],
     ],
 
     /*

@@ -9,6 +9,7 @@ use App\Models\KioskMachine;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\KioskMachineResource;
@@ -43,13 +44,23 @@ class KioskMachineLoginController extends Controller
             ], 400);
         }
 
-        if ($kioskMachine->is_login === Ask::YES) {
+        $loginResult = null;
+        DB::transaction(function () use ($kioskMachine, &$loginResult) {
+            // Recharger avec lock pour éviter la race condition
+            $lockedKiosk = KioskMachine::lockForUpdate()->find($kioskMachine->id);
+            if ($lockedKiosk->is_login === Ask::YES) {
+                $loginResult = 'already_logged_in';
+                return;
+            }
+            $user = User::find($lockedKiosk->user_id);
+            $this->token = $user->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
+            $lockedKiosk->update(['is_login' => Ask::YES]);
+            $loginResult = 'success';
+        });
+
+        if ($loginResult === 'already_logged_in') {
             return response()->json(['errors' => ['validation' => trans('all.message.already_logged_in')]], 400);
         }
-
-        $user = User::find($kioskMachine->user_id);
-        $this->token = $user->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
-        $kioskMachine->update(['is_login' => Ask::YES]);
 
         return response()->json([
             'message' => trans('all.message.login_success'),

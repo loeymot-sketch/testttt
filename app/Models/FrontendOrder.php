@@ -12,6 +12,11 @@ class FrontendOrder extends Model
     use HasFactory;
 
     protected $table = "orders";
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BranchScope);
+    }
     protected $fillable = [
         'order_serial_no',
         'token',

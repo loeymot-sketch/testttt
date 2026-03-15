@@ -25,15 +25,19 @@ class ItemCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => [
+            'name'               => [
                 'required',
                 'string',
                 'max:190',
                 Rule::unique("item_categories", "name")->ignore($this->route('itemCategory.id'))
             ],
-            'description' => ['nullable', 'string', 'max:900'],
-            'status'      => ['required', 'numeric', 'max:24'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'description'        => ['nullable', 'string', 'max:900'],
+            'status'             => ['required', 'numeric', 'max:24'],
+            'image'              => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'wizard_template'    => ['nullable', 'string', 'in:simple,tacos,sandwich,burger,assiette,salade,omelette,snacking'],
+            'has_menu'           => ['nullable', 'boolean'],
+            'default_menu_kiosk' => ['nullable', 'boolean'],
+            'sauce_included_menu'=> ['nullable', 'boolean'],
         ];
     }
 }

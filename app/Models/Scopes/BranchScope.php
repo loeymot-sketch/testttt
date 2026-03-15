@@ -17,7 +17,10 @@ class BranchScope implements Scope
     {
         if (!App::runningInConsole() && Auth::check()) {
             $field = sprintf('%s.%s', $builder->getQuery()->from, 'branch_id');
-            $builder->where($field, '=', $this->branch())->orWhere($field, '=', 0);
+            $builder->where(function ($query) use ($field) {
+                $query->where($field, '=', $this->branch())
+                      ->orWhere($field, '=', 0);
+            });
         }
     }
 }

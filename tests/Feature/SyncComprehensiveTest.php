@@ -220,15 +220,15 @@ class SyncComprehensiveTest extends TestCase
     public function test_table_order_appears_in_kds()
     {
         [$branch, $chef] = $this->setupChef();
+        $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         
         $table = DiningTable::factory()->create([
-            
+            'branch_id' => $branch->id,
             'status' => \App\Enums\Status::ACTIVE,
         ]);
         
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $item = \Database\Factories\ItemFactory::new()->create([
-            
             'item_category_id' => $category->id,
             'price' => 12.00,
         ]);
@@ -241,6 +241,9 @@ class SyncComprehensiveTest extends TestCase
                 'subtotal' => 12.00,
                 'total' => 12.00,
                 'source' => \App\Enums\Source::POS,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'is_advance_order' => 0,
                 'items' => json_encode([[
                     'item_id' => $item->id,
                     'price' => 12.00,

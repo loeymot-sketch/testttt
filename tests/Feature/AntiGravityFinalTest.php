@@ -6,13 +6,24 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Item;
 use App\Models\OrderItem;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AntiGravityFinalTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+    }
+
     public function test_ag_02_and_04()
     {
-        $admin = User::where('email', 'admin@lecayenne-henin-beaumont.fr')->first() ?? User::find(1);
-        $item = Item::where('name', 'Tacos L (2 Viandes)')->first();
+        $admin = User::factory()->create(['email' => 'admin@test.com']);
+        $admin->assignRole('Admin');
+        $item = Item::factory()->create(['name' => 'Tacos L (2 Viandes)', 'price' => 10.00]);
 
         echo "\n\n--- AG-02: API wizard_template ---\n";
         $response = $this->actingAs($admin)->getJson("/api/admin/item/{$item->id}");

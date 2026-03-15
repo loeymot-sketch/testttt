@@ -13,7 +13,10 @@ class PaymentStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        if (!auth()->check()) {
+            return false;
+        }
+        return auth()->user()->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator']);
     }
 
     /**

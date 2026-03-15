@@ -17,7 +17,7 @@ class DiningTableFactory extends Factory
             'slug' => \Illuminate\Support\Str::slug($name) . '-' . $this->faker->unique()->numerify('###'),
             'size' => $this->faker->numberBetween(2, 8),
             'status' => \App\Enums\Status::ACTIVE,
-            'branch_id' => 1,
+            'branch_id' => \App\Models\Branch::factory(),
         ];
     }
 }

@@ -58,6 +58,41 @@
                             <small class="db-field-alert" v-if="errors.description">{{ errors.description[0] }}</small>
                         </div>
 
+                        <!-- [SPRINT 7] Wizard template pour le POS et la borne -->
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="wizard_template" class="db-field-title">{{ $t('label.wizard_template') || 'Type de wizard' }}</label>
+                            <select v-model="props.form.wizard_template" id="wizard_template" class="db-field-control">
+                                <option value="simple">Simple (pas de wizard)</option>
+                                <option value="tacos">Tacos</option>
+                                <option value="sandwich">Sandwich</option>
+                                <option value="burger">Burger</option>
+                                <option value="assiette">Assiette</option>
+                                <option value="salade">Salade</option>
+                                <option value="omelette">Omelette</option>
+                                <option value="snacking">Snacking (Wings/Tenders)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title">{{ $t('label.has_menu') || 'Propose un menu (frites+boisson)' }}</label>
+                            <div class="db-field-radio-group">
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="1" v-model="props.form.has_menu" type="radio" id="has_menu_yes" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="has_menu_yes" class="db-field-label">{{ $t('label.yes') }}</label>
+                                </div>
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="0" v-model="props.form.has_menu" type="radio" id="has_menu_no" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="has_menu_no" class="db-field-label">{{ $t('label.no') }}</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -120,7 +155,11 @@ export default {
             this.$props.props.form = {
                 name: "",
                 description: "",
-                status: statusEnum.ACTIVE
+                status: statusEnum.ACTIVE,
+                wizard_template: 'simple',
+                has_menu: 0,
+                default_menu_kiosk: 0,
+                sauce_included_menu: 0
             }
             if (this.image) {
                 this.image = "";
@@ -134,6 +173,10 @@ export default {
                 fd.append('name', this.props.form.name);
                 fd.append('status', this.props.form.status);
                 fd.append('description', this.props.form.description);
+                fd.append('wizard_template', this.props.form.wizard_template || 'simple');
+                fd.append('has_menu', this.props.form.has_menu ?? 0);
+                fd.append('default_menu_kiosk', this.props.form.default_menu_kiosk ?? 0);
+                fd.append('sauce_included_menu', this.props.form.sauce_included_menu ?? 0);
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -151,6 +194,10 @@ export default {
                         name: "",
                         description: "",
                         status: statusEnum.ACTIVE,
+                        wizard_template: 'simple',
+                        has_menu: 0,
+                        default_menu_kiosk: 0,
+                        sauce_included_menu: 0
                     }
                     this.image = "";
                     this.errors = {};

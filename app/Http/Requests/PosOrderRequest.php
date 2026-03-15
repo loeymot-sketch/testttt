@@ -33,7 +33,7 @@ class PosOrderRequest extends FormRequest
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             'subtotal' => ['required', 'numeric'],
-            'discount' => ['nullable', 'numeric'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
             'dining_table_id' => request('order_type') === OrderType::DINING_TABLE ? [
                 'required',
                 'numeric'

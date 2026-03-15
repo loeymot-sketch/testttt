@@ -62,7 +62,7 @@ class AdminCrudComprehensiveTest extends TestCase
 
     /**
      * 2.2 - Créer un item
-     * Route: POST /api/admin/setting/item
+     * Route: POST /api/admin/item
      */
     public function test_admin_can_create_item()
     {
@@ -71,11 +71,10 @@ class AdminCrudComprehensiveTest extends TestCase
         
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/setting/item', [
+            ->postJson('/api/admin/item', [
                 'name' => 'Test Item',
                 'price' => 10.99,
-                'category_id' => $category->id,
-                
+                'item_category_id' => $category->id,
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
         
@@ -108,7 +107,6 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $item = \Database\Factories\ItemFactory::new()->create([
-            
             'price' => 10.00
         ]);
         
@@ -117,8 +115,7 @@ class AdminCrudComprehensiveTest extends TestCase
             ->putJson("/api/admin/setting/item/{$item->id}", [
                 'name' => $item->name,
                 'price' => 15.99,
-                'category_id' => $item->category_id,
-                
+                'item_category_id' => $item->item_category_id,
                 'status' => $item->status,
             ]);
         
@@ -282,17 +279,16 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_create_coupon()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/coupon', [
                 'name' => 'TEST10',
                 'code' => 'TEST10',
                 'discount' => 10,
-                'discount_type' => \App\Enums\CouponDiscountType::PERCENTAGE,
-                'status' => \App\Enums\Status::ACTIVE,
+                'discount_type' => 1, // 1 = percentage
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('coupons', ['code' => 'TEST10']);
     }

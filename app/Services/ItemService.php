@@ -127,6 +127,21 @@ class ItemService
                         $this->item->variations()->createMany($variations);
                     }
                 }
+
+                // [SPRINT 7] Gestion des extras
+                if ($request->extras) {
+                    $extras = $this->safeJsonDecode($request->extras, true);
+                    if ($extras !== null) {
+                        foreach ($extras as $extra) {
+                            \App\Models\ItemExtra::create([
+                                'item_id' => $this->item->id,
+                                'name'    => $extra['name'],
+                                'price'   => $extra['price'] ?? 0,
+                                'status'  => $extra['status'] ?? \App\Enums\Status::ACTIVE,
+                            ]);
+                        }
+                    }
+                }
             });
             return $this->item;
         } catch (Exception $exception) {
@@ -177,6 +192,38 @@ class ItemService
 
                     if ($variationDeleteArray) {
                         ItemVariation::whereIn('id', $variationDeleteArray)->delete();
+                    }
+                }
+
+                // [SPRINT 7] Gestion des extras — diff sync
+                if ($request->extras !== null) {
+                    $decodedExtras = $this->safeJsonDecode($request->extras, true);
+                    if ($decodedExtras !== null) {
+                        $extraIdsToKeep = [];
+                        foreach ($decodedExtras as $extra) {
+                            if (isset($extra['id'])) {
+                                // Mettre à jour l'extra existant
+                                \App\Models\ItemExtra::where('id', $extra['id'])->update([
+                                    'name'   => $extra['name'],
+                                    'price'  => $extra['price'] ?? 0,
+                                    'status' => $extra['status'] ?? \App\Enums\Status::ACTIVE,
+                                ]);
+                                $extraIdsToKeep[] = $extra['id'];
+                            } else {
+                                // Créer un nouvel extra
+                                $newExtra = \App\Models\ItemExtra::create([
+                                    'item_id' => $item->id,
+                                    'name'    => $extra['name'],
+                                    'price'   => $extra['price'] ?? 0,
+                                    'status'  => $extra['status'] ?? \App\Enums\Status::ACTIVE,
+                                ]);
+                                $extraIdsToKeep[] = $newExtra->id;
+                            }
+                        }
+                        // Supprimer les extras qui ne sont plus dans la liste
+                        \App\Models\ItemExtra::where('item_id', $item->id)
+                            ->whereNotIn('id', $extraIdsToKeep)
+                            ->delete();
                     }
                 }
             });
