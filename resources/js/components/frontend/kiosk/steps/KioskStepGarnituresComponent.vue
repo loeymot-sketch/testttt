@@ -54,16 +54,14 @@ export default {
       return Object.values(this.localSelections).filter(Boolean).length;
     },
     garnitureList() {
-      // Les garnitures sont des extras avec prix = 0 (gratuites)
-      if (!this.item.extras) return this.getDefaultGarnitureList();
+      // Les garnitures sont des extras avec prix = 0 (gratuites), excluant les sauces
+      if (!this.item.extras) return [];
       
-      const garnitures = this.item.extras.filter(e => 
-        parseFloat(e.convert_price || e.price || 0) === 0
-      );
-      
-      if (garnitures.length === 0) {
-        return this.getDefaultGarnitureList();
-      }
+      const garnitures = this.item.extras.filter(e => {
+        const price = parseFloat(e.convert_price || e.price || 0);
+        const name = (e.name || '').toLowerCase();
+        return price === 0 && !name.includes('sauce suppl');
+      });
       
       return garnitures.map(g => ({
         id: g.id,
@@ -74,14 +72,6 @@ export default {
     }
   },
   methods: {
-    getDefaultGarnitureList() {
-      return [
-        { id: 1, name: 'Salade', thumb: null, emoji: '🥬' },
-        { id: 2, name: 'Tomate', thumb: null, emoji: '🍅' },
-        { id: 3, name: 'Oignon', thumb: null, emoji: '🧅' },
-        { id: 4, name: 'Cornichons', thumb: null, emoji: '🥒' }
-      ];
-    },
     getEmojiForGarniture(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('salade') || lower.includes('laitue') || lower.includes('roquette')) return '🥬';

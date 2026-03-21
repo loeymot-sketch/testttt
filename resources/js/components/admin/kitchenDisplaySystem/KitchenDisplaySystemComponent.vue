@@ -411,7 +411,7 @@ export default {
       if (this.$route.path.includes('kitchen-display-system')) {
         this.autoRefreshInterval = setInterval(() => {
           this.refreshOrderList();
-        }, 300000); // Changed to 5 minutes as fallback, relying mainly on Firebase push
+        }, 30000); // 30s fallback — Firebase push is primary, polling is safety net
       }
     },
     refreshOrderList() {
@@ -504,6 +504,10 @@ export default {
           );
           this.list();
           this.items();
+          // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
+          window.dispatchEvent(new CustomEvent('realtime-order-update', {
+            detail: { type: 'status-change', order_id: id, status: status }
+          }));
         }).catch((err) => {
           this.loading.isActive = false;
           alertService.error(err.response.data.message);

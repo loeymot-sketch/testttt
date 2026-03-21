@@ -7,7 +7,7 @@
  *
  * This file is the ONLY authorized source for menu configuration.
  *
- * Restaurant: Le Grill House
+ * Restaurant: Le Cayenne
  * Locale: French (fr)
  * Currency: Euro (EUR)
  * Timezone: Europe/Paris
@@ -22,8 +22,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'restaurant' => [
-        'name'        => 'Le Grill House',
-        'slug'        => 'le-grill-house',
+        'name'        => 'Le Cayenne',
+        'slug'        => 'le-cayenne',
         'description' => 'Restaurant de burgers, tacos et grillades',
         'address'     => 'Paris, France',
         'phone'       => '+33 1 23 45 67 89',
@@ -116,15 +116,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Crudité Options
+    | Crudité Options (Atomiques - Sprint 23 Fix)
+    | Chaque crudité est un élément individuel toggle-able (vert/rouge)
     |--------------------------------------------------------------------------
     */
     'crudites' => [
-        'Complet (Salade, Tomate, Oignon)',
-        'Sans Oignon',
-        'Sans Tomate',
-        'Sans Salade',
-        'Aucune Crudité',
+        'Salade',
+        'Tomate',
+        'Oignon',
     ],
 
     /*
@@ -655,15 +654,15 @@ return [
     'addons' => [
         [
             'name'  => 'Menu (Frites + Boisson)',
-            'price' => 2.50,
+            'price' => 3.00,
         ],
         [
             'name'  => 'Frites Seules',
-            'price' => 2.50,
+            'price' => 2.00,
         ],
         [
             'name'  => 'Boisson Seule',
-            'price' => 1.50,
+            'price' => 2.00,
         ],
     ],
 

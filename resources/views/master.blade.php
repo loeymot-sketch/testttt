@@ -16,7 +16,7 @@
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
     <!-- PAGE TITLE -->
     <title>{{ Settings::group('company')->get('company_name') }}</title>
 
@@ -79,7 +79,16 @@
     <script src="{{ asset('themes/default/js/customScript.js') }}"></script>
     <script src="{{ asset('themes/default/js/tabs.js') }}"></script>
     <script src="{{ asset('themes/default/js/dropdown.js') }}"></script>
-    <script src="{{ asset('js/pos-wizard.js') }}"></script>
+    {{-- [AUDIT-FIX P2-1] Wizard pricing config injected server-side — prevents hardcoded stale values --}}
+    <script>
+        window.POS_WIZARD_CONFIG = {
+            sauceExtraPrice:   {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_sauce_extra_price') ?? 0.50) }},
+            viandeSupplPrice:  {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_viande_suppl_price') ?? 2.50) }},
+            fritesGrandePrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_grande_price') ?? 1.00) }},
+            fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
+        };
+    </script>
+    <script src="{{ asset('js/pos-wizard.js') }}?v=9-{{ time() }}"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

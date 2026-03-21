@@ -167,7 +167,30 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
 
     Route::post('/authcheck', function () {
         if (Auth::check()) {
-            return response()->json(['status' => true]);
+            $user = Auth::user();
+            $role = $user->roles[0] ?? null;
+            if (!$role) {
+                return response()->json(['status' => true]);
+            }
+
+            $menuService       = app(\App\Services\MenuService::class);
+            $permissionService = app(\App\Services\PermissionService::class);
+
+            $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($role));
+            $menus             = \App\Http\Resources\MenuResource::collection(collect($menuService->menu($role)));
+            $defaultPermission = \App\Libraries\AppLibrary::defaultPermission($permission);
+            $defaultMenu       = (object) \App\Libraries\AppLibrary::defaultMenu($menuService->menu($role), $defaultPermission);
+
+            return response()->json([
+                'status'            => true,
+                'token'             => null,
+                'branch_id'         => (int) $user->branch_id,
+                'user'              => new \App\Http\Resources\UserResource($user),
+                'menu'              => $menus,
+                'permission'        => $permission,
+                'defaultPermission' => $defaultPermission,
+                'defaultMenu'       => $defaultMenu,
+            ]);
         }
         return response()->json(['status' => false]);
     });

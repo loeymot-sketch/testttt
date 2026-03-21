@@ -372,12 +372,10 @@ class MenuSeeder extends Seeder
         $this->attrViande3 = ItemAttribute::create(['name' => 'Viande 3', 'status' => Status::ACTIVE]);
         $this->attrViande4 = ItemAttribute::create(['name' => 'Viande 4', 'status' => Status::ACTIVE]);
         $this->attrSauce = ItemAttribute::create(['name' => 'Sauce (1ère Gratuite)', 'status' => Status::ACTIVE]);
-        $this->attrCrudite = ItemAttribute::create(['name' => 'Garnitures', 'status' => Status::ACTIVE]);
         $this->attrPain = ItemAttribute::create(['name' => 'Type de Pain', 'status' => Status::ACTIVE]);  // [UI/UX Sprint 4]
 
         echo "  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4\n";
         echo "  ✓ Created: Sauce (1ère Gratuite)\n";
-        echo "  ✓ Created: Garnitures\n";
         echo "  ✓ Created: Type de Pain\n";  // [UI/UX Sprint 4]
         echo "✓ Attributes created\n\n";
     }
@@ -472,9 +470,9 @@ class MenuSeeder extends Seeder
             $this->attachSauceVariations($item, $data['sauce_special'] ?? null);
         }
 
-        // Add crudité variations if applicable
+        // Add crudité extras if applicable
         if ($data['has_crudites']) {
-            $this->attachCruditeVariations($item);
+            $this->attachCruditeExtras($item);
         }
 
         // [UI/UX Sprint 4] Add bread type variations for sandwichs
@@ -588,19 +586,18 @@ class MenuSeeder extends Seeder
     }
 
     /**
-     * Attach crudité variations to an item
+     * Attach crudité extras to an item
      *
      * @param Item $item
      */
-    protected function attachCruditeVariations(Item $item): void
+    protected function attachCruditeExtras(Item $item): void
     {
         foreach ($this->config['crudites'] as $crudite) {
-            ItemVariation::create([
-                'item_id'           => $item->id,
-                'item_attribute_id' => $this->attrCrudite->id,
-                'name'              => $crudite,
-                'price'             => 0.00,
-                'status'            => Status::ACTIVE,
+            ItemExtra::create([
+                'item_id' => $item->id,
+                'name'    => $crudite,
+                'price'   => 0.00,
+                'status'  => Status::ACTIVE,
             ]);
         }
     }

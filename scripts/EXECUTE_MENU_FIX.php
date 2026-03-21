@@ -1,10 +1,16 @@
 <?php
 /**
- * EXECUTE MENU FIX - Web Version
- * 
- * Access via browser: http://your-domain.com/EXECUTE_MENU_FIX.php
- * Or via CLI: php EXECUTE_MENU_FIX.php
+ * EXECUTE MENU FIX - Maintenance script (CLI only)
+ *
+ * [AUDIT-FIX P0-3] Ce script doit être exécuté UNIQUEMENT en CLI.
+ * Usage: php scripts/EXECUTE_MENU_FIX.php
  */
+
+// [AUDIT-FIX P0-3] Guard: refuse HTTP execution
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('Ce script ne peut être exécuté que via la ligne de commande.');
+}
 
 require __DIR__ . '/vendor/autoload.php';
 

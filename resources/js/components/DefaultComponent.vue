@@ -86,11 +86,11 @@ export default {
       .catch();
 
 
-    if (env.DEMO === "true" || env.DEMO === 'TRUE' || env.DEMO === true || env.DEMO === "1" || env.DEMO === 1) {
+    if (this.$store.getters.authStatus) {
       this.$store.dispatch("authcheck").then(res => {
         if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
           this.$router.push({ name: "frontend.home" });
-        };
+        }
       }).catch();
     }
 

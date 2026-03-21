@@ -22,67 +22,67 @@ class UserTableSeeder extends Seeder
     {
         $envService = new EnvEditor();
         $admin      = User::create([
-            'name'              => 'John Doe',
-            'email'             => 'admin@example.com',
-            'phone'             => '1254875855',
+            'name'              => 'Admin Le Cayenne',
+            'email'             => 'admin@lecayenne.fr',
+            'phone'             => '0600000000',
             'username'          => 'admin',
             'email_verified_at' => now(),
             'password'          => bcrypt('123456'),
             'branch_id'         => 0,
             'status'            => Status::ACTIVE,
-            'country_code'      => '+880',
+            'country_code'      => '+33',
             'is_guest'          => Ask::NO
         ]);
         $admin->assignRole(EnumRole::ADMIN);
 
         if ($envService->getValue('DEMO')) {
             Address::create([
-                'label'     => 'Home',
-                'address'   => 'Dhaka Bangladesh',
-                'apartment' => rand(0, 999) . ', Mirpur 10',
-                'latitude'  => '23.8069',
-                'longitude' => '90.3687',
+                'label'     => 'Domicile',
+                'address'   => 'Paris, France',
+                'apartment' => rand(0, 999) . ', Rue de Rivoli',
+                'latitude'  => '48.8566',
+                'longitude' => '2.3522',
                 'user_id'   => $admin->id,
             ]);
             Address::create([
-                'label'     => 'Work',
-                'address'   => 'Dhaka Bangladesh',
-                'apartment' => rand(0, 999) . ', Mirpur 1',
-                'latitude'  => '23.7956',
-                'longitude' => '90.3537',
+                'label'     => 'Travail',
+                'address'   => 'Paris, France',
+                'apartment' => rand(0, 999) . ', Avenue des Champs-Élysées',
+                'latitude'  => '48.8698',
+                'longitude' => '2.3075',
                 'user_id'   => $admin->id,
             ]);
         }
 
         $customer = User::create([
-            'name'              => 'Walking Customer',
+            'name'              => 'Client passage',
             'email'             => 'walkingcustomer@example.com',
-            'phone'             => '125444455',
+            'phone'             => '0600000001',
             'username'          => 'default-customer',
             'email_verified_at' => now(),
             'password'          => bcrypt('123456'),
             'branch_id'         => 0,
             'status'            => Status::ACTIVE,
-            'country_code'      => '+880',
+            'country_code'      => '+33',
             'is_guest'          => Ask::NO
         ]);
         $customer->assignRole(EnumRole::CUSTOMER);
 
         if ($envService->getValue('DEMO')) {
             Address::create([
-                'label'     => 'Home',
-                'address'   => 'Dhaka Bangladesh',
-                'apartment' => rand(0, 999) . ', Mirpur 1',
-                'latitude'  => '23.7956',
-                'longitude' => '90.3537',
+                'label'     => 'Domicile',
+                'address'   => 'Paris, France',
+                'apartment' => rand(0, 999) . ', Boulevard Haussmann',
+                'latitude'  => '48.8738',
+                'longitude' => '2.3312',
                 'user_id'   => $customer->id,
             ]);
             Address::create([
-                'label'     => 'Work',
-                'address'   => 'Dhaka Bangladesh',
-                'apartment' => rand(0, 999) . ', Gulshan 2',
-                'latitude'  => '23.7948',
-                'longitude' => '90.4143',
+                'label'     => 'Travail',
+                'address'   => 'Paris, France',
+                'apartment' => rand(0, 999) . ', Rue de la Paix',
+                'latitude'  => '48.8689',
+                'longitude' => '2.3302',
                 'user_id'   => $customer->id,
             ]);
         }

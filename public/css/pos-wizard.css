@@ -437,6 +437,26 @@
     margin-bottom: 6px;
 }
 
+/* [S24 FIX] Force emoji mode for sauces/garnitures - cleaner UI */
+.wizard-option .option-icon.force-emoji,
+.wizard-option .option-icon-micro.force-emoji {
+    font-size: 24px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.wizard-option .option-icon-micro.force-emoji {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+}
+
 .wizard-option .option-name {
     font-size: 12px;
     font-weight: 600;
@@ -1195,8 +1215,6 @@
 .wizard-recap-row:hover {
     background: rgba(233, 60, 60, 0.03);
     border-radius: 8px;
-    padding-left: 6px;
-    padding-right: 6px;
 }
 
 .wizard-recap-row .label {
@@ -1312,7 +1330,7 @@
     text-decoration-color: rgba(110, 110, 138, 0.8);
 }
 
-/* -- Nav container: slight lift shadow -- */
+/* -- Nav container: sticky with separator shadow -- */
 .wizard-nav {
     background: white;
     border-radius: 0 0 16px 16px;
@@ -1320,6 +1338,8 @@
     position: sticky;
     bottom: 0;
     z-index: 10;
+    box-shadow: 0 -4px 12px rgba(27, 27, 58, 0.06);
+    border-top: 1px solid #F2F2F7;
 }
 
 /* -- Viande complete badge: celebratory pulse -- */
@@ -1378,5 +1398,538 @@
     }
     .wizard-step-header h3 {
         font-size: 15px;
+    }
+}
+
+/* ============================================
+   [S25] SINGLE-PAGE ORDER FLOW STYLES
+   ============================================ */
+
+.pos-wizard.single-page {
+    padding-bottom: 8px;
+}
+
+/* ---- Header compact avec Qté inline ---- */
+.pos-wizard.single-page .wizard-item-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #FAFAFF;
+    border-radius: 12px;
+}
+
+.pos-wizard.single-page .wizard-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pos-wizard.single-page .wizard-item-header h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-wizard.single-page .wizard-item-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #E93C3C;
+    margin: 0;
+}
+
+/* Qté inline dans le header */
+.pos-wizard.single-page .wizard-qty-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    background: white;
+    border: 2px solid #EFF0F6;
+    border-radius: 10px;
+    padding: 4px 8px;
+}
+
+/* ---- Pain seul sur sa ligne (sandwich uniquement) ---- */
+.pos-wizard.single-page .wizard-top-row {
+    margin-bottom: 12px;
+}
+
+.pos-wizard.single-page .pain-section {
+    width: 100%;
+}
+
+.pos-wizard.single-page .pain-section h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8E8EA9;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.pos-wizard.single-page .pain-segment {
+    display: flex;
+    gap: 6px;
+}
+
+.pos-wizard.single-page .pain-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 2px solid #EFF0F6;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+
+.pos-wizard.single-page .pain-btn .pain-emoji {
+    font-size: 18px;
+}
+
+.pos-wizard.single-page .pain-btn:hover {
+    border-color: #D0D0E0;
+    background: #FAFAFF;
+}
+
+.pos-wizard.single-page .pain-btn.selected {
+    border-color: #E93C3C;
+    background: linear-gradient(135deg, #FFF0F0, #FFE8EC);
+    color: #E93C3C;
+}
+
+/* ---- Sections générales ---- */
+.pos-wizard.single-page .wizard-section {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #EFF0F6;
+}
+
+.pos-wizard.single-page .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.pos-wizard.single-page .section-header h4,
+.pos-wizard.single-page .wizard-section > h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    margin: 0 0 8px;
+}
+
+.pos-wizard.single-page .section-hint {
+    font-size: 11px;
+    color: #8E8EA9;
+    margin-bottom: 8px;
+}
+
+.pos-wizard.single-page .quota-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: #FFF0F0;
+    color: #E93C3C;
+    border: 1px solid #E93C3C;
+}
+
+.pos-wizard.single-page .quota-badge.complete {
+    background: #E8F8F5;
+    color: #43C6AC;
+    border-color: #43C6AC;
+}
+
+.pos-wizard.single-page .complete-text {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    color: #43C6AC;
+    font-weight: 600;
+}
+
+/* ---- Sauce icon / supplement icon ---- */
+.pos-wizard.single-page .sauce-icon,
+.pos-wizard.single-page .supplement-icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+}
+
+/* ---- Mise en page 2 colonnes (Sauce | Suppléments) et (Viandes | Crudités) ---- */
+.pos-wizard.single-page .wizard-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #EFF0F6;
+}
+
+.pos-wizard.single-page .wizard-2col-block {
+    min-width: 0;
+}
+
+.pos-wizard.single-page .wizard-2col-block h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    margin: 0 0 8px;
+}
+
+/* --- C1: Sauces en chips compacts --- */
+.sauce-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.sauce-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border: 1.5px solid #D9DBE9;
+    border-radius: 20px;
+    background: white;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.sauce-chip:hover {
+    border-color: #E93C3C;
+    background: #FFF5F5;
+}
+
+.sauce-chip.selected {
+    background: #E93C3C;
+    border-color: #E93C3C;
+    color: white;
+}
+
+.sauce-chip .chip-free {
+    font-size: 10px;
+    opacity: 0.85;
+}
+
+.sauce-chip .chip-paid {
+    font-size: 10px;
+    opacity: 0.85;
+}
+
+/* --- C2: Viandes en grille 3 colonnes --- */
+.pos-wizard.single-page .wizard-viande-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    max-height: none;
+    overflow-y: visible;
+}
+
+.pos-wizard.single-page .wizard-viande-row {
+    padding: 6px 8px;
+    margin-bottom: 0;
+}
+
+.pos-wizard.single-page .viande-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+
+.pos-wizard.single-page .viande-emoji {
+    font-size: 16px;
+}
+
+.pos-wizard.single-page .viande-name {
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.pos-wizard.single-page .viande-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+}
+
+.pos-wizard.single-page .viande-count {
+    font-size: 14px;
+    min-width: 14px;
+}
+
+/* Supplement grid dans la colonne droite */
+.pos-wizard.single-page .wizard-2col-block .wizard-options.supplement-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    max-height: 200px;
+}
+
+/* Crudités dans la colonne droite */
+.pos-wizard.single-page .wizard-2col-block .garniture-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ---- Formule compacte ---- */
+.pos-wizard.single-page .wizard-formule-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.pos-wizard.single-page .formule-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 6px;
+    border: 2px solid #EFF0F6;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pos-wizard.single-page .formule-card:hover {
+    border-color: #D0D0E0;
+}
+
+.pos-wizard.single-page .formule-card.selected {
+    border-color: #43C6AC;
+    background: #F0FDFA;
+}
+
+.pos-wizard.single-page .formule-icon {
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.pos-wizard.single-page .formule-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1B1B3A;
+    text-align: center;
+    font-family: 'Rubik', sans-serif;
+    line-height: 1.2;
+}
+
+.pos-wizard.single-page .formule-price {
+    font-size: 12px;
+    font-weight: 700;
+    color: #E93C3C;
+    margin-top: 3px;
+}
+
+/* ---- Sauce frites : grille 4 colonnes compacte ---- */
+.pos-wizard.single-page .sauce-frites-inline .wizard-options.sauce-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    max-height: 160px;
+}
+
+.pos-wizard.single-page .sauce-frites-inline h4,
+.pos-wizard.single-page .frites-upgrades-inline h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    margin: 10px 0 8px;
+}
+
+/* ---- Options frites compactes ---- */
+.pos-wizard.single-page .frites-upgrades-inline .wizard-options.supplement-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* --- C5: Suppléments toggle collapse --- */
+.suppl-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 7px 12px;
+    border: 1.5px dashed #D9DBE9;
+    border-radius: 8px;
+    background: #FAFAFF;
+    color: #6E6E8A;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Rubik', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.suppl-toggle:hover {
+    border-color: #E93C3C;
+    color: #E93C3C;
+}
+
+.suppl-toggle.has-items {
+    background: #E93C3C;
+    border-color: #E93C3C;
+    color: white;
+    border-style: solid;
+}
+
+.suppl-panel { }
+.suppl-panel.collapsed { display: none; }
+
+/* --- C6: Réduction espacement global wizard --- */
+.pos-wizard.single-page .wizard-section {
+    margin-bottom: 12px;
+}
+
+.pos-wizard.single-page .wizard-2col {
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.pos-wizard.single-page .wizard-2col-block {
+    padding: 10px;
+}
+
+.pos-wizard.single-page h4 {
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+/* ---- Instruction spéciale compacte ---- */
+.pos-wizard.single-page .wizard-comment-field {
+    width: 100%;
+    min-height: 48px;
+    max-height: 100px;
+    padding: 8px 12px;
+    border: 2px solid #EFF0F6;
+    border-radius: 10px;
+    font-family: 'Rubik', sans-serif;
+    font-size: 13px;
+    resize: vertical;
+    line-height: 1.4;
+}
+
+.pos-wizard.single-page .wizard-comment-field:focus {
+    outline: none;
+    border-color: #43C6AC;
+}
+
+/* ---- Aperçu ticket compact ---- */
+.pos-wizard.single-page .wizard-ticket-preview {
+    margin: 10px 0;
+    padding: 8px 12px;
+    background: #FFF8F0;
+    border: 1px solid #FFD9A0;
+    border-radius: 8px;
+}
+
+.pos-wizard.single-page .ticket-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #B05A00;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-family: 'Rubik', sans-serif;
+}
+
+.pos-wizard.single-page .ticket-content {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B1B3A;
+    font-family: 'Rubik', sans-serif;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+/* ---- Barre sticky ---- */
+.pos-wizard.single-page .wizard-sticky-bar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: white;
+    border-top: 2px solid #EFF0F6;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.07);
+    z-index: 10;
+    margin-top: 8px;
+}
+
+.pos-wizard.single-page .sticky-total {
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-wizard.single-page .total-label {
+    font-size: 11px;
+    color: #8E8EA9;
+    font-family: 'Rubik', sans-serif;
+}
+
+.pos-wizard.single-page .total-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #43C6AC;
+    font-family: 'Rubik', sans-serif;
+}
+
+.pos-wizard.single-page .wizard-btn-cart {
+    padding: 12px 24px;
+    background: #43C6AC;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Rubik', sans-serif;
+    transition: all 0.2s;
+}
+
+.pos-wizard.single-page .wizard-btn-cart:hover {
+    background: #3BB99D;
+    transform: translateY(-2px);
+}
+
+/* Hide progress bar in single-page mode */
+.pos-wizard.single-page .wizard-progress-bar,
+.pos-wizard.single-page .wizard-step-badge {
+    display: none !important;
+}
+
+/* ---- Responsive: sur petit écran, 2col repasse en 1col ---- */
+@media (max-width: 600px) {
+    .pos-wizard.single-page .wizard-2col {
+        grid-template-columns: 1fr;
+    }
+    .pos-wizard.single-page .wizard-top-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .pos-wizard.single-page .wizard-formule-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .pos-wizard.single-page .sauce-frites-inline .wizard-options.sauce-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
     }
 }

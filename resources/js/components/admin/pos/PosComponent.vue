@@ -658,10 +658,10 @@ export default {
                 order_column: 'id',
                 order_type: 'asc',
                 status: statusEnum.ACTIVE,
+                role_id: 2,
             }).then((res) => {
-                // [FIX API-BUG-001] Safe access: use 2nd user (Walking Customer) if exists, else 1st
                 if (res.data.data && res.data.data.length > 0) {
-                    var walkingCustomer = res.data.data.length > 1 ? res.data.data[1] : res.data.data[0];
+                    var walkingCustomer = res.data.data.find(u => u.email === 'walkingcustomer@example.com') || res.data.data[0];
                     this.checkoutProps.form.customer_id = walkingCustomer.id;
                     this.address.form.user_id = walkingCustomer.id;
                     this.gettingUserAddress(this.checkoutProps.form.customer_id);
@@ -939,6 +939,7 @@ export default {
                                 order_column: "id",
                                 order_type: "asc",
                                 status: statusEnum.ACTIVE,
+                                role_id: 2,
                                 vuex: true
                             })
                             .then((customerResponse) => {

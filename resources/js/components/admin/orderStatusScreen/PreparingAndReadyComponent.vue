@@ -63,7 +63,7 @@ export default {
       if (this.$route.path.includes('order-status-screen')) {
         this.autoRefreshInterval = setInterval(() => {
           this.list();
-        }, 300000); // 5 minutes fallback
+        }, 30000); // 30s fallback — Firebase push is primary, polling is safety net
       }
     },
     stopAutoRefresh() {

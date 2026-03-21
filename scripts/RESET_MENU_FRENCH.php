@@ -1,15 +1,21 @@
 <?php
 /**
- * RESET MENU TO FRENCH - STANDALONE SCRIPT
- * 
- * This script purges the English menu and recreates the French "Le Grill House" menu.
- * 
+ * RESET MENU TO FRENCH - Maintenance script (CLI only)
+ *
+ * [AUDIT-FIX P0-3] Ce script doit être exécuté UNIQUEMENT en CLI.
+ * Usage: php scripts/RESET_MENU_FRENCH.php
+ *
  * USAGE:
- *   Method 1: Via browser - http://your-domain.com/RESET_MENU_FRENCH.php
+ *   CLI uniquement: php scripts/RESET_MENU_FRENCH.php
  *   Method 2: Via CLI - php RESET_MENU_FRENCH.php
  */
 
-// Show all errors for debugging
+// [AUDIT-FIX P0-3] Guard: refuse HTTP execution
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('Ce script ne peut être exécuté que via la ligne de commande.');
+}
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 

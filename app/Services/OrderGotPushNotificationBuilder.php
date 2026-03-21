@@ -38,6 +38,9 @@ class OrderGotPushNotificationBuilder
                     $q->role('Branch Manager')->where('branch_id', $this->order->branch_id);
                 })->orWhere(function ($q) {
                     $q->role('POS Operator')->where('branch_id', $this->order->branch_id);
+                })->orWhere(function ($q) {
+                    // Chef doit recevoir les nouvelles commandes pour le KDS
+                    $q->role('Chef')->where('branch_id', $this->order->branch_id);
                 });
             })->where(function ($q) {
                 $q->whereNotNull('web_token')->orWhereNotNull('device_token');

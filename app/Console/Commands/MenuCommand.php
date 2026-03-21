@@ -217,9 +217,11 @@ class MenuCommand extends Command
 
         // 3. Check for English categories
         $this->line('3. Checking categories for English words...');
+        // Mots réellement anglais non-admis en contexte restaurant français
+        // Sandwich, Burger, Dessert, Salad, Chicken, Tenders sont acceptés dans les menus français
         $englishCategoryWords = [
-            'Appetizer', 'Burger', 'Sandwich', 'Chicken', 'Beef', 'Seafood',
-            'Salad', 'Soup', 'Side', 'Beverage', 'Drink', 'Dessert',
+            'Appetizer', 'Beef', 'Seafood',
+            'Soup', 'Side', 'Beverage', 'Drink',
             'Flame Grill', 'Veggie', 'Plant Based', 'House Special',
             'Entree', 'Zoop', 'Order'
         ];

@@ -1,25 +1,27 @@
 # PLAN DIRECTEUR MVP — FoodKing POS + KDS + Borne
 
 **Architecte :** Claude (Lead)  
-**Date :** 10 Mars 2026  
-**Statut :** SPRINT 21 — Wizard Logic: Sauces, Frites, Supplements (IMPLEMENTATION PHASE)
+**Date :** 16 Mars 2026  
+**Statut :** SPRINT 24 — Finalisation POS : Migrations + Build + Crudités Atomiques
 
 ---
 
 ## Dernier Sprint Actif
 
-**[📋 Sprint 21 — Wizard Logic: Sauces, Frites, Supplements](./sprint_21_plan.md)**  
-**Statut:** IMPLEMENTED (en attente validation E2E)  
+**[📋 Sprint 24 — Finalisation POS : Migrations + Build + Crudités Atomiques](./sprint_24_finalisation.md)**  
+**Statut:** PARTIELLEMENT COMPLETED — Actions manuelles requises (K1/K3/K4 bloqués par sandbox)  
 **Agent d'implémentation:** Kimi  
+**Verdict:** Attente exécution manuelle des commandes shell
 
-### Bugs corrigés dans Sprint 21
+### Tâches Sprint 24
 
-| ID | Sévérité | Description | Fichier |
-|----|----------|-------------|---------|
-| S21-1 | CRITICAL | `individualAddons` jamais écrit dans l'instruction KDS | `pos-wizard.js` buildWizardInstruction() |
-| S21-2 | HIGH | `addonTotal` non multiplié par `itemQuantity` (prix faux pour qty>1) | `pos-wizard.js` calculateRunningTotal() |
-| S21-3 | MEDIUM | Sandwich sans cheddar/grande frites (upsells manquants) | `pos-wizard.js` renderSupplementsMenuStep() |
-| S21-6 | LOW | Carte "Boisson Seule" jamais rendue | `pos-wizard.js` renderMenuChoiceStep() |
+| ID | Description | Statut | Bloquant |
+|----|-------------|--------|----------|
+| K1 | Exécuter migrations `2026_03_16_000001` et `000002` | ⏳ PENDING | Sandbox DB |
+| K2 | Fix migration 000002 (robustesse `$this->command`) | ✅ COMPLETED | — |
+| K3 | Vérifier/re-seeder crudités atomiques | ⏳ PENDING | Sandbox DB |
+| K4 | Build Vue `npm run dev` | ⏳ PENDING | Sandbox npm |
+| K5 | Créer rapports workflow (planning/execution) | ✅ COMPLETED | — |
 
 ---
 
@@ -34,7 +36,10 @@
 | Sprint 18 | Nullish coalescing operator for menu addon prices | ✅ COMPLETED |
 | Sprint 19 | Wizard logic: boisson lookup, supplements_menu, hasFrites, sauce frites, parseInt NaN | ✅ COMPLETED |
 | Sprint 20 | KDS instruction gaps: SANS garnitures, sauceSingle, accompagnement | ✅ COMPLETED |
-| Sprint 21 | Wizard logic: sauces, frites, supplements (S21-1/2/3/6) | 🔄 IMPLEMENTED |
+| Sprint 21 | Wizard logic: sauces, frites, supplements (S21-1/2/3/6) | ✅ COMPLETED |
+| Sprint 22 | Safety Lock: Sync & Pricing Integrity (S22-1/2/3/4) | ✅ COMPLETED |
+| Sprint 23 | Wizard UX fixes : crudités atomiques, validation navigation, prix DB (S23-P1/P2/P3/P4) | ✅ COMPLETED |
+| Sprint 24 | Finalisation : migrations + build + rapports | 🔄 PARTIELLEMENT COMPLETED |
 
 ---
 
@@ -42,14 +47,14 @@
 
 **Pour Kimi (implémentation):**
 1. Lire ce fichier (`latest.md`)
-2. Lire le sprint assigné (`sprint_21_plan.md`)
+2. Lire le sprint assigné (`sprint_22_plan.md`)
 3. Implémenter UNIQUEMENT les tâches du sprint
 4. Exécuter les tests spécifiés
 5. Écrire le résumé dans `reports/execution/latest.md`
 
 **Pour Anti-Gravity (QA):**
 1. Lire ce fichier (`latest.md`)
-2. Lire le sprint en cours (`sprint_21_plan.md`)
+2. Lire le sprint en cours (`sprint_22_plan.md`)
 3. Exécuter le test checklist du sprint
 4. Rédiger le rapport dans `reports/antigravity/latest.md`
 

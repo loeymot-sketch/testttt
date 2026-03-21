@@ -1,77 +1,52 @@
-# RAPPORT DE REVUE CLAUDE — Sprints 1A, 1B, 2
-**Revieweur :** Claude (Architecte)
-**Date :** 12 Mars 2026
-**Statut :** ✅ APPROUVÉ — Avec 1 note mineure
+# Latest Review — Claude Verdict
+
+**Sprint:** 22 — Safety Lock: Sync & Pricing Integrity  
+**Reviewer:** Claude (Architecte)  
+**Date:** 2026-03-15  
+**Status:** NEEDS_ANTIGRAVITY — E2E Validation Required
 
 ---
 
-## Sprint 1-A — Sécurité Critique ✅ APPROUVÉ
+## Quick Verdict
 
-| Check | Attendu | Vérifié | Statut |
-|-------|---------|---------|--------|
-| `rand()` supprimé dans `OrderService.php` | 0 occurrence | ✅ 0 | ✅ |
-| `Str::random(12)` à L930 et L954 | Present | ✅ Confirmé | ✅ |
-| `abort(403)` dans `OrderService.php` | 6+ | ✅ 7 (L803,823,840,857,991,1022,1050) | ✅ |
-| `random_int(100000,999999)` dans `ForgotPasswordController` | 1 | ✅ L42 | ✅ |
-| `throttle` sur routes auth | 4+ | ✅ 10 règles | ✅ |
+| Check | Status |
+|-------|--------|
+| PATCH 1 — individualAddons field | ✅ Correct |
+| PATCH 2 — Recap formula | ✅ Correct |
+| PATCH 3 — Addon sync robustness | ✅ Correct |
+| PATCH 4 — Boisson DOM target | ✅ Correct |
+| Code quality | ✅ Acceptable |
+| Git state | ✅ Clean at code verification time (before report files staging) |
+| E2E validation | ⏳ **PENDING** |
 
-**Verdict Sprint 1-A : ✅ APPROUVÉ — Impeccable.**
+**Overall Verdict:** `NEEDS_ANTIGRAVITY`
 
----
-
-## Sprint 1-B — Performance & Intégrité ✅ APPROUVÉ
-
-| Check | Attendu | Vérifié | Statut |
-|-------|---------|---------|--------|
-| `Item::get()` supprimé | 0 | ✅ 0 (remplacé par commentaire `[PERF-01]` aux L266/447/655) | ✅ |
-| `Item::select('id', 'price')` à L268, L449 | 2 | ✅ Confirmé | ✅ |
-| `Item::select('id', 'tax_id')` à L657 | 1 | ✅ Confirmé | ✅ |
-| Migration performance_indexes créée | 1 | ✅ `2026_03_12_130000_...` | ✅ |
-| `DB::transaction` dans OrderService | Existait | ✅ Déjà présent (aucune régression) | ✅ |
-
-> ⚠️ NOTE : La migration est créée **mais pas encore exécutée**. Lancer `php artisan migrate --force` pour activer les 9 index de performance.
-
-**Verdict Sprint 1-B : ✅ APPROUVÉ — Migration à exécuter (cf. note).**
+**Reason:** Patches touch sync logic, pricing display, and DOM interactions. Browser-based E2E validation is mandatory to confirm correct behavior.
 
 ---
 
-## Sprint 2 — Frontend Stability ✅ APPROUVÉ
+## E2E Validation Checklist (Anti-Gravity)
 
-| Check | Attendu | Vérifié | Statut |
-|-------|---------|---------|--------|
-| `beforeUnmount()` dans `FrontendNavBarComponent.vue` | 1 | ✅ L400 | ✅ |
-| `beforeUnmount()` dans `TableNavBarComponent.vue` | 1 | ✅ L157 | ✅ |
-| `limit(50)` dans `KitchenDisplaySystemOrderService.php` | 1 | ✅ L82 | ✅ |
+Required before marking Sprint 22 complete:
 
-**Verdict Sprint 2 : ✅ APPROUVÉ**
-
----
-
-## ⚡ Action Requise — Exécuter la migration
-
-```bash
-cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
-php artisan migrate --force
-```
-
-Vérifier ensuite :
-```bash
-php artisan tinker --execute="echo count(\DB::select('SHOW INDEX FROM orders')) . ' indexes';"
-```
+1. [ ] **Sandwich + Frites individuel** → total includes frites price
+2. [ ] **Sandwich qty=2 + Menu** → recap total == running total
+3. [ ] **Tacos + Boisson Seule** → boisson card synced to modal
+4. [ ] **Sandwich + Cheddar + Grande** → total +€2.00
+5. [ ] **Multiple addons** → all synced correctly to modal
 
 ---
 
-## Prochaine Étape — Sprint 3 : Menu Seeder
+## Report Links
 
-**Le Sprint 3 (fix menu POS vide) est le prochain.** Fichier : `KIMI_SPRINT_3_SEEDER_MENU.md`
+- **Full Sprint 22 Review:** [sprint_22_review.md](sprint_22_review.md)
+- **Sprint 22 Execution:** [reports/execution/sprint_22_execution.md](../execution/sprint_22_execution.md)
+- **Sprint 22 Planning:** [reports/planning/sprint_22_plan.md](../planning/sprint_22_plan.md)
 
 ---
 
-## Scorecard Mise à Jour
+## History
 
-| Catégorie | Score Avant | Score Maintenant |
-|-----------|-------------|------------------|
-| Sécurité | 3/10 | **8/10** ✅ |
-| Performance | 4/10 | **7/10** ✅ |
-| Stabilité Frontend | 5/10 | **8/10** ✅ |
-| Menu POS | 0/10 | **0/10** ⏳ (Sprint 3 non fait) |
+| Sprint | Review | Status |
+|--------|--------|--------|
+| 22 | [sprint_22_review.md](sprint_22_review.md) | 🔄 NEEDS_ANTIGRAVITY |

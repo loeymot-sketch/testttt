@@ -57,7 +57,11 @@ class DiningTableTableSeeder extends Seeder
                 if (!File::exists(storage_path('app/public/qr_codes/'))) {
                     File::makeDirectory(storage_path('app/public/qr_codes/'));
                 }
-                QrCode::format('png')->size(200)->generate(URL::to('/') . "/menu/" . $table['slug'], storage_path('app/public/qr_codes/' . $filename));
+                try {
+                    QrCode::format('png')->size(200)->generate(URL::to('/') . "/menu/" . $table['slug'], storage_path('app/public/qr_codes/' . $filename));
+                } catch (\Throwable $e) {
+                    // Silent fail if Imagick is not installed
+                }
 
                 DiningTable::create([
                     'name'      => $table['name'],

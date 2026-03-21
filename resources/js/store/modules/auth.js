@@ -60,7 +60,9 @@ export const auth = {
                 axios.post('auth/authcheck', payload).then((res) => {
                     if (res.data.status === false) {
                         context.commit('authLogout');
-                    };
+                    } else if (res.data.user) {
+                        context.commit('authRefresh', res.data);
+                    }
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
@@ -163,6 +165,14 @@ export const auth = {
         },
         authInfo: function (state, payload) {
             state.authInfo = payload;
+        },
+        authRefresh: function (state, payload) {
+            state.authBranchId = payload.branch_id;
+            state.authInfo = payload.user;
+            state.authMenu = payload.menu;
+            state.authPermission = payload.permission;
+            state.authDefaultPermission = payload.defaultPermission;
+            state.authDefaultMenu = payload.defaultMenu;
         }
     },
 }
