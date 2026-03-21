@@ -58,6 +58,7 @@ return [
         ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements', 'wizard_template' => 'simple', 'has_menu' => false],
         ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
         ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches', 'wizard_template' => 'simple', 'has_menu' => false],
+        ['name' => 'Suppléments', 'sort' => 13, 'description' => 'Suppléments et extras commandables séparément', 'wizard_template' => 'simple', 'has_menu' => false],
     ],
 
     /*
@@ -638,6 +639,76 @@ return [
                 'name'        => 'Capri-Sun',
                 'price'       => 1.50,
                 'description' => 'Capri-Sun 20cl',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+        ],
+
+        // =========================================================================
+        // SUPPLÉMENTS (items commandables séparément au POS)
+        // =========================================================================
+        'supplements' => [
+            [
+                'name'        => 'Sauce supplémentaire',
+                'price'       => 0.50,
+                'description' => 'Sauce au choix en supplément',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Fromage supplémentaire',
+                'price'       => 1.00,
+                'description' => 'Fromage en supplément',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Jambon de dinde',
+                'price'       => 1.00,
+                'description' => 'Supplément jambon de dinde',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Boursin',
+                'price'       => 1.00,
+                'description' => 'Supplément Boursin',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Fromage à raclette',
+                'price'       => 1.00,
+                'description' => 'Supplément fromage à raclette',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Œuf',
+                'price'       => 1.00,
+                'description' => 'Supplément œuf',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Galette pommes de terre',
+                'price'       => 1.00,
+                'description' => 'Supplément galette pommes de terre',
+                'viandes'     => 0,
+                'has_sauce'   => false,
+                'has_crudites'=> false,
+            ],
+            [
+                'name'        => 'Salade verte',
+                'price'       => 2.00,
+                'description' => 'Salade verte en accompagnement',
                 'viandes'     => 0,
                 'has_sauce'   => false,
                 'has_crudites'=> false,

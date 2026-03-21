@@ -15,7 +15,7 @@ class ItemCategory extends Model implements HasMedia
 
     protected $table = "item_categories";
     protected $fillable = [
-        'name', 'slug', 'description', 'status',
+        'name', 'slug', 'description', 'status', 'sort',
         // [PLAN_11 ARCH-01] Config wizard
         'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
     ];
