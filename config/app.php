@@ -58,6 +58,9 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    // [SEC-FIX] API key for x-api-key header validation — use config() not env() in middleware
+    'api_key' => env('MIX_API_KEY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

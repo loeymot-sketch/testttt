@@ -40,9 +40,29 @@ Bienvenue sur le dépôt principal de **FoodKing SaaS**, une solution complète 
 
 ## Documentation Technique Complète
 Pour comprendre l'architecture, les flux de commande et la sécurité, consultez le dossier `docs/` :
+- **[Continuité, vision & passation IDE](docs/PROJECT_CONTINUITY_AND_VISION.md)** — contexte produit (POS, KDS, borne, OSS), état du projet, correctifs majeurs, backlog ; **à lire en priorité** pour une nouvelle session ou un nouvel outil d’IA.
 - [Architecture Générale](docs/ARCHITECTURE.md)
 - [Flux de Commande (Order Flow)](docs/ORDER_FLOW.md)
 - [Cartographie par Appareil (Device Flow)](docs/DEVICE_FLOW.md)
 - [Notes de Sécurité & Falsification](docs/SECURITY_NOTES.md)
 - [Cartographie API](docs/API_MAP.md)
 - [Plan de Tests](docs/TEST_PLAN.md)
+
+## Développement assisté par IA (Cursor) — règles du projet
+
+### Règles automatiques (projet)
+En ouvrant ce dossier comme **racine du workspace** dans Cursor, les règles du dossier **`.cursor/rules/`** sont prises en compte automatiquement (fichiers `.mdc` / `.md`).  
+- **`project-continuity.mdc`** : rappel de lire `docs/PROJECT_CONTINUITY_AND_VISION.md` et `AGENTS.md` à chaque session.  
+- **`global-operating-principles.md`** : principes généraux (workflow multi-agents, petits changements, docs source de vérité).
+
+### Importer les règles « utilisateur » (tous vos projets Cursor)
+Le fichier **`.cursor/rules/global-operating-principles.md`** est pensé pour être aussi une **User Rule** globale :
+
+1. Ouvrir **Cursor** → **Settings** (ou `Cmd+,` / `Ctrl+,`).
+2. Aller à **Rules** (ou **Cursor Settings → Rules** selon la version).
+3. Dans **User Rules**, coller le contenu de **`.cursor/rules/global-operating-principles.md`** *ou* ajouter une règle qui renvoie explicitement à ce fichier (en le copiant depuis le dépôt après `git pull`).
+
+Ainsi, les mêmes principes s’appliquent même si vous travaillez sur une autre branche ou un autre clone.
+
+### Instructions projet pour les agents
+Le fichier **`AGENTS.md`** à la racine décrit la boucle QA / planning / exécution et les responsabilités par rôle (Claude, Kimi, Anti-Gravity). Les rapports vivent sous **`reports/`** et les workflows sous **`workflows/`**.

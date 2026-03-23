@@ -361,6 +361,8 @@ class OrderService
                             'item_variation_total' => $variationTotal,
                             'item_extra_total'     => $extraTotal,
                             'total_price'          => $verifiedTotalPrice,
+                            'created_at'           => now(),
+                            'updated_at'           => now(),
                         ];
                         $totalTax += $taxPrice;
                         $i++;
@@ -371,18 +373,30 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
-                // Queue number — lockForUpdate prevents race condition
+                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting the query for Admin (branch_id=0)
+                // [BUG-H3 FIX] Cross-table check: include FrontendOrder (table/kiosk) to prevent duplicate queue numbers
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::where('branch_id', $this->order->branch_id)
+                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('branch_id', $this->order->branch_id)
                     ->whereDate('created_at', $today)
                     ->whereNotNull('queue_number')
                     ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
-                $nextQueueNum = 1;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $matches)) {
-                    $nextQueueNum = intval($matches[1]) + 1;
+                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('queue_number')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                $maxOrderNum = 0;
+                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
+                    $maxOrderNum = (int) $m[1];
                 }
+                $maxFrontendNum = 0;
+                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
+                    $maxFrontendNum = (int) $m[1];
+                }
+                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
                 $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
@@ -435,14 +449,6 @@ class OrderService
                     ]);
                 }
 
-                SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-                SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-                SendOrderPush::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
-
-                SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
-                SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
-                SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::id() : null,
                     'action'   => 'Nouvelle commande Web/App',
@@ -456,6 +462,21 @@ class OrderService
                     ),
                 ]);
             });
+
+            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            try {
+                SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+                SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+                SendOrderPush::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
+                SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
+                SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
+                SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
+                // [PHASE-E] Broadcast via Soketi WebSockets
+                \App\Events\OrderCreated::dispatch($this->order);
+            } catch (\Exception $e) {
+                Log::warning('Notifications post-commande Web/App échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
+            }
+
             return $this->order;
         } catch (Exception $exception) {
             DB::rollBack();
@@ -571,22 +592,24 @@ class OrderService
                         $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
                         
                         $itemsArray[$i] = [
-                            'order_id' => $this->order->id,
-                            'branch_id' => $this->order->branch_id, // [FIX] Utiliser branch_id de l'order
-                            'item_id' => $item->item_id,
-                            'quantity' => $item->quantity,
-                            'discount' => (float) ($item->discount ?? 0),
-                            'tax_name' => $taxName,
-                            'tax_rate' => $taxRate,
-                            'tax_type' => $taxType,
-                            'tax_amount' => $taxPrice,
-                            'price' => $itemPrice, // [SÉCURITÉ] Prix DB
-                            'item_variations' => json_encode($item->item_variations ?? []),
-                            'item_extras' => json_encode($item->item_extras ?? []),
-                            'instruction' => $item->instruction ?? null,
+                            'order_id'             => $this->order->id,
+                            'branch_id'            => $this->order->branch_id,
+                            'item_id'              => $item->item_id,
+                            'quantity'             => $item->quantity,
+                            'discount'             => (float) ($item->discount ?? 0),
+                            'tax_name'             => $taxName,
+                            'tax_rate'             => $taxRate,
+                            'tax_type'             => $taxType,
+                            'tax_amount'           => $taxPrice,
+                            'price'                => $itemPrice,
+                            'item_variations'      => json_encode($item->item_variations ?? []),
+                            'item_extras'          => json_encode($item->item_extras ?? []),
+                            'instruction'          => $item->instruction ?? null,
                             'item_variation_total' => $variationTotal,
-                            'item_extra_total' => $extraTotal,
-                            'total_price' => $verifiedTotalPrice, // [SÉCURITÉ] Prix vérifié
+                            'item_extra_total'     => $extraTotal,
+                            'total_price'          => $verifiedTotalPrice,
+                            'created_at'           => now(),
+                            'updated_at'           => now(),
                         ];
                         $realSubtotal += $verifiedTotalPrice;
                         $totalTax = $totalTax + $taxPrice;
@@ -594,23 +617,34 @@ class OrderService
                     }
                 }
 
-
                 if (!blank($itemsArray)) {
                     OrderItem::insert($itemsArray);
                 }
 
+                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting query for Admin (branch_id=0)
+                // [BUG-H3 FIX] Cross-table check: include FrontendOrder to prevent queue number collision with table/kiosk orders
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::where('branch_id', $this->order->branch_id)
+                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('branch_id', $this->order->branch_id)
                     ->whereDate('created_at', $today)
                     ->whereNotNull('queue_number')
                     ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
-
-                $nextQueueNum = 1;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $matches)) {
-                    $nextQueueNum = intval($matches[1]) + 1;
+                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('queue_number')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                $maxOrderNum = 0;
+                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
+                    $maxOrderNum = (int) $m[1];
                 }
+                $maxFrontendNum = 0;
+                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
+                    $maxFrontendNum = (int) $m[1];
+                }
+                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
                 $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
@@ -643,7 +677,8 @@ class OrderService
 
                 $this->order->subtotal = $realSubtotal;
                 $this->order->discount = $calculatedDiscount;
-                $this->order->total = $realSubtotal + $totalTax + $this->order->delivery_charge - $calculatedDiscount;
+                // [BUG-H1 FIX] null-coalescing on delivery_charge + max(0) guard prevents negative totals
+                $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
 
                 $currentTime = Carbon::now();
                 $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -652,18 +687,28 @@ class OrderService
                 $this->order->delivery_time = "$start - $end";
                 $this->order->save();
 
+                // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order
+                if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
+                    OrderCoupon::create([
+                        'order_id'  => $this->order->id,
+                        'coupon_id' => $request->coupon_id,
+                        'user_id'   => $request->customer_id,
+                        'discount'  => $calculatedDiscount,
+                    ]);
+                }
+
                 //storing order address
                 if ($request->address_id) {
                     $address = Address::find($request->address_id);
                     if ($address) {
                         OrderAddress::create([
-                            'order_id' => $this->order->id,
-                            'user_id' => $request->customer_id,
-                            'label' => $address->label,
-                            'address' => $address->address,
+                            'order_id'  => $this->order->id,
+                            'user_id'   => $request->customer_id,
+                            'label'     => $address->label,
+                            'address'   => $address->address,
                             'apartment' => $address->apartment,
-                            'latitude' => $address->latitude,
-                            'longitude' => $address->longitude
+                            'latitude'  => $address->latitude,
+                            'longitude' => $address->longitude,
                         ]);
                     }
                 }
@@ -681,9 +726,8 @@ class OrderService
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details'  => sprintf('Créée via Point de Vente | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
-                
-                // [TÂCHE 2] NOTIFICATIONS KDS - Dispatcher événements pour réveiller KDS
-                $order = $this->order; // Sauvegarder pour dispatch après transaction
+
+                $order = $this->order;
             });
             
             // Dispatcher notifications APRÈS transaction (hors transaction)
@@ -692,8 +736,9 @@ class OrderService
                     SendOrderGotMail::dispatch(['order_id' => $order->id]);
                     SendOrderGotSms::dispatch(['order_id' => $order->id]);
                     SendOrderGotPush::dispatch(['order_id' => $order->id]);
+                    // [PHASE-E] Broadcast via Soketi WebSockets (no-op if BROADCAST_DRIVER=null)
+                    \App\Events\OrderCreated::dispatch($order);
                 } catch (\Exception $e) {
-                    // Log l'erreur mais ne pas bloquer la commande
                     Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
                 }
             }
@@ -795,22 +840,24 @@ class OrderService
                         $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                         $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
                         $itemsArray[$i] = [
-                            'order_id' => $this->order->id,
-                            'branch_id' => $item->branch_id,
-                            'item_id' => $item->item_id,
-                            'quantity' => $item->quantity,
-                            'discount' => (float) $item->discount,
-                            'tax_name' => $taxName,
-                            'tax_rate' => $taxRate,
-                            'tax_type' => $taxType,
-                            'tax_amount' => $taxPrice,
-                            'price' => $itemPrice,
-                            'item_variations' => json_encode($item->item_variations),
-                            'item_extras' => json_encode($item->item_extras),
-                            'instruction' => $item->instruction,
+                            'order_id'             => $this->order->id,
+                            'branch_id'            => $item->branch_id,
+                            'item_id'              => $item->item_id,
+                            'quantity'             => $item->quantity,
+                            'discount'             => (float) $item->discount,
+                            'tax_name'             => $taxName,
+                            'tax_rate'             => $taxRate,
+                            'tax_type'             => $taxType,
+                            'tax_amount'           => $taxPrice,
+                            'price'                => $itemPrice,
+                            'item_variations'      => json_encode($item->item_variations),
+                            'item_extras'          => json_encode($item->item_extras),
+                            'instruction'          => $item->instruction,
                             'item_variation_total' => $calcVariationTotal,
-                            'item_extra_total' => $calcExtraTotal,
-                            'total_price' => $verifiedTotalPrice,
+                            'item_extra_total'     => $calcExtraTotal,
+                            'total_price'          => $verifiedTotalPrice,
+                            'created_at'           => now(),
+                            'updated_at'           => now(),
                         ];
                         $totalTax = $totalTax + $taxPrice;
                         $i++;
@@ -821,18 +868,31 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
+                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope corruption for Admin
+                // [BUG-H3 FIX] tableOrderStore stores in FrontendOrder but must read BOTH tables for unified queue sequence
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::where('branch_id', $this->order->branch_id)
+                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('branch_id', $this->order->branch_id)
                     ->whereDate('created_at', $today)
                     ->whereNotNull('queue_number')
                     ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
-
-                $nextQueueNum = 1;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $matches)) {
-                    $nextQueueNum = intval($matches[1]) + 1;
+                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('queue_number')
+                    ->lockForUpdate()
+                    ->orderBy('id', 'desc')
+                    ->first();
+                $maxOrderNum = 0;
+                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
+                    $maxOrderNum = (int) $m[1];
                 }
+                $maxFrontendNum = 0;
+                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
+                    $maxFrontendNum = (int) $m[1];
+                }
+                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
                 $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
@@ -865,7 +925,8 @@ class OrderService
 
                 $this->order->subtotal = $realSubtotal;
                 $this->order->discount = $calculatedDiscount;
-                $this->order->total = $realSubtotal + $totalTax + $this->order->delivery_charge - $calculatedDiscount;
+                // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
+                $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
 
                 $currentTime = Carbon::now();
                 $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -874,9 +935,15 @@ class OrderService
                 $this->order->delivery_time = "$start - $end";
                 $this->order->save();
 
-                SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
-                SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
-                SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
+                // [BUG-C3 FIX] Create OrderCoupon record for table orders — tracks coupon usage
+                if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
+                    OrderCoupon::create([
+                        'order_id'  => $this->order->id,
+                        'coupon_id' => $request->coupon_id,
+                        'user_id'   => $request->customer_id,
+                        'discount'  => $calculatedDiscount,
+                    ]);
+                }
 
                 // [AUDIT-FIX P1-3] Log includes discount amount and type for auditability
                 $discountDetail = $calculatedDiscount > 0
@@ -892,6 +959,18 @@ class OrderService
                     'details'  => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
             });
+
+            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            try {
+                SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
+                SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
+                SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
+                // [PHASE-E] Broadcast via Soketi WebSockets
+                \App\Events\OrderCreated::dispatch($this->order);
+            } catch (\Exception $e) {
+                Log::warning('Notifications post-commande Table échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
+            }
+
             return $this->order;
         } catch (Exception $exception) {
             DB::rollBack();
@@ -1073,11 +1152,19 @@ class OrderService
                     }
                 }
 
+                $oldStatus = $order->status;
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 $order->status = $request->status;
                 $order->save();
+
+                // [PHASE-E] Broadcast status change via Soketi WebSockets
+                try {
+                    \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                } catch (\Exception $e) {
+                    Log::warning('OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                }
 
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::user()->id : null,

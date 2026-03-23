@@ -11,6 +11,7 @@ use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
+use App\Events\OrderStatusChanged;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\OrderStatusRequest;
@@ -95,11 +96,22 @@ class KitchenDisplaySystemOrderService
             if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
+
+            $oldStatus = $order->status;
+
             SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
             SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
             SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
             $order->status = $request->status;
             $order->save();
+
+            // [BUG-C1 FIX] Broadcast status change so OSS and POS update in real-time
+            // No-op if BROADCAST_DRIVER=null; safe to call unconditionally
+            try {
+                OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+            } catch (\Exception $e) {
+                Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());
+            }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

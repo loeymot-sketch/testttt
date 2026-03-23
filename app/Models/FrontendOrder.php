@@ -19,6 +19,7 @@ class FrontendOrder extends Model
     }
     protected $fillable = [
         'order_serial_no',
+        'queue_number',
         'token',
         'user_id',
         'branch_id',
@@ -26,6 +27,7 @@ class FrontendOrder extends Model
         'discount',
         'delivery_charge',
         'total',
+        'total_tax',
         'order_type',
         'order_datetime',
         'delivery_time',
@@ -36,7 +38,7 @@ class FrontendOrder extends Model
         'payment_status',
         'status',
         'dining_table_id',
-        'source'
+        'source',
     ];
 
     protected $casts = [
@@ -58,7 +60,7 @@ class FrontendOrder extends Model
         'payment_status'   => 'integer',
         'status'           => 'integer',
         'dining_table_id'  => 'integer',
-        'source'           => 'string'
+        'source'           => 'integer'
     ];
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany

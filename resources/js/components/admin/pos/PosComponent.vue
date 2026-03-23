@@ -661,7 +661,10 @@ export default {
                 role_id: 2,
             }).then((res) => {
                 if (res.data.data && res.data.data.length > 0) {
-                    var walkingCustomer = res.data.data.find(u => u.email === 'walkingcustomer@example.com') || res.data.data[0];
+                    // [BUG-M2 FIX] Find walking customer by email, then by name keyword, never fall through to a random real customer
+                    var walkingCustomer = res.data.data.find(u => u.email === 'walkingcustomer@example.com')
+                        || res.data.data.find(u => u.name && u.name.toLowerCase().includes('walking'))
+                        || res.data.data[0];
                     this.checkoutProps.form.customer_id = walkingCustomer.id;
                     this.address.form.user_id = walkingCustomer.id;
                     this.gettingUserAddress(this.checkoutProps.form.customer_id);
@@ -1121,9 +1124,13 @@ export default {
                     this.$nextTick(() => {
                         if (this.$refs.takeAway) {
                             this.$refs.takeAway.click();
-                            if (this.customers.length > 1) {
-                                this.checkoutProps.form.customer_id = this.customers[1].id;
-                                this.address.form.user_id = this.customers[1].id;
+                            if (this.customers.length > 0) {
+                                // [BUG-M2 FIX] Use same walking customer resolution logic — never rely on array index
+                                var wc = this.customers.find(u => u.email === 'walkingcustomer@example.com')
+                                    || this.customers.find(u => u.name && u.name.toLowerCase().includes('walking'))
+                                    || this.customers[0];
+                                this.checkoutProps.form.customer_id = wc.id;
+                                this.address.form.user_id = wc.id;
                                 this.gettingUserAddress(this.checkoutProps.form.customer_id);
                             }
 

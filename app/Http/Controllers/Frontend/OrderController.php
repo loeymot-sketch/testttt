@@ -59,4 +59,45 @@ class OrderController extends Controller
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
+
+    /**
+     * [BORNE-WINDOWS] Confirm card payment from physical terminal.
+     * Called by the Electron app after the terminal approves the transaction.
+     * Stores the transaction_id and marks the order as PAID.
+     */
+    public function paymentConfirm(FrontendOrder $frontendOrder, \Illuminate\Http\Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $request->validate([
+                'transaction_id' => ['required', 'string', 'max:255'],
+                'card_type'      => ['nullable', 'string', 'max:50'],
+                'payment_method' => ['nullable', 'integer'],
+            ]);
+
+            // Ensure the order belongs to the authenticated user
+            if ($frontendOrder->user_id !== \Illuminate\Support\Facades\Auth::id()) {
+                return response(['status' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $frontendOrder->update([
+                'payment_status' => \App\Enums\PaymentStatus::PAID,
+                'payment_method' => $request->payment_method ?? $frontendOrder->payment_method,
+            ]);
+
+            \App\Models\ActionLog::create([
+                'user_id'  => \Illuminate\Support\Facades\Auth::id(),
+                'action'   => 'Paiement carte confirmé (borne)',
+                'resource' => 'Commande #' . $frontendOrder->order_serial_no,
+                'details'  => sprintf(
+                    'Transaction: %s | Carte: %s',
+                    $request->transaction_id,
+                    $request->card_type ?? 'N/A'
+                ),
+            ]);
+
+            return response(['status' => true, 'message' => 'Paiement confirmé'], 200);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
 }

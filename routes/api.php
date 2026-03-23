@@ -181,6 +181,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             $defaultPermission = \App\Libraries\AppLibrary::defaultPermission($permission);
             $defaultMenu       = (object) \App\Libraries\AppLibrary::defaultMenu($menuService->menu($role), $defaultPermission);
 
+            // [BUG-AUTH FIX] Apply landing_url override — same logic as LoginController lines 82-85
+            // Without this, POS Operator loses their correct redirect URL after a page refresh
+            if (!empty($role->landing_url)) {
+                $defaultPermission->url = $role->landing_url;
+            }
+
             return response()->json([
                 'status'            => true,
                 'token'             => null,
@@ -783,6 +789,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
         Route::post('/', [FrontendOrderController::class, 'store']);
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
+        // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
+        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {
@@ -849,9 +857,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus']);
     });
 
+    // [SEC-CRIT FIX] Loyalty routes now require auth:sanctum — previously fully unauthenticated
+    // /register is kept public (no auth) as it creates a new loyalty account for a new customer
+    // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check']);
         Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register']);
+    });
+    Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
         Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem']);
         Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);

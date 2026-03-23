@@ -21,6 +21,7 @@ use App\Models\FrontendOrder;
 use App\Events\SendOrderGotSms;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
+use App\Events\OrderCreated;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\OrderRequest;
 use Illuminate\Support\Facades\Log;
@@ -223,18 +224,32 @@ class FrontendOrderService
                     OrderItem::insert($itemsArray);
                 }
 
+                // [BUG-C2 FIX] Cross-table queue number: read BOTH Order (POS) and FrontendOrder (web/kiosk)
+                // to prevent duplicate queue numbers when POS and kiosk orders coexist in the same branch.
+                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting query for Admin (branch_id=0)
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::where('branch_id', $this->frontendOrder->branch_id)
+                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('branch_id', $this->frontendOrder->branch_id)
                     ->whereDate('created_at', $today)
                     ->whereNotNull('queue_number')
-                    ->lockForUpdate() // Lock pour éviter la race condition dans la transaction
+                    ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
-
-                $nextQueueNum = 1;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $matches)) {
-                    $nextQueueNum = intval($matches[1]) + 1;
+                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->frontendOrder->branch_id)
+                    ->whereDate('created_at', $today)
+                    ->whereNotNull('queue_number')
+                    ->lockForUpdate()
+                    ->orderBy('id', 'desc')
+                    ->first();
+                $maxOrderNum = 0;
+                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
+                    $maxOrderNum = (int) $m[1];
                 }
+                $maxFrontendNum = 0;
+                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
+                    $maxFrontendNum = (int) $m[1];
+                }
+                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
                 $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT
@@ -284,14 +299,24 @@ class FrontendOrderService
                         'discount' => $calculatedDiscount
                     ]);
                 }
+            });
+
+            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit
+            // Prevents ghost KDS orders if the transaction rolls back after these dispatches
+            // [FEAT] OrderCreated broadcast enables real-time KDS/OSS updates via Soketi
+            try {
                 SendOrderMail::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
                 SendOrderSms::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
                 SendOrderPush::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
-
                 SendOrderGotMail::dispatch(['order_id' => $this->frontendOrder->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->frontendOrder->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->frontendOrder->id]);
-            });
+                // [PHASE-E] Broadcast via Soketi WebSockets (no-op if BROADCAST_DRIVER=null)
+                OrderCreated::dispatch($this->frontendOrder);
+            } catch (\Exception $e) {
+                Log::warning('[FrontendOrder] Post-commit notifications failed for order #' . $this->frontendOrder->id . ': ' . $e->getMessage());
+            }
+
             return $this->frontendOrder;
         } catch (Exception $exception) {
             DB::rollBack();

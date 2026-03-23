@@ -1,0 +1,14 @@
+---
+description: Passation projet — vision, POS/KDS/borne, état et backlog
+alwaysApply: true
+---
+
+# FoodKing — contexte obligatoire
+
+Avant toute décision ou changement important :
+
+1. Lire **`docs/PROJECT_CONTINUITY_AND_VISION.md`** (vision, surfaces, correctifs, reste à faire).
+2. Respecter **`AGENTS.md`** et le workflow `reports/` + `workflows/`.
+3. Croiser avec **`docs/ARCHITECTURE.md`**, **`docs/ORDER_FLOW.md`**, **`docs/DEVICE_FLOW.md`**.
+
+Ne pas modifier hors périmètre ; préserver authz, cycle de commande et recalcul prix côté serveur.

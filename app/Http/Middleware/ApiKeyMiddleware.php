@@ -17,7 +17,8 @@ class ApiKeyMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $validApiKey = env('MIX_API_KEY', config('app.api_key'));
+        // [SEC-FIX] Use config() not env() — env() returns null after php artisan config:cache
+        $validApiKey = config('app.api_key');
 
         if ($request->hasHeader('x-api-key')) {
             if ($request->header('x-api-key') === $validApiKey) {
