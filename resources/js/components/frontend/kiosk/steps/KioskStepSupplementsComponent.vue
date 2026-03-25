@@ -53,6 +53,16 @@ export default {
       localSelections: { ...this.selections.supplements }
     };
   },
+  watch: {
+    'selections.supplements': {
+      deep: true,
+      handler(newVal) {
+        if (Object.keys(this.localSelections).length === 0) {
+          this.localSelections = { ...newVal };
+        }
+      },
+    },
+  },
   computed: {
     supplementList() {
       // Les suppléments sont des extras avec prix > 0 (payants)

@@ -69,7 +69,8 @@ class OtpManagerService
     public function verify(VerifyPhoneRequest $request) : bool
     {
         try {
-            if(env('DEMO')) {
+            // env('DEMO') === 'false' est truthy en PHP — utiliser un booléen réel
+            if (filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN)) {
                 return true;
             }
 

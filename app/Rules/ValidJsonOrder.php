@@ -61,6 +61,12 @@ class ValidJsonOrder implements Rule
                 $this->message = "L'article à l'index {$index} n'a pas de quantité valide.";
                 return false;
             }
+
+            // [P2-2] instruction longueur max 500 caractères
+            if (isset($item['instruction']) && is_string($item['instruction']) && strlen($item['instruction']) > 500) {
+                $this->message = "L'instruction de l'article à l'index {$index} dépasse 500 caractères.";
+                return false;
+            }
         }
 
         return true;

@@ -33,48 +33,48 @@ describe('posCart store', () => {
         state.subtotal = 6.50;
         
         // Simulating the saveCartToStorage internal call from posCart.js
-        localStorage.setItem('pos_cart_v1', JSON.stringify({
+        localStorage.setItem('pos_cart_v2', JSON.stringify({
             lists: state.lists,
             subtotal: state.subtotal,
             discount: state.discount,
             savedAt: Date.now()
         }));
 
-        expect(localStorageMock.getItem('pos_cart_v1')).not.toBeNull();
-        const saved = JSON.parse(localStorageMock.getItem('pos_cart_v1'));
+        expect(localStorageMock.getItem('pos_cart_v2')).not.toBeNull();
+        const saved = JSON.parse(localStorageMock.getItem('pos_cart_v2'));
         expect(saved.lists.length).toBe(1);
         expect(saved.subtotal).toBe(6.50);
     });
 
     it('should clear localStorage on resetCart', () => {
-        localStorageMock.setItem('pos_cart_v1', JSON.stringify({
+        localStorageMock.setItem('pos_cart_v2', JSON.stringify({
             lists: [{ item_id: 1 }], subtotal: 6.50, discount: 0, savedAt: Date.now()
         }));
         
         // Simulating resetCart internal call
-        localStorageMock.removeItem('pos_cart_v1');
+        localStorageMock.removeItem('pos_cart_v2');
         
-        expect(localStorageMock.getItem('pos_cart_v1')).toBeNull();
+        expect(localStorageMock.getItem('pos_cart_v2')).toBeNull();
     });
 
     it('should not restore cart older than 2 hours', () => {
         const oldTimestamp = Date.now() - (3 * 60 * 60 * 1000); // 3h ago
-        localStorageMock.setItem('pos_cart_v1', JSON.stringify({
+        localStorageMock.setItem('pos_cart_v2', JSON.stringify({
             lists: [{ item_id: 1 }], subtotal: 6.50, discount: 0, savedAt: oldTimestamp
         }));
         
         // Simulating loadCartFromStorage internal call
-        const raw = localStorageMock.getItem('pos_cart_v1');
+        const raw = localStorageMock.getItem('pos_cart_v2');
         const data = JSON.parse(raw);
         let restoredData = null;
         if (Date.now() - data.savedAt > 2 * 60 * 60 * 1000) {
-            localStorageMock.removeItem('pos_cart_v1');
+            localStorageMock.removeItem('pos_cart_v2');
             restoredData = null;
         } else {
             restoredData = data;
         }
         
         expect(restoredData).toBeNull();
-        expect(localStorageMock.getItem('pos_cart_v1')).toBeNull();
+        expect(localStorageMock.getItem('pos_cart_v2')).toBeNull();
     });
 });

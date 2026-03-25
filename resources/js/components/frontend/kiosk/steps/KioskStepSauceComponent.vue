@@ -12,14 +12,14 @@
     <div class="kiosk-sauce-grid">
       <div
         v-for="sauce in sauceList"
-        :key="sauce.id"
+        :key="sauce.id ?? sauce.name"
         class="kiosk-option-card"
-        :class="{ selected: localSelections[sauce.id] }"
-        @click="toggleSauce(sauce.id)"
+        :class="{ selected: localSelections[sauceKey(sauce)] }"
+        @click="toggleSauce(sauce)"
       >
         <span class="kiosk-sauce-emoji">{{ sauce.emoji }}</span>
         <span class="kiosk-sauce-name">{{ sauce.name }}</span>
-        <span v-if="getSauceOrder(sauce.id) > 0" class="kiosk-sauce-order">{{ getSauceOrder(sauce.id) }}</span>
+        <span v-if="getSauceOrder(sauceKey(sauce)) > 0" class="kiosk-sauce-order">{{ getSauceOrder(sauceKey(sauce)) }}</span>
       </div>
     </div>
     
@@ -69,13 +69,15 @@ export default {
   },
   methods: {
     getDefaultSauceList() {
+      // Fallback names only — IDs are null so wizard won't map them to item_variations.
+      // Kitchen will receive sauce names via instruction text instead.
       return [
-        { id: 1, name: 'Algérienne', emoji: '🌶️' },
-        { id: 2, name: 'Blanche', emoji: '🥛' },
-        { id: 3, name: 'Ketchup', emoji: '🍅' },
-        { id: 4, name: 'Mayonnaise', emoji: '🥚' },
-        { id: 5, name: 'Biggy', emoji: '🍔' },
-        { id: 6, name: 'Samouraï', emoji: '🌶️' }
+        { id: null, name: 'Algérienne', emoji: '🌶️' },
+        { id: null, name: 'Blanche', emoji: '🥛' },
+        { id: null, name: 'Ketchup', emoji: '🍅' },
+        { id: null, name: 'Mayonnaise', emoji: '🥚' },
+        { id: null, name: 'Biggy', emoji: '🍔' },
+        { id: null, name: 'Samouraï', emoji: '🌶️' },
       ];
     },
     getEmojiForSauce(name) {
@@ -88,22 +90,25 @@ export default {
       if (lower.includes('tartare') || lower.includes('poivre')) return '🧂';
       return '🥄';
     },
-    getSauceOrder(sauceId) {
-      const index = this.sauceOrder.indexOf(sauceId);
+    // Use real integer ID when available, otherwise fall back to name as unique key
+    sauceKey(sauce) {
+      return typeof sauce.id === 'number' ? sauce.id : sauce.name;
+    },
+    getSauceOrder(key) {
+      const index = this.sauceOrder.indexOf(key);
       return index >= 0 ? index + 1 : 0;
     },
-    toggleSauce(id) {
+    toggleSauce(sauce) {
+      const key = this.sauceKey(sauce);
       const newSelections = { ...this.localSelections };
       const newSauceOrder = [...this.sauceOrder];
-      if (newSelections[id]) {
-        // Décocher
-        delete newSelections[id];
-        const index = newSauceOrder.indexOf(id);
+      if (newSelections[key]) {
+        delete newSelections[key];
+        const index = newSauceOrder.indexOf(key);
         if (index > -1) newSauceOrder.splice(index, 1);
       } else {
-        // Cocher
-        newSelections[id] = true;
-        newSauceOrder.push(id);
+        newSelections[key] = true;
+        newSauceOrder.push(key);
       }
       this.localSelections = newSelections;
       this.sauceOrder = newSauceOrder;

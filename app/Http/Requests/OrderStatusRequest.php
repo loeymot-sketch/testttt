@@ -14,14 +14,24 @@ class OrderStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // [SECURITY FIX P0-002] Only authenticated users with proper permissions can change order status
         if (!auth()->check()) {
             return false;
         }
-        
-        // Check if user has admin, manager, or kitchen role
+
         $user = auth()->user();
-        return $user->hasAnyRole(['Admin', 'Branch Manager', 'Chef', 'POS Operator']);
+
+        // Staff/admin roles can change any order status
+        if ($user->hasAnyRole(['Admin', 'Branch Manager', 'Chef', 'POS Operator', 'Cashier'])) {
+            return true;
+        }
+
+        // Kiosk machine users can only cancel their OWN orders (status 16 = CANCELED)
+        // The service layer enforces ownership + status constraints.
+        if ($user->tokenCan('kiosk:order') && (int) $this->input('status') === 16) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

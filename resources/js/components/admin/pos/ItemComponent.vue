@@ -1,23 +1,20 @@
 <template>
-    <div
-        class="grid gap-3 sm:gap-[18px] grid-cols-[repeat(auto-fill,_minmax(140px,_1fr))] sm:grid-cols-[repeat(auto-fill,_minmax(185px,_1fr))] mb-8 md:mb-0">
+    <div class="grid grid-cols-3 gap-2.5 mb-8 md:mb-0">
         <div v-for="item in items" :key="item"
-            class="pos-card-height rounded-2xl border transition border-[#EFF0F6] bg-white hover:shadow-xs">
-            <img class="pos-image-height w-full rounded-t-2xl" :src="item.thumb" alt="item">
-            <div class="py-3 px-3 rounded-b-2xl">
-                <h3
-                    class="text-sm mb-3 font-medium font-rubik capitalize text-ellipsis whitespace-nowrap overflow-hidden">
-                    {{ textShortener(item.name, 25) }}</h3>
-                <div class="flex items-center justify-between gap-2">
-                    <h4 class="font-rubik">{{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price
-                        }}
-                    </h4>
-                    <button @click.prevent="variationModalShow(item)" data-modal="#item-variation-modal"
-                        class="db-product-cart pos-add-button flex items-center gap-1.5 rounded-3xl capitalize text-sm font-medium font-rubik py-1 px-2 shadow-cardCart transition bg-white hover:bg-primary">
-                        <i class="lab lab-bag-2 font-fill-primary transition lab-font-size-14"></i>
-                        <span class="text-xs font-rubik text-primary transition">{{ $t('button.add') }}</span>
-                    </button>
-                </div>
+            class="flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:shadow-sm transition cursor-pointer select-none"
+            style="min-height: 90px;"
+            @click.prevent="variationModalShow(item)" data-modal="#item-variation-modal">
+            <div class="flex-1 flex items-center justify-center w-full">
+                <h3 class="text-xs font-semibold font-rubik capitalize text-center leading-tight text-[#2E2F38] line-clamp-3">{{ item.name }}</h3>
+            </div>
+            <div class="flex items-center justify-between w-full mt-1">
+                <h4 class="text-[11px] font-rubik font-medium text-primary">
+                    {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
+                </h4>
+                <button @click.stop.prevent="variationModalShow(item)" data-modal="#item-variation-modal"
+                    class="flex items-center justify-center w-6 h-6 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition">
+                    <i class="lab lab-bag-2 font-fill-primary lab-font-size-10 group-hover:text-white" style="font-size:11px;"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -165,6 +162,9 @@
                             <SwiperSlide v-for="addon in item.addons" :key="addon">
                                 <div class="!w-fit !relative">
                                     <div @click.prevent="changeAddon(addon)"
+                                        :data-addon-id="addon.id"
+                                        :data-addon-name="addon.addon_item_name"
+                                        :data-addon-active="addons[addon.id] ? '1' : '0'"
                                         class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]">
                                         <img class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
                                             :src="addon.thumb" alt="thumbnail">
@@ -220,17 +220,19 @@
                         class="h-12 w-full rounded-lg border py-1.5 px-2 placeholder:text-[10px] placeholder:text-[#6E7191] border-[#D9DBE9]"></textarea>
                     <small class="db-field-alert" v-if="instructionError">{{ instructionError }}</small>
                 </div>
-                <button type="button" :disabled="temp.total_price <= 0" @click.prevent="addToCart"
-                    class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary">
-                    <i class="icon-bag-2"></i>
-                    <span>
-                        {{ $t('button.add_to_cart') }} -
-                        {{
-                            currencyFormat(temp.total_price, setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position)
-                        }}
-                    </span>
-                </button>
+                <div class="pos-add-to-cart-sticky">
+                    <button type="button" :disabled="temp.total_price <= 0" @click.prevent="addToCart"
+                        class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary">
+                        <i class="icon-bag-2"></i>
+                        <span>
+                            {{ $t('button.add_to_cart') }} -
+                            {{
+                                currencyFormat(temp.total_price, setting.site_digit_after_decimal_point,
+                                    setting.site_default_currency_symbol, setting.site_currency_position)
+                            }}
+                        </span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -260,6 +262,10 @@ export default {
             addons: {},
             addonQuantity: {},
             itemArrays: [],
+            /** Index ligne panier en cours d’édition (null = ajout normal) */
+            editingCartIndex: null,
+            /** True juste après ouverture depuis le panier : garde convert_price enregistré (wizard) jusqu’à une modif */
+            usePricedCartBase: false,
             settings: {
                 itemsToShow: 4.3,
                 wrapAround: false,
@@ -325,6 +331,8 @@ export default {
             document.body.style.overflowY = "auto";
         },
         variationModalShow: function (selectedItem) {
+            this.editingCartIndex = null;
+            this.usePricedCartBase = false;
 
             this.$store.dispatch('item/details', selectedItem.id)
                 .then((res) => {
@@ -358,11 +366,112 @@ export default {
                     this.temp.total_price = (item.offer.length > 0 ? item.offer[0].convert_price : item.convert_price) + this.temp.item_variation_total;
 
                     const modalTarget = this.$refs.itemVariationModal;
+                    // Inject item data directly so wizard doesn't depend solely on XHR interceptor
+                    if (modalTarget && item) {
+                        modalTarget.setAttribute('data-wizard-item-data', JSON.stringify(item));
+                    }
                     modalTarget?.classList?.add("active");
                     document.body.style.overflowY = "hidden";
                 }).catch({});
         },
+        /**
+         * Rouvre le modal article depuis une ligne panier (édition).
+         * @param {object} cartLine — entrée `posCart/lists`
+         * @param {number} index — index dans le panier
+         */
+        openEditFromCart: function (cartLine, index) {
+            if (!cartLine || cartLine.item_id == null) return;
+            this.editingCartIndex = typeof index === 'number' ? index : null;
+            this.$store.dispatch('item/details', cartLine.item_id)
+                .then((res) => {
+                    const item = res.data.data;
+                    this.item = item;
+                    this.addons = {};
+                    this.addonQuantity = {};
+                    this.temp.item_variations = { variations: {}, names: {} };
+                    this.temp.item_extras = { extras: [], names: [] };
+                    this.temp.item_variation_total = 0;
+                    this.temp.item_extra_total = 0;
+                    this.temp.name = cartLine.name;
+                    this.temp.image = cartLine.image;
+                    this.temp.item_id = cartLine.item_id;
+                    this.temp.quantity = parseInt(cartLine.quantity, 10) > 0 ? parseInt(cartLine.quantity, 10) : 1;
+                    this.temp.discount = cartLine.discount || 0;
+                    this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
+                    this.temp.currency_price = cartLine.currency_price;
+                    this.temp.instruction = cartLine.instruction || '';
+                    this.temp.item_variations = _.cloneDeep(cartLine.item_variations);
+                    this.temp.item_extras = _.cloneDeep(cartLine.item_extras);
+
+                    _.forEach(cartLine.pos_line_addons || [], (b) => {
+                        const ad = item.addons && item.addons.find((x) => String(x.id) === String(b.parent_addon_id));
+                        if (ad) {
+                            const q = parseInt(b.quantity, 10) > 0 ? parseInt(b.quantity, 10) : 1;
+                            this.addonQuantity[ad.id] = q;
+                            this.addons[ad.id] = {
+                                name: b.name,
+                                image: b.image,
+                                item_id: b.item_id,
+                                quantity: q,
+                                discount: b.discount || 0,
+                                currency_price: b.currency_price,
+                                convert_price: parseFloat(b.convert_price) || 0,
+                                item_variations: _.cloneDeep(b.item_variations),
+                                item_extras: _.cloneDeep(b.item_extras),
+                                item_variation_total: parseFloat(b.item_variation_total) || 0,
+                                item_extra_total: parseFloat(b.item_extra_total) || 0,
+                                total_price: parseFloat(b.total_price) || 0,
+                                instruction: b.instruction || '',
+                            };
+                        }
+                    });
+                    if (item.addons && item.addons.length > 0) {
+                        _.forEach(item.addons, (addon) => {
+                            if (typeof this.addonQuantity[addon.id] === 'undefined') {
+                                this.addonQuantity[addon.id] = 1;
+                            }
+                        });
+                    }
+                    this.totalPriceSetup();
+                    // Conserver la base déjà enregistrée en panier (pont wizard / ajustements), pas le prix catalogue brut
+                    this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
+                    this.temp.currency_price = cartLine.currency_price;
+                    var item_addon_total = 0;
+                    _.forEach(this.addons, (addon) => {
+                        item_addon_total += (parseFloat(addon.total_price) || 0) * (parseInt(addon.quantity) || 1);
+                    });
+                    this.temp.total_price = parseFloat(
+                        (this.temp.convert_price + this.temp.item_variation_total + this.temp.item_extra_total) *
+                            this.temp.quantity +
+                            item_addon_total
+                    );
+                    this.usePricedCartBase = true;
+
+                    // [EDIT-RESTORE] Construire selections wizard pour restauration
+                    const wizardRestore = this.buildWizardRestorePayload(cartLine, item);
+                    const modalTarget = this.$refs.itemVariationModal;
+                    if (modalTarget && wizardRestore) {
+                        modalTarget.setAttribute('data-wizard-restore-selections', JSON.stringify(wizardRestore));
+                    }
+                    // Inject item data directly so the wizard doesn't depend on the XHR interceptor
+                    // (which misses relative Axios URLs like "admin/item/details/123").
+                    if (modalTarget && item) {
+                        modalTarget.setAttribute('data-wizard-item-data', JSON.stringify(item));
+                    }
+
+                    modalTarget?.classList?.add('active');
+                    document.body.style.overflowY = 'hidden';
+                })
+                .catch(() => {
+                    // [V7 FIX] Show error feedback — silent failure leaves cashier confused
+                    this.editingCartIndex = null;
+                    this.usePricedCartBase = false;
+                    alertService.error(this.$t('message.something_went_wrong') || 'Erreur lors du chargement du produit.');
+                });
+        },
         variationModalHide: function () {
+            this.editingCartIndex = null;
+            this.usePricedCartBase = false;
             this.item = null;
 
             this.temp.name = "";
@@ -387,15 +496,39 @@ export default {
             this.addons = {};
             this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities
 
+            if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                delete this.$refs.itemVariationModal.dataset.wizardTotal;
+            }
+            this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+            this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-restore-selections');
+
             const modalDiv = this.$refs.itemVariationModal;
             modalDiv?.classList?.remove("active");
             document.body.style.overflowY = "auto";
         },
+        bumpPricingToCatalog: function () {
+            if (!this.usePricedCartBase || !this.item) return;
+            this.usePricedCartBase = false;
+            this.temp.convert_price = this.item.offer.length > 0 ? this.item.offer[0].convert_price : this.item.convert_price;
+            this.temp.currency_price = this.item.offer.length > 0 ? this.item.offer[0].currency_price : this.item.currency_price;
+        },
         changeVariation: function (attributeId, variationId, variationName, variationPrice) {
+            this.bumpPricingToCatalog();
             this.temp.item_variations.variations[attributeId] = variationId;
+            // [W7 FIX] Coerce both sides to string for comparison — attributeId from DOM events
+            // is a string, while element.id from API response is a number. Strict === fails.
+            // [V2 FIX] Also store names_by_id[attrId] = {attrName, varName} so buildPosCheckoutOrderRow
+            // can join by attrId instead of fragile index-zip.
+            if (!this.temp.item_variations.names_by_id) {
+                this.temp.item_variations.names_by_id = {};
+            }
             _.forEach(this.item.itemAttributes, (element) => {
-                if (element.id === attributeId) {
+                if (String(element.id) === String(attributeId)) {
                     this.temp.item_variations.names[element.name] = variationName;
+                    this.temp.item_variations.names_by_id[String(attributeId)] = {
+                        attrName: element.name,
+                        varName: variationName,
+                    };
                 }
             });
             this.totalPriceSetup();
@@ -408,6 +541,7 @@ export default {
             });
         },
         changeExtra: function (e, id, name) {
+            this.bumpPricingToCatalog();
             if (e.target.checked) {
                 this.temp.item_extras.extras.push(id);
                 this.temp.item_extras.names.push(name);
@@ -451,15 +585,26 @@ export default {
 
             this.temp.item_variation_total = item_variation_total;
             this.temp.item_extra_total = item_extra_total;
-            this.temp.total_price = parseFloat((((this.item.offer.length > 0 ? this.item.offer[0].convert_price : this.item.convert_price) + this.temp.item_variation_total + this.temp.item_extra_total) * this.temp.quantity) + item_addon_total);
+            var catalogBase =
+                parseFloat(this.item.offer.length > 0 ? this.item.offer[0].convert_price : this.item.convert_price) || 0;
+            if (!this.usePricedCartBase) {
+                this.temp.convert_price = catalogBase;
+            }
+            var baseUnit = this.usePricedCartBase ? parseFloat(this.temp.convert_price) || 0 : catalogBase;
+            this.temp.total_price = parseFloat(
+                (baseUnit + this.temp.item_variation_total + this.temp.item_extra_total) * this.temp.quantity +
+                    item_addon_total
+            );
         },
         quantityUp: function () {
+            this.bumpPricingToCatalog();
             if (this.temp.quantity === 0) {
                 this.temp.quantity = 1;
             }
             this.totalPriceSetup();
         },
         quantityIncrement: function () {
+            this.bumpPricingToCatalog();
             this.temp.quantity++;
             if (this.temp.quantity <= 0) {
                 this.temp.quantity = 1;
@@ -467,6 +612,7 @@ export default {
             this.totalPriceSetup();
         },
         quantityDecrement: function () {
+            this.bumpPricingToCatalog();
             this.temp.quantity--;
             if (this.temp.quantity <= 0) {
                 this.temp.quantity = 1;
@@ -474,6 +620,7 @@ export default {
             this.totalPriceSetup();
         },
         addonQuantityUp: function (id) {
+            this.bumpPricingToCatalog();
             if (typeof this.addonQuantity[id] !== "undefined") {
                 if (this.addonQuantity[id] === 0) {
                     this.addonQuantity[id] = 1;
@@ -486,6 +633,7 @@ export default {
             this.totalPriceSetup();
         },
         addonQuantityIncrement: function (id) {
+            this.bumpPricingToCatalog();
             if (typeof this.addonQuantity[id] !== "undefined") {
                 this.addonQuantity[id]++;
                 if (this.addonQuantity[id] <= 0) {
@@ -498,6 +646,7 @@ export default {
             }
         },
         addonQuantityDecrement: function (id) {
+            this.bumpPricingToCatalog();
             if (typeof this.addonQuantity[id] !== "undefined") {
                 this.addonQuantity[id]--;
                 if (this.addonQuantity[id] <= 0) {
@@ -510,6 +659,7 @@ export default {
             }
         },
         changeAddon: function (addon) {
+            this.bumpPricingToCatalog();
             if (typeof this.addons[addon.id] === "undefined") {
                 this.addons[addon.id] = {
                     name: addon.addon_item_name,
@@ -548,46 +698,299 @@ export default {
             }
             this.totalPriceSetup();
         },
-        addToCart: function () {
-            this.itemArrays = [
-                {
-                    name: this.temp.name,
-                    image: this.temp.image,
-                    item_id: this.temp.item_id,
-                    quantity: this.temp.quantity,
-                    discount: this.temp.discount,
-                    currency_price: this.temp.currency_price,
-                    convert_price: this.temp.convert_price,
-                    item_variations: this.temp.item_variations,
-                    item_extras: this.temp.item_extras,
-                    item_variation_total: this.temp.item_variation_total,
-                    item_extra_total: this.temp.item_extra_total,
-                    instruction: this.temp.instruction
-                }
-            ];
+        /** Menus regroupés passés par le wizard si le clic .addon n’a pas rempli `this.addons`. */
+        readWizardBundledAddons: function () {
+            var el = this.$refs.itemVariationModal;
+            if (!el || typeof el.getAttribute !== 'function') return [];
+            var raw = el.getAttribute('data-wizard-pos-line-addons');
+            if (!raw) return [];
+            try {
+                var arr = JSON.parse(raw);
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) {
+                return [];
+            }
+        },
+        /**
+         * [EDIT-RESTORE] Reconstruit les selections wizard à partir d'une ligne panier
+         * pour pré-remplir le wizard lors de l'édition.
+         */
+        buildWizardRestorePayload: function (cartLine, item) {
+            const restore = {
+                viandes: {},
+                sauces: {},
+                sauceOrder: [],
+                garnitures: {},
+                supplements: {},
+                menuChoice: 'none',
+                pain: null,
+                accompagnement: null,
+                sauceSingle: null,
+                instruction: cartLine.instruction || '',
+                fritesGrande: false,
+                fritesCheddar: false,
+                sauceFrites: {},
+                sauceFritesOrder: [],
+                // [X4 FIX] boissonChoice restored from menu_restore
+                boissonChoice: null,
+                // [X5 FIX] viandeSupplItems restored from menu_restore
+                viandeSupplItems: {},
+                // [Y1 FIX] Carry cart line quantity so wizard itemQuantity stays in sync
+                _cartQuantity: parseInt(cartLine.quantity, 10) > 0 ? parseInt(cartLine.quantity, 10) : 1
+            };
 
-            if (this.addons !== "undefined" && Object.keys(this.addons).length !== 0) {
+            // 1. Variations → pain, viande, sauce
+            if (cartLine.item_variations && cartLine.item_variations.names) {
+                Object.entries(cartLine.item_variations.names).forEach(([attrName, varName]) => {
+                    const attrLower = attrName.toLowerCase();
+                    
+                    // Pain / Galette — match by exact attrName first, then fallback
+                    if (attrLower.includes('pain') || attrLower.includes('galette')) {
+                        let painAttr = item.itemAttributes?.find(a => (a.name || '').toLowerCase() === attrLower);
+                        if (!painAttr) {
+                            painAttr = item.itemAttributes?.find(a => {
+                                const n = (a.name || '').toLowerCase();
+                                return n.includes('pain') || n.includes('galette');
+                            });
+                        }
+                        if (painAttr && item.variations && item.variations[painAttr.id]) {
+                            const painVar = item.variations[painAttr.id].find(v => v.name === varName);
+                            if (painVar) restore.pain = painVar.id;
+                        }
+                    }
+                    // Viande (compter les occurrences)
+                    // [N2 FIX] Match the attribute by its exact name (attrName) first, not generic find.
+                    // This handles "Viande 1" / "Viande 2" as separate attributes correctly.
+                    else if (attrLower.includes('viande') || attrLower.includes('meat')) {
+                        // 1st pass: find attribute whose name matches attrName exactly (case-insensitive)
+                        let viandeAttr = item.itemAttributes?.find(a =>
+                            (a.name || '').toLowerCase() === attrLower
+                        );
+                        // 2nd pass fallback: any attribute containing 'viande' or 'meat'
+                        if (!viandeAttr) {
+                            viandeAttr = item.itemAttributes?.find(a => {
+                                const n = (a.name || '').toLowerCase();
+                                return n.includes('viande') || n.includes('meat');
+                            });
+                        }
+                        if (viandeAttr && item.variations && item.variations[viandeAttr.id]) {
+                            const viandeVar = item.variations[viandeAttr.id].find(v => v.name === varName);
+                            if (viandeVar) {
+                                const key = 'v_' + viandeVar.id;
+                                restore.viandes[key] = (restore.viandes[key] || 0) + 1;
+                            }
+                        }
+                    }
+                    // Sauce (première = gratuite) — match by exact attrName first, then fallback
+                    else if (attrLower.includes('sauce')) {
+                        let sauceAttr = item.itemAttributes?.find(a => (a.name || '').toLowerCase() === attrLower);
+                        if (!sauceAttr) {
+                            sauceAttr = item.itemAttributes?.find(a => (a.name || '').toLowerCase().includes('sauce'));
+                        }
+                        if (sauceAttr && item.variations && item.variations[sauceAttr.id]) {
+                            const sauceVar = item.variations[sauceAttr.id].find(v => v.name === varName);
+                            if (sauceVar) {
+                                const key = 's_' + sauceVar.id;
+                                if (!restore.sauceOrder.includes(key)) {
+                                    restore.sauces[key] = true;
+                                    restore.sauceOrder.push(key);
+                                }
+                                // Sauce unique (omelettes, snacking)
+                                if (restore.sauceOrder.length === 1) {
+                                    restore.sauceSingle = sauceVar.id;
+                                }
+                            }
+                        }
+                    }
+                    // Accompagnement (assiettes : riz, frites, salade) — match by exact attrName first
+                    else if (attrLower.includes('accompagnement') || attrLower.includes('riz') || attrLower.includes('salade')) {
+                        let accompAttr = item.itemAttributes?.find(a => (a.name || '').toLowerCase() === attrLower);
+                        if (!accompAttr) {
+                            accompAttr = item.itemAttributes?.find(a => {
+                                const n = (a.name || '').toLowerCase();
+                                return n.includes('accompagnement') || n.includes('riz') || n.includes('salade');
+                            });
+                        }
+                        if (accompAttr && item.variations && item.variations[accompAttr.id]) {
+                            const accompVar = item.variations[accompAttr.id].find(v => v.name === varName);
+                            if (accompVar) restore.accompagnement = accompVar.id;
+                        }
+                    }
+                });
+            }
+
+            // 2. Extras → garnitures, suppléments, sauces extras, sauce frites
+            if (cartLine.item_extras && cartLine.item_extras.names) {
+                cartLine.item_extras.names.forEach((extraName) => {
+                    const extra = item.extras?.find(e => e.name === extraName);
+                    if (!extra) return;
+
+                    const extraLower = extraName.toLowerCase();
+                    const isFree = parseFloat(extra.convert_price) <= 0;
+
+                    // Sauce frites (menu)
+                    if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) {
+                        const key = 'sf_' + extra.id;
+                        if (!restore.sauceFritesOrder.includes(key)) {
+                            restore.sauceFrites[key] = true;
+                            restore.sauceFritesOrder.push(key);
+                        }
+                    }
+                    // Grande portion / Cheddar (menu)
+                    else if (extraLower.includes('grande') && extraLower.includes('portion')) {
+                        restore.fritesGrande = true;
+                    }
+                    else if (extraLower.includes('cheddar')) {
+                        restore.fritesCheddar = true;
+                    }
+                    // Garnitures gratuites (tomate, oignon, salade, etc.)
+                    else if (isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon')) {
+                        restore.garnitures['c_' + extra.id] = true;
+                    }
+                    // Sauce extra (payante)
+                    else if (extraLower.includes('sauce')) {
+                        const key = 's_' + extra.id;
+                        if (!restore.sauceOrder.includes(key)) {
+                            restore.sauces[key] = true;
+                            restore.sauceOrder.push(key);
+                        }
+                    }
+                    // Supplément payant
+                    else {
+                        restore.supplements['p_' + extra.id] = true;
+                    }
+                });
+            }
+
+            // [P5-2 FIX] Restore sauceSingle from instruction text if not already set via variations
+            // Instruction format: "Sauce: <name>" on its own line
+            if (!restore.sauceSingle && cartLine.instruction) {
+                const sauceMatch = cartLine.instruction.match(/(?:^|\n)Sauce\s*:\s*(.+?)(?:\n|$)/i);
+                if (sauceMatch) {
+                    const sauceName = sauceMatch[1].trim();
+                    const sauceExtra = item.extras?.find(e => e.name === sauceName);
+                    if (sauceExtra) {
+                        restore.sauceSingle = sauceExtra.id;
+                        // Also add to sauceOrder if not already present
+                        const sKey = 's_' + sauceExtra.id;
+                        if (!restore.sauceOrder.includes(sKey)) {
+                            restore.sauces[sKey] = true;
+                            restore.sauceOrder.push(sKey);
+                        }
+                    }
+                }
+            }
+
+            // 3. Addons → menuChoice + menu_restore (sauce frites, options frites)
+            if (cartLine.pos_line_addons && cartLine.pos_line_addons.length > 0) {
+                const firstAddon = cartLine.pos_line_addons[0];
+                const addonId = firstAddon.parent_addon_id;
+                restore.menuChoice = 'addon_' + addonId;
+
+                // Restaurer les extras menu depuis menu_restore (stocké par le wizard)
+                if (firstAddon.menu_restore) {
+                    const mr = firstAddon.menu_restore;
+                    if (mr.fritesGrande) restore.fritesGrande = true;
+                    if (mr.fritesCheddar) restore.fritesCheddar = true;
+                    if (mr.sauceFrites && typeof mr.sauceFrites === 'object') {
+                        restore.sauceFrites = Object.assign({}, mr.sauceFrites);
+                    }
+                    if (Array.isArray(mr.sauceFritesOrder) && mr.sauceFritesOrder.length > 0) {
+                        restore.sauceFritesOrder = mr.sauceFritesOrder.slice();
+                    }
+                    // [X4 FIX] Restore boissonChoice from menu_restore
+                    if (mr.boissonChoice != null) {
+                        restore.boissonChoice = mr.boissonChoice;
+                    }
+                    // [X5 FIX] Restore viandeSupplItems from menu_restore
+                    if (mr.viandeSupplItems && typeof mr.viandeSupplItems === 'object') {
+                        restore.viandeSupplItems = Object.assign({}, mr.viandeSupplItems);
+                    }
+                }
+            }
+
+            return restore;
+        },
+        /** Une seule ligne panier : principal + `pos_line_addons` (menu, etc.) */
+        buildPosCartMainPayload: function () {
+            var quantity = parseInt(this.temp.quantity) > 0 ? parseInt(this.temp.quantity) : 1;
+            var bridgedWizardTotal = parseFloat(this.$refs.itemVariationModal?.dataset?.wizardTotal || 0) || 0;
+            var wizardCartDisplay = this.$refs.itemVariationModal?.dataset?.wizardCartDisplay || '';
+            var wizardBundled = this.readWizardBundledAddons();
+            var addonTotal = 0;
+            var pos_line_addons = [];
+
+            // Wizard bundled addons take priority: they carry menu_extras + menu_restore.
+            // Only fall back to Vue's this.addons when the wizard is not active.
+            if (wizardBundled.length > 0) {
+                wizardBundled.forEach((b) => {
+                    addonTotal += (parseFloat(b.total_price) || 0) * (parseInt(b.quantity) || 1);
+                });
+                wizardBundled.forEach((b) => {
+                    pos_line_addons.push(_.cloneDeep(b));
+                });
+            // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"
+            } else if (this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
                 _.forEach(this.addons, (addon) => {
-                    this.itemArrays.push({
+                    addonTotal += (parseFloat(addon.total_price) || 0) * (parseInt(addon.quantity) || 1);
+                });
+                _.forEach(this.addons, (addon, parentKey) => {
+                    pos_line_addons.push({
+                        parent_addon_id: parentKey,
                         name: addon.name,
                         image: addon.image,
                         item_id: addon.item_id,
                         quantity: addon.quantity,
-                        discount: addon.discount,
-                        price: addon.price,
+                        discount: addon.discount || 0,
                         currency_price: addon.currency_price,
                         convert_price: addon.convert_price,
-                        item_variations: addon.item_variations,
-                        item_extras: addon.item_extras,
+                        item_variations: _.cloneDeep(addon.item_variations),
+                        item_extras: _.cloneDeep(addon.item_extras),
                         item_variation_total: addon.item_variation_total,
                         item_extra_total: addon.item_extra_total,
-                        instruction: addon.instruction
+                        instruction: addon.instruction || '',
+                        total_price: addon.total_price,
                     });
                 });
             }
 
-            if (this.itemArrays.length > 0) {
-                this.$store.dispatch("posCart/lists", this.itemArrays).then((res) => {
+            var effectiveLineTotal = bridgedWizardTotal > 0 ? bridgedWizardTotal : (parseFloat(this.temp.total_price) || 0);
+            var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal);
+            var mainUnitTotal = quantity > 0 ? (mainLineTotal / quantity) : 0;
+            var adjustedBaseConvertPrice = Math.max(
+                0,
+                mainUnitTotal - (parseFloat(this.temp.item_variation_total) || 0) - (parseFloat(this.temp.item_extra_total) || 0)
+            );
+
+            return {
+                name: this.temp.name,
+                image: this.temp.image,
+                item_id: this.temp.item_id,
+                quantity: this.temp.quantity,
+                discount: this.temp.discount,
+                currency_price: this.temp.currency_price,
+                convert_price: adjustedBaseConvertPrice,
+                item_variations: this.temp.item_variations,
+                item_extras: this.temp.item_extras,
+                item_variation_total: this.temp.item_variation_total,
+                item_extra_total: this.temp.item_extra_total,
+                instruction: this.temp.instruction,
+                pos_line_addons: pos_line_addons,
+                cart_display: wizardCartDisplay,
+            };
+        },
+        addToCart: function () {
+            var mainPayload = this.buildPosCartMainPayload();
+            var editIdx = this.editingCartIndex;
+            var dispatchPromise =
+                editIdx !== null && editIdx >= 0
+                    ? this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
+                    : this.$store.dispatch('posCart/lists', [mainPayload]);
+
+            dispatchPromise
+                .then(() => {
+                    this.editingCartIndex = null;
+                    this.usePricedCartBase = false;
                     this.item = null;
                     this.temp.name = "";
                     this.temp.image = "";
@@ -609,26 +1012,66 @@ export default {
                     this.temp.total_price = 0;
                     this.temp.instruction = "";
                     this.addons = {};
-                    this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities after add to cart
+                    this.addonQuantity = {};
+                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    }
+                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
                     this.itemArrays = [];
 
                     alertService.success(this.$t('message.add_to_cart'));
                     appService.modalHide('#item-variation-modal');
-                }).catch();
-            }
+                })
+                .catch(() => {
+                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    }
+                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+                    this.itemArrays = [];
+                });
         },
     },
     watch: {
         'temp.instruction'(val) {
-            if (val.length > 190) {
-                this.temp.instruction = val.slice(0, 190);
+            // [V5 FIX] Raise cap from 190 to 500 to match API ValidJsonOrder rule (500 chars).
+            // 190 was too restrictive for complex wizard-generated instructions.
+            if (val.length > 500) {
+                this.temp.instruction = val.slice(0, 500);
                 this.instructionError = this.$t("message.special_instructions_limit");
             }
-            if (val.length <= 190) { // [BUG-A7 FIX] Clear error at exactly 190 chars too
+            if (val.length <= 500) {
                 this.instructionError = "";
             }
         }
-    }
+    },
+
+    mounted() {
+        // [WIZARD-SUBMIT] The pos-wizard.js dispatches 'wizard:add-to-cart' on the modal element
+        // instead of clicking the (potentially disabled) Vue button.
+        // This listener calls addToCart() directly, bypassing the :disabled guard.
+        const modal = this.$refs.itemVariationModal;
+        if (modal) {
+            modal.addEventListener('wizard:add-to-cart', () => {
+                // Ensure total_price is set from wizard total if Vue hasn't computed it yet
+                const wizardTotal = parseFloat(modal.dataset?.wizardTotal || 0);
+                if (wizardTotal > 0 && this.temp.total_price <= 0) {
+                    this.temp.total_price = wizardTotal;
+                }
+                this.addToCart();
+            });
+        }
+    },
 
 }
 </script>
+
+<style scoped>
+.pos-add-to-cart-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: #fff;
+    padding-top: 8px;
+    padding-bottom: 2px;
+}
+</style>

@@ -41,6 +41,8 @@ Bienvenue sur le dépôt principal de **FoodKing SaaS**, une solution complète 
 ## Documentation Technique Complète
 Pour comprendre l'architecture, les flux de commande et la sécurité, consultez le dossier `docs/` :
 - **[Continuité, vision & passation IDE](docs/PROJECT_CONTINUITY_AND_VISION.md)** — contexte produit (POS, KDS, borne, OSS), état du projet, correctifs majeurs, backlog ; **à lire en priorité** pour une nouvelle session ou un nouvel outil d’IA.
+- **[Comptes locaux & parcours POS](docs/LOCAL_TEST_ACCOUNTS.md)** — logins de test (Le Cayenne), branche par défaut, `landing_url`, ordre du parcours jusqu’au menu caisse.
+- **[Audit login / identifiants invalides](docs/AUDIT_LOGIN_ACCOUNTS.md)** — pourquoi le message « credentials invalid », décalage `admin@example.com` vs `admin@lecayenne.fr`, commande `php artisan foodking:ensure-admin`.
 - [Architecture Générale](docs/ARCHITECTURE.md)
 - [Flux de Commande (Order Flow)](docs/ORDER_FLOW.md)
 - [Cartographie par Appareil (Device Flow)](docs/DEVICE_FLOW.md)

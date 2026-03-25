@@ -70,15 +70,19 @@ export default {
     KioskOrderSummary
   },
   props: {
-    item: { type: Object, required: true },
-    onAddToCart: { type: Function, required: true },
-    onClose: { type: Function, required: true }
+    item: { type: Object, default: null },
+    onAddToCart: { type: Function, default: null },
+    onClose: { type: Function, default: null },
+    itemId: { type: [String, Number], default: null },
   },
   data() {
     return {
       currentStepIndex: 0,
       selections: {
         pain: null,
+        _painMeta: null,    // { realId, attrId, name } — set by KioskStepPain when DB data available
+        _boissonMeta: null, // { boissonId, boissonName } — set by KioskStepMenu
+        _viandeMeta: [],    // [{ id, key, name, count }] — set by KioskStepViande
         viandes: {},
         totalViandes: 0,
         sauces: {},
@@ -222,8 +226,18 @@ export default {
         (a.name || '').toLowerCase().includes('viande')
       );
     },
-    updateSelection(key, value) {
+    updateSelection(key, value, meta) {
       this.selections[key] = value;
+      // Steps send meta for accurate catalog ID mapping when DB data is available
+      if (key === 'pain' && meta) {
+        this.selections._painMeta = meta;
+      }
+      if (key === 'boissonChoice' && meta) {
+        this.selections._boissonMeta = meta;
+      }
+      if (key === '_viandeMeta') {
+        this.selections._viandeMeta = value; // value is the meta array here
+      }
     },
     formatPrice(price) {
       return new Intl.NumberFormat('fr-FR', {
@@ -253,44 +267,95 @@ export default {
       }
     },
     buildCartItem() {
-      const sauceVariations = {};
-      const sauceNames = {};
-      
+      const allVariations = {};
+      const allVariationNames = {};
+
+      // Pain variation — only when real catalog ID exists (not fallback null)
+      const painMeta = this.selections._painMeta;
+      if (painMeta?.realId && painMeta?.attrId) {
+        allVariations[painMeta.attrId] = painMeta.realId;
+        allVariationNames['Pain'] = painMeta.name;
+      }
+
+      // Viande variation — first selected viande maps to item_variations when DB ID exists
+      const viandeMeta = this.selections._viandeMeta || [];
+      if (viandeMeta.length > 0 && this.item.itemAttributes) {
+        const viandeAttr = this.item.itemAttributes.find(a =>
+          (a.name || '').toLowerCase().includes('viande')
+        );
+        if (viandeAttr && this.item.variations?.[viandeAttr.id]) {
+          const firstViande = viandeMeta[0];
+          if (typeof firstViande.id === 'number') {
+            allVariations[viandeAttr.id] = firstViande.id;
+            allVariationNames[viandeAttr.name] = firstViande.name;
+          }
+        }
+      }
+
+      // Sauce variation (first selection only — extras are priced via sauceVariationSurcharge)
       if (this.selections.sauceOrder.length > 0) {
-        const firstSauceId = this.selections.sauceOrder[0];
-        
+        const firstSauceKey = this.selections.sauceOrder[0];
         if (this.item.itemAttributes) {
           const sauceAttr = this.item.itemAttributes.find(a =>
             (a.name || '').toLowerCase().includes('sauce')
           );
           if (sauceAttr && this.item.variations?.[sauceAttr.id]) {
-            const variation = this.item.variations[sauceAttr.id].find(v => v.id === firstSauceId);
+            // firstSauceKey may be an integer ID (DB-driven) or a name string (fallback)
+            const variation = typeof firstSauceKey === 'number'
+              ? this.item.variations[sauceAttr.id].find(v => v.id === firstSauceKey)
+              : this.item.variations[sauceAttr.id].find(v => v.name === firstSauceKey);
             if (variation) {
-              sauceVariations[sauceAttr.id] = firstSauceId;
-              sauceNames[sauceAttr.name] = variation.name;
+              allVariations[sauceAttr.id] = variation.id;
+              allVariationNames[sauceAttr.name] = variation.name;
             }
           }
         }
       }
 
+      // Alias for readability
+      const sauceVariations = allVariations;
+      const sauceNames = allVariationNames;
+
       const selectedExtras = [];
       const extraNames = [];
-      
+      let itemExtraTotal = 0;
+
       Object.keys(this.selections.garnitures).forEach(id => {
         if (this.selections.garnitures[id]) {
           selectedExtras.push(parseInt(id));
           const extra = this.item.extras?.find(e => e.id === parseInt(id));
-          if (extra) extraNames.push(extra.name);
+          if (extra) {
+            extraNames.push(extra.name);
+            // garnitures are free — no price add
+          }
         }
       });
-      
+
       Object.keys(this.selections.supplements).forEach(id => {
         if (this.selections.supplements[id]) {
           selectedExtras.push(parseInt(id));
           const extra = this.item.extras?.find(e => e.id === parseInt(id));
-          if (extra) extraNames.push(extra.name);
+          if (extra) {
+            extraNames.push(extra.name);
+            itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
+          }
         }
       });
+
+      // Extra sauces (beyond first): each adds 0.50€ as variation surcharge
+      const extraSauceCount = Math.max(0, this.selections.sauceOrder.length - 1);
+      const sauceVariationSurcharge = extraSauceCount * 0.50;
+
+      // Menu addon price
+      let menuAddonPrice = 0;
+      if (this.selections.menuChoice === 'full' && this.item.addons) {
+        const menuAddon = this.item.addons.find(a =>
+          (a.addon_item_name || '').toLowerCase().includes('menu')
+        );
+        if (menuAddon) menuAddonPrice = parseFloat(menuAddon.addon_item_convert_price) || 0;
+      }
+
+      const itemVariationTotal = sauceVariationSurcharge + menuAddonPrice;
 
       return {
         item_id: this.item.id,
@@ -302,8 +367,8 @@ export default {
         discount: 0,
         item_variations: { variations: sauceVariations, names: sauceNames },
         item_extras: { extras: selectedExtras, names: extraNames },
-        item_variation_total: 0,
-        item_extra_total: 0,
+        item_variation_total: parseFloat(itemVariationTotal.toFixed(2)),
+        item_extra_total: parseFloat(itemExtraTotal.toFixed(2)),
         instruction: this.buildInstruction()
       };
     },
@@ -349,22 +414,34 @@ export default {
         const choices = {
           full: 'Menu complet (frites + boisson)',
           frites: '+ Frites',
-          boisson: '+ Boisson'
+          boisson: '+ Boisson',
         };
-        parts.push('MENU: ' + choices[this.selections.menuChoice]);
+        let menuLabel = choices[this.selections.menuChoice] || ('+ ' + this.selections.menuChoice);
+        // Append specific drink name when known
+        const boissonMeta = this.selections._boissonMeta;
+        if (boissonMeta?.boissonName &&
+            (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'boisson')) {
+          menuLabel += ` (${boissonMeta.boissonName})`;
+        }
+        parts.push('MENU: ' + menuLabel);
       }
       
       return parts.join('. ') || null;
     },
     addToCart() {
       const cartItem = this.buildCartItem();
-      this.onAddToCart(cartItem);
-      this.onClose();
+      if (this.onAddToCart) {
+        this.onAddToCart(cartItem);
+        if (this.onClose) this.onClose();
+      } else {
+        this.$store.dispatch('kioskCart/addItem', cartItem);
+        this.$router.go(-1);
+      }
     }
   },
   mounted() {
     this.initGarnitures();
-  }
+  },
 };
 </script>
 

@@ -39,6 +39,10 @@ class FrontendOrder extends Model
         'status',
         'dining_table_id',
         'source',
+        'idempotency_key',
+        'loyalty_points_awarded',
+        'transaction_id',
+        'card_type',
     ];
 
     protected $casts = [

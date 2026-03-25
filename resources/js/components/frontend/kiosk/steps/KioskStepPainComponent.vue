@@ -6,8 +6,8 @@
         v-for="pain in painList"
         :key="pain.id"
         class="kiosk-option-card"
-        :class="{ selected: localSelection === pain.id }"
-        @click="selectPain(pain.id)"
+        :class="{ selected: localSelection === (pain.id ?? pain.name) }"
+        @click="selectPain(pain)"
       >
         <span class="kiosk-pain-emoji">{{ pain.emoji }}</span>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
@@ -34,31 +34,38 @@ export default {
     };
   },
   computed: {
+    // Whether we have real catalog IDs (integers from DB) or name-only fallback
+    hasRealIds() {
+      return this.painList.length > 0 && typeof this.painList[0].id === 'number';
+    },
+
     painList() {
-      // Lire les pains depuis les variations DB (attribut "Pain" ou "Type de Pain")
-      if (!this.item.itemAttributes) return this.getDefaultPainList();
-      
+      if (!this.item?.itemAttributes) return this.getDefaultPainList();
+
       const painAttr = this.item.itemAttributes.find(a =>
         (a.name || '').toLowerCase().includes('pain') ||
         (a.name || '').toLowerCase().includes('galette')
       );
-      
-      if (!painAttr || !this.item.variations?.[painAttr.id]) {
+
+      if (!painAttr || !this.item.variations?.[painAttr.id]?.length) {
         return this.getDefaultPainList();
       }
-      
+
       return this.item.variations[painAttr.id].map(v => ({
-        id: v.id,
+        id: v.id,           // Real integer DB id
         name: v.name,
-        emoji: this.getEmojiForPain(v.name)
+        emoji: this.getEmojiForPain(v.name),
+        attrId: painAttr.id,
       }));
-    }
+    },
   },
   methods: {
     getDefaultPainList() {
+      // IDs are null when we have no catalog data — wizard buildCartItem will
+      // only add pain to item_variations when id is a real integer.
       return [
-        { id: 'pain', name: 'Pain', emoji: '🥖' },
-        { id: 'galette', name: 'Galette', emoji: '🥙' }
+        { id: null, name: 'Pain', emoji: '🥖', attrId: null },
+        { id: null, name: 'Galette', emoji: '🥙', attrId: null },
       ];
     },
     getEmojiForPain(name) {
@@ -67,10 +74,15 @@ export default {
       if (lower.includes('pain')) return '🥖';
       return '🍞';
     },
-    selectPain(id) {
-      this.localSelection = id;
-      this.$emit('update', 'pain', id);
-    }
+    selectPain(pain) {
+      this.localSelection = pain.id ?? pain.name; // Store real ID or name as label
+      // Emit full pain object so wizard can decide whether to map to item_variations
+      this.$emit('update', 'pain', this.localSelection, {
+        realId: typeof pain.id === 'number' ? pain.id : null,
+        attrId: pain.attrId,
+        name:   pain.name,
+      });
+    },
   }
 };
 </script>

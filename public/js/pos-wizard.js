@@ -23,7 +23,11 @@
     /* ==============================
        ONLY RUN ON POS PAGE
        ============================== */
-    if (!window.location.pathname.includes('/admin/pos')) return;
+    // Do NOT guard with window.location.pathname here — this script is loaded once for the
+    // entire SPA session. If the user lands on /admin/dashboard first and then navigates to
+    // /admin/pos via Vue Router, pathname is already evaluated and the wizard would never init.
+    // Instead, the body-level MutationObserver in init() only activates when #item-variation-modal
+    // actually appears in the DOM (which only happens on the POS page).
 
     /* ==============================
        STATE
@@ -37,6 +41,7 @@
     let selections = {};
     let itemQuantity = 1;
     let instructionText = '';
+    let currentCategory = 'unknown'; // module-level so buildTicketInstruction can read it
 
     /* ==============================
        CONFIG — VIANDES DISPONIBLES
@@ -170,8 +175,14 @@
         return _xhrOpen.apply(this, arguments);
     };
 
+    function _isItemDetailUrl(url) {
+        if (typeof url !== 'string') return false;
+        // Match both absolute (/api/admin/item/...) and relative (admin/item/...) URLs
+        return url.includes('admin/item/') || url.includes('admin/setting/item/');
+    }
+
     XMLHttpRequest.prototype.send = function () {
-        if (this.__wizUrl && (this.__wizUrl.includes('/admin/item/') || this.__wizUrl.includes('/admin/setting/item/'))) {
+        if (this.__wizUrl && _isItemDetailUrl(this.__wizUrl)) {
             this.addEventListener('load', function () {
                 try {
                     var d = JSON.parse(this.responseText);
@@ -190,7 +201,7 @@
     var _originalFetch = window.fetch;
     window.fetch = function (url, options) {
         return _originalFetch.apply(this, arguments).then(function (response) {
-            if (typeof url === 'string' && (url.includes('/admin/item/') || url.includes('/admin/setting/item/'))) {
+            if (_isItemDetailUrl(typeof url === 'string' ? url : (url && url.url) || '')) {
                 response.clone().json().then(function (d) {
                     if (d && d.data && (d.data.itemAttributes || d.data.variations || d.data.extras)) {
                         lastItemData = d.data;
@@ -215,18 +226,19 @@
      */
     function detectViandeCount(name) {
         if (!name) return 0;
-        let n = normalizeStr(name);
+        var n = normalizeStr(name);
         if (!n.includes('tacos')) return 0;
 
         // Try to extract number from parentheses: "(3 viande)"
-        let match = n.match(/\((\d+)\s*viande/);
+        var match = n.match(/\((\d+)\s*viande/);
         if (match) return parseInt(match[1]);
 
-        // Try XXL first (before XL)
+        // [T2 FIX] Use anchored patterns relative to 'tacos' to avoid false matches
+        // e.g. "Tacos Légumes" must not match 'l' as size L
         if (n.includes('xxl')) return 4;
-        if (n.includes('xl') && !n.includes('xxl')) return 3;
-        if (n.includes(' l ') || n.match(/\bl\b/) || n.includes(' l(') || n.includes('tacos l')) return 2;
-        if (n.includes(' m ') || n.match(/\bm\b/) || n.includes(' m(') || n.includes('tacos m')) return 1;
+        if (/tacos\s*xl\b/.test(n) && !n.includes('xxl')) return 3;
+        if (/tacos\s*l\b/.test(n) || n.includes('tacos l ') || n.includes('tacos l(')) return 2;
+        if (/tacos\s*m\b/.test(n) || n.includes('tacos m ') || n.includes('tacos m(')) return 1;
 
         return 0;
     }
@@ -259,12 +271,18 @@
     function getViandeItemsFromData(data) {
         if (!data || !Array.isArray(data.itemAttributes) || !data.variations) return null;
         var items = [];
+        var seenIds = {};
+        var seenNames = {};
         data.itemAttributes.forEach(function (attr) {
             var attrName = normalizeStr(attr.name || '');
             var isViandeAttr = attrName.includes('viande') || attrName.includes('meat') || attrName.includes('proteine');
             if (!isViandeAttr) return;
             var vars = data.variations[attr.id.toString()] || [];
             vars.forEach(function (v) {
+                var normName = normalizeStr(v.name || '');
+                if (seenIds[v.id] || seenNames[normName]) return;
+                seenIds[v.id] = true;
+                seenNames[normName] = true;
                 items.push({
                     key: 'viande_' + v.id,
                     id: v.id,
@@ -563,9 +581,13 @@
                 viandeItems: viandeItems,
                 sauceItems: sauceList
             });
-            // Init selections
+            // [T4 FIX] Init selections with BOTH 'v_<id>' keys (single-page) AND 'viande_<key>' keys (multi-step)
+            // so both rendering paths work with the same selections object
             selections.viandes = {};
-            viandeItems.forEach(function (v) { selections.viandes[v.key] = 0; });
+            viandeItems.forEach(function (v) {
+                selections.viandes[v.key] = 0;        // multi-step key: 'viande_<key>'
+                selections.viandes['v_' + v.id] = 0;  // single-page key: 'v_<id>'
+            });
             selections.maxViandes = viandeCount;
             selections.totalViandes = 0;
             selections.sauces = {};
@@ -643,11 +665,10 @@
 
         // === Step: Sauce + Accompagnement (Assiette - combined) ===
         if (allowed.indexOf('sauce_accompagnement') !== -1) {
+            var accompKeywordsBS = ['riz', 'frites', 'salade', 'bourgoul', 'semoule', 'couscous', 'pates', 'legume'];
             var accompItems = freeExtras.filter(function (ex) {
-                return ex.name.toLowerCase().includes('riz') ||
-                    ex.name.toLowerCase().includes('frites') ||
-                    ex.name.toLowerCase().includes('salade') ||
-                    ex.name.toLowerCase().includes('bourgoul');
+                var n = normalizeStr(ex.name);
+                return accompKeywordsBS.some(function (kw) { return n.includes(kw); });
             });
             s.push({
                 type: 'sauce_accompagnement',
@@ -1091,17 +1112,33 @@
             extra += supplTotal * VIANDE_SUPPL_PRICE;
         }
         // Formule (addon) — [S25] Extract price from lastItemData.addons using 'addon_123' format
+        // [P1-3 FIX] Also handle legacy menuChoice values 'full'/'frites'/'boisson' by name lookup
         var addonTotal = 0;
-        if (selections.menuChoice && selections.menuChoice !== 'none') {
+        if (selections.menuChoice && selections.menuChoice !== 'none' && lastItemData && lastItemData.addons) {
             var addonMatch = selections.menuChoice.match(/^addon_(\d+)$/);
-            if (addonMatch && lastItemData && lastItemData.addons) {
+            var selectedAddon = null;
+            if (addonMatch) {
                 var selectedAddonId = parseInt(addonMatch[1]);
-                var selectedAddon = lastItemData.addons.find(function (a) { return a.id === selectedAddonId; });
-                if (selectedAddon) {
-                    // addon_item_currency_price is a string like "€3.00" — strip currency symbol
-                    var addonPriceStr = (selectedAddon.addon_item_currency_price || '0').replace(/[^0-9.,]/g, '').replace(',', '.');
-                    addonTotal += parseFloat(addonPriceStr) || 0;
-                }
+                selectedAddon = lastItemData.addons.find(function (a) { return a.id === selectedAddonId; });
+            } else if (selections.menuChoice === 'full') {
+                selectedAddon = lastItemData.addons.find(function (a) {
+                    var n = (a.addon_item_name || a.name || '').toLowerCase();
+                    return n.includes('menu') || (n.includes('frite') && n.includes('boisson'));
+                });
+            } else if (selections.menuChoice === 'frites') {
+                selectedAddon = lastItemData.addons.find(function (a) {
+                    var n = (a.addon_item_name || a.name || '').toLowerCase();
+                    return n.includes('frite') && !n.includes('boisson') && !n.includes('menu');
+                });
+            } else if (selections.menuChoice === 'boisson') {
+                selectedAddon = lastItemData.addons.find(function (a) {
+                    var n = (a.addon_item_name || a.name || '').toLowerCase();
+                    return (n.includes('boisson') || n.includes('coca') || n.includes('jus')) && !n.includes('frite');
+                });
+            }
+            if (selectedAddon) {
+                var addonPriceStr = (selectedAddon.addon_item_currency_price || '0').replace(/[^0-9.,]/g, '').replace(',', '.');
+                addonTotal += parseFloat(addonPriceStr) || 0;
             }
         }
         // Frites upgrade options — prices from POS_WIZARD_CONFIG
@@ -1474,7 +1511,10 @@
             h += '<p class="wizard-hint">Cliquez pour retirer une crudité (affichage rouge ✕ Sans ...)</p>';
             h += '<div class="garniture-toggle">';
             step.freeItems.forEach(function (g) {
-                var isIncluded = selections.garnitures && selections.garnitures[g.id];
+                // [H2 FIX] Use 'c_<id>' key (unified format) with fallback to numeric key
+                var cKey = 'c_' + g.id;
+                var isIncluded = !selections.garnitures ||
+                    (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
                 var stateClass = isIncluded ? ' included' : ' removed';
                 var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
                 var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
@@ -1571,7 +1611,10 @@
         h += '<p class="wizard-hint">Tout est inclus par défaut. Cliquez pour retirer (rouge ✕ Sans ...)</p>';
         h += '<div class="garniture-toggle">';
         step.garnitureItems.forEach(function (g) {
-            var isIncluded = selections.garnitures && selections.garnitures[g.id];
+            // [H2 FIX] Read using 'c_<id>' key (unified format) with fallback to numeric key
+            var cKey = 'c_' + g.id;
+            var isIncluded = !selections.garnitures ||
+                (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
             var stateClass = isIncluded ? ' included' : ' removed';
             var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
             var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
@@ -1960,7 +2003,11 @@
             var garnIncluded = [];
             var garnRemoved = [];
             garnItems.forEach(function (g) {
-                if (selections.garnitures && selections.garnitures[g.id]) {
+                // [H2 FIX] Check both 'c_<id>' and numeric key
+                var cKey = 'c_' + g.id;
+                var isIncluded = !selections.garnitures ||
+                    (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
+                if (isIncluded) {
                     garnIncluded.push(g.name);
                 } else {
                     garnRemoved.push('Sans ' + g.name);
@@ -2149,23 +2196,19 @@
     function buildWizardInstruction() {
         var parts = [];
 
-        // Viandes
+        // Viandes: "VIANDES : X, Y, +Z" — all merged, no "Viande 1 / Viande 2" labels
         if (selections.viandes) {
             var viandeNames = [];
             var viandeStepForInstruction = steps.find(function (s) { return s.type === 'viande' || s.type === 'viande_sauce'; });
             var viandeItemsForInstruction = viandeStepForInstruction ? (viandeStepForInstruction.items || viandeStepForInstruction.viandeItems || VIANDES) : VIANDES;
             viandeItemsForInstruction.forEach(function (v) {
-                var count = selections.viandes[v.key] || 0;
+                var count = (selections.viandes['v_' + v.id] || 0) + (selections.viandes[v.key] || 0);
                 if (count > 0) {
-                    viandeNames.push(count > 1 ? count + '× ' + v.name : v.name);
+                    viandeNames.push(count > 1 ? count + '\u00d7 ' + v.name : v.name);
                 }
             });
-            if (viandeNames.length > 0) {
-                parts.push('VIANDES: ' + viandeNames.join(', '));
-            }
-            // Viandes supplémentaires — list each extra viande by name
+            // Viandes supplémentaires — append inline with price
             if (selections.viandeSupplItems && lastItemData && lastItemData.variations) {
-                var supplParts = [];
                 Object.keys(selections.viandeSupplItems).forEach(function (key) {
                     var sc = selections.viandeSupplItems[key] || 0;
                     if (sc <= 0) return;
@@ -2175,9 +2218,11 @@
                         var found = lastItemData.variations[attrId].find(function (v) { return v.id === vid; });
                         if (found) viandeName = found.name;
                     });
-                    supplParts.push('+' + sc + '× ' + viandeName + ' (+' + fmtPrice(sc * VIANDE_SUPPL_PRICE) + ')');
+                    viandeNames.push('+' + (sc > 1 ? sc + '\u00d7 ' : '') + viandeName + ' (+' + fmtPrice(sc * VIANDE_SUPPL_PRICE) + ')');
                 });
-                if (supplParts.length > 0) parts.push('EXTRAS: ' + supplParts.join(', '));
+            }
+            if (viandeNames.length > 0) {
+                parts.push('VIANDES : ' + viandeNames.join(', '));
             }
         }
 
@@ -2201,37 +2246,25 @@
             }
         }
 
-        // Sauce principale (première sauce dans sauceOrder)
+        // Sauces: "SAUCE : X, Y, Z" — all sauces on one line, no "(1ère Gratuite)" / "SUPPL" split
         if (selections.sauceOrder && selections.sauceOrder.length > 0) {
             var allSauceItems = [];
             steps.forEach(function (s) {
                 if (s.sauceItems) allSauceItems = allSauceItems.concat(s.sauceItems);
                 if (s.items && s.type === 'sauce') allSauceItems = allSauceItems.concat(s.items);
             });
-            var sauce = allSauceItems.find(function (ss) { return ss.id === selections.sauceOrder[0]; });
-            if (sauce) {
-                parts.push('SAUCE: ' + sauce.name);
-            }
-        }
-
-        // Extra sauces (2nd, 3rd, etc.)
-        if (selections.sauceOrder && selections.sauceOrder.length > 1) {
-            allSauceItems = []; // reuse — already declared above
-            steps.forEach(function (s) {
-                if (s.sauceItems) allSauceItems = allSauceItems.concat(s.sauceItems);
-                if (s.items && s.type === 'sauce') allSauceItems = allSauceItems.concat(s.items);
+            var allSauceNames = [];
+            selections.sauceOrder.forEach(function (sKey) {
+                var sId = typeof sKey === 'string' ? parseInt((sKey.match(/_(\d+)$/) || [])[1] || sKey) : sKey;
+                var sauce = allSauceItems.find(function (ss) { return ss.id === sId; });
+                if (sauce) allSauceNames.push(sauce.name);
             });
-            var extraSauceNames = [];
-            for (var si = 1; si < selections.sauceOrder.length; si++) {
-                var sauce = allSauceItems.find(function (ss) { return ss.id === selections.sauceOrder[si]; });
-                if (sauce) extraSauceNames.push(sauce.name);
-            }
-            if (extraSauceNames.length > 0) {
-                parts.push('SAUCES SUPPL: ' + extraSauceNames.join(', '));
+            if (allSauceNames.length > 0) {
+                parts.push('SAUCE : ' + allSauceNames.join(', '));
             }
         }
 
-        // [G1 FIX] sauceSingle for omelette/snacking
+        // sauceSingle for omelette/snacking
         if (selections.sauceSingle) {
             var sauceSingleStep = steps.find(function (s) { return s.type === 'sauce_single'; });
             if (sauceSingleStep && sauceSingleStep.items) {
@@ -2239,7 +2272,7 @@
                     return ss.id === selections.sauceSingle;
                 });
                 if (sauceSingleItem) {
-                    parts.push('SAUCE: ' + sauceSingleItem.name);
+                    parts.push('SAUCE : ' + sauceSingleItem.name);
                 }
             }
         }
@@ -2261,8 +2294,18 @@
             var garnIncluded = [];
             var garnExcluded = [];
             allGarnItems.forEach(function (g) {
-                if (selections.garnitures[g.id] === true) garnIncluded.push(g.name);
-                else if (selections.garnitures[g.id] === false) garnExcluded.push(g.name);
+                // [H2 FIX] Check both 'c_<id>' and numeric key for included/excluded state
+                // [X7 FIX] Align with buildTicketInstruction: "not explicitly false = included"
+                // so default-included crudités (initialized to true but possibly undefined after
+                // a partial restore) still appear in the recap.
+                var cKey = 'c_' + g.id;
+                var cVal = selections.garnitures[cKey];
+                var numVal = selections.garnitures[g.id];
+                // Explicitly excluded if any key is false
+                var isExcluded = cVal === false || numVal === false;
+                // Included = not excluded (matches buildTicketInstruction semantics)
+                if (isExcluded) garnExcluded.push(g.name);
+                else garnIncluded.push(g.name);
             });
             // [BUG-GARN-1 FIX] Emit SANS: for excluded garnitures
             if (garnExcluded.length > 0) {
@@ -2287,13 +2330,15 @@
         }
 
         // Suppléments
+        // [P1-2 FIX] Keys are 'p_<id>' on single-page path — strip prefix before numeric comparison
         if (selections.supplements) {
             var supplNames = [];
-            Object.keys(selections.supplements).forEach(function (id) {
-                if (!selections.supplements[id]) return;
+            Object.keys(selections.supplements).forEach(function (key) {
+                if (!selections.supplements[key]) return;
+                var numericId = String(key).replace(/^p_/, '');
                 steps.forEach(function (s) {
                     (s.paidItems || []).concat(s.items || []).forEach(function (p) {
-                        if (String(p.id) === String(id)) supplNames.push(p.name);
+                        if (String(p.id) === numericId) supplNames.push(p.name);
                     });
                 });
             });
@@ -2304,7 +2349,16 @@
 
         // Formule/Menu
         if (selections.menuChoice) {
-            if (selections.menuChoice === 'full') {
+            // [X2 FIX] Handle addon_N path (single-page formule) — resolve real addon name from lastItemData
+            var addonNMatch = selections.menuChoice.match(/^addon_(\d+)$/);
+            if (addonNMatch && lastItemData && lastItemData.addons) {
+                var addonNId = parseInt(addonNMatch[1]);
+                var addonNItem = lastItemData.addons.find(function (a) { return a.id === addonNId; });
+                if (addonNItem) {
+                    var addonNLabel = addonNItem.addon_item_name || addonNItem.name || ('Addon #' + addonNId);
+                    parts.push('FORMULE: ' + addonNLabel);
+                }
+            } else if (selections.menuChoice === 'full') {
                 parts.push('FORMULE: Menu Complet (Frites + Boisson)');
             } else if (selections.menuChoice === 'frites') {
                 parts.push('FORMULE: Frites Seules');
@@ -2359,8 +2413,13 @@
             }
             var sfNames = [];
             if (sfItems) {
-                selections.sauceFritesOrder.forEach(function (id) {
-                    var sauce = sfItems.find(function (ss) { return ss.id === id; });
+                selections.sauceFritesOrder.forEach(function (rawId) {
+                    // [X3 FIX] sauceFritesOrder stores 'sf_<id>' strings on single-page path.
+                    // Extract numeric id before comparing to sfItems[n].id (which is a number).
+                    var numericSfId = typeof rawId === 'string'
+                        ? parseInt((rawId.match(/_(\d+)$/) || [])[1] || rawId)
+                        : rawId;
+                    var sauce = sfItems.find(function (ss) { return ss.id === numericSfId; });
                     if (sauce) sfNames.push(sauce.name);
                 });
             }
@@ -2411,6 +2470,132 @@
         return result;
     }
 
+    /**
+     * Build a clean multi-line display string for the cashier's cart view.
+     * No prices, no KDS-style uppercase, just the essentials in reading order.
+     * Used to populate data-wizard-cart-display → cart_display in Vue store.
+     */
+    function buildCartDisplay() {
+        var lines = [];
+
+        // Viandes (no prices)
+        if (selections.viandes) {
+            var viandeNames = [];
+            var viandeStepForDisplay = steps.find(function (s) { return s.type === 'viande' || s.type === 'viande_sauce'; });
+            var viandeItemsForDisplay = viandeStepForDisplay ? (viandeStepForDisplay.items || viandeStepForDisplay.viandeItems || VIANDES) : VIANDES;
+            viandeItemsForDisplay.forEach(function (v) {
+                var count = (selections.viandes['v_' + v.id] || 0) + (selections.viandes[v.key] || 0);
+                if (count > 0) {
+                    viandeNames.push(count > 1 ? count + '\u00d7 ' + v.name : v.name);
+                }
+            });
+            if (selections.viandeSupplItems) {
+                Object.keys(selections.viandeSupplItems).forEach(function (key) {
+                    var sc = selections.viandeSupplItems[key] || 0;
+                    if (sc <= 0) return;
+                    var vid = parseInt(key.replace('v_', ''));
+                    var viandeName = key;
+                    if (lastItemData && lastItemData.variations) {
+                        Object.keys(lastItemData.variations).forEach(function (attrId) {
+                            var found = lastItemData.variations[attrId].find(function (v) { return v.id === vid; });
+                            if (found) viandeName = found.name;
+                        });
+                    }
+                    viandeNames.push('+' + (sc > 1 ? sc + '\u00d7 ' : '') + viandeName);
+                });
+            }
+            if (viandeNames.length > 0) {
+                lines.push('Viandes: ' + viandeNames.join(', '));
+            }
+        }
+
+        // Pain
+        if (selections.pain && wizardItemData && wizardItemData.variations) {
+            var painVariation = null;
+            Object.values(wizardItemData.variations).forEach(function (group) {
+                if (Array.isArray(group)) {
+                    group.forEach(function (v) {
+                        if (v.id === selections.pain) painVariation = v;
+                    });
+                }
+            });
+            if (painVariation) lines.push('Pain: ' + painVariation.name);
+        }
+
+        // Garnitures / crudités
+        if (selections.garnitures) {
+            var allGarnItems = [];
+            steps.forEach(function (s) {
+                var items = s.garnitureItems || s.freeItems || (s.type === 'garnitures' ? s.items : null) || [];
+                items.forEach(function (g) {
+                    if (!allGarnItems.find(function (x) { return x.id === g.id; })) allGarnItems.push(g);
+                });
+            });
+            var garnIncluded = [];
+            var garnExcluded = [];
+            allGarnItems.forEach(function (g) {
+                var cKey = 'c_' + g.id;
+                var cVal = selections.garnitures[cKey];
+                var numVal = selections.garnitures[g.id];
+                if (cVal === false || numVal === false) garnExcluded.push(g.name);
+                else garnIncluded.push(g.name);
+            });
+            if (garnExcluded.length > 0) lines.push('Sans: ' + garnExcluded.join(', '));
+            if (garnIncluded.length > 0) lines.push('Crudités: ' + garnIncluded.join(', '));
+        }
+
+        // Sauce sandwich
+        if (selections.sauceOrder && selections.sauceOrder.length > 0) {
+            var allSauceItems = [];
+            steps.forEach(function (s) {
+                if (s.sauceItems) allSauceItems = allSauceItems.concat(s.sauceItems);
+                if (s.items && s.type === 'sauce') allSauceItems = allSauceItems.concat(s.items);
+            });
+            var sauceNames = [];
+            selections.sauceOrder.forEach(function (sKey) {
+                var sId = typeof sKey === 'string' ? parseInt((sKey.match(/_(\d+)$/) || [])[1] || sKey) : sKey;
+                var sauce = allSauceItems.find(function (ss) { return ss.id === sId; });
+                if (sauce) sauceNames.push(sauce.name);
+            });
+            if (sauceNames.length > 0) lines.push('Sauce: ' + sauceNames.join(', '));
+        }
+
+        // Sauce unique (omelette / snacking)
+        if (selections.sauceSingle) {
+            var sauceSingleStepCD = steps.find(function (s) { return s.type === 'sauce_single'; });
+            if (sauceSingleStepCD && sauceSingleStepCD.items) {
+                var sauceSingleItemCD = sauceSingleStepCD.items.find(function (ss) { return ss.id === selections.sauceSingle; });
+                if (sauceSingleItemCD) lines.push('Sauce: ' + sauceSingleItemCD.name);
+            }
+        }
+
+        // Accompagnement (assiettes)
+        if (selections.accompagnement) {
+            var accompStepCD = steps.find(function (s) { return s.type === 'sauce_accompagnement'; });
+            if (accompStepCD && accompStepCD.accompItems) {
+                var accompItemCD = accompStepCD.accompItems.find(function (a) { return a.id === selections.accompagnement; });
+                if (accompItemCD) lines.push('Accompagnement: ' + accompItemCD.name);
+            }
+        }
+
+        // Suppléments (no prices)
+        if (selections.supplements) {
+            var supplNamesCD = [];
+            Object.keys(selections.supplements).forEach(function (key) {
+                if (!selections.supplements[key]) return;
+                var numericId = String(key).replace(/^p_/, '');
+                steps.forEach(function (s) {
+                    (s.paidItems || []).concat(s.items || []).forEach(function (p) {
+                        if (String(p.id) === numericId) supplNamesCD.push(p.name);
+                    });
+                });
+            });
+            if (supplNamesCD.length > 0) lines.push('Suppléments: ' + supplNamesCD.join(', '));
+        }
+
+        return lines.join('\n');
+    }
+
     /* ==============================
        [S25] SINGLE-PAGE RENDERER
        ============================== */
@@ -2431,6 +2616,7 @@
         }
 
         var category = detectCategory(lastItemData);
+        currentCategory = category; // hoist to module scope for buildTicketInstruction
         var h = '<div class="pos-wizard single-page">';
 
         // Header : image + nom + prix + Qté inline à droite
@@ -2498,100 +2684,7 @@
             hasCrudites = crudites.length > 0;
         }
 
-        if (hasViandes || hasCrudites) {
-            h += '<div class="wizard-2col">';
-
-            // Colonne gauche : Viandes
-            if (hasViandes) {
-                var maxViandes = viandeAttrs.length;
-                var totalV = selections.totalViandes || 0;
-                var firstViandeAttr = viandeAttrs[0];
-                var viandeVariations = lastItemData.variations[firstViandeAttr.id] || [];
-
-                h += '<div class="wizard-2col-block viande-section">';
-                h += '<div class="section-header">';
-                h += '<h4>🥩 Viande' + (maxViandes > 1 ? 's' : '') + '</h4>';
-                h += '<span class="quota-badge ' + (totalV === maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + '</span>';
-                h += '</div>';
-
-                h += '<div class="wizard-viande-list">';
-                viandeVariations.forEach(function (variation) {
-                    var key = 'v_' + variation.id;
-                    var count = selections.viandes[key] || 0;
-                    var canAdd = totalV < maxViandes;
-                    var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
-                    h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
-                    h += '<div class="viande-info">';
-                    h += '<span class="viande-emoji">' + emoji + '</span>';
-                    h += '<span class="viande-name">' + variation.name + '</span>';
-                    h += '</div>';
-                    h += '<div class="viande-controls">';
-                    h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + key + '" data-action="minus">−</button>';
-                    h += '<span class="viande-count">' + count + '</span>';
-                    h += '<button type="button" class="viande-btn plus' + (!canAdd ? ' disabled' : '') + '" data-viande="' + key + '" data-action="plus">+</button>';
-                    h += '</div>';
-                    h += '</div>';
-                });
-                h += '</div>';
-
-                // Viandes supplémentaires — bouton toggle + liste dépliable
-                var totalSuppl = 0;
-                if (selections.viandeSupplItems) {
-                    Object.keys(selections.viandeSupplItems).forEach(function (k) { totalSuppl += selections.viandeSupplItems[k] || 0; });
-                }
-                var isExpanded = totalSuppl > 0 || (selections.viandeSupplExpanded === true);
-                var toggleLabel = totalSuppl > 0
-                    ? '🥩+ ' + totalSuppl + ' viande' + (totalSuppl > 1 ? 's' : '') + ' extra (+' + fmtPrice(totalSuppl * VIANDE_SUPPL_PRICE) + ') ' + (isExpanded ? '▲' : '▼')
-                    : '➕ Viande supplémentaire (+' + fmtPrice(VIANDE_SUPPL_PRICE) + '/viande) ' + (isExpanded ? '▲' : '▼');
-                h += '<button type="button" class="viande-suppl-toggle' + (totalSuppl > 0 ? ' has-items' : '') + '" data-action="toggle-suppl">' + toggleLabel + '</button>';
-                h += '<div class="wizard-viande-suppl-section' + (isExpanded ? '' : ' collapsed') + '" id="viande-suppl-panel">';
-                viandeVariations.forEach(function (variation) {
-                    var key = 'v_' + variation.id;
-                    var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
-                    var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
-                    h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
-                    h += '<div class="viande-info">';
-                    h += '<span class="viande-emoji">' + emoji + '</span>';
-                    h += '<span class="viande-name">' + variation.name + '</span>';
-                    h += '</div>';
-                    h += '<div class="viande-controls">';
-                    h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
-                    h += '<span class="viande-suppl-count viande-count">' + sc + '</span>';
-                    h += '<button type="button" class="viande-suppl-btn viande-btn plus" data-viande-suppl="' + key + '" data-action="plus">+</button>';
-                    h += '</div>';
-                    h += '</div>';
-                });
-                h += '</div>';
-
-                h += '</div>'; // .wizard-2col-block viande
-            }
-
-            // Colonne droite : Crudités
-            if (hasCrudites) {
-                h += '<div class="wizard-2col-block crudites-section">';
-                h += '<h4>🥬 Crudités</h4>';
-                h += '<p class="section-hint">Cliquez pour retirer.</p>';
-                h += '<div class="garniture-toggle">';
-                crudites.forEach(function (c) {
-                    var key = 'c_' + c.id;
-                    var isIncluded = selections.garnitures && selections.garnitures[key];
-                    if (selections.garnitures && selections.garnitures[key] === undefined) {
-                        isIncluded = true;
-                    }
-                    var stateClass = isIncluded ? ' included' : ' removed';
-                    var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
-                    var emoji = getEmoji(GARNITURE_EMOJIS, c.name);
-                    h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + label + '</button>';
-                });
-                h += '</div>';
-                h += '</div>'; // .wizard-2col-block crudites
-            }
-
-            h += '</div>'; // .wizard-2col
-        }
-
-        // === SECTIONS 4+5: SAUCE + SUPPLÉMENTS (2 colonnes) ===
-        // sauceVariations is hoisted so the sauce frites section can reuse the same list
+        // === SECTIONS 4+5: SAUCE + SUPPLÉMENTS — computed early so layout can be decided ===
         var sauceVariations = [];
         var hasSauce = false, hasSupplements = false;
         var supplements = [];
@@ -2614,67 +2707,209 @@
             hasSupplements = supplements.length > 0;
         }
 
-        if (hasSauce || hasSupplements) {
+        // Helper: render the sauce block HTML (reused in both layout paths)
+        function _renderSauceBlock() {
+            var sauceCount = selections.sauceOrder ? selections.sauceOrder.length : 0;
+            var sh = '<div class="wizard-2col-block sauce-section">';
+            sh += '<div class="section-header">';
+            sh += '<h4>🥄 Sauce</h4>';
+            if (sauceCount === 0) {
+                sh += '<span class="sauce-badge free">1ère gratuite</span>';
+            } else if (sauceCount === 1) {
+                sh += '<span class="sauce-badge free">✅ Gratuite</span>';
+            } else {
+                var extraCost = (sauceCount - 1) * SAUCE_EXTRA_PRICE;
+                sh += '<span class="sauce-badge paid">+' + fmtPrice(extraCost) + '</span>';
+            }
+            sh += '</div>';
+            sh += '<div class="sauce-chips-grid">';
+            sauceVariations.forEach(function (sauce) {
+                var key = 's_' + sauce.id;
+                var sel = selections.sauces && selections.sauces[key] ? ' selected' : '';
+                var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
+                var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
+                sh += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
+                sh += sauce.name + badge;
+                sh += '</button>';
+            });
+            sh += '</div>';
+            sh += '</div>'; // .wizard-2col-block sauce
+            return sh;
+        }
+
+        // Helper: render the supplements block HTML
+        function _renderSupplBlock() {
+            var supplSelected = selections.supplements ? Object.values(selections.supplements).filter(Boolean).length : 0;
+            var supplOpen = supplSelected > 0 || selections.supplExpanded === true;
+            var supplToggleLabel = supplSelected > 0
+                ? '➕ Suppléments (' + supplSelected + ' choisi' + (supplSelected > 1 ? 's' : '') + ') ' + (supplOpen ? '▲' : '▼')
+                : '➕ Suppléments ' + (supplOpen ? '▲' : '▼');
+            var sh = '<div class="wizard-2col-block supplements-section">';
+            sh += '<button type="button" class="suppl-toggle' + (supplSelected > 0 ? ' has-items' : '') + '" data-action="toggle-suppl">' + supplToggleLabel + '</button>';
+            sh += '<div class="suppl-panel' + (supplOpen ? '' : ' collapsed') + '">';
+            sh += '<div class="wizard-options supplement-grid">';
+            supplements.forEach(function (sup) {
+                var key = 'p_' + sup.id;
+                var sel = selections.supplements && selections.supplements[key] ? ' selected' : '';
+                var emoji = getEmoji(SUPPLEMENT_EMOJIS, sup.name);
+                var price = sup.currency_price || '€1.00';
+                sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
+                sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+                sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
+                sh += '<span class="option-name">' + sup.name + '</span>';
+                sh += '<span class="option-price paid">+' + price + '</span>';
+                sh += '</div>';
+            });
+            sh += '</div>';
+            sh += '</div>'; // .suppl-panel
+            sh += '</div>'; // .wizard-2col-block supplements
+            return sh;
+        }
+
+        // === SECTION VIANDES (pleine largeur) ===
+        if (hasViandes) {
+            // Deduplicate by id AND normalized name (API sends "Viande 1" + "Viande 2" with same list)
+            var seenViandeIds = {};
+            var seenViandeNames = {};
+            var viandeVariations = [];
+            viandeAttrs.forEach(function (attr) {
+                var vars = lastItemData.variations[attr.id] || [];
+                vars.forEach(function (v) {
+                    var normName = normalizeStr(v.name || '');
+                    if (!seenViandeIds[v.id] && !seenViandeNames[normName]) {
+                        seenViandeIds[v.id] = true;
+                        seenViandeNames[normName] = true;
+                        viandeVariations.push(v);
+                    }
+                });
+            });
+            var maxViandes = detectViandeCountFromData(lastItemData);
+            if (maxViandes === 0) maxViandes = viandeAttrs.length;
+            var totalV = selections.totalViandes || 0;
+
+            h += '<div class="wizard-section viande-section">';
+            h += '<div class="section-header">';
+            h += '<h4>🥩 Viande' + (maxViandes > 1 ? 's' : '') + '</h4>';
+            h += '<span class="quota-badge ' + (totalV === maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + '</span>';
+            h += '</div>';
+
+            h += '<div class="wizard-viande-list">';
+            viandeVariations.forEach(function (variation) {
+                var key = 'v_' + variation.id;
+                var count = selections.viandes[key] || 0;
+                var canAdd = totalV < maxViandes;
+                var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
+                h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
+                h += '<div class="viande-info">';
+                h += '<span class="viande-emoji">' + emoji + '</span>';
+                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '</div>';
+                h += '<div class="viande-controls">';
+                h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + key + '" data-action="minus">−</button>';
+                h += '<span class="viande-count">' + count + '</span>';
+                h += '<button type="button" class="viande-btn plus' + (!canAdd ? ' disabled' : '') + '" data-viande="' + key + '" data-action="plus">+</button>';
+                h += '</div>';
+                h += '</div>';
+            });
+            h += '</div>';
+
+            // Viandes supplémentaires — bouton toggle + liste dépliable
+            var totalVSuppl = 0;
+            if (selections.viandeSupplItems) {
+                Object.keys(selections.viandeSupplItems).forEach(function (k) { totalVSuppl += selections.viandeSupplItems[k] || 0; });
+            }
+            var isExpanded = totalVSuppl > 0 || (selections.viandeSupplExpanded === true);
+            var toggleLabel = totalVSuppl > 0
+                ? '🥩+ ' + totalVSuppl + ' viande' + (totalVSuppl > 1 ? 's' : '') + ' extra (+' + fmtPrice(totalVSuppl * VIANDE_SUPPL_PRICE) + ') ' + (isExpanded ? '▲' : '▼')
+                : '➕ Viande supplémentaire (+' + fmtPrice(VIANDE_SUPPL_PRICE) + '/viande) ' + (isExpanded ? '▲' : '▼');
+            h += '<button type="button" class="viande-suppl-toggle' + (totalVSuppl > 0 ? ' has-items' : '') + '" data-action="toggle-suppl">' + toggleLabel + '</button>';
+            h += '<div class="wizard-viande-suppl-section' + (isExpanded ? '' : ' collapsed') + '" id="viande-suppl-panel">';
+            viandeVariations.forEach(function (variation) {
+                var key = 'v_' + variation.id;
+                var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
+                var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
+                h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
+                h += '<div class="viande-info">';
+                h += '<span class="viande-emoji">' + emoji + '</span>';
+                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '</div>';
+                h += '<div class="viande-controls">';
+                h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
+                h += '<span class="viande-suppl-count viande-count">' + sc + '</span>';
+                h += '<button type="button" class="viande-suppl-btn viande-btn plus" data-viande-suppl="' + key + '" data-action="plus">+</button>';
+                h += '</div>';
+                h += '</div>';
+            });
+            h += '</div>';
+            h += '</div>'; // .wizard-section viande
+        }
+
+        // === SECTION CRUDITÉS + SAUCE (toujours côte à côte, juste après les viandes) ===
+        // Crudités gauche, Sauce droite — peu importe si viandes présentes ou non.
+        if (hasCrudites || hasSauce) {
             h += '<div class="wizard-2col">';
 
-            // Colonne gauche : Sauce sandwich
-            if (hasSauce) {
-                var sauceCount = selections.sauceOrder ? selections.sauceOrder.length : 0;
-                h += '<div class="wizard-2col-block sauce-section">';
-                h += '<div class="section-header">';
-                h += '<h4>🥄 Sauce</h4>';
-                if (sauceCount === 0) {
-                    h += '<span class="sauce-badge free">1ère gratuite</span>';
-                } else if (sauceCount === 1) {
-                    h += '<span class="sauce-badge free">✅ Gratuite</span>';
-                } else {
-                    var extraCost = (sauceCount - 1) * SAUCE_EXTRA_PRICE;
-                    h += '<span class="sauce-badge paid">+' + fmtPrice(extraCost) + '</span>';
-                }
-                h += '</div>';
-                h += '<div class="sauce-chips-grid">';
-                sauceVariations.forEach(function (sauce) {
-                    var key = 's_' + sauce.id;
-                    var sel = selections.sauces && selections.sauces[key] ? ' selected' : '';
-                    var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
-                    var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
-                    h += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
-                    h += sauce.name + badge;
-                    h += '</button>';
+            if (hasCrudites) {
+                h += '<div class="wizard-2col-block crudites-section">';
+                h += '<h4>🥬 Crudités</h4>';
+                h += '<p class="section-hint">Cliquez pour retirer.</p>';
+                h += '<div class="garniture-toggle">';
+                crudites.forEach(function (c) {
+                    var key = 'c_' + c.id;
+                    var isIncluded = selections.garnitures && selections.garnitures[key];
+                    if (selections.garnitures && selections.garnitures[key] === undefined) {
+                        isIncluded = true;
+                    }
+                    var stateClass = isIncluded ? ' included' : ' removed';
+                    var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
+                    var emoji = getEmoji(GARNITURE_EMOJIS, c.name);
+                    h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + label + '</button>';
                 });
                 h += '</div>';
-                h += '</div>'; // .wizard-2col-block sauce
+                h += '</div>'; // .wizard-2col-block crudites
             }
 
-            // Colonne droite : Suppléments (collapsed par défaut)
-            if (hasSupplements) {
-                var supplSelected = selections.supplements ? Object.values(selections.supplements).filter(Boolean).length : 0;
-                var supplOpen = supplSelected > 0 || selections.supplExpanded === true;
-                var supplToggleLabel = supplSelected > 0
-                    ? '➕ Suppléments (' + supplSelected + ' choisi' + (supplSelected > 1 ? 's' : '') + ') ' + (supplOpen ? '▲' : '▼')
-                    : '➕ Suppléments ' + (supplOpen ? '▲' : '▼');
-                h += '<div class="wizard-2col-block supplements-section">';
-                h += '<button type="button" class="suppl-toggle' + (supplSelected > 0 ? ' has-items' : '') + '" data-action="toggle-suppl">' + supplToggleLabel + '</button>';
-                h += '<div class="suppl-panel' + (supplOpen ? '' : ' collapsed') + '">';
-                h += '<div class="wizard-options supplement-grid">';
-                supplements.forEach(function (sup) {
-                    var key = 'p_' + sup.id;
-                    var sel = selections.supplements && selections.supplements[key] ? ' selected' : '';
-                    var emoji = getEmoji(SUPPLEMENT_EMOJIS, sup.name);
-                    var price = sup.currency_price || '€1.00';
-                    h += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
-                    h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
-                    h += '<span class="option-icon supplement-icon">' + emoji + '</span>';
-                    h += '<span class="option-name">' + sup.name + '</span>';
-                    h += '<span class="option-price paid">+' + price + '</span>';
+            if (hasSauce) {
+                h += _renderSauceBlock();
+            }
+
+            h += '</div>'; // .wizard-2col crudites+sauce
+        }
+
+        // === SUPPLÉMENTS (seuls sur leur ligne) ===
+        if (hasSupplements) {
+            h += '<div class="wizard-2col">';
+            h += _renderSupplBlock();
+            h += '</div>';
+        }
+
+        // === SECTION 5b: ACCOMPAGNEMENT (Assiettes only) ===
+        // [A1 FIX] Show accompagnement radio for assiette category
+        if (category === 'assiette' && lastItemData && lastItemData.extras) {
+            var accompKeywords = ['riz', 'frites', 'salade', 'bourgoul', 'semoule', 'couscous', 'pates', 'legume'];
+            var accompItems = lastItemData.extras.filter(function (ex) {
+                var n = normalizeStr(ex.name);
+                return ex.convert_price === 0 && accompKeywords.some(function (kw) { return n.includes(kw); });
+            });
+            if (accompItems.length > 0) {
+                h += '<div class="wizard-section accompagnement-section">';
+                h += '<h4>🍽️ Accompagnement</h4>';
+                h += '<div class="wizard-options accompagnement-grid">';
+                accompItems.forEach(function (acc) {
+                    var isSelected = selections.accompagnement === acc.id;
+                    var emoji = normalizeStr(acc.name).includes('riz') ? '🍚' :
+                                normalizeStr(acc.name).includes('frite') ? '🍟' :
+                                normalizeStr(acc.name).includes('salade') ? '🥗' : '🍽️';
+                    h += '<div class="wizard-option radio-opt' + (isSelected ? ' selected' : '') + '" data-type="accompagnement" data-id="' + acc.id + '">';
+                    h += '<span class="radio-mark"><i class="fa-solid fa-circle-dot"></i></span>';
+                    h += '<span class="option-icon">' + emoji + '</span>';
+                    h += '<span class="option-name">' + acc.name + '</span>';
+                    h += '<span class="option-price">Inclus</span>';
                     h += '</div>';
                 });
                 h += '</div>';
-                h += '</div>'; // .suppl-panel
-                h += '</div>'; // .wizard-2col-block supplements
+                h += '</div>';
             }
-
-            h += '</div>'; // .wizard-2col
         }
 
         // === SECTION 6: FORMULE (from addons) ===
@@ -2775,6 +3010,9 @@
         // === STICKY BOTTOM BAR ===
         var runTotal = calculateRunningTotal();
         h += '<div class="wizard-sticky-bar">';
+        h += '<button type="button" class="wizard-btn-cancel" data-action="cancel-wizard">';
+        h += '<i class="fa-solid fa-xmark"></i> Annuler';
+        h += '</button>';
         h += '<div class="sticky-total">';
         h += '<span class="total-label">Total</span>';
         h += '<span class="total-value">' + fmtPrice(runTotal) + '</span>';
@@ -2789,10 +3027,14 @@
     }
 
     // Helper to check if name is a crudite
+    // [M2 FIX] Expanded list of crudité names. [L1 FIX] Removed duplicate 'salade'.
     function isCruditeName(name) {
         var n = normalizeStr(name);
         return n.includes('salade') || n.includes('tomate') || n.includes('oignon') ||
-               n.includes('crudite') || n.includes('salade') || n.includes('legume');
+               n.includes('crudite') || n.includes('legume') || n.includes('concombre') ||
+               n.includes('mais') || n.includes('carotte') || n.includes('poivron') ||
+               n.includes('laitue') || n.includes('roquette') || n.includes('epinard') ||
+               n.includes('betterave') || n.includes('radis') || n.includes('celeri');
     }
 
     // Helper to check if name is a paid supplement (not a sauce extra, not a crudite)
@@ -2811,15 +3053,16 @@
     function updateSinglePageUI() {
         if (!wizardEl) return;
 
-        // Calculate max viandes from item data
-        var maxViandes = 1;
-        if (lastItemData && lastItemData.itemAttributes) {
+        // [B1/R4 FIX] Calculate max viandes using detectViandeCountFromData first (reads name/description)
+        var maxViandes = detectViandeCountFromData(lastItemData);
+        if (maxViandes === 0 && lastItemData && lastItemData.itemAttributes) {
             var viandeAttrs = lastItemData.itemAttributes.filter(function (attr) {
                 var n = normalizeStr(attr.name);
                 return n.includes('viande') || n.includes('meat');
             });
             maxViandes = viandeAttrs.length || 1;
         }
+        if (maxViandes === 0) maxViandes = 1;
 
         // Update viande quota badge
         var quotaBadge = wizardEl.querySelector('.viande-section .quota-badge');
@@ -2847,8 +3090,10 @@
         });
 
         // Update viande button disabled states
+        // [V1 FIX] Exclude .viande-suppl-btn — supplementary viande buttons have no quota cap
+        // and must remain enabled even when the main viande slots are full.
         var totalV = selections.totalViandes || 0;
-        wizardEl.querySelectorAll('.viande-btn.plus').forEach(function (btn) {
+        wizardEl.querySelectorAll('.viande-btn.plus:not(.viande-suppl-btn)').forEach(function (btn) {
             var canAdd = totalV < maxViandes;
             btn.classList.toggle('disabled', !canAdd);
         });
@@ -2876,6 +3121,12 @@
             opt.classList.toggle('selected', selections.pain === storedId);
         });
 
+        // [A1 FIX] Update accompagnement radio selection
+        wizardEl.querySelectorAll('.wizard-option[data-type="accompagnement"]').forEach(function (opt) {
+            var id = parseInt(opt.getAttribute('data-id'));
+            opt.classList.toggle('selected', selections.accompagnement === id);
+        });
+
         // Update garniture toggles
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
             var garnId = btn.getAttribute('data-garniture');
@@ -2891,7 +3142,10 @@
                     if (garnExtra) displayName = garnExtra.name;
                 }
             }
-            var emoji = btn.textContent.trim().charAt(0);
+            // [V6 FIX] Use spread to extract first grapheme cluster — charAt(0) returns only the
+            // first UTF-16 code unit, leaving a lone surrogate for multi-unit emojis (🥬, 🧅, etc.)
+            var emojiChars = Array.from(btn.textContent.trim());
+            var emoji = emojiChars.length > 0 ? emojiChars[0] : '';
             btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + displayName : '✕ Sans ' + displayName);
         });
 
@@ -3027,18 +3281,23 @@
     }
 
     /**
-     * [S25] Build compact ticket instruction for KDS/printer
-     * Format: [P/G] [viandes+] [crudites initials] [sauce] [formule] [sauce frites] [NOTE]
+     * Build structured multi-line ticket instruction for KDS/printer.
+     * Line 1: [Pain] [viandes] - [crudités noms complets] - [sauces]
+     * Line 2+: + [Formule] (+prix) then ↳ extras frites
+     * Last line: [NOTE utilisateur]
+     *
      * Examples:
-     * - G Merguez STO Harissa Menu SFr Ketchup
-     * - P Kefta+Poulet ST Mayonnaise
-     * - Merguez STO Ketchup Frites
+     * - Kefta+Viande Hachée - Tomate, Oignon - Mayonnaise
+     *   + Menu (Frites + Boisson) (+3.00€)
+     *   ↳ Grande Portion (+1.00€)
+     *   ↳ Cheddar Fondu (+1.00€)
+     *   ↳ Sauce frites: Harissa, Blanche
      */
     function buildTicketInstruction() {
-        var parts = [];
+        var line1Parts = [];
+        var extraLines = [];
 
-        // Pain (for sandwich): G = Galette, P = Pain
-        // selections.pain is a variation ID (integer) — look up name from lastItemData
+        // Pain (for sandwich): full name
         if (selections.pain && lastItemData && lastItemData.itemAttributes) {
             var painAttrTkt = lastItemData.itemAttributes.find(function (attr) {
                 var n = normalizeStr(attr.name);
@@ -3049,78 +3308,90 @@
                     return v.id === selections.pain;
                 });
                 if (painVarTkt) {
-                    var painName = normalizeStr(painVarTkt.name);
-                    parts.push(painName.includes('galette') ? 'G' : 'P');
+                    line1Parts.push(painVarTkt.name);
                 }
             }
         }
 
-        // Viandes: joined with +
-        // selections.viandes uses 'v_123' keys — look up names from lastItemData.variations
-        if (selections.viandes && selections.totalViandes > 0 && lastItemData && lastItemData.itemAttributes) {
+        // Viandes: "Viandes : X, Y" — all selections merged on one label (no "Viande 1 / Viande 2")
+        var hasAnyViande = selections.viandes && Object.keys(selections.viandes).some(function (k) { return (selections.viandes[k] || 0) > 0; });
+        if (hasAnyViande && lastItemData && lastItemData.itemAttributes) {
             var viandeAttrsTkt = lastItemData.itemAttributes.filter(function (attr) {
                 var n = normalizeStr(attr.name);
                 return n.includes('viande') || n.includes('meat');
             });
             if (viandeAttrsTkt.length > 0 && lastItemData.variations) {
-                var firstViandeAttrTkt = viandeAttrsTkt[0];
-                var viandeVarsTkt = lastItemData.variations[firstViandeAttrTkt.id] || [];
+                var seenTktIds = {};
+                var allViandeVarsTkt = [];
+                viandeAttrsTkt.forEach(function (attr) {
+                    (lastItemData.variations[attr.id] || []).forEach(function (v) {
+                        if (!seenTktIds[v.id]) { seenTktIds[v.id] = true; allViandeVarsTkt.push(v); }
+                    });
+                });
                 var viandeParts = [];
-                viandeVarsTkt.forEach(function (variation) {
+                allViandeVarsTkt.forEach(function (variation) {
                     var key = 'v_' + variation.id;
                     var count = selections.viandes[key] || 0;
                     if (count > 0) {
                         viandeParts.push(count > 1 ? count + '\u00d7' + variation.name : variation.name);
                     }
                 });
-                if (viandeParts.length > 0) parts.push(viandeParts.join('+'));
+                // Viandes supplémentaires — append inline
+                if (selections.viandeSupplItems && lastItemData.variations) {
+                    Object.keys(selections.viandeSupplItems).forEach(function (key) {
+                        var sc = selections.viandeSupplItems[key] || 0;
+                        if (sc <= 0) return;
+                        var vid = parseInt(key.replace('v_', ''));
+                        var fullName = key;
+                        Object.keys(lastItemData.variations).forEach(function (attrId) {
+                            var found = lastItemData.variations[attrId].find(function (v) { return v.id === vid; });
+                            if (found) fullName = found.name;
+                        });
+                        viandeParts.push('+' + (sc > 1 ? sc + '\u00d7' : '') + fullName);
+                    });
+                }
+                if (viandeParts.length > 0) line1Parts.push('Viandes : ' + viandeParts.join(', '));
             }
-        }
-
-        // Viandes supplémentaires — short ticket notation
-        if (selections.viandeSupplItems && lastItemData && lastItemData.variations) {
+        } else if (selections.viandeSupplItems && lastItemData && lastItemData.variations) {
+            // Cas sans viande principale mais avec suppléments
+            var supplVParts = [];
             Object.keys(selections.viandeSupplItems).forEach(function (key) {
                 var sc = selections.viandeSupplItems[key] || 0;
                 if (sc <= 0) return;
                 var vid = parseInt(key.replace('v_', ''));
-                var shortName = key;
+                var fullName = key;
                 Object.keys(lastItemData.variations).forEach(function (attrId) {
                     var found = lastItemData.variations[attrId].find(function (v) { return v.id === vid; });
-                    if (found) shortName = found.name.substring(0, 4).toUpperCase();
+                    if (found) fullName = found.name;
                 });
-                parts.push('+' + sc + shortName);
+                supplVParts.push((sc > 1 ? sc + '\u00d7' : '') + fullName);
             });
+            if (supplVParts.length > 0) line1Parts.push('Viandes : ' + supplVParts.join(', '));
         }
 
-        // Crudités: initials of INCLUDED items
-        // selections.garnitures uses 'c_123' keys — look up names from lastItemData.extras
-        // Default: all crudites are included unless explicitly set to false
+        // Crudités: full names of INCLUDED items (default = all included unless explicitly false)
         if (lastItemData && lastItemData.extras) {
             var cruditesTkt = lastItemData.extras.filter(function (e) {
                 return e.convert_price === 0 && isCruditeName(e.name);
             });
             if (cruditesTkt.length > 0) {
-                var cruditeInitials = [];
+                var cruditeNames = [];
                 cruditesTkt.forEach(function (c) {
                     var key = 'c_' + c.id;
-                    // Included by default (true or undefined = included, false = removed)
                     var isIncluded = !selections.garnitures || selections.garnitures[key] !== false;
                     if (isIncluded) {
-                        cruditeInitials.push(c.name.charAt(0).toUpperCase());
+                        cruditeNames.push(c.name);
                     }
                 });
-                if (cruditeInitials.length === cruditesTkt.length) {
-                    // All included — use combined initials
-                    parts.push(cruditeInitials.join(''));
-                } else if (cruditeInitials.length > 0) {
-                    parts.push(cruditeInitials.join(''));
+                if (cruditeNames.length > 0) {
+                    line1Parts.push('- ' + cruditeNames.join(', '));
                 } else {
-                    parts.push('SC'); // Sans crudités
+                    line1Parts.push('- Sans crudités');
                 }
             }
         }
 
-        // Sauce: look up name from lastItemData.variations using 's_123' key
+        // Sauces: "Sauce : X, Y, Z" — no "(1ère Gratuite)" label, just the names
         if (selections.sauceOrder && selections.sauceOrder.length > 0 && lastItemData && lastItemData.itemAttributes) {
             var sauceAttrTkt = lastItemData.itemAttributes.find(function (attr) {
                 var n = normalizeStr(attr.name);
@@ -3128,79 +3399,127 @@
             });
             if (sauceAttrTkt && lastItemData.variations && lastItemData.variations[sauceAttrTkt.id]) {
                 var sauceVarsTkt = lastItemData.variations[sauceAttrTkt.id];
-
-                // First sauce (free)
-                var firstSauceKey = selections.sauceOrder[0];
-                var firstSauceMatch = firstSauceKey.match(/_(\d+)$/);
-                if (firstSauceMatch) {
-                    var firstSauceId = parseInt(firstSauceMatch[1]);
-                    var firstSauceVar = sauceVarsTkt.find(function (v) { return v.id === firstSauceId; });
-                    if (firstSauceVar) parts.push(firstSauceVar.name);
-                }
-
-                // Extra sauces
-                for (var si = 1; si < selections.sauceOrder.length; si++) {
-                    var extraSauceKey = selections.sauceOrder[si];
-                    var extraSauceMatch = extraSauceKey.match(/_(\d+)$/);
-                    if (extraSauceMatch) {
-                        var extraSauceId = parseInt(extraSauceMatch[1]);
-                        var extraSauceVar = sauceVarsTkt.find(function (v) { return v.id === extraSauceId; });
-                        if (extraSauceVar) parts.push('+' + extraSauceVar.name);
+                var sauceNames = [];
+                selections.sauceOrder.forEach(function (sauceKey) {
+                    var sauceMatch = sauceKey.match(/_(\d+)$/);
+                    if (sauceMatch) {
+                        var sauceId = parseInt(sauceMatch[1]);
+                        var sauceVar = sauceVarsTkt.find(function (v) { return v.id === sauceId; });
+                        if (sauceVar) sauceNames.push(sauceVar.name);
                     }
+                });
+                if (sauceNames.length > 0) {
+                    line1Parts.push('Sauce : ' + sauceNames.join(', '));
                 }
             }
         }
 
-        // Supplements: abbreviated names from lastItemData.extras using 'p_123' keys
+        // sauce_single for omelette/snacking — resolve name from item data
+        var sauceSingleId = selections.sauceSingle;
+        if (!sauceSingleId && selections.sauceOrder && selections.sauceOrder.length > 0) {
+            var ssKey = selections.sauceOrder[0];
+            var ssMatch = ssKey.match(/_(\d+)$/);
+            if (ssMatch) sauceSingleId = parseInt(ssMatch[1]);
+        }
+        if (sauceSingleId && lastItemData && lastItemData.itemAttributes &&
+            (currentCategory === 'omelette' || currentCategory === 'snacking')) {
+            var ssSauceAttr = lastItemData.itemAttributes.find(function (attr) {
+                var n = normalizeStr(attr.name);
+                return n.includes('sauce');
+            });
+            if (ssSauceAttr && lastItemData.variations && lastItemData.variations[ssSauceAttr.id]) {
+                var ssVar = lastItemData.variations[ssSauceAttr.id].find(function (v) { return v.id === sauceSingleId; });
+                if (ssVar) line1Parts.push('Sauce : ' + ssVar.name);
+            }
+        }
+
+        // Suppléments: "Supplément : X (+€Y), Z (+€W)" — name + price each
         if (selections.supplements && lastItemData && lastItemData.extras) {
-            var supAbbr = [];
+            var supParts = [];
             lastItemData.extras.forEach(function (extra_item) {
                 var key = 'p_' + extra_item.id;
                 if (selections.supplements[key]) {
-                    // Abbreviate: first 2-3 letters of each word
-                    var words = extra_item.name.split(' ');
-                    var abbr = words.length > 1
-                        ? words.map(function (w) { return w.charAt(0).toUpperCase(); }).join('')
-                        : extra_item.name.substring(0, 3);
-                    supAbbr.push(abbr);
+                    var price = parseFloat(extra_item.convert_price) || 0;
+                    supParts.push(extra_item.name + (price > 0 ? ' (+' + fmtPrice(price) + ')' : ''));
                 }
             });
-            if (supAbbr.length > 0) parts.push(supAbbr.join(','));
+            if (supParts.length > 0) line1Parts.push('Supplément : ' + supParts.join(', '));
         }
 
-        // Formule: look up addon name from lastItemData.addons using 'addon_123' format
+        // Formule: full addon name on its own line
         if (selections.menuChoice && selections.menuChoice !== 'none') {
             var formuleMatch = selections.menuChoice.match(/^addon_(\d+)$/);
             if (formuleMatch && lastItemData && lastItemData.addons) {
                 var formuleAddonId = parseInt(formuleMatch[1]);
                 var formuleAddon = lastItemData.addons.find(function (a) { return a.id === formuleAddonId; });
                 if (formuleAddon) {
-                    var formuleName = normalizeStr(formuleAddon.addon_item_name || '');
-                    if (formuleName.includes('menu')) parts.push('Menu');
-                    else if (formuleName.includes('frite')) parts.push('Frites');
-                    else if (formuleName.includes('boisson')) parts.push('Boisson');
-                    else parts.push(formuleAddon.addon_item_name);
+                    var formulePrice = formuleAddon.addon_item_currency_price || '';
+                    var formuleLine = '+ ' + formuleAddon.addon_item_name;
+                    if (formulePrice) formuleLine += ' (+' + formulePrice + ')';
+                    extraLines.push(formuleLine);
                 }
             }
-        }
-
-        // Sauce frites: look up name from lastItemData.extras using 'sf_123' keys
-        if (selections.sauceFritesOrder && selections.sauceFritesOrder.length > 0 && lastItemData && lastItemData.extras) {
-            var firstSFKey = selections.sauceFritesOrder[0];
-            var firstSFMatch = firstSFKey.match(/_(\d+)$/);
-            if (firstSFMatch) {
-                var firstSFId = parseInt(firstSFMatch[1]);
-                var firstSFExtra = lastItemData.extras.find(function (e) { return e.id === firstSFId; });
-                if (firstSFExtra) parts.push('SFr ' + firstSFExtra.name);
+            // Legacy multi-step wizard values
+            if (!formuleMatch) {
+                if (selections.menuChoice === 'full') extraLines.push('+ Menu complet');
+                else if (selections.menuChoice === 'frites') extraLines.push('+ Frites seules');
+                else if (selections.menuChoice === 'boisson') extraLines.push('+ Boisson seule');
             }
         }
 
-        // User comment
-        if (instructionText && instructionText.trim()) {
-            parts.push('[' + instructionText.trim() + ']');
+        // Frites options: ↳ lines after formule
+        if (selections.fritesGrande) {
+            extraLines.push('\u21b3 Grande Portion (+' + fmtPrice(FRITES_GRANDE_PRICE) + ')');
+        }
+        if (selections.fritesCheddar) {
+            extraLines.push('\u21b3 Cheddar Fondu (+' + fmtPrice(FRITES_CHEDDAR_PRICE) + ')');
         }
 
-        return parts.join(' ');
+        // Sauce frites: all selected, full names, on one ↳ line
+        if (selections.sauceFritesOrder && selections.sauceFritesOrder.length > 0 && lastItemData) {
+            var sfVarsTkt = [];
+            if (lastItemData.itemAttributes) {
+                // [H3 FIX] Prefer attribute that contains 'frites', fallback to any sauce attribute
+                var sfAttrTkt = lastItemData.itemAttributes.find(function (attr) {
+                    var n = normalizeStr(attr.name);
+                    return n.includes('sauce') && n.includes('frite');
+                }) || lastItemData.itemAttributes.find(function (attr) {
+                    var n = normalizeStr(attr.name);
+                    return n.includes('sauce');
+                });
+                if (sfAttrTkt && lastItemData.variations && lastItemData.variations[sfAttrTkt.id]) {
+                    sfVarsTkt = lastItemData.variations[sfAttrTkt.id];
+                }
+            }
+            var sfNames = [];
+            selections.sauceFritesOrder.forEach(function (key) {
+                var sfMatch = key.match(/_(\d+)$/);
+                if (sfMatch) {
+                    var sfId = parseInt(sfMatch[1]);
+                    var sfVar = sfVarsTkt.find(function (v) { return v.id === sfId; });
+                    if (sfVar) sfNames.push(sfVar.name);
+                }
+            });
+            if (sfNames.length > 0) {
+                extraLines.push('\u21b3 Sauce frites: ' + sfNames.join(', '));
+            }
+        }
+
+        // User comment: last line
+        if (instructionText && instructionText.trim()) {
+            extraLines.push('[' + instructionText.trim() + ']');
+        }
+
+        var allLines = [];
+        // Product name first — KDS cook knows immediately what to prepare
+        if (lastItemData && lastItemData.name) {
+            allLines.push(lastItemData.name.toUpperCase());
+        }
+        var firstLine = line1Parts.join(' ');
+        if (firstLine) allLines.push(firstLine);
+        extraLines.forEach(function (l) { allLines.push(l); });
+
+        return allLines.join('\n');
     }
 
     /* ==============================
@@ -3220,12 +3539,16 @@
 
         // 2. Click the correct sauce/variation radio (use 1st selected sauce)
         // [S25] Extract numeric ID from string key like 's_123'
+        // [O1 FIX] Also handle sauce_single (omelette/snacking) — stored as plain numeric ID
         var sauceIdToSync = null;
         if (selections.sauceOrder && selections.sauceOrder.length > 0) {
             var firstSauceKey = selections.sauceOrder[0];
             // Extract numeric ID from key like 's_123'
             var match = firstSauceKey.match(/_(\d+)$/);
             if (match) sauceIdToSync = parseInt(match[1]);
+        } else if (selections.sauceSingle) {
+            // sauce_single is stored as a plain integer ID
+            sauceIdToSync = selections.sauceSingle;
         }
         if (sauceIdToSync) {
             var radios = originalBody.querySelectorAll('.custom-radio-field');
@@ -3257,11 +3580,12 @@
                     radio.click();
                 }
             });
+            // [N5 FIX] Compare as strings to handle both numeric IDs and string fallback values
             var painSelects = originalBody.querySelectorAll('select');
             painSelects.forEach(function (sel) {
                 var opts = sel.querySelectorAll('option');
                 opts.forEach(function (opt) {
-                    if (parseInt(opt.value) === selections.pain) {
+                    if (String(opt.value) === String(selections.pain)) {
                         sel.value = opt.value;
                         sel.dispatchEvent(new Event('change', { bubbles: true }));
                     }
@@ -3317,51 +3641,76 @@
         var extraCheckboxes = originalBody.querySelectorAll('.extra .custom-checkbox-field');
         var allSelectedExtras = {};
 
-        // [SYNC-BUG-003] Décocher TOUTES les garnitures d'abord, puis cocher seulement la sélectionnée
-        // pour éviter les contradictions (ex: "Complet" + "Sans Oignon")
-        // [S25] Updated to extract numeric IDs from string keys like 'c_123' and 'p_123'
-        var garnitureIds = [];
-        var selectedGarnitureIds = [];
-
-        if (selections.garnitures) {
-            Object.keys(selections.garnitures).forEach(function (key) {
-                var match = key.match(/_(\d+)$/);
-                if (match) {
-                    var id = parseInt(match[1]);
-                    garnitureIds.push(id);
-                    if (selections.garnitures[key]) selectedGarnitureIds.push(id);
+        // Collect all crudité IDs from item data (free extras that are crudités)
+        var allCruditeIds = [];
+        if (lastItemData && lastItemData.extras) {
+            lastItemData.extras.forEach(function (e) {
+                if (e.convert_price === 0 && isCruditeName(e.name)) {
+                    allCruditeIds.push(e.id);
                 }
             });
         }
 
-        // Décocher toutes les garnitures d'abord
+        // Décocher TOUTES les garnitures d'abord pour éviter les contradictions
         extraCheckboxes.forEach(function (cb) {
             var cbId = parseInt(cb.value);
-            if (garnitureIds.indexOf(cbId) !== -1 && cb.checked) {
-                cb.click();  // Décocher
+            if (allCruditeIds.indexOf(cbId) !== -1 && cb.checked) {
+                cb.click();
             }
         });
 
-        // Puis cocher les garnitures et suppléments sélectionnées
-        // [S25] Extract numeric IDs from string keys
+        // Cocher les crudités incluses: default = all included unless explicitly set to false
+        // This ensures default-included crudités appear in item_extras.names
+        allCruditeIds.forEach(function (cid) {
+            var key = 'c_' + cid;
+            var isIncluded = !selections.garnitures || selections.garnitures[key] !== false;
+            if (isIncluded) {
+                allSelectedExtras[cid] = true;
+            }
+        });
+
+        // Also sync any explicitly-true garnitures (non-crudité free extras)
+        // Support 'c_123' prefixed keys (single-page) AND bare numeric keys (multi-step)
         if (selections.garnitures) {
             Object.keys(selections.garnitures).forEach(function (key) {
                 if (selections.garnitures[key]) {
                     var match = key.match(/_(\d+)$/);
-                    if (match) allSelectedExtras[parseInt(match[1])] = true;
+                    if (match) {
+                        allSelectedExtras[parseInt(match[1])] = true;
+                    } else if (/^\d+$/.test(key)) {
+                        allSelectedExtras[parseInt(key)] = true;
+                    }
                 }
             });
         }
         if (selections.supplements) {
             Object.keys(selections.supplements).forEach(function (key) {
                 if (selections.supplements[key]) {
+                    // Support both 'p_123' / 'sup_123' prefixed keys AND bare numeric keys (multi-step path)
                     var match = key.match(/_(\d+)$/);
-                    if (match) allSelectedExtras[parseInt(match[1])] = true;
+                    if (match) {
+                        allSelectedExtras[parseInt(match[1])] = true;
+                    } else if (/^\d+$/.test(key)) {
+                        allSelectedExtras[parseInt(key)] = true;
+                    }
                 }
             });
         }
         if (selections.accompagnement) {
             allSelectedExtras[selections.accompagnement] = true;
+        }
+
+        // [X6 FIX] Include viandeSupplItems as extras so they appear in Vue item_extras.
+        // Each key is 'v_<id>'; the count is stored but extras are binary (present/absent).
+        // We mark each extra viande id as selected once — quantity is reflected in instruction.
+        if (selections.viandeSupplItems) {
+            Object.keys(selections.viandeSupplItems).forEach(function (key) {
+                var sc = selections.viandeSupplItems[key] || 0;
+                if (sc > 0) {
+                    var match = key.match(/_(\d+)$/);
+                    if (match) allSelectedExtras[parseInt(match[1])] = true;
+                }
+            });
         }
 
         // Include extra sauces found in 2b
@@ -3385,52 +3734,90 @@
             var addons = lastItemData.addons;
 
             if (selections.menuChoice && selections.menuChoice !== 'none') {
-                // Extract addon ID from 'addon_123' format
-                var match = selections.menuChoice.match(/addon_(\d+)$/);
-                if (match) {
-                    var selectedAddonId = parseInt(match[1]);
+                var targetAddonForSync = null;
 
-                    // Click the matching addon card
+                // Single-page wizard: 'addon_N' format
+                var spMatch = selections.menuChoice.match(/^addon_(\d+)$/);
+                if (spMatch) {
+                    var spId = parseInt(spMatch[1]);
+                    targetAddonForSync = addons.find(function (a) { return a.id === spId; });
+                }
+
+                // Multi-step wizard: 'full' / 'frites' / 'boisson' — resolve by name from addons list
+                if (!targetAddonForSync) {
+                    if (selections.menuChoice === 'full') {
+                        targetAddonForSync = addons.find(function (a) {
+                            return (a.addon_item_name || '').toLowerCase().includes('menu');
+                        });
+                        if (!targetAddonForSync) {
+                            // Fallback: first addon that includes both frites and boisson keywords OR any formule
+                            targetAddonForSync = addons.find(function (a) {
+                                var n = (a.addon_item_name || '').toLowerCase();
+                                return n.includes('frites') || n.includes('boisson') || n.includes('formule');
+                            });
+                        }
+                    } else if (selections.menuChoice === 'frites') {
+                        targetAddonForSync = addons.find(function (a) {
+                            var n = (a.addon_item_name || '').toLowerCase();
+                            return n.includes('frites') && !n.includes('menu');
+                        });
+                    } else if (selections.menuChoice === 'boisson') {
+                        targetAddonForSync = addons.find(function (a) {
+                            var n = (a.addon_item_name || '').toLowerCase();
+                            return n.includes('boisson') || n.includes('coca') || n.includes('fanta') || n.includes('sprite');
+                        });
+                    }
+                }
+
+                if (targetAddonForSync) {
                     addonCards.forEach(function (card) {
-                        var addonId = parseInt(card.getAttribute('data-addon-id'));
+                        var addonId = parseInt(card.getAttribute('data-addon-id'), 10);
                         var addonName = (card.getAttribute('data-addon-name') || '').toLowerCase();
+                        var shouldBeSelected =
+                            addonId === targetAddonForSync.id ||
+                            addonName.includes((targetAddonForSync.addon_item_name || '').toLowerCase());
 
-                        var shouldBeSelected = false;
-
-                        // Match by ID
-                        if (addonId === selectedAddonId) {
-                            shouldBeSelected = true;
+                        // [BUG-W-ADDON-01] Use data-addon-active, not DOM ancestors
+                        var isActive = card.getAttribute('data-addon-active') === '1';
+                        if (shouldBeSelected && !isActive) {
+                            card.click();
                         }
-
-                        // Fallback: match by name
-                        if (!shouldBeSelected) {
-                            var addon = addons.find(function (a) { return a.id === selectedAddonId; });
-                            if (addon && addonName.includes(addon.addon_item_name.toLowerCase())) {
-                                shouldBeSelected = true;
-                            }
-                        }
-
-                        var isSelected = card.closest('.selected, [class*="primary"]') !== null;
-                        if (shouldBeSelected && !isSelected) card.click();
                     });
                 }
             }
         }
 
         // [W-5 FIX] Sync boissonChoice to Vue modal addon cards
+        // [N3 FIX] Match by full name first to avoid first-word collisions (e.g. "Coca Zero" vs "Coca Cola")
         if (selections.boissonChoice && selections.boissonChoice !== 'none') {
             var boissonStepSync = steps.find(function (s) { return s.type === 'boisson_choice'; });
             if (boissonStepSync && boissonStepSync.boissonItems) {
                 var boissonItemSync = boissonStepSync.boissonItems.find(function (b) { return b.id === selections.boissonChoice; });
                 if (boissonItemSync) {
                     var boissonAddonCards = originalBody.querySelectorAll('.addon[data-addon-id]');
+                    var boissonFullName = boissonItemSync.name.toLowerCase();
+                    var boissonFirstWord = boissonFullName.split(' ')[0];
+                    // Try full-name match first; fall back to first-word if no exact match found
+                    var exactMatch = null;
                     boissonAddonCards.forEach(function (card) {
                         var addonName = (card.getAttribute('data-addon-name') || '').toLowerCase();
-                        if (addonName.includes(boissonItemSync.name.toLowerCase().split(' ')[0])) {
-                            var isSelected = card.closest('.selected, [class*="primary"]') !== null;
-                            if (!isSelected) card.click();
+                        if (addonName === boissonFullName || addonName.includes(boissonFullName)) {
+                            exactMatch = card;
                         }
                     });
+                    var targetCard = exactMatch;
+                    if (!targetCard) {
+                        boissonAddonCards.forEach(function (card) {
+                            var addonName = (card.getAttribute('data-addon-name') || '').toLowerCase();
+                            if (!targetCard && addonName.includes(boissonFirstWord)) {
+                                targetCard = card;
+                            }
+                        });
+                    }
+                    if (targetCard) {
+                        var isActive = targetCard.getAttribute('data-addon-active') === '1';
+                        if (!isActive) targetCard.click();
+                    }
                 }
             }
         }
@@ -3446,11 +3833,22 @@
                 return n.includes('viande') || n.includes('meat');
             });
 
+            // Collect viandes deduped by id AND name (same fix as renderSinglePage)
             if (viandeAttrs.length > 0 && lastItemData.variations) {
-                var firstViandeAttr = viandeAttrs[0];
-                var viandeVariations = lastItemData.variations[firstViandeAttr.id] || [];
-
-                viandeVariations.forEach(function (variation) {
+                var seenSyncIds = {};
+                var seenSyncNames = {};
+                var allSyncVariations = [];
+                viandeAttrs.forEach(function (attr) {
+                    (lastItemData.variations[attr.id] || []).forEach(function (v) {
+                        var normName = normalizeStr(v.name || '');
+                        if (!seenSyncIds[v.id] && !seenSyncNames[normName]) {
+                            seenSyncIds[v.id] = true;
+                            seenSyncNames[normName] = true;
+                            allSyncVariations.push(v);
+                        }
+                    });
+                });
+                allSyncVariations.forEach(function (variation) {
                     var key = 'v_' + variation.id;
                     var count = selections.viandes[key] || 0;
                     for (var i = 0; i < count; i++) selectedViandes.push(variation.name);
@@ -3466,9 +3864,17 @@
                 selectedViandes.forEach(function (viandeName, idx) {
                     var target = viandeSelects[idx];
                     if (!target) return;
+                    var normalizedName = normalizeStr(viandeName);
+                    // [W5 FIX] Exact match first to avoid "Kefta" matching "Kefta Épicée"
                     var match = Array.from(target.options).find(function (opt) {
-                        return normalizeStr(opt.textContent || '').includes(normalizeStr(viandeName));
+                        return normalizeStr(opt.textContent || '') === normalizedName;
                     });
+                    // Fallback: substring match if no exact match found
+                    if (!match) {
+                        match = Array.from(target.options).find(function (opt) {
+                            return normalizeStr(opt.textContent || '').includes(normalizedName);
+                        });
+                    }
                     if (match) {
                         target.value = match.value;
                         target.dispatchEvent(new Event('change', { bubbles: true }));
@@ -3487,62 +3893,229 @@
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // 6. [Sprint 23 Fix P4] Secure silent submit with error detection and fallback
-        setTimeout(function () {
-            // [BUG S6-01 FIX] Must NOT match hover:bg-primary from quantity buttons!
-            var addBtn = originalBody.querySelector('button.bg-primary:not(.indec-plus):not(.indec-minus)');
-            if (!addBtn) {
-                var buttons = originalBody.querySelectorAll('button');
-                addBtn = buttons[buttons.length - 1]; // This is usually the submit button
+        // 6. [Bridge pricing fix] Total + addons regroupés (filet si clic .addon n’a pas mis à jour Vue)
+        function buildWizardPosLineAddonsPayload() {
+            var out = [];
+            if (!lastItemData || !lastItemData.addons || !selections.menuChoice || selections.menuChoice === 'none') {
+                return out;
             }
 
-            if (!addBtn) {
-                console.error('[Wizard] Add to Cart button not found');
-                showValidationError('Erreur: bouton Ajouter introuvable');
-                return;
-            }
+            /** Construit la liste des extras menu (sauce frites, grande portion, cheddar) */
+            function buildMenuExtras() {
+                var extras = [];
 
-            // Click the button WITHOUT hiding originalBody first (so errors can be detected)
-            addBtn.click();
+                // Options frites
+                if (selections.fritesGrande) extras.push('Grande Portion (+' + fmtPrice(FRITES_GRANDE_PRICE) + ')');
+                if (selections.fritesCheddar) extras.push('Cheddar Fondu (+' + fmtPrice(FRITES_CHEDDAR_PRICE) + ')');
 
-            // Wait for Vue validation to run, then check for errors
-            setTimeout(function () {
-                // Check for validation errors in the modal
-                var errorElements = originalBody.querySelectorAll('.is-invalid, .invalid-feedback, .text-danger, .error');
-                var hasErrors = errorElements.length > 0;
+                // Sauce frites — les sauces viennent de lastItemData.itemAttributes (même source que sauceVariations)
+                if (selections.sauceFritesOrder && selections.sauceFritesOrder.length > 0) {
+                    // [H3 FIX] Priorité à l'attribut "sauce frites" (contient 'frites'), sinon fallback sauce générique
+                    var sfVariations = [];
+                    if (lastItemData && lastItemData.itemAttributes) {
+                        // 1st pass: attribute whose name contains both 'sauce' AND 'frites'
+                        var sfSauceAttr = lastItemData.itemAttributes.find(function (attr) {
+                            var n = normalizeStr(attr.name || '');
+                            return n.includes('sauce') && n.includes('frite');
+                        });
+                        // 2nd pass fallback: any sauce attribute (generic sandwich sauce list)
+                        if (!sfSauceAttr) {
+                            sfSauceAttr = lastItemData.itemAttributes.find(function (attr) {
+                                var n = normalizeStr(attr.name || '');
+                                return n.includes('sauce');
+                            });
+                        }
+                        if (sfSauceAttr && lastItemData.variations && lastItemData.variations[sfSauceAttr.id]) {
+                            sfVariations = lastItemData.variations[sfSauceAttr.id];
+                        }
+                    }
+                    // Fallback : chercher dans steps
+                    if (sfVariations.length === 0) {
+                        steps.forEach(function (s) {
+                            if (sfVariations.length === 0 && s.sauceItems && s.sauceItems.length > 0) {
+                                sfVariations = s.sauceItems;
+                            }
+                        });
+                    }
 
-                // Also check if any required field is still empty (Vue validation)
-                var requiredInputs = originalBody.querySelectorAll('[required]');
-                for (var i = 0; i < requiredInputs.length; i++) {
-                    if (!requiredInputs[i].value || requiredInputs[i].value === '') {
-                        hasErrors = true;
-                        break;
+                    var sfNames = [];
+                    selections.sauceFritesOrder.forEach(function (key) {
+                        // key = 'sf_123' → extraire l'id numérique
+                        var numId = parseInt(String(key).replace('sf_', ''), 10);
+                        var found = sfVariations.find(function (ss) { return ss.id === numId; });
+                        if (found) sfNames.push(found.name);
+                    });
+                    if (sfNames.length > 0) {
+                        extras.push('Sauce frites: ' + sfNames.join(', '));
                     }
                 }
 
-                if (hasErrors) {
-                    // RESTORE the original modal so the user sees the errors
-                    originalBody.style.display = '';
-                    console.warn('[Wizard] Validation errors detected, restored original modal');
+                return extras;
+            }
 
-                    // Show error in wizard
-                    showValidationError('Veuillez corriger les erreurs dans le formulaire');
+            function addonToPayload(ad) {
+                var cvt = ad.offer && ad.offer.length > 0 ? parseFloat(ad.offer[0].convert_price) : parseFloat(ad.addon_item_convert_price) || 0;
+                var cur = ad.offer && ad.offer.length > 0 ? ad.offer[0].currency_price : ad.addon_item_currency_price;
+                var lineItemId = ad.addon_item_id != null ? ad.addon_item_id : ad.item_addon_id;
+                // [P6-1 FIX] Build addon instruction from menu_extras so it persists to DB and receipt
+                var extras = buildMenuExtras();
+                var addonInstruction = extras.length > 0 ? extras.join('\n') : '';
+                return {
+                    parent_addon_id: String(ad.id),
+                    name: ad.addon_item_name,
+                    image: ad.thumb || '',
+                    item_id: lineItemId,
+                    quantity: 1,
+                    discount: 0,
+                    currency_price: cur,
+                    convert_price: cvt,
+                    item_variations: { variations: {}, names: {} },
+                    item_extras: { extras: [], names: [] },
+                    item_variation_total: parseFloat(ad.variation_total_convert_price) || 0,
+                    item_extra_total: 0,
+                    instruction: addonInstruction,
+                    total_price: parseFloat(ad.total_convert_price) || 0,
+                    // Extras menu (sauce frites, grande portion, cheddar) pour affichage panier
+                    menu_extras: extras,
+                    // Données brutes pour restauration wizard édition
+                    menu_restore: {
+                        fritesGrande: !!selections.fritesGrande,
+                        fritesCheddar: !!selections.fritesCheddar,
+                        sauceFrites: selections.sauceFrites ? JSON.parse(JSON.stringify(selections.sauceFrites)) : {},
+                        sauceFritesOrder: selections.sauceFritesOrder ? selections.sauceFritesOrder.slice() : [],
+                        // [X4 FIX] Persist boissonChoice so it can be restored on cart edit
+                        boissonChoice: selections.boissonChoice || null,
+                        // [X5 FIX] Persist viandeSupplItems so paid extra viandes survive cart edit
+                        viandeSupplItems: selections.viandeSupplItems ? JSON.parse(JSON.stringify(selections.viandeSupplItems)) : {}
+                    }
+                };
+            }
 
-                    // Close wizard WITHOUT hiding original body (so user can see errors)
-                    closeWizard(false); // false = restore original body
-                } else {
-                    // No errors — proceed with silent close
-                    if (originalBody) originalBody.style.display = 'none';
-                    closeWizard(true); // true = keep original hidden
+            var ad = null;
+
+            // Single-page wizard: 'addon_N' format
+            var m = selections.menuChoice.match(/^addon_(\d+)$/);
+            if (m) {
+                var aid = parseInt(m[1], 10);
+                ad = lastItemData.addons.find(function (a) { return a.id === aid; });
+            }
+
+            // Multi-step wizard: 'full' / 'frites' / 'boisson' — resolve by name
+            if (!ad) {
+                if (selections.menuChoice === 'full') {
+                    ad = lastItemData.addons.find(function (a) {
+                        return (a.addon_item_name || '').toLowerCase().includes('menu');
+                    });
+                    if (!ad) {
+                        ad = lastItemData.addons.find(function (a) {
+                            var n = (a.addon_item_name || '').toLowerCase();
+                            return n.includes('frites') || n.includes('boisson') || n.includes('formule');
+                        });
+                    }
+                } else if (selections.menuChoice === 'frites') {
+                    ad = lastItemData.addons.find(function (a) {
+                        var n = (a.addon_item_name || '').toLowerCase();
+                        return n.includes('frites') && !n.includes('menu');
+                    });
+                } else if (selections.menuChoice === 'boisson') {
+                    ad = lastItemData.addons.find(function (a) {
+                        var n = (a.addon_item_name || '').toLowerCase();
+                        return n.includes('boisson') || n.includes('coca') || n.includes('fanta') || n.includes('sprite');
+                    });
                 }
-            }, 300); // Wait 300ms for Vue validation to run
-        }, 200);
+            }
+
+            if (ad) out.push(addonToPayload(ad));
+            return out;
+        }
+
+        var wizardTotalBeforeSubmit = calculateRunningTotal();
+        var modalRoot = originalBody ? originalBody.closest('.modal') : null;
+        if (modalRoot) {
+            modalRoot.setAttribute('data-wizard-total', String(wizardTotalBeforeSubmit));
+            var wizardBundled = buildWizardPosLineAddonsPayload();
+            if (wizardBundled.length > 0) {
+                modalRoot.setAttribute('data-wizard-pos-line-addons', JSON.stringify(wizardBundled));
+            } else {
+                modalRoot.removeAttribute('data-wizard-pos-line-addons');
+            }
+            // Cart display: clean multi-line summary for cashier view (no prices)
+            modalRoot.setAttribute('data-wizard-cart-display', buildCartDisplay() || '');
+        }
+
+        function parseMoneyLoose(text) {
+            if (!text) return 0;
+            // Support "11,50€", "€11.50", "11.50 EUR", etc.
+            var cleaned = String(text).replace(/\s/g, '').replace(/[^0-9,.-]/g, '');
+            if (!cleaned) return 0;
+            // Convert comma decimal to dot when needed
+            if (cleaned.indexOf(',') !== -1 && cleaned.indexOf('.') === -1) {
+                cleaned = cleaned.replace(',', '.');
+            } else if (cleaned.indexOf(',') !== -1 && cleaned.indexOf('.') !== -1) {
+                cleaned = cleaned.replace(/,/g, '');
+            }
+            var n = parseFloat(cleaned);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function readModalAddButtonTotal(addBtn) {
+            if (!addBtn) return 0;
+            var txt = addBtn.textContent || '';
+            // 1) Dernier segment après « - » (libellé i18n souvent « Ajouter - 12,50 € »)
+            var parts = txt.split('-');
+            if (parts.length >= 2) {
+                var fromDash = parseMoneyLoose(parts[parts.length - 1]);
+                if (fromDash > 0) return fromDash;
+            }
+            // 2) Fallback : dernier groupe numérique (libellés avec plusieurs tirets / sans tiret)
+            var matches = txt.match(/\d+[.,]\d+|\d+/g);
+            if (matches && matches.length > 0) {
+                return parseMoneyLoose(matches[matches.length - 1]);
+            }
+            return 0;
+        }
+
+        function submitWhenSynced() {
+            // Dispatch a custom event on the modal — ItemComponent listens and calls addToCart()
+            // directly, bypassing the :disabled="temp.total_price <= 0" guard on the Vue button.
+            var modalRoot = originalBody ? originalBody.closest('.modal') : null;
+            if (!modalRoot) {
+                console.error('[Wizard] Modal root not found for wizard:add-to-cart dispatch');
+                showValidationError('Erreur interne. Veuillez réessayer.');
+                return;
+            }
+            modalRoot.dispatchEvent(new CustomEvent('wizard:add-to-cart', { bubbles: false }));
+
+            // Close wizard after a short delay to let Vue process the cart update
+            setTimeout(function () {
+                if (originalBody) originalBody.style.display = 'none';
+                closeWizard(true);
+            }, 200);
+        }
+
+        // Small delay to let Vue consume all dispatched changes before submitting.
+        setTimeout(function () {
+            submitWhenSynced();
+        }, 180);
     }
 
     /* ==============================
        WIZARD OPEN / CLOSE
        ============================== */
     function openWizard(modal) {
+        // Allow Vue to inject item data directly via DOM attribute (edit-from-cart path),
+        // bypassing the XHR/fetch interceptor which may miss relative URLs.
+        var injectedDataAttr = modal.getAttribute('data-wizard-item-data');
+        if (injectedDataAttr) {
+            try {
+                var injected = JSON.parse(injectedDataAttr);
+                if (injected && (injected.itemAttributes || injected.variations || injected.extras)) {
+                    lastItemData = injected;
+                }
+            } catch (e) { /* ignore */ }
+            modal.removeAttribute('data-wizard-item-data');
+        }
+
         if (!lastItemData) return;
 
         // [BUG-W1 FIX] Store item data for buildWizardInstruction()
@@ -3552,19 +4125,16 @@
         originalBody = modal.querySelector('.modal-body');
         if (!originalBody || !modalDialog) return;
 
+        // Avoid stale total bridge from a previous failed/aborted wizard submit.
+        modal.removeAttribute('data-wizard-total');
+        modal.removeAttribute('data-wizard-pos-line-addons');
+
         // Hide Vue modal header to avoid duplicate product info
         var originalHeader = modal.querySelector('.modal-header');
         if (originalHeader) {
             originalHeader.setAttribute('data-wiz-hidden', '1');
             originalHeader.style.display = 'none';
         }
-
-        // [S25] Initialize steps for data structure (used by calculateRunningTotal and sync)
-        steps = buildSteps(lastItemData);
-
-        // [S25] Always show single-page wizard (even for simple items, to maintain consistency)
-        itemQuantity = 1;
-        instructionText = '';
 
         originalBody.style.display = 'none';
 
@@ -3834,19 +4404,42 @@
                     word-break: break-word;
                 }
 
+                /* Wizard scroll container: modal-dialog becomes a flex column,
+                   #pos-wizard-root scrolls internally, sticky bar stays at bottom */
+                #item-variation-modal .modal-dialog {
+                    display: flex;
+                    flex-direction: column;
+                    max-height: 92vh;
+                    overflow: hidden;
+                }
+                #pos-wizard-root {
+                    flex: 1 1 auto;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 0;
+                }
+                #pos-wizard-root .pos-wizard.single-page {
+                    flex: 1 1 auto;
+                    overflow-y: auto;
+                    min-height: 0;
+                    padding-bottom: 0;
+                }
+
                 .pos-wizard.single-page .wizard-sticky-bar {
-                    position: fixed;
+                    position: sticky;
                     bottom: 0;
-                    left: 0;
-                    right: 0;
+                    flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 16px 24px;
+                    padding: 14px 20px;
                     background: white;
-                    border-top: 1px solid #EFF0F6;
+                    border-top: 2px solid #EFF0F6;
                     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-                    z-index: 100;
+                    z-index: 10;
+                    gap: 12px;
                 }
 
                 .pos-wizard.single-page .sticky-total {
@@ -3890,6 +4483,8 @@
 
         // [S25] Reset all single-page selections to clean state before rendering
         // Prevents stale keys from a previous item corrupting the new item's display
+        // [M1 FIX] Also reset accompagnement, individualAddons, sauceSingle, boissonChoice
+        // [A1 FIX] buildSteps must run AFTER reset so its initializations are not wiped
         selections.supplements = {};
         selections.sauces = {};
         selections.sauceOrder = [];
@@ -3905,6 +4500,77 @@
         selections.pain = null;
         selections.fritesGrande = false;
         selections.fritesCheddar = false;
+        selections.accompagnement = null;
+        selections.individualAddons = {};
+        selections.sauceSingle = null;
+        selections.boissonChoice = null;
+
+        // [S25] Initialize steps AFTER reset so buildSteps initializations (accompagnement, etc.) are preserved
+        // [A1 FIX] buildSteps must run before edit-restore so restore can override defaults
+        steps = buildSteps(lastItemData);
+
+        // [P3 FIX] Simple products (boissons, desserts) — no viandes, no sauces, no garnitures,
+        // no addons, no paid extras. The wizard would be empty and confusing.
+        // Let the native Vue modal (quantity + Add to Cart) handle these products instead.
+        var hasExtras = lastItemData.extras && lastItemData.extras.length > 0;
+        var hasAddons = lastItemData.addons && lastItemData.addons.length > 0;
+        var hasVariations = lastItemData.itemAttributes && lastItemData.itemAttributes.length > 0;
+        var isSimpleProduct = steps.length === 0 && !hasExtras && !hasAddons && !hasVariations;
+        if (isSimpleProduct) {
+            // Restore Vue modal header that was hidden above
+            if (originalHeader) {
+                originalHeader.style.display = '';
+                originalHeader.removeAttribute('data-wiz-hidden');
+            }
+            if (originalBody) originalBody.style.display = '';
+            // Clear any stale wizard data-attributes from previous wizard session
+            modal.removeAttribute('data-wizard-total');
+            modal.removeAttribute('data-wizard-pos-line-addons');
+            modal.removeAttribute('data-wizard-cart-display');
+            originalBody = null;
+            lastItemData = null;
+            return;
+        }
+
+        // [EDIT-RESTORE] Restaurer selections depuis édition panier APRÈS buildSteps (override defaults)
+        var restoreAttr = modal.getAttribute('data-wizard-restore-selections');
+        var isEditRestore = false;
+        if (restoreAttr) {
+            try {
+                var restored = JSON.parse(restoreAttr);
+                // Fusionner dans selections (priorité à restored)
+                Object.assign(selections, restored);
+                // Restaurer quantité et instruction
+                if (restored.instruction) instructionText = restored.instruction;
+                // [Y1 FIX] Sync itemQuantity from cart line so syncAndSubmit writes the correct qty
+                // back to the Vue modal. Without this, itemQuantity stays at its last value (1 after
+                // closeWizard) and overwrites the real cart quantity on save.
+                if (restored._cartQuantity && restored._cartQuantity > 0) {
+                    itemQuantity = restored._cartQuantity;
+                }
+                modal.removeAttribute('data-wizard-restore-selections');
+                isEditRestore = true;
+
+                // [W1 FIX] Recompute totalViandes from selections.viandes after restore.
+                // buildWizardRestorePayload fills viandes counts but not totalViandes,
+                // so totalViandes stays 0 after Object.assign — causing:
+                //   1. buildTicketInstruction to skip the viande block (gates on totalViandes > 0)
+                //   2. renderSinglePage canAdd logic to allow over-selection
+                if (selections.viandes && typeof selections.viandes === 'object') {
+                    var recomputedTotal = 0;
+                    Object.keys(selections.viandes).forEach(function (k) {
+                        recomputedTotal += (selections.viandes[k] || 0);
+                    });
+                    selections.totalViandes = recomputedTotal;
+                }
+            } catch (e) {
+                console.warn('[Wizard] Failed to restore selections:', e);
+            }
+        } else {
+            // Nouvelle commande : réinitialiser
+            itemQuantity = 1;
+            instructionText = '';
+        }
 
         // [S25] Create single-page wizard instead of multi-step
         wizardEl = document.createElement('div');
@@ -3914,6 +4580,14 @@
 
         // [S25] Bind single-page events
         bindSinglePageEvents();
+
+        // [W2 FIX] After edit-restore, sync the rendered UI to match selections state.
+        // renderSinglePage() uses selections at render time, but restore runs after render
+        // so any restored state (viandes, sauces, garnitures, accompagnement, etc.) needs
+        // a UI sync pass to reflect the pre-selected state visually.
+        if (isEditRestore) {
+            updateSinglePageUI();
+        }
     }
 
     function closeWizard(keepOriginalHidden) {
@@ -3925,6 +4599,9 @@
             // Restore Vue modal header
             var modalEl = originalBody.closest('.modal');
             if (modalEl) {
+                modalEl.removeAttribute('data-wizard-total');
+                modalEl.removeAttribute('data-wizard-pos-line-addons');
+                modalEl.removeAttribute('data-wizard-cart-display');
                 var hiddenHeader = modalEl.querySelector('.modal-header[data-wiz-hidden]');
                 if (hiddenHeader) {
                     hiddenHeader.style.display = '';
@@ -3942,6 +4619,7 @@
         selections = {};
         itemQuantity = 1;
         instructionText = '';
+        currentCategory = 'unknown';
     }
 
     function updateWizardUI() {
@@ -4498,12 +5176,15 @@
             });
         });
 
-        // Garniture toggle
+        // Garniture toggle (multi-step path)
+        // [H2 FIX] Use 'c_<id>' keys to match syncAndSubmit and single-page path
         wizardEl.querySelectorAll('.wizard-option[data-type="garniture"]').forEach(function (opt) {
             opt.addEventListener('click', function () {
-                var id = parseInt(this.getAttribute('data-id'));
+                var rawId = this.getAttribute('data-id');
+                var id = parseInt(rawId);
                 if (!selections.garnitures) selections.garnitures = {};
-                selections.garnitures[id] = !selections.garnitures[id];
+                var key = isNaN(id) ? rawId : ('c_' + id);
+                selections.garnitures[key] = !selections.garnitures[key];
                 updateWizardUI();
             });
         });
@@ -4608,15 +5289,9 @@
             });
         }
 
-        // [NEW SPRINT 4] Garniture toggle buttons (new style)
-        wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var id = parseInt(this.getAttribute('data-id'));
-                if (!selections.garnitures) selections.garnitures = {};
-                selections.garnitures[id] = !selections.garnitures[id];
-                updateWizardUI();
-            });
-        });
+        // [H2 FIX] Removed duplicate .garniture-toggle-btn listener from bindEvents().
+        // Single-page garniture toggles use data-garniture="c_<id>" and are handled
+        // exclusively by bindSinglePageEvents() to avoid NaN key corruption.
 
         // [NEW SPRINT 4] Menu cards (new style)
         wizardEl.querySelectorAll('.wizard-menu-card').forEach(function (card) {
@@ -4780,15 +5455,17 @@
                 var currentCount = selections.viandes[viandeKey] || 0;
                 var total = selections.totalViandes || 0;
 
-                // Determine max from actual item data
-                var max = 1;
-                if (lastItemData && lastItemData.itemAttributes) {
+                // [B1/R4 FIX] Determine max from detectViandeCountFromData (reads name/description)
+                // then fallback to attribute count
+                var max = detectViandeCountFromData(lastItemData);
+                if (max === 0 && lastItemData && lastItemData.itemAttributes) {
                     var viandeAttrs = lastItemData.itemAttributes.filter(function (attr) {
                         var n = normalizeStr(attr.name);
                         return n.includes('viande') || n.includes('meat');
                     });
                     max = viandeAttrs.length || 1;
                 }
+                if (max === 0) max = 1;
 
                 if (action === 'plus') {
                     if (total < max) {
@@ -4886,6 +5563,15 @@
             });
         });
 
+        // [A1 FIX] Accompagnement radio (assiettes) — single-page binding
+        wizardEl.querySelectorAll('.wizard-option[data-type="accompagnement"]').forEach(function (opt) {
+            opt.addEventListener('click', function () {
+                var id = parseInt(this.getAttribute('data-id'));
+                selections.accompagnement = id;
+                updateSinglePageUI();
+            });
+        });
+
         // Toggle suppléments collapse
         var supplToggleBtn = wizardEl.querySelector('.suppl-toggle');
         if (supplToggleBtn) {
@@ -4963,8 +5649,18 @@
         var addBtn = wizardEl.querySelector('[data-action="add-to-cart"]');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
-                // Sync to original modal and submit
                 syncAndSubmit();
+            });
+        }
+
+        // Cancel / close wizard button — dismiss without saving
+        var cancelBtn = wizardEl.querySelector('[data-action="cancel-wizard"]');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                var modal = document.getElementById('item-variation-modal');
+                closeWizard(false);
+                if (modal) modal.classList.remove('active');
+                document.body.style.overflowY = 'auto';
             });
         }
 
@@ -4986,35 +5682,73 @@
     /* ==============================
        OBSERVE MODAL OPENING
        ============================== */
-    function init() {
-        var pollInterval = setInterval(function () {
-            var modal = document.getElementById('item-variation-modal');
-            if (modal) {
-                clearInterval(pollInterval);
 
-                var observer = new MutationObserver(function () {
-                    if (modal.classList.contains('active') && !wizardEl) {
-                        // [BUG-6 FIX] Retry loop instead of fixed 400ms timeout
-                        // Waits for lastItemData to be populated by XHR interceptor
-                        var retries = 0;
-                        var tryOpen = function () {
-                            if (lastItemData) {
-                                openWizard(modal);
-                            } else if (retries < 15) {
-                                retries++;
-                                setTimeout(tryOpen, 50);
-                            }
-                            // else: fallback to original modal if data never arrives
-                        };
-                        setTimeout(tryOpen, 50);
-                    } else if (!modal.classList.contains('active') && wizardEl) {
-                        closeWizard();
-                    }
-                });
+    // Track the modal node we are currently observing so we can re-attach when
+    // Vue Router destroys and recreates the component (SPA navigation).
+    var _observedModal = null;
+    var _modalObserver = null;
 
-                observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    function _attachModalObserver(modal) {
+        if (_modalObserver) _modalObserver.disconnect();
+        _observedModal = modal;
+
+        _modalObserver = new MutationObserver(function () {
+            var currentModal = document.getElementById('item-variation-modal');
+            // If Vue replaced the node, re-attach to the new one immediately.
+            if (currentModal && currentModal !== _observedModal) {
+                _attachModalObserver(currentModal);
+                return;
             }
-        }, 500);
+            if (modal.classList.contains('active') && !wizardEl) {
+                var retries = 0;
+                var tryOpen = function () {
+                    if (lastItemData || modal.getAttribute('data-wizard-item-data')) {
+                        openWizard(modal);
+                    } else if (retries < 20) {
+                        retries++;
+                        setTimeout(tryOpen, 50);
+                    }
+                    // else: data never arrived — Vue modal stays visible as fallback
+                };
+                setTimeout(tryOpen, 0);
+            } else if (!modal.classList.contains('active') && wizardEl) {
+                closeWizard();
+            }
+        });
+
+        _modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Body-level observer: detects when Vue mounts / re-mounts #item-variation-modal
+    // after SPA navigation. Runs once, never stops.
+    function _watchBodyForModal() {
+        var bodyObserver = new MutationObserver(function () {
+            var modal = document.getElementById('item-variation-modal');
+            if (modal && modal !== _observedModal) {
+                // New modal node detected (Vue re-mounted the POS component).
+                // Reset stale item data so the wizard doesn't open with a previous product's data.
+                lastItemData = null;
+                if (wizardEl) closeWizard();
+                _attachModalObserver(modal);
+            } else if (!modal && _observedModal) {
+                // Modal was removed from DOM (navigated away from POS).
+                // Clean up so state doesn't leak into the next visit.
+                if (wizardEl) closeWizard();
+                lastItemData = null;
+                _observedModal = null;
+                if (_modalObserver) { _modalObserver.disconnect(); _modalObserver = null; }
+            }
+        });
+        bodyObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function init() {
+        // Attach immediately if the modal already exists (e.g. hard refresh on /admin/pos).
+        var modal = document.getElementById('item-variation-modal');
+        if (modal) _attachModalObserver(modal);
+
+        // Always watch the body so we catch Vue re-mounting the modal after navigation.
+        _watchBodyForModal();
     }
 
     /* ==============================

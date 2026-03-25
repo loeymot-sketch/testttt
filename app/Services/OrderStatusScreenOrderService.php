@@ -35,13 +35,30 @@ class OrderStatusScreenOrderService
     public function list()
     {
         try {
-            return Order::whereNotNull('token')->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])->where(function ($query) {
-                $query->where(function ($subQuery) {
-                    $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
-                })->orWhere(function ($subQuery) {
-                    $subQuery->where('is_advance_order', Ask::YES)->where('order_datetime', '<', Carbon::today());
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            // Kiosk orders use queue_number instead of token — include both
+            $query = Order::where(function ($q) {
+                    $q->whereNotNull('token')
+                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK);
+                })
+                ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
+                ->where(function ($q) {
+                    $q->where(function ($sub) {
+                        // [P3-4 FIX] Align with KDS: today's non-advance orders
+                        $sub->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
+                    })->orWhere(function ($sub) {
+                        // [P3-4 FIX] Align with KDS: yesterday's advance orders only (not all past)
+                        $sub->where('is_advance_order', Ask::YES)->whereDate('order_datetime', Carbon::yesterday());
+                    });
                 });
-            })->get();
+
+            // [P3-3 FIX] Branch filter: admin (branch_id=0) sees all, staff sees own branch
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            return $query->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

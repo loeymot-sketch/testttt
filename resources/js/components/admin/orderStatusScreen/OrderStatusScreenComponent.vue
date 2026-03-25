@@ -36,7 +36,8 @@ export default {
     },
     closeSidebar: function () {
       document?.querySelector(".db-main")?.classList?.add("expand");
-      document?.querySelector('.db-header').classList.remove("active", "hidden")
+      // [W8 FIX] Full optional chain — querySelector can return null if .db-header is absent
+      document?.querySelector('.db-header')?.classList?.remove("active", "hidden");
     },
   },
   beforeUnmount() {

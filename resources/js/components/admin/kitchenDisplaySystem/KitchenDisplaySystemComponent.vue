@@ -16,7 +16,8 @@
             <h3 class="text-lg font-semibold">{{ $t('label.items_board') }}</h3>
           </div>
           <ul class="h-full thin-scrolling overflow-auto pb-12">
-            <li v-for="orderItem in orderItems" :key="orderItem"
+            <!-- [N7 FIX] Stable key using item_id + instruction hash instead of object reference -->
+            <li v-for="(orderItem, oIdx) in orderItems" :key="orderItem.item_id + '-' + oIdx"
               class="px-3 py-2 flex items-start justify-between gap-2 border-b border-[#EFF0F6] last:border-none">
               <div>
                 <h5 class="text-sm font-medium mb-1">{{ orderItem.item_name }}</h5>
@@ -37,20 +38,7 @@
                     </span>
                   </p>
                 </span>
-                <!-- [PLAN_06 D-010] Instructions parsées en sections colorées -->
-                <div v-if="orderItem.instruction" class="kds-instruction-parsed mt-1">
-                  <div v-for="(section, key) in parseInstruction(orderItem.instruction)" :key="key"
-                    v-if="section && key !== 'raw'" 
-                    :class="['kds-section', 'kds-' + key]">
-                    <span class="kds-icon">{{ getSectionIcon(key) }}</span>
-                    <span class="kds-label">{{ getSectionLabel(key) }}:</span>
-                    <span class="kds-value">{{ section }}</span>
-                  </div>
-                  <div v-if="parseInstruction(orderItem.instruction).raw" class="kds-section kds-raw">
-                    <span class="kds-icon">📝</span>
-                    <span class="kds-value">{{ parseInstruction(orderItem.instruction).raw }}</span>
-                  </div>
-                </div>
+                <div v-if="orderItem.instruction" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ orderItem.instruction }}</div>
               </div>
               <div
                 class="text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">{{
@@ -107,7 +95,7 @@
             </form>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" @click="closeFilterSlide($event)">
+        <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4" @click="closeFilterSlide($event)">
           <div class="db-card rounded-[10px] h-fit">
             <div class="p-3 pb-2" :class="dineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
@@ -145,27 +133,31 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="item in dineinOrder.order_items" :key="item"
+                    <div v-for="(item, iIdx) in dineinOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
                       <div>
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
-                        <p v-if="item.item_variations.length !== 0"
+                        <!-- [Y2 FIX] Guard item_variations -->
+                        <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                          <span v-for="(variation, index) in item.item_variations" class="text-heading">
+                          <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
                             {{ variation.variation_name }}: {{ variation.name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
-                        <li class="flex gap-1" v-if="item.item_extras.length > 0">
-                          <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:
-                          </h3>
+                        <!-- [N4 FIX] Was <li> without <ul> — replaced with <div> -->
+                        <!-- [Y2 FIX] Guard item_extras -->
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                            <span v-for="(extra, index) in item.item_extras" class="text-heading">
+                            <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
                               {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
-                        </li>
+                        </div>
+                        <!-- [P3-1 FIX] Show instruction on dine-in cards -->
+                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
@@ -220,41 +212,30 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="item in onlineOrder.order_items" :key="item"
+                    <div v-for="(item, iIdx) in onlineOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
                       <div>
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
-                        <p v-if="item.item_variations.length !== 0"
+                        <!-- [Y2 FIX] Guard item_variations -->
+                        <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                          <span v-for="(variation, index) in item.item_variations" class="text-heading">
+                          <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
                             {{ variation.variation_name }}: {{ variation.name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
-                        <li class="flex gap-1" v-if="item.item_extras.length > 0">
-                          <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:
-                          </h3>
+                        <!-- [N4 FIX] Was <li> without <ul> — replaced with <div> -->
+                        <!-- [Y2 FIX] Guard item_extras -->
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                            <span v-for="(extra, index) in item.item_extras" class="text-heading">
+                            <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
                               {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
-                        </li>
-                        <!-- [PLAN_06 D-010] Instructions parsées en sections colorées -->
-                        <li class="kds-instruction-parsed mt-1" v-if="item.instruction && item.instruction !== ''">
-                          <div v-for="(section, key) in parseInstruction(item.instruction)" :key="key"
-                            v-if="section && key !== 'raw'" 
-                            :class="['kds-section', 'kds-' + key]">
-                            <span class="kds-icon">{{ getSectionIcon(key) }}</span>
-                            <span class="kds-label">{{ getSectionLabel(key) }}:</span>
-                            <span class="kds-value">{{ section }}</span>
-                          </div>
-                          <div v-if="parseInstruction(item.instruction).raw" class="kds-section kds-raw">
-                            <span class="kds-icon">📝</span>
-                            <span class="kds-value">{{ parseInstruction(item.instruction).raw }}</span>
-                          </div>
-                        </li>
+                        </div>
+                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
@@ -305,27 +286,31 @@
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
-                    <div v-for="item in takeawayOrder.order_items" :key="item"
+                    <div v-for="(item, iIdx) in takeawayOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
                       <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
                       <div>
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
-                        <p v-if="item.item_variations.length !== 0"
+                        <!-- [Y2 FIX] Guard item_variations -->
+                        <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                          <span v-for="(variation, index) in item.item_variations" class="text-heading">
+                          <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
                             {{ variation.variation_name }}: {{ variation.name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
-                        <li class="flex gap-1" v-if="item.item_extras.length > 0">
-                          <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:
-                          </h3>
+                        <!-- [N4 FIX] Was <li> without <ul> — replaced with <div> -->
+                        <!-- [Y2 FIX] Guard item_extras -->
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                            <span v-for="(extra, index) in item.item_extras" class="text-heading">
+                            <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
                               {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
-                        </li>
+                        </div>
+                        <!-- [P3-1 FIX] Show instruction on takeaway cards -->
+                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
@@ -343,6 +328,85 @@
               </div>
             </div>
           </div>
+          <!-- Borne (Kiosk) orders column -->
+          <div class="db-card rounded-[10px] h-fit">
+            <div class="p-3 pb-2 flex items-center gap-2" :class="kioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
+              <h3 class="text-lg font-semibold">🖥️ Borne</h3>
+              <span v-if="kioskOrders.length > 0"
+                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#e53935] text-white text-[10px] font-bold">
+                {{ kioskOrders.length }}
+              </span>
+            </div>
+            <div v-if="kioskOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+              Aucune commande borne en cours.
+            </div>
+            <div v-if="kioskOrders.length > 0" class="p-3" v-for="kioskOrder in kioskOrders" :key="kioskOrder.id">
+              <div class="w-full rounded-lg border border-[#EFF0F6]">
+                <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]">
+                  <div class="flex items-center gap-2 text-[#e53935]">
+                    <i class="lab lab-processing lab-font-size-16 text-[#e53935]"></i>
+                    <span class="text-sm font-normal">#{{ kioskOrder.order_serial_no }}</span>
+                    <span v-if="kioskOrder.queue_number"
+                      class="bg-[#e53935] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      N°{{ kioskOrder.queue_number }}
+                    </span>
+                  </div>
+                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white"
+                    :class="kioskOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (kioskOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">
+                    {{ kioskOrder.status === enums.orderStatusEnum.PREPARED ? $t('label.done') :
+                      (kioskOrder.status === enums.orderStatusEnum.ACCEPT ? $t('label.confirmed') : kioskOrder.status_name) }}
+                  </span>
+                </div>
+                <div class="w-full pt-2 pb-3 px-3">
+                  <button type="button" @click="openFilterSlide($event)"
+                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full">
+                    <span>{{ kioskOrder.order_datetime }}</span>
+                    <div class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
+                      <i class="icon text-primary fa-solid fa-chevron-down"></i>
+                    </div>
+                  </button>
+                  <div style="height: 0px" class="overflow-hidden transition-all duration-500">
+                    <div v-for="(item, iIdx) in kioskOrder.order_items" :key="item.id || iIdx"
+                      class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
+                      <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
+                      <div>
+                        <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
+                        <!-- [Y2 FIX] Guard item_variations -->
+                        <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
+                          class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                          <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
+                            {{ variation.variation_name }}: {{ variation.name }}<span
+                              v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
+                          </span>
+                        </p>
+                        <!-- [Y2 FIX] Guard item_extras -->
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
+                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                            <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
+                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                            </span>
+                          </p>
+                        </div>
+                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                      </div>
+                    </div>
+                    <button v-if="kioskOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
+                      @click="orderStatus(kioskOrder.id, enums.orderStatusEnum.PREPARING)"
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
+                      {{ $t('label.start_preparing') }}
+                    </button>
+                    <button v-if="kioskOrder.status === enums.orderStatusEnum.PREPARING" type="button"
+                      @click="orderStatus(kioskOrder.id, enums.orderStatusEnum.PREPARED)"
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white">
+                      {{ $t('label.mark_done') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -383,6 +447,7 @@ export default {
       dineinOrders: [],
       onlineOrders: [],
       takeawayOrders: [],
+      kioskOrders: [],
       enums: {
         statusEnum: statusEnum,
         orderTypeEnum: orderTypeEnum,
@@ -405,14 +470,37 @@ export default {
     this.refreshOrderList();
     this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.refreshOrderList);
+    // [P4-1] Subscribe to branch Echo channel for sub-second push updates
+    this.subscribeEcho();
   },
   methods: {
     startAutoRefresh() {
       if (this.$route.path.includes('kitchen-display-system')) {
         this.autoRefreshInterval = setInterval(() => {
           this.refreshOrderList();
-        }, 30000); // 30s fallback — Firebase push is primary, polling is safety net
+        }, 30000); // 30s fallback polling — Echo push is primary
       }
+    },
+    // [P4-1] Subscribe to branch Echo channel for real-time order updates
+    // Admin users (branch_id=0) rely on 30s polling; branch staff get sub-second push
+    subscribeEcho() {
+      if (!window.Echo) return;
+      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      if (branchId <= 0) return; // Admin: polling fallback is sufficient
+      try {
+        this._echoChannel = window.Echo.private(`branch.${branchId}`)
+          .listen('.OrderStatusChanged', () => { this.refreshOrderList(); })
+          .listen('.OrderCreated', () => { this.refreshOrderList(); });
+      } catch (e) {
+        // Echo not available or auth failed — polling fallback handles it
+      }
+    },
+    unsubscribeEcho() {
+      if (!window.Echo || !this._echoChannel) return;
+      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      if (branchId <= 0) return;
+      try { window.Echo.leave(`branch.${branchId}`); } catch (e) {}
+      this._echoChannel = null;
     },
     refreshOrderList() {
       this.items();
@@ -449,6 +537,9 @@ export default {
           );
           this.takeawayOrders = res.data.data.filter(
             (item) => item.order_type === orderTypeEnum.TAKEAWAY
+          );
+          this.kioskOrders = res.data.data.filter(
+            (item) => item.order_type === orderTypeEnum.KIOSK
           );
 
           this.loading.isActive = false;
@@ -525,153 +616,19 @@ export default {
       }
     },
 
-    // [PLAN_06 D-010] Parser l'instruction wizard en sections structurées
-    parseInstruction(instruction) {
-      if (!instruction || typeof instruction !== 'string') {
-        return { raw: null, viandes: null, supplements: null, formule: null, sauces: null, garnitures: null, note: null };
-      }
-
-      const sections = {
-        viandes: null,
-        supplements: null,
-        formule: null,
-        sauces: null,
-        garnitures: null,
-        note: null,
-        raw: null,
-      };
-
-      const patterns = {
-        viandes: /VIANDES?:\s*([^.]+)/i,
-        supplements: /SUPPL[ÉE]MENTS?:\s*([^.]+)/i,
-        formule: /FORMULE:\s*([^.]+)/i,
-        sauces: /SAUCES?:\s*([^.]+)/i,
-        garnitures: /GARNITURES?:\s*([^.]+)/i,
-        note: /NOTE:\s*([^.]+)/i,
-      };
-
-      let hasStructured = false;
-      Object.keys(patterns).forEach(key => {
-        const match = instruction.match(patterns[key]);
-        if (match) {
-          sections[key] = match[1].trim();
-          hasStructured = true;
-        }
-      });
-
-      if (!hasStructured) {
-        sections.raw = instruction;
-      }
-
-      return sections;
-    },
-
-    getSectionIcon(key) {
-      const icons = {
-        viandes: '🥩',
-        supplements: '➕',
-        formule: '🍟',
-        sauces: '🥄',
-        garnitures: '🥬',
-        note: '💬',
-      };
-      return icons[key] || '📋';
-    },
-
-    getSectionLabel(key) {
-      const labels = {
-        viandes: 'Viandes',
-        supplements: 'Suppléments',
-        formule: 'Formule',
-        sauces: 'Sauces',
-        garnitures: 'Garnitures',
-        note: 'Note',
-      };
-      return labels[key] || key;
-    },
   },
   beforeUnmount() {
     this.stopAutoRefresh();
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
+    // [P4-1] Unsubscribe Echo channel on unmount
+    this.unsubscribeEcho();
   },
 };
 </script>
 
 <style scoped>
-/* [PLAN_06 D-010] KDS — Sections d'instruction colorées */
-.kds-instruction-parsed {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.kds-section {
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  line-height: 1.3;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.kds-icon {
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.kds-label {
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.kds-value {
-  font-weight: 400;
-  flex: 1;
-}
-
-.kds-viandes {
-  background: #FDE8E8;
-  border-left: 3px solid #E74C3C;
-  color: #922B21;
-}
-
-.kds-supplements {
-  background: #FFF3CD;
-  border-left: 3px solid #FFC107;
-  color: #7B6E00;
-}
-
-.kds-formule {
-  background: #D1ECF1;
-  border-left: 3px solid #17A2B8;
-  color: #0C6674;
-}
-
-.kds-sauces {
-  background: #E8F5E9;
-  border-left: 3px solid #4CAF50;
-  color: #2E7D32;
-}
-
-.kds-garnitures {
-  background: #F1F8E9;
-  border-left: 3px solid #8BC34A;
-  color: #33691E;
-}
-
-.kds-note {
-  background: #F5F5F5;
-  border-left: 3px solid #9E9E9E;
-  color: #555;
-  font-style: italic;
-}
-
-.kds-raw {
-  background: #FFF;
-  border-left: 3px solid #CCC;
-  color: #333;
+.kds-instruction {
+  line-height: 1.5;
 }
 </style>

@@ -49,6 +49,7 @@ class OrderRequest extends FormRequest
             ] : ['nullable'],
             'coupon_id' => ['nullable', 'numeric'],
             'source' => ['required', 'numeric'],
+            'payment_method' => ['nullable', 'numeric'],
             'token' => ['nullable', 'string'],
             'items' => ['required', 'json', new ValidJsonOrder]
         ];

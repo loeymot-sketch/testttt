@@ -97,13 +97,29 @@ class FrontendOrderService
      */
     public function myOrderStore(OrderRequest $request): object
     {
+        // [SPLASH SECURITY] Idempotency: if the kiosk sends the same key twice (network retry,
+        // double-tap), return the existing order instead of creating a duplicate.
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        if ($idempotencyKey) {
+            $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
+            if ($existing) {
+                $this->frontendOrder = $existing;
+                return $this->frontendOrder;
+            }
+        }
+
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($request, $idempotencyKey) {
                 $validatedRequest = $request->validated();
                 $kiosk = \App\Models\KioskMachine::where('user_id', Auth::user()->id)->first();
                 if ($kiosk) {
                     $validatedRequest['branch_id'] = $kiosk->branch_id;
                     $validatedRequest['order_type'] = OrderType::KIOSK;  // [SPRINT 9] Forcer le type borne
+                }
+
+                // Attach idempotency key if provided by client
+                if ($idempotencyKey) {
+                    $validatedRequest['idempotency_key'] = substr($idempotencyKey, 0, 64);
                 }
 
                 $this->frontendOrder = FrontendOrder::create(
@@ -301,13 +317,32 @@ class FrontendOrderService
                 }
             });
 
+            // [KIOSK] Auto-accept kiosk orders so they immediately appear in KDS.
+            // KDS filters on status >= ACCEPT (4). Without this, kiosk orders stay
+            // PENDING and are invisible to kitchen staff until manually accepted.
+            if ($this->frontendOrder->order_type === OrderType::KIOSK) {
+                $this->frontendOrder->status = OrderStatus::ACCEPT;
+                $this->frontendOrder->save();
+                // Fire OrderStatusChanged so KDS/OSS are notified in real-time
+                try {
+                    event(new \App\Events\OrderStatusChanged(
+                    $this->frontendOrder,
+                    OrderStatus::PENDING,    // oldStatus (before auto-accept)
+                    OrderStatus::ACCEPT      // newStatus
+                ));
+                } catch (\Exception $e) {
+                    Log::warning('[Kiosk] OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                }
+            }
+
             // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit
             // Prevents ghost KDS orders if the transaction rolls back after these dispatches
             // [FEAT] OrderCreated broadcast enables real-time KDS/OSS updates via Soketi
             try {
-                SendOrderMail::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
-                SendOrderSms::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
-                SendOrderPush::dispatch(['order_id' => $this->frontendOrder->id, 'status' => OrderStatus::PENDING]);
+                $notifStatus = $this->frontendOrder->status; // ACCEPT for kiosk, PENDING for others
+                SendOrderMail::dispatch(['order_id' => $this->frontendOrder->id, 'status' => $notifStatus]);
+                SendOrderSms::dispatch(['order_id' => $this->frontendOrder->id, 'status' => $notifStatus]);
+                SendOrderPush::dispatch(['order_id' => $this->frontendOrder->id, 'status' => $notifStatus]);
                 SendOrderGotMail::dispatch(['order_id' => $this->frontendOrder->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->frontendOrder->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->frontendOrder->id]);
@@ -356,22 +391,27 @@ class FrontendOrderService
                 }
 
                 if ($request->status == OrderStatus::CANCELED) {
-                    if ($frontendOrder->status >= OrderStatus::ACCEPT) {
+                    // Kiosk orders are auto-accepted (ACCEPT=4) for KDS visibility.
+                    // Allow customer cancel as long as kitchen has not started PREPARING (7).
+                    $isKioskOrder = $frontendOrder->order_type === OrderType::KIOSK;
+                    $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+
+                    if ($frontendOrder->status >= $cancelableThreshold) {
                         throw new Exception(trans('all.message.order_accept'), 422);
-                    } else {
-                        if ($frontendOrder->transaction) {
-                            app(PaymentService::class)->cashBack(
-                                $frontendOrder,
-                                'credit',
-                                'TXN-' . \Illuminate\Support\Str::random(12)
-                            );
-                        }
-                        SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                        SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                        SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                        $frontendOrder->status = $request->status;
-                        $frontendOrder->save();
                     }
+
+                    if ($frontendOrder->transaction) {
+                        app(PaymentService::class)->cashBack(
+                            $frontendOrder,
+                            'credit',
+                            'TXN-' . \Illuminate\Support\Str::random(12)
+                        );
+                    }
+                    SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                    SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                    SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                    $frontendOrder->status = $request->status;
+                    $frontendOrder->save();
                 }
             }
             return $frontendOrder;

@@ -58,26 +58,67 @@ class ItemController extends Controller
         }
     }
 
+    /**
+     * [SPLASH MERCHANDISING] Smart upsell based on cart item IDs.
+     * Splash logic: if basket has meals → suggest drinks + desserts (is_upsell=true).
+     * Falls back to featured items if no is_upsell items configured.
+     *
+     * Usage: GET /frontend/item/kiosk-upsell?item_ids=1,2,3&limit=6
+     */
+    public function kioskUpsell(\Illuminate\Http\Request $request)
+    {
+        try {
+            $limit     = min((int) $request->input('limit', 6), 12);
+            $itemIds   = array_filter(explode(',', $request->input('item_ids', '')));
+            $excludeIds = array_map('intval', $itemIds);
+
+            // Priority 1: items explicitly flagged as upsell
+            $upsellItems = Item::where('status', \App\Enums\Status::ACTIVE)
+                ->where('is_upsell', true)
+                ->whereNotIn('id', $excludeIds)
+                ->inRandomOrder()
+                ->take($limit)
+                ->get();
+
+            // Priority 2: if not enough is_upsell items, fallback to is_featured
+            if ($upsellItems->count() < $limit) {
+                $needed   = $limit - $upsellItems->count();
+                $usedIds  = array_merge($excludeIds, $upsellItems->pluck('id')->toArray());
+                $featured = Item::where('status', \App\Enums\Status::ACTIVE)
+                    ->where('is_featured', true)
+                    ->whereNotIn('id', $usedIds)
+                    ->inRandomOrder()
+                    ->take($needed)
+                    ->get();
+                $upsellItems = $upsellItems->merge($featured);
+            }
+
+            return SimpleItemResource::collection($upsellItems);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /** Legacy upsell (kept for backward compat) */
     public function upsell(Item $item)
     {
         try {
-            // Algorithme d'Upsell: on retourne les items de la même catégorie, sinon des populaires.
             $suggested = Item::with('category')
                 ->where('id', '!=', $item->id)
-                ->where('status', 5)
-                ->where('item_category_id', $item->item_category_id)
+                ->where('status', \App\Enums\Status::ACTIVE)
+                ->where('is_upsell', true)
                 ->inRandomOrder()
-                ->take(3)
+                ->take(6)
                 ->get();
 
-            // Si moins de 3 suggestions trouvées, on complète avec des populaires (si applicable)
             if ($suggested->count() < 3) {
                 $more = Item::with('category')
                     ->where('id', '!=', $item->id)
-                    ->where('status', 5)
+                    ->where('status', \App\Enums\Status::ACTIVE)
                     ->whereNotIn('id', $suggested->pluck('id')->toArray())
+                    ->where('is_featured', true)
                     ->inRandomOrder()
-                    ->take(3 - $suggested->count())
+                    ->take(6 - $suggested->count())
                     ->get();
                 $suggested = $suggested->merge($more);
             }

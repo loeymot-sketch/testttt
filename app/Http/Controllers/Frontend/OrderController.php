@@ -61,9 +61,9 @@ class OrderController extends Controller
     }
 
     /**
-     * [BORNE-WINDOWS] Confirm card payment from physical terminal.
-     * Called by the Electron app after the terminal approves the transaction.
-     * Stores the transaction_id and marks the order as PAID.
+     * [BORNE-WINDOWS + SPLASH SECURITY] Confirm card payment from physical terminal.
+     * Idempotent: calling twice with same transaction_id returns 200 without double-billing.
+     * Called by the Electron app after TPE approves the transaction.
      */
     public function paymentConfirm(FrontendOrder $frontendOrder, \Illuminate\Http\Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
@@ -74,14 +74,27 @@ class OrderController extends Controller
                 'payment_method' => ['nullable', 'integer'],
             ]);
 
-            // Ensure the order belongs to the authenticated user
+            // [SPLASH SECURITY] Ownership: kiosk machine is the order owner
+            // user_id on a kiosk order = kiosk machine's user id
             if ($frontendOrder->user_id !== \Illuminate\Support\Facades\Auth::id()) {
                 return response(['status' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            // [SPLASH IDEMPOTENCY] If already PAID → return success without re-processing
+            // Prevents double-confirmation from network retry or UI bug
+            if ($frontendOrder->payment_status === \App\Enums\PaymentStatus::PAID) {
+                return response([
+                    'status'  => true,
+                    'message' => 'Paiement déjà confirmé',
+                    'data'    => ['order_id' => $frontendOrder->id],
+                ], 200);
             }
 
             $frontendOrder->update([
                 'payment_status' => \App\Enums\PaymentStatus::PAID,
                 'payment_method' => $request->payment_method ?? $frontendOrder->payment_method,
+                'transaction_id' => $request->transaction_id,
+                'card_type'      => $request->card_type,
             ]);
 
             \App\Models\ActionLog::create([
@@ -95,7 +108,7 @@ class OrderController extends Controller
                 ),
             ]);
 
-            return response(['status' => true, 'message' => 'Paiement confirmé'], 200);
+            return response(['status' => true, 'message' => 'Paiement confirmé', 'data' => ['order_id' => $frontendOrder->id]], 200);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

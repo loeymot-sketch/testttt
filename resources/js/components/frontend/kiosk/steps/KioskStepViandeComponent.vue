@@ -93,11 +93,12 @@ export default {
   },
   methods: {
     getDefaultViandeList() {
+      // Fallback: no real DB IDs — wizard uses instruction text only
       return [
-        { id: 1, key: 'poulet', name: 'Poulet', thumb: null, emoji: '🍗' },
-        { id: 2, key: 'boeuf', name: 'Bœuf', thumb: null, emoji: '🥩' },
-        { id: 3, key: 'merguez', name: 'Merguez', thumb: null, emoji: '🌭' },
-        { id: 4, key: 'nuggets', name: 'Nuggets', thumb: null, emoji: '🍗' }
+        { id: null, key: 'poulet',   name: 'Poulet',   thumb: null, emoji: '🍗' },
+        { id: null, key: 'boeuf',    name: 'Bœuf',     thumb: null, emoji: '🥩' },
+        { id: null, key: 'merguez',  name: 'Merguez',  thumb: null, emoji: '🌭' },
+        { id: null, key: 'nuggets',  name: 'Nuggets',  thumb: null, emoji: '🍗' },
       ];
     },
     getEmojiForViande(name) {
@@ -109,18 +110,25 @@ export default {
       if (lower.includes('crevette')) return '🦐';
       return '🥩';
     },
+    emitUpdate() {
+      this.$emit('update', 'viandes', { ...this.localSelections });
+      this.$emit('update', 'totalViandes', this.totalSelected);
+      // Emit meta so wizard can map first selected viande to item_variations
+      const selectedMeta = this.viandeList
+        .filter(v => (this.localSelections[v.key] || 0) > 0)
+        .map(v => ({ id: v.id, key: v.key, name: v.name, count: this.localSelections[v.key] }));
+      this.$emit('update', '_viandeMeta', selectedMeta);
+    },
     increment(key) {
       if (this.totalSelected < this.maxViandes) {
         this.localSelections[key] = (this.localSelections[key] || 0) + 1;
-        this.$emit('update', 'viandes', { ...this.localSelections });
-        this.$emit('update', 'totalViandes', this.totalSelected);
+        this.emitUpdate();
       }
     },
     decrement(key) {
       if ((this.localSelections[key] || 0) > 0) {
         this.localSelections[key]--;
-        this.$emit('update', 'viandes', { ...this.localSelections });
-        this.$emit('update', 'totalViandes', this.totalSelected);
+        this.emitUpdate();
       }
     }
   }

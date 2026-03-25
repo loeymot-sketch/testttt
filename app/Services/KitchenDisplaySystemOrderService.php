@@ -126,8 +126,10 @@ class KitchenDisplaySystemOrderService
         try {
             $userBranchId = auth()->user()->branch_id ?? 0;
 
+            // [P3-2 FIX] Include ACCEPT orders so new POS orders appear on items board immediately
+            // without waiting for chef to click "Start Preparing"
             $query = Order::with('orderItems')
-                ->where('status', OrderStatus::PREPARING);
+                ->whereIn('status', [OrderStatus::ACCEPT, OrderStatus::PREPARING]);
 
             // Admin bypass: branch_id=0 sees all branches
             if ($userBranchId > 0) {
@@ -146,7 +148,9 @@ class KitchenDisplaySystemOrderService
             $mergedItems = $allItems->groupBy(function ($item) {
                 $variations = empty($item['item_variations']) ? '[]' : collect($item['item_variations'])->sortKeys()->toJson();
                 $extras = empty($item['item_extras']) ? '[]' : collect($item['item_extras'])->sortKeys()->toJson();
-                $instruction = $item['instruction'] ?? '';
+                // [L2 FIX] Normalize instruction: trim whitespace and lowercase to avoid
+                // spurious KDS splits caused by minor formatting differences
+                $instruction = mb_strtolower(trim($item['instruction'] ?? ''));
 
                 return json_encode([
                     'item_id' => $item['item_id'],

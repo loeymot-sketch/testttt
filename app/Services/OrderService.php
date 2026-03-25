@@ -551,14 +551,21 @@ class OrderService
                                 $varId = $variation->id ?? null;
                                 if (!$varId) continue;
 
-                                $dbVar = $dbVariations[$varId] ?? null;
-                                if (!$dbVar) {
-                                    throw new \InvalidArgumentException(
-                                        "Variation ID {$varId} introuvable.",
-                                        422
-                                    );
-                                }
-                                $variationTotal += (float) $dbVar->price;
+                        $dbVar = $dbVariations[$varId] ?? null;
+                        if (!$dbVar) {
+                            throw new \InvalidArgumentException(
+                                "Variation ID {$varId} introuvable.",
+                                422
+                            );
+                        }
+                        // [P2-1 FIX] Cross-item injection guard: variation must belong to this item
+                        if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                            throw new \InvalidArgumentException(
+                                "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                422
+                            );
+                        }
+                        $variationTotal += (float) $dbVar->price;
                             }
                         }
 
@@ -570,14 +577,21 @@ class OrderService
                                 $extraId = $extra->id ?? null;
                                 if (!$extraId) continue;
 
-                                $dbExt = $dbExtras[$extraId] ?? null;
-                                if (!$dbExt) {
-                                    throw new \InvalidArgumentException(
-                                        "Extra ID {$extraId} introuvable.",
-                                        422
-                                    );
-                                }
-                                $extraTotal += (float) $dbExt->price;
+                        $dbExt = $dbExtras[$extraId] ?? null;
+                        if (!$dbExt) {
+                            throw new \InvalidArgumentException(
+                                "Extra ID {$extraId} introuvable.",
+                                422
+                            );
+                        }
+                        // [P2-1 FIX] Cross-item injection guard: extra must belong to this item
+                        if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                            throw new \InvalidArgumentException(
+                                "Extra ID {$extraId} n'appartient pas à l'article {$item->item_id}.",
+                                422
+                            );
+                        }
+                        $extraTotal += (float) $dbExt->price;
                             }
                         }
                         
@@ -665,6 +679,10 @@ class OrderService
                         } else {
                             $calculatedDiscount = $coupon->discount;
                         }
+                    } else {
+                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
+                        // instead of silently applying zero discount while the customer expects a reduction.
+                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
                     }
                 } elseif ($request->discount > 0) {
                     // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
@@ -699,7 +717,11 @@ class OrderService
 
                 //storing order address
                 if ($request->address_id) {
-                    $address = Address::find($request->address_id);
+                    // [V3 FIX] Ownership check: address must belong to the customer on this order.
+                    // Prevents IDOR where a manipulated payload could copy another customer's address.
+                    $address = Address::where('id', $request->address_id)
+                        ->where('user_id', $request->customer_id)
+                        ->first();
                     if ($address) {
                         OrderAddress::create([
                             'order_id'  => $this->order->id,
@@ -710,6 +732,10 @@ class OrderService
                             'latitude'  => $address->latitude,
                             'longitude' => $address->longitude,
                         ]);
+                    } else {
+                        // [Y5 FIX] Address not found or doesn't belong to customer — fail explicitly
+                        // for delivery orders so the order is not created without a valid address.
+                        throw new \Exception('Adresse #' . $request->address_id . ' introuvable ou n\'appartient pas au client.', 422);
                     }
                 }
 
@@ -913,6 +939,9 @@ class OrderService
                         } else {
                             $calculatedDiscount = $coupon->discount;
                         }
+                    } else {
+                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
+                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
                     }
                 } elseif ($request->discount > 0) {
                     // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below

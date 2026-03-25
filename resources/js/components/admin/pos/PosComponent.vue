@@ -14,37 +14,65 @@
             </button>
         </form>
 
-        <div class="swiper pos-menu-swiper mb-6" v-if="categories.length > 1">
-            <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="16" class="menu-slides">
-                <SwiperSlide class="!w-fit" v-for="(category, index) in categories" :key="category"
-                    :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''">
-                    <router-link v-if="index === 0" to="#" @click.prevent="allCategory"
-                        class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                        <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                        <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                    </router-link>
-                    <router-link v-else to="#" @click.prevent="setCategory(category.id)"
-                        class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                        <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                        <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                    </router-link>
-                </SwiperSlide>
-            </Swiper>
-        </div>
-        <ItemComponent :items="items" v-if="items.length > 0" />
+        <!-- LANDING: grille catégories + best sellers -->
+        <template v-if="isLanding">
+            <!-- Grille catégories (grandes cartes) -->
+            <!-- [Y6 FIX] Filter out the "All" pseudo-category (id=0 or id='') instead of slice(1)
+                 so real categories are never hidden if API order changes. -->
+            <div v-if="categories.filter(c => c.id && c.id !== 0).length > 0" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+                <router-link v-for="(category, index) in categories.filter(c => c.id && c.id !== 0)" :key="category.id"
+                    to="#" @click.prevent="setCategory(category.id)"
+                    class="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary transition">
+                    <img class="h-10 w-10 object-contain drop-shadow-category" :src="category.thumb" alt="category">
+                    <h3 class="text-xs font-medium font-rubik leading-tight">{{ category.name }}</h3>
+                </router-link>
+            </div>
 
-        <div class="my-12" v-else-if="items.length === 0 && !props.search.name">
-            <div class="max-w-[350px] mx-auto">
-                <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+            <!-- Best Sellers -->
+            <div v-if="bestSellerItems.length > 0" class="mb-4">
+                <h3 class="text-sm font-semibold font-rubik text-heading mb-3">⭐ Best Sellers</h3>
+                <ItemComponent ref="posItemComponent" :items="bestSellerItems" />
             </div>
-            <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
-        </div>
-        <div class="my-12" v-else-if="items.length === 0 && props.search.name">
-            <div class="max-w-[250px] mx-auto">
-                <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+            <!-- Pas de best sellers trouvés: monter ItemComponent vide pour permettre l'édition depuis le panier -->
+            <ItemComponent v-else ref="posItemComponent" :items="[]" />
+        </template>
+
+        <!-- FILTRÉ: swiper catégories + liste complète -->
+        <template v-else>
+            <div class="swiper pos-menu-swiper mb-4" v-if="categories.length > 1">
+                <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="16" class="menu-slides">
+                    <!-- [W9 FIX] Stable key using category.id instead of object reference -->
+                    <SwiperSlide class="!w-fit" v-for="(category, index) in categories" :key="category.id || index"
+                        :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''">
+                        <router-link v-if="index === 0" to="#" @click.prevent="allCategory"
+                            class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
+                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
+                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
+                        </router-link>
+                        <router-link v-else to="#" @click.prevent="setCategory(category.id)"
+                            class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
+                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
+                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
+                        </router-link>
+                    </SwiperSlide>
+                </Swiper>
             </div>
-            <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
-        </div>
+
+            <ItemComponent ref="posItemComponent" :items="items" />
+
+            <div class="my-12" v-if="items.length === 0 && !props.search.name">
+                <div class="max-w-[350px] mx-auto">
+                    <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                </div>
+                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
+            </div>
+            <div class="my-12" v-else-if="items.length === 0 && props.search.name">
+                <div class="max-w-[250px] mx-auto">
+                    <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+                </div>
+                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
+            </div>
+        </template>
     </div>
 
 
@@ -70,10 +98,6 @@
                     <i class="fa-solid fa-circle-plus text-white"></i>
                 </div>
             </div>
-            <input
-                class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9] mb-3"
-                type="text" id="token" v-model="checkoutProps.form.token" :placeholder="$t('label.token_no')" />
-
             <div class="p-3 pt-2 rounded-lg border border-[#D9DBE9]">
                 <h4 class="text-sm font-medium mb-3">{{ $t('label.select_order_type') }}</h4>
 
@@ -120,41 +144,77 @@
                         </h3>
                     </label>
                 </div>
+                <!-- [P4] Inline delivery form — no separate modal, no map tab -->
                 <div ref="deliveryOrderDiv" id="orderdelivery" class="h-auto hidden transition">
-                    <div class="my-3 flex items-center gap-4">
-                        <div class="db-field flex-grow">
-                            <vue-select
-                                class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]"
-                                id="customerAddresses" :options="filteredCustomerAddresses"
-                                v-model="checkoutProps.form.address_id" @update:modelValue="updateSelectedAddress"
-                                value-by="id" label-by="labelAddress" :closeOnSelect="true" :searchable="true"
-                                :clearOnClose="true" :placeholder="$t('label.select_address')"
-                                :search-placeholder="$t('label.search_address')" />
+                    <div class="mt-3 flex flex-col gap-2">
+                        <!-- Row 1: Nom + Téléphone -->
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <input
+                                    type="text"
+                                    v-model="deliveryInline.name"
+                                    placeholder="Nom du client"
+                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                />
+                            </div>
+                            <div class="flex-1">
+                                <input
+                                    type="tel"
+                                    v-model="deliveryInline.phone"
+                                    placeholder="Téléphone"
+                                    class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                />
+                            </div>
                         </div>
-                        <div @click.prevent="openAddressModal"
-                            class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center cursor-pointer">
-                            <i class="fa-solid fa-circle-plus text-white"></i>
+                        <!-- Row 2: Adresse autocomplete -->
+                        <div class="relative">
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <i class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                    <input
+                                        ref="deliveryAddressInput"
+                                        type="text"
+                                        v-model="deliveryInline.addressText"
+                                        @input="onDeliveryAddressInput"
+                                        @keydown.down.prevent="deliveryNavDown"
+                                        @keydown.up.prevent="deliveryNavUp"
+                                        @keydown.enter.prevent="deliveryNavSelect"
+                                        @keydown.esc="deliveryInline.suggestions = []"
+                                        placeholder="Adresse de livraison..."
+                                        autocomplete="off"
+                                        class="w-full h-10 text-sm rounded-lg border pl-8 pr-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                        :class="deliveryInline.confirmed ? 'border-green-400 bg-green-50' : ''"
+                                    />
+                                    <i v-if="deliveryInline.confirmed" class="fa-solid fa-circle-check absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-sm"></i>
+                                    <i v-else-if="deliveryInline.loading" class="fa-solid fa-spinner fa-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                </div>
+                                <button
+                                    v-if="deliveryInline.confirmed"
+                                    @click.prevent="resetDeliveryInline"
+                                    type="button"
+                                    class="h-10 w-10 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition flex-shrink-0"
+                                    title="Effacer"
+                                >
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                </button>
+                            </div>
+                            <!-- Suggestions dropdown -->
+                            <ul
+                                v-if="deliveryInline.suggestions.length > 0"
+                                class="absolute z-50 w-full mt-1 bg-white border border-[#D9DBE9] rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                            >
+                                <li
+                                    v-for="(s, idx) in deliveryInline.suggestions"
+                                    :key="s.place_id"
+                                    @mousedown.prevent="selectDeliverySuggestion(s)"
+                                    class="flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-[#FFEDF4] text-sm text-heading transition"
+                                    :class="idx === deliveryInline.activeIdx ? 'bg-[#FFEDF4]' : ''"
+                                >
+                                    <i class="fa-solid fa-location-dot text-primary mt-0.5 flex-shrink-0 text-xs"></i>
+                                    <span class="leading-tight">{{ s.description }}</span>
+                                </li>
+                            </ul>
                         </div>
-                    </div>
-                    <div v-if="selectedAddress?.id" class="p-3 rounded-lg w-full border border-[#D9DBE9] relative">
-                        <div v-if="selectedAddress?.label"
-                            class="text-xs font-medium flex items-center gap-2 text-[#008BBA] mb-2">
-                            <i class="icon-home"></i>
-                            <span class="font-medium leading-6 capitalize">{{ selectedAddress?.label }}</span>
-                        </div>
-                        <div class="flex gap-2 text-xs font-normal items-center">
-                            <i class="icon-location1 mt-0.5 text-paragraph"></i>
-                            <span class="text-sm leading-6 text-heading">{{ selectedAddress?.address }}</span>
-                        </div>
-                        <button @click="editAddressModal(selectedAddress)" data-modal="#addaddress" type="button"
-                            class="absolute top-2 right-2 group text-xs capitalize font-medium flex items-center rounded-3xl py-1.5 px-3 gap-1 text-[#00749B] bg-[#D6F5FF] transition hover:text-white hover:bg-[#00749B]">
-                            <svg class="fill-[#00749B] transition group-hover:fill-white" width="10" height="10"
-                                viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M3.6882 9.01395L8.08139 3.33272C8.32015 3.02635 8.40504 2.67215 8.32546 2.31149C8.25648 1.98363 8.05486 1.67189 7.75243 1.43539L7.01493 0.849532C6.37293 0.33892 5.57706 0.392668 5.12076 0.978529L4.62732 1.61867C4.56365 1.69876 4.57957 1.81701 4.65916 1.88151C4.65916 1.88151 5.90602 2.88123 5.93255 2.90273C6.01744 2.98335 6.08111 3.09085 6.09703 3.21985C6.12356 3.47247 5.94846 3.70896 5.68848 3.74121C5.56645 3.75733 5.44972 3.71971 5.36483 3.64984L4.0543 2.60711C3.99063 2.55928 3.89512 2.56949 3.84207 2.63399L0.727569 6.66514C0.525949 6.91775 0.456974 7.24562 0.525949 7.56274L0.923883 9.28807C0.945106 9.37944 1.02469 9.44394 1.1202 9.44394L2.87111 9.42244C3.18945 9.41707 3.48658 9.27194 3.6882 9.01395ZM6.13984 8.47663H8.99489C9.27344 8.47663 9.5 8.70613 9.5 8.98831C9.5 9.27103 9.27344 9.5 8.99489 9.5H6.13984C5.86129 9.5 5.63473 9.27103 5.63473 8.98831C5.63473 8.70613 5.86129 8.47663 6.13984 8.47663Z" />
-                            </svg>
-                            <span>{{ $t('button.edit') }}</span>
-                        </button>
                     </div>
                 </div>
                 <!-- Table selector masqué -->
@@ -180,8 +240,7 @@
         <table class="w-full">
             <thead class="bg-[#FFEDF4]">
                 <tr class="h-9">
-                    <th class="capitalize text-xs font-normal font-rubik text-left pl-3 text-heading"></th>
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
+                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading pl-3">
                         {{ $t('label.item') }}
                     </th>
                     <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
@@ -195,15 +254,23 @@
             <tbody>
                 <tr v-for="(cart, index) in carts">
                     <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <button @click.prevent="deleteCartItem(index)">
-                            <i class="lab lab-trash-line-2 font-fill-danger"></i>
-                        </button>
-                    </td>
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
                         <div class="flex gap-2 items-start">
                             <img v-if="cart.image" :src="cart.image" class="w-10 h-10 rounded-md object-cover flex-shrink-0" />
                             <div>
-                                <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
+                                    <button type="button" @click.prevent="editCartLine(index)"
+                                        class="shrink-0 text-primary hover:opacity-80"
+                                        :title="$t('button.edit') || 'Modifier'">
+                                        <i class="fa-regular fa-pen-to-square text-xs"></i>
+                                    </button>
+                                </div>
+                                <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) — no instruction clutter -->
+                                <template v-if="cart.cart_display && cart.cart_display.trim()">
+                                    <p class="text-[11px] font-rubik text-[#5A5A78] leading-snug whitespace-pre-line mt-0.5">{{ cart.cart_display }}</p>
+                                </template>
+                                <!-- Fallback for non-wizard products: show raw variations/extras -->
+                                <template v-else>
                                 <p v-if="Object.keys(cart.item_variations.variations).length !== 0">
                             <span v-for="(variation, variationName, index) in cart.item_variations.names">
                                 <span class="capitalize text-xs leading-4 font-rubik text-heading">{{
@@ -216,8 +283,8 @@
                                 </span>
                             </span>
                         </p>
-                        <ul v-if="cart.item_extras.extras.length > 0 || cart.instruction !== ''">
-                            <li v-if="cart.item_extras.extras.length > 0" class="leading-4">
+                        <ul v-if="cart.item_extras.extras.length > 0">
+                            <li class="leading-4">
                                 <span class="capitalize text-xs leading-4 font-rubik text-heading">
                                     {{ $t('label.extras') }}:
                                 </span>
@@ -228,15 +295,32 @@
                                     </span>
                                 </p>
                             </li>
-                            <li v-if="cart.instruction !== ''" class="leading-4">
-                                <span class="capitalize text-xs leading-4 font-rubik text-heading">
-                                    {{ $t('label.instruction') }}:
-                                </span>
-                                <span class="capitalize text-xs leading-4 font-rubik">
-                                    {{ cart.instruction }}
-                                </span>
-                            </li>
                         </ul>
+                                </template>
+
+                        <!-- Menu bundled + extras menu directement sous chaque ligne -->
+                        <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="mt-1.5 space-y-0.5">
+                            <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi">
+                                <div class="text-[11px] font-semibold font-rubik text-[#1AB759] leading-snug flex items-center gap-1 flex-wrap">
+                                    <span>+ {{ bundled.name }}</span>
+                                    <span v-if="bundledLineUnitTotal(bundled) > 0" class="font-rubik text-[#1AB759]">
+                                        (+{{
+                                            currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
+                                                setting.site_digit_after_decimal_point,
+                                                setting.site_default_currency_symbol, setting.site_currency_position)
+                                        }})
+                                    </span>
+                                </div>
+                                <!-- Extras menu directement sous cette ligne (sauce frites, grande portion, cheddar) -->
+                                <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="ml-3 mt-0.5 space-y-0.5">
+                                    <li v-for="(extra, ei) in bundled.menu_extras" :key="'me-' + index + '-' + bi + '-' + ei"
+                                        class="text-[10px] font-rubik text-[#8E8EA9] leading-snug flex items-center gap-1">
+                                        <span class="text-[#1AB759] font-bold">↳</span>
+                                        <span>{{ extra }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                             </div>
                         </div>
                     </td>
@@ -404,10 +488,11 @@
                         </div>
                         <div class="col-12 sm:col-6">
                             <label for="password" class="db-field-title required">{{ $t("label.password") }}</label>
+                            <!-- [W11 FIX] type="password" to prevent shoulder-surfing on shared POS terminals -->
                             <input v-model="customerProps.form.password" v-bind:class="errors.password ? 'invalid' : ''"
-                                type="text" id="password"
+                                type="password" id="password"
                                 class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"
-                                autocomplete="off" />
+                                autocomplete="new-password" />
                             <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>
                         </div>
                         <input type="hidden" v-model="customerProps.form.password_confirmation" />
@@ -454,8 +539,68 @@
             }}
         </span>
     </button>
+
+    <!-- ═══ Borne Cash — notification flottante ═══ -->
+    <!-- Badge pulsant si des commandes kiosk cash sont en attente de paiement -->
+    <transition name="slide-up-pos">
+      <button
+        v-if="kioskCashOrders.length > 0"
+        class="kiosk-cash-fab"
+        @click="showKioskCashPanel = true"
+        title="Commandes borne à encaisser"
+      >
+        <span class="kiosk-cash-fab-icon">🖥️</span>
+        <span class="kiosk-cash-fab-badge">{{ kioskCashOrders.length }}</span>
+      </button>
+    </transition>
+
+    <!-- Panel commandes borne cash -->
+    <transition name="slide-panel">
+      <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
+        <div class="kiosk-cash-panel">
+          <div class="kiosk-cash-panel-header">
+            <h3>🖥️ Commandes borne — à encaisser</h3>
+            <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+          </div>
+          <div class="kiosk-cash-panel-body">
+            <div v-if="kioskCashLoading" class="kiosk-cash-loading">
+              <div class="kiosk-cash-spinner"></div>
+            </div>
+            <div v-else-if="kioskCashOrders.length === 0" class="kiosk-cash-empty">
+              Aucune commande borne en attente.
+            </div>
+            <div
+              v-for="order in kioskCashOrders"
+              :key="order.id"
+              class="kiosk-cash-order-card"
+            >
+              <div class="kiosk-cash-order-head">
+                <span class="kiosk-cash-order-num">N° {{ order.queue_number || order.order_serial_no }}</span>
+                <span class="kiosk-cash-order-total">{{ formatKioskPrice(order.order_amount) }}</span>
+              </div>
+              <div class="kiosk-cash-order-items">
+                <span v-for="(item, i) in (order.order_items || []).slice(0,3)" :key="i" class="kiosk-cash-item-pill">
+                  {{ item.quantity }}× {{ item.item_name || item.name }}
+                </span>
+                <span v-if="(order.order_items || []).length > 3" class="kiosk-cash-item-pill more">
+                  +{{ order.order_items.length - 3 }} autres
+                </span>
+              </div>
+              <div class="kiosk-cash-order-foot">
+                <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
+                <span class="kiosk-cash-order-status">💵 Espèces à encaisser</span>
+              </div>
+            </div>
+          </div>
+          <div class="kiosk-cash-panel-footer">
+            <button class="kiosk-cash-refresh-btn" @click="loadKioskCashOrders">↻ Actualiser</button>
+          </div>
+        </div>
+      </div>
+    </transition>
 </template>
 <script>
+import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent";
@@ -476,6 +621,12 @@ import focustrap from "bootstrap/js/src/util/focustrap";
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
+import {
+    rowUnitBundled,
+    mainOrderLineTotal,
+    bundledOrderQuantityAndTotal,
+    parsePositiveInt,
+} from "../../../helpers/posCartLineMath";
 
 export default {
     name: "PosComponent",
@@ -496,6 +647,11 @@ export default {
             company: {},
             order: {},
             discount: null,
+            // Kiosk cash orders notification
+            kioskCashOrders: [],
+            kioskCashLoading: false,
+            showKioskCashPanel: false,
+            _kioskPollTimer: null,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -590,6 +746,20 @@ export default {
             },
             clearAddresses: false,
 
+            // [P4] Inline delivery form — no separate modal, no map
+            deliveryInline: {
+                name: '',
+                phone: '',
+                addressText: '',
+                address: '',
+                latitude: '',
+                longitude: '',
+                suggestions: [],
+                confirmed: false,
+                loading: false,
+                activeIdx: -1,
+            },
+
         }
     },
     computed: {
@@ -604,6 +774,22 @@ export default {
         },
         items: function () {
             return this.$store.getters["item/lists"];
+        },
+        isLanding: function () {
+            return this.props.search.item_category_id === '' && !this.props.search.name;
+        },
+        bestSellerItems: function () {
+            // [V8 FIX] Use is_featured flag from API as the primary source for best sellers.
+            // Falls back to hard-coded name list only when no featured items are configured,
+            // so the admin can manage best sellers from the back-office without code changes.
+            const allItems = this.$store.getters["item/lists"];
+            const featured = allItems.filter(function (item) { return item.is_featured == 1 || item.is_featured === true; });
+            if (featured.length > 0) return featured;
+            const names = ['cayenne', 'terminator', 'double cheese', 'tacos l', 'tacos m'];
+            return allItems.filter(function (item) {
+                const n = (item.name || '').toLowerCase();
+                return names.some(function (bs) { return n.includes(bs); });
+            });
         },
         customers: function () {
             return this.$store.getters['user/lists'];
@@ -633,11 +819,17 @@ export default {
             return this.$store.getters["user/addressLists"];
         },
     },
+    beforeUnmount() {
+        if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+    },
     mounted() {
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
         this.itemList();
+        // Poll kiosk cash orders every 30s
+        this.loadKioskCashOrders();
+        this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), 30000);
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
@@ -661,13 +853,17 @@ export default {
                 role_id: 2,
             }).then((res) => {
                 if (res.data.data && res.data.data.length > 0) {
-                    // [BUG-M2 FIX] Find walking customer by email, then by name keyword, never fall through to a random real customer
+                    // [W4 FIX] Find walking customer by email first, then by name keyword.
+                    // Do NOT fall back to res.data.data[0] — that would assign a real customer's
+                    // account to an anonymous POS order, leaking order history.
                     var walkingCustomer = res.data.data.find(u => u.email === 'walkingcustomer@example.com')
-                        || res.data.data.find(u => u.name && u.name.toLowerCase().includes('walking'))
-                        || res.data.data[0];
-                    this.checkoutProps.form.customer_id = walkingCustomer.id;
-                    this.address.form.user_id = walkingCustomer.id;
-                    this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                        || res.data.data.find(u => u.name && u.name.toLowerCase().includes('walking'));
+                    if (walkingCustomer) {
+                        this.checkoutProps.form.customer_id = walkingCustomer.id;
+                        this.address.form.user_id = walkingCustomer.id;
+                        this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                    }
+                    // If no walking customer found, leave customer_id null — cashier must select manually
                 }
                 this.loading.isActive = false;
             }).catch((err) => {
@@ -732,6 +928,33 @@ export default {
 
     },
     methods: {
+        // ── Kiosk cash orders ──────────────────────────────────────────────
+        async loadKioskCashOrders() {
+            this.kioskCashLoading = true;
+            try {
+                // Fetch kiosk orders with cash payment (status ACCEPT=4 or PREPARING=7)
+                const res = await axios.get('admin/kds-order', {
+                    params: { order_type: 25, payment_method: 1, paginate: 20 },
+                }).catch(() => null);
+                const all = res?.data?.data || [];
+                // Client-side filter by status (ACCEPT=4, PREPARING=7)
+                this.kioskCashOrders = all.filter(o => [4, 7].includes(parseInt(o.order_status ?? o.status, 10)));
+            } catch (_) {
+                this.kioskCashOrders = [];
+            } finally {
+                this.kioskCashLoading = false;
+            }
+        },
+        formatKioskPrice(amount) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        },
+        formatKioskTime(iso) {
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return ''; }
+        },
+        // ──────────────────────────────────────────────────────────────────
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
         },
@@ -790,8 +1013,11 @@ export default {
             this.itemList();
         },
         cartQuantityUp: function (id, e) {
-            if (e.target.value > 0) {
-                this.$store.dispatch('posCart/quantity', { id: id, status: e.target.value }).then().catch();
+            // [V4 FIX] e.target.value is always a string from DOM input; parseInt before storing
+            // to avoid string quantity being stored in Vuex (e.g. "3" instead of 3).
+            var qty = parseInt(e.target.value, 10);
+            if (!isNaN(qty) && qty > 0) {
+                this.$store.dispatch('posCart/quantity', { id: id, status: qty }).then().catch();
             }
         },
         cartQuantityIncrement: function (id) {
@@ -826,77 +1052,124 @@ export default {
         resetCart: function () {
             this.$store.dispatch('posCart/resetCart').then(res => {
                 this.checkoutProps.form.token = "";
+                this.resetDeliveryInline();
+                alertService.success(this.$t('message.cart_reset') || 'Panier vidé.');
             }).catch();
         },
-        orderSubmit: function () {
+        /** Délègue au helper (même formule que store / checkout) */
+        bundledLineUnitTotal: function (bundled) {
+            return rowUnitBundled(bundled);
+        },
+        editCartLine: function (index) {
+            const line = this.carts[index];
+            if (!line || !this.$refs.posItemComponent) return;
+            this.$refs.posItemComponent.openEditFromCart(line, index);
+        },
+        /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
+        buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {
+            let item_variations = [];
+            // [V2 FIX] Join variations by attrId key using names_by_id map (set in changeVariation).
+            // Falls back to index-zip if names_by_id is absent (legacy cart lines or addon rows).
+            const variationEntries = Object.entries(row.item_variations.variations || {});
+            const namesByIdMap = row.item_variations.names_by_id || null;
+            const nameEntries = Object.entries(row.item_variations.names || {});
+            variationEntries.forEach(([attrId, varId], i) => {
+                let variation_name, name;
+                if (namesByIdMap && namesByIdMap[String(attrId)]) {
+                    variation_name = namesByIdMap[String(attrId)].attrName;
+                    name = namesByIdMap[String(attrId)].varName;
+                } else {
+                    const nameEntry = nameEntries[i];
+                    variation_name = nameEntry ? nameEntry[0] : undefined;
+                    name = nameEntry ? nameEntry[1] : undefined;
+                }
+                item_variations.push({
+                    id: varId,
+                    item_id: row.item_id,
+                    item_attribute_id: attrId,
+                    variation_name,
+                    name,
+                });
+            });
+            let item_extras = [];
+            const extraIds = row.item_extras.extras || [];
+            const extraNames = row.item_extras.names || [];
+            extraIds.forEach((extraId, i) => {
+                item_extras.push({
+                    id: extraId,
+                    item_id: row.item_id,
+                    name: extraNames[i] || undefined,
+                });
+            });
+            return {
+                item_id: row.item_id,
+                item_price: row.convert_price,
+                branch_id: this.checkoutProps.form.branch_id,
+                instruction: row.instruction || '',
+                quantity: quantity,
+                discount: row.discount || 0,
+                total_price: lineTotal,
+                item_variation_total: row.item_variation_total,
+                item_extra_total: row.item_extra_total,
+                item_variations: item_variations,
+                item_extras: item_extras,
+            };
+        },
+        orderSubmit: async function () {
+            // [P5-3] Guard: prevent opening payment modal with empty cart
+            if (!this.carts || this.carts.length === 0) {
+                return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
             this.loading.isActive = true;
             this.checkoutProps.form.subtotal = this.subtotal;
             this.checkoutProps.form.total = parseFloat(this.subtotal + this.checkoutProps.form.delivery_charge - this.checkoutProps.form.discount).toFixed(this.setting.site_digit_after_decimal_point);
             this.checkoutProps.form.items = [];
-            _.forEach(this.carts, (item, index) => {
-                let item_variations = [];
-                if (Object.keys(item.item_variations.variations).length > 0) {
-                    _.forEach(item.item_variations.variations, (value, index) => {
-                        item_variations.push({
-                            "id": value,
-                            "item_id": item.item_id,
-                            "item_attribute_id": index,
-                        });
-                    });
-                }
+            _.forEach(this.carts, (item) => {
+                const mainQty = parsePositiveInt(item.quantity, 1);
+                const mainLineTotal = mainOrderLineTotal(item, mainQty);
+                this.checkoutProps.form.items.push(this.buildPosCheckoutOrderRow(item, mainQty, mainLineTotal));
 
-                if (Object.keys(item.item_variations.names).length > 0) {
-                    let i = 0;
-                    _.forEach(item.item_variations.names, (value, index) => {
-                        item_variations[i].variation_name = index;
-                        item_variations[i].name = value;
-                        i++;
-                    });
-                }
-
-                let item_extras = [];
-                if (item.item_extras.extras.length) {
-                    _.forEach(item.item_extras.extras, (value) => {
-                        item_extras.push({
-                            id: value,
-                            item_id: item.item_id,
-                        });
-                    });
-                }
-
-                if (item.item_extras.names.length) {
-                    let i = 0;
-                    _.forEach(item.item_extras.names, (value) => {
-                        item_extras[i].name = value;
-                        i++;
-                    });
-                }
-
-                this.checkoutProps.form.items.push({
-                    item_id: item.item_id,
-                    item_price: item.convert_price,
-                    branch_id: this.checkoutProps.form.branch_id,
-                    instruction: item.instruction,
-                    quantity: item.quantity,
-                    discount: item.discount,
-                    total_price: item.total,
-                    item_variation_total: item.item_variation_total,
-                    item_extra_total: item.item_extra_total,
-                    item_variations: item_variations,
-                    item_extras: item_extras
+                const addons = Array.isArray(item.pos_line_addons) ? item.pos_line_addons : [];
+                _.forEach(addons, (b) => {
+                    // [C2 FIX] Skip bundled addons with no resolvable item_id to avoid backend 422
+                    if (b.item_id == null) {
+                        console.warn('[POS] Bundled addon skipped — item_id is null/undefined:', b);
+                        return;
+                    }
+                    const { orderQty, lineTotal } = bundledOrderQuantityAndTotal(b, mainQty);
+                    this.checkoutProps.form.items.push(this.buildPosCheckoutOrderRow(b, orderQty, lineTotal));
                 });
             });
             this.checkoutProps.form.items = JSON.stringify(this.checkoutProps.form.items);
-            this.loading.isActive = false;
+
+            // Auto-generate order token (like a fast-food: sequential number for on-site, customer name for delivery)
             if (!this.checkoutProps.form.token) {
-                return alertService.error(this.$t("message.token_field_required"));
+                const isDelivery = this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY;
+                if (isDelivery && this.deliveryInline.name && this.deliveryInline.name.trim()) {
+                    // Use customer first name for delivery orders (easy to call out)
+                    this.checkoutProps.form.token = this.deliveryInline.name.trim().split(' ')[0];
+                } else {
+                    // Sequential daily counter: N°1, N°2 … resets at midnight
+                    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+                    const seqKey = 'pos_order_seq_' + today;
+                    const seq = (parseInt(localStorage.getItem(seqKey) || '0') + 1);
+                    localStorage.setItem(seqKey, String(seq));
+                    this.checkoutProps.form.token = String(seq);
+                }
             }
             if (this.checkoutProps.form.order_type === orderTypeEnum.DINING_TABLE && !this.checkoutProps.form.dining_table_id) {
+                this.loading.isActive = false;
                 return alertService.error(this.$t("message.table_field_required"));
             }
             if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY && !this.checkoutProps.form.address_id) {
-                return alertService.error(this.$t("message.address_field_required"));
+                // [P4] Try to create customer+address from inline form before rejecting
+                const ok = await this.ensureDeliveryCustomerAndAddress();
+                if (!ok) {
+                    this.loading.isActive = false;
+                    return;
+                }
             }
+            this.loading.isActive = false;
             appService.modalShow('#orderpayment');
         },
         totalItems: function () {
@@ -1111,6 +1384,167 @@ export default {
                 this.checkoutProps.form.delivery_charge = 0;
             }
         },
+
+        // ─── [P4] Inline delivery autocomplete ───────────────────────────────────
+        _deliveryAcTimer: null,
+        _deliveryAcService: null,
+        _deliveryActiveIdx: -1,
+
+        onDeliveryAddressInput() {
+            this.deliveryInline.confirmed = false;
+            this.deliveryInline.latitude = '';
+            this.deliveryInline.longitude = '';
+            this.checkoutProps.form.address_id = null;
+            clearTimeout(this._deliveryAcTimer);
+            const q = this.deliveryInline.addressText.trim();
+            if (q.length < 3) { this.deliveryInline.suggestions = []; return; }
+            this._deliveryAcTimer = setTimeout(() => this._fetchDeliverySuggestions(q), 300);
+        },
+
+        _getDeliveryAcService() {
+            if (this._deliveryAcService) return this._deliveryAcService;
+            if (window.google && window.google.maps && window.google.maps.places) {
+                this._deliveryAcService = new window.google.maps.places.AutocompleteService();
+                return this._deliveryAcService;
+            }
+            return null;
+        },
+
+        _fetchDeliverySuggestions(query) {
+            const svc = this._getDeliveryAcService();
+            if (!svc) {
+                // Fallback: no Google Maps loaded — skip suggestions
+                this.deliveryInline.suggestions = [];
+                return;
+            }
+            this.deliveryInline.loading = true;
+            const req = { input: query, types: ['geocode'] };
+            // Bias toward branch location if known
+            if (this.location && this.location.lat && this.location.lng) {
+                req.location = new window.google.maps.LatLng(this.location.lat, this.location.lng);
+                req.radius = 50000;
+            }
+            svc.getPlacePredictions(req, (predictions, status) => {
+                this.deliveryInline.loading = false;
+                if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+                    this.deliveryInline.suggestions = predictions.slice(0, 6);
+                } else {
+                    this.deliveryInline.suggestions = [];
+                }
+            });
+        },
+
+        selectDeliverySuggestion(suggestion) {
+            this.deliveryInline.suggestions = [];
+            this.deliveryInline.addressText = suggestion.description;
+            this.deliveryInline.loading = true;
+            // Geocode to get lat/lng
+            if (window.google && window.google.maps) {
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ placeId: suggestion.place_id }, (results, status) => {
+                    this.deliveryInline.loading = false;
+                    if (status === 'OK' && results && results[0]) {
+                        const loc = results[0].geometry.location;
+                        this.deliveryInline.latitude = loc.lat();
+                        this.deliveryInline.longitude = loc.lng();
+                        this.deliveryInline.address = suggestion.description;
+                        this.deliveryInline.confirmed = true;
+                    } else {
+                        this.deliveryInline.address = suggestion.description;
+                        this.deliveryInline.confirmed = true;
+                    }
+                });
+            } else {
+                this.deliveryInline.address = suggestion.description;
+                this.deliveryInline.confirmed = true;
+                this.deliveryInline.loading = false;
+            }
+        },
+
+        deliveryNavDown() {
+            if (this.deliveryInline.suggestions.length === 0) return;
+            this.deliveryInline.activeIdx = Math.min(
+                (this.deliveryInline.activeIdx || -1) + 1,
+                this.deliveryInline.suggestions.length - 1
+            );
+        },
+        deliveryNavUp() {
+            this.deliveryInline.activeIdx = Math.max((this.deliveryInline.activeIdx || 0) - 1, 0);
+        },
+        deliveryNavSelect() {
+            const idx = this.deliveryInline.activeIdx || 0;
+            if (this.deliveryInline.suggestions[idx]) {
+                this.selectDeliverySuggestion(this.deliveryInline.suggestions[idx]);
+            }
+        },
+
+        resetDeliveryInline() {
+            this.deliveryInline.name = '';
+            this.deliveryInline.phone = '';
+            this.deliveryInline.addressText = '';
+            this.deliveryInline.address = '';
+            this.deliveryInline.latitude = '';
+            this.deliveryInline.longitude = '';
+            this.deliveryInline.suggestions = [];
+            this.deliveryInline.confirmed = false;
+            this.deliveryInline.loading = false;
+            this.deliveryInline.activeIdx = -1;
+            this.checkoutProps.form.address_id = null;
+        },
+
+        async ensureDeliveryCustomerAndAddress() {
+            // If address_id already set (legacy flow), nothing to do
+            if (this.checkoutProps.form.address_id) return true;
+            // Inline form must have at minimum an address
+            if (!this.deliveryInline.address) {
+                alertService.error('Veuillez saisir une adresse de livraison.');
+                return false;
+            }
+            try {
+                this.loading.isActive = true;
+                // 1. Create or reuse customer
+                let customerId = this.checkoutProps.form.customer_id;
+                if (this.deliveryInline.name) {
+                    const customerRes = await axios.post('/admin/users', {
+                        name: this.deliveryInline.name,
+                        phone: this.deliveryInline.phone || null,
+                        email: `delivery_${Date.now()}@pos.local`,
+                        password: 'delivery123',
+                        password_confirmation: 'delivery123',
+                        status: 1,
+                    });
+                    customerId = customerRes.data.data.id;
+                    this.checkoutProps.form.customer_id = customerId;
+                }
+                // 2. Save address under that customer
+                const addrRes = await axios.post(`/admin/users/address/${customerId}`, {
+                    address: this.deliveryInline.address,
+                    apartment: '',
+                    latitude: this.deliveryInline.latitude || '',
+                    longitude: this.deliveryInline.longitude || '',
+                    label: 'Livraison',
+                });
+                this.checkoutProps.form.address_id = addrRes.data.data.id;
+                // Update delivery charge if lat/lng available
+                if (this.deliveryInline.latitude && this.deliveryInline.longitude) {
+                    this.selectedAddress = {
+                        id: addrRes.data.data.id,
+                        address: this.deliveryInline.address,
+                        latitude: this.deliveryInline.latitude,
+                        longitude: this.deliveryInline.longitude,
+                    };
+                    this.deliveryChargeCalculation();
+                }
+                this.loading.isActive = false;
+                return true;
+            } catch (err) {
+                this.loading.isActive = false;
+                const msg = err.response?.data?.message || 'Erreur lors de la sauvegarde de l\'adresse.';
+                alertService.error(msg);
+                return false;
+            }
+        },
+        // ─────────────────────────────────────────────────────────────────────────
     },
     watch: {
         "customerProps.form.password"(newValue) {
@@ -1144,3 +1578,117 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+/* ── Kiosk cash FAB button ── */
+.kiosk-cash-fab {
+  position: fixed;
+  bottom: 88px;
+  right: 20px;
+  z-index: 1000;
+  background: #e8001c;
+  border: none;
+  border-radius: 50px;
+  padding: 0.6rem 1rem 0.6rem 0.85rem;
+  display: flex; align-items: center; gap: 0.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(232,0,28,0.4);
+  animation: kiosk-fab-pulse 2s ease-in-out infinite;
+}
+@keyframes kiosk-fab-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(232,0,28,0.4); }
+  50% { box-shadow: 0 4px 28px rgba(232,0,28,0.7); }
+}
+.kiosk-cash-fab-icon { font-size: 1.2rem; }
+.kiosk-cash-fab-badge {
+  background: #fff;
+  color: #e8001c;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  font-size: 0.78rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+/* ── Panel overlay ── */
+.kiosk-cash-panel-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: flex-end; justify-content: flex-end;
+}
+.kiosk-cash-panel {
+  background: #fff;
+  width: 380px; max-width: 100vw;
+  height: 100vh;
+  display: flex; flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+}
+.kiosk-cash-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 700; font-size: 0.95rem;
+}
+.kiosk-cash-panel-close {
+  background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; color: #888; padding: 0.25rem;
+}
+.kiosk-cash-panel-body {
+  flex: 1; overflow-y: auto;
+  padding: 1rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+.kiosk-cash-loading, .kiosk-cash-empty {
+  display: flex; align-items: center; justify-content: center;
+  padding: 2rem; color: #888; font-size: 0.9rem;
+}
+.kiosk-cash-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #e8001c;
+  border-radius: 50%;
+  animation: kiosk-spin 0.8s linear infinite;
+}
+@keyframes kiosk-spin { to { transform: rotate(360deg); } }
+.kiosk-cash-order-card {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-left: 4px solid #e8001c;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.kiosk-cash-order-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.kiosk-cash-order-num { font-weight: 800; font-size: 1rem; }
+.kiosk-cash-order-total { font-weight: 700; color: #e8001c; font-size: 1rem; }
+.kiosk-cash-order-items { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.kiosk-cash-item-pill {
+  background: #f0f0f0; border-radius: 20px;
+  padding: 0.18rem 0.55rem; font-size: 0.78rem; color: #444;
+}
+.kiosk-cash-item-pill.more { background: #ffe4e4; color: #e8001c; }
+.kiosk-cash-order-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.78rem; color: #999;
+}
+.kiosk-cash-order-status { color: #16a34a; font-weight: 600; }
+.kiosk-cash-panel-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+.kiosk-cash-refresh-btn {
+  width: 100%; padding: 0.6rem;
+  background: #f5f5f5; border: none; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #444;
+}
+.kiosk-cash-refresh-btn:hover { background: #ebebeb; }
+/* Transitions */
+.slide-up-pos-enter-active, .slide-up-pos-leave-active { transition: transform 0.3s ease, opacity 0.3s; }
+.slide-up-pos-enter-from, .slide-up-pos-leave-to { transform: translateY(20px); opacity: 0; }
+.slide-panel-enter-active, .slide-panel-leave-active { transition: opacity 0.25s; }
+.slide-panel-enter-from, .slide-panel-leave-to { opacity: 0; }
+.slide-panel-enter-active .kiosk-cash-panel,
+.slide-panel-leave-active .kiosk-cash-panel { transition: transform 0.3s ease; }
+.slide-panel-enter-from .kiosk-cash-panel,
+.slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
+</style>

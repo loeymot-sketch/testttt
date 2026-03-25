@@ -44,15 +44,49 @@ axios.interceptors.request.use(
     config => {
         config.headers['x-api-key'] = API_KEY;
         if (localStorage.getItem('vuex')) {
-            const vuex = JSON.parse(localStorage.getItem('vuex'));
-            const token = vuex.auth.authToken;
-            const language = vuex.globalState.lists.language_code;
-            config.headers['Authorization'] = token ? `Bearer ${token}` : '';
-            config.headers['x-localization'] = language;
+            try {
+                const vuex = JSON.parse(localStorage.getItem('vuex'));
+                // Kiosk machine token takes priority over regular user session
+                const kioskToken = vuex.kioskCart?.kioskToken;
+                const userToken   = vuex.auth?.authToken;
+                const token       = kioskToken || userToken;
+                const language    = vuex.globalState?.lists?.language_code;
+                config.headers['Authorization'] = token ? `Bearer ${token}` : '';
+                if (language) config.headers['x-localization'] = language;
+            } catch (_) { /* malformed localStorage — ignore */ }
         }
         return config;
     },
     error => Promise.reject(error),
+);
+/**
+ * Response interceptor: handle 401 globally.
+ * - Kiosk routes → clear kiosk token + redirect to kiosk.login
+ * - Other routes  → clear user auth + redirect to /login
+ * Uses a flag to prevent infinite redirect loops.
+ */
+let _401Handling = false;
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        const status = error?.response?.status;
+        if (status === 401 && !_401Handling) {
+            _401Handling = true;
+            setTimeout(() => { _401Handling = false; }, 3000);
+
+            const path = window.location.pathname || '';
+            if (path.startsWith('/kiosk')) {
+                // Clear kiosk token from Vuex store
+                store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+                router.push({ name: 'kiosk.login' }).catch(() => {});
+            } else {
+                // Clear regular auth session
+                store.dispatch('auth/logout').catch(() => {});
+                router.push({ name: 'auth.login' }).catch(() => {});
+            }
+        }
+        return Promise.reject(error);
+    },
 );
 /* End axios code */
 

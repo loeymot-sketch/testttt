@@ -25,6 +25,7 @@ class Item extends Model implements HasMedia
         'item_type',
         'price',
         'is_featured',
+        'is_upsell',
         'description',
         'caution',
         'status',

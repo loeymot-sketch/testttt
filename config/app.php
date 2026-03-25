@@ -61,6 +61,11 @@ return [
     // [SEC-FIX] API key for x-api-key header validation — use config() not env() in middleware
     'api_key' => env('MIX_API_KEY', ''),
 
+    // Exposé au Blade pour le SPA (évite env() dans les vues + aligne clé API sans rebuild npm)
+    'demo_mode' => filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN),
+
+    'google_map_key' => env('MIX_GOOGLE_MAP_KEY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

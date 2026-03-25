@@ -1578,6 +1578,8 @@
     margin-bottom: 14px;
     padding-bottom: 14px;
     border-bottom: 1px solid #EFF0F6;
+    /* Évite colonnes étirées à la hauteur de l’autre + réduit sensation de « trou » sous crudités */
+    align-items: start;
 }
 
 .pos-wizard.single-page .wizard-2col-block {
@@ -1643,8 +1645,12 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    max-height: none;
-    overflow-y: visible;
+    /* Limite la hauteur de ligne (viande | crudités) : la liste défile, moins d’espace blanc sous crudités */
+    max-height: min(360px, 48vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .pos-wizard.single-page .wizard-viande-row {
@@ -1684,11 +1690,34 @@
     max-height: 200px;
 }
 
-/* Crudités dans la colonne droite */
+/* Crudités : colonne droite — pas de débordement sur la grille viandes, boutons empilés propres */
+.pos-wizard.single-page .wizard-2col-block.crudites-section {
+    min-width: 0;
+    align-self: start;
+    position: relative;
+    z-index: 1;
+}
+
 .pos-wizard.single-page .wizard-2col-block .garniture-toggle {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.pos-wizard.single-page .wizard-2col-block.crudites-section .garniture-toggle-btn {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.25;
+    padding: 10px 12px;
 }
 
 /* ---- Formule compacte ---- */
@@ -1864,15 +1893,16 @@
 .pos-wizard.single-page .wizard-sticky-bar {
     position: sticky;
     bottom: 0;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    gap: 12px;
+    padding: 14px 20px;
     background: white;
     border-top: 2px solid #EFF0F6;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.07);
     z-index: 10;
-    margin-top: 8px;
 }
 
 .pos-wizard.single-page .sticky-total {
@@ -1891,6 +1921,28 @@
     font-weight: 700;
     color: #43C6AC;
     font-family: 'Rubik', sans-serif;
+}
+
+.pos-wizard.single-page .wizard-btn-cancel {
+    padding: 12px 20px;
+    background: #F7F7FC;
+    color: #6E7191;
+    border: 2px solid #D9DBE9;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Rubik', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pos-wizard.single-page .wizard-btn-cancel:hover {
+    background: #FFE8E8;
+    border-color: #E93C3C;
+    color: #E93C3C;
 }
 
 .pos-wizard.single-page .wizard-btn-cart {

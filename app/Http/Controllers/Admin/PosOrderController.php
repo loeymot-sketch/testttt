@@ -29,7 +29,8 @@ class PosOrderController extends AdminController
             'export',
             'changeStatus',
             'changePaymentStatus',
-            'selectDeliveryBoy'
+            'selectDeliveryBoy',
+            'reorderItems' // [P2-3 FIX] Explicit permission guard for reorder
         );
         $this->middleware(['permission:pos-orders|pos'])->only('show');
     }

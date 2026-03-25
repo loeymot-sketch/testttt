@@ -78,6 +78,11 @@ class GuestSignupController extends Controller
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+
+        return response()->json([
+            'status'  => false,
+            'message' => trans('all.message.code_is_invalid'),
+        ], 422);
     }
 
     private function register($array) : JsonResponse

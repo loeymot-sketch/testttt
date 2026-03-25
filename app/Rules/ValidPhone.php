@@ -25,10 +25,17 @@ class ValidPhone implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        $site_default_phone_digit_length = Settings::group('site')->get('site_default_phone_digit_length');
+        $digitsOnly = preg_replace('/\D+/', '', (string) $value);
+        $len        = strlen($digitsOnly);
 
-        if ((int)$site_default_phone_digit_length !== strlen($value)) {
-            $this->message = 'The :attribute number should be ' . $site_default_phone_digit_length . ' digits long.';
+        // Longueur cible (souvent 10 legacy BD) : accepter une plage pour FR / invités (+33, sans 0 initial, etc.)
+        $expected = (int) Settings::group('site')->get('site_default_phone_digit_length');
+        $minLen   = max(8, $expected > 0 ? $expected - 2 : 8);
+        $maxLen   = min(15, $expected > 0 ? $expected + 2 : 15);
+
+        if ($len < $minLen || $len > $maxLen) {
+            $this->message = 'The :attribute must be between ' . $minLen . ' and ' . $maxLen . ' digits (national number, without country code).';
+
             return false;
         }
 

@@ -44,23 +44,16 @@ class KioskMachineLoginController extends Controller
             ], 400);
         }
 
-        $loginResult = null;
-        DB::transaction(function () use ($kioskMachine, &$loginResult) {
-            // Recharger avec lock pour éviter la race condition
+        DB::transaction(function () use ($kioskMachine) {
             $lockedKiosk = KioskMachine::lockForUpdate()->find($kioskMachine->id);
-            if ($lockedKiosk->is_login === Ask::YES) {
-                $loginResult = 'already_logged_in';
-                return;
-            }
             $user = User::find($lockedKiosk->user_id);
+
+            // Revoke all existing kiosk tokens for this user to allow clean re-login
+            $user->tokens()->where('name', 'kiosk-token')->delete();
+
             $this->token = $user->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
             $lockedKiosk->update(['is_login' => Ask::YES]);
-            $loginResult = 'success';
         });
-
-        if ($loginResult === 'already_logged_in') {
-            return response()->json(['errors' => ['validation' => trans('all.message.already_logged_in')]], 400);
-        }
 
         return response()->json([
             'message' => trans('all.message.login_success'),

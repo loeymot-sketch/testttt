@@ -26,7 +26,8 @@ class VerifyPhoneRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'  => ['required', 'numeric'],
+            // Indicatif pays (ex. +33, 33) — jamais « numeric » seul, sinon +33 est rejeté.
+            'code'  => ['required', 'string', 'max:32'],
             'phone' => ['required', 'string', 'max:180', new ValidPhone()],
             'token' => ['required', 'max:180'],
         ];

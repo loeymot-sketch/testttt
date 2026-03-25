@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\SendOrderDeliveryBoyMail;
 use App\Events\SendOrderDeliveryBoyPush;
 use App\Events\SendOrderDeliveryBoySms;
+use App\Events\OrderStatusChanged;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
 use App\Events\SendOrderGotSms;
@@ -16,6 +17,7 @@ use App\Events\SendSmsCode;
 use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
+use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\SendOrderGotMailNotification;
 use App\Listeners\SendOrderGotPushNotification;
 use App\Listeners\SendOrderGotSmsNotification;
@@ -73,7 +75,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         SendOrderGotPush::class         => [
             SendOrderGotPushNotification::class
-        ]
+        ],
+        // [SPLASH LOYALTY] Auto-award points when order is delivered
+        OrderStatusChanged::class => [
+            AwardLoyaltyPointsOnDelivery::class,
+        ],
     ];
 
     /**

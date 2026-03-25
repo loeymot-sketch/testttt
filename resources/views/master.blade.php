@@ -66,11 +66,14 @@
         @endforeach
     @endif
 
+    {{-- Config runtime SPA : toujours alignée sur Laravel (config:cache OK). Le bundle Mix peut avoir des MIX_* obsolètes. --}}
     <script>
-        const APP_URL = "{{ env('MIX_HOST') }}";
-        const APP_KEY = "{{ env('MIX_API_KEY') }}";
-        const GOOGLE_TOKEN = "{{ env('MIX_GOOGLE_MAP_KEY') }}";
-        const APP_DEMO = "{{ env('MIX_DEMO') }}";
+        window.foodkingConfig = {
+            baseUrl: @json(rtrim((string) config('app.url'), '/')),
+            apiKey: @json((string) config('app.api_key')),
+            googleMapKey: @json((string) config('app.google_map_key')),
+            demo: @json((bool) config('app.demo_mode')),
+        };
     </script>
 
     <script src="{{ mix('js/app.js') }}"></script>

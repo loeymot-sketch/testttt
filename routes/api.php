@@ -787,7 +787,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
-        Route::post('/', [FrontendOrderController::class, 'store']);
+        // [SPLASH SECURITY] Rate limit: 10 orders/min max per user/kiosk — prevents runaway kiosk spam
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:10,1');
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
@@ -805,6 +806,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/popular-items', [FrontendItemController::class, 'mostPopularItems']);
         Route::get('/details/{item}', [FrontendItemController::class, 'itemDetails']);
         Route::get('/upsell/{item}', [FrontendItemController::class, 'upsell']);
+        // [SPLASH] Smart kiosk upsell — GET /frontend/item/kiosk-upsell?item_ids=1,2,3
+        Route::get('/kiosk-upsell', [FrontendItemController::class, 'kioskUpsell']);
     });
 
     Route::prefix('item-category')->name('item-category.')->group(function () {
@@ -863,6 +866,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check']);
         Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register']);
+        // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
+        Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
     Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);

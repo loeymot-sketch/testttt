@@ -49,6 +49,19 @@ export default {
       localSelections: { ...this.selections.garnitures }
     };
   },
+  watch: {
+    // Sync when parent initialises garniture defaults after this child mounts
+    // (Vue lifecycle: child mounted() runs before parent mounted())
+    'selections.garnitures': {
+      deep: true,
+      handler(newVal) {
+        // Only sync when localSelections is still empty (not yet interacted with)
+        if (Object.keys(this.localSelections).length === 0) {
+          this.localSelections = { ...newVal };
+        }
+      },
+    },
+  },
   computed: {
     selectedCount() {
       return Object.values(this.localSelections).filter(Boolean).length;

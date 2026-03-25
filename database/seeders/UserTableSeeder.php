@@ -68,6 +68,21 @@ class UserTableSeeder extends Seeder
         ]);
         $customer->assignRole(EnumRole::CUSTOMER);
 
+        // Caissier POS — toujours créé (branche 1 = « Le Cayenne (principal) » du BranchTableSeeder)
+        $posOperatorLc = User::create([
+            'name'              => 'Caissier Le Cayenne',
+            'email'             => 'pos@lecayenne.fr',
+            'phone'             => '0600000002',
+            'username'          => 'pos-lecayenne',
+            'email_verified_at' => now(),
+            'password'          => bcrypt('123456'),
+            'branch_id'         => 1,
+            'status'            => Status::ACTIVE,
+            'country_code'      => '+33',
+            'is_guest'          => Ask::NO
+        ]);
+        $posOperatorLc->assignRole(EnumRole::POS_OPERATOR);
+
         if ($envService->getValue('DEMO')) {
             Address::create([
                 'label'     => 'Domicile',

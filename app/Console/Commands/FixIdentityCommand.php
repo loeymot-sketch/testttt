@@ -84,6 +84,9 @@ class FixIdentityCommand extends Command
             $this->info('Identity fix applied successfully.');
         }
 
+        $this->newLine();
+        $this->comment('Si le login admin@lecayenne.fr échoue encore : php artisan foodking:ensure-admin');
+
         return 0;
     }
 }

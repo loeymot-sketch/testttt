@@ -15,11 +15,12 @@ class CDSOrderDetailsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                                  => $this->id,
-            'order_serial_no'                     => $this->order_serial_no,
-            'token'                               => $this->token,
-            'order_type'                          => $this->order_type,
-            'status'                              => $this->status,
+            'id'           => $this->id,
+            'order_serial_no' => $this->order_serial_no,
+            'token'        => $this->token,
+            'queue_number' => $this->queue_number,
+            'order_type'   => $this->order_type,
+            'status'       => $this->status,
         ];
     }
 }

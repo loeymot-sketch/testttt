@@ -8,16 +8,18 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Smartisan\Settings\Facades\Settings;
 
 class LoyaltyController extends Controller
 {
     /**
-     * Validation rules for loyalty code
+     * Validation rules for loyalty lookup (code OR phone number).
+     * Accepts alphanumeric codes (A1B2C3D4) and phone numbers (digits, +, spaces, dashes).
      */
     private function validateCode(Request $request): \Illuminate\Contracts\Validation\Validator
     {
         return Validator::make($request->all(), [
-            'code' => ['required', 'string', 'min:4', 'max:20', 'regex:/^[A-Z0-9]+$/i'],
+            'code' => ['required', 'string', 'min:4', 'max:25', 'regex:/^[A-Z0-9\+\s\-]+$/i'],
         ]);
     }
 
@@ -60,15 +62,31 @@ class LoyaltyController extends Controller
                 ], 422);
             }
 
-            $code = $request->input('code');
-            $user = User::where('loyalty_code', $code)->first();
+            $input = trim($request->input('code'));
 
-            if ($user && $user->status == 1) { // Assuming 1 means active
+            // Try by loyalty code first, then fall back to phone number
+            $user = User::where('loyalty_code', $input)->first();
+            if (!$user) {
+                // Normalize phone: keep digits, leading +
+                $phone = preg_replace('/[\s\-]/', '', $input);
+                $user = User::where('phone', $phone)->first();
+            }
+
+            if ($user && $user->status == 1) {
+                // Ensure the user has a loyalty code (may have registered by phone only)
+                if (!$user->loyalty_code) {
+                    $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8));
+                    $user->save();
+                }
+                // [SPLASH] Return points + computed discount value so kiosk can display it
+                $discountValue = $this->pointsToDiscount($user->loyalty_points);
                 return response()->json([
                     'status' => true,
                     'data' => [
-                        'name' => $user->name,
-                        'points' => $user->loyalty_points,
+                        'name'           => $user->name,
+                        'points'         => $user->loyalty_points,
+                        'discount_value' => $discountValue,
+                        'loyalty_code'   => $user->loyalty_code,
                     ]
                 ], 200);
             } else {
@@ -131,8 +149,18 @@ class LoyaltyController extends Controller
         }
     }
 
+    /**
+     * [SECURITY] Only staff/admin/manager roles can manually credit points.
+     * Kiosk machine users cannot call this — points are awarded automatically via listener.
+     */
     public function addPoints(Request $request)
     {
+        // Only staff roles can add points manually (not kiosk machines or customers)
+        $caller = $request->user();
+        if (!$caller || !$caller->hasAnyRole(['admin', 'manager', 'staff'])) {
+            return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
+        }
+
         try {
             $validator = $this->validatePoints($request);
             if ($validator->fails()) {
@@ -154,19 +182,31 @@ class LoyaltyController extends Controller
             $user->loyalty_points += $pointsToAdd;
             $user->save();
 
+            Log::info("Loyalty addPoints: {$pointsToAdd} pts added to user #{$user->id} by staff #{$caller->id}");
+
             return response()->json([
                 'status' => true,
                 'message' => "{$pointsToAdd} points ajoutés",
                 'data' => ['points' => $user->loyalty_points]
             ]);
         } catch (Exception $exception) {
-            Log::info($exception->getMessage());
+            Log::error($exception->getMessage());
             return response()->json(['status' => false, 'message' => 'Erreur serveur'], 500);
         }
     }
 
+    /**
+     * [SECURITY] Redeem can be called by:
+     * - A kiosk machine user (tokenCan 'kiosk:order')
+     * - A user redeeming their own code (code belongs to caller)
+     * - Staff/admin roles
+     */
     public function redeem(Request $request)
     {
+        $caller = $request->user();
+        $isKiosk = $caller && $caller->tokenCan('kiosk:order');
+        $isStaff = $caller && $caller->hasAnyRole(['admin', 'manager', 'staff', 'cashier']);
+
         try {
             $validator = $this->validatePoints($request);
             if ($validator->fails()) {
@@ -181,6 +221,11 @@ class LoyaltyController extends Controller
             if (!$user)
                 return response()->json(['status' => false, 'message' => 'Code introuvable'], 404);
 
+            // Non-kiosk, non-staff: only the owner of the code can redeem
+            if (!$isKiosk && !$isStaff && $caller && $caller->id !== $user->id) {
+                return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
+            }
+
             $pointsToRedeem = (int) $request->input('points', 0);
             if ($pointsToRedeem <= 0) {
                 return response()->json(['status' => false, 'message' => 'Points must be positive'], 400);
@@ -192,13 +237,15 @@ class LoyaltyController extends Controller
             $user->loyalty_points -= $pointsToRedeem;
             $user->save();
 
+            Log::info("Loyalty redeem: {$pointsToRedeem} pts redeemed from user #{$user->id}");
+
             return response()->json([
                 'status' => true,
                 'message' => "{$pointsToRedeem} points utilisés",
                 'data' => ['points' => $user->loyalty_points]
             ]);
         } catch (Exception $exception) {
-            Log::info($exception->getMessage());
+            Log::error($exception->getMessage());
             return response()->json(['status' => false, 'message' => 'Erreur serveur'], 500);
         }
     }
@@ -208,26 +255,61 @@ class LoyaltyController extends Controller
         return $this->check($request);
     }
 
+    /**
+     * [SPLASH] Return loyalty program configuration for the kiosk UI.
+     * Kiosk needs to know the conversion rate to display "Vous économisez X€".
+     */
+    public function config(Request $request)
+    {
+        try {
+            $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
+            $pointsFor1Euro = (int)   Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
+            $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+
+            return response()->json([
+                'status' => true,
+                'data'   => [
+                    'points_per_euro'             => $pointsPerEuro,
+                    'points_for_1_euro_discount'  => $pointsFor1Euro,
+                    'min_redeem_points'           => $minRedeem,
+                    'label'                       => "Dépensez {$pointsFor1Euro} points = 1€ de remise",
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function history(Request $request)
     {
-        // Validate pagination if provided
         $validator = Validator::make($request->all(), [
-            'page' => ['nullable', 'integer', 'min:1'],
+            'page'     => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Paramètres invalides',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
-        // Placeholder return (à faire si une table transactions est ajoutée)
-        return response()->json([
-            'status' => true,
-            'data' => []
-        ]);
+        return response()->json(['status' => true, 'data' => []]);
+    }
+
+    /**
+     * [SPLASH] Convert N loyalty points to a discount amount in €.
+     * Rate from settings: loyalty_points_for_1_euro_discount (default 100).
+     */
+    private function pointsToDiscount(int $points): float
+    {
+        try {
+            $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
+            if ($rate <= 0) return 0.0;
+            return round($points / $rate, 2);
+        } catch (\Throwable $e) {
+            return 0.0;
+        }
     }
 }

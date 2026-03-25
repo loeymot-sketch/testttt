@@ -37,43 +37,33 @@
                     </thead>
 
                     <tbody class="border-b border-dashed border-gray-400">
-                        <tr v-if="orderItems.length > 0" v-for="item in orderItems" :key="item">
-                            <td class="text-left font-normal align-top py-1">
-                                <p class="text-xs leading-5 text-heading">{{ item.quantity }}</p>
+                        <tr v-if="orderItems.length > 0" v-for="item in orderItems" :key="item.id || item.item_name">
+                            <td class="text-left font-normal align-top py-1.5">
+                                <p class="text-xs leading-5 font-semibold text-heading">{{ item.quantity }}</p>
                             </td>
-                            <td class="text-left font-normal align-top py-1">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-sm font-normal capitalize">{{ item.item_name }}</h4>
-                                    <p class="text-xs leading-5 text-heading">{{ item.total_without_tax_currency_price
-                                        }}
-                                    </p>
+                            <td class="text-left font-normal align-top py-1.5 pl-1">
+                                <!-- Nom produit + prix total -->
+                                <div class="flex items-start justify-between gap-1">
+                                    <h4 class="text-sm font-semibold capitalize leading-tight">{{ item.item_name }}</h4>
+                                    <p class="text-xs font-semibold text-heading whitespace-nowrap">{{ item.total_without_tax_currency_price }}</p>
                                 </div>
-                                <p v-if="Object.keys(item.item_variations).length !== 0"
-                                    class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}
-                                        <span v-if="index + 1 < Object.keys(item.item_variations).length">, </span>
-                                    </span>
-                                </p>
-                                <p v-if="item.item_extras.length > 0"
-                                    class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    {{ $t('label.extras') }}:
-                                    <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}
-                                        <span v-if="index + 1 < item.item_extras.length">, </span>
-                                    </span>
-                                </p>
-                                <p v-if="item.instruction"
-                                    class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    {{ $t('label.instruction') }}: {{ item.instruction }}
-                                </p>
 
-                                <div class="flex items-center justify-between" v-if="item.tax_rate > 0">
-                                    <p class="text-xs leading-5 font-normal text-heading">{{ item.tax_name }}
-                                        ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
-                                    <p class="text-xs leading-5 font-normal text-heading">
-                                        {{ item.tax_currency_amount }}
-                                    </p>
+                                <!-- Instruction structurée : chaque ligne = une info (Viandes, Sauce, Supplément, Formule…) -->
+                                <template v-if="item.instruction">
+                                    <div v-for="(line, li) in item.instruction.split('\n').filter(l => l.trim())" :key="li"
+                                        class="flex items-start justify-between gap-1 mt-0.5">
+                                        <!-- Ligne ↳ (option formule) -->
+                                        <p v-if="line.startsWith('\u21b3')"
+                                            class="text-[10px] leading-4 text-gray-500 pl-2">{{ line }}</p>
+                                        <!-- Ligne normale -->
+                                        <p v-else class="text-[10px] leading-4 text-heading">{{ line }}</p>
+                                    </div>
+                                </template>
+
+                                <!-- Taxe si applicable -->
+                                <div class="flex items-center justify-between mt-0.5" v-if="item.tax_rate > 0">
+                                    <p class="text-[10px] leading-4 text-gray-400">{{ item.tax_name }} ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
+                                    <p class="text-[10px] leading-4 text-gray-400">{{ item.tax_currency_amount }}</p>
                                 </div>
                             </td>
                         </tr>
@@ -139,9 +129,10 @@
                         </tbody>
                     </table>
                 </div>
-                <h4 v-if="order.token"
+                <h4 v-if="order.queue_number || order.token"
                     class="py-2 capitalize text-xl font-bold text-center border-b border-dashed border-gray-400">
-                    {{ $t('label.token') }} #{{ order.token }}
+                    <template v-if="order.queue_number">N°{{ order.queue_number }}</template>
+                    <template v-else>{{ $t('label.token') }} #{{ order.token }}</template>
                 </h4>
                 <div class="text-center pt-2 pb-4">
                     <p class="text-[11px] leading-[14px] capitalize text-heading">

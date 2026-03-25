@@ -51,20 +51,23 @@
       </div>
     </div>
     
-    <div v-if="showBoissonChoice" class="kiosk-boisson-section">
+    <div v-if="showBoissonChoice && boissonList.length > 0" class="kiosk-boisson-section">
       <h4 class="kiosk-subtitle">Choisissez votre boisson</h4>
       <div class="kiosk-boisson-grid">
         <div
           v-for="boisson in boissonList"
-          :key="boisson.id"
+          :key="boisson.id ?? boisson.name"
           class="kiosk-boisson-card"
-          :class="{ selected: localBoisson === boisson.id }"
-          @click="selectBoisson(boisson.id)"
+          :class="{ selected: localBoisson === (boisson.id ?? boisson.name) }"
+          @click="selectBoisson(boisson)"
         >
           <span class="kiosk-boisson-emoji">{{ boisson.emoji }}</span>
           <span class="kiosk-boisson-name">{{ boisson.name }}</span>
         </div>
       </div>
+    </div>
+    <div v-else-if="showBoissonChoice" class="kiosk-boisson-section">
+      <p class="kiosk-boisson-placeholder">Votre boisson sera choisie au comptoir 🥤</p>
     </div>
   </div>
 </template>
@@ -100,35 +103,41 @@ export default {
       return this.localChoice === 'full' || this.localChoice === 'boisson';
     },
     boissonList() {
-      // Chercher les boissons dans les addons
-      if (!this.item.addons) return this.getDefaultBoissonList();
-      
-      const boissons = this.item.addons.filter(a =>
-        (a.addon_item_name || '').toLowerCase().includes('boisson') ||
-        (a.addon_item_name || '').toLowerCase().includes('soda') ||
-        (a.addon_item_name || '').toLowerCase().includes('drink')
-      );
-      
-      if (boissons.length === 0) return this.getDefaultBoissonList();
-      
-      return boissons.map((b, index) => ({
-        id: b.addon_item_id || b.id || index,
+      // Filter addons for drink/boisson items — map to display objects with REAL addon_item_id
+      if (!this.item.addons?.length) return [];
+
+      // Addons may be drink options (specific boissons) — use name heuristic to distinguish
+      const isDrinkAddon = (name) => {
+        const n = (name || '').toLowerCase();
+        return n.includes('coca') || n.includes('fanta') || n.includes('sprite') ||
+               n.includes('eau') || n.includes('thé') || n.includes('jus') ||
+               n.includes('boisson') || n.includes('soda') || n.includes('drink') ||
+               n.includes('limonade') || n.includes('orangina');
+      };
+
+      const boissonAddons = this.item.addons.filter(a => isDrinkAddon(a.addon_item_name || a.name));
+
+      if (boissonAddons.length === 0) {
+        // No drink addons — return empty list (user just picks "boisson" label without choosing)
+        return [];
+      }
+
+      return boissonAddons.map(b => ({
+        // Use real addon_item_id if numeric, otherwise use addon name as key
+        id:   typeof b.addon_item_id === 'number' ? b.addon_item_id : (b.id || null),
         name: b.addon_item_name || b.name || 'Boisson',
-        emoji: this.getEmojiForBoisson(b.addon_item_name || b.name)
+        emoji: this.getEmojiForBoisson(b.addon_item_name || b.name),
+        // Keep full addon object for instruction building
+        _addon: b,
       }));
-    }
+    },
+
+    // Whether we have real DB ids for boissons (vs name-only fallback)
+    hasBoissonIds() {
+      return this.boissonList.some(b => typeof b.id === 'number');
+    },
   },
   methods: {
-    getDefaultBoissonList() {
-      return [
-        { id: 1, name: 'Coca-Cola', emoji: '🥤' },
-        { id: 2, name: 'Coca Zéro', emoji: '🥤' },
-        { id: 3, name: 'Fanta', emoji: '🥤' },
-        { id: 4, name: 'Sprite', emoji: '🥤' },
-        { id: 5, name: 'Eau', emoji: '💧' },
-        { id: 6, name: 'Thé', emoji: '🧊' }
-      ];
-    },
     getEmojiForBoisson(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('coca') || lower.includes('cola')) return '🥤';
@@ -149,9 +158,13 @@ export default {
       this.localChoice = choice;
       this.$emit('update', 'menuChoice', choice);
     },
-    selectBoisson(boissonId) {
-      this.localBoisson = boissonId;
-      this.$emit('update', 'boissonChoice', boissonId);
+    selectBoisson(boisson) {
+      // boisson is a full object { id, name, emoji, _addon }
+      this.localBoisson = boisson.id ?? boisson.name;
+      this.$emit('update', 'boissonChoice', this.localBoisson, {
+        boissonName: boisson.name,
+        boissonId:   typeof boisson.id === 'number' ? boisson.id : null,
+      });
     }
   }
 };

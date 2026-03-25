@@ -1,8 +1,9 @@
 import _ from "lodash";
-import activityEnum from "../../enums/modules/activityEnum";
+import { computePosCartLineDisplayTotal } from "../../helpers/posCartLineMath";
 
 // Clé localStorage pour le panier POS
-const POS_CART_KEY = 'pos_cart_v1';
+/** v2 : lignes menu regroupées (`pos_line_addons`) — invalide l’ancien panier « 2 lignes » en localStorage */
+const POS_CART_KEY = 'pos_cart_v2';
 const POS_CART_TTL_MS = 2 * 60 * 60 * 1000; // 2 heures
 
 function saveCartToStorage(state) {
@@ -40,6 +41,66 @@ function clearCartFromStorage() {
     try {
         localStorage.removeItem(POS_CART_KEY);
     } catch (e) {}
+}
+
+/** Addons regroupés sur la ligne principale (menu, frites, etc.) — signature pour fusion panier */
+function normPosLineAddons(addons) {
+    return Array.isArray(addons) ? addons : [];
+}
+
+function posLineAddonsSignature(addons) {
+    const arr = normPosLineAddons(addons);
+    if (arr.length === 0) return '_';
+    // [M3 FIX] Include menu_extras in signature so lines with different frites options don't merge
+    return arr
+        .map((a) => {
+            const extrasHash = Array.isArray(a.menu_extras) ? a.menu_extras.slice().sort().join(',') : '';
+            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}`;
+        })
+        .sort()
+        .join('|');
+}
+
+/** Normalise un addon bundlé en préservant menu_extras et menu_restore */
+function normPosLineAddon(a) {
+    return {
+        parent_addon_id: a.parent_addon_id,
+        name: a.name,
+        image: a.image || '',
+        item_id: a.item_id,
+        quantity: a.quantity,
+        discount: a.discount || 0,
+        currency_price: a.currency_price,
+        convert_price: a.convert_price,
+        item_variations: a.item_variations || { variations: {}, names: {} },
+        item_extras: a.item_extras || { extras: [], names: [] },
+        item_variation_total: a.item_variation_total || 0,
+        item_extra_total: a.item_extra_total || 0,
+        instruction: a.instruction || '',
+        total_price: a.total_price || 0,
+        menu_extras: Array.isArray(a.menu_extras) ? a.menu_extras : [],
+        menu_restore: a.menu_restore || null,
+    };
+}
+
+/** Forme canonique d'une ligne panier (évite duplication lists vs replaceCartLine) */
+function shapePosListItem(pay) {
+    return {
+        discount: pay.discount,
+        image: pay.image,
+        instruction: pay.instruction,
+        item_extra_total: pay.item_extra_total,
+        item_extras: pay.item_extras,
+        item_id: pay.item_id,
+        item_variation_total: pay.item_variation_total,
+        item_variations: pay.item_variations,
+        name: pay.name,
+        currency_price: pay.currency_price,
+        convert_price: pay.convert_price,
+        quantity: pay.quantity,
+        pos_line_addons: normPosLineAddons(pay.pos_line_addons).map(normPosLineAddon),
+        cart_display: pay.cart_display || '',
+    };
 }
 
 export const posCart = {
@@ -94,6 +155,10 @@ export const posCart = {
         acknowledgeRestore: function (context) {
             context.commit('acknowledgeRestore');
         },
+        replaceCartLine: function (context, payload) {
+            context.commit('replaceCartLine', payload);
+            context.commit('subtotal');
+        },
     },
     mutations: {
         lists: function (state, payload) {
@@ -109,32 +174,36 @@ export const posCart = {
                         _.forEach(state.lists, (list, listKey) => {
                             if (list.item_id === pay.item_id) {
 
-                                if (state.lists[listKey].item_variations.variations !== "undefined") {
-                                    if (Object.keys(state.lists[listKey].item_variations.variations).length !== 0) {
-                                        _.forEach(state.lists[listKey].item_variations.variations, (variationId, variationKey) => {
-                                            if (pay.item_variations.variations[variationKey] !== "undefined" && pay.item_variations.variations[variationKey] === variationId) {
-                                                variationAndExtraChecker.push(true);
-                                            } else {
-                                                variationAndExtraChecker.push(false);
-                                            }
-                                        });
-                                    }
-                                }
-
-                                if (pay.item_extras.extras.length !== 0 && state.lists[listKey].item_extras.extras.length !== 0) {
-                                    _.forEach(pay.item_extras.extras, (payExtra) => {
-                                        if (state.lists[listKey].item_extras.extras.includes(payExtra) && state.lists[listKey].item_extras.extras.length === pay.item_extras.extras.length) {
+                                // [N1+N8 FIX] Symmetric variation check: both stored and incoming must have
+                                // identical key sets and values. Using typeof guard instead of "undefined" string.
+                                const storedVars = (typeof state.lists[listKey].item_variations.variations === 'object' && state.lists[listKey].item_variations.variations !== null)
+                                    ? state.lists[listKey].item_variations.variations : {};
+                                const payVars = (typeof pay.item_variations.variations === 'object' && pay.item_variations.variations !== null)
+                                    ? pay.item_variations.variations : {};
+                                const storedVarKeys = Object.keys(storedVars);
+                                const payVarKeys = Object.keys(payVars);
+                                if (storedVarKeys.length !== payVarKeys.length) {
+                                    // Different number of attributes → definitely different configs
+                                    variationAndExtraChecker.push(false);
+                                } else if (storedVarKeys.length > 0) {
+                                    storedVarKeys.forEach((variationKey) => {
+                                        if (payVars[variationKey] === storedVars[variationKey]) {
                                             variationAndExtraChecker.push(true);
                                         } else {
                                             variationAndExtraChecker.push(false);
                                         }
                                     });
-                                } else {
-                                    if (pay.item_extras.extras.length === state.lists[listKey].item_extras.extras.length) {
-                                        variationAndExtraChecker.push(true);
-                                    } else {
-                                        variationAndExtraChecker.push(false);
-                                    }
+                                }
+
+                                // [N8 FIX] Extras: symmetric length + content check (no "undefined" string)
+                                const storedExtras = Array.isArray(state.lists[listKey].item_extras.extras) ? state.lists[listKey].item_extras.extras : [];
+                                const payExtras = Array.isArray(pay.item_extras.extras) ? pay.item_extras.extras : [];
+                                if (storedExtras.length !== payExtras.length) {
+                                    variationAndExtraChecker.push(false);
+                                } else if (payExtras.length > 0) {
+                                    // Every extra in pay must be present in stored (same count already verified)
+                                    const allMatch = payExtras.every(e => storedExtras.includes(e));
+                                    variationAndExtraChecker.push(allMatch ? true : false);
                                 }
 
                                 if (variationAndExtraChecker.includes(false)) {
@@ -142,7 +211,10 @@ export const posCart = {
                                 } else {
                                     // [V-1 FIX] Check instruction before merging — different instructions = separate items
                                     var sameInstruction = (state.lists[listKey].instruction || '') === (pay.instruction || '');
-                                    if (sameInstruction) {
+                                    var sameBundled =
+                                        posLineAddonsSignature(state.lists[listKey].pos_line_addons) ===
+                                        posLineAddonsSignature(pay.pos_line_addons);
+                                    if (sameInstruction && sameBundled) {
                                         newChecker.push(true);
                                         state.lists[listKey].quantity += pay.quantity;
                                     } else {
@@ -164,20 +236,7 @@ export const posCart = {
                     }
 
                     if (isNew) {
-                        state.lists.push({
-                            discount: pay.discount,
-                            image: pay.image,
-                            instruction: pay.instruction,
-                            item_extra_total: pay.item_extra_total,
-                            item_extras: pay.item_extras,
-                            item_id: pay.item_id,
-                            item_variation_total: pay.item_variation_total,
-                            item_variations: pay.item_variations,
-                            name: pay.name,
-                            currency_price: pay.currency_price,
-                            convert_price: pay.convert_price,
-                            quantity: pay.quantity
-                        });
+                        state.lists.push(shapePosListItem(pay));
                         isNew = false;
                     }
                 });
@@ -185,11 +244,19 @@ export const posCart = {
             saveCartToStorage(state);
             state.restoredFromStorage = false; // Reset flag après première modification
         },
+        replaceCartLine: function (state, payload) {
+            var index = payload.index;
+            var pay = payload.item;
+            if (index < 0 || index >= state.lists.length || !pay) return;
+            state.lists.splice(index, 1, shapePosListItem(pay));
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
         subtotal: function (state) {
             if (state.lists.length > 0) {
                 let subtotal = 0;
                 _.forEach(state.lists, (list, listKey) => {
-                    state.lists[listKey].total = ((list.convert_price + list.item_variation_total + list.item_extra_total) * list.quantity);
+                    state.lists[listKey].total = computePosCartLineDisplayTotal(state.lists[listKey]);
                     subtotal += state.lists[listKey].total;
                 });
                 state.subtotal = subtotal;

@@ -96,6 +96,7 @@ import { subscriber } from './modules/subscriber';
 import { kitchenDisplaySystemOrder } from './modules/kitchenDisplaySystemOrder';
 import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
+import { kioskCart } from './modules/kioskCart';
 
 
 
@@ -198,11 +199,31 @@ export default new createStore({
         subscriber,
         kitchenDisplaySystemOrder,
         orderStatusScreenOrder,
-        kioskMachine
+        kioskMachine,
+        kioskCart,
     },
     plugins: [
         createPersistedState({
-            paths: ["auth", "globalState", "frontendCart", "frontendSignup", "GuestSignup", "posCart", "tableCart"],
+            paths: [
+                "auth",
+                "globalState",
+                "frontendCart",
+                "frontendSignup",
+                "GuestSignup",
+                "posCart",
+                "tableCart",
+                // Kiosk: persist enough to survive a page refresh on the waiting screen
+                "kioskCart.branchId",
+                "kioskCart.orderRef",
+                "kioskCart.queueNumber",
+                "kioskCart.idempotencyKey",
+                "kioskCart.items",
+                "kioskCart.loyaltyDiscount",
+                "kioskCart.loyaltyCustomer",
+                // Kiosk machine auth — persist token so machine stays logged in across refreshes
+                "kioskCart.kioskToken",
+                "kioskCart.kioskMachineId",
+            ],
         }),
     ],
 });

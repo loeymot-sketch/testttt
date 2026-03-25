@@ -171,7 +171,16 @@ export default {
                     }, 1000);
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    this.errors = err.response.data.errors;
+                    const data = err.response?.data;
+                    if (data?.errors) {
+                        this.errors = data.errors;
+                    } else if (typeof data === 'string') {
+                        this.errors = { validation: data };
+                    } else {
+                        this.errors = {
+                            validation: data?.message || err.message || 'Network error — check API URL and x-api-key.',
+                        };
+                    }
                 })
             } catch (err) {
                 this.loading.isActive = false;
@@ -182,7 +191,7 @@ export default {
         },
         setupCredit: function (e) {
             if (e === 'admin') {
-                this.form.email = 'admin@example.com';
+                this.form.email = 'admin@lecayenne.fr';
                 this.form.password = '123456';
             } else if (e === 'customer') {
                 this.form.email = 'customer@example.com';

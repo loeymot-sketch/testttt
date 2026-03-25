@@ -29,7 +29,8 @@ class PosOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => ['nullable', 'string', 'numeric'],
+            // Numeric daily counter OR delivery call-out name (prénom) — must not be digits-only
+            'token' => ['nullable', 'string', 'max:191'],
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             'subtotal' => ['required', 'numeric'],
