@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\BroadcastableOrder;
 use App\Enums\OrderStatus;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class FrontendOrder extends Model
+class FrontendOrder extends Model implements BroadcastableOrder
 {
     use HasFactory;
 
@@ -41,6 +42,9 @@ class FrontendOrder extends Model
         'source',
         'idempotency_key',
         'loyalty_points_awarded',
+        // [AUDIT-P50-BUG3] source_surface must be fillable for analytics/tracing (kiosk, web, mobile)
+        'source_surface',
+        'loyalty_customer_code',
         'transaction_id',
         'card_type',
     ];

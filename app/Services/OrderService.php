@@ -373,31 +373,34 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
-                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting the query for Admin (branch_id=0)
-                // [BUG-H3 FIX] Cross-table check: include FrontendOrder (table/kiosk) to prevent duplicate queue numbers
+                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
+                // lockForUpdate() is weak when no rows exist yet (first order of the day).
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-                    ->where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxOrderNum = 0;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
-                    $maxOrderNum = (int) $m[1];
+                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
+                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+
+                try {
+                    $lock->block(5);
+
+                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
+                    // Both models use the same 'orders' table — use direct DB query with MAX() for true atomicity
+                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
+                        ->where('branch_id', $this->order->branch_id)
+                        ->whereDate('created_at', $today)
+                        ->whereNotNull('queue_number')
+                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
+                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
+                        ->value('max_num');
+
+                    $nextQueueNum = $maxQueueNum + 1;
+                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P2-F] 4 digits
+
+                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
+                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' — fallback queue number used.');
+                } finally {
+                    $lock->release();
                 }
-                $maxFrontendNum = 0;
-                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
-                    $maxFrontendNum = (int) $m[1];
-                }
-                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
-                $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
                 $calculatedDiscount = 0;
@@ -490,17 +493,52 @@ class OrderService
      */
     public function posOrderStore(PosOrderRequest $request): object
     {
+        // [AUDIT-P49-BUG6] Idempotency: if the cashier double-clicks submit (slow network),
+        // return the existing order instead of creating a duplicate.
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        if ($idempotencyKey) {
+            $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+            if ($existing) {
+                return $existing;
+            }
+        }
+
         try {
             $order = null;
-            DB::transaction(function () use ($request, &$order) {
+            DB::transaction(function () use ($request, &$order, $idempotencyKey) {
+                // [GAP-20-3] Unset client-supplied financial fields before Order::create().
+                // Mirrors the same pattern in myOrderStore() — server always recalculates
+                // total, subtotal, discount from DB prices below. This prevents any
+                // client-manipulated value from persisting even transiently in the DB row.
+                $validated = $request->validated();
+                unset($validated['total'], $validated['subtotal'], $validated['discount']);
+
+                // Attach idempotency key if provided by client
+                if ($idempotencyKey) {
+                    $validated['idempotency_key'] = substr($idempotencyKey, 0, 64);
+                }
+
+                // [AUDIT-P1-A] Validate branch_id ownership: cashier can only create orders for their own branch.
+                // Admin (branch_id=0) can create orders for any branch.
+                $authUser = \Illuminate\Support\Facades\Auth::user();
+                if ($authUser->branch_id !== 0 && (int) $request->branch_id !== (int) $authUser->branch_id) {
+                    throw new \InvalidArgumentException(
+                        'Vous ne pouvez pas créer une commande pour une autre branche.',
+                        403
+                    );
+                }
+
                 $this->order = Order::create(
-                    $request->validated() + [
+                    $validated + [
                         'user_id' => $request->customer_id,
                         'status' => OrderStatus::ACCEPT,
                         'token' => $request->token,
                         'payment_status' => PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time')
+                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'total'    => 0,
+                        'subtotal' => 0,
+                        'discount' => 0,
                     ]
                 );
 
@@ -635,31 +673,33 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
-                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting query for Admin (branch_id=0)
-                // [BUG-H3 FIX] Cross-table check: include FrontendOrder to prevent queue number collision with table/kiosk orders
+                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
+                // lockForUpdate() is weak when no rows exist yet (first order of the day).
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-                    ->where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxOrderNum = 0;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
-                    $maxOrderNum = (int) $m[1];
+                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
+                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+
+                try {
+                    $lock->block(5);
+
+                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
+                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
+                        ->where('branch_id', $this->order->branch_id)
+                        ->whereDate('created_at', $today)
+                        ->whereNotNull('queue_number')
+                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
+                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
+                        ->value('max_num');
+
+                    $nextQueueNum = $maxQueueNum + 1;
+                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P2-F] 4 digits
+
+                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
+                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' — fallback queue number used.');
+                } finally {
+                    $lock->release();
                 }
-                $maxFrontendNum = 0;
-                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
-                    $maxFrontendNum = (int) $m[1];
-                }
-                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
-                $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
                 $this->order->queue_number = $queueNumber;
@@ -695,8 +735,31 @@ class OrderService
 
                 $this->order->subtotal = $realSubtotal;
                 $this->order->discount = $calculatedDiscount;
-                // [BUG-H1 FIX] null-coalescing on delivery_charge + max(0) guard prevents negative totals
                 $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+
+                // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
+                // The client-side check in PosOrderRequest uses the client-sent total (may differ).
+                // This check uses the server-recalculated total to ensure correct cash handling.
+                if ($request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
+                    && $request->pos_received_amount !== null
+                    && (float) $request->pos_received_amount < $this->order->total) {
+                    throw new \InvalidArgumentException(
+                        'Le montant reçu (' . $request->pos_received_amount . '€) est inférieur au total réel (' . $this->order->total . '€).',
+                        422
+                    );
+                }
+
+                // Loyalty: store the customer code for AwardLoyaltyPointsOnDelivery listener.
+                // If cashier passes an explicit code, use it; otherwise derive from the selected customer.
+                if ($request->loyalty_customer_code) {
+                    $this->order->loyalty_customer_code = $request->loyalty_customer_code;
+                } else {
+                    $customer = \App\Models\User::find($request->customer_id);
+                    if ($customer && $customer->loyalty_code) {
+                        $this->order->loyalty_customer_code = $customer->loyalty_code;
+                    }
+                }
+                $this->order->source_surface = 'pos';
 
                 $currentTime = Carbon::now();
                 $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -770,6 +833,20 @@ class OrderService
             }
             
             return $this->order;
+        } catch (\Illuminate\Database\QueryException $qe) {
+            // [AUDIT-52-BUG6] Catch MySQL duplicate key (23000) on idempotency_key UNIQUE constraint.
+            // This handles the race condition where two simultaneous requests both pass the pre-check
+            // (both see NULL) but the second INSERT hits the DB-level unique constraint.
+            // Return the existing order gracefully instead of a 500 error.
+            if ($qe->getCode() === '23000' && $idempotencyKey) {
+                $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
+                    return $existing;
+                }
+            }
+            Log::info($qe->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($qe), 422);
         } catch (Exception $exception) {
             DB::rollBack();
             Log::info($exception->getMessage());
@@ -836,8 +913,9 @@ class OrderService
                         $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
                         // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
+                        // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
                         $calcVariationTotal = 0;
-                        if (!empty($item->item_variations)) {
+                        if (isset($item->item_variations) && !empty($item->item_variations)) {
                             foreach ($item->item_variations as $var) {
                                 $varId = $var->id ?? 0;
                                 $dbVar = $dbVariations[$varId] ?? null;
@@ -848,7 +926,7 @@ class OrderService
 
                         // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
                         $calcExtraTotal = 0;
-                        if (!empty($item->item_extras)) {
+                        if (isset($item->item_extras) && !empty($item->item_extras)) {
                             foreach ($item->item_extras as $ext) {
                                 $extId = $ext->id ?? 0;
                                 $dbExt = $dbExtras[$extId] ?? null;
@@ -867,18 +945,18 @@ class OrderService
                         $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
                         $itemsArray[$i] = [
                             'order_id'             => $this->order->id,
-                            'branch_id'            => $item->branch_id,
+                            'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
                             'item_id'              => $item->item_id,
                             'quantity'             => $item->quantity,
-                            'discount'             => (float) $item->discount,
+                            'discount'             => (float) ($item->discount ?? 0),
                             'tax_name'             => $taxName,
                             'tax_rate'             => $taxRate,
                             'tax_type'             => $taxType,
                             'tax_amount'           => $taxPrice,
                             'price'                => $itemPrice,
-                            'item_variations'      => json_encode($item->item_variations),
-                            'item_extras'          => json_encode($item->item_extras),
-                            'instruction'          => $item->instruction,
+                            'item_variations'      => json_encode($item->item_variations ?? []),
+                            'item_extras'          => json_encode($item->item_extras ?? []),
+                            'instruction'          => $item->instruction ?? null,
                             'item_variation_total' => $calcVariationTotal,
                             'item_extra_total'     => $calcExtraTotal,
                             'total_price'          => $verifiedTotalPrice,
@@ -894,32 +972,33 @@ class OrderService
                     OrderItem::insert($itemsArray);
                 }
 
-                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope corruption for Admin
-                // [BUG-H3 FIX] tableOrderStore stores in FrontendOrder but must read BOTH tables for unified queue sequence
+                // [AUDIT-P47-BUG2] Atomic queue number allocation using Cache lock.
+                // lockForUpdate() is weak when no rows exist yet (first order of the day).
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-                    ->where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->order->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxOrderNum = 0;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
-                    $maxOrderNum = (int) $m[1];
+                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
+                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+
+                try {
+                    $lock->block(5);
+
+                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
+                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
+                        ->where('branch_id', $this->order->branch_id)
+                        ->whereDate('created_at', $today)
+                        ->whereNotNull('queue_number')
+                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
+                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
+                        ->value('max_num');
+
+                    $nextQueueNum = $maxQueueNum + 1;
+                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P47-BUG2] 4 digits
+
+                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
+                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' (table) — fallback used.');
+                } finally {
+                    $lock->release();
                 }
-                $maxFrontendNum = 0;
-                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
-                    $maxFrontendNum = (int) $m[1];
-                }
-                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
-                $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
                 $this->order->queue_number = $queueNumber;
@@ -1108,16 +1187,35 @@ class OrderService
     public function deliveryBoyOrderChangeStatus(Order $order, OrderStatusRequest $request): Order
     {
         try {
-            $transaction = Transaction::where('order_id', $order->id)->first();
+            // [FIX-54-1] Ownership check — same as deliveryBoyOrderDetails()
+            if ($order->delivery_boy_id != Auth::user()->id) {
+                abort(403, 'Access denied: this order is not assigned to you.');
+            }
 
+            // [FIX-54-1] Enforce valid state machine transitions
+            if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
+                throw new Exception(trans('all.message.invalid_status_transition'), 422);
+            }
+
+            $transaction = Transaction::where('order_id', $order->id)->first();
             if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
                 $order->payment_status = PaymentStatus::PAID;
             }
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => OrderStatus::DELIVERED]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::DELIVERED]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => OrderStatus::DELIVERED]);
-            $order->status = OrderStatus::DELIVERED;
+
+            $oldStatus = $order->status;
+            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+            $order->status = $request->status;
             $order->save();
+
+            // [FIX-54-1] Broadcast so OSS, KDS, loyalty listener all fire
+            try {
+                \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+            } catch (\Exception $e) {
+                Log::warning('[DeliveryBoy] OrderStatusChanged broadcast failed: ' . $e->getMessage());
+            }
+
             return $order;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -1128,7 +1226,7 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function changeStatus(Order $order, $auth = false, OrderStatusRequest $request): Order|array
+    public function changeStatus(Order $order, OrderStatusRequest $request, bool $auth = false): Order|array
     {
         try {
             if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
@@ -1155,6 +1253,9 @@ class OrderService
                     SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     $order->status = $request->status;
                     $order->save();
+                } else {
+                    // [FIX-54-7] Return 403 instead of silent 200 for non-owner
+                    abort(403, 'Access denied: you do not own this order.');
                 }
             } else {
                 // [AUDIT-FIX P0-2] Branch isolation: non-Admin staff can only modify orders of their branch
@@ -1217,7 +1318,7 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function changePaymentStatus(Order $order, $auth = false, PaymentStatusRequest $request): Order|array
+    public function changePaymentStatus(Order $order, PaymentStatusRequest $request, bool $auth = false): Order|array
     {
         try {
             if ($auth) {
@@ -1261,7 +1362,7 @@ class OrderService
     }
 
 
-    public function tokenCreate(Order $order, $auth = false, TableOrderTokenRequest $request): Order|array
+    public function tokenCreate(Order $order, TableOrderTokenRequest $request, bool $auth = false): Order|array
     {
         try {
             if ($auth) {
@@ -1286,7 +1387,7 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function selectDeliveryBoy(Order $order, $auth = false, Request $request): Order|array
+    public function selectDeliveryBoy(Order $order, Request $request, bool $auth = false): Order|array
     {
         try {
             if ($auth) {

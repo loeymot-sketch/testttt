@@ -7,18 +7,26 @@
                 <thead class="db-table-head">
                     <tr class="db-table-head-tr">
                         <th class="db-table-head-th">{{ $t("label.name") }}</th>
+                        <th class="db-table-head-th">Groupe</th>
                         <th class="db-table-head-th">{{ $t("label.price") }}</th>
+                        <th class="db-table-head-th">Surfaces</th>
                         <th class="db-table-head-th">{{ $t("label.status") }}</th>
                         <th class="db-table-head-th">{{ $t("label.action") }}</th>
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="extras.length > 0">
                     <tr class="db-table-body-tr" v-for="extra in extras" :key="extra">
+                        <td class="db-table-body-td">{{ extra.name }}</td>
                         <td class="db-table-body-td">
-                            {{ extra.name }}
+                            <span v-if="extra.group_label" class="inline-block px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">
+                                {{ extra.group_label }}
+                            </span>
+                            <span v-else class="text-slate-300 text-xs">—</span>
                         </td>
+                        <td class="db-table-body-td">{{ extra.flat_price }}</td>
                         <td class="db-table-body-td">
-                            {{ extra.flat_price }}
+                            <span v-if="!extra.visible_on" class="text-xs text-green-600 font-medium">Toutes</span>
+                            <span v-else class="text-xs text-blue-600 font-medium">{{ extra.visible_on.join(', ') }}</span>
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(extra.status)">
@@ -78,7 +86,9 @@ export default {
                 form: {
                     name: "",
                     price: null,
-                    status: statusEnum.ACTIVE
+                    status: statusEnum.ACTIVE,
+                    visible_on: null,
+                    group_label: "",
                 },
                 search: {
                     paginate: 1,
@@ -115,13 +125,13 @@ export default {
         },
         edit: function (itemExtra) {
             appService.modalShow('#extraModal');
-            this.loading.isActive = true;
             this.$store.dispatch('itemExtra/edit', itemExtra.id);
-            this.loading.isActive = false;
             this.extraProps.form = {
-                name: itemExtra.name,
-                price: itemExtra.flat_price,
-                status: itemExtra.status,
+                name:        itemExtra.name,
+                price:       itemExtra.flat_price,
+                status:      itemExtra.status,
+                visible_on:  itemExtra.visible_on  ?? null,
+                group_label: itemExtra.group_label ?? "",
             };
         },
         destroy: function (id) {

@@ -41,6 +41,7 @@ class Item extends Model implements HasMedia
         'item_type'        => 'integer',
         'price'            => 'decimal:6',
         'is_featured'      => 'integer',
+        'is_upsell'        => 'integer',
         'description'      => 'string',
         'caution'          => 'string',
         'status'           => 'integer',

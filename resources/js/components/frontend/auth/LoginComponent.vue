@@ -190,21 +190,24 @@ export default {
             this.errors = {}
         },
         setupCredit: function (e) {
+            // [SEC-30-2] Demo credentials read from runtime config (injected server-side)
+            // Never hardcode real restaurant credentials in the JS bundle.
+            const demo = window.__FOODKING_RUNTIME__?.demo || {};
             if (e === 'admin') {
-                this.form.email = 'admin@lecayenne.fr';
-                this.form.password = '123456';
+                this.form.email = demo.adminEmail || 'admin@lecayenne.fr';
+                this.form.password = demo.adminPassword || '123456';
             } else if (e === 'customer') {
-                this.form.email = 'customer@example.com';
-                this.form.password = '123456';
+                this.form.email = demo.customerEmail || 'walkingcustomer@example.com';
+                this.form.password = demo.customerPassword || '123456';
             } else if (e === 'branchManager') {
-                this.form.email = 'branchmanager@example.com';
-                this.form.password = '123456';
+                this.form.email = demo.branchManagerEmail || 'branchmanager@example.com';
+                this.form.password = demo.branchManagerPassword || '123456';
             } else if (e === 'posOperator') {
-                this.form.email = 'posoperator@example.com';
-                this.form.password = '123456';
+                this.form.email = demo.posOperatorEmail || 'pos@lecayenne.fr';
+                this.form.password = demo.posOperatorPassword || '123456';
             } else if (e === 'chef') {
-                this.form.email = 'chef@example.com';
-                this.form.password = '123456';
+                this.form.email = demo.chefEmail || 'chef@example.com';
+                this.form.password = demo.chefPassword || '123456';
             }
         }
     }

@@ -7,7 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- FONTS -->
+    <!-- FONTS — Inter pour le kiosk (Splash DNA) + existing fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/fontawesome/fontawesome.css') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/lab/lab.css') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/typography/public/public.css') }}">
@@ -73,6 +76,24 @@
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
+            // Borne : voir config/kiosk.php (local = démarrage direct par défaut)
+            kioskAutoLogin: @json(config('kiosk.spa_payload')),
+        };
+        // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
+        // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
+        window.__FOODKING_RUNTIME__ = {
+            demo: @json((bool) config('app.demo_mode')) ? {
+                adminEmail:          @json((string) config('app.demo_credentials.admin_email')),
+                adminPassword:       @json((string) config('app.demo_credentials.admin_password')),
+                customerEmail:       @json((string) config('app.demo_credentials.customer_email')),
+                customerPassword:    @json((string) config('app.demo_credentials.customer_password')),
+                branchManagerEmail:  @json((string) config('app.demo_credentials.branch_manager_email')),
+                branchManagerPassword: @json((string) config('app.demo_credentials.branch_manager_password')),
+                posOperatorEmail:    @json((string) config('app.demo_credentials.pos_operator_email')),
+                posOperatorPassword: @json((string) config('app.demo_credentials.pos_operator_password')),
+                chefEmail:           @json((string) config('app.demo_credentials.chef_email')),
+                chefPassword:        @json((string) config('app.demo_credentials.chef_password')),
+            } : null,
         };
     </script>
 

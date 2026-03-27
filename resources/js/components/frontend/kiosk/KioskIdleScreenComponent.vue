@@ -1,5 +1,18 @@
 <template>
-  <div class="kiosk-idle" @click="startOrder" @touchstart.prevent="startOrder">
+  <div class="kiosk-idle" @touchstart.prevent="handleIdleTouch" @click="handleIdleClick">
+    <!-- [PHASE-37] Language selector — only if multiple languages enabled -->
+    <div v-if="enabledLanguages.length > 1" class="kiosk-lang-selector" @click.stop>
+      <button
+        v-for="lang in enabledLanguages"
+        :key="lang"
+        class="kiosk-lang-btn"
+        :class="{ active: currentLocale === lang }"
+        @click="changeLanguage(lang)"
+      >
+        {{ languageLabels[lang] }}
+      </button>
+    </div>
+
     <!-- Vidéo de fond -->
     <video
       v-if="videoSrc"
@@ -27,8 +40,8 @@
 
       <!-- Message principal -->
       <div class="kiosk-idle-headline">
-        <h2 class="kiosk-idle-title">Bienvenue !</h2>
-        <p class="kiosk-idle-subtitle">Commandez en quelques touches</p>
+        <h2 class="kiosk-idle-title">{{ welcomeTitle }}</h2>
+        <p class="kiosk-idle-subtitle">{{ welcomeSubtitle }}</p>
       </div>
 
       <!-- CTA animé Splash-style -->
@@ -42,7 +55,7 @@
         </div>
       </div>
 
-      <p class="kiosk-idle-tap-hint">Touchez l'écran pour commander</p>
+      <p class="kiosk-idle-tap-hint">{{ tapHint }}</p>
     </div>
 
     <!-- Bas de page -->
@@ -53,7 +66,8 @@
 </template>
 
 <script>
-// No vuex helpers needed — uses $store.dispatch directly
+// [PHASE-37] Multi-language support
+import { setLocale, getCurrentLocale } from '../../../i18n';
 
 export default {
   name: 'KioskIdleScreenComponent',
@@ -65,7 +79,21 @@ export default {
       videoSrc: null,
       restaurantLogo: null,
       restaurantName: 'Notre Restaurant',
+      welcomeTitle: 'Bienvenue !',
+      welcomeSubtitle: 'Commandez en quelques touches',
+      tapHint: 'Touchez l\'écran pour commander',
+      enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
+      languageLabels: {
+        fr: 'FR',
+        en: 'EN',
+        ar: 'العربية',
+      },
     };
+  },
+  computed: {
+    currentLocale() {
+      return getCurrentLocale();
+    },
   },
   watch: {
     videoSrc(src) {
@@ -87,9 +115,29 @@ export default {
     clearInterval(this.dotTimer);
   },
   methods: {
+    handleIdleTouch() {
+      // touchstart fires before the synthetic click — set a flag so handleIdleClick ignores it.
+      this._touchActivated = true;
+      this.startOrder();
+      // Clear flag after the synthetic click window (300ms is the classic delay on most browsers)
+      setTimeout(() => { this._touchActivated = false; }, 400);
+    },
+    handleIdleClick() {
+      // Ignore the synthetic click that follows a touchstart (already handled above)
+      if (this._touchActivated) return;
+      this.startOrder();
+    },
     startOrder() {
       this.$emit('start-order');
       this.$router.push({ name: 'kiosk.categories' });
+    },
+    changeLanguage(lang) {
+      // [PHASE-37] Change locale and reload page to apply RTL if needed
+      if (this.currentLocale !== lang) {
+        setLocale(lang);
+        // Force reload to apply RTL and re-render all translations
+        window.location.reload();
+      }
     },
     startDotAnimation() {
       this.dotTimer = setInterval(() => {
@@ -100,9 +148,23 @@ export default {
       try {
         const res = await this.$store.dispatch('frontendSetting/lists', { vuex: false });
         const data = res?.data?.data || res?.data || {};
+
+        // [KIOSK-12-1] Use logo_full_path (alias of theme_logo added in SettingResource)
         this.restaurantName = data.company_name || data.site_name || 'Notre Restaurant';
-        this.restaurantLogo = data.logo_full_path || data.logo || null;
+        this.restaurantLogo = data.logo_full_path || data.theme_logo || null;
+
+        // [KIOSK-12-1] Kiosk idle video — null means animated gradient fallback
         this.videoSrc = data.kiosk_idle_video || null;
+
+        // [KIOSK-12-2] Configurable idle screen texts with sensible French defaults
+        if (data.kiosk_welcome_title)    this.welcomeTitle    = data.kiosk_welcome_title;
+        if (data.kiosk_welcome_subtitle) this.welcomeSubtitle = data.kiosk_welcome_subtitle;
+        if (data.kiosk_tap_hint)         this.tapHint         = data.kiosk_tap_hint;
+
+        // [PHASE-37] Load enabled languages from settings
+        if (data.kiosk_languages_enabled) {
+          this.enabledLanguages = data.kiosk_languages_enabled;
+        }
       } catch (_) {}
     },
   },
@@ -132,20 +194,21 @@ export default {
   z-index: 0;
 }
 
-/* Fallback gradient animé */
+/* Fallback Splash DNA — fond très sombre + lueur radiale rouge subtile */
 .kiosk-idle-fallback {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #0F0F1A 0%, #1A0A2E 30%, #2D0A3E 60%, #0F0F1A 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
+  background: #0C0C14;
   z-index: 0;
 }
 
-@keyframes gradientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Lueur radiale centrale style Splash */
+.kiosk-idle-fallback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 65%, rgba(232,0,28,0.15), transparent 70%);
+  pointer-events: none;
 }
 
 /* Overlay */
@@ -301,5 +364,54 @@ export default {
 @keyframes fadeInUp {
   from { transform: translateY(20px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* [PHASE-37] Language selector */
+.kiosk-lang-selector {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kiosk-lang-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+  min-width: 44px;
+}
+
+.kiosk-lang-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.kiosk-lang-btn.active {
+  background: var(--kiosk-primary);
+  border-color: var(--kiosk-primary);
+  color: white;
+  box-shadow: 0 2px 12px rgba(232, 0, 28, 0.4);
+}
+
+/* RTL support for Arabic */
+[dir="rtl"] .kiosk-lang-selector {
+  right: auto;
+  left: 24px;
 }
 </style>

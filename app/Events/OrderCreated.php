@@ -2,12 +2,10 @@
 
 namespace App\Events;
 
-use App\Models\Order;
-use Illuminate\Broadcasting\Channel;
+use App\Contracts\BroadcastableOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -15,14 +13,19 @@ use Illuminate\Queue\SerializesModels;
  * [BORNE-WINDOWS / PHASE-E] Broadcast event fired when a new order is created.
  * Enables real-time KDS/POS/OSS updates via Soketi WebSockets.
  *
+ * Uses BroadcastableOrder interface so both Order (POS) and FrontendOrder (kiosk/web)
+ * can be passed without a PHP type mismatch.
+ *
+ * ShouldBroadcastNow bypasses the queue (QUEUE_CONNECTION=sync safe).
+ *
  * Channel: private-branch.{branch_id}
  * Requires: BROADCAST_DRIVER=pusher + Soketi running
  */
-class OrderCreated implements ShouldBroadcast
+class OrderCreated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Order $order)
+    public function __construct(public BroadcastableOrder $order)
     {
     }
 

@@ -78,6 +78,7 @@
 
 <script>
 import { mapActions } from 'vuex';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 
 const DESSERT_EMOJI = { dessert: '🍰', gâteau: '🎂', glace: '🍦', boisson: '🥤', café: '☕', jus: '🧃', eau: '💧', coca: '🥤', frite: '🍟' };
 
@@ -85,6 +86,12 @@ const AUTO_SKIP_SECONDS = 30;
 
 export default {
   name: 'KioskUpsellComponent',
+  mixins: [kioskPriceMixin],
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
   data() {
     return {
       suggestions: [],
@@ -180,6 +187,11 @@ export default {
           instruction: null,
         });
       });
+      const count = this.selectedItems.length;
+      this.showToast(
+        count === 1 ? `${this.selectedItems[0].name} ajouté !` : `${count} articles ajoutés !`,
+        'success'
+      );
       this.$router.push({ name: 'kiosk.payment' });
     },
 
@@ -195,9 +207,7 @@ export default {
       return '🍽️';
     },
 
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price || 0);
-    },
+    // formatPrice() provided by kioskPriceMixin
   },
 };
 </script>
@@ -206,7 +216,7 @@ export default {
 .kiosk-upsell {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-dark);
+  background: #fff;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -222,7 +232,7 @@ export default {
 .kiosk-spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid rgba(255,255,255,0.1);
+  border: 3px solid #e8e8e8;
   border-top-color: var(--kiosk-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -230,62 +240,62 @@ export default {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Header */
 .kiosk-upsell-header {
-  padding: 32px 32px 24px;
+  padding: 26px 28px 18px;
   text-align: center;
   flex-shrink: 0;
+  border-bottom: 1px solid #ececec;
 }
 
 .kiosk-upsell-title {
-  font-size: 36px;
-  font-weight: 900;
-  color: white;
-  margin: 0 0 8px;
-  letter-spacing: -0.5px;
+  font-size: 30px;
+  font-weight: 800;
+  color: #1f1f1f;
+  margin: 0 0 6px;
+  letter-spacing: -0.03em;
 }
 
 .kiosk-upsell-subtitle {
-  font-size: 18px;
-  color: rgba(255,255,255,0.5);
+  font-size: 16px;
+  color: #777;
   margin: 0;
 }
 
-/* Grille */
 .kiosk-upsell-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 0 32px;
+  padding: 18px 24px 8px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
   align-content: start;
   scrollbar-width: none;
 }
 
 .kiosk-upsell-grid::-webkit-scrollbar { display: none; }
 
-/* Card suggestion */
 .kiosk-upsell-card {
-  background: var(--kiosk-dark-2);
-  border-radius: 20px;
-  border: 2px solid rgba(255,255,255,0.07);
+  background: #fff;
+  border-radius: 18px;
+  border: 1.5px solid #ececec;
   overflow: hidden;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .kiosk-upsell-card.selected {
   border-color: var(--kiosk-primary);
-  box-shadow: 0 0 0 2px rgba(232,0,28,0.25);
+  box-shadow: 0 0 0 2px rgba(232,0,28,0.10);
 }
 
-.kiosk-upsell-card:active { transform: scale(0.96); }
+.kiosk-upsell-card:active { transform: scale(0.98); }
 
 .kiosk-upsell-img-wrap {
-  height: 120px;
+  height: 150px;
   overflow: hidden;
+  background: #f7f7f8;
 }
 
 .kiosk-upsell-img {
@@ -295,7 +305,7 @@ export default {
   transition: transform 0.3s ease;
 }
 
-.kiosk-upsell-card:active .kiosk-upsell-img { transform: scale(1.05); }
+.kiosk-upsell-card:active .kiosk-upsell-img { transform: scale(1.03); }
 
 .kiosk-upsell-img-fallback {
   width: 100%;
@@ -304,30 +314,33 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 56px;
-  background: rgba(255,255,255,0.04);
+  background: #f7f7f8;
 }
 
 .kiosk-upsell-info {
-  padding: 12px 14px;
+  padding: 12px 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .kiosk-upsell-item-name {
   font-size: 15px;
   font-weight: 700;
-  color: white;
+  color: #1f1f1f;
   margin: 0;
-  white-space: nowrap;
+  line-height: 1.25;
+  min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .kiosk-upsell-item-price {
   font-size: 16px;
   font-weight: 800;
-  color: rgba(255,255,255,0.9);
+  color: #d7263d;
 }
 
 .kiosk-upsell-check {
@@ -341,98 +354,104 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(232,0,28,0.5);
+  box-shadow: 0 2px 8px rgba(232,0,28,0.3);
+  outline: 2px solid rgba(255,255,255,0.92);
 }
 
 .kiosk-upsell-add {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.1);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #d7263d;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
   font-weight: 300;
-  color: rgba(255,255,255,0.5);
+  color: #fff;
+  outline: 2px solid rgba(255,255,255,0.92);
 }
 
 .kiosk-upsell-card.selected .kiosk-upsell-add { display: none; }
 
-/* Actions */
 .kiosk-upsell-actions {
-  padding: 20px 32px 32px;
+  padding: 18px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid #ececec;
 }
 
 .kiosk-btn-primary {
   width: 100%;
-  height: 72px;
+  height: 64px;
   background: var(--kiosk-primary);
   color: white;
   border: none;
-  border-radius: 20px;
-  font-size: 20px;
+  border-radius: 14px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  box-shadow: 0 6px 24px rgba(232,0,28,0.35);
+  padding: 0 24px;
+  box-shadow: 0 6px 20px rgba(232,0,28,0.2);
   transition: all 0.15s ease;
 }
 
 .kiosk-btn-primary:active { transform: scale(0.98); }
 
 .kiosk-btn-price {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
-  background: rgba(255,255,255,0.2);
-  padding: 6px 16px;
-  border-radius: 12px;
+  background: rgba(255,255,255,0.18);
+  padding: 6px 14px;
+  border-radius: 10px;
 }
 
 .kiosk-upsell-skip {
   width: 100%;
-  height: 56px;
-  background: transparent;
-  color: rgba(255,255,255,0.5);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  font-size: 16px;
-  font-weight: 500;
+  height: 52px;
+  background: #fff;
+  color: #666;
+  border: 1.5px solid #e4e4e4;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.kiosk-upsell-skip:active { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
+.kiosk-upsell-skip:active { background: #f7f7f8; color: #444; }
+
 .kiosk-upsell-skip-timer {
   font-size: 0.8em;
-  color: rgba(255,255,255,0.35);
+  color: #999;
   margin-left: 0.4rem;
 }
 
-/* Auto-skip countdown bar */
 .kiosk-upsell-autoskip-bar {
-  width: 100%; height: 3px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 2px; overflow: hidden;
+  width: 100%;
+  height: 3px;
+  background: #ececec;
+  border-radius: 2px;
+  overflow: hidden;
   margin-top: 0.5rem;
 }
+
 .kiosk-upsell-autoskip-fill {
-  height: 100%; background: rgba(255,255,255,0.3);
+  height: 100%;
+  background: rgba(232,0,28,0.4);
   border-radius: 2px;
   transition: width 0.1s linear;
 }
 
-/* Animation pop */
 .pop-enter-active { animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1); }
 .pop-leave-active { animation: popIn 0.2s ease reverse; }
 

@@ -68,10 +68,14 @@ export const frontendItem = {
                 });
             });
         },
-        details: function (context,payload) {
+        details: function (context, payload) {
             return new Promise((resolve, reject) => {
-                let url = `frontend/item/details/${payload}`;
-                axios.get(url,payload).then((res) => {
+                // Accept either a plain ID (legacy) or { id, surface } object
+                const id = (typeof payload === 'object' && payload !== null) ? payload.id : payload;
+                const surface = (typeof payload === 'object' && payload !== null) ? payload.surface : null;
+                let url = `frontend/item/details/${id}`;
+                const params = surface ? { surface } : {};
+                axios.get(url, { params }).then((res) => {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

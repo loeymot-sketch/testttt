@@ -11,6 +11,8 @@
       >
         <span class="kiosk-pain-emoji">{{ pain.emoji }}</span>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
+        <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
+        <span v-else class="kiosk-pain-action">+</span>
       </div>
     </div>
     <div v-if="!localSelection" class="kiosk-validation-hint">
@@ -89,66 +91,112 @@ export default {
 
 <style scoped>
 .kiosk-step-pain {
-  padding: 16px;
+  padding: 6px 18px 24px;
+  background: #fff;
+  min-height: 100%;
 }
 
 .kiosk-step-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 32px;
-  color: #1a1a2e;
+  margin: 0 0 18px;
+  color: #333;
 }
 
 .kiosk-pain-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  max-width: 600px;
+  gap: 20px 18px;
+  max-width: 620px;
   margin: 0 auto;
 }
 
 .kiosk-option-card {
-  min-height: 140px;
+  min-height: 206px;
   border-radius: 20px;
-  border: 3px solid #EFF0F6;
-  background: white;
+  border: 1px solid #efefef;
+  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 14px 12px 20px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
+  position: relative;
 }
 
-.kiosk-option-card:active {
-  transform: scale(0.98);
-}
+.kiosk-option-card::after { display: none; }
+
+.kiosk-option-card:active { transform: scale(0.96); }
 
 .kiosk-option-card.selected {
-  border-color: #E93C3C;
-  background: #FFF0F0;
-  box-shadow: 0 4px 20px rgba(233, 60, 60, 0.15);
+  border-color: rgba(232,0,28,0.18);
+  background: rgba(232,0,28,0.02);
+  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
 }
 
 .kiosk-pain-emoji {
-  font-size: 48px;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background: #f7f7f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
   margin-bottom: 12px;
+  transition: transform 0.2s;
 }
 
+.kiosk-option-card.selected .kiosk-pain-emoji { transform: scale(1.1); }
+
 .kiosk-pain-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #444;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.kiosk-option-card.selected .kiosk-pain-name { color: #E8001C; }
+
+.kiosk-pain-action {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  width: 28px;
+  height: 28px;
+  background: #d7263d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 20px;
-  font-weight: 600;
-  color: #1a1a2e;
+  color: white;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(215,38,61,0.2);
+  outline: 2px solid rgba(255,255,255,0.85);
+}
+
+.kiosk-pain-action.active {
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .kiosk-validation-hint {
   text-align: center;
-  margin-top: 32px;
-  font-size: 18px;
-  color: #E93C3C;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #E8001C;
   font-weight: 500;
+  padding: 10px 20px;
+  background: rgba(232,0,28,0.06);
+  border-radius: 10px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

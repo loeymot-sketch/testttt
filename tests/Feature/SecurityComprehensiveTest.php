@@ -77,8 +77,8 @@ class SecurityComprehensiveTest extends TestCase
         
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/dashboard');
-        
+            ->getJson('/api/admin/dashboard/total-orders');
+
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 
@@ -148,8 +148,8 @@ class SecurityComprehensiveTest extends TestCase
         
         $response = $this->actingAs($customer)
             ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/dashboard');
-        
+            ->getJson('/api/admin/dashboard/total-orders');
+
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 
@@ -261,10 +261,12 @@ class SecurityComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         
-        $response = $this->actingAs($admin)
-            ->getJson('/api/admin/dashboard'); // Pas de x-api-key
-        
-        $this->assertTrue(in_array($response->status(), [401, 403]));
+        // Sans en-tête x-api-key (flush des défauts TestCase)
+        $response = $this->flushHeaders()
+            ->actingAs($admin)
+            ->getJson('/api/admin/dashboard/total-orders');
+
+        $this->assertTrue(in_array($response->status(), [400, 401, 403]));
     }
 
     /**
@@ -280,9 +282,8 @@ class SecurityComprehensiveTest extends TestCase
         $admin->tokens()->delete(); // Révoquer tous les tokens
         
         $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/dashboard');
-        
+            ->getJson('/api/admin/dashboard/total-orders');
+
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 }

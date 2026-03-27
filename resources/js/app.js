@@ -8,7 +8,7 @@ import DefaultComponent from "./components/DefaultComponent";
 import router from './router';
 import store from './store';
 import axios from 'axios';
-import i18n from "./i18n";
+import i18n, { getCurrentLocale } from "./i18n";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
 import VueSimpleAlert from "vue3-simple-alert";
@@ -43,6 +43,11 @@ axios.defaults.baseURL = API_URL + '/api';
 axios.interceptors.request.use(
     config => {
         config.headers['x-api-key'] = API_KEY;
+
+        // [PHASE-37] Add Accept-Language header for backend localization
+        const currentLocale = getCurrentLocale();
+        config.headers['Accept-Language'] = currentLocale;
+
         if (localStorage.getItem('vuex')) {
             try {
                 const vuex = JSON.parse(localStorage.getItem('vuex'));
@@ -52,7 +57,9 @@ axios.interceptors.request.use(
                 const token       = kioskToken || userToken;
                 const language    = vuex.globalState?.lists?.language_code;
                 config.headers['Authorization'] = token ? `Bearer ${token}` : '';
-                if (language) config.headers['x-localization'] = language;
+                // [PHASE-37] Keep x-localization for backward compatibility, prefer currentLocale
+                const lang = currentLocale || language;
+                if (lang) config.headers['x-localization'] = lang;
             } catch (_) { /* malformed localStorage — ignore */ }
         }
         return config;

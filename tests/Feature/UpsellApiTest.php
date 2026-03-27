@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
+use App\Enums\Ask;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 
@@ -29,7 +30,7 @@ class UpsellApiTest extends TestCase
             'status' => 5
         ]);
 
-        // Items pour upsell même catégorie
+        // Candidats upsell (legacy endpoint filtre is_upsell = YES — GAP-27-2)
         for ($i = 0; $i < 2; $i++) {
             Item::forceCreate([
                 'name' => 'Other Burger ' . $i,
@@ -37,25 +38,22 @@ class UpsellApiTest extends TestCase
                 'item_category_id' => $category1->id,
                 'tax_id' => $tax->id,
                 'price' => 8,
-                'status' => 5
+                'status' => 5,
+                'is_upsell' => Ask::YES,
             ]);
         }
 
-        // Complément
         Item::forceCreate([
             'name' => 'Coke',
             'slug' => 'coke',
             'item_category_id' => $category2->id,
             'tax_id' => $tax->id,
             'price' => 3,
-            'status' => 5
+            'status' => 5,
+            'is_upsell' => Ask::YES,
         ]);
 
         $response = $this->getJson('/api/frontend/item/upsell/' . $targetItem->id);
-
-        if ($response->status() !== 200) {
-            dump('Upsell Failure Response:', $response->json());
-        }
 
         $response->assertStatus(200);
         $this->assertCount(3, $response->json('data')); // Doit retourner 3 suggestions mixées

@@ -47,4 +47,14 @@ return [
         'hashKey'     => "",
     ],
 
+    /**
+     * [PHASE-36-P1] Firebase Cloud Messaging (FCM) configuration.
+     * Get your Server Key from Firebase Console → Project Settings → Cloud Messaging
+     */
+    'fcm' => [
+        'server_key' => env('FCM_SERVER_KEY', ''),
+        'sender_id'  => env('FCM_SENDER_ID', ''),
+        'topic_prefix' => env('FCM_TOPIC_PREFIX', 'foodking'),
+    ],
+
 ];

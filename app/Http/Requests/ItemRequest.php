@@ -37,6 +37,8 @@ class ItemRequest extends FormRequest
             'item_type'        => ['required', 'numeric', 'not_in:0'],
             'price'            => ['required', new IniAmount()],
             'is_featured'      => ['required', 'numeric', 'not_in:0'],
+            // [GAP-27-1] is_upsell — optional flag for Splash-style upsell suggestions on kiosk
+            'is_upsell'        => ['nullable', 'numeric'],
             'description'      => ['nullable', 'string', 'max:5000'],
             'caution'          => ['nullable', 'string', 'max:5000'],
             'status'           => ['required', 'numeric', 'max:24'],

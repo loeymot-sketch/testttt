@@ -280,6 +280,8 @@ export default {
                     description: "",
                     caution: "",
                     is_featured: askEnum.YES,
+                    // [GAP-27-1] Default is_upsell = NO (5) for new items
+                    is_upsell: askEnum.NO,
                     item_type: itemTypeEnum.VEG,
                     item_category_id: null,
                     tax_id: null,
@@ -391,6 +393,8 @@ export default {
                 description: item.description,
                 caution: item.caution,
                 is_featured: item.is_featured,
+                // [GAP-27-1] Load is_upsell from API so admin can toggle it (askEnum.NO=10 default)
+                is_upsell: item.is_upsell ?? askEnum.NO,
                 item_type: item.item_type,
                 tax_id: item.tax_id,
                 item_category_id: item.item_category_id,

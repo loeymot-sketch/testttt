@@ -1,7 +1,5 @@
 <template>
   <div class="kiosk-order-summary">
-    <h3 class="kiosk-summary-title">Récapitulatif de votre commande</h3>
-    
     <!-- Item principal -->
     <div class="kiosk-summary-item main">
       <div class="kiosk-summary-img">
@@ -39,7 +37,7 @@
         <div v-for="(sauceId, index) in selections.sauceOrder" :key="sauceId" class="kiosk-summary-row">
           <span>{{ getSauceName(sauceId) }}</span>
           <span v-if="index === 0" class="kiosk-free">Gratuite</span>
-          <span v-else class="kiosk-price">+0.50€</span>
+          <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
         </div>
       </div>
       
@@ -95,8 +93,11 @@
 </template>
 
 <script>
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+
 export default {
   name: 'KioskOrderSummary',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -136,30 +137,38 @@ export default {
         default: return 0;
       }
     },
+    extraSaucePrice() {
+      // Read sauce extra price from DB variations if available, fallback to 0.50€
+      const sauceAttr = this.item.itemAttributes?.find(a =>
+        (a.name || '').toLowerCase().includes('sauce')
+      );
+      if (sauceAttr && this.item.variations?.[sauceAttr.id]) {
+        const sauceVar = this.item.variations[sauceAttr.id].find(v =>
+          parseFloat(v.convert_price || v.price || 0) > 0
+        );
+        if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
+      }
+      return 0.50;
+    },
     runningTotal() {
       let total = parseFloat(this.item.convert_price) || 0;
-      
-      // Sauces supplémentaires
+
+      // Sauces supplémentaires — prix depuis DB ou fallback 0.50€
       if (this.selections.sauceOrder.length > 1) {
-        total += (this.selections.sauceOrder.length - 1) * 0.50;
+        total += (this.selections.sauceOrder.length - 1) * this.extraSaucePrice;
       }
-      
+
       // Suppléments
       total += this.selectedSupplements.reduce((sum, s) => sum + s.price, 0);
-      
+
       // Menu
       total += this.menuPrice;
-      
+
       return total * (this.selections.quantity || 1);
     }
   },
   methods: {
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(price || 0);
-    },
+    // formatPrice() provided by kioskPriceMixin
     getPainName() {
       const painId = this.selections.pain;
       if (!painId) return 'Non sélectionné';
@@ -226,40 +235,37 @@ export default {
 
 <style scoped>
 .kiosk-order-summary {
-  padding: 16px;
-}
-
-.kiosk-summary-title {
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 24px;
-  color: #1a1a2e;
+  padding: 10px 18px 22px;
+  background: #fff;
+  min-height: 100%;
 }
 
 .kiosk-summary-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 14px 16px;
   background: white;
-  border-radius: 16px;
-  margin-bottom: 16px;
+  border: 1px solid #E9E9E9;
+  border-radius: 18px;
+  margin-bottom: 12px;
 }
 
 .kiosk-summary-item.main {
-  border: 2px solid #E93C3C;
+  border: 2px solid #E8001C;
+  background: rgba(232,0,28,0.03);
 }
 
 .kiosk-summary-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F8F9FA;
+  background: #F7F7F8;
+  flex-shrink: 0;
 }
 
 .kiosk-summary-img img {
@@ -268,115 +274,117 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-summary-emoji {
-  font-size: 36px;
-}
+.kiosk-summary-emoji { font-size: 28px; }
 
 .kiosk-summary-details {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .kiosk-summary-name {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #1A1A1A;
 }
 
 .kiosk-summary-price {
-  font-size: 16px;
-  color: #E93C3C;
-  font-weight: 600;
+  font-size: 14px;
+  color: #E8001C;
+  font-weight: 700;
 }
 
 .kiosk-summary-sections {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .kiosk-summary-section {
   background: white;
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid #E9E9E9;
+  border-radius: 16px;
+  padding: 12px 16px;
 }
 
 .kiosk-summary-section h4 {
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 700;
-  color: #666;
+  color: #999;
   text-transform: uppercase;
-  margin: 0 0 12px 0;
-  letter-spacing: 0.5px;
+  margin: 0 0 8px;
+  letter-spacing: 1px;
 }
 
 .kiosk-summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 5px 0;
   border-bottom: 1px solid #F0F0F0;
-  font-size: 16px;
+  font-size: 13px;
+  color: #555;
 }
 
-.kiosk-summary-row:last-child {
-  border-bottom: none;
-}
+.kiosk-summary-row:last-child { border-bottom: none; }
 
 .kiosk-summary-row.boisson {
-  padding-left: 16px;
-  color: #666;
+  padding-left: 14px;
+  color: #999;
+  font-size: 12px;
 }
 
 .kiosk-free {
-  color: #43C6AC;
-  font-weight: 600;
-  font-size: 14px;
+  color: #27ae60;
+  font-weight: 700;
+  font-size: 11px;
 }
 
 .kiosk-price {
-  color: #E93C3C;
-  font-weight: 600;
+  color: #E8001C;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .kiosk-summary-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .kiosk-tag {
-  background: #F0FDF4;
-  color: #166534;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  color: #27ae60;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .kiosk-summary-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: #1a1a2e;
+  padding: 14px 18px;
+  background: #f7e5e8;
+  border: 1px solid #efd2d7;
   border-radius: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .kiosk-summary-total span:first-child {
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
+  color: #7b4a52;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .kiosk-total-price {
-  color: #E93C3C;
-  font-size: 28px;
-  font-weight: 800;
+  color: #d7263d;
+  font-size: 24px;
+  font-weight: 900;
 }
 
 .kiosk-quantity-section {
@@ -384,49 +392,66 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 16px;
+  padding: 12px 18px;
   background: white;
-  border-radius: 12px;
+  border: 1px solid #E9E9E9;
+  border-radius: 16px;
 }
 
-.kiosk-quantity-section span {
-  font-size: 16px;
+.kiosk-quantity-section > span {
+  font-size: 14px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: #555;
 }
 
 .kiosk-qty-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .kiosk-qty-controls button {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  border: 2px solid #E93C3C;
-  background: white;
-  color: #E93C3C;
-  font-size: 20px;
+  border: none;
+  background: #F7F7F8;
+  color: #1A1A1A;
+  font-size: 22px;
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+  border-radius: 50%;
+  border: 1.5px solid #E0E0E0;
+}
+
+.kiosk-qty-controls button:first-child {
+  color: #777;
+}
+
+.kiosk-qty-controls button:last-child {
+  background: #E8001C;
+  border-color: #E8001C;
+  color: white;
+}
+
+.kiosk-qty-controls button:active:not(:disabled) {
+  transform: scale(0.92);
 }
 
 .kiosk-qty-controls button:disabled {
-  border-color: #ddd;
-  color: #aaa;
+  opacity: 0.58;
   cursor: not-allowed;
 }
 
 .kiosk-qty-controls span {
   font-size: 20px;
-  font-weight: 700;
-  min-width: 32px;
+  font-weight: 800;
+  color: #1A1A1A;
+  min-width: 40px;
   text-align: center;
 }
 </style>

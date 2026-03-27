@@ -92,7 +92,25 @@ class GuestSignupController extends Controller
             throw new Exception(trans('all.message.guest_login_is_not_allowed'), 422);
          }
 
-        $user = User::where(['phone' => $array['phone']])->first();
+        // [GAP-32-3] Use withoutGlobalScopes + withTrashed to find ALL accounts with this phone,
+        // including soft-deleted users and users from other branches (BranchScope).
+        // Without this, a deleted or out-of-scope account causes a duplicate to be created.
+        $user = User::withoutGlobalScopes()->withTrashed()->where('phone', $array['phone'])->first();
+
+        // [SECURITY] If the phone matches a non-guest account (staff, admin, manager),
+        // refuse to issue a guest token. OTP alone must not grant access to privileged accounts.
+        if ($user && $user->is_guest != Ask::YES && !$user->trashed()) {
+            // The phone belongs to a staff/admin account — do not allow guest login
+            throw new \Exception(trans('all.message.credentials_invalid'), 422);
+        }
+
+        // Restore soft-deleted guest account instead of creating a duplicate
+        if ($user && $user->trashed()) {
+            $user->restore();
+            $user->status = \App\Enums\Status::ACTIVE;
+            $user->save();
+        }
+
         if (!$user) {
             $name = "Guest User";
             $user = User::create([
@@ -116,9 +134,20 @@ class GuestSignupController extends Controller
             }
 
             $this->defaultAccessService->storeOrUpdate(['branch_id' => $branchId]);
-            $this->token = $user->createToken('auth_token')->plainTextToken;
+            // [GAP-20-5] Guest tokens expire after 30 days. Without expiry, a token issued
+            // to a kiosk customer or anonymous web visitor remains valid indefinitely,
+            // creating a growing attack surface. 30 days matches typical session expectations.
+            $this->token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
 
-            $permission        = PermissionResource::collection($this->permissionService->permission($user->roles[0]));
+            // [FIX] Guard against user with no roles (should not happen, but defensive)
+            $firstRole = $user->roles->first();
+            if (!$firstRole) {
+                $user->assignRole(EnumRole::CUSTOMER);
+                $user->refresh();
+                $firstRole = $user->roles->first();
+            }
+
+            $permission        = PermissionResource::collection($this->permissionService->permission($firstRole));
             $defaultPermission = AppLibrary::defaultPermission($permission);
 
             return new JsonResponse([
@@ -126,7 +155,7 @@ class GuestSignupController extends Controller
                 'token'             => $this->token,
                 'branch_id'         => (int)$user->branch_id,
                 'user'              => new UserResource($user),
-                'menu'              => MenuResource::collection(collect($this->menuService->menu($user->roles[0]))),
+                'menu'              => MenuResource::collection(collect($this->menuService->menu($firstRole))),
                 'permission'        => $permission,
                 'defaultPermission' => $defaultPermission,
             ], 201);

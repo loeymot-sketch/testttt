@@ -232,7 +232,9 @@ export default {
                 orderTypeEnumArray: {
                     [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
                     [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                    [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
+                    [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table"),
+                    [orderTypeEnum.KIOSK]: this.$t("label.kiosk"),
+                    [orderTypeEnum.POS]: this.$t("label.pos")
                 }
             },
             printLoading: true,

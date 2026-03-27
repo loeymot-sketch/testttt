@@ -15,7 +15,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // [GAP-20-4] Purge expired OTPs every 15 minutes to prevent table bloat.
+        // OTPs expire after otp_expire_time minutes (default 5). This cleanup runs
+        // every 15 minutes as a safety net in addition to the opportunistic cleanup
+        // in OtpManagerService::otp(). Uses DB facade directly to avoid loading the
+        // full OtpManagerService for a simple DELETE query.
+        $schedule->call(function () {
+            $expireMinutes = (int) \Smartisan\Settings\Facades\Settings::group('otp')->get('otp_expire_time') ?: 5;
+            \Illuminate\Support\Facades\DB::table('otps')
+                ->where('created_at', '<', now()->subMinutes($expireMinutes + 1))
+                ->delete();
+        })->everyFifteenMinutes()->name('purge-expired-otps')->withoutOverlapping();
     }
 
     /**

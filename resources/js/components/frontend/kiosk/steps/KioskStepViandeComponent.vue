@@ -3,42 +3,48 @@
     <h3 class="kiosk-step-title">
       Choisissez {{ maxViandes }} viande{{ maxViandes > 1 ? 's' : '' }}
     </h3>
-    
+
     <div class="kiosk-viande-counter">
       <div class="kiosk-counter-badge" :class="{ complete: totalSelected >= maxViandes }">
         {{ totalSelected }} / {{ maxViandes }}
       </div>
       <span v-if="totalSelected >= maxViandes" class="kiosk-complete-badge">✅ Complet</span>
     </div>
-    
-    <div class="kiosk-viande-list">
+
+    <!-- Grille 2 colonnes style Splash -->
+    <div class="kiosk-viande-grid">
       <div
         v-for="viande in viandeList"
         :key="viande.id"
-        class="kiosk-viande-row"
+        class="kiosk-viande-card"
         :class="{ active: (localSelections[viande.key] || 0) > 0 }"
       >
-        <div class="kiosk-viande-info">
+        <!-- Image/Emoji en haut -->
+        <div class="kiosk-viande-visual">
           <img v-if="viande.thumb" :src="viande.thumb" class="kiosk-viande-img" />
           <span class="kiosk-viande-emoji" v-else>{{ viande.emoji }}</span>
-          <span class="kiosk-viande-name">{{ viande.name }}</span>
         </div>
+
+        <!-- Nom viande -->
+        <span class="kiosk-viande-name">{{ viande.name }}</span>
+
+        <!-- Contrôles +/- en bas de carte -->
         <div class="kiosk-viande-controls">
           <button
             @click="decrement(viande.key)"
-            class="kiosk-qty-btn"
+            class="kiosk-viande-qty-btn"
             :disabled="(localSelections[viande.key] || 0) === 0"
           >−</button>
-          <span class="kiosk-qty-value">{{ localSelections[viande.key] || 0 }}</span>
+          <span class="kiosk-viande-qty-value">{{ localSelections[viande.key] || 0 }}</span>
           <button
             @click="increment(viande.key)"
-            class="kiosk-qty-btn"
+            class="kiosk-viande-qty-btn plus"
             :disabled="totalSelected >= maxViandes"
           >+</button>
         </div>
       </div>
     </div>
-    
+
     <div v-if="totalSelected < maxViandes" class="kiosk-validation-hint">
       Sélectionnez {{ maxViandes - totalSelected }} viande{{ maxViandes - totalSelected > 1 ? 's' : '' }} pour continuer
     </div>
@@ -61,6 +67,11 @@ export default {
   },
   computed: {
     maxViandes() {
+      // [AUDIT-P2] Prefer explicit taille selection from parent wizard
+      if (this.selections._tailleMeta?.viandeCount) {
+        return this.selections._tailleMeta.viandeCount;
+      }
+      // Fallback to name heuristic only when no explicit taille choice
       const name = (this.item.name || '').toLowerCase();
       if (name.includes('xxl') || name.includes('4 viande')) return 4;
       if (name.includes('xl') || name.includes('3 viande')) return 3;
@@ -73,15 +84,15 @@ export default {
     viandeList() {
       // Lire les viandes depuis les variations DB (attribut "Viande")
       if (!this.item.itemAttributes) return this.getDefaultViandeList();
-      
+
       const viandeAttr = this.item.itemAttributes.find(a =>
         (a.name || '').toLowerCase().includes('viande')
       );
-      
+
       if (!viandeAttr || !this.item.variations?.[viandeAttr.id]) {
         return this.getDefaultViandeList();
       }
-      
+
       return this.item.variations[viandeAttr.id].map(v => ({
         id: v.id,
         key: v.name.toLowerCase().replace(/\s+/g, '_'),
@@ -137,110 +148,144 @@ export default {
 
 <style scoped>
 .kiosk-step-viande {
-  padding: 16px;
+  padding: 6px 18px 24px;
+  background: #fff;
+  min-height: 100%;
 }
 
 .kiosk-step-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 24px;
-  color: #1a1a2e;
+  margin: 0 0 12px;
+  color: #333;
 }
 
 .kiosk-viande-counter {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .kiosk-counter-badge {
-  background: #EFF0F6;
-  padding: 12px 24px;
-  border-radius: 16px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a2e;
+  background: #F7F7F8;
+  border: 2px solid #E0E0E0;
+  padding: 8px 24px;
+  border-radius: 50px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #555;
+  transition: all 0.25s ease;
 }
 
 .kiosk-counter-badge.complete {
-  background: #43C6AC;
-  color: white;
+  background: rgba(46,204,113,0.1);
+  border-color: #27ae60;
+  color: #27ae60;
 }
 
 .kiosk-complete-badge {
-  font-size: 18px;
-  font-weight: 600;
-  color: #43C6AC;
+  font-size: 14px;
+  font-weight: 700;
+  color: #27ae60;
 }
 
-.kiosk-viande-list {
+.kiosk-viande-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px 18px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.kiosk-viande-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.kiosk-viande-row {
-  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-radius: 16px;
-  border: 2px solid #EFF0F6;
-  background: white;
-  min-height: 80px;
-  transition: all 0.2s ease;
+  min-height: 234px;
+  padding: 14px 14px 16px;
+  border-radius: 20px;
+  border: 1px solid #efefef;
+  background: #fff;
+  transition: all 0.18s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+  position: relative;
 }
 
-.kiosk-viande-row.active {
-  border-color: #E93C3C;
-  background: #FFF5F5;
+.kiosk-viande-card:active { transform: scale(0.97); }
+
+.kiosk-viande-card.active {
+  border-color: rgba(232,0,28,0.18);
+  background: rgba(232,0,28,0.02);
+  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
 }
 
-.kiosk-viande-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.kiosk-viande-img {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.kiosk-viande-emoji {
-  font-size: 36px;
-  width: 56px;
-  height: 56px;
+.kiosk-viande-visual {
+  width: 122px;
+  height: 122px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 6px;
+}
+
+.kiosk-viande-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.kiosk-viande-emoji {
+  width: 122px;
+  height: 122px;
+  border-radius: 50%;
+  background: #f7f7f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  line-height: 1;
 }
 
 .kiosk-viande-name {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
+
+.kiosk-viande-card.active .kiosk-viande-name { color: #E8001C; }
 
 .kiosk-viande-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0;
+  background: #F7F7F8;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: auto;
 }
 
-.kiosk-qty-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  border: 2px solid #E93C3C;
-  background: white;
-  color: #E93C3C;
-  font-size: 24px;
+.kiosk-viande-card.active .kiosk-viande-controls {
+  border-color: rgba(232,0,28,0.3);
+  background: rgba(232,0,28,0.04);
+}
+
+.kiosk-viande-qty-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 22px;
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
@@ -250,30 +295,41 @@ export default {
   transition: all 0.15s ease;
 }
 
-.kiosk-qty-btn:active:not(:disabled) {
-  transform: scale(0.95);
-  background: #FFF0F0;
+.kiosk-viande-qty-btn:active:not(:disabled) {
+  background: rgba(0,0,0,0.05);
+  color: #1A1A1A;
 }
 
-.kiosk-qty-btn:disabled {
-  border-color: #ddd;
-  color: #aaa;
+.kiosk-viande-qty-btn.plus { color: #E8001C; }
+
+.kiosk-viande-qty-btn.plus:active:not(:disabled) {
+  background: #E8001C;
+  color: white;
+}
+
+.kiosk-viande-qty-btn:disabled {
+  color: #b0b0b0;
   cursor: not-allowed;
 }
 
-.kiosk-qty-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a2e;
-  min-width: 40px;
+.kiosk-viande-qty-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1A1A1A;
+  min-width: 36px;
   text-align: center;
 }
 
+.kiosk-viande-card.active .kiosk-viande-qty-value { color: #E8001C; }
+
 .kiosk-validation-hint {
   text-align: center;
-  margin-top: 32px;
-  font-size: 18px;
-  color: #E93C3C;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #E8001C;
   font-weight: 500;
+  padding: 10px 20px;
+  background: rgba(232,0,28,0.06);
+  border-radius: 10px;
 }
 </style>

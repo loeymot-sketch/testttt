@@ -46,7 +46,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // [AUDIT-P2] Tokens expire after 43200 min (30 days) by default.
+    // Override per environment: SANCTUM_TOKEN_EXPIRATION=10080 (7 days) for stricter security.
+    // Kiosk machine tokens should be renewed on boot via kiosk-login, so this won't break kiosks.
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 43200),
 
     /*
     |--------------------------------------------------------------------------

@@ -38,6 +38,8 @@ use App\Http\Controllers\Admin\ItemExtraController;
 use App\Http\Controllers\Admin\OfferItemController;
 use App\Http\Controllers\Auth\DeactivateController;
 use App\Http\Controllers\Admin\OrderSetupController;
+use App\Http\Controllers\Admin\KioskSetupController;
+use App\Http\Controllers\Admin\LoyaltySetupController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\SimpleUserController;
 use App\Http\Controllers\Admin\SmsGatewayController;
@@ -120,7 +122,8 @@ Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
 })->name('login');
 
-Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed']);
+// [AUDIT-P1] Added apiKey: token refresh must authenticate the client app, not be public.
+Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed', 'apiKey']);
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
     // [SEC-02] Rate limiting — 5 tentatives par minute
@@ -141,20 +144,25 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     });
 
     Route::prefix('signup')->name('signup.')->group(function () {
-        // [SEC-02] Rate limiting — 10 inscriptions par minute
+        // [GAP-20-2] OTP send: 5/min (was 10) — limits SMS flood.
         Route::post('/otp', [SignupController::class, 'otp'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:5,1');
+        // [GAP-20-2] OTP verify: 3 per 5 minutes — anti brute-force.
         Route::post('/verify', [SignupController::class, 'verify'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:3,5');
         Route::post('/register', [SignupController::class, 'register'])
             ->middleware('throttle:10,1');
     });
 
     Route::prefix('guest-signup')->name('guest-signup.')->group(function () {
+        // [GAP-20-2] OTP send: 5 per minute (was 10) — limits SMS flood abuse.
         Route::post('/otp', [GuestSignupController::class, 'otp'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:5,1');
+        // [GAP-20-2] OTP verify: 3 per 5 minutes — prevents brute-force of 4-digit codes.
+        // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
+        // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
         Route::post('/verify', [GuestSignupController::class, 'verify'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:3,5');
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -231,6 +239,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::prefix('order-setup')->name('order-setup.')->group(function () {
             Route::get('/', [OrderSetupController::class, 'index']);
             Route::match(['put', 'patch'], '/', [OrderSetupController::class, 'update']);
+        });
+
+        Route::prefix('kiosk-setup')->name('kiosk-setup.')->group(function () {
+            Route::get('/', [KioskSetupController::class, 'index']);
+            Route::match(['put', 'patch'], '/', [KioskSetupController::class, 'update']);
+        });
+
+        Route::prefix('loyalty-setup')->name('loyalty-setup.')->group(function () {
+            Route::get('/', [LoyaltySetupController::class, 'index']);
+            Route::match(['put', 'patch'], '/', [LoyaltySetupController::class, 'update']);
         });
 
         Route::prefix('mail')->name('mail.')->group(function () {
@@ -762,7 +780,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     });
 
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
-        Route::post('/', [FrontendSubscriberController::class, 'store']);
+        // [SEC-26-2] Rate limit subscriber spam: 5 subscriptions/min per IP
+        Route::post('/', [FrontendSubscriberController::class, 'store'])
+            ->middleware('throttle:5,1');
     });
 
     Route::prefix('address')->name('address.')->middleware(['auth:sanctum'])->group(function () {
@@ -830,7 +850,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::prefix('coupon')->name('coupon.')->group(function () {
         Route::get('/', [FrontendCouponController::class, 'index']);
-        Route::post('/coupon-checking', [FrontendCouponController::class, 'couponChecking']);
+        // [SEC-26-1] Rate limit coupon brute-force: 10 attempts/min per IP
+        Route::post('/coupon-checking', [FrontendCouponController::class, 'couponChecking'])
+            ->middleware('throttle:10,1');
     });
 
     Route::prefix('slider')->name('slider.')->group(function () {
@@ -864,8 +886,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // /register is kept public (no auth) as it creates a new loyalty account for a new customer
     // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
-        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check']);
-        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register']);
+        // [AUDIT-P0-D] Add throttle to loyalty endpoints to prevent enumeration and mass registration.
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware('throttle:10,1');
+        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1');
         // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
@@ -891,6 +914,7 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
 
     Route::prefix('dining-order')->name('dining-order.')->group(function () {
         Route::get('/show/{frontendOrder}', [TableOrderController::class, 'show']);
-        Route::post('/', [TableOrderController::class, 'store']);
+        // [AUDIT-P1] Dedicated throttle: table ordering is unauthenticated (QR code), 20 orders/min per IP.
+        Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1');
     });
 });

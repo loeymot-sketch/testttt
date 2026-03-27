@@ -6,14 +6,21 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Events\OrderStatusChanged;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Smartisan\Settings\Facades\Settings;
 
 /**
- * [SPLASH LOYALTY] Auto-award loyalty points when an order is completed.
- * For normal orders: trigger on DELIVERED (13).
- * For kiosk orders: trigger on PREPARED (8) — the terminal flow has no DELIVERED step.
- * Points are awarded exactly once per order (idempotent: checks order.loyalty_points_awarded).
+ * Auto-award loyalty points when an order is completed.
+ * For normal orders: trigger on DELIVERED.
+ * For kiosk/takeaway orders: trigger on PREPARED or DELIVERED
+ *   (kiosk flow ends at PREPARED; POS cashier can skip directly to DELIVERED).
+ *
+ * Idempotent: uses an atomic sentinel (-1) on orders.loyalty_points_awarded
+ * to guarantee exactly-once execution even under concurrent events.
+ *
+ * Writes an immutable record to loyalty_transactions for full audit trail
+ * and multi-surface analytics (kiosk / pos / web / mobile).
  */
 class AwardLoyaltyPointsOnDelivery
 {
@@ -21,59 +28,137 @@ class AwardLoyaltyPointsOnDelivery
     {
         $order = $event->order;
 
-        $isKiosk = (int) ($order->order_type ?? 0) === OrderType::KIOSK;
-        $triggerStatus = $isKiosk ? OrderStatus::PREPARED : OrderStatus::DELIVERED;
-
-        if ($event->newStatus !== $triggerStatus) {
+        // [AUDIT-P50-BUG10] Never award points for cancelled orders (edge case: status change event after cancel)
+        $currentStatus = (int) ($order->status ?? $event->newStatus ?? -1);
+        if ($currentStatus === OrderStatus::CANCELED) {
             return;
         }
 
-        // Idempotency: if already awarded, skip silently
-        if (!empty($order->loyalty_points_awarded)) {
+        $isKiosk = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
+
+        if ($isKiosk) {
+            $shouldTrigger = in_array($event->newStatus, [OrderStatus::PREPARED, OrderStatus::DELIVERED], true);
+        } else {
+            $shouldTrigger = ($event->newStatus === OrderStatus::DELIVERED);
+        }
+
+        if (!$shouldTrigger) {
             return;
         }
 
-        // The order must belong to a real customer (not guest / kiosk machine itself)
-        if (!$order->user_id) {
+        // Atomic idempotency: only one concurrent process can claim the sentinel.
+        // FrontendOrder::$table = "orders" — physical table is always "orders".
+        // [AUDIT-P50-BUG10] Also verify order is not cancelled at the moment of awarding
+        $updated = DB::table('orders')
+            ->where('id', $order->id)
+            ->whereNull('loyalty_points_awarded')
+            ->where('status', '!=', OrderStatus::CANCELED)
+            ->update(['loyalty_points_awarded' => -1]);
+
+        if ($updated === 0) {
             return;
         }
 
-        $user = User::find($order->user_id);
-        if (!$user || !$user->loyalty_code) {
+        // Resolve the loyalty customer.
+        // On kiosk orders user_id is the machine account; the real customer is in loyalty_customer_code.
+        // On POS/web orders fall back to the order owner if they have a loyalty code.
+        $user = null;
+        if (!empty($order->loyalty_customer_code)) {
+            $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
+        }
+        if (!$user && $order->user_id) {
+            $candidate = User::find($order->user_id);
+            if ($candidate && $candidate->loyalty_code) {
+                $user = $candidate;
+            }
+        }
+        if (!$user) {
+            DB::table('orders')
+                ->where('id', $order->id)
+                ->where('loyalty_points_awarded', -1)
+                ->update(['loyalty_points_awarded' => null]);
             return;
         }
 
         try {
-            // Configurable rate: loyalty_points_per_euro (default: 10 points per €)
             $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
             if ($rate <= 0) {
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->where('loyalty_points_awarded', -1)
+                    ->update(['loyalty_points_awarded' => null]);
                 return;
             }
 
-            $orderTotal = (float) ($order->order_amount ?? $order->total ?? 0);
+            // [AUDIT-P49-BUG2] FrontendOrder (kiosk) uses 'total', Order (POS) uses 'order_amount'.
+            // If we read $order->order_amount and it has a DB default of 0.00, the ?? fallback never triggers.
+            // Explicitly check order_type to determine which column to use.
+            $isKioskOrder = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
+            if ($isKioskOrder) {
+                $orderTotal = (float) ($order->total ?? 0);
+            } else {
+                $orderTotal = (float) ($order->order_amount ?? $order->total ?? 0);
+            }
             $pointsToAward = (int) floor($orderTotal * $rate);
 
             if ($pointsToAward <= 0) {
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->where('loyalty_points_awarded', -1)
+                    ->update(['loyalty_points_awarded' => null]);
                 return;
             }
 
-            // Atomic increment to avoid race condition if event fires twice
-            User::where('id', $user->id)
-                ->where('loyalty_code', $user->loyalty_code)
-                ->increment('loyalty_points', $pointsToAward);
+            // Determine the surface that generated this order for analytics.
+            $surface = $order->source_surface ?? ($isKiosk ? 'kiosk' : 'web');
 
-            // Mark order as awarded to prevent double-award
-            $order->update(['loyalty_points_awarded' => $pointsToAward]);
+            DB::transaction(function () use ($user, $pointsToAward, $order, $surface) {
+                // Atomic balance increment
+                User::where('id', $user->id)->increment('loyalty_points', $pointsToAward);
+
+                // Snapshot balance after increment for the ledger
+                $balanceAfter = (int) DB::table('users')
+                    ->where('id', $user->id)
+                    ->value('loyalty_points');
+
+                // Immutable audit record
+                DB::table('loyalty_transactions')->insert([
+                    'user_id'        => $user->id,
+                    'loyalty_code'   => $user->loyalty_code,
+                    'order_id'       => $order->id,
+                    'type'           => 'earn',
+                    'points'         => $pointsToAward,
+                    'balance_after'  => $balanceAfter,
+                    'source_surface' => $surface,
+                    'description'    => 'Commande #' . ($order->order_serial_no ?? $order->id),
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+
+                // Finalize sentinel with actual points awarded
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->update(['loyalty_points_awarded' => $pointsToAward]);
+            });
 
             Log::info(sprintf(
-                '[Loyalty] +%d points pour %s (commande #%s, total %.2f€)',
+                '[Loyalty] +%d points pour %s via %s (commande #%s, total %.2f€)',
                 $pointsToAward,
                 $user->name,
+                $surface,
                 $order->order_serial_no ?? $order->id,
                 $orderTotal
             ));
         } catch (\Throwable $e) {
-            // Never block order status change for loyalty failure
+            // Never block order status change for loyalty failure.
+            try {
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->where('loyalty_points_awarded', -1)
+                    ->update(['loyalty_points_awarded' => null]);
+            } catch (\Throwable $inner) {
+                Log::error('[Loyalty] Failed to revert sentinel: ' . $inner->getMessage());
+            }
             Log::error('[Loyalty] AwardLoyaltyPointsOnDelivery: ' . $e->getMessage());
         }
     }

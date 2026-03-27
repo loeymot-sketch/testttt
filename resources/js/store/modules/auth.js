@@ -142,6 +142,12 @@ export const auth = {
             state.authPermission = payload.permission;
             state.authDefaultPermission = payload.defaultPermission;
             state.authDefaultMenu = payload.defaultMenu;
+            // [GAP-34-2] Re-inject the new token into Echo auth headers after login.
+            // Echo is initialized at page load before the token exists — this ensures
+            // private channel auth works immediately after login without page reload.
+            if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
+                window._refreshEchoAuth();
+            }
         },
         authLogout: function (state) {
             state.authStatus = false;

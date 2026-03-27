@@ -68,7 +68,8 @@ Elle :
 
 | Sujet | Détail |
 |--------|--------|
-| **Clé API / URL** | `window.foodkingConfig` dans `master.blade.php` + `resources/js/config/env.js` — alignement Laravel ↔ navigateur sans dépendre d’un vieux `npm run`. |
+| **Clé API / URL** | `window.foodkingConfig` dans `master.blade.php` + `resources/js/config/env.js` — alignement Laravel ↔ navigateur sans dépendre d’un vieux `npm run`. La valeur côté Laravel est **`MIX_API_KEY`** (`config('app.api_key')`). Un `.env` qui ne définit que `API_KEY` laissait la clé vide → erreur **Invalid Api Key** ; un **repli sur `API_KEY`** est pris si `MIX_API_KEY` est absent. |
+| **Borne : champ identifiant** | L’API `/api/auth/kiosk-login` attend le **`username` de la table `kiosk_machines`** (ex. `kiosk-lecayenne`), pas l’e-mail d’un employé. |
 | **localhost vs 127.0.0.1** | Repli d’origine dans `env.js` pour éviter un mauvais `baseURL`. |
 | **`storage/installed`** | Middleware `Installed` renvoie du JSON pour l’API si l’app n’est pas installée. |
 | **Invité** | `VerifyPhoneRequest` / `ValidPhone` / OTP `DEMO` — correctifs précédents. |

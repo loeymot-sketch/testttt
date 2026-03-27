@@ -16,7 +16,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        echo "\n=== EMERGENCY MENU RESET - Le Grill House ===\n";
+        $verbose = !app()->environment('testing');
+        if ($verbose) {
+            echo "\n=== EMERGENCY MENU RESET - Le Grill House ===\n";
+        }
         
         // [FIX] SQLite-compatible foreign key handling
         $driver = DB::getDriverName();
@@ -46,23 +49,27 @@ return new class extends Migration
             DB::table('item_categories')->truncate();
         }
         
-        echo "✓ Purged item_addons\n";
-        echo "✓ Purged item_extras\n";
-        echo "✓ Purged item_variations\n";
-        echo "✓ Purged item_attributes\n";
-        echo "✓ Purged items\n";
-        echo "✓ Purged item_categories\n";
-        
+        if ($verbose) {
+            echo "✓ Purged item_addons\n";
+            echo "✓ Purged item_extras\n";
+            echo "✓ Purged item_variations\n";
+            echo "✓ Purged item_attributes\n";
+            echo "✓ Purged items\n";
+            echo "✓ Purged item_categories\n";
+        }
+
         // Re-enable foreign key checks
         if ($driver === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = ON;');
         } else {
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
-        
-        echo "✅ All menu tables purged successfully\n";
-        echo "Run: php artisan db:seed --class=MenuSeeder\n";
-        echo "=============================================\n\n";
+
+        if ($verbose) {
+            echo "✅ All menu tables purged successfully\n";
+            echo "Run: php artisan db:seed --class=MenuSeeder\n";
+            echo "=============================================\n\n";
+        }
     }
 
     /**
@@ -70,7 +77,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Cannot restore previous menu data
-        echo "Cannot restore previous menu data - migration was emergency reset\n";
+        if (!app()->environment('testing')) {
+            echo "Cannot restore previous menu data - migration was emergency reset\n";
+        }
     }
 };

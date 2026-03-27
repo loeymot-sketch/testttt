@@ -26,6 +26,7 @@ class SimpleItemResource extends JsonResource
             "item_category_id" => $this->item_category_id,
             "tax_id"           => $this->tax_id,
             "is_featured"      => $this->is_featured,
+            "is_upsell"        => $this->is_upsell ?? 10,
             "flat_price"     => AppLibrary::flatAmountFormat($this->price),
             "convert_price"  => AppLibrary::convertAmountFormat($this->price),
             "currency_price" => AppLibrary::currencyAmountFormat($this->price),

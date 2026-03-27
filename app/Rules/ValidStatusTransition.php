@@ -44,11 +44,20 @@ class ValidStatusTransition implements Rule
                 return in_array($newStatus, [OrderStatus::ACCEPT, OrderStatus::CANCELED, OrderStatus::REJECTED]);
 
             case OrderStatus::ACCEPT:
-                // Depuis ACCEPT, on part en préparation ou on annule
+                // Depuis ACCEPT, on part en préparation ou on annule.
+                // [GAP-25-2] POS cashier can also mark kiosk cash orders as DELIVERED directly
+                // (collect cash + hand over in one action, bypassing KDS preparation steps).
+                if ($newStatus === OrderStatus::DELIVERED && auth()->check() && auth()->user()->hasPermissionTo('pos')) {
+                    return true;
+                }
                 return in_array($newStatus, [OrderStatus::PREPARING, OrderStatus::CANCELED]);
 
             case OrderStatus::PREPARING:
-                // Depuis PREPARING, la commande est prête ou annulée
+                // Depuis PREPARING, la commande est prête ou annulée.
+                // [GAP-25-2] POS cashier can also mark kiosk cash orders as DELIVERED directly.
+                if ($newStatus === OrderStatus::DELIVERED && auth()->check() && auth()->user()->hasPermissionTo('pos')) {
+                    return true;
+                }
                 return in_array($newStatus, [OrderStatus::PREPARED, OrderStatus::CANCELED]);
 
             case OrderStatus::PREPARED:

@@ -41,11 +41,11 @@ class Kernel extends HttpKernel
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            //'throttle:api',
-            'throttle:200,1',
+            // [AUDIT-P1] Use named limiter: 60/min keyed by user ID (auth) or IP (guest).
+            // Prevents a single IP from saturating the API while keeping normal usage comfortable.
+            'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\JsonMiddleware::class,
-
         ],
     ];
 

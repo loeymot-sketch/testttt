@@ -71,7 +71,7 @@ class PosOrderController extends AdminController
         PaginateRequest $request
     ): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return Excel::download(new OrderExport($this->orderService, $request), 'Online-Order.xlsx');
+            return Excel::download(new OrderExport($this->orderService, $request), 'POS-Order.xlsx');
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -82,7 +82,7 @@ class PosOrderController extends AdminController
         OrderStatusRequest $request
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new OrderDetailsResource($this->orderService->changeStatus($order, false, $request));
+            return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -93,7 +93,7 @@ class PosOrderController extends AdminController
         PaymentStatusRequest $request
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new OrderDetailsResource($this->orderService->changePaymentStatus($order, false, $request));
+            return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -102,7 +102,7 @@ class PosOrderController extends AdminController
     public function selectDeliveryBoy(Order $order, Request $request): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, false, $request));
+            return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

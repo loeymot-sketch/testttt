@@ -97,6 +97,30 @@
                         </div>
                     </div>
 
+                    <!-- [GAP-27-1] is_upsell — Splash-style upsell suggestion on kiosk checkout -->
+                    <div class="form-col-12 sm:form-col-6">
+                        <label class="db-field-title" for="upsell_yes">{{ $t("label.is_upsell") }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" v-model="props.form.is_upsell" id="upsell_yes"
+                                        :value="enums.askEnum.YES" class="custom-radio-field">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="upsell_yes" class="db-field-label">{{ $t('label.yes') }}</label>
+                            </div>
+                            <div class="db-field-radio">
+                                <div class="custom-radio">
+                                    <input type="radio" class="custom-radio-field" v-model="props.form.is_upsell"
+                                        id="upsell_no" :value="enums.askEnum.NO">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label for="upsell_no" class="db-field-label">{{ $t('label.no') }}</label>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.is_upsell_hint') }}</p>
+                    </div>
+
                     <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title">{{ $t("label.status") }}</label>
                         <div class="db-field-radio-group">
@@ -231,6 +255,7 @@ export default {
                 description: "",
                 caution: "",
                 is_featured: askEnum.YES,
+                is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
                 tax_id: null,
@@ -250,6 +275,7 @@ export default {
                 description: "",
                 caution: "",
                 is_featured: askEnum.YES,
+                is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
                 tax_id: null,
@@ -269,6 +295,7 @@ export default {
                 fd.append('tax_id', this.props.form.tax_id == null ? '' : this.props.form.tax_id);
                 fd.append('item_type', this.props.form.item_type);
                 fd.append('is_featured', this.props.form.is_featured);
+                fd.append('is_upsell', this.props.form.is_upsell ?? askEnum.NO);
                 fd.append('description', this.props.form.description);
                 fd.append('caution', this.props.form.caution);
                 fd.append('order', 1);
@@ -291,6 +318,7 @@ export default {
                         description: "",
                         caution: "",
                         is_featured: askEnum.YES,
+                        is_upsell: askEnum.NO,
                         item_type: itemTypeEnum.VEG,
                         item_category_id: null,
                         tax_id: null,

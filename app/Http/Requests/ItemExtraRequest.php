@@ -32,8 +32,12 @@ class ItemExtraRequest extends FormRequest
                 'max:190',
                 Rule::unique("item_extras", "name")->whereNull('deleted_at')->ignore($this->route('itemExtra.id'))->where('item_id', $this->route('item.id')),
             ],
-            'price'   => ['required', new IniAmount()],
-            'status'  => ['required', 'numeric', 'max:24'],
+            'price'       => ['required', new IniAmount()],
+            'status'      => ['required', 'numeric', 'max:24'],
+            // Surface visibility: null = all surfaces; array of "kiosk", "pos", "web"
+            'visible_on'  => ['nullable', 'array'],
+            'visible_on.*'=> ['string', Rule::in(['kiosk', 'pos', 'web'])],
+            'group_label' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

@@ -17,6 +17,17 @@
                     <p class="db-light-text">
                         {{ itemCategory.description }}
                     </p>
+
+                    <!-- [GAP-28-1] Kiosk wizard configuration summary -->
+                    <div class="mt-4 flex flex-wrap gap-2" v-if="itemCategory.wizard_template">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            🧙 Wizard : {{ itemCategory.wizard_template }}
+                        </span>
+                        <span v-if="itemCategory.has_menu"
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                            🍟 Menu inclus
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

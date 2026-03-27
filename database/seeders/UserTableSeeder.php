@@ -20,6 +20,13 @@ class UserTableSeeder extends Seeder
      */
     public function run()
     {
+        // [AUDIT-P0-C] Safety guard: never seed default credentials in production.
+        // Change passwords manually before running with --force if needed in production.
+        if (app()->environment('production')) {
+            \Illuminate\Support\Facades\Log::warning('[UserTableSeeder] Blocked in production environment.');
+            return;
+        }
+
         $envService = new EnvEditor();
         $admin      = User::create([
             'name'              => 'Admin Le Cayenne',

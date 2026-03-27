@@ -23,24 +23,27 @@ class OtpManagerService
     public function otp(Request $request) : bool
     {
         try {
-            $otp = DB::table('otps')->where([
-                ['phone', $request->post('phone')],
-                ['code', $request->post('code')],
-            ]);
+            // [GAP-20-1] Delete ALL previous OTPs for this phone number regardless of country code.
+            // The old query (phone + code) left stale OTPs when the country code changed between
+            // requests, allowing token accumulation. A phone number is the unique identity here.
+            DB::table('otps')->where('phone', $request->post('phone'))->delete();
 
-            if ($otp->exists()) {
-                $otp->delete();
-            }
+            // [GAP-20-4] Opportunistic cleanup: purge all OTPs older than the configured expiry
+            // to prevent table bloat. This runs on every OTP request (cheap, indexed on created_at).
+            $expireMinutes = (int) Settings::group('otp')->get('otp_expire_time') ?: 5;
+            DB::table('otps')
+                ->where('created_at', '<', now()->subMinutes($expireMinutes + 1))
+                ->delete();
 
+            // [GAP-32-5] Use random_int() (CSPRNG) instead of rand() for OTP generation.
+            // rand() is not cryptographically secure; random_int() uses OS entropy.
             if (OtpType::SMS == Settings::group('otp')->get('otp_type') || OtpType::BOTH == Settings::group('otp')->get(
                     'otp_type'
                 )) {
-                $token = rand(
-                    pow(10, (int)Settings::group('otp')->get('otp_digit_limit') - 1),
-                    pow(10, (int)Settings::group('otp')->get('otp_digit_limit')) - 1
-                );
+                $digits = max(4, (int) Settings::group('otp')->get('otp_digit_limit'));
+                $token  = random_int((int) pow(10, $digits - 1), (int) pow(10, $digits) - 1);
             } else {
-                $token = rand(pow(10, 4 - 1), pow(10, 4) - 1);
+                $token = random_int(1000, 9999);
             }
 
             $otp = Otp::create([

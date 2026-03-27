@@ -73,8 +73,9 @@ class ItemController extends Controller
             $excludeIds = array_map('intval', $itemIds);
 
             // Priority 1: items explicitly flagged as upsell
+            // [GAP-27-2] Ask::YES = 5 (not boolean true=1) — must use integer comparison
             $upsellItems = Item::where('status', \App\Enums\Status::ACTIVE)
-                ->where('is_upsell', true)
+                ->where('is_upsell', \App\Enums\Ask::YES)
                 ->whereNotIn('id', $excludeIds)
                 ->inRandomOrder()
                 ->take($limit)
@@ -85,7 +86,7 @@ class ItemController extends Controller
                 $needed   = $limit - $upsellItems->count();
                 $usedIds  = array_merge($excludeIds, $upsellItems->pluck('id')->toArray());
                 $featured = Item::where('status', \App\Enums\Status::ACTIVE)
-                    ->where('is_featured', true)
+                    ->where('is_featured', \App\Enums\Ask::YES)
                     ->whereNotIn('id', $usedIds)
                     ->inRandomOrder()
                     ->take($needed)
@@ -106,7 +107,8 @@ class ItemController extends Controller
             $suggested = Item::with('category')
                 ->where('id', '!=', $item->id)
                 ->where('status', \App\Enums\Status::ACTIVE)
-                ->where('is_upsell', true)
+                // [GAP-27-2] Ask::YES = 5 — integer comparison required
+                ->where('is_upsell', \App\Enums\Ask::YES)
                 ->inRandomOrder()
                 ->take(6)
                 ->get();
@@ -116,7 +118,7 @@ class ItemController extends Controller
                     ->where('id', '!=', $item->id)
                     ->where('status', \App\Enums\Status::ACTIVE)
                     ->whereNotIn('id', $suggested->pluck('id')->toArray())
-                    ->where('is_featured', true)
+                    ->where('is_featured', \App\Enums\Ask::YES)
                     ->inRandomOrder()
                     ->take(6 - $suggested->count())
                     ->get();

@@ -92,7 +92,67 @@ class SettingResource extends JsonResource
             'image_order_not_found'                => asset('/images/default/not-found.png'),
             'item_not_found'                       => asset('/images/item/item-not-found.png'),
             'demo'                                 => env('DEMO'),
+
+            // [KIOSK-12-1] Alias logo for kiosk idle screen — uses theme_logo as the restaurant logo
+            // KioskIdleScreenComponent reads logo_full_path, theme_logo is the canonical source
+            'logo_full_path'                       => $this->themeImage('theme_logo')?->logo ?? asset('images/theme/theme-logo.png'),
+
+            // [KIOSK-12-1] Kiosk idle video — configurable via admin settings (kiosk_setup group)
+            // Falls back to null so the component shows the animated gradient fallback
+            'kiosk_idle_video'                     => $this->info['kiosk_idle_video'] ?? null,
+
+            // [KIOSK-12-2] Kiosk idle screen texts — configurable per restaurant for SaaS
+            'kiosk_welcome_title'                  => $this->info['kiosk_welcome_title'] ?? 'Bienvenue !',
+            'kiosk_welcome_subtitle'               => $this->info['kiosk_welcome_subtitle'] ?? 'Commandez en quelques touches',
+            'kiosk_tap_hint'                       => $this->info['kiosk_tap_hint'] ?? 'Touchez l\'écran pour commander',
+
+            // [PHASE-37] Kiosk multi-language settings
+            'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),
+            'kiosk_default_language'               => $this->info['kiosk_default_language'] ?? 'fr',
+
+            // [KIOSK-19-1] Admin PIN — exposed ONLY to authenticated kiosk tokens (kiosk:order ability).
+            // The frontend/setting route is public; returning the PIN to unauthenticated callers
+            // would be a critical security leak. Kiosk machines authenticate first via /auth/kiosk-login
+            // and then call /frontend/setting with their Sanctum token.
+            'kiosk_admin_pin'                      => $this->_kioskAdminPin($request),
         ];
+    }
+
+    /**
+     * Return the kiosk admin PIN only to authenticated kiosk machines.
+     * Unauthenticated callers (public frontend/setting) receive null.
+     */
+    private function _kioskAdminPin(\Illuminate\Http\Request $request): ?string
+    {
+        $user = $request->user('sanctum');
+        if ($user && $user->tokenCan('kiosk:order')) {
+            return $this->info['kiosk_admin_pin'] ?? '1234';
+        }
+
+        return null;
+    }
+
+    /**
+     * [PHASE-37] Parse enabled kiosk languages from settings.
+     * Returns array of enabled language codes (e.g., ['fr', 'en', 'ar'])
+     * Defaults to ['fr'] if not configured.
+     */
+    private function _parseLanguagesEnabled(): array
+    {
+        $enabled = $this->info['kiosk_languages_enabled'] ?? 'fr';
+
+        // If already an array, return it
+        if (is_array($enabled)) {
+            return array_filter($enabled);
+        }
+
+        // If comma-separated string, parse it
+        if (is_string($enabled) && str_contains($enabled, ',')) {
+            return array_map('trim', array_filter(explode(',', $enabled)));
+        }
+
+        // Single value (string)
+        return [$enabled];
     }
 
     public function themeImage($key)

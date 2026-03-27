@@ -52,6 +52,7 @@ return [
         'validation_error' => 'Validation Error.',
         'credentials_error' => 'Credentials errors.',
         'credentials_invalid' => 'Invalid credentials or you are blocked',
+        'kiosk_username_not_email' => 'Use the kiosk machine username (e.g. kiosk-lecayenne), not an email address.',
         'role_error' => 'Role errors.',
         'role_exist' => 'Role does not exist.',
         'login_success' => 'Login Successfully.',

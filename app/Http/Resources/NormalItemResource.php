@@ -19,6 +19,19 @@ class NormalItemResource extends JsonResource
     public function toArray($request)
     {
         $price = $this->price;
+
+        // Surface filtering: pass ?surface=kiosk|pos|web to restrict extras and variations.
+        // null surface = no filtering (admin, backward-compatible).
+        $surface = $request->get('surface');
+
+        $filteredExtras = $surface
+            ? $this->extras->filter(fn($e) => $e->isVisibleOn($surface))->values()
+            : $this->extras;
+
+        $filteredVariations = $surface
+            ? $this->variations->filter(fn($v) => $v->isVisibleOn($surface))->values()
+            : $this->variations;
+
         return [
             "id" => $this->id,
             "name" => $this->name,
@@ -40,9 +53,9 @@ class NormalItemResource extends JsonResource
             "thumb" => $this->thumb,
             "cover" => $this->cover,
             "preview" => $this->preview,
-            "variations" => $this->variations->groupBy('item_attribute_id'),
-            "itemAttributes" => ItemAttributeResource::collection($this->itemAttributeList($this->variations)),
-            "extras" => ItemExtraResource::collection($this->extras->load('item')),
+            "variations" => $filteredVariations->groupBy('item_attribute_id'),
+            "itemAttributes" => ItemAttributeResource::collection($this->itemAttributeList($filteredVariations)),
+            "extras" => ItemExtraResource::collection($filteredExtras->load('item')),
             "addons" => ItemAddonResource::collection($this->addons->load('addonItem', 'addonItem.variations', 'addonItem.offer', 'item')),
             "offer" => SimpleOfferResource::collection(
                 $this->offer->filter(function ($offer) use ($price) {

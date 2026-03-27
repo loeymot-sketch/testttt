@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\KioskMachineResource;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class KioskMachineLoginController extends Controller
 {
@@ -36,9 +37,16 @@ class KioskMachineLoginController extends Controller
             ], 422);
         }
 
-        $kioskMachine = KioskMachine::where('username', $request->post('username'))->first();
+        $username = trim((string) $request->post('username'));
+        if (str_contains($username, '@')) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.kiosk_username_not_email')],
+            ], 422);
+        }
 
-        if (!$kioskMachine || !Hash::check($request->post('password'), $kioskMachine->password)) {
+        $kioskMachine = KioskMachine::where('username', $username)->first();
+
+        if (!$kioskMachine || !Hash::check((string) $request->post('password'), $kioskMachine->password)) {
             return response()->json([
                 'errors' => ['validation' => trans('all.message.credentials_invalid')]
             ], 400);
@@ -71,8 +79,9 @@ class KioskMachineLoginController extends Controller
             foreach ($kiosks as $k) {
                 $k->update(['is_login' => Ask::NO]);
             }
-            if ($user->currentAccessToken()) {
-                $user->currentAccessToken()->delete();
+            $current = $user->currentAccessToken();
+            if ($current instanceof PersonalAccessToken) {
+                $current->delete();
             }
         }
 

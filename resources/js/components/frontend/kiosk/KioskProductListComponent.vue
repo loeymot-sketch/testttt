@@ -16,20 +16,20 @@
     <!-- Loading -->
     <div v-if="loading" class="kiosk-prod-loading">
       <div class="kiosk-spinner" />
-      <p>Chargement des produits...</p>
+      <p>{{ $t('kiosk.loading') }}</p>
     </div>
 
-    <!-- Liste produits -->
-    <div v-else class="kiosk-prod-list">
+    <!-- Grille produits 2 colonnes — style Splash -->
+    <div v-else class="kiosk-prod-grid">
       <div
         v-for="(product, idx) in products"
         :key="product.id"
         class="kiosk-prod-card"
         :class="{ 'is-loading': loadingItemId === product.id }"
-        :style="{ animationDelay: (idx * 50) + 'ms' }"
+        :style="{ animationDelay: (idx * 40) + 'ms' }"
         @click="selectProduct(product)"
       >
-        <!-- Image -->
+        <!-- Zone image (haut de carte) -->
         <div class="kiosk-prod-img-wrap">
           <img
             v-if="product.thumb || product.image"
@@ -39,25 +39,34 @@
             loading="lazy"
           />
           <div v-else class="kiosk-prod-img-placeholder">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <path d="M24 8C15.2 8 8 15.2 8 24s7.2 16 16 16 16-7.2 16-16S32.8 8 24 8z" fill="rgba(255,255,255,0.1)"/>
-              <text x="24" y="30" text-anchor="middle" font-size="20">🍽️</text>
-            </svg>
+            <span class="kiosk-prod-emoji">{{ getCategoryEmoji(product.name) }}</span>
           </div>
+          <!-- Overlay gradient bas -->
+          <div class="kiosk-prod-img-overlay" />
           <!-- Badge populaire -->
-          <div v-if="product.is_featured" class="kiosk-prod-badge">⭐ Populaire</div>
+          <div v-if="product.is_featured == 5" class="kiosk-prod-badge">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1l1.5 3 3.3.5-2.4 2.3.6 3.2L6 8.5l-3 1.5.6-3.2L1.2 4.5l3.3-.5L6 1z" fill="white"/>
+            </svg>
+            Populaire
+          </div>
+          <!-- Badge personnalisable -->
+          <div v-if="hasOptions(product)" class="kiosk-prod-badge-custom">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M9.5 2.5L7 5l-1.5-.5L5 3l2.5-2.5L9.5 2.5zM3 7l1.5 1.5-2 2.5L1 11l.5-1.5L3 7z" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            À personnaliser
+          </div>
+          <!-- Spinner de chargement -->
+          <div v-if="loadingItemId === product.id" class="kiosk-prod-loading-overlay">
+            <div class="kiosk-prod-btn-spinner" />
+          </div>
         </div>
 
-        <!-- Contenu -->
+        <!-- Infos (bas de carte) -->
         <div class="kiosk-prod-content">
-          <div class="kiosk-prod-main">
-            <h3 class="kiosk-prod-name">{{ product.name }}</h3>
-            <p v-if="product.description" class="kiosk-prod-desc">{{ truncate(product.description, 80) }}</p>
-            <!-- Tags suppléments si disponibles -->
-            <div class="kiosk-prod-tags" v-if="hasOptions(product)">
-              <span class="kiosk-prod-tag">Personnalisable</span>
-            </div>
-          </div>
+          <h3 class="kiosk-prod-name">{{ product.name }}</h3>
+          <p v-if="product.description" class="kiosk-prod-desc">{{ truncate(product.description, 55) }}</p>
 
           <!-- Prix + bouton -->
           <div class="kiosk-prod-footer">
@@ -68,32 +77,23 @@
               <span class="kiosk-prod-price">{{ formatPrice(product.convert_price) }}</span>
             </div>
             <button class="kiosk-prod-add-btn" @click.stop="selectProduct(product)" :disabled="!!loadingItemId">
-              <svg v-if="loadingItemId !== product.id" width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <path d="M14 6v16M6 14h16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
               </svg>
-              <div v-else class="kiosk-prod-btn-spinner" />
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Charger plus -->
-    <div v-if="hasMore && !loading" class="kiosk-load-more-wrap">
-      <button class="kiosk-load-more-btn" :disabled="loadingMore" @click="loadMore">
-        <span v-if="!loadingMore">Voir plus de produits</span>
-        <span v-else class="kiosk-load-more-spinner"></span>
-      </button>
-    </div>
-
     <!-- Vide / Erreur chargement -->
     <div v-if="!loading && products.length === 0" class="kiosk-prod-empty">
       <div v-if="loadError" class="kiosk-prod-error">
         <span class="kiosk-prod-error-icon">📡</span>
-        <p>Impossible de charger les produits.</p>
-        <button class="kiosk-prod-retry-btn" @click="loadProducts()">Réessayer</button>
+        <p>{{ $t('kiosk.error_loading') }}</p>
+        <button class="kiosk-prod-retry-btn" @click="loadProducts()">{{ $t('kiosk.retry') }}</button>
       </div>
-      <p v-else>Aucun produit disponible dans cette catégorie.</p>
+      <p v-else>{{ $t('kiosk.no_items') }}</p>
     </div>
 
     <!-- Wizard overlay -->
@@ -111,69 +111,57 @@
 
 <script>
 import KioskWizardComponent from './KioskWizardComponent.vue';
-import { mapActions } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 
 export default {
   name: 'KioskProductListComponent',
   components: { KioskWizardComponent },
+  mixins: [kioskPriceMixin],
   props: { categoryId: { type: [String, Number], required: true } },
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
   data() {
     return {
-      products: [],
-      loading: true,
-      loadingMore: false,
-      loadError: false,
-      activeItem: null,
+      loadError:     false,
+      activeItem:    null,
       loadingItemId: null,
-      categoryName: this.$route.query.name || 'Produits',
-      page: 1,
-      hasMore: false,
+      categoryName:  this.$route.query.name || '',
     };
   },
-  mounted() {
-    this.loadProducts();
+
+  computed: {
+    ...mapGetters('kioskMenu', ['loading', 'isStale']),
+
+    // Products filtered from cache — instantaneous, no network call
+    products() {
+      const id = parseInt(this.categoryId, 10) || this.categoryId;
+      return this.$store.getters['kioskMenu/itemsByCategory'](id);
+    },
   },
+
+  mounted() {
+    // If menu cache is stale or empty, fetch it (fills cache for all categories)
+    if (this.isStale || this.$store.getters['kioskMenu/allItems'].length === 0) {
+      this.loadProducts();
+    }
+  },
+
   methods: {
     ...mapActions('kioskCart', ['addItem']),
+    ...mapActions('kioskMenu', ['fetchMenu']),
 
-    async loadProducts(append = false) {
-      if (!append) {
-        this.loading = true;
-        this.loadError = false;
-        this.page = 1;
-        this.products = [];
-      } else {
-        this.loadingMore = true;
-      }
+    async loadProducts() {
+      this.loadError = false;
       try {
-        const res = await this.$store.dispatch('frontendItem/lists', {
-          item_category_id: this.categoryId,
-          paginate: 20,
-          page: this.page,
-          vuex: false,
-        });
-        const newItems = res?.data?.data || [];
-        this.products = append ? [...this.products, ...newItems] : newItems;
-        const meta = res?.data?.meta || res?.data;
-        this.hasMore = meta?.last_page
-          ? this.page < meta.last_page
-          : newItems.length === 20;
+        const branchId = this.$store.state.kioskCart?.branchId;
+        await this.fetchMenu({ branchId });
       } catch (_) {
-        if (!append) {
-          this.products = [];
-          this.loadError = true;
-        }
-        this.hasMore = false;
-      } finally {
-        this.loading = false;
-        this.loadingMore = false;
+        this.loadError = true;
       }
-    },
-
-    async loadMore() {
-      if (this.loadingMore || !this.hasMore) return;
-      this.page++;
-      await this.loadProducts(true);
     },
 
     async selectProduct(product) {
@@ -200,6 +188,7 @@ export default {
             item_extras: { extras: [], names: [] },
             instruction: null,
           });
+          this.showToast(`${detail.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
         }
       } catch (_) {
         // Fallback : ajout simple sans wizard
@@ -217,6 +206,7 @@ export default {
           item_extras: { extras: [], names: [] },
           instruction: null,
         });
+        this.showToast(`${product.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
       } finally {
         this.loadingItemId = null;
       }
@@ -233,53 +223,71 @@ export default {
     addToCartAndClose(cartItem) {
       this.addItem(cartItem);
       this.closeWizard();
+      this.showToast(`${cartItem.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
     },
 
     closeWizard() {
       this.activeItem = null;
     },
 
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price || 0);
-    },
+    // formatPrice() provided by kioskPriceMixin
 
     truncate(text, max) {
       if (!text) return '';
       return text.length > max ? text.slice(0, max) + '...' : text;
     },
+
+    getCategoryEmoji(name) {
+      const n = (name || '').toLowerCase();
+      if (n.includes('tacos')) return '🌮';
+      if (n.includes('burger')) return '🍔';
+      if (n.includes('sandwich')) return '🥪';
+      if (n.includes('pizza')) return '🍕';
+      if (n.includes('kebab')) return '🥙';
+      if (n.includes('frite')) return '🍟';
+      if (n.includes('boisson') || n.includes('coca') || n.includes('jus')) return '🥤';
+      if (n.includes('dessert') || n.includes('gâteau')) return '🍰';
+      if (n.includes('salade')) return '🥗';
+      if (n.includes('poulet')) return '🍗';
+      if (n.includes('viande') || n.includes('bœuf') || n.includes('agneau')) return '🥩';
+      if (n.includes('poisson')) return '🐟';
+      if (n.includes('wrap')) return '🫓';
+      if (n.includes('assiette') || n.includes('plat')) return '🍽️';
+      return '🍽️';
+    },
   },
 };
+
 </script>
 
 <style scoped>
 .kiosk-products {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-dark);
+  background: #fff;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
 }
 
-/* Header */
 .kiosk-prod-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 32px 20px;
-  background: var(--kiosk-dark-2);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  gap: 16px;
+  padding: 20px 28px 16px;
+  background: white;
+  border-bottom: 1px solid #E0E0E0;
   flex-shrink: 0;
 }
 
 .kiosk-prod-back {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #E0E0E0;
+  background: white;
+  color: #1A1A1A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,25 +296,23 @@ export default {
   transition: all 0.15s ease;
 }
 
-.kiosk-prod-back:active { background: rgba(255,255,255,0.12); transform: scale(0.95); }
+.kiosk-prod-back:active { background: #F7F7F8; transform: scale(0.95); }
 
 .kiosk-prod-header-info { flex: 1; }
 
 .kiosk-prod-title {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
-  color: white;
+  color: #1A1A1A;
   margin: 0 0 2px;
-  letter-spacing: -0.3px;
 }
 
 .kiosk-prod-count {
-  font-size: 14px;
-  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  color: #999;
   margin: 0;
 }
 
-/* Loading */
 .kiosk-prod-loading {
   flex: 1;
   display: flex;
@@ -314,63 +320,65 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  color: rgba(255,255,255,0.6);
-  font-size: 18px;
+  color: #999;
+  font-size: 16px;
 }
 
 .kiosk-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255,255,255,0.1);
-  border-top-color: var(--kiosk-primary);
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E0E0E0;
+  border-top-color: #E8001C;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Liste produits */
-.kiosk-prod-list {
+.kiosk-prod-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 32px 120px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 16px 20px 120px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  align-content: start;
   scrollbar-width: none;
 }
 
-.kiosk-prod-list::-webkit-scrollbar { display: none; }
+.kiosk-prod-grid::-webkit-scrollbar { display: none; }
 
-/* Card produit — style Splash horizontal */
 .kiosk-prod-card {
-  background: var(--kiosk-dark-2);
-  border-radius: 20px;
-  border: 1.5px solid rgba(255,255,255,0.07);
+  background: white;
+  border-radius: 16px;
+  border: 1.5px solid #E0E0E0;
   display: flex;
-  gap: 0;
+  flex-direction: column;
   overflow: hidden;
   cursor: pointer;
   animation: cardIn 0.35s ease both;
   transition: transform 0.15s ease, border-color 0.15s ease;
-  min-height: 140px;
+  position: relative;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
 }
 
 @keyframes cardIn {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .kiosk-prod-card:active {
-  transform: scale(0.985);
-  border-color: rgba(232,0,28,0.4);
+  transform: scale(0.97);
+  border-color: #E8001C;
 }
 
-/* Image */
 .kiosk-prod-img-wrap {
   position: relative;
-  width: 150px;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
   flex-shrink: 0;
+  background: #F7F7F8;
 }
 
 .kiosk-prod-img {
@@ -378,136 +386,165 @@ export default {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  display: block;
 }
 
-.kiosk-prod-card:active .kiosk-prod-img { transform: scale(1.03); }
+.kiosk-prod-card:active .kiosk-prod-img { transform: scale(1.04); }
+
+.kiosk-prod-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.08) 100%);
+  pointer-events: none;
+}
 
 .kiosk-prod-img-placeholder {
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F7F7F8;
+}
+
+.kiosk-prod-emoji { font-size: 56px; line-height: 1; }
+
+.kiosk-prod-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #E8001C;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kiosk-prod-badge-custom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kiosk-prod-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.7);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.kiosk-prod-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: var(--kiosk-accent);
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-
-/* Contenu */
 .kiosk-prod-content {
   flex: 1;
-  padding: 20px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
 }
 
-.kiosk-prod-main { flex: 1; }
-
 .kiosk-prod-name {
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 700;
-  color: white;
-  margin: 0 0 6px;
-  letter-spacing: -0.2px;
+  color: #1A1A1A;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .kiosk-prod-desc {
-  font-size: 13px;
-  color: rgba(255,255,255,0.45);
-  margin: 0 0 8px;
-  line-height: 1.5;
-}
-
-.kiosk-prod-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-
-.kiosk-prod-tag {
-  background: rgba(232,0,28,0.15);
-  color: #FF6B6B;
-  border: 1px solid rgba(232,0,28,0.25);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .kiosk-prod-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
+  margin-top: auto;
 }
 
 .kiosk-prod-price-wrap {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .kiosk-prod-old-price {
-  font-size: 14px;
-  color: rgba(255,255,255,0.3);
+  font-size: 11px;
+  color: #ccc;
   text-decoration: line-through;
+  line-height: 1;
 }
 
 .kiosk-prod-price {
-  font-size: 24px;
-  font-weight: 800;
-  color: white;
+  font-size: 18px;
+  font-weight: 900;
+  color: #1A1A1A;
 }
 
 .kiosk-prod-add-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: var(--kiosk-primary);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #E8001C;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(232,0,28,0.4);
+  box-shadow: 0 2px 8px rgba(232,0,28,0.3);
   transition: all 0.15s ease;
 }
 
 .kiosk-prod-add-btn:active {
-  transform: scale(0.92);
-  box-shadow: 0 2px 8px rgba(232,0,28,0.3);
+  transform: scale(0.88);
 }
 
-.kiosk-prod-add-btn:disabled { opacity: 0.6; cursor: default; }
+.kiosk-prod-add-btn:disabled { opacity: 0.5; cursor: default; }
 
 .kiosk-prod-btn-spinner {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border: 2px solid rgba(255,255,255,0.3);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 
-.kiosk-prod-card.is-loading { opacity: 0.75; pointer-events: none; }
+.kiosk-prod-card.is-loading { opacity: 0.7; pointer-events: none; }
 
-/* Vide */
 .kiosk-prod-empty {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.4);
-  font-size: 18px;
+  color: #999;
+  font-size: 16px;
 }
 
 .kiosk-load-more-wrap {
@@ -517,58 +554,51 @@ export default {
 }
 
 .kiosk-load-more-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1.5px solid rgba(255,255,255,0.15);
+  background: #F7F7F8;
+  border: 1.5px solid #E0E0E0;
   border-radius: 50px;
-  color: rgba(255,255,255,0.75);
+  color: #555;
   font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
   padding: 0.85rem 2.5rem;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
   min-width: 200px;
   text-align: center;
 }
 .kiosk-load-more-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.3);
+  background: #EFEFEF;
 }
 .kiosk-load-more-btn:disabled { opacity: 0.5; cursor: default; }
 
 .kiosk-load-more-spinner {
   display: inline-block;
   width: 20px; height: 20px;
-  border: 2.5px solid rgba(255,255,255,0.2);
-  border-top-color: #fff;
+  border: 2.5px solid #E0E0E0;
+  border-top-color: #E8001C;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   vertical-align: middle;
 }
 
-/* Wizard overlay */
 .kiosk-wizard-overlay {
   position: absolute;
   inset: 0;
   z-index: 50;
-  background: var(--kiosk-dark);
+  background: #fff;
 }
 
 .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); }
 .slide-up-enter-from { transform: translateY(100%); }
 .slide-up-leave-to   { transform: translateY(100%); }
 
-/* Retry error */
 .kiosk-prod-error {
   display: flex; flex-direction: column; align-items: center; gap: 1rem;
 }
 .kiosk-prod-error-icon { font-size: 3rem; }
-.kiosk-prod-error p { margin: 0; color: rgba(255,255,255,0.55); }
+.kiosk-prod-error p { margin: 0; color: #999; }
 .kiosk-prod-retry-btn {
-  background: #e8001c; color: #fff; border: none;
+  background: #E8001C; color: #fff; border: none;
   border-radius: 50px; padding: 0.7rem 2rem;
   font-size: 1rem; font-weight: 700; cursor: pointer;
-  transition: background 0.2s;
 }
-.kiosk-prod-retry-btn:hover { background: #c0001a; }
 </style>

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\SendOrderDeliveryBoyMail;
 use App\Events\SendOrderDeliveryBoyPush;
 use App\Events\SendOrderDeliveryBoySms;
+use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
@@ -18,6 +19,8 @@ use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
+use App\Listeners\SendFcmOnOrderCreated;
+use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
 use App\Listeners\SendOrderGotPushNotification;
 use App\Listeners\SendOrderGotSmsNotification;
@@ -79,6 +82,12 @@ class EventServiceProvider extends ServiceProvider
         // [SPLASH LOYALTY] Auto-award points when order is delivered
         OrderStatusChanged::class => [
             AwardLoyaltyPointsOnDelivery::class,
+            // [PHASE-36-P1] FCM push notifications on status change
+            SendFcmOnOrderStatusChange::class,
+        ],
+        // [PHASE-36-P1] FCM push notifications on new order
+        OrderCreated::class => [
+            SendFcmOnOrderCreated::class,
         ],
     ];
 

@@ -24,7 +24,8 @@ class KitchenDisplaySystemOrderService
         'branch_id',
         'order_type',
         'status',
-        'source'
+        'source',
+        'payment_method', // [GAP-29-3] Allow filtering by payment method (e.g. cash=1 for kiosk cash panel)
     ];
 
     protected array $exceptFilter = [
@@ -53,11 +54,19 @@ class KitchenDisplaySystemOrderService
             }
 
             // [FIX-FRONT-05] Pagination KDS: limiter à 50 commandes actives maximum
+            // [AUDIT-P51-BUG1] Fix: include advance orders scheduled for today OR overdue from yesterday+
+            // Previously only showed yesterday's advance orders, causing "zombie" orders to persist unseen.
             return $query->where(function ($query) {
+                // Standard orders: placed today (non-advance)
                 $query->where(function ($subQuery) {
-                    $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
-                })->orWhere(function ($subQuery) {
-                    $subQuery->where('is_advance_order', Ask::YES)->whereDate('order_datetime', Carbon::yesterday());
+                    $subQuery->whereDate('order_datetime', Carbon::today())
+                             ->where('is_advance_order', Ask::NO);
+                })
+                // Advance orders: scheduled for today OR overdue from yesterday/past
+                ->orWhere(function ($subQuery) {
+                    $subQuery->where('is_advance_order', Ask::YES)
+                             ->whereDate('order_datetime', '<=', Carbon::today()) // Today or overdue past dates
+                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
                 });
             })->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
@@ -99,14 +108,21 @@ class KitchenDisplaySystemOrderService
 
             $oldStatus = $order->status;
 
+            // [GAP-21-1 + GAP-21-4] Wrap in DB::transaction so that if save() fails,
+            // no notifications are dispatched with a stale status.
+            // Notifications are dispatched AFTER the transaction commits (post-commit block)
+            // to mirror the same pattern used in FrontendOrderService::myOrderStore().
+            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
+                $order->status = $request->status;
+                $order->save();
+            });
+
+            // Post-commit: dispatch notifications and broadcast now that DB is consistent.
             SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
             SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
             SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            $order->status = $request->status;
-            $order->save();
 
-            // [BUG-C1 FIX] Broadcast status change so OSS and POS update in real-time
-            // No-op if BROADCAST_DRIVER=null; safe to call unconditionally
+            // Broadcast status change so OSS and POS update in real-time
             try {
                 OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
             } catch (\Exception $e) {
@@ -121,7 +137,7 @@ class KitchenDisplaySystemOrderService
     /**
      * @throws Exception
      */
-    public function OrderItems()
+    public function orderItems()
     {
         try {
             $userBranchId = auth()->user()->branch_id ?? 0;
@@ -136,11 +152,16 @@ class KitchenDisplaySystemOrderService
                 $query->where('branch_id', $userBranchId);
             }
 
+            // [FIX-53-2] Mirror the same fix applied to list() in Phase 51:
+            // orderItems() was still using Carbon::yesterday() for advance orders,
+            // causing overdue orders to vanish from the items board after 24h.
             $orders = $query->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) {
-                    $subQuery->where('is_advance_order', Ask::YES)->whereDate('order_datetime', Carbon::yesterday());
+                    $subQuery->where('is_advance_order', Ask::YES)
+                             ->whereDate('order_datetime', '<=', Carbon::today())
+                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 });
             })->get();
 

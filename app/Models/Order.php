@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\BroadcastableOrder;
 use App\Enums\OrderStatus;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Order extends Model
+class Order extends Model implements BroadcastableOrder
 {
     use HasFactory;
 
@@ -36,7 +37,13 @@ class Order extends Model
         'source',
         'pos_payment_method',
         'pos_payment_note',
-        'pos_received_amount'
+        'pos_received_amount',
+        'loyalty_customer_code',
+        'source_surface',
+        // [AUDIT-P50-BUG1] Idempotency key must be fillable so POS orders can be deduplicated
+        'idempotency_key',
+        // [FIX-53-6] loyalty_points_awarded must be fillable for atomic sentinel updates via Eloquent
+        'loyalty_points_awarded',
     ];
 
     protected $casts = [

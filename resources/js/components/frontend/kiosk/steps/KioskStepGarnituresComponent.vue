@@ -1,34 +1,32 @@
 <template>
   <div class="kiosk-step-garnitures">
-    <h3 class="kiosk-step-title">Garnitures incluses</h3>
-    
+    <h3 class="kiosk-step-title">Quelle crudité ?</h3>
+
     <div class="kiosk-garnitures-info">
       <span class="kiosk-info-badge">Toutes les garnitures sont incluses</span>
       <span class="kiosk-info-text">Désélectionnez celles que vous ne voulez pas</span>
     </div>
-    
+
     <div class="kiosk-garnitures-list">
       <div
         v-for="garniture in garnitureList"
         :key="garniture.id"
         class="kiosk-garniture-row"
-        :class="{ selected: localSelections[garniture.id] }"
+        :class="{ selected: localSelections[garniture.id], removed: !localSelections[garniture.id] }"
         @click="toggleGarniture(garniture.id)"
       >
-        <div class="kiosk-garniture-checkbox">
-          <span v-if="localSelections[garniture.id]" class="kiosk-check-icon">✓</span>
-        </div>
-        <div class="kiosk-garniture-info">
+        <div class="kiosk-garniture-visual">
           <img v-if="garniture.thumb" :src="garniture.thumb" class="kiosk-garniture-img" />
           <span class="kiosk-garniture-emoji" v-else>{{ garniture.emoji }}</span>
-          <span class="kiosk-garniture-name">{{ garniture.name }}</span>
+          <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
-        <span class="kiosk-garniture-status">
-          {{ localSelections[garniture.id] ? 'INCLUSE' : 'Retirée' }}
-        </span>
+        <span class="kiosk-garniture-name">{{ garniture.name }}</span>
+        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? 'AVEC' : 'SANS' }}</span>
+        <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
+        <span v-else class="kiosk-garniture-action">+</span>
       </div>
     </div>
-    
+
     <div class="kiosk-garnitures-summary">
       {{ selectedCount }} garniture{{ selectedCount > 1 ? 's' : '' }} sélectionnée{{ selectedCount > 1 ? 's' : '' }}
     </div>
@@ -109,141 +107,166 @@ export default {
 
 <style scoped>
 .kiosk-step-garnitures {
-  padding: 16px;
+  padding: 6px 18px 26px;
+  background: #fff;
+  min-height: 100%;
 }
 
 .kiosk-step-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 16px;
-  color: #1a1a2e;
+  margin: 0 0 12px;
+  color: #333;
 }
 
 .kiosk-garnitures-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 5px;
+  margin-bottom: 14px;
 }
 
 .kiosk-info-badge {
-  background: #43C6AC;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
+  background: transparent;
+  border: none;
+  color: #7d7d7d;
+  padding: 0;
+  border-radius: 50px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .kiosk-info-text {
-  font-size: 14px;
-  color: #666;
+  font-size: 11px;
+  color: #999;
 }
 
 .kiosk-garnitures-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 18px;
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .kiosk-garniture-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: 16px;
-  border: 2px solid #EFF0F6;
-  background: white;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 196px;
+  padding: 10px 10px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: #fff;
   cursor: pointer;
   touch-action: manipulation;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
+  position: relative;
 }
 
-.kiosk-garniture-row:active {
-  transform: scale(0.99);
-}
+.kiosk-garniture-row:active { transform: scale(0.99); }
 
 .kiosk-garniture-row.selected {
-  border-color: #43C6AC;
-  background: #F0FDFB;
+  border-color: rgba(232,0,28,0.14);
+  background: rgba(232,0,28,0.025);
+  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
 }
 
-.kiosk-garniture-row:not(.selected) {
-  opacity: 0.7;
-}
-
-.kiosk-garniture-checkbox {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #EFF0F6;
-  border-radius: 8px;
+.kiosk-garniture-visual {
+  width: 118px;
+  height: 118px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  flex-shrink: 0;
-}
-
-.kiosk-garniture-row.selected .kiosk-garniture-checkbox {
-  border-color: #43C6AC;
-  background: #43C6AC;
-}
-
-.kiosk-check-icon {
-  color: white;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.kiosk-garniture-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
+  position: relative;
 }
 
 .kiosk-garniture-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .kiosk-garniture-emoji {
-  font-size: 32px;
-  width: 48px;
-  height: 48px;
+  font-size: 44px;
+  width: 118px;
+  height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f8;
+  border-radius: 50%;
+}
+
+.kiosk-garniture-strike {
+  position: absolute;
+  width: 130px;
+  height: 2px;
+  background: rgba(199, 62, 79, 0.7);
+  transform: rotate(-38deg);
+  border-radius: 2px;
+}
+
+.kiosk-garniture-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.2;
+  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.kiosk-garniture-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
 .kiosk-garniture-status {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 12px;
-  background: #EFF0F6;
-  color: #666;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 0;
+  border-radius: 50px;
+  background: transparent;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .kiosk-garniture-row.selected .kiosk-garniture-status {
-  background: #43C6AC;
+  color: #d7263d;
+}
+
+.kiosk-garniture-action {
+  position: absolute;
+  top: 12px;
+  right: 22px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #d7263d;
   color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(215,38,61,0.2);
+  outline: 2px solid rgba(255,255,255,0.85);
+}
+
+.kiosk-garniture-action.active {
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .kiosk-garnitures-summary {
   text-align: center;
-  margin-top: 24px;
-  font-size: 16px;
-  color: #666;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #999;
+  font-weight: 500;
 }
 </style>

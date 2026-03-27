@@ -21,19 +21,20 @@
               class="px-3 py-2 flex items-start justify-between gap-2 border-b border-[#EFF0F6] last:border-none">
               <div>
                 <h5 class="text-sm font-medium mb-1">{{ orderItem.item_name }}</h5>
-                <p v-if="orderItem.item_variations.length > 0"
+                <!-- [AUDIT-P1] Array.isArray guard: legacy kiosk orders stored JSON objects,
+                     not arrays. Without this guard, .length on an object is undefined → Vue warning. -->
+                <p v-if="Array.isArray(orderItem.item_variations) && orderItem.item_variations.length > 0"
                   class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                  <span v-for="(variation, index) in orderItem.item_variations" class="text-heading">
+                  <span v-for="(variation, index) in orderItem.item_variations" :key="index" class="text-heading">
                     {{ variation.variation_name }}: {{ variation.name }}<span
                       v-if="index + 1 < orderItem.item_variations.length">,&nbsp;</span>
                   </span>
                 </p>
-                <span class="flex gap-1" v-if="orderItem.item_extras.length > 0">
+                <span class="flex gap-1" v-if="Array.isArray(orderItem.item_extras) && orderItem.item_extras.length > 0">
                   <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:
                   </h3>
-                  <p v-if="orderItem.item_extras.length > 0"
-                    class="text-xs font-normal font-client capitalize text-[#6E7191]">
-                    <span v-for="(extra, index) in orderItem.item_extras" class="text-heading">
+                  <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                    <span v-for="(extra, index) in orderItem.item_extras" :key="index" class="text-heading">
                       {{ extra.name }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
                     </span>
                   </p>
@@ -100,7 +101,7 @@
             <div class="p-3 pb-2" :class="dineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
             </div>
-            <div v-if="dineinOrders.length > 0" class="p-3" v-for="dineinOrder in dineinOrders" :key="dineinOrder">
+            <div v-if="dineinOrders.length > 0" class="p-3" v-for="dineinOrder in dineinOrders" :key="dineinOrder.id">
               <div class="w-full rounded-lg border border-[#EFF0F6]">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
                   <div class="flex items-center gap-1 text-[#0084FF]">
@@ -160,6 +161,12 @@
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
+                    <!-- [AUDIT-P2] Print kitchen ticket button -->
+                    <button type="button" @click="printKitchenTicket(dineinOrder)"
+                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
+                      <i class="fa-solid fa-print text-xs"></i>
+                      Imprimer ticket
+                    </button>
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(dineinOrder.id, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -179,7 +186,7 @@
             <div class="p-3 pb-2" :class="onlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.online_orders") }}</h3>
             </div>
-            <div v-if="onlineOrders.length > 0" class="p-3" v-for="onlineOrder in onlineOrders" :key="onlineOrder">
+            <div v-if="onlineOrders.length > 0" class="p-3" v-for="onlineOrder in onlineOrders" :key="onlineOrder.id">
               <div class="w-full rounded-lg border border-[#EFF0F6]">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]">
                   <div class="flex items-center gap-1 text-[#FF8C1A]">
@@ -238,6 +245,12 @@
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
+                    <!-- [AUDIT-P2] Print kitchen ticket button -->
+                    <button type="button" @click="printKitchenTicket(onlineOrder)"
+                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
+                      <i class="fa-solid fa-print text-xs"></i>
+                      Imprimer ticket
+                    </button>
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(onlineOrder.id, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -258,12 +271,15 @@
               <h3 class="text-lg font-semibold">{{ $t("label.takeaway") }}</h3>
             </div>
             <div v-if="takeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in takeawayOrders"
-              :key="takeawayOrder">
+              :key="takeawayOrder.id">
               <div class="w-full rounded-lg border border-[#EFF0F6]">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FAF4FF]">
                   <div class="flex items-center gap-1 text-[#9837FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#9837FF]"></i>
                     <span class="text-sm font-normal">#{{ takeawayOrder.order_serial_no }}</span>
+                    <!-- [AUDIT-P48-BUG6] Badge BORNE for kiosk orders that appear in takeaway column (order_type=10 with queue_number) -->
+                    <span v-if="takeawayOrder.queue_number"
+                      class="ml-1 text-[9px] font-bold bg-[#9837FF] text-white px-1.5 py-0.5 rounded">BORNE</span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white "
                     :class="takeawayOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (takeawayOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">{{
@@ -313,6 +329,12 @@
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
+                    <!-- [AUDIT-P2] Print kitchen ticket button -->
+                    <button type="button" @click="printKitchenTicket(takeawayOrder)"
+                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
+                      <i class="fa-solid fa-print text-xs"></i>
+                      Imprimer ticket
+                    </button>
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(takeawayOrder.id, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -391,6 +413,12 @@
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
+                    <!-- [AUDIT-P2] Print kitchen ticket button -->
+                    <button type="button" @click="printKitchenTicket(kioskOrder)"
+                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
+                      <i class="fa-solid fa-print text-xs"></i>
+                      Imprimer ticket
+                    </button>
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(kioskOrder.id, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -487,24 +515,75 @@ export default {
       if (!window.Echo) return;
       const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
       if (branchId <= 0) return; // Admin: polling fallback is sufficient
+      // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
+      this.unsubscribeEcho();
       try {
-        this._echoChannel = window.Echo.private(`branch.${branchId}`)
-          .listen('.OrderStatusChanged', () => { this.refreshOrderList(); })
-          .listen('.OrderCreated', () => { this.refreshOrderList(); });
+        const channelName = `branch.${branchId}`;
+        this._echoChannel = window.Echo.private(channelName);
+        // Store listener references for proper cleanup
+        this._echoListenerStatus = () => { this._debouncedRefresh(); };
+        this._echoListenerCreated = () => { this._debouncedRefresh(); };
+        this._echoChannel
+          .listen('.OrderStatusChanged', this._echoListenerStatus)
+          .listen('.OrderCreated', this._echoListenerCreated);
+        console.log(`[KDS] Echo subscribed to ${channelName}`);
       } catch (e) {
         // Echo not available or auth failed — polling fallback handles it
+        console.warn('[KDS] Echo subscription failed:', e.message);
       }
     },
     unsubscribeEcho() {
-      if (!window.Echo || !this._echoChannel) return;
+      if (!window.Echo) return;
       const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
       if (branchId <= 0) return;
-      try { window.Echo.leave(`branch.${branchId}`); } catch (e) {}
+      const channelName = `branch.${branchId}`;
+      try {
+        // [AUDIT-P51-BUG2] Properly stop listening before leaving channel
+        if (this._echoChannel && this._echoListenerStatus) {
+          this._echoChannel.stopListening('.OrderStatusChanged');
+          this._echoChannel.stopListening('.OrderCreated');
+        }
+        // Force leave the channel
+        window.Echo.leave(channelName);
+        console.log(`[KDS] Echo unsubscribed from ${channelName}`);
+      } catch (e) {
+        console.warn('[KDS] Echo unsubscribe error:', e.message);
+      }
       this._echoChannel = null;
+      this._echoListenerStatus = null;
+      this._echoListenerCreated = null;
     },
     refreshOrderList() {
       this.items();
-      this.list(this.props.search.status);
+      // [FIX-54-5] Preserve current filter — use _refreshWithCurrentFilter instead of list()
+      // to avoid falsy value (0) being treated as "no filter" and resetting the status
+      this._refreshWithCurrentFilter();
+    },
+    _refreshWithCurrentFilter() {
+      // [FIX-54-5] Re-fetch orders without modifying props.search.status
+      // This ensures the current filter (e.g., status=7 PREPARING) is preserved
+      // even when the value is 0 (ACCEPT) which is falsy in JavaScript
+      this.loading.isActive = true;
+      this.$store
+        .dispatch("kitchenDisplaySystemOrder/lists", this.props.search)
+        .then((res) => {
+          this.dineinOrders = res.data.data.filter(
+            (item) => item.order_type === orderTypeEnum.DINING_TABLE
+          );
+          this.onlineOrders = res.data.data.filter(
+            (item) => item.order_type === orderTypeEnum.DELIVERY
+          );
+          this.takeawayOrders = res.data.data.filter(
+            (item) => item.order_type === orderTypeEnum.TAKEAWAY
+          );
+          this.kioskOrders = res.data.data.filter(
+            (item) => item.order_type === orderTypeEnum.KIOSK
+          );
+          this.loading.isActive = false;
+        })
+        .catch((err) => {
+          this.loading.isActive = false;
+        });
     },
     openFilterSlide(event) {
       return appService.openFilterSlide(event);
@@ -581,6 +660,71 @@ export default {
       this.props.search.order_serial_no = "";
       this.list();
     },
+    // [AUDIT-P47-BUG4] Escape HTML to prevent XSS when printing kitchen tickets.
+    // Order data comes from DB but could be poisoned if an admin account was compromised.
+    escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    },
+    // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
+    // Opens a minimal print window with order ref, items, variations, extras, and instructions.
+    // No external library needed — uses native window.print() on an isolated document.
+    // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
+    printKitchenTicket(order) {
+      const e = this.escapeHtml.bind(this);
+      const lines = [];
+      const orderLabel = e(order.order_serial_no) || ('#' + e(order.id));
+      const queueLabel = order.queue_number ? ` — N°${e(order.queue_number)}` : '';
+      const typeLabel = {
+        [this.enums.orderTypeEnum.DINING_TABLE]: 'Sur place',
+        [this.enums.orderTypeEnum.DELIVERY]: 'Livraison',
+        [this.enums.orderTypeEnum.TAKEAWAY]: 'À emporter',
+        [this.enums.orderTypeEnum.KIOSK]: 'Borne',
+      }[order.order_type] || '';
+
+      lines.push(`<h2 style="margin:0 0 6px;font-size:18px;">${orderLabel}${queueLabel}</h2>`);
+      if (typeLabel) lines.push(`<p style="margin:0 0 4px;font-size:13px;color:#555;">${typeLabel}</p>`);
+      if (order.order_datetime) lines.push(`<p style="margin:0 0 10px;font-size:12px;color:#888;">${e(order.order_datetime)}</p>`);
+      lines.push('<hr style="border:none;border-top:1px dashed #ccc;margin:8px 0;">');
+
+      (order.order_items || []).forEach(item => {
+        lines.push(`<div style="margin-bottom:10px;">`);
+        lines.push(`<strong style="font-size:15px;">${item.quantity}× ${e(item.item_name)}</strong>`);
+
+        if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
+          const vars = item.item_variations.map(v => `${e(v.variation_name)}: ${e(v.name)}`).join(' | ');
+          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">${vars}</div>`);
+        }
+        if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
+          const extras = item.item_extras.map(ex => e(ex.name)).join(', ');
+          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${extras}</div>`);
+        }
+        if (item.instruction) {
+          lines.push(`<div style="font-size:11px;color:#666;margin-top:3px;white-space:pre-line;">${e(item.instruction)}</div>`);
+        }
+        lines.push('</div>');
+      });
+
+      lines.push('<hr style="border:none;border-top:1px dashed #ccc;margin:8px 0;">');
+      lines.push('<p style="font-size:11px;color:#aaa;text-align:center;">FoodKing KDS</p>');
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket cuisine</title>
+        <style>body{font-family:monospace;padding:12px;max-width:300px;margin:0 auto;}</style>
+        </head><body>${lines.join('')}</body></html>`;
+
+      const win = window.open('', '_blank', 'width=320,height=600,toolbar=0,menubar=0');
+      if (!win) return; // popup blocked
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
+    },
     orderStatus: function (id, status) {
       try {
         this.loading.isActive = true;
@@ -593,20 +737,35 @@ export default {
             1,
             this.$t("label.status")
           );
-          this.list();
-          this.items();
+          // [AUDIT-P49-BUG7] Debounce refresh: list() triggers items update via store,
+          // and Echo broadcast also triggers refresh. Use debounce to prevent triple API calls.
+          this._debouncedRefresh();
           // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
           window.dispatchEvent(new CustomEvent('realtime-order-update', {
             detail: { type: 'status-change', order_id: id, status: status }
           }));
         }).catch((err) => {
           this.loading.isActive = false;
-          alertService.error(err.response.data.message);
+          // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
+          const msg = err?.response?.data?.message || err?.message || 'Erreur réseau';
+          alertService.error(msg);
         });
       } catch (err) {
         this.loading.isActive = false;
-        alertService.error(err.response.data.message);
+        // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
+        const msg = err?.response?.data?.message || err?.message || 'Erreur réseau';
+        alertService.error(msg);
       }
+    },
+    // [AUDIT-P49-BUG7] Debounced refresh: prevents simultaneous list()+items()+Echo refresh.
+    _debouncedRefresh() {
+      if (this._refreshTimeout) {
+        clearTimeout(this._refreshTimeout);
+      }
+      this._refreshTimeout = setTimeout(() => {
+        this.list();
+        this.items();
+      }, 300); // 300ms debounce — sufficient to absorb Echo broadcast + manual call
     },
     toggleFilter(index) {
       if (this.expandedFilter === index) {

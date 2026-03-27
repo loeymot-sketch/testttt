@@ -37,10 +37,16 @@ class OrderStatusScreenOrderService
         try {
             $userBranchId = auth()->user()->branch_id ?? 0;
 
-            // Kiosk orders use queue_number instead of token — include both
+            // [AUDIT-P0-A] Include kiosk TAKEAWAY orders (order_type=10, token=null) that have a queue_number.
+            // Previously only KIOSK (25=sur place) and token-bearing orders were shown.
+            // Kiosk "à emporter" orders use order_type=TAKEAWAY but still have queue_number and must appear on OSS.
             $query = Order::where(function ($q) {
                     $q->whereNotNull('token')
-                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK);
+                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
+                      ->orWhere(function ($sub) {
+                          $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
+                              ->whereNotNull('queue_number');
+                      });
                 })
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
                 ->where(function ($q) {
@@ -48,8 +54,11 @@ class OrderStatusScreenOrderService
                         // [P3-4 FIX] Align with KDS: today's non-advance orders
                         $sub->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($sub) {
-                        // [P3-4 FIX] Align with KDS: yesterday's advance orders only (not all past)
-                        $sub->where('is_advance_order', Ask::YES)->whereDate('order_datetime', Carbon::yesterday());
+                        // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (not just yesterday)
+                        // that are still active (not DELIVERED or CANCELED). Prevents zombie disappearance.
+                        $sub->where('is_advance_order', Ask::YES)
+                            ->whereDate('order_datetime', '<=', Carbon::today())
+                            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 });
 

@@ -11,17 +11,18 @@
                     <tr class="db-table-head-tr">
                         <th class="db-table-head-th">{{ $t("label.name") }}</th>
                         <th class="db-table-head-th">{{ $t("label.additional_price") }}</th>
+                        <th class="db-table-head-th">Surfaces</th>
                         <th class="db-table-head-th">{{ $t("label.status") }}</th>
                         <th class="db-table-head-th">{{ $t("label.action") }}</th>
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="variation.children">
                     <tr class="db-table-body-tr" v-for="child in variation.children" :key="child">
-                        <td class="db-table-body-td overflow-hidden text-wrap">
-                            {{ child.name }}
-                        </td>
+                        <td class="db-table-body-td overflow-hidden text-wrap">{{ child.name }}</td>
+                        <td class="db-table-body-td">{{ child.flat_price }}</td>
                         <td class="db-table-body-td">
-                            {{ child.flat_price }}
+                            <span v-if="!child.visible_on" class="text-xs text-green-600 font-medium">Toutes</span>
+                            <span v-else class="text-xs text-blue-600 font-medium">{{ child.visible_on.join(', ') }}</span>
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(child.status)">
@@ -82,7 +83,8 @@ export default {
                     price: null,
                     item_attribute_id: null,
                     caution: "",
-                    status: statusEnum.ACTIVE
+                    status: statusEnum.ACTIVE,
+                    visible_on: null,
                 },
                 search: {
                     id: 0,
@@ -118,15 +120,14 @@ export default {
         },
         edit: function (itemVariation) {
             appService.modalShow();
-            this.loading.isActive = true;
             this.$store.dispatch('itemVariation/edit', itemVariation.id);
-            this.loading.isActive = false;
             this.variationProps.form = {
-                name: itemVariation.name,
-                price: itemVariation.flat_price,
+                name:              itemVariation.name,
+                price:             itemVariation.flat_price,
                 item_attribute_id: itemVariation.item_attribute_id,
-                caution: itemVariation.caution,
-                status: itemVariation.status
+                caution:           itemVariation.caution,
+                status:            itemVariation.status,
+                visible_on:        itemVariation.visible_on ?? null,
             };
         },
         destroy: function (id) {

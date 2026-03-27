@@ -22,3 +22,7 @@ Homestead.yaml
 stress_test_kds.php
 test_order_simulate.php
 avis\ d\'expert\ .md
+
+# Splash reference clone — analyzed and integrated, not part of FoodKing codebase
+splash-partenaire-windows-borne-clone/
+borne-windows/

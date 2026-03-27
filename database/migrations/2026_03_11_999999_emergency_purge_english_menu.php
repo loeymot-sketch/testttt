@@ -17,19 +17,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        echo "\n";
-        echo "╔════════════════════════════════════════════════════════════╗\n";
-        echo "║  🚨 EMERGENCY PURGE - English Menu Removal              ║\n";
-        echo "╚════════════════════════════════════════════════════════════╝\n";
-        echo "\n";
+        $verbose = !app()->environment('testing');
+        if ($verbose) {
+            echo "\n";
+            echo "╔════════════════════════════════════════════════════════════╗\n";
+            echo "║  🚨 EMERGENCY PURGE - English Menu Removal              ║\n";
+            echo "╚════════════════════════════════════════════════════════════╝\n";
+            echo "\n";
+        }
 
         // Show current state
         $categoriesBefore = DB::table('item_categories')->count();
         $itemsBefore = DB::table('items')->count();
-        
-        echo "Current database state:\n";
-        echo "  - Categories: {$categoriesBefore}\n";
-        echo "  - Items: {$itemsBefore}\n\n";
+
+        if ($verbose) {
+            echo "Current database state:\n";
+            echo "  - Categories: {$categoriesBefore}\n";
+            echo "  - Items: {$itemsBefore}\n\n";
+        }
 
         // Check for English items
         $englishCount = DB::table('items')
@@ -43,7 +48,7 @@ return new class extends Migration
             })
             ->count();
 
-        if ($englishCount > 0) {
+        if ($verbose && $englishCount > 0) {
             echo "⚠️  Found {$englishCount} English items! Purging...\n\n";
         }
 
@@ -67,9 +72,13 @@ return new class extends Migration
         foreach ($tables as $table) {
             try {
                 DB::table($table)->truncate();
-                echo "  ✓ Truncated {$table}\n";
+                if ($verbose) {
+                    echo "  ✓ Truncated {$table}\n";
+                }
             } catch (\Exception $e) {
-                echo "  ⚠️  Could not truncate {$table}: " . $e->getMessage() . "\n";
+                if ($verbose) {
+                    echo "  ⚠️  Could not truncate {$table}: " . $e->getMessage() . "\n";
+                }
             }
         }
 
@@ -84,17 +93,19 @@ return new class extends Migration
         $categoriesAfter = DB::table('item_categories')->count();
         $itemsAfter = DB::table('items')->count();
 
-        echo "\n";
-        echo "╔════════════════════════════════════════════════════════════╗\n";
-        echo "║  ✅ PURGE COMPLETE                                       ║\n";
-        echo "╠════════════════════════════════════════════════════════════╣\n";
-        echo "║  Categories: {$categoriesBefore} → {$categoriesAfter}                              ║\n";
-        echo "║  Items: {$itemsBefore} → {$itemsAfter}                                    ║\n";
-        echo "╠════════════════════════════════════════════════════════════╣\n";
-        echo "║  NEXT STEP: Run MenuSeeder                                  ║\n";
-        echo "║  Command: php artisan db:seed --class=MenuSeeder           ║\n";
-        echo "╚════════════════════════════════════════════════════════════╝\n";
-        echo "\n";
+        if ($verbose) {
+            echo "\n";
+            echo "╔════════════════════════════════════════════════════════════╗\n";
+            echo "║  ✅ PURGE COMPLETE                                       ║\n";
+            echo "╠════════════════════════════════════════════════════════════╣\n";
+            echo "║  Categories: {$categoriesBefore} → {$categoriesAfter}                              ║\n";
+            echo "║  Items: {$itemsBefore} → {$itemsAfter}                                    ║\n";
+            echo "╠════════════════════════════════════════════════════════════╣\n";
+            echo "║  NEXT STEP: Run MenuSeeder                                  ║\n";
+            echo "║  Command: php artisan db:seed --class=MenuSeeder           ║\n";
+            echo "╚════════════════════════════════════════════════════════════╝\n";
+            echo "\n";
+        }
     }
 
     /**
@@ -102,6 +113,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        echo "Cannot restore previous menu data - this was an emergency purge.\n";
+        if (!app()->environment('testing')) {
+            echo "Cannot restore previous menu data - this was an emergency purge.\n";
+        }
     }
 };

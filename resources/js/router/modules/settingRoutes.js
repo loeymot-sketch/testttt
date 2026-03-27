@@ -37,6 +37,8 @@ import LanguageComponent from "../../components/admin/settings/Language/Language
 import LanguageListComponent from "../../components/admin/settings/Language/LanguageListComponent";
 import LanguageShowComponent from "../../components/admin/settings/Language/LanguageShowComponent";
 import OrderSetupComponent from "../../components/admin/settings/OrderSetup/OrderSetupComponent";
+import KioskSetupComponent from "../../components/admin/settings/KioskSetup/KioskSetupComponent";
+import LoyaltySetupComponent from "../../components/admin/settings/LoyaltySetup/LoyaltySetupComponent";
 import PaymentGatewayComponent from "../../components/admin/settings/PaymentGateway/PaymentGatewayComponent";
 import SmsGatewayComponent from "../../components/admin/settings/SmsGateway/SmsGatewayComponent";
 import NotificationAlertComponent from "../../components/admin/settings/NotificationAlert/NotificationAlertComponent";
@@ -134,6 +136,28 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "order_setup",
+                },
+            },
+            {
+                path: "kiosk-setup",
+                component: KioskSetupComponent,
+                name: "admin.settings.kioskSetup",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "kiosk_setup",
+                },
+            },
+            {
+                path: "loyalty-setup",
+                component: LoyaltySetupComponent,
+                name: "admin.settings.loyaltySetup",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "loyalty_setup",
                 },
             },
             {

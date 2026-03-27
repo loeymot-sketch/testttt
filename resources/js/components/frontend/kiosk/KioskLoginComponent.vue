@@ -16,10 +16,18 @@
             v-model="username"
             type="text"
             class="kiosk-login-input"
-            placeholder="Nom de la borne"
+            placeholder="kiosk-lecayenne"
             autocomplete="off"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            inputmode="text"
             :disabled="loading"
           />
+          <p class="kiosk-login-hint">
+            Ce n’est pas l’e-mail du personnel : entrez le
+            <strong>nom d’utilisateur de la borne</strong> défini dans Admin → Bornes.
+          </p>
         </div>
         <div class="kiosk-login-field">
           <label class="kiosk-login-label">Mot de passe</label>
@@ -47,6 +55,10 @@
         </button>
       </form>
 
+      <p v-if="showDevSeedHint" class="kiosk-login-devhint">
+        Seed local (non prod) : utilisateur <code>kiosk-lecayenne</code> · mot de passe
+        <code>kiosk123</code> — à changer en admin après la première connexion.
+      </p>
       <p class="kiosk-login-footer">
         Configurez cette borne dans l'espace admin → Paramètres → Bornes
       </p>
@@ -59,6 +71,11 @@ import { mapActions } from 'vuex';
 
 export default {
   name: 'KioskLoginComponent',
+  computed: {
+    showDevSeedHint() {
+      return process.env.NODE_ENV !== 'production';
+    },
+  },
   data() {
     return {
       username: '',
@@ -67,15 +84,25 @@ export default {
       error: null,
     };
   },
+  mounted() {
+    if (this.$route.query.auto_failed === '1') {
+      this.error = 'Connexion automatique impossible. Vérifiez que la machine existe en admin (Paramètres → Bornes), les identifiants .env (KIOSK_MACHINE_*) ou KIOSK_DEFAULT_MACHINE_*, puis php artisan config:clear.';
+    }
+  },
   methods: {
     ...mapActions('kioskCart', ['kioskLogin']),
 
     async login() {
-      if (!this.username || !this.password) return;
+      const u = (this.username || '').trim();
+      if (!u || !this.password) return;
+      if (u.includes('@')) {
+        this.error = 'Utilisez le nom d’utilisateur de la borne (ex. kiosk-lecayenne), pas une adresse e-mail.';
+        return;
+      }
       this.loading = true;
       this.error = null;
       try {
-        await this.kioskLogin({ username: this.username, password: this.password });
+        await this.kioskLogin({ username: u, password: this.password });
         // Redirect to idle screen after successful login
         this.$router.replace({ name: 'kiosk.idle' });
       } catch (err) {
@@ -164,6 +191,27 @@ export default {
 .kiosk-login-input:focus { border-color: #e8001c; }
 .kiosk-login-input::placeholder { color: rgba(255,255,255,0.25); }
 .kiosk-login-input:disabled { opacity: 0.5; }
+.kiosk-login-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.38);
+}
+.kiosk-login-hint strong { color: rgba(255,255,255,0.55); font-weight: 600; }
+.kiosk-login-devhint {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.32);
+  text-align: center;
+}
+.kiosk-login-devhint code {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.65);
+}
 .kiosk-login-error {
   margin: 0;
   background: rgba(232,0,28,0.12);

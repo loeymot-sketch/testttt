@@ -30,6 +30,14 @@
                 <i class="lab lab-order-setup text-sm"></i>
                 {{ $t("menu.order_setup") }}
             </router-link>
+            <router-link :to="{ name: 'admin.settings.kioskSetup' }" class="db-tab-btn">
+                <i class="lab lab-kiosk text-sm"></i>
+                {{ $t("menu.kiosk_setup") }}
+            </router-link>
+            <router-link :to="{ name: 'admin.settings.loyaltySetup' }" class="db-tab-btn">
+                <i class="lab lab-loyalty text-sm"></i>
+                {{ $t("menu.loyalty_setup") }}
+            </router-link>
             <router-link :to="{ name: 'admin.settings.otp' }" class="db-tab-btn">
                 <i class="lab lab-otp text-sm"></i>
                 {{ $t("menu.otp") }}

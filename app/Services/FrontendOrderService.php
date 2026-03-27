@@ -35,6 +35,9 @@ class FrontendOrderService
 {
 
     public object $frontendOrder;
+    // [AUDIT-P2] Flag set to true when loyalty discount is successfully applied server-side.
+    // Exposed in the API response so the kiosk can show a toast if points were silently dropped.
+    public bool $loyaltyApplied = false;
     protected array $frontendOrderFilter = [
         'order_serial_no',
         'user_id',
@@ -61,8 +64,12 @@ class FrontendOrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $frontendOrderColumn = $request->get('order_column') ?? 'id';
-            $frontendOrderType = $request->get('order_by') ?? 'desc';
+            // [SECURITY] Whitelist sortable columns to prevent SQL manipulation via order_column
+            $allowedColumns = ['id', 'order_serial_no', 'total', 'order_datetime', 'status', 'created_at'];
+            $requestedColumn = $request->get('order_column', 'id');
+            $frontendOrderColumn = in_array($requestedColumn, $allowedColumns, true) ? $requestedColumn : 'id';
+            $requestedType = strtolower($request->get('order_by', 'desc'));
+            $frontendOrderType = in_array($requestedType, ['asc', 'desc'], true) ? $requestedType : 'desc';
 
             return FrontendOrder::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where(function ($query) use ($requests) {
                 $query->where('user_id', auth()->user()->id);
@@ -104,6 +111,9 @@ class FrontendOrderService
             $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
             if ($existing) {
                 $this->frontendOrder = $existing;
+                // [AUDIT-P47-BUG10] Restore loyaltyApplied based on existing order's discount
+                // so the kiosk shows the correct toast on retry (idempotency hit).
+                $this->loyaltyApplied = ($existing->discount > 0);
                 return $this->frontendOrder;
             }
         }
@@ -114,7 +124,12 @@ class FrontendOrderService
                 $kiosk = \App\Models\KioskMachine::where('user_id', Auth::user()->id)->first();
                 if ($kiosk) {
                     $validatedRequest['branch_id'] = $kiosk->branch_id;
-                    $validatedRequest['order_type'] = OrderType::KIOSK;  // [SPRINT 9] Forcer le type borne
+                    // [GAP-22-1] Allow kiosk to send TAKEAWAY (10) or KIOSK (25).
+                    // Only force KIOSK if the client sent neither of these valid kiosk types.
+                    $clientOrderType = (int) ($validatedRequest['order_type'] ?? 0);
+                    if (!in_array($clientOrderType, [OrderType::KIOSK, OrderType::TAKEAWAY], true)) {
+                        $validatedRequest['order_type'] = OrderType::KIOSK;
+                    }
                 }
 
                 // Attach idempotency key if provided by client
@@ -122,12 +137,20 @@ class FrontendOrderService
                     $validatedRequest['idempotency_key'] = substr($idempotencyKey, 0, 64);
                 }
 
+                // [GAP-21-2] Unset client-supplied financial fields before FrontendOrder::create().
+                // The server recalculates total, subtotal, discount from DB prices below.
+                // Prevents any client-manipulated value from persisting even transiently.
+                unset($validatedRequest['total'], $validatedRequest['subtotal'], $validatedRequest['discount']);
+
                 $this->frontendOrder = FrontendOrder::create(
                     $validatedRequest + [
-                        'user_id' => Auth::user()->id,
-                        'status' => OrderStatus::PENDING,
-                        'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time')
+                        'user_id'          => Auth::user()->id,
+                        'status'           => OrderStatus::PENDING,
+                        'order_datetime'   => date('Y-m-d H:i:s'),
+                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'total'            => 0,
+                        'subtotal'         => 0,
+                        'discount'         => 0,
                     ]
                 );
 
@@ -189,9 +212,19 @@ class FrontendOrderService
                         $calcVariationTotal = 0;
                         if (!empty($item->item_variations)) {
                             foreach ($item->item_variations as $var) {
-                                $dbVar = $dbVariations[$var->id ?? 0] ?? null;
-                                if ($dbVar)
-                                    $calcVariationTotal += $dbVar->price;
+                                $varId = $var->id ?? 0;
+                                $dbVar = $dbVariations[$varId] ?? null;
+                                if (!$dbVar) continue;
+                                // [GAP-21-3] Cross-item injection guard: reject variation that
+                                // belongs to a different item — prevents price manipulation via
+                                // a cheap item's variation applied to an expensive item.
+                                if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                    throw new \InvalidArgumentException(
+                                        "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                $calcVariationTotal += $dbVar->price;
                             }
                         }
                         
@@ -199,9 +232,18 @@ class FrontendOrderService
                         $calcExtraTotal = 0;
                         if (!empty($item->item_extras)) {
                             foreach ($item->item_extras as $ext) {
-                                $dbExt = $dbExtras[$ext->id ?? 0] ?? null;
-                                if ($dbExt)
-                                    $calcExtraTotal += $dbExt->price;
+                                $extId = $ext->id ?? 0;
+                                $dbExt = $dbExtras[$extId] ?? null;
+                                if (!$dbExt) continue;
+                                // [GAP-21-3] Cross-item injection guard: reject extra that
+                                // belongs to a different item.
+                                if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                    throw new \InvalidArgumentException(
+                                        "Extra ID {$extId} n'appartient pas à l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                $calcExtraTotal += $dbExt->price;
                             }
                         }
 
@@ -240,33 +282,38 @@ class FrontendOrderService
                     OrderItem::insert($itemsArray);
                 }
 
-                // [BUG-C2 FIX] Cross-table queue number: read BOTH Order (POS) and FrontendOrder (web/kiosk)
-                // to prevent duplicate queue numbers when POS and kiosk orders coexist in the same branch.
-                // [BUG-H2 FIX] withoutGlobalScope prevents BranchScope from corrupting query for Admin (branch_id=0)
+                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
+                // lockForUpdate() is weak when no rows exist yet (first order of the day) — two concurrent
+                // transactions both read NULL and both compute A001. Cache::lock() provides a named mutex
+                // that serializes the allocation even on empty result sets.
                 $today = date('Y-m-d');
-                $maxQueueObj = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-                    ->where('branch_id', $this->frontendOrder->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxFrontendObj = \App\Models\FrontendOrder::where('branch_id', $this->frontendOrder->branch_id)
-                    ->whereDate('created_at', $today)
-                    ->whereNotNull('queue_number')
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $maxOrderNum = 0;
-                if ($maxQueueObj && preg_match('/^A(\d+)$/', $maxQueueObj->queue_number, $m)) {
-                    $maxOrderNum = (int) $m[1];
+                $lockKey = 'queue_lock_' . $this->frontendOrder->branch_id . '_' . $today;
+                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10); // 10s max hold
+
+                try {
+                    $lock->block(5); // wait up to 5s to acquire
+
+                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
+                    // Both models use the same 'orders' table — use direct DB query with MAX() for true atomicity
+                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
+                        ->where('branch_id', $this->frontendOrder->branch_id)
+                        ->whereDate('created_at', $today)
+                        ->whereNotNull('queue_number')
+                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
+                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
+                        ->value('max_num');
+
+                    $nextQueueNum = $maxQueueNum + 1;
+                    // [AUDIT-P2-F] 4 digits = up to A9999 (was 3 digits limited to 999)
+                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT);
+
+                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                    // Fallback: use timestamp-based suffix to avoid collision if lock times out
+                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
+                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->frontendOrder->branch_id . ' — fallback queue number used.');
+                } finally {
+                    $lock->release();
                 }
-                $maxFrontendNum = 0;
-                if ($maxFrontendObj && preg_match('/^A(\d+)$/', $maxFrontendObj->queue_number, $m)) {
-                    $maxFrontendNum = (int) $m[1];
-                }
-                $nextQueueNum = max($maxOrderNum, $maxFrontendNum) + 1;
-                $queueNumber = 'A' . str_pad($nextQueueNum, 3, '0', STR_PAD_LEFT);
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT
                 $calculatedDiscount = 0;
@@ -284,16 +331,94 @@ class FrontendOrderService
                     }
                 }
 
+                // [AUDIT-P47-BUG5] AVERTISSEMENT ARCHITECTURE — Double déduction possible.
+                // Si le kiosk appelle LoyaltyController::redeem() AVANT de soumettre la commande,
+                // ET que la commande arrive ici avec discount > 0 + loyalty_code,
+                // les points sont déduits DEUX FOIS (une fois dans redeem, une fois ici).
+                // RÈGLE : Le kiosk NE DOIT PAS appeler redeem() si la déduction se fait ici.
+                // Le flow kiosk actuel passe par ici uniquement (pas par redeem()).
+                // redeem() est réservé au POS/web qui n'ont pas ce bloc.
+                // [SPLASH LOYALTY] Validate and apply loyalty discount server-side.
+                // The kiosk sends loyalty_code + discount amount. We verify:
+                //   1. The loyalty_code belongs to a real active user
+                //   2. The user has enough points to cover the requested discount
+                //   3. The discount does not exceed the subtotal
+                // If valid, deduct the points atomically and add the discount.
+                $loyaltyUser = null;
+                if ($request->loyalty_code && $request->discount > 0) {
+                    try {
+                        $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
+                        if ($rate <= 0) $rate = 100;
+                        $requestedDiscount = (float) $request->discount;
+                        $maxDiscount = min($requestedDiscount, $realSubtotal);
+                        $pointsRequired = (int) ceil($maxDiscount * $rate);
+
+                        if ($pointsRequired > 0) {
+                            // [BUG-11-6 FIX] Use lockForUpdate() to prevent race condition:
+                            // two simultaneous kiosk orders with the same loyalty_code could
+                            // both read the same point balance and both succeed, overdrawing points.
+                            $loyaltyUser = \App\Models\User::where('loyalty_code', $request->loyalty_code)
+                                ->where('status', 1)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($loyaltyUser && $loyaltyUser->loyalty_points >= $pointsRequired) {
+                                $calculatedDiscount += $maxDiscount;
+                                // Atomic decrement — safe inside the DB transaction
+                                \Illuminate\Support\Facades\DB::table('users')
+                                    ->where('id', $loyaltyUser->id)
+                                    ->decrement('loyalty_points', $pointsRequired);
+                                // [AUDIT-P2] Signal to the controller that loyalty was honored
+                                $this->loyaltyApplied = true;
+                                // [AUDIT-P49-BUG8] Write redemption to loyalty_transactions ledger for complete audit trail.
+                                // This ensures the customer's history shows the redeem event even when inline (not via LoyaltyController).
+                                $balanceAfter = $loyaltyUser->loyalty_points - $pointsRequired;
+                                \App\Models\LoyaltyTransaction::create([
+                                    'user_id'        => $loyaltyUser->id,
+                                    'loyalty_code'   => $loyaltyUser->loyalty_code,
+                                    'order_id'       => null, // inline redeem is pre-order creation
+                                    'type'           => 'redeem',
+                                    'points'         => -$pointsRequired,
+                                    'balance_after'  => $balanceAfter,
+                                    'source_surface' => 'kiosk',
+                                    'description'    => 'Réduction fidélité appliquée sur commande kiosk',
+                                ]);
+                                Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount}€)");
+                            } elseif ($loyaltyUser) {
+                                Log::warning("[Loyalty] Insufficient points for user #{$loyaltyUser->id}: has {$loyaltyUser->loyalty_points}, needs {$pointsRequired}");
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning("[Loyalty] Discount calculation failed: " . $e->getMessage());
+                    }
+                }
+
                 $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                 $this->frontendOrder->queue_number = $queueNumber;
                 $this->frontendOrder->total_tax = $totalTax;
                 $this->frontendOrder->subtotal = $realSubtotal;
                 $this->frontendOrder->discount = $calculatedDiscount;
-                $this->frontendOrder->total = $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount;
+                $this->frontendOrder->total = max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount);
+                // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
+                // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
+                if ($request->loyalty_code) {
+                    $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
+                }
+                // Track which surface generated this order for loyalty analytics
+                if (!$this->frontendOrder->source_surface) {
+                    $orderType = (int) ($this->frontendOrder->order_type ?? 0);
+                    $isKiosk = in_array($orderType, [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY], true);
+                    $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
+                }
                 $this->frontendOrder->save();
 
                 if ($request->address_id) {
-                    $address = Address::find($request->address_id);
+                    // [SECURITY-IDOR] Ensure the address belongs to the authenticated user.
+                    // Without this check, any user could reference another user's address_id
+                    // and snapshot their private address data onto an order.
+                    $address = Address::where('id', $request->address_id)
+                        ->where('user_id', Auth::user()->id)
+                        ->first();
                     if ($address) {
                         OrderAddress::create([
                             'order_id' => $this->frontendOrder->id,
@@ -320,7 +445,15 @@ class FrontendOrderService
             // [KIOSK] Auto-accept kiosk orders so they immediately appear in KDS.
             // KDS filters on status >= ACCEPT (4). Without this, kiosk orders stay
             // PENDING and are invisible to kitchen staff until manually accepted.
-            if ($this->frontendOrder->order_type === OrderType::KIOSK) {
+            // [GAP-22-1] Also auto-accept TAKEAWAY orders from kiosk (customer chose "à emporter").
+            // We detect a kiosk machine order by checking if the authenticated user owns a KioskMachine.
+            $isKioskMachineOrder = \App\Models\KioskMachine::where('user_id', Auth::user()->id)->exists();
+            $isKioskOrderType = in_array(
+                $this->frontendOrder->order_type,
+                [OrderType::KIOSK, OrderType::TAKEAWAY],
+                true
+            ) && $isKioskMachineOrder;
+            if ($isKioskOrderType) {
                 $this->frontendOrder->status = OrderStatus::ACCEPT;
                 $this->frontendOrder->save();
                 // Fire OrderStatusChanged so KDS/OSS are notified in real-time
@@ -353,8 +486,21 @@ class FrontendOrderService
             }
 
             return $this->frontendOrder;
+        } catch (\Illuminate\Database\QueryException $qe) {
+            // [FIX-54-6] Catch MySQL duplicate key on idempotency_key UNIQUE constraint.
+            // Same recovery logic as OrderService::posOrderStore() for consistency.
+            if ($qe->getCode() === '23000' && $idempotencyKey) {
+                $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    Log::info('[Kiosk Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
+                    return $existing;
+                }
+            }
+            Log::info($qe->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($qe), 422);
         } catch (Exception $exception) {
-            DB::rollBack();
+            // Note: DB::transaction() already rolls back on exception.
+            // Calling DB::rollBack() here is redundant and can interfere with nested transactions.
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -391,9 +537,13 @@ class FrontendOrderService
                 }
 
                 if ($request->status == OrderStatus::CANCELED) {
-                    // Kiosk orders are auto-accepted (ACCEPT=4) for KDS visibility.
-                    // Allow customer cancel as long as kitchen has not started PREPARING (7).
-                    $isKioskOrder = $frontendOrder->order_type === OrderType::KIOSK;
+                    // [FIX] Both KIOSK (25) and TAKEAWAY (10) from kiosk machine follow the same
+                    // cancel threshold: allow cancel until PREPARING starts.
+                    $isKioskOrder = in_array(
+                        (int) $frontendOrder->order_type,
+                        [OrderType::KIOSK, OrderType::TAKEAWAY],
+                        true
+                    );
                     $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
 
                     if ($frontendOrder->status >= $cancelableThreshold) {
@@ -407,11 +557,22 @@ class FrontendOrderService
                             'TXN-' . \Illuminate\Support\Str::random(12)
                         );
                     }
+                    $oldStatus = $frontendOrder->status;
+                    $frontendOrder->status = $request->status;
+                    $frontendOrder->save();
+                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens
+                    try {
+                        event(new \App\Events\OrderStatusChanged(
+                            $frontendOrder,
+                            $oldStatus,
+                            $request->status
+                        ));
+                    } catch (\Exception $e) {
+                        Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+                    }
                     SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    $frontendOrder->status = $request->status;
-                    $frontendOrder->save();
                 }
             }
             return $frontendOrder;

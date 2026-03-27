@@ -1,135 +1,200 @@
-# Plan — POS wizard → panier : alignement prix
+# Plan de Handoff Claude — Bugs Complexes Restants
 
-**Architecte :** Claude  
-**Date :** 2026-03-23  
-**Test type :** **Kimi-test** (manuel POS + `npm run dev`, pas d’Anti-Gravity obligatoire pour cette itération)
-
----
-
-## Compréhension architecture (5–10 lignes)
-
-- Le panier POS (`posCart`) calcule le total ligne : `(convert_price + item_variation_total + item_extra_total) * quantity`.
-- Le wizard (`public/js/pos-wizard.js`) calcule un total parallèle (`calculateRunningTotal`) et synchronise le DOM vers le modal Vue (`ItemComponent`) avant de cliquer « Ajouter au panier ».
-- Si la synchro Vue est en retard ou si les addons n’ont pas `data-addon-id` / `data-addon-name`, le clic part avec des totaux Vue encore au prix de base → ligne panier affiche le prix seul alors que l’instruction KDS est riche.
-- La source de vérité **commande** reste côté serveur (`OrderService`) ; ce correctif porte sur **cohérence UI panier** avant envoi.
+**Date** : 2026-03-27  
+**Auteur** : Kimi  
+**Type de test** : Kimi-test (PHPUnit ciblé login borne)  
+**Priorité** : HAUTE
 
 ---
 
-## Objectif
+## 0. Identifiants / auth — corrigé par Kimi + pièges pour Claude
 
-1. Faire correspondre le **total ligne panier** au **total wizard / bouton Ajouter** après personnalisation.
-2. Réduire la **course** entre synchro DOM et clic automatique.
-3. Éviter un **`data-wizard-total` obsolète** après échec / fermeture wizard.
+### 0.1 Ce qui bloquait en pratique (captures utilisateur)
 
----
+| Symptôme | Cause probable | Correctif Kimi |
+|----------|----------------|----------------|
+| Connexion borne avec `chef@example.com` dans « Identifiant machine » | Confusion : le champ attend le **`username` de `kiosk_machines`**, pas un compte staff | UI : texte d’aide + placeholder `kiosk-lecayenne` + refus immédiat si `@` (front + API 422) |
+| Admin / démo : boutons rapides remplissaient `@demo.foodking.app` | Defaults `config('app.demo_credentials')` ne correspondaient pas au `UserTableSeeder` Le Cayenne | Defaults alignés `admin@lecayenne.fr` / `123456`, etc. + fallbacks JS `LoginComponent.vue` |
+| « Invalid Api Key » sur toute l’SPA | `.env` avec seulement `API_KEY` alors que Laravel lit **`MIX_API_KEY`** (`config/app.php`) | `MIX_API_KEY` documenté dans `.env.example` + repli `API_KEY` si `MIX_API_KEY` vide |
+| En-tête catalogue « NOS NOS BURGERS » | Préfixe UI `NOS` + libellé catégorie déjà « Nos … », ou double « Nos » en base | `stripLeadingNos` en **boucle** + même logique sur **sidebar** (`displayCategoryName`) |
 
-## Tâches (Kimi)
+### 0.2 Référence seed local (hors `APP_ENV=production`)
 
-| ID | Description |
-|----|-------------|
-| P1 | `ItemComponent.vue` : `data-addon-id` / `data-addon-name` sur `.addon` ; lecture `dataset.wizardTotal` dans `addToCart` pour reconstruire `convert_price` ; nettoyage dataset à la fermeture / après succès. |
-| P2 | `pos-wizard.js` : avant submit, poser `data-wizard-total` sur le modal ; retry jusqu’à alignement bouton vs wizard ; parser montants ; à l’ouverture / `closeWizard`, retirer `data-wizard-total`. |
-| P3 | Rebuild `npm run dev`. |
+- **Admin** : `admin@lecayenne.fr` / `123456`
+- **POS** : `pos@lecayenne.fr` / `123456`
+- **Borne** : utilisateur machine `kiosk-lecayenne` / `kiosk123` (`KioskMachineTableSeeder`, branche 1)
+- **Important** : `chef@example.com` n’existe que si `DEMO=true` au moment du seed utilisateurs ; ce n’est **jamais** un identifiant borne.
 
----
+### 0.3 Check-list bugs / risques résiduels (à traiter par Claude si besoin)
 
-## Critères de validation (manuel)
-
-- Produit avec wizard : total wizard ≈ total ligne panier (± arrondi).
-- Menu / addon : somme lignes cohérente avec le wizard.
-- Après erreur validation puis ajout manuel : pas de total « fantôme » du wizard précédent.
-- Sans wizard : comportement inchangé.
-
----
-
-## Risques
-
-- Divergence mineure wizard vs `addon.total_price` Vue sur certains addons (à surveiller en QA).
-- Si le libellé du bouton « Ajouter » change, le parse du prix peut nécessiter un ajustement.
+- [ ] **P0 prod** : refuser démarrage ou log clair si `config('app.api_key')` est vide en `production` (aujourd’hui `'' === ''` peut être ambigu selon clients HTTP).
+- [ ] **P1** : document d’onboarding unique (`README` + `docs/AUDIT_LOGIN_ACCOUNTS.md`) synchronisé après chaque changement de seeder.
+- [ ] **P1** : flux « première borne » sans seed (création machine uniquement admin) — message d’erreur métier si aucune ligne `kiosk_machines` pour la branche.
+- [ ] **P2** : internationaliser `kiosk_username_not_email` pour `ar`, `bn`, `de` (seuls `en` / `fr` ajoutés).
 
 ---
 
-## Suite (humain)
+## 1. Compréhension architecture actuelle
 
-Valider en caisse réelle ; si flakiness persiste → planifier **Anti-Gravity** E2E POS.
-
----
-
-# Plan — POS wizard single-page : layout Crudités (viande | crudités)
-
-**Architecte :** Claude  
-**Date :** 2026-03-10  
-**Contexte :** UI sandwich : boutons crudités perçus comme empilés / chevauchant la colonne viandes + grand vide blanc sous la colonne droite.
-
-## Compréhension (5–10 lignes)
-
-- La rangée `.wizard-2col` est une grille 2 colonnes ; par défaut `align-items: stretch` aligne la hauteur des deux cellules sur la plus haute → la colonne crudités « s’étire » visuellement avec du vide en bas si la liste viandes est longue.
-- La liste viandes en single-page était en `max-height: none` → toute la grille monte en hauteur.
-- Les boutons `.garniture-toggle-btn` (styles injectés + fichier) peuvent dépasser en largeur (`min-width: 0` insuffisant sur le conteneur) et **déborder visuellement** sur la colonne viandes si le texte est long.
-
-## Objectif
-
-1. Supprimer le chevauchement viandes / crudités (confinement largeur + pile verticale stable).
-2. Réduire l’espace blanc inutile (plafond scroll sur la liste viandes + `align-items: start` sur la grille).
-
-## Tâches (Kimi)
-
-| ID | Description |
-|----|-------------|
-| C1 | `public/css/pos-wizard.css` : `.wizard-2col` → `align-items: start`. |
-| C2 | `.wizard-viande-list` (single-page) : `max-height: min(360px, 48vh)`, `overflow-y: auto`. |
-| C3 | `.crudites-section` + `.garniture-toggle` : `width: 100%`, `min-width: 0`, `flex-wrap: nowrap` ; boutons `width: 100%`, `box-sizing`, texte multiligne si besoin. |
-
-## Validation manuelle
-
-- Ouvrir un sandwich avec viandes + crudités : pas de recouvrement sur la 3e colonne viandes ; crudités restent dans la colonne droite.
-- Faire défiler la liste viandes si nombreuses options ; crudités restent en haut (colonne courte).
-- Vue &lt; 600px : grille 1 colonne (régression visuelle rapide).
-
-## Risques
-
-- **Mineur :** hauteur max viandes impose un scroll — acceptable pour densité POS ; ajuster `360px` / `48vh` si retour terrain.
+- FoodKing repose sur Laravel côté backend et Vue 3 côté surfaces client/admin.
+- La borne, la caisse, le KDS et l’écran client partagent le même noyau métier commande/prix/statuts.
+- Le temps réel principal passe par `OrderCreated` / `OrderStatusChanged` sur `private-branch.{branch_id}`.
+- Le push secondaire passe par FCM avec des topics par surface (`kitchen_branch_X`, `pos_branch_X`, etc.).
+- Le tunnel borne est maintenant beaucoup plus proche de GUR visuellement, mais les invariants critiques restent backend/synchro.
+- La numérotation de file, les états de paiement et l’apparition KDS doivent rester parfaitement cohérents entre POS et borne.
+- Le projet n’a toujours pas de vrai modèle “rupture / stock bloquant” exploité de bout en bout.
+- Les prochains sujets demandent une décision d’architecture, pas juste un patch local.
 
 ---
 
-# Plan — Audit POS : ajout panier (wizard → Vue → posCart) + affichage panier
+## 2. Ce que Kimi a corrigé facilement
 
-**Architecte :** Claude  
-**Date :** 2026-03-10  
+- Nettoyage du header catalogue pour éviter `NOS NOS ...` quand le nom de catégorie contient déjà `Nos`.
+- Badge produit changé de `MENU` vers `PERSONNALISER` pour mieux refléter l’ouverture du wizard.
+- Suppression du faux hint `Panier` dans le wizard, qui créait une pollution visuelle inutile.
+- Suppression du doublon de titre dans `KioskOrderSummaryComponent.vue`.
+- Suppression du double loader sur l’écran paiement pour garder un seul état d’attente clair.
 
-## Périmètre
+Ces changements sont faibles en risque et déjà compilés.
 
-- `public/js/pos-wizard.js` : `syncAndSubmit`, `calculateRunningTotal`, `data-wizard-total`, `submitWhenSynced`, `readModalAddButtonTotal`
-- `resources/js/components/admin/pos/ItemComponent.vue` : `addToCart`, bridge `dataset.wizardTotal`
-- `resources/js/store/modules/posCart.js` : agrégation ligne `(convert_price + item_variation_total + item_extra_total) * quantity`
-- `resources/js/components/admin/pos/PosComponent.vue` : rendu lignes panier (prix, instructions)
+---
 
-## Constat (audit)
+## 3. Bugs complexes à reprendre par Claude
 
-| ID | Problème | Gravité |
-|----|----------|---------|
-| SYNC-01 | Si `wizardTotalBeforeSubmit > 0` et total parsé du bouton = 0, l’ancienne logique ne **retry** pas → clic « Ajouter » avant que Vue ait mis à jour le libellé (course DOM). Le pont `data-wizard-total` compensait souvent en silencieux, mais comportement incorrect / fragile. | Moyen |
-| PARSE-01 | `readModalAddButtonTotal` : un libellé i18n avec **plusieurs tirets** peut faire échouer le parse (segment final sans montant). | Faible |
-| CART-01 | `dispatch('posCart/lists').catch()` vide : en échec rare, `data-wizard-total` / `itemArrays` pouvaient rester **stales**. | Faible |
-| UI-01 | Instructions KDS longues dans le panier : pas de `break-words` → débordement horizontal possible. | Faible |
+### P0 — Cycle de vie commande vs paiement CB/TR
 
-## Tâches (Kimi)
+**Constat**
+- `FrontendOrderService` auto-accepte les commandes borne avant confirmation TPE.
+- `KioskPaymentComponent.vue` tente ensuite de “void” côté client si le paiement est refusé ou annulé.
 
-| ID | Description |
-|----|-------------|
-| K1 | `pos-wizard.js` : corriger `submitWhenSynced` (retry si wizard > 0 et bouton 0 ou delta > seuil). |
-| K2 | `pos-wizard.js` : `readModalAddButtonTotal` — fallback dernier nombre dans le texte. |
-| K3 | `ItemComponent.vue` : dans `.catch()` du dispatch panier, nettoyer `dataset.wizardTotal` + `itemArrays`. |
-| K4 | `PosComponent.vue` : `break-words` (et largeur max raisonnable) sur le texte d’instruction ligne panier. |
+**Références**
+- `app/Services/FrontendOrderService.php`
+- `resources/js/components/frontend/kiosk/KioskPaymentComponent.vue`
 
-## Validation manuelle
+**Pourquoi c’est complexe**
+- Le KDS peut voir trop tôt une commande qui n’est pas encore réellement payée.
+- La cohérence dépend aujourd’hui d’un rollback applicatif piloté par le frontend, donc fragile en cas de crash réseau/browser/TPE.
+- Claude doit décider si la borne doit créer une commande en statut transitoire, ou différer l’acceptation métier jusqu’à la confirmation paiement.
 
-- Wizard sandwich + formule addon : total bouton ≈ total ligne(s) panier ; pas de double-clic nécessaire.
-- Changer quantité dans le wizard puis valider.
-- Article gratuit / prix très bas : pas de blocage infini sur retries (wizard total 0 → pas d’attente).
-- Instruction très longue : lisible dans le panier sans casser la mise en page.
+**Attendu Claude**
+- Définir une vraie state machine borne/TPE/KDS.
+- Garantir qu’aucune commande fantôme ne parte en production cuisine.
 
-## Risques résiduels (à documenter en revue)
+### P0 — Numérotation `queue_number` inter-surfaces encore fragile
 
-- Si un addon reste coché côté Vue alors que le wizard en choisit un autre **sans** désélection explicite, divergence possible (hors scope : nécessiterait « reset addons » avant sync).
-- `calculateRunningTotal` utilise `addon_item_currency_price` parsé pour certaines formules ; `addToCart` soustrait les `addon.total_price` Vue — alignement à surveiller si devises / arrondis diffèrent.
+**Constat**
+- POS et borne calculent le prochain numéro via `MAX(queue_number) + 1`.
+- En cas d’échec du lock, le fallback timestampé peut générer un numéro de secours potentiellement collisionnable.
+
+**Références**
+- `app/Services/OrderService.php`
+- `app/Services/FrontendOrderService.php`
+
+**Pourquoi c’est complexe**
+- Le besoin métier est strict : si la caisse fait `70`, la borne doit faire `71`, puis la caisse `72`.
+- Le fallback actuel privilégie la continuité plutôt que l’unicité garantie.
+- Claude doit choisir un mécanisme plus robuste : compteur transactionnel, table dédiée, séquence par branche/date, ou verrou DB fort.
+
+**Attendu Claude**
+- Supprimer le risque de doublon ou de trou incohérent en heure de pointe.
+
+### P0 — Modèle de rupture / indisponibilité absent
+
+**Constat**
+- Aucun champ/flux explicite `stock`, `out_of_stock`, `rupture`, `available` n’est exploité côté backend + kiosque.
+- L’objectif utilisateur exige qu’un produit en rupture soit bloqué immédiatement sur borne avec affichage clair.
+
+**Références**
+- Audit par absence de modèle dédié dans `app/` et côté composants borne.
+
+**Pourquoi c’est complexe**
+- Le sujet touche admin, borne, POS, KDS, potentiellement impression et cohérence prix/menus.
+- Il faut distinguer produit indisponible, variation indisponible, extra indisponible, indisponibilité par branche et éventuellement temporaire.
+
+**Attendu Claude**
+- Proposer le modèle de données et les règles d’exposition multi-surfaces.
+
+### P1 — Topologie temps réel : Echo vs FCM vs polling
+
+**Constat**
+- Echo est utilisé pour les mises à jour live par branche.
+- FCM envoie en parallèle des notifications par topics surface.
+- Le fallback polling reste actif sur plusieurs surfaces.
+
+**Références**
+- `app/Events/OrderCreated.php`
+- `app/Events/OrderStatusChanged.php`
+- `app/Listeners/SendFcmOnOrderCreated.php`
+- `resources/js/components/frontend/kiosk/KioskWaitingComponent.vue`
+- `resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue`
+
+**Pourquoi c’est complexe**
+- Il faut clarifier quelle couche est source de vérité pour quel usage : UI temps réel, réveil device, push passif, reprise après perte réseau.
+- Risque de doublons d’événements, de logique redondante et de comportements différents selon la surface.
+
+**Attendu Claude**
+- Définir un contrat temps réel simple et durable par surface.
+
+### P1 — Limite KDS fixe à 50 commandes actives
+
+**Constat**
+- `KitchenDisplaySystemOrderService` tronque la liste à `50`.
+
+**Référence**
+- `app/Services/KitchenDisplaySystemOrderService.php`
+
+**Pourquoi c’est complexe**
+- En service chargé, des commandes actives peuvent disparaître de l’écran sans être terminées.
+- La bonne solution dépend du modèle d’exploitation réel : pagination, priorisation, colonnes, station cuisine, ou fenêtres actives.
+
+**Attendu Claude**
+- Choisir une stratégie de charge KDS sans casser la lisibilité opérationnelle.
+
+### P1 — Sémantique FCM “web/kiosk/app” à revalider
+
+**Constat**
+- `SendFcmOnOrderCreated` annonce “POS notification for non-POS orders” mais la condition actuelle exclut aussi `WEB`.
+
+**Référence**
+- `app/Listeners/SendFcmOnOrderCreated.php`
+
+**Pourquoi c’est complexe**
+- Ce n’est pas juste un `if` à inverser : il faut confirmer la vraie matrice des notifications par source, par surface et par moment métier.
+
+**Attendu Claude**
+- Valider la matrice de notification cible avant correction.
+
+**Modèle de matrice à remplir (brouillon pour Claude)**
+
+| Événement | Source commande | Topic / canal | Destinataire visé | Condition actuelle (fichier) | Décision cible |
+|-----------|-----------------|---------------|-------------------|------------------------------|----------------|
+| `OrderCreated` | POS | `kitchen_branch_*` | Cuisine | Skippé si status ACCEPT/PREPARING | À valider |
+| `OrderCreated` | Kiosk/Web/App | `pos_branch_*` | Caisse | `!in_array(source, [POS, WEB])` — **WEB exclu** | À valider |
+| `OrderCreated` | * | `customer_order_{id}` | Client | Toujours dispatch | À valider (token / opt-in) |
+| `OrderStatusChanged` | * | FCM via listener dédié | KDS/OSS/mobile | Voir `SendFcmOnOrderStatusChange` | Aligner avec Echo |
+
+---
+
+## 4. Ordre recommandé pour Claude
+
+0. **Valider auth multi-surfaces** : clé API, Sanctum, borne vs admin (pas de régression après changements Kimi).
+1. Formaliser la state machine `commande borne -> paiement -> visibilité KDS`.
+2. Refondre la génération `queue_number` avec garantie d’unicité inter-surfaces.
+3. Définir le modèle `rupture / indisponibilité` multi-branches.
+4. Simplifier la stratégie temps réel et push.
+5. Revenir sur la limite KDS et la matrice FCM (remplir le tableau section 3).
+
+---
+
+## 5. Risque global si on n’agit pas
+
+- Risque de commande vue trop tôt en cuisine.
+- Risque résiduel de collision ou d’incohérence sur les numéros d’appel.
+- Risque de vendre un produit indisponible.
+- Risque de comportements divergents entre borne, POS, KDS et écran client sous charge ou réseau dégradé.
+
+---
+
+## 6. Verdict
+
+Les irritants UI faciles ont été absorbés. Le reste n’est plus du cosmétique : ce sont des sujets de cohérence métier et d’architecture qui doivent être repris par Claude avant validation production.

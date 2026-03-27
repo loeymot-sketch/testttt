@@ -97,8 +97,9 @@
                     <button :onclick="`solve('.', '${inputIdName}')`" value="point"
                         class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">.</button>
                 </div>
-                <button @click="confirmOrder" type="button"
-                    class="rounded-3xl text-base py-2 px-3 font-medium w-full text-white bg-primary">{{
+                <!-- [AUDIT-P2] :disabled prevents a second click while the order is being submitted -->
+                <button @click="confirmOrder" type="button" :disabled="loading.isActive"
+                    class="rounded-3xl text-base py-2 px-3 font-medium w-full text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">{{
                         $t('button.confirm_and_print') }}</button>
             </div>
         </div>
@@ -169,7 +170,10 @@ export default {
             this.$props.props.form.pos_payment_note = "";
         },
         confirmOrder: function () {
-            this.loading.isActive = true; // [BUG-PAY-001 FIX] Prevent double-click
+            // [AUDIT-P2] Strict single-flight guard: if already submitting, bail out immediately.
+            // The :disabled on the button is the first line of defense; this is the second.
+            if (this.loading.isActive) return;
+            this.loading.isActive = true;
             try {
                 // Fix: Lire directement depuis le DOM pour éviter le problème de binding Vue.js
                 if (this.$props.props.form.pos_payment_method === this.posPaymentMethodEnum.CASH) {
@@ -221,14 +225,28 @@ export default {
                         appService.modalShow('#receiptModal');
                     }).catch((err) => {
                         this.loading.isActive = false;
-                        if (typeof err.response.data.errors === 'object') {
-                            _.forEach(err.response.data.errors, (error) => {
+                        // [AUDIT-52-BUG4] Use optional chaining: err.response is undefined on network
+                        // timeout or connection drop, causing a fatal TypeError that freezes the POS page.
+                        const errors = err?.response?.data?.errors;
+                        if (errors && typeof errors === 'object') {
+                            _.forEach(errors, (error) => {
                                 alertService.error(error[0]);
                             });
+                        } else {
+                            alertService.error(
+                                err?.response?.data?.message ||
+                                err?.message ||
+                                'Erreur réseau. Veuillez réessayer.'
+                            );
                         }
                     });
                 }).catch((err) => {
                     this.loading.isActive = false;
+                    alertService.error(
+                        err?.response?.data?.message ||
+                        err?.message ||
+                        'Erreur réseau. Veuillez réessayer.'
+                    );
                 });
 
             } catch (err) {

@@ -103,10 +103,14 @@
         </div>
         <h2 class="kiosk-tpe-title">{{ tpeMessage }}</h2>
         <p class="kiosk-tpe-sub">Suivez les instructions sur le terminal de paiement</p>
-        <div class="kiosk-tpe-progress">
-          <div class="kiosk-tpe-progress-bar" :style="{ width: tpeProgressPct + '%' }" />
-        </div>
-        <p class="kiosk-tpe-hint">Redirection automatique dans {{ tpeCountdown }}s</p>
+        <div class="kiosk-tpe-spinner"></div>
+        <button
+          v-if="tpeCanCancel"
+          class="kiosk-tpe-cancel"
+          @click="cancelCardPayment"
+        >
+          Annuler le paiement
+        </button>
       </div>
     </transition>
 
@@ -124,42 +128,47 @@
         </svg>
       </button>
     </div>
+
   </div>
 </template>
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
-
-const TPE_COUNTDOWN_SECONDS = 5;
+import axios from 'axios';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 
 const TPE_MESSAGES = {
   card: 'Insérez votre carte sur le terminal',
-  tr: 'Présentez votre titre-restaurant',
+  tr:   'Présentez votre titre-restaurant',
 };
 
 export default {
   name: 'KioskPaymentComponent',
+  mixins: [kioskPriceMixin],
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
   data() {
     return {
-      method: null,
-      submitting: false,
-      submitted: false,
-      error: null,
-      // TPE waiting screen (card / ticket restaurant)
-      tpeWaiting: false,
-      tpeCountdown: TPE_COUNTDOWN_SECONDS,
-      tpeProgressPct: 0,
-      _tpeTimer: null,
-      _pendingNav: null,
+      method:        null,
+      submitting:    false,
+      submitted:     false,
+      error:         null,
+      tpeWaiting:    false,
+      tpeMessage:    '',
+      tpeCanCancel:  false,
+      _lastOrder:    null,
     };
   },
   computed: {
-    ...mapGetters('kioskCart', ['total', 'branchId']),
+    // [GAP-22-4] Also read orderType so it's passed to submitOrder
+    ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
     cartTotal() { return this.total; },
-    tpeMessage() { return TPE_MESSAGES[this.method] || 'Terminal en cours…'; },
   },
   beforeUnmount() {
-    clearInterval(this._tpeTimer);
+    // nothing to clear — no more interval
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
@@ -167,60 +176,180 @@ export default {
     selectMethod(m) { this.method = m; this.error = null; },
 
     async confirmPayment() {
-      if (!this.method) return;
+      if (!this.method || this.submitting) return;
       this.submitting = true;
       this.error = null;
 
       try {
-        const res = await this.submitOrder({ paymentMethod: this.method });
+        // Step 1 — Submit order to Laravel API
+        // [GAP-22-4] Pass orderType (sur place=25 / à emporter=10) chosen by customer in cart
+        const res = await this.submitOrder({ paymentMethod: this.method, orderType: this.orderType });
         const orderId  = res?.data?.data?.id || res?.data?.id;
         const queueNum = res?.data?.data?.queue_number || res?.data?.queue_number;
-        const total    = res?.data?.data?.order_amount || this.cartTotal;
-        const navTarget = {
-          name: 'kiosk.waiting',
-          params: { orderId: String(orderId) },
-          query: { queue: queueNum, total },
-        };
+        // [AUDIT-52-BUG5] FrontendOrder (kiosk) uses column 'total', NOT 'order_amount' (POS-only column).
+        // Fallback chain: server total → POS order_amount (never set for kiosk) → client cart total.
+        // Using cartTotal as final fallback only — TPE must always charge the server-validated amount.
+        const total    = res?.data?.data?.total ?? res?.data?.data?.order_amount ?? this.cartTotal;
+
+        // [AUDIT-P2] Check if loyalty discount was silently dropped server-side.
+        // This happens when points were consumed by another order between the loyalty check
+        // and the order commit (race condition). The order still succeeds but without the discount.
+        const loyaltyWasRequested = this.$store.state.kioskCart?.loyaltyDiscount > 0;
+        const loyaltyApplied = res?.data?.loyalty_applied;
+        if (loyaltyWasRequested && loyaltyApplied === false) {
+          this.showToast(
+            'Votre réduction fidélité n\'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction.',
+            'warning',
+            6000
+          );
+        }
+
+        // [AUDIT-P0] Guard: if the API response is malformed and orderId is missing,
+        // do NOT navigate to /waiting/undefined — show a clear error instead.
+        // This prevents an infinite poll loop on GET frontend/order/undefined.
+        // [AUDIT-P48-BUG3] Clearer logic: throw if no orderId AND it's not an offline queued order.
+        const isOfflineId = typeof orderId === 'string' && orderId.startsWith('offline_');
+        if (!orderId && !isOfflineId) {
+          throw new Error('Réponse serveur invalide : identifiant commande manquant. Veuillez réessayer.');
+        }
+
+        this._lastOrder = { id: orderId, queue_number: queueNum, total };
 
         this.submitted = true;
         this.submitting = false;
 
+        const navTarget = {
+          name:   'kiosk.waiting',
+          params: { orderId: String(orderId) },
+          query:  { queue: queueNum, total },
+        };
+
+        // Step 2 — Payment processing
         if (this.method === 'card' || this.method === 'tr') {
-          // Show TPE waiting screen with countdown before proceeding to kitchen waiting
-          this._pendingNav = navTarget;
-          this.startTpeCountdown();
+          await this.processCardPayment(navTarget);
         } else {
-          // Cash: go directly to waiting
-          this.$router.push(navTarget);
+          await this.processCashPayment(navTarget);
         }
+
       } catch (err) {
-        const msg = err?.response?.data?.errors
-          ? Object.values(err.response.data.errors).flat().join(' ')
-          : 'Une erreur est survenue. Veuillez réessayer.';
+        this.tpeWaiting = false;
+        this.tpeCanCancel = false;
+        // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
+        let msg;
+        if (err?.message === 'TPE_TIMEOUT') {
+          msg = 'Le terminal de paiement ne répond pas. Veuillez appeler un membre du personnel.';
+        } else {
+          msg = err?.response?.data?.errors
+            ? Object.values(err.response.data.errors).flat().join(' ')
+            : (err?.message || 'Une erreur est survenue. Veuillez réessayer.');
+        }
         this.error = msg;
+        this.showToast(msg, 'error', 6000);
         this.submitting = false;
+        this.submitted = false;
       }
     },
 
-    startTpeCountdown() {
+    async processCardPayment(navTarget) {
       this.tpeWaiting = true;
-      this.tpeCountdown = TPE_COUNTDOWN_SECONDS;
-      this.tpeProgressPct = 0;
-      const step = 100 / (TPE_COUNTDOWN_SECONDS * 10); // update every 100ms
-      this._tpeTimer = setInterval(() => {
-        this.tpeProgressPct = Math.min(100, this.tpeProgressPct + step);
-        this.tpeCountdown = Math.max(0, TPE_COUNTDOWN_SECONDS - Math.floor((this.tpeProgressPct / 100) * TPE_COUNTDOWN_SECONDS));
-        if (this.tpeProgressPct >= 100) {
-          clearInterval(this._tpeTimer);
-          this.tpeWaiting = false;
-          this.$router.push(this._pendingNav);
+      this.tpeMessage = TPE_MESSAGES[this.method] || 'Terminal en cours…';
+      this.tpeCanCancel = true;
+
+      const isElectron = window.borne?.isElectron;
+      let paymentResult;
+
+      if (isElectron && window.borne?.chargeCard) {
+        // Real TPE via Electron IPC bridge
+        // [AUDIT-52-BUG7] Wrap chargeCard() in a 120s global timeout via Promise.race().
+        // Without this, a frozen/disconnected TPE blocks the kiosk indefinitely.
+        // 120s is generous enough for slow chip+PIN but short enough to recover the kiosk.
+        const TPE_TIMEOUT_MS = 120_000;
+        const tpePromise = window.borne.chargeCard(
+          this._lastOrder.total || this.cartTotal,
+          this._lastOrder.queue_number || this._lastOrder.id,
+          'EUR'
+        );
+        const tpeTimeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TPE_TIMEOUT')), TPE_TIMEOUT_MS)
+        );
+        paymentResult = await Promise.race([tpePromise, tpeTimeoutPromise]);
+      } else {
+        // Browser stub — simulate 2s TPE delay
+        this.tpeMessage = 'Simulation paiement (mode navigateur)…';
+        await new Promise(r => setTimeout(r, 2000));
+        paymentResult = { approved: true, transaction_id: `STUB-${Date.now()}`, card_type: 'VISA' };
+      }
+
+      this.tpeCanCancel = false;
+
+      if (!paymentResult.approved) {
+        this.tpeWaiting = false;
+        // [AUDIT-P1] Void the server-side order when TPE declines/cancels.
+        // Without this, a PENDING order stays in DB forever (orphan order).
+        // We fire-and-forget: if the void fails, staff can cancel manually from admin.
+        if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
+          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
+            .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
-      }, 100);
+        throw new Error(paymentResult.error || 'Paiement refusé par le terminal');
+      }
+
+      this.tpeMessage = 'Paiement accepté ✓';
+
+      // Step 3 — Confirm payment on backend (stores transaction_id)
+      if (this._lastOrder?.id && paymentResult.transaction_id) {
+        try {
+          await axios.post(`frontend/order/${this._lastOrder.id}/payment-confirm`, {
+            transaction_id: paymentResult.transaction_id,
+            card_type:      paymentResult.card_type || 'CARD',
+            payment_method: this.method === 'tr' ? 5 : 4,
+          });
+        } catch (e) {
+          // Non-blocking — order is valid even if confirm call fails
+          console.warn('[KioskPayment] payment-confirm failed:', e.message);
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 800));
+      this.tpeWaiting = false;
+      this.$router.push(navTarget);
     },
 
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price || 0);
+    async processCashPayment(navTarget) {
+      // [SPLASH-FIX] Open cash drawer via Electron IPC on cash payment
+      if (window.borne?.isElectron && window.borne?.openDrawer) {
+        try {
+          const drawerResult = await window.borne.openDrawer();
+          if (!drawerResult?.success && !drawerResult?.skipped) {
+            console.warn('[KioskPayment] Cash drawer failed:', drawerResult?.error);
+            // Non-blocking — order is still valid
+          }
+        } catch (e) {
+          console.warn('[KioskPayment] Cash drawer error:', e.message);
+        }
+      }
+      this.$router.push(navTarget);
     },
+
+    async cancelCardPayment() {
+      if (window.borne?.isElectron && window.borne?.cancelPayment) {
+        try { await window.borne.cancelPayment(); } catch (_) {}
+      }
+      this.tpeWaiting = false;
+      this.tpeCanCancel = false;
+      this.submitted = false;
+      this.submitting = false;
+      this.error = 'Paiement annulé.';
+      this.showToast('Paiement annulé', 'warning', 2500);
+      // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
+      if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
+        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
+          .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
+        this._lastOrder = null;
+      }
+    },
+
+    // formatPrice() provided by kioskPriceMixin
   },
 };
 </script>
@@ -492,17 +621,27 @@ export default {
 .kiosk-tpe-sub {
   font-size: 1rem; color: rgba(255,255,255,0.5); margin: 0; max-width: 340px;
 }
-.kiosk-tpe-progress {
-  width: 280px; height: 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px; overflow: hidden;
+.kiosk-tpe-spinner {
+  width: 64px; height: 64px;
+  border: 5px solid rgba(255,255,255,0.1);
+  border-top-color: #e8001c;
+  border-radius: 50%;
+  animation: tpe-spin 0.8s linear infinite;
 }
-.kiosk-tpe-progress-bar {
-  height: 100%; background: #e8001c;
-  border-radius: 3px;
-  transition: width 0.1s linear;
+@keyframes tpe-spin { to { transform: rotate(360deg); } }
+
+.kiosk-tpe-cancel {
+  margin-top: 8px;
+  padding: 14px 40px;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 14px;
+  color: rgba(255,255,255,0.7);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-.kiosk-tpe-hint {
-  font-size: 0.85rem; color: rgba(255,255,255,0.3); margin: 0;
-}
+.kiosk-tpe-cancel:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
 </style>

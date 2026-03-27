@@ -70,7 +70,12 @@ export const posOrder = {
         },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post("admin/pos", payload).then((res) => {
+                // [AUDIT-P50-BUG2] Send idempotency key header to prevent duplicate POS orders on double-clicks
+                const idempotencyKey = payload?.idempotency_key || null;
+                const config = idempotencyKey
+                    ? { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                    : {};
+                axios.post("admin/pos", payload, config).then((res) => {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

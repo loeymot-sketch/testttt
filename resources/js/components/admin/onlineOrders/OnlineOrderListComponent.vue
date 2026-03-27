@@ -252,7 +252,8 @@ export default {
                 },
                 orderTypeEnumArray: {
                     [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
-                    [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway")
+                    [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
+                    [orderTypeEnum.KIOSK]: this.$t("label.kiosk")
                 }
             },
             printLoading: true,

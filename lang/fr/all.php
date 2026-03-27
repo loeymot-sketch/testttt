@@ -52,6 +52,7 @@ return [
         'validation_error' => 'Erreur de validation.',
         'credentials_error' => 'Erreur de connexion.',
         'credentials_invalid' => 'Identifiants invalides ou compte bloqué',
+        'kiosk_username_not_email' => 'Utilisez le nom d’utilisateur de la borne (ex. kiosk-lecayenne), pas une adresse e-mail.',
         'role_error' => 'Erreur de rôle.',
         'role_exist' => "Le rôle n'existe pas.",
         'login_success' => 'Connexion réussie.',

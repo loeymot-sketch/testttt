@@ -17,18 +17,19 @@ class ItemExtraResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->id,
-            'item_id' => $this->item_id,
-            'name' => $this->name,
-            'price' => $this->price,
-            'currency_price' => AppLibrary::currencyAmountFormat($this->price),
-            'flat_price' => AppLibrary::flatAmountFormat($this->price),
+            'id'            => $this->id,
+            'item_id'       => $this->item_id,
+            'name'          => $this->name,
+            'price'         => $this->price,
+            'currency_price'=> AppLibrary::currencyAmountFormat($this->price),
+            'flat_price'    => AppLibrary::flatAmountFormat($this->price),
             'convert_price' => AppLibrary::convertAmountFormat($this->price),
-            'status' => $this->status,
-            // [SPRINT-8] Ajout pour le wizard kiosk — images et badge NOUVEAU
-            'thumb' => $this->thumb ?? null,
-            'is_new' => (bool) ($this->is_new ?? false),
-            'item' => optional($this->item)->name,
+            'status'        => $this->status,
+            'visible_on'    => $this->visible_on,   // null = all surfaces
+            'group_label'   => $this->group_label,  // e.g. "Sauce", "Supplément", "Garniture"
+            'thumb'         => $this->thumb ?? null,
+            'is_new'        => (bool) ($this->is_new ?? false),
+            'item'          => optional($this->item)->name,
         ];
     }
 }

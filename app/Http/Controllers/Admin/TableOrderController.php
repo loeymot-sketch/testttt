@@ -63,7 +63,7 @@ class TableOrderController extends AdminController
     public function changeStatus(Order $order, OrderStatusRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new OrderDetailsResource($this->orderService->changeStatus($order, false, $request));
+            return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -72,7 +72,7 @@ class TableOrderController extends AdminController
     public function changePaymentStatus(Order $order, PaymentStatusRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new OrderDetailsResource($this->orderService->changePaymentStatus($order, false, $request));
+            return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -81,7 +81,7 @@ class TableOrderController extends AdminController
     public function tokenCreate(Order $order, TableOrderTokenRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new OrderDetailsResource($this->orderService->tokenCreate($order, false, $request));
+            return new OrderDetailsResource($this->orderService->tokenCreate($order, $request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

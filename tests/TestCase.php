@@ -12,6 +12,16 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Aligné routes `apiKey` (auth, admin, frontend) avec phpunit.xml MIX_API_KEY
+        $this->withHeaders([
+            'x-api-key' => config('app.api_key', env('MIX_API_KEY', 'test-api-key')),
+            'Accept'    => 'application/json',
+        ]);
+    }
+
     /**
      * Set up minimal application settings required by middleware.
      * Called AFTER migrations (RefreshDatabase trait migrates before setUp hooks).
@@ -73,15 +83,42 @@ abstract class TestCase extends BaseTestCase
         Role::firstOrCreate(['name' => 'Customer',       'guard_name' => 'sanctum']);
         Role::firstOrCreate(['name' => 'Stuff',          'guard_name' => 'sanctum']);
 
-        // Create permissions and assign to Admin role
-        $permissions = ['online-orders', 'pos-orders', 'kitchen-display-system', 'pos'];
-        foreach ($permissions as $perm) {
+        $permissionNames = [
+            'online-orders',
+            'pos-orders',
+            'kitchen-display-system',
+            'pos',
+            'dashboard',
+            'order-status-screen',
+        ];
+        foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
         }
 
         $adminRole = Role::where('name', 'Admin')->where('guard_name', 'sanctum')->first();
         if ($adminRole) {
-            $adminRole->syncPermissions($permissions);
+            $adminRole->syncPermissions($permissionNames);
+        }
+
+        // Aligné RolePermissionTableSeeder (POS / Chef ont besoin de dashboard + écrans métier)
+        $posRole = Role::where('name', 'POS Operator')->where('guard_name', 'sanctum')->first();
+        if ($posRole) {
+            $posRole->syncPermissions([
+                'dashboard',
+                'pos',
+                'pos-orders',
+                'kitchen-display-system',
+                'order-status-screen',
+            ]);
+        }
+
+        $chefRole = Role::where('name', 'Chef')->where('guard_name', 'sanctum')->first();
+        if ($chefRole) {
+            $chefRole->syncPermissions([
+                'dashboard',
+                'kitchen-display-system',
+                'order-status-screen',
+            ]);
         }
     }
 }

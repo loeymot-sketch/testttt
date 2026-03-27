@@ -90,5 +90,45 @@ class RolePermissionTableSeeder extends Seeder
             $chefPermissions = Permission::whereIn('name', $chefPermissions)->get();
             $chef->givePermissionTo($chefPermissions);
         }
+
+        // [GAP-19-5] POS Operator also needs KDS + OSS visibility.
+        // In a small restaurant (Le Cayenne), the cashier monitors the kitchen
+        // and the order status screen directly from the POS station.
+        // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
+        $posOperatorManager = Role::find(EnumRole::POS_OPERATOR);
+        if ($posOperatorManager) {
+            $extraPermissions = Permission::whereIn('name', [
+                'kitchen-display-system',
+                'order-status-screen',
+            ])->get();
+            $posOperatorManager->givePermissionTo($extraPermissions);
+        }
+
+        // [GAP-19-5] Stuff role had zero permissions — blocked after login.
+        // Stuff = floor staff (runners, helpers). They need KDS read access
+        // to see which orders are ready to serve, and the OSS to track status.
+        // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
+        $stuff = Role::find(EnumRole::STUFF);
+        if ($stuff) {
+            $stuffPermissions = Permission::whereIn('name', [
+                'dashboard',
+                'kitchen-display-system',
+                'order-status-screen',
+            ])->get();
+            $stuff->givePermissionTo($stuffPermissions);
+        }
+
+        // [GAP-19-5] Waiter role — needs table orders + KDS + OSS visibility.
+        // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
+        $waiter = Role::find(EnumRole::WAITER);
+        if ($waiter) {
+            $waiterPermissions = Permission::whereIn('name', [
+                'dashboard',
+                'table-orders',
+                'kitchen-display-system',
+                'order-status-screen',
+            ])->get();
+            $waiter->givePermissionTo($waiterPermissions);
+        }
     }
 }

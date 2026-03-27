@@ -98,6 +98,19 @@
                     <i class="fa-solid fa-circle-plus text-white"></i>
                 </div>
             </div>
+
+            <!-- Loyalty badge — shown when selected customer has a loyalty account -->
+            <div v-if="selectedCustomerLoyalty.code" class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+                <i class="fa-solid fa-star text-amber-500 text-sm"></i>
+                <span class="text-xs font-medium text-amber-700">
+                    <span v-if="selectedCustomerLoyalty.loading">...</span>
+                    <template v-else>
+                        <span class="font-bold">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
+                        <span class="text-amber-500 ml-1">({{ selectedCustomerLoyalty.code }})</span>
+                    </template>
+                </span>
+            </div>
+
             <div class="p-3 pt-2 rounded-lg border border-[#D9DBE9]">
                 <h4 class="text-sm font-medium mb-3">{{ $t('label.select_order_type') }}</h4>
 
@@ -408,6 +421,10 @@
                 <li class="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
                     <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
                         {{ $t("label.total") }}
+                        <!-- [AUDIT-P2] Tax is recalculated server-side from catalog tax_id.
+                             Display total here is pre-tax (subtotal + delivery - discount).
+                             Final order total may differ slightly if products carry a tax rate. -->
+                        <span class="text-xs font-normal text-[#A0A3BD] ml-1">(HT)</span>
                     </span>
                     <span class="text-base font-bold font-rubik leading-6 text-primary">
                         {{
@@ -588,7 +605,14 @@
               </div>
               <div class="kiosk-cash-order-foot">
                 <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
-                <span class="kiosk-cash-order-status">💵 Espèces à encaisser</span>
+                <!-- [GAP-25-2] Bouton "Encaisser" — marque la commande comme DELIVERED (13) -->
+                <button
+                  class="kiosk-cash-collect-btn"
+                  :disabled="order._collecting"
+                  @click="collectKioskCashOrder(order)"
+                >
+                  {{ order._collecting ? '…' : '✓ Encaisser' }}
+                </button>
               </div>
             </div>
           </div>
@@ -652,6 +676,7 @@ export default {
             kioskCashLoading: false,
             showKioskCashPanel: false,
             _kioskPollTimer: null,
+            _echoChannel: null,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -672,8 +697,13 @@ export default {
                     items: [],
                     dining_table_id: null,
                     pos_received_amount: null,
-
+                    loyalty_customer_code: null,
                 }
+            },
+            selectedCustomerLoyalty: {
+                points: null,
+                code: null,
+                loading: false,
             },
             props: {
                 search: {
@@ -821,15 +851,18 @@ export default {
     },
     beforeUnmount() {
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        this._unsubscribeEcho();
     },
     mounted() {
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
         this.itemList();
-        // Poll kiosk cash orders every 30s
+        // Load kiosk cash orders immediately, then subscribe to Echo push for sub-second updates.
+        // Polling is kept as a 60s fallback in case Echo is unavailable (no Soketi running).
         this.loadKioskCashOrders();
-        this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), 30000);
+        this._subscribeEcho();
+        this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), 60000);
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
@@ -928,21 +961,63 @@ export default {
 
     },
     methods: {
+        // ── Echo real-time subscription for kiosk cash orders ─────────────
+        _subscribeEcho() {
+            if (!window.Echo) return;
+            const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+            if (branchId <= 0) return;
+            try {
+                this._echoChannel = window.Echo.private(`branch.${branchId}`)
+                    .listen('.OrderCreated', () => { this.loadKioskCashOrders(); })
+                    .listen('.OrderStatusChanged', () => { this.loadKioskCashOrders(); });
+            } catch (e) {
+                // Echo auth failed or Soketi not running — polling fallback handles it
+            }
+        },
+        _unsubscribeEcho() {
+            if (!window.Echo || !this._echoChannel) return;
+            const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+            if (branchId <= 0) return;
+            try { window.Echo.leave(`branch.${branchId}`); } catch (e) {}
+            this._echoChannel = null;
+        },
+
         // ── Kiosk cash orders ──────────────────────────────────────────────
         async loadKioskCashOrders() {
             this.kioskCashLoading = true;
             try {
-                // Fetch kiosk orders with cash payment (status ACCEPT=4 or PREPARING=7)
-                const res = await axios.get('admin/kds-order', {
-                    params: { order_type: 25, payment_method: 1, paginate: 20 },
-                }).catch(() => null);
-                const all = res?.data?.data || [];
-                // Client-side filter by status (ACCEPT=4, PREPARING=7)
-                this.kioskCashOrders = all.filter(o => [4, 7].includes(parseInt(o.order_status ?? o.status, 10)));
+                // [GAP-25-1] Fetch BOTH order_type=25 (KIOSK/sur place) AND order_type=10 (TAKEAWAY/à emporter)
+                // since kiosk now allows customers to choose "à emporter" (Phase 22).
+                const [resKiosk, resTakeaway] = await Promise.all([
+                    axios.get('admin/kds-order', { params: { order_type: 25, payment_method: 1, paginate: 50 } }).catch(() => null),
+                    axios.get('admin/kds-order', { params: { order_type: 10, payment_method: 1, paginate: 50 } }).catch(() => null),
+                ]);
+                const all = [
+                    ...(resKiosk?.data?.data || []),
+                    ...(resTakeaway?.data?.data || []),
+                ];
+                // Client-side filter by status (ACCEPT=4, PREPARING=7, PREPARED=8)
+                this.kioskCashOrders = all
+                    .filter(o => [4, 7, 8].includes(parseInt(o.order_status ?? o.status, 10)))
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             } catch (_) {
                 this.kioskCashOrders = [];
             } finally {
                 this.kioskCashLoading = false;
+            }
+        },
+
+        // [GAP-25-2] Mark a kiosk cash order as DELIVERED (collected + paid by cashier)
+        async collectKioskCashOrder(order) {
+            if (order._collecting) return;
+            order._collecting = true;
+            try {
+                await axios.post(`admin/kds-order/change-status/${order.id}`, { status: 13 }); // 13 = DELIVERED
+                await this.loadKioskCashOrders();
+            } catch (err) {
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'encaissement';
+                alertService.error(msg);
+                order._collecting = false;
             }
         },
         formatKioskPrice(amount) {
@@ -1169,6 +1244,11 @@ export default {
                     return;
                 }
             }
+
+            // [AUDIT-P50-BUG2] Generate idempotency key for POS orders to prevent double-submit duplicates
+            // This key is unique per checkout attempt and sent in X-Idempotency-Key header
+            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${this.checkoutProps.form.branch_id || 0}`;
+
             this.loading.isActive = false;
             appService.modalShow('#orderpayment');
         },
@@ -1288,6 +1368,44 @@ export default {
             this.$refs.takeAway?.classList.remove('active');
         },
 
+        _loadCustomerLoyalty: function (customerId) {
+            const customer = this.customers.find(c => c.id === customerId);
+            if (!customer) {
+                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
+                this.checkoutProps.form.loyalty_customer_code = null;
+                return;
+            }
+            // If the customer list already includes loyalty_code (from UserResource), use it directly.
+            if (customer.loyalty_code) {
+                this.selectedCustomerLoyalty = {
+                    points: customer.loyalty_points ?? null,
+                    code: customer.loyalty_code,
+                    loading: false,
+                };
+                this.checkoutProps.form.loyalty_customer_code = customer.loyalty_code;
+                return;
+            }
+            // Fallback: fetch from loyalty API (for customers without loyalty_code in list payload)
+            this.selectedCustomerLoyalty = { points: null, code: null, loading: true };
+            this.checkoutProps.form.loyalty_customer_code = null;
+            axios.get('frontend/loyalty/balance', { params: { code: customer.phone || '' } })
+                .then(res => {
+                    if (res.data?.status && res.data?.data?.loyalty_code) {
+                        this.selectedCustomerLoyalty = {
+                            points: res.data.data.points ?? 0,
+                            code: res.data.data.loyalty_code,
+                            loading: false,
+                        };
+                        this.checkoutProps.form.loyalty_customer_code = res.data.data.loyalty_code;
+                    } else {
+                        this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
+                    }
+                })
+                .catch(() => {
+                    this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
+                });
+        },
+
         gettingUserAddress: function (userId) {
             this.$store
                 .dispatch("user/addressLists", {
@@ -1340,8 +1458,11 @@ export default {
             if (this.checkoutProps.form.customer_id !== null) {
                 this.clearAddresses = false;
                 this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                this._loadCustomerLoyalty(this.checkoutProps.form.customer_id);
             } else {
                 this.clearAddresses = true;
+                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
+                this.checkoutProps.form.loyalty_customer_code = null;
             }
             this.address.form.user_id = this.checkoutProps.form.customer_id;
             this.selectedAddress = {};
@@ -1667,6 +1788,22 @@ export default {
   padding: 0.18rem 0.55rem; font-size: 0.78rem; color: #444;
 }
 .kiosk-cash-item-pill.more { background: #ffe4e4; color: #e8001c; }
+/* [GAP-25-2] Bouton Encaisser */
+.kiosk-cash-collect-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #16a34a;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.kiosk-cash-collect-btn:hover { background: #15803d; }
+.kiosk-cash-collect-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
 .kiosk-cash-order-foot {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 0.78rem; color: #999;

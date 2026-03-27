@@ -53,7 +53,8 @@ class KioskAuthTest extends TestCase
             'password' => '123456',
         ]);
 
-        $response->assertStatus(200)->assertJsonStructure(['data' => ['token']]);
+        $response->assertStatus(201)
+            ->assertJsonStructure(['token', 'message', 'kiosk']);
     }
 
     public function test_kiosk_cannot_access_admin_flows()
@@ -61,9 +62,8 @@ class KioskAuthTest extends TestCase
         [$branch, $user] = $this->setupDb();
 
         // Simuler un accès en tant qu'utilisateur standard non admin vers un endpoint Admin
-        $response = $this->actingAs($user)->getJson('/api/admin/dashboard');
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/admin/dashboard/total-orders');
 
-        // Strict assertion: unauthorized or forbidden
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 }

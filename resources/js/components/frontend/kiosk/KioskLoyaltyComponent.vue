@@ -150,7 +150,7 @@
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
           <span class="kiosk-loyalty-points-label">points disponibles</span>
           <span v-if="discountValue > 0" class="kiosk-loyalty-points-equiv">
-            = {{ formatPrice(discountValue) }} de réduction
+            = {{ formatPrice(Math.min(discountValue, total)) }} de réduction sur cette commande
           </span>
         </div>
 
@@ -181,7 +181,7 @@
             </div>
             <div class="kiosk-loyalty-option-text">
               <strong>Utiliser mes points</strong>
-              <span>-{{ formatPrice(discountValue) }} sur cette commande</span>
+              <span>-{{ formatPrice(Math.min(discountValue, total)) }} sur cette commande</span>
             </div>
           </button>
 
@@ -254,10 +254,17 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import axios from 'axios';
+
 
 export default {
   name: 'KioskLoyaltyComponent',
+  mixins: [kioskPriceMixin],
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
 
   data() {
     return {
@@ -281,7 +288,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters('kioskCart', ['total']),
+    ...mapGetters('kioskCart', ['total', 'upsellShown']),
 
     customerInitials() {
       if (!this.customer?.name) return '?';
@@ -315,7 +322,7 @@ export default {
   },
 
   methods: {
-    ...mapActions('kioskCart', ['setLoyalty']),
+    ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
       try {
@@ -357,13 +364,13 @@ export default {
 
     async applyLoyalty() {
       if (this.canRedeem && this.redeemChoice === 'yes') {
-        // Apply the discount
         this.appliedDiscount = Math.min(this.discountValue, this.total);
         await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount });
+        this.showToast(`Réduction de ${this.formatPrice(this.appliedDiscount)} appliquée !`, 'success', 3000);
       } else {
-        // Register without discount — points will be awarded on delivery
         await this.setLoyalty({ customer: this.customer, discount: 0 });
         this.appliedDiscount = 0;
+        this.showToast('Fidélité enregistrée — points crédités après commande', 'info', 3000);
       }
       this.step = 'confirmed';
     },
@@ -383,10 +390,11 @@ export default {
         this.customer = {
           name:          data.name || this.registerName,
           loyalty_point: parseInt(data.points ?? 0, 10),
+          loyalty_code:  data.loyalty_code || '',
         };
         this.discountValue = 0; // New member: 0 points, no discount yet
         this.code = data.loyalty_code || '';
-        // Show a welcoming balance screen
+        this.showToast(`Bienvenue ${this.customer.name} ! Compte fidélité créé.`, 'success', 3500);
         this.step = 'balance';
       } catch (err) {
         const msg = err.response?.data?.message || 'Inscription impossible. Réessayez.';
@@ -397,16 +405,21 @@ export default {
     },
 
     proceedToPayment() {
-      this.$router.push({ name: 'kiosk.payment' });
+      // Always go through upsell once per session — same logic as KioskCartComponent::proceedToUpsell.
+      // Loyalty must NOT bypass the upsell screen (dessert suggestion after order confirmation).
+      if (this.upsellShown) {
+        this.$router.push({ name: 'kiosk.payment' });
+      } else {
+        this.markUpsellShown();
+        this.$router.push({ name: 'kiosk.upsell' });
+      }
     },
 
     goBack() {
       this.$router.push({ name: 'kiosk.cart' });
     },
 
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price || 0);
-    },
+    // formatPrice() provided by kioskPriceMixin
   },
 };
 </script>

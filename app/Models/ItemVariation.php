@@ -21,7 +21,8 @@ class ItemVariation extends Model
         'name',
         'price',
         'caution',
-        'status'
+        'status',
+        'visible_on',
     ];
     protected $casts = [
         'id'                => 'integer',
@@ -31,7 +32,17 @@ class ItemVariation extends Model
         'price'             => 'decimal:6',
         'caution'           => 'string',
         'status'            => 'integer',
+        'visible_on'        => 'array',  // null = all surfaces; ["kiosk","pos","web"] = restricted
     ];
+
+    /**
+     * Returns true if this variation is visible on the given surface.
+     * null visible_on means visible everywhere (backward-compatible default).
+     */
+    public function isVisibleOn(string $surface): bool
+    {
+        return $this->visible_on === null || in_array($surface, $this->visible_on, true);
+    }
 
     public function item()
     {

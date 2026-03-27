@@ -12,14 +12,25 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price'];
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label'];
     protected $casts = [
-        'id'      => 'integer',
-        'item_id' => 'integer',
-        'name'    => 'string',
-        'status'  => 'integer',
-        'price'   => 'decimal:6',
+        'id'          => 'integer',
+        'item_id'     => 'integer',
+        'name'        => 'string',
+        'status'      => 'integer',
+        'price'       => 'decimal:6',
+        'visible_on'  => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
+        'group_label' => 'string',
     ];
+
+    /**
+     * Returns true if this extra is visible on the given surface.
+     * null visible_on means visible everywhere (backward-compatible default).
+     */
+    public function isVisibleOn(string $surface): bool
+    {
+        return $this->visible_on === null || in_array($surface, $this->visible_on, true);
+    }
 
     /**
      * Image URL for supplements (from config/menu_images.php)

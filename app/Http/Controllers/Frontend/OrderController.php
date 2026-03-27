@@ -35,7 +35,13 @@ class OrderController extends Controller
     public function store(OrderRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new OrderDetailsResource($this->frontendOrderService->myOrderStore($request));
+            $order = $this->frontendOrderService->myOrderStore($request);
+            // [AUDIT-P2] Include loyalty_applied flag so the kiosk can show a toast
+            // if the client sent a loyalty discount that was silently dropped server-side
+            // (e.g. race condition, insufficient points at commit time).
+            return (new OrderDetailsResource($order))->additional([
+                'loyalty_applied' => $this->frontendOrderService->loyaltyApplied,
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

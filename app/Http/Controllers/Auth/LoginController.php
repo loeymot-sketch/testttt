@@ -16,6 +16,7 @@ use App\Services\PermissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Validator;
 use Smartisan\Settings\Facades\Settings;
 
@@ -65,7 +66,13 @@ class LoginController extends Controller
             $branchId = Settings::group('site')->get('site_default_branch');
         }
         $this->defaultAccessService->storeOrUpdate(['branch_id' => $branchId]);
-        $user        = User::where('email', $request['email'])->first();
+
+        // API SPA : fermer la session web après attempt(). Sinon, les requêtes suivantes avec
+        // Bearer sont résolues par Sanctum via la session → TransientToken, et logout ne peut
+        // pas révoquer le PersonalAccessToken.
+        $user = User::where('email', $request['email'])->first();
+        Auth::guard('web')->logout();
+
         $this->token = $user->createToken('auth_token')->plainTextToken;
 
         if (!isset($user->roles[0])) {
@@ -98,10 +105,20 @@ class LoginController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->user()?->currentAccessToken();
-        if ($token) {
-            $token->delete();
+        $user = $request->user();
+        $current = $user?->currentAccessToken();
+
+        if ($current instanceof PersonalAccessToken) {
+            $current->delete();
+        } elseif ($user && ($bearer = $request->bearerToken())) {
+            $accessToken = PersonalAccessToken::findToken($bearer);
+            if ($accessToken
+                && (int) $accessToken->tokenable_id === (int) $user->getAuthIdentifier()
+                && $accessToken->tokenable_type === $user->getMorphClass()) {
+                $accessToken->delete();
+            }
         }
+
         return new JsonResponse([
             'message' => trans('all.message.logout_success')
         ], 200);

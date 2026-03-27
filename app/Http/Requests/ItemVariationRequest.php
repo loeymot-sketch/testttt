@@ -40,6 +40,9 @@ class ItemVariationRequest extends FormRequest
             'price'             => ['required', new IniAmount(true)],
             'caution'           => ['nullable', 'string', 'max:5000'],
             'status'            => ['required', 'numeric', 'max:24'],
+            // Surface visibility: null = all surfaces; array of "kiosk", "pos", "web"
+            'visible_on'        => ['nullable', 'array'],
+            'visible_on.*'      => ['string', Rule::in(['kiosk', 'pos', 'web'])],
         ];
     }
 

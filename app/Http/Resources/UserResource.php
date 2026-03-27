@@ -30,6 +30,8 @@ class UserResource extends JsonResource
             "role_id"          => $this->myRole,
             "country_code"     => $this->country_code,
             "order"            => $this->orders->count(),
+            "loyalty_code"     => $this->loyalty_code,
+            "loyalty_points"   => (int) ($this->loyalty_points ?? 0),
             'create_date'      => AppLibrary::date($this->created_at),
             'update_date'      => AppLibrary::date($this->updated_at),
 

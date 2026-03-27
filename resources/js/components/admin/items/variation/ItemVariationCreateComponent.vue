@@ -71,6 +71,34 @@
                             <small class="db-field-alert" v-if="errors.caution">{{ errors.caution[0] }}</small>
                         </div>
 
+                        <!-- Visibilité par surface -->
+                        <div class="form-col-12">
+                            <label class="db-field-title">Visible sur</label>
+                            <div class="flex flex-wrap gap-4 mt-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="w-4 h-4 accent-primary"
+                                        :checked="isSurfaceChecked('kiosk')"
+                                        @change="toggleSurface('kiosk', $event.target.checked)" />
+                                    <span class="text-sm">🖥️ Borne (Kiosk)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="w-4 h-4 accent-primary"
+                                        :checked="isSurfaceChecked('pos')"
+                                        @change="toggleSurface('pos', $event.target.checked)" />
+                                    <span class="text-sm">🖨️ Caisse (POS)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="w-4 h-4 accent-primary"
+                                        :checked="isSurfaceChecked('web')"
+                                        @change="toggleSurface('web', $event.target.checked)" />
+                                    <span class="text-sm">🌐 Site web</span>
+                                </label>
+                            </div>
+                            <small class="text-slate-400 text-xs mt-1 block">
+                                Laisser tout décoché = visible partout (comportement par défaut)
+                            </small>
+                        </div>
+
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -141,12 +169,31 @@ export default {
             this.$store.dispatch("itemVariation/reset").then().catch();
             this.errors = {};
             this.$props.props.form = {
-                name: "",
-                price: null,
+                name:              "",
+                price:             null,
                 item_attribute_id: null,
-                caution: "",
-                status: statusEnum.ACTIVE,
+                caution:           "",
+                status:            statusEnum.ACTIVE,
+                visible_on:        null,
             };
+        },
+        isSurfaceChecked(surface) {
+            const v = this.props.form.visible_on;
+            if (!v || v.length === 0) return false;
+            return v.includes(surface);
+        },
+        toggleSurface(surface, checked) {
+            let current = Array.isArray(this.props.form.visible_on)
+                ? [...this.props.form.visible_on]
+                : [];
+            if (checked) {
+                if (!current.includes(surface)) current.push(surface);
+            } else {
+                current = current.filter(s => s !== surface);
+            }
+            const allSurfaces = ['kiosk', 'pos', 'web'];
+            const allSelected = allSurfaces.every(s => current.includes(s));
+            this.props.form.visible_on = (current.length === 0 || allSelected) ? null : current;
         },
         save: function () {
             try {
@@ -160,11 +207,12 @@ export default {
                         this.$t("label.variation")
                     );
                     this.props.form = {
-                        name: "",
-                        price: null,
+                        name:              "",
+                        price:             null,
                         item_attribute_id: null,
-                        caution: "",
-                        status: statusEnum.ACTIVE,
+                        caution:           "",
+                        status:            statusEnum.ACTIVE,
+                        visible_on:        null,
                     };
                     this.errors = {};
                 }).catch((err) => {

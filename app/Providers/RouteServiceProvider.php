@@ -48,8 +48,11 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting()
     {
+        // [AUDIT-P1] 120 req/min per user (authenticated) or per IP (guest/kiosk).
+        // 120 is safe for kiosk boot (menu + categories) while blocking abuse.
+        // Per-route stricter limits (order creation = 10/min, login = 5/min) still apply.
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
     }
 

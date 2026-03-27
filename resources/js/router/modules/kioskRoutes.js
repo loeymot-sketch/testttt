@@ -3,7 +3,6 @@ import KioskAppComponent from "../../components/frontend/kiosk/KioskAppComponent
 import KioskLoginComponent from "../../components/frontend/kiosk/KioskLoginComponent.vue";
 import KioskIdleScreenComponent from "../../components/frontend/kiosk/KioskIdleScreenComponent.vue";
 import KioskCategoriesComponent from "../../components/frontend/kiosk/KioskCategoriesComponent.vue";
-import KioskProductListComponent from "../../components/frontend/kiosk/KioskProductListComponent.vue";
 import KioskWizardComponent from "../../components/frontend/kiosk/KioskWizardComponent.vue";
 import KioskCartComponent from "../../components/frontend/kiosk/KioskCartComponent.vue";
 import KioskLoyaltyComponent from "../../components/frontend/kiosk/KioskLoyaltyComponent.vue";
@@ -11,15 +10,47 @@ import KioskUpsellComponent from "../../components/frontend/kiosk/KioskUpsellCom
 import KioskPaymentComponent from "../../components/frontend/kiosk/KioskPaymentComponent.vue";
 import KioskWaitingComponent from "../../components/frontend/kiosk/KioskWaitingComponent.vue";
 import KioskConfirmationComponent from "../../components/frontend/kiosk/KioskConfirmationComponent.vue";
+import KioskAdminComponent from "../../components/frontend/kiosk/KioskAdminComponent.vue";
+
+function getKioskAutoCredentials() {
+    if (typeof window === 'undefined') return null;
+    const a = window.foodkingConfig?.kioskAutoLogin;
+    if (a?.username && a.password !== undefined && a.password !== null && String(a.password) !== '') {
+        return { username: String(a.username).trim(), password: String(a.password) };
+    }
+    return null;
+}
 
 /**
  * Guard: redirect to kiosk.login if the machine token is absent.
- * The login page itself is excluded from this guard.
+ * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
  */
 function requireKioskAuth(to, from, next) {
     if (to.name === 'kiosk.login') return next();
     const token = store.state.kioskCart?.kioskToken;
-    if (!token) return next({ name: 'kiosk.login' });
+    if (token) return next();
+
+    const auto = getKioskAutoCredentials();
+    if (auto) {
+        store
+            .dispatch('kioskCart/kioskLogin', auto)
+            .then(() => next())
+            .catch(() => next({ name: 'kiosk.login', query: { auto_failed: '1' } }));
+        return;
+    }
+    next({ name: 'kiosk.login' });
+}
+
+/** Sur /kiosk/login : si auto-login configuré, ne jamais afficher le formulaire. */
+function kioskLoginRouteGuard(to, from, next) {
+    const auto = getKioskAutoCredentials();
+    if (auto) {
+        store
+            .dispatch('kioskCart/kioskLogin', auto)
+            .then(() => next({ name: 'kiosk.idle', replace: true }))
+            .catch(() => next());
+        return;
+    }
     next();
 }
 
@@ -35,7 +66,14 @@ function requireCart(to, from, next) {
 
 function requireOrderRef(to, from, next) {
     const orderRef = store.state.kioskCart?.orderRef;
-    if (!orderRef && !to.params.orderId) return next({ name: 'kiosk.idle' });
+    const paramId  = to.params.orderId;
+    // [AUDIT-P1] Reject navigation if:
+    //   - No orderRef in store AND
+    //   - No valid orderId param (undefined, "undefined", "null", empty string)
+    // This prevents a raw URL like /kiosk/waiting/undefined from loading the waiting screen
+    // and polling GET frontend/order/undefined in an infinite loop.
+    const isValidParam = paramId && paramId !== 'undefined' && paramId !== 'null' && paramId !== '';
+    if (!orderRef && !isValidParam) return next({ name: 'kiosk.idle' });
     next();
 }
 
@@ -46,6 +84,7 @@ export default [
         name: "kiosk.login",
         component: KioskLoginComponent,
         meta: { isKiosk: true, requiresAuth: false },
+        beforeEnter: kioskLoginRouteGuard,
     },
     {
         path: "/kiosk",
@@ -72,9 +111,14 @@ export default [
             {
                 path: "products/:categoryId",
                 name: "kiosk.products",
-                component: KioskProductListComponent,
+                redirect: (to) => ({
+                    name: 'kiosk.categories',
+                    query: {
+                        cat: to.params.categoryId,
+                        ...(to.query || {}),
+                    },
+                }),
                 meta: { isKiosk: true },
-                props: true,
             },
             {
                 path: "wizard/:itemId",
@@ -125,8 +169,15 @@ export default [
                 meta: { isKiosk: true },
                 props: (route) => ({
                     orderNumber: route.query.number || '',
-                    orderTotal: parseFloat(route.query.total) || null,
+                    orderTotal: route.query.total !== undefined && route.query.total !== '' ? parseFloat(route.query.total) : null, // [AUDIT-P47-BUG6] preserve zero (0 is valid total, not "null")
                 }),
+            },
+            {
+                path: "admin",
+                name: "kiosk.admin",
+                component: KioskAdminComponent,
+                meta: { isKiosk: true },
+                beforeEnter: requireKioskAuth,
             },
         ],
     },

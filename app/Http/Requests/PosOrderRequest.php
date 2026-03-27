@@ -33,7 +33,8 @@ class PosOrderRequest extends FormRequest
             'token' => ['nullable', 'string', 'max:191'],
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
-            'subtotal' => ['required', 'numeric'],
+            // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
+            'subtotal' => ['nullable', 'numeric'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'dining_table_id' => request('order_type') === OrderType::DINING_TABLE ? [
                 'required',
@@ -43,7 +44,8 @@ class PosOrderRequest extends FormRequest
                 'required',
                 'numeric'
             ] : ['nullable'],
-            'total' => ['required', 'numeric'],
+            // [AUDIT-P50-BUG4] Allow total=0 for 100% loyalty-redemption orders
+            'total' => ['required', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
             'address_id' => request('order_type') === OrderType::DELIVERY ? [
@@ -57,6 +59,7 @@ class PosOrderRequest extends FormRequest
             'pos_payment_method' => ['required', 'numeric'],
             'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string']) : ['nullable', 'string'],
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric'] : ['nullable', 'numeric'],
+            'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
         ];
     }
 
@@ -70,6 +73,10 @@ class PosOrderRequest extends FormRequest
             } else if (blank(request('order_type'))) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
+            // [AUDIT-P1-B] NOTE: This validation uses the client-sent 'total' as a preliminary check.
+            // The server recalculates the real total in OrderService::posOrderStore.
+            // A second validation against the server-computed total is enforced there.
+            // This check only prevents obvious UI errors (cashier entered less cash than shown).
             if (request('pos_payment_method') == PosPaymentMethod::CASH && ((float) request('total') > (float) request('pos_received_amount'))) {
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
             }

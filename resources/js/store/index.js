@@ -57,6 +57,8 @@ import { timezone } from './modules/timezone';
 import { site } from './modules/site';
 import { dashboard } from './modules/dashboard';
 import { orderSetup } from './modules/orderSetup';
+import { kioskSetup } from './modules/kioskSetup';
+import { loyaltySetup } from './modules/loyaltySetup';
 import { offerItem } from './modules/offerItem';
 import { paymentGateway } from './modules/paymentGateway';
 import { smsGateway } from './modules/smsGateway';
@@ -97,6 +99,7 @@ import { kitchenDisplaySystemOrder } from './modules/kitchenDisplaySystemOrder';
 import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
 import { kioskCart } from './modules/kioskCart';
+import { kioskMenu } from './modules/kioskMenu';
 
 
 
@@ -162,6 +165,8 @@ export default new createStore({
         site,
         dashboard,
         orderSetup,
+        kioskSetup,
+        loyaltySetup,
         offerItem,
         paymentGateway,
         smsGateway,
@@ -201,6 +206,7 @@ export default new createStore({
         orderStatusScreenOrder,
         kioskMachine,
         kioskCart,
+        kioskMenu,
     },
     plugins: [
         createPersistedState({
@@ -220,6 +226,10 @@ export default new createStore({
                 "kioskCart.items",
                 "kioskCart.loyaltyDiscount",
                 "kioskCart.loyaltyCustomer",
+                // [AUDIT-P1] Persist orderType: "Sur place" (25) vs "À emporter" (10) chosen by
+                // customer must survive a page refresh (e.g. Electron reload on the payment screen).
+                // Without this, a reload between cart and payment resets to default 25 (sur place).
+                "kioskCart.orderType",
                 // Kiosk machine auth — persist token so machine stays logged in across refreshes
                 "kioskCart.kioskToken",
                 "kioskCart.kioskMachineId",

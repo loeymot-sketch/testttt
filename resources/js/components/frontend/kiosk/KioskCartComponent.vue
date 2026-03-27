@@ -8,11 +8,11 @@
         </svg>
       </button>
       <div class="kiosk-cart-header-info">
-        <h1 class="kiosk-cart-title">Mon panier</h1>
+        <h1 class="kiosk-cart-title">{{ $t('kiosk.your_cart') }}</h1>
         <p class="kiosk-cart-item-count">{{ cartCount }} article{{ cartCount > 1 ? 's' : '' }}</p>
       </div>
       <button class="kiosk-cart-clear" @click="showClearConfirm = true" v-if="cartCount > 0">
-        Vider
+        {{ $t('kiosk.clear_cart') }}
       </button>
     </div>
 
@@ -20,11 +20,11 @@
     <transition name="fade">
       <div v-if="showClearConfirm" class="kiosk-clear-overlay" @click.self="showClearConfirm = false">
         <div class="kiosk-clear-modal">
-          <p class="kiosk-clear-title">Vider le panier ?</p>
-          <p class="kiosk-clear-sub">Tous les articles seront supprimés.</p>
+          <p class="kiosk-clear-title">{{ $t('kiosk.clear_cart') }}</p>
+          <p class="kiosk-clear-sub">{{ $t('kiosk.clear_cart_confirm') }}</p>
           <div class="kiosk-clear-actions">
-            <button class="kiosk-clear-yes" @click="confirmClear">Oui, vider</button>
-            <button class="kiosk-clear-no" @click="showClearConfirm = false">Annuler</button>
+            <button class="kiosk-clear-yes" @click="confirmClear">{{ $t('kiosk.yes_clear') }}</button>
+            <button class="kiosk-clear-no" @click="showClearConfirm = false">{{ $t('kiosk.cancel') }}</button>
           </div>
         </div>
       </div>
@@ -33,17 +33,38 @@
     <!-- Panier vide -->
     <div v-if="cartCount === 0" class="kiosk-cart-empty">
       <div class="kiosk-cart-empty-icon">🛒</div>
-      <h2>Votre panier est vide</h2>
-      <p>Ajoutez des articles depuis le menu</p>
+      <h2>{{ $t('kiosk.empty_cart') }}</h2>
+      <p>{{ $t('kiosk.empty_cart_hint') }}</p>
       <button class="kiosk-btn-primary" @click="$router.push({ name: 'kiosk.categories' })">
-        Voir le menu
+        {{ $t('kiosk.add_items') }}
+      </button>
+    </div>
+
+    <!-- [GAP-22-1] Sélecteur Sur place / À emporter — inspiré Splash -->
+    <div v-if="cartCount > 0" class="kiosk-order-type-bar">
+      <button
+        class="kiosk-order-type-btn"
+        :class="{ active: orderType === ORDER_TYPE_KIOSK }"
+        @click="selectOrderType(ORDER_TYPE_KIOSK)"
+      >
+        <span class="kiosk-order-type-icon">🍽️</span>
+        <span class="kiosk-order-type-label">{{ $t('kiosk.dine_in') }}</span>
+      </button>
+      <button
+        class="kiosk-order-type-btn"
+        :class="{ active: orderType === ORDER_TYPE_TAKEAWAY }"
+        @click="selectOrderType(ORDER_TYPE_TAKEAWAY)"
+      >
+        <span class="kiosk-order-type-icon">🥡</span>
+        <span class="kiosk-order-type-label">{{ $t('kiosk.takeaway') }}</span>
       </button>
     </div>
 
     <!-- Liste articles -->
-    <div v-else class="kiosk-cart-body">
+    <div v-if="cartCount > 0" class="kiosk-cart-body">
       <div class="kiosk-cart-items">
-        <div v-for="(item, idx) in cartItems" :key="idx" class="kiosk-cart-item">
+        <!-- [FIX] Use stable composite key instead of array index to avoid re-render issues -->
+        <div v-for="(item, idx) in cartItems" :key="item.item_id ? `${item.item_id}-${idx}` : idx" class="kiosk-cart-item">
           <!-- Image -->
           <div class="kiosk-cart-item-img">
             <img v-if="item.image" :src="item.image" :alt="item.name" />
@@ -66,9 +87,13 @@
                 </svg>
               </button>
             </div>
+            <!-- [GAP-22-2] Afficher les sélections wizard (variations, extras) -->
+            <div v-if="getItemSelectionSummary(item)" class="kiosk-cart-item-selections">
+              {{ getItemSelectionSummary(item) }}
+            </div>
             <p v-if="item.instruction" class="kiosk-cart-item-note">{{ item.instruction }}</p>
             <span class="kiosk-cart-item-unit">
-              {{ formatPrice(item.convert_price + (item.item_variation_total || 0) + (item.item_extra_total || 0)) }} / unité
+              {{ formatPrice((parseFloat(item.convert_price) || 0) + (item.item_variation_total || 0) + (item.item_extra_total || 0)) }} / unité
             </span>
           </div>
 
@@ -87,8 +112,9 @@
                 </svg>
               </button>
             </div>
+            <!-- [KIOSK-17] item.total is always present (computed by ADD_ITEM / UPDATE_QUANTITY) -->
             <span class="kiosk-cart-item-total">
-              {{ formatPrice((item.convert_price + (item.item_variation_total || 0) + (item.item_extra_total || 0)) * item.quantity) }}
+              {{ formatPrice(item.total) }}
             </span>
           </div>
         </div>
@@ -134,9 +160,28 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+
+// [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
+const ORDER_TYPE_KIOSK    = 25;
+const ORDER_TYPE_TAKEAWAY = 10;
 
 export default {
   name: 'KioskCartComponent',
+  mixins: [kioskPriceMixin],
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
+  data() {
+    return {
+      showClearConfirm: false,
+      ORDER_TYPE_KIOSK,
+      ORDER_TYPE_TAKEAWAY,
+    };
+  },
+
   computed: {
     ...mapGetters('kioskCart', {
       cartItems: 'items',
@@ -145,18 +190,45 @@ export default {
       cartTotal: 'total',
       loyaltyDiscount: 'loyaltyDiscount',
       upsellShown: 'upsellShown',
+      orderType: 'orderType',
     }),
   },
-  data() {
-    return {
-      showClearConfirm: false,
-    };
-  },
   methods: {
-    ...mapActions('kioskCart', ['updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem']),
+    ...mapActions('kioskCart', ['updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType']),
+
+    // [GAP-22-1] Select order type and give haptic-like visual feedback
+    selectOrderType(type) {
+      this.setOrderType(type);
+    },
+
+    // [GAP-22-2] Build a short readable summary of wizard selections for cart display
+    getItemSelectionSummary(item) {
+      const parts = [];
+
+      // Variations (pain, viande, etc.)
+      if (item.item_variations?.names) {
+        const names = Object.values(item.item_variations.names);
+        if (names.length > 0) parts.push(names.join(', '));
+      }
+
+      // Extras
+      if (item.item_extras?.names) {
+        const extras = Array.isArray(item.item_extras.names)
+          ? item.item_extras.names
+          : Object.values(item.item_extras.names);
+        if (extras.length > 0) parts.push(extras.join(', '));
+      }
+
+      return parts.join(' · ');
+    },
 
     changeQty(index, qty) {
-      this.updateQuantity({ index, quantity: qty });
+      if (qty <= 0) {
+        this.removeItem(index);
+        this.showToast(this.$t('kiosk.item_removed'), 'info', 1800);
+      } else {
+        this.updateQuantity({ index, quantity: qty });
+      }
     },
 
     /**
@@ -189,9 +261,7 @@ export default {
       }
     },
 
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(price || 0);
-    },
+    // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists
   },
 };
 </script>
@@ -200,30 +270,77 @@ export default {
 .kiosk-cart {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-dark);
+  background: #F7F7F8;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Header */
+.kiosk-order-type-bar {
+  display: flex;
+  gap: 12px;
+  padding: 16px 28px 0;
+  flex-shrink: 0;
+}
+
+.kiosk-order-type-btn {
+  flex: 1;
+  height: 64px;
+  border-radius: 14px;
+  border: 2px solid #E0E0E0;
+  background: white;
+  color: #999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kiosk-order-type-btn.active {
+  border-color: #E8001C;
+  background: rgba(232,0,28,0.04);
+  color: #1A1A1A;
+}
+
+.kiosk-order-type-btn:active { transform: scale(0.97); }
+
+.kiosk-order-type-icon { font-size: 22px; line-height: 1; }
+
+.kiosk-order-type-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.kiosk-cart-item-selections {
+  font-size: 11px;
+  color: #999;
+  margin: 2px 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .kiosk-cart-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px 32px 20px;
-  background: var(--kiosk-dark-2);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 20px 28px 16px;
+  background: white;
+  border-bottom: 1px solid #E0E0E0;
   flex-shrink: 0;
 }
 
 .kiosk-cart-back {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #E0E0E0;
+  background: white;
+  color: #1A1A1A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,38 +349,37 @@ export default {
   transition: all 0.15s ease;
 }
 
-.kiosk-cart-back:active { transform: scale(0.95); background: rgba(255,255,255,0.12); }
+.kiosk-cart-back:active { transform: scale(0.95); background: #F7F7F8; }
 
 .kiosk-cart-header-info { flex: 1; }
 
 .kiosk-cart-title {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
-  color: white;
+  color: #1A1A1A;
   margin: 0 0 2px;
 }
 
 .kiosk-cart-item-count {
-  font-size: 14px;
-  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  color: #999;
   margin: 0;
 }
 
 .kiosk-cart-clear {
-  padding: 10px 20px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  background: transparent;
-  color: rgba(255,255,255,0.6);
-  font-size: 15px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px solid #E0E0E0;
+  background: white;
+  color: #E8001C;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.kiosk-cart-clear:active { background: rgba(255,255,255,0.08); }
+.kiosk-cart-clear:active { background: #F7F7F8; }
 
-/* Panier vide */
 .kiosk-cart-empty {
   flex: 1;
   display: flex;
@@ -275,22 +391,21 @@ export default {
   text-align: center;
 }
 
-.kiosk-cart-empty-icon { font-size: 80px; line-height: 1; }
+.kiosk-cart-empty-icon { font-size: 72px; line-height: 1; }
 
 .kiosk-cart-empty h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
-  color: white;
+  color: #1A1A1A;
   margin: 0;
 }
 
 .kiosk-cart-empty p {
-  font-size: 16px;
-  color: rgba(255,255,255,0.45);
+  font-size: 15px;
+  color: #999;
   margin: 0;
 }
 
-/* Corps panier */
 .kiosk-cart-body {
   flex: 1;
   overflow-y: auto;
@@ -303,30 +418,30 @@ export default {
 
 .kiosk-cart-items {
   flex: 1;
-  padding: 20px 32px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Article */
 .kiosk-cart-item {
-  background: var(--kiosk-dark-2);
-  border-radius: 18px;
-  border: 1.5px solid rgba(255,255,255,0.07);
-  padding: 16px;
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid #E0E0E0;
+  padding: 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 
 .kiosk-cart-item-img {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
+  background: #F7F7F8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,7 +453,7 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-cart-item-emoji { font-size: 36px; }
+.kiosk-cart-item-emoji { font-size: 32px; }
 
 .kiosk-cart-item-info { flex: 1; min-width: 0; }
 
@@ -350,52 +465,51 @@ export default {
 
 .kiosk-cart-edit-btn {
   flex-shrink: 0;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  color: rgba(255,255,255,0.55);
-  width: 28px; height: 28px;
+  background: #F7F7F8;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  color: #999;
+  width: 26px; height: 26px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   padding: 0;
 }
 .kiosk-cart-edit-btn:hover {
-  background: rgba(232,0,28,0.15);
-  color: #e8001c;
-  border-color: rgba(232,0,28,0.3);
+  background: rgba(232,0,28,0.08);
+  color: #E8001C;
+  border-color: rgba(232,0,28,0.2);
 }
 
 .kiosk-cart-item-name {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  color: white;
-  margin: 0 0 4px;
+  color: #1A1A1A;
+  margin: 0 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .kiosk-cart-item-note {
-  font-size: 12px;
-  color: rgba(255,255,255,0.4);
-  margin: 0 0 4px;
+  font-size: 11px;
+  color: #999;
+  margin: 0 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .kiosk-cart-item-unit {
-  font-size: 13px;
-  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+  color: #999;
 }
 
-/* Contrôles quantité */
 .kiosk-cart-item-controls {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -403,18 +517,18 @@ export default {
   display: flex;
   align-items: center;
   gap: 0;
-  background: rgba(255,255,255,0.06);
-  border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.1);
+  background: #F7F7F8;
+  border-radius: 10px;
+  border: 1.5px solid #E0E0E0;
   overflow: hidden;
 }
 
 .kiosk-qty-btn {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border: none;
   background: transparent;
-  color: white;
+  color: #1A1A1A;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -422,161 +536,157 @@ export default {
   transition: background 0.15s ease;
 }
 
-.kiosk-qty-btn:active { background: rgba(255,255,255,0.1); }
+.kiosk-qty-btn:active { background: rgba(0,0,0,0.05); }
 
-.kiosk-qty-btn.minus { color: rgba(255,255,255,0.6); }
-.kiosk-qty-btn.minus:active { color: #ff6b6b; }
+.kiosk-qty-btn.minus { color: #777; }
+.kiosk-qty-btn.minus:active { color: #E8001C; }
 
 .kiosk-qty-num {
-  min-width: 36px;
+  min-width: 32px;
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: white;
+  color: #1A1A1A;
 }
 
 .kiosk-cart-item-total {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  color: white;
+  color: #1A1A1A;
 }
 
-/* Résumé totaux */
 .kiosk-cart-summary {
-  margin: 0 32px;
-  background: var(--kiosk-dark-2);
-  border-radius: 18px;
-  border: 1.5px solid rgba(255,255,255,0.07);
-  padding: 20px 24px;
+  margin: 0 24px;
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid #E0E0E0;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .kiosk-cart-summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
-  color: rgba(255,255,255,0.6);
+  font-size: 15px;
+  color: #555;
 }
 
 .kiosk-cart-summary-row.total {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: white;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  color: #1A1A1A;
+  padding-top: 10px;
+  border-top: 1px solid #E0E0E0;
   margin-top: 4px;
 }
 
-.kiosk-cart-summary-row.loyalty { color: rgba(255,255,255,0.8); }
+.kiosk-cart-summary-row.loyalty { color: #555; }
 
-.green { color: #2ECC71; font-weight: 700; }
+.green { color: #27ae60; font-weight: 700; }
 
 .kiosk-cart-grand-total {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 900;
-  color: white;
+  color: #E8001C;
 }
 
-/* Actions */
 .kiosk-cart-actions {
-  padding: 20px 32px 32px;
+  padding: 16px 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Bouton fidélité */
 .kiosk-btn-loyalty {
   width: 100%;
-  height: 60px;
-  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.08));
-  border: 1.5px solid rgba(255,215,0,0.35);
-  border-radius: 16px;
-  color: #FFD700;
-  font-size: 16px;
+  height: 52px;
+  background: rgba(255,215,0,0.08);
+  border: 1.5px solid rgba(255,215,0,0.3);
+  border-radius: 12px;
+  color: #b8860b;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  transition: background 0.2s, border-color 0.2s;
+  padding: 0 16px;
+  transition: background 0.2s;
   margin-bottom: 4px;
 }
-.kiosk-btn-loyalty:active { background: rgba(255,215,0,0.2); }
-.kiosk-btn-loyalty-star { font-size: 20px; }
-.kiosk-btn-loyalty-arrow { font-size: 22px; opacity: 0.7; }
+.kiosk-btn-loyalty:active { background: rgba(255,215,0,0.15); }
+.kiosk-btn-loyalty-star { font-size: 18px; }
+.kiosk-btn-loyalty-arrow { font-size: 20px; opacity: 0.7; }
 
-/* Boutons réutilisables */
 .kiosk-btn-primary {
   width: 100%;
-  height: 72px;
-  background: var(--kiosk-primary);
+  height: 60px;
+  background: #E8001C;
   color: white;
   border: none;
-  border-radius: 20px;
-  font-size: 20px;
+  border-radius: 14px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  box-shadow: 0 6px 24px rgba(232,0,28,0.35);
+  padding: 0 24px;
+  box-shadow: 0 4px 16px rgba(232,0,28,0.25);
   transition: all 0.15s ease;
 }
 
-.kiosk-btn-primary:active { transform: scale(0.98); box-shadow: 0 3px 12px rgba(232,0,28,0.25); }
+.kiosk-btn-primary:active { transform: scale(0.98); }
 
 .kiosk-btn-price {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   background: rgba(255,255,255,0.2);
-  padding: 6px 16px;
-  border-radius: 12px;
+  padding: 4px 14px;
+  border-radius: 10px;
 }
 
 .kiosk-btn-secondary {
   width: 100%;
-  height: 60px;
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.7);
-  border: 1.5px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  font-size: 17px;
+  height: 52px;
+  background: white;
+  color: #555;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.kiosk-btn-secondary:active { background: rgba(255,255,255,0.1); }
+.kiosk-btn-secondary:active { background: #F7F7F8; }
 
-/* Confirm-clear modal */
 .kiosk-clear-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0,0,0,0.4);
   display: flex; align-items: center; justify-content: center;
   z-index: 999;
 }
 .kiosk-clear-modal {
-  background: #1a1a2e;
-  border: 1.5px solid rgba(255,255,255,0.12);
+  background: white;
+  border: 1.5px solid #E0E0E0;
   border-radius: 20px;
   padding: 2rem;
   width: 340px;
   text-align: center;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
 }
 .kiosk-clear-title {
   font-size: 1.3rem;
   font-weight: 700;
   margin: 0 0 0.4rem;
-  color: #fff;
+  color: #1A1A1A;
 }
 .kiosk-clear-sub {
-  color: rgba(255,255,255,0.5);
+  color: #999;
   font-size: 0.95rem;
   margin: 0 0 1.5rem;
 }
@@ -586,7 +696,7 @@ export default {
 }
 .kiosk-clear-yes {
   flex: 1;
-  background: #e53935;
+  background: #E8001C;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -594,14 +704,12 @@ export default {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.kiosk-clear-yes:hover { background: #c62828; }
 .kiosk-clear-no {
   flex: 1;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.75);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: #F7F7F8;
+  color: #555;
+  border: 1px solid #E0E0E0;
   border-radius: 12px;
   padding: 0.85rem 1rem;
   font-size: 1rem;

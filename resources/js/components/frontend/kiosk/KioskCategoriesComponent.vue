@@ -1,75 +1,175 @@
 <template>
-  <div class="kiosk-categories">
-    <!-- Header -->
-    <div class="kiosk-cats-header">
-      <button class="kiosk-cats-back" @click="goBack">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="kiosk-cats-title-wrap">
-        <h1 class="kiosk-cats-title">Que voulez-vous commander ?</h1>
-        <p class="kiosk-cats-subtitle">Choisissez une catégorie</p>
+  <div class="kiosk-catalogue">
+    <div class="kiosk-catalogue-header">
+      <div class="kiosk-catalogue-brand">
+        <div class="kiosk-brand-thumb-wrap">
+          <img
+            v-if="selectedCategory && (selectedCategory.image_full_path || selectedCategory.image)"
+            :src="selectedCategory.image_full_path || selectedCategory.image"
+            :alt="selectedCategoryDisplayName"
+            class="kiosk-brand-thumb"
+          />
+          <div v-else class="kiosk-brand-thumb-fallback">{{ getCategoryEmoji(selectedCategoryDisplayName) }}</div>
+        </div>
+        <div class="kiosk-catalogue-breadcrumb">
+          <span class="kiosk-breadcrumb-muted">NOS</span>
+          <span class="kiosk-breadcrumb-current">{{ selectedCategoryDisplayName || 'PRODUITS' }}</span>
+        </div>
+      </div>
+
+      <div class="kiosk-catalogue-top-actions">
+        <button class="kiosk-top-chip" type="button" disabled>
+          <span class="kiosk-top-chip-icon">👤</span>
+          MON COMPTE
+        </button>
+        <button class="kiosk-top-chip" type="button" disabled>
+          <span class="kiosk-top-chip-icon">i</span>
+          ALLERGÈNES
+        </button>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="kiosk-cats-loading">
+    <div v-if="loading" class="kiosk-catalogue-loading">
       <div class="kiosk-spinner" />
       <p>Chargement du menu...</p>
     </div>
 
-    <!-- Grille catégories -->
-    <div v-else class="kiosk-cats-grid">
-      <div
-        v-for="(cat, idx) in categories"
-        :key="cat.id"
-        class="kiosk-cat-card"
-        :style="{ animationDelay: (idx * 60) + 'ms' }"
-        @click="selectCategory(cat)"
-      >
-        <!-- Image catégorie -->
-        <div class="kiosk-cat-img-wrap">
-          <img
-            v-if="cat.image_full_path || cat.image"
-            :src="cat.image_full_path || cat.image"
-            :alt="cat.name"
-            class="kiosk-cat-img"
-            loading="lazy"
-          />
-          <div v-else class="kiosk-cat-emoji-fallback">
-            {{ getCategoryEmoji(cat.name) }}
-          </div>
-          <!-- Overlay gradient -->
-          <div class="kiosk-cat-img-overlay" />
-        </div>
-
-        <!-- Infos -->
-        <div class="kiosk-cat-info">
-          <h3 class="kiosk-cat-name">{{ cat.name }}</h3>
-          <span class="kiosk-cat-count" v-if="cat.items_count > 0">
-            {{ cat.items_count }} article{{ cat.items_count > 1 ? 's' : '' }}
-          </span>
-        </div>
-
-        <!-- Indicateur actif -->
-        <div class="kiosk-cat-arrow">›</div>
-      </div>
-    </div>
-
-    <!-- Erreur / Vide avec bouton Retry -->
-    <div v-if="!loading && categories.length === 0" class="kiosk-cats-empty">
-      <div v-if="loadError" class="kiosk-cats-error">
-        <span class="kiosk-cats-error-icon">📡</span>
+    <div v-else-if="!loading && categories.length === 0" class="kiosk-catalogue-empty">
+      <div v-if="loadError" class="kiosk-catalogue-error">
+        <span class="kiosk-catalogue-error-icon">📡</span>
         <p>Impossible de charger le menu.</p>
-        <button class="kiosk-cats-retry-btn" @click="loadCategories">Réessayer</button>
+        <button class="kiosk-catalogue-retry-btn" @click="loadCatalogue">Réessayer</button>
       </div>
       <p v-else>Aucune catégorie disponible pour le moment.</p>
     </div>
+
+    <template v-else>
+      <div class="kiosk-catalogue-body">
+        <aside class="kiosk-sidebar">
+          <button
+            v-for="cat in categories"
+            :key="cat.id"
+            class="kiosk-sidebar-item"
+            :class="{ active: selectedCategoryId === cat.id }"
+            @click="selectCategory(cat)"
+          >
+            <span class="kiosk-sidebar-name">{{ displayCategoryName(cat) }}</span>
+            <div class="kiosk-sidebar-thumb-wrap">
+              <img
+                v-if="cat.image_full_path || cat.image"
+                :src="cat.image_full_path || cat.image"
+                :alt="displayCategoryName(cat)"
+                class="kiosk-sidebar-thumb"
+                loading="lazy"
+              />
+              <div v-else class="kiosk-sidebar-thumb-fallback">
+                {{ getCategoryEmoji(cat.name) }}
+              </div>
+            </div>
+          </button>
+        </aside>
+
+        <main class="kiosk-product-zone">
+          <div class="kiosk-product-zone-header">
+            <h1 class="kiosk-zone-title">{{ selectedCategoryDisplayName }}</h1>
+            <p class="kiosk-zone-subtitle">
+              {{ filteredProducts.length }} produit{{ filteredProducts.length > 1 ? 's' : '' }}
+            </p>
+          </div>
+
+          <div class="kiosk-product-grid">
+            <div
+              v-for="(product, idx) in filteredProducts"
+              :key="product.id"
+              class="kiosk-product-card"
+              :class="{ 'is-loading': loadingItemId === product.id }"
+              :style="{ animationDelay: (idx * 35) + 'ms' }"
+              @click="openProduct(product)"
+            >
+              <div class="kiosk-product-media">
+                <img
+                  v-if="product.thumb || product.image"
+                  :src="product.thumb || product.image"
+                  :alt="product.name"
+                  class="kiosk-product-image"
+                  loading="lazy"
+                />
+                <div v-else class="kiosk-product-image-fallback">
+                  <span class="kiosk-product-emoji">{{ getCategoryEmoji(product.name) }}</span>
+                </div>
+
+                <span v-if="getProductBadge(product)" class="kiosk-product-badge">
+                  {{ getProductBadge(product) }}
+                </span>
+
+                <button
+                  class="kiosk-product-add"
+                  type="button"
+                  @click.stop="openProduct(product)"
+                  :disabled="!!loadingItemId"
+                >
+                  <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner"></span>
+                  <span v-else>+</span>
+                </button>
+              </div>
+
+              <div class="kiosk-product-copy">
+                <h3 class="kiosk-product-name">{{ product.name }}</h3>
+                <p v-if="product.description" class="kiosk-product-desc">
+                  {{ truncate(product.description, 68) }}
+                </p>
+                <span class="kiosk-product-price">{{ formatPrice(product.convert_price) }}</span>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <div class="kiosk-bottom-bar">
+        <div class="kiosk-bottom-summary">
+          <button class="kiosk-bottom-cart" @click="goToCart" :disabled="cartCount === 0">
+            <span class="kiosk-bottom-cart-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="10" cy="19" r="1.6" fill="currentColor"/>
+                <circle cx="17" cy="19" r="1.6" fill="currentColor"/>
+              </svg>
+            </span>
+            <span>{{ cartCount }} article{{ cartCount > 1 ? 's' : '' }}</span>
+          </button>
+
+          <div class="kiosk-bottom-total">{{ formatPrice(cartTotal) }}</div>
+        </div>
+
+        <div class="kiosk-bottom-actions">
+          <button class="kiosk-bottom-abandon" @click="abandonOrder">
+            ABANDONNER MA COMMANDE
+          </button>
+
+          <button class="kiosk-bottom-pay" @click="goToCart" :disabled="cartCount === 0">
+            PAYER
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <transition name="slide-up">
+      <div v-if="activeItem" class="kiosk-wizard-overlay">
+        <KioskWizardComponent
+          :item="activeItem"
+          :on-add-to-cart="addToCartAndClose"
+          :on-close="closeWizard"
+        />
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
+import { mapActions, mapGetters } from 'vuex';
+import KioskWizardComponent from './KioskWizardComponent.vue';
+import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+
 const EMOJI_MAP = {
   tacos: '🌮', burger: '🍔', sandwich: '🥪', pizza: '🍕',
   kebab: '🥙', frite: '🍟', boisson: '🥤', dessert: '🍰',
@@ -79,39 +179,172 @@ const EMOJI_MAP = {
 
 export default {
   name: 'KioskCategoriesComponent',
+  components: { KioskWizardComponent },
+  mixins: [kioskPriceMixin],
+  inject: {
+    showToast: { default: () => () => {} },
+  },
   data() {
     return {
-      categories: [],
-      loading: true,
       loadError: false,
+      activeItem: null,
+      loadingItemId: null,
     };
   },
-  mounted() {
-    this.loadCategories();
+  computed: {
+    ...mapGetters('kioskMenu', ['categories', 'allItems', 'selectedCategoryId', 'loading', 'isStale']),
+    ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
+    selectedCategory() {
+      return this.categories.find(cat => cat.id === this.selectedCategoryId) || this.categories[0] || null;
+    },
+    selectedCategoryName() {
+      return this.selectedCategory?.name || 'Menu';
+    },
+    selectedCategoryDisplayName() {
+      return this.stripLeadingNos(this.selectedCategoryName);
+    },
+    filteredProducts() {
+      if (!this.selectedCategoryId) return this.allItems || [];
+      return this.$store.getters['kioskMenu/itemsByCategory'](this.selectedCategoryId);
+    },
+  },
+  watch: {
+    '$route.query.cat': {
+      immediate: true,
+      handler(catId) {
+        if (catId) {
+          this.syncCategoryFromRoute(catId);
+        }
+      },
+    },
+  },
+  async mounted() {
+    await this.loadCatalogue();
+    if (!this.$route.query.cat && this.selectedCategoryId) {
+      this.replaceCategoryQuery(this.selectedCategoryId);
+    }
   },
   methods: {
-    async loadCategories() {
-      this.loading = true;
+    ...mapActions('kioskMenu', { fetchMenu: 'fetchMenu', setSelectedCategory: 'selectCategory' }),
+    ...mapActions('kioskCart', ['addItem', 'reset']),
+
+    async loadCatalogue() {
       this.loadError = false;
       try {
-        const res = await this.$store.dispatch('frontendItemCategory/lists', {
-          paginate: 50,
-          vuex: false,
-        });
-        this.categories = res?.data?.data || [];
+        const branchId = this.$store.state.kioskCart?.branchId;
+        await this.fetchMenu({ branchId });
+        if (this.$route.query.cat) {
+          this.syncCategoryFromRoute(this.$route.query.cat);
+        } else if (this.categories.length > 0 && this.selectedCategoryId) {
+          this.replaceCategoryQuery(this.selectedCategoryId);
+        }
       } catch (_) {
-        this.categories = [];
         this.loadError = true;
-      } finally {
-        this.loading = false;
       }
     },
-    selectCategory(cat) {
-      this.$router.push({ name: 'kiosk.products', params: { categoryId: cat.id }, query: { name: cat.name } });
+
+    syncCategoryFromRoute(catId) {
+      const normalizedId = parseInt(catId, 10);
+      const match = this.categories.find(cat => parseInt(cat.id, 10) === normalizedId);
+      if (match) {
+        this.setSelectedCategory(match.id);
+      }
     },
-    goBack() {
+
+    replaceCategoryQuery(categoryId) {
+      this.$router.replace({
+        name: 'kiosk.categories',
+        query: { cat: String(categoryId) },
+      });
+    },
+
+    selectCategory(cat) {
+      this.setSelectedCategory(cat.id);
+      this.replaceCategoryQuery(cat.id);
+    },
+
+    async openProduct(product) {
+      if (this.loadingItemId) return;
+      this.loadingItemId = product.id;
+      try {
+        const res = await this.$store.dispatch('frontendItem/details', product.id);
+        const detail = res?.data?.data || res?.data || product;
+        if (this.hasOptions(detail)) {
+          this.activeItem = detail;
+        } else {
+          this.addItem(this.buildSimpleCartItem(detail));
+          this.showToast(`${detail.name} ajouté au panier`, 'success', 1800);
+        }
+      } catch (_) {
+        this.addItem(this.buildSimpleCartItem(product));
+        this.showToast(`${product.name} ajouté au panier`, 'success', 1800);
+      } finally {
+        this.loadingItemId = null;
+      }
+    },
+
+    hasOptions(detail) {
+      return (detail.itemAttributes?.length > 0) ||
+             (detail.extras?.length > 0) ||
+             (detail.addons?.length > 0) ||
+             (detail.variations && Object.keys(detail.variations).length > 0) ||
+             !!detail.has_menu;
+    },
+
+    buildSimpleCartItem(item) {
+      return {
+        item_id: item.id,
+        name: item.name,
+        image: item.thumb || item.cover || item.image || null,
+        quantity: 1,
+        convert_price: parseFloat(item.convert_price) || 0,
+        currency_price: item.currency_price,
+        discount: 0,
+        item_variation_total: 0,
+        item_extra_total: 0,
+        item_variations: { variations: {}, names: {} },
+        item_extras: { extras: [], names: [] },
+        instruction: null,
+      };
+    },
+
+    addToCartAndClose(cartItem) {
+      this.addItem(cartItem);
+      this.closeWizard();
+      this.showToast(`${cartItem.name} ajouté au panier`, 'success', 1800);
+    },
+
+    closeWizard() {
+      this.activeItem = null;
+    },
+
+    goToCart() {
+      if (this.cartCount === 0) return;
+      this.$router.push({ name: 'kiosk.cart' });
+    },
+
+    abandonOrder() {
+      this.reset();
       this.$router.push({ name: 'kiosk.idle' });
     },
+
+    truncate(text, max) {
+      if (!text) return '';
+      return text.length > max ? text.slice(0, max) + '...' : text;
+    },
+
+    stripLeadingNos(name) {
+      let s = (name || '').trim();
+      while (/^nos\s+/i.test(s)) {
+        s = s.replace(/^nos\s+/i, '').trim();
+      }
+      return s || 'Menu';
+    },
+
+    displayCategoryName(cat) {
+      return this.stripLeadingNos(cat?.name || '');
+    },
+
     getCategoryEmoji(name) {
       const n = (name || '').toLowerCase();
       for (const [key, emoji] of Object.entries(EMOJI_MAP)) {
@@ -119,216 +352,507 @@ export default {
       }
       return '🍽️';
     },
+
+    getProductBadge(product) {
+      if (product.is_featured == 5) return 'NOUVEAU';
+      if (this.hasOptions(product)) return 'PERSONNALISER';
+      return '';
+    },
   },
 };
 </script>
 
 <style scoped>
-.kiosk-categories {
+.kiosk-catalogue {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-dark);
   display: flex;
   flex-direction: column;
+  background: #ffffff;
   overflow: hidden;
+  position: relative;
 }
 
-/* Header */
-.kiosk-cats-header {
+.kiosk-catalogue-header {
+  height: 82px;
+  padding: 0 22px 0 18px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 32px 20px;
-  background: var(--kiosk-dark-2);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
   flex-shrink: 0;
 }
 
-.kiosk-cats-back {
-  width: 52px;
-  height: 52px;
+.kiosk-catalogue-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.kiosk-brand-thumb-wrap {
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  color: white;
+  overflow: hidden;
+  background: #f7f7f8;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   flex-shrink: 0;
-  transition: all 0.15s ease;
 }
 
-.kiosk-cats-back:active {
-  background: rgba(255,255,255,0.12);
-  transform: scale(0.95);
+.kiosk-brand-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.kiosk-cats-title-wrap { flex: 1; }
+.kiosk-brand-thumb-fallback {
+  font-size: 28px;
+}
 
-.kiosk-cats-title {
+.kiosk-catalogue-breadcrumb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kiosk-breadcrumb-muted {
+  font-size: 13px;
+  font-weight: 600;
+  color: #999;
+  letter-spacing: 0.08em;
+}
+
+.kiosk-breadcrumb-current {
   font-size: 26px;
   font-weight: 800;
-  color: white;
-  margin: 0 0 2px;
-  letter-spacing: -0.3px;
+  color: #222;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-.kiosk-cats-subtitle {
-  font-size: 15px;
-  color: rgba(255,255,255,0.5);
-  margin: 0;
-}
-
-/* Loading */
-.kiosk-cats-loading {
-  flex: 1;
+.kiosk-catalogue-top-actions {
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.kiosk-top-chip {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background: #e8001c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.92;
+}
+
+.kiosk-top-chip-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  color: rgba(255,255,255,0.6);
-  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.65);
+  font-size: 10px;
+}
+
+.kiosk-catalogue-loading,
+.kiosk-catalogue-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+}
+
+.kiosk-catalogue-loading {
+  flex-direction: column;
+  gap: 18px;
 }
 
 .kiosk-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255,255,255,0.1);
-  border-top-color: var(--kiosk-primary);
+  width: 42px;
+  height: 42px;
+  border: 3px solid #e3e3e3;
+  border-top-color: #e8001c;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Grille */
-.kiosk-cats-grid {
+.kiosk-catalogue-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.kiosk-catalogue-error-icon { font-size: 42px; }
+
+.kiosk-catalogue-retry-btn {
+  background: #e8001c;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.kiosk-catalogue-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px 32px 120px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(128px, 17vw) 1fr;
+  min-height: 0;
+}
+
+.kiosk-sidebar {
+  background: #fff;
+  border-right: 1px solid #ececec;
+  padding: 12px 10px 90px;
+  overflow-y: auto;
   scrollbar-width: none;
 }
 
-.kiosk-cats-grid::-webkit-scrollbar { display: none; }
+.kiosk-sidebar::-webkit-scrollbar { display: none; }
 
-/* Card catégorie */
-.kiosk-cat-card {
-  position: relative;
-  background: var(--kiosk-dark-2);
-  border-radius: 24px;
-  overflow: hidden;
-  cursor: pointer;
+.kiosk-sidebar-item {
+  width: 100%;
+  border: none;
+  background: transparent;
   display: flex;
   flex-direction: column;
-  border: 1.5px solid rgba(255,255,255,0.07);
-  animation: cardIn 0.4s ease both;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  min-height: 200px;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 14px;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+.kiosk-sidebar-item:active {
+  background: #fafafa;
 }
 
-.kiosk-cat-card:active {
-  transform: scale(0.97);
-  border-color: var(--kiosk-primary);
-  box-shadow: 0 0 0 2px rgba(232,0,28,0.3);
+.kiosk-sidebar-item.active {
+  border-bottom-color: #e8001c;
+  background: linear-gradient(180deg, rgba(232,0,28,0.06), rgba(232,0,28,0));
 }
 
-/* Image */
-.kiosk-cat-img-wrap {
-  position: relative;
-  height: 150px;
+.kiosk-sidebar-thumb-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
   overflow: hidden;
-  flex-shrink: 0;
+  background: #f7f7f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
-.kiosk-cat-img {
+.kiosk-sidebar-thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
 }
 
-.kiosk-cat-card:active .kiosk-cat-img {
-  transform: scale(1.04);
+.kiosk-sidebar-thumb-fallback {
+  font-size: 36px;
 }
 
-.kiosk-cat-img-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(15,15,26,0.7) 100%);
+.kiosk-sidebar-name {
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #555;
+  text-align: center;
+  text-transform: uppercase;
+  min-height: 26px;
+  display: flex;
+  align-items: flex-end;
 }
 
-.kiosk-cat-emoji-fallback {
+.kiosk-sidebar-item.active .kiosk-sidebar-name {
+  color: #b5162c;
+}
+
+.kiosk-product-zone {
+  background: #ffffff;
+  overflow-y: auto;
+  padding: 12px 18px 110px;
+  scrollbar-width: none;
+}
+
+.kiosk-product-zone::-webkit-scrollbar { display: none; }
+
+.kiosk-product-zone-header {
+  padding: 2px 4px 14px;
+}
+
+.kiosk-zone-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  color: #2b2b2b;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+}
+
+.kiosk-zone-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #999;
+}
+
+.kiosk-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 22px;
+}
+
+.kiosk-product-card {
+  position: relative;
+  min-height: 350px;
+  padding: 4px 8px 10px;
+  cursor: pointer;
+  animation: productIn 0.35s ease both;
+}
+
+@keyframes productIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kiosk-product-card:active {
+  transform: scale(0.985);
+}
+
+.kiosk-product-media {
+  position: relative;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.kiosk-product-image-fallback {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #fafafa;
+  border-radius: 16px;
+}
+
+.kiosk-product-emoji {
   font-size: 72px;
-  background: linear-gradient(135deg, rgba(232,0,28,0.15), rgba(255,107,53,0.15));
 }
 
-/* Infos */
-.kiosk-cat-info {
-  padding: 16px 20px 12px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.kiosk-cat-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  margin: 0;
-  letter-spacing: -0.2px;
-}
-
-.kiosk-cat-count {
-  font-size: 13px;
-  color: rgba(255,255,255,0.45);
-}
-
-/* Flèche */
-.kiosk-cat-arrow {
+.kiosk-product-badge {
   position: absolute;
-  bottom: 16px;
-  right: 20px;
-  font-size: 28px;
-  font-weight: 300;
-  color: rgba(255,255,255,0.3);
-  line-height: 1;
+  top: 10px;
+  left: 18px;
+  background: #d7263d;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+  border-radius: 6px;
+  transform: rotate(-4deg);
+  box-shadow: 0 2px 8px rgba(215,38,61,0.15);
 }
 
-/* Vide */
-.kiosk-cats-empty {
-  flex: 1;
+.kiosk-product-add {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #d7263d;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.4);
+  font-size: 24px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(215,38,61,0.25);
+  outline: 2px solid rgba(255,255,255,0.85);
+}
+
+.kiosk-product-add:disabled {
+  opacity: 0.7;
+}
+
+.kiosk-product-add-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.kiosk-product-copy {
+  margin-top: 2px;
+  text-align: center;
+}
+
+.kiosk-product-name {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #b5162c;
+  text-transform: uppercase;
+}
+
+.kiosk-product-desc {
+  margin: 6px auto 0;
+  max-width: 82%;
+  font-size: 12px;
+  color: #777;
+  line-height: 1.35;
+}
+
+.kiosk-product-price {
+  display: block;
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+}
+
+.kiosk-bottom-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 96px;
+  display: grid;
+  grid-template-rows: 40px 56px;
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+  z-index: 20;
+}
+
+.kiosk-bottom-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  border-bottom: 1px solid #ececec;
+}
+
+.kiosk-bottom-actions {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.kiosk-bottom-abandon,
+.kiosk-bottom-cart,
+.kiosk-bottom-pay,
+.kiosk-bottom-total {
+  height: 100%;
+}
+
+.kiosk-bottom-abandon,
+.kiosk-bottom-cart,
+.kiosk-bottom-pay {
+  border: none;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.kiosk-bottom-abandon {
+  color: #c33345;
+  border-right: 1px solid #ececec;
+}
+
+.kiosk-bottom-cart {
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.kiosk-bottom-cart:disabled {
+  opacity: 0.55;
+}
+
+.kiosk-bottom-cart-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-bottom-total {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
   font-size: 18px;
+  font-weight: 800;
+  color: #6a4047;
+  white-space: nowrap;
+  background: #f7e5e8;
 }
-.kiosk-cats-error {
-  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+
+.kiosk-bottom-pay {
+  background: #e0b3ba;
+  color: #7a4a52;
 }
-.kiosk-cats-error-icon { font-size: 3rem; }
-.kiosk-cats-error p { margin: 0; }
-.kiosk-cats-retry-btn {
-  background: #e8001c; color: #fff; border: none;
-  border-radius: 50px; padding: 0.7rem 2rem;
-  font-size: 1rem; font-weight: 700; cursor: pointer;
-  transition: background 0.2s;
+
+.kiosk-bottom-pay:not(:disabled) {
+  background: #e8001c;
+  color: #fff;
 }
-.kiosk-cats-retry-btn:hover { background: #c0001a; }
+
+.kiosk-bottom-pay:disabled {
+  background: #ead6d9;
+  color: #7a4a52;
+}
+
+.kiosk-wizard-overlay {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  z-index: 50;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
 </style>
