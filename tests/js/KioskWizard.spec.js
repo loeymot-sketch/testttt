@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import KioskStepMenuComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue';
+import KioskStepSauceComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue';
 
 /**
  * Tests du Wizard Borne Tactile (Kiosk)
@@ -37,9 +39,12 @@ const createKioskWizardMock = () => ({
   data() {
     return {
       currentStepIndex: 0,
+      resolvedItem: null, // set by tests for buildCartItem
       selections: {
         pain: null,
+        _painMeta: null,
         viandes: {},
+        _viandeMeta: [],
         totalViandes: 0,
         sauces: {},
         sauceOrder: [],
@@ -136,6 +141,102 @@ const createKioskWizardMock = () => ({
         });
         this.selections.garnitures = garnitures;
       }
+    },
+    // C1: mirror of the real buildCartItem — produces server-ready arrays
+    buildCartItem() {
+      const item = this.resolvedItem || this.item;
+      if (!item) return null;
+
+      const allVariations = {};
+      const allVariationNames = {};
+
+      // Pain
+      const painMeta = this.selections._painMeta;
+      if (painMeta?.realId && painMeta?.attrId) {
+        allVariations[painMeta.attrId] = painMeta.realId;
+        allVariationNames['Pain'] = painMeta.name;
+      }
+
+      // Viande
+      const viandeMeta = this.selections._viandeMeta || [];
+      if (viandeMeta.length > 0 && item.itemAttributes) {
+        const viandeAttr = item.itemAttributes.find(a =>
+          (a.name || '').toLowerCase().includes('viande')
+        );
+        if (viandeAttr && item.variations?.[viandeAttr.id]) {
+          const firstViande = viandeMeta[0];
+          if (typeof firstViande.id === 'number') {
+            allVariations[viandeAttr.id] = firstViande.id;
+            allVariationNames[viandeAttr.name] = firstViande.name;
+          }
+        }
+      }
+
+      // Sauce
+      if (this.selections.sauceOrder.length > 0) {
+        const firstSauceKey = this.selections.sauceOrder[0];
+        if (item.itemAttributes) {
+          const sauceAttr = item.itemAttributes.find(a =>
+            (a.name || '').toLowerCase().includes('sauce')
+          );
+          if (sauceAttr && item.variations?.[sauceAttr.id]) {
+            const variation = typeof firstSauceKey === 'number'
+              ? item.variations[sauceAttr.id].find(v => v.id === firstSauceKey)
+              : item.variations[sauceAttr.id].find(v => v.name === firstSauceKey);
+            if (variation) {
+              allVariations[sauceAttr.id] = variation.id;
+              allVariationNames[sauceAttr.name] = variation.name;
+            }
+          }
+        }
+      }
+
+      // Normalize to server arrays
+      const normalizedVariations = Object.entries(allVariations)
+        .filter(([, varId]) => varId)
+        .map(([attrId, varId]) => {
+          const attr = item.itemAttributes?.find(a => String(a.id) === String(attrId));
+          const variationName = attr?.name || Object.keys(allVariationNames)[0] || '';
+          const name = allVariationNames[variationName] || allVariationNames[attr?.name] || '';
+          return { id: parseInt(varId), variation_name: variationName, name };
+        });
+
+      const normalizedExtras = [];
+      let itemExtraTotal = 0;
+
+      Object.keys(this.selections.garnitures).forEach(id => {
+        if (this.selections.garnitures[id]) {
+          const extra = item.extras?.find(e => e.id === parseInt(id));
+          normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
+        }
+      });
+
+      Object.keys(this.selections.supplements).forEach(id => {
+        if (this.selections.supplements[id]) {
+          const extra = item.extras?.find(e => e.id === parseInt(id));
+          normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
+          if (extra) itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
+        }
+      });
+
+      const basePrice = parseFloat(item.convert_price) || 0;
+      const qty = this.selections.quantity || 1;
+
+      return {
+        item_id: item.id,
+        name: item.name,
+        image: item.thumb,
+        quantity: qty,
+        convert_price: basePrice,
+        currency_price: item.currency_price,
+        discount: 0,
+        item_variations: normalizedVariations,
+        item_extras: normalizedExtras,
+        item_variation_total: 0,
+        item_extra_total: parseFloat(itemExtraTotal.toFixed(2)),
+        total: parseFloat(((basePrice + itemExtraTotal) * qty).toFixed(2)),
+        instruction: '',
+      };
     }
   },
   mounted() {
@@ -547,6 +648,119 @@ describe('KioskWizardComponent - Garnitures Initiales', () => {
   });
 });
 
+// ─── C1: buildCartItem output format tests ────────────────────────────────────
+// Verify that buildCartItem() produces server-ready arrays (not wizard objects).
+// These tests guard against regressions in the normalization refactor.
+
+describe('KioskWizardComponent - buildCartItem server format (C1)', () => {
+  // Minimal item fixture with itemAttributes and variations
+  const makeItem = (overrides = {}) => ({
+    id: 42,
+    name: 'Tacos L',
+    convert_price: '8.00',
+    currency_price: '8,00 €',
+    thumb: null,
+    itemAttributes: [
+      { id: 10, name: 'Viande' },
+      { id: 20, name: 'Sauce' },
+    ],
+    variations: {
+      10: [{ id: 101, name: 'Poulet', convert_price: '0', price: 0 }],
+      20: [
+        { id: 201, name: 'Harissa', convert_price: '0', price: 0 },
+        { id: 202, name: 'Blanche', convert_price: '0.50', price: 0.5 },
+      ],
+    },
+    extras: [
+      { id: 301, name: 'Tomate',    convert_price: '0',    price: 0 },
+      { id: 302, name: 'Fromage',   convert_price: '1.00', price: 1 },
+    ],
+    addons: [],
+    ...overrides,
+  });
+
+  it('item_variations is an array of { id, variation_name, name }', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    // Simulate viande selection stored in _viandeMeta
+    wrapper.vm.selections._viandeMeta = [{ id: 101, name: 'Poulet' }];
+    wrapper.vm.selections.sauceOrder = [201];
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(Array.isArray(cartItem.item_variations)).toBe(true);
+    cartItem.item_variations.forEach(v => {
+      expect(typeof v.id).toBe('number');
+      expect(typeof v.variation_name).toBe('string');
+      expect(typeof v.name).toBe('string');
+    });
+  });
+
+  it('item_extras is an array of { id, name }', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    wrapper.vm.selections.garnitures = { 301: true };
+    wrapper.vm.selections.supplements = { 302: true };
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(Array.isArray(cartItem.item_extras)).toBe(true);
+    cartItem.item_extras.forEach(e => {
+      expect(typeof e.id).toBe('number');
+      expect(typeof e.name).toBe('string');
+    });
+  });
+
+  it('paid supplements contribute to item_extra_total, free garnitures do not', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    wrapper.vm.selections.garnitures  = { 301: true }; // free
+    wrapper.vm.selections.supplements = { 302: true }; // 1.00€
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(cartItem.item_extra_total).toBeCloseTo(1.0);
+    expect(cartItem.item_extras.length).toBe(2);
+  });
+
+  it('no variations selected → item_variations is empty array', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(cartItem.item_variations).toEqual([]);
+  });
+
+  it('no extras selected → item_extras is empty array and extra_total is 0', () => {
+    const Component = createKioskWizardMock();
+    const wrapper = mount(Component, {
+      props: { item: makeItem(), onAddToCart: vi.fn(), onClose: vi.fn() },
+    });
+    // Reset garnitures to none selected (initGarnitures auto-selects free ones on mount)
+    wrapper.vm.selections.garnitures = {};
+    wrapper.vm.selections.supplements = {};
+    wrapper.vm.resolvedItem = makeItem();
+
+    const cartItem = wrapper.vm.buildCartItem();
+
+    expect(cartItem.item_extras).toEqual([]);
+    expect(cartItem.item_extra_total).toBe(0);
+  });
+});
+
 describe('KioskWizardComponent - Detection du nombre de viandes', () => {
   const testCases = [
     { name: 'Tacos L', expected: 1 },
@@ -576,5 +790,189 @@ describe('KioskWizardComponent - Detection du nombre de viandes', () => {
 
       expect(wrapper.vm.detectViandeCount()).toBe(expected);
     });
+  });
+});
+
+// ─── Wizard kiosk step components (sauces / menu / boisson heuristics) ───────
+
+describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
+  const menuItem = () => ({
+    addons: [
+      { addon_item_name: 'Menu', addon_item_convert_price: 10 },
+      { addon_item_name: 'Coca-Cola', addon_item_id: 1 },
+      { addon_item_name: 'Menu frites boisson', addon_item_id: 2 },
+      { addon_item_name: 'Frites à part', addon_item_id: 3 },
+      { addon_item_name: 'Jus d\'orange', addon_item_id: 4 },
+    ],
+  });
+
+  const baseSelections = () => ({
+    menuChoice: 'none',
+    boissonChoice: null,
+    fritesSauce: null,
+    fritesSauceOrder: [],
+  });
+
+  it('showFritesSauce is false when menuChoice is none', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: baseSelections(),
+      },
+    });
+    expect(wrapper.vm.showFritesSauce).toBe(false);
+  });
+
+  it('showFritesSauce is true for full or frites-only menu choice', async () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: { ...baseSelections(), menuChoice: 'full' },
+      },
+    });
+    expect(wrapper.vm.showFritesSauce).toBe(true);
+
+    await wrapper.vm.selectChoice('frites');
+    expect(wrapper.vm.showFritesSauce).toBe(true);
+
+    await wrapper.vm.selectChoice('none');
+    expect(wrapper.vm.showFritesSauce).toBe(false);
+  });
+
+  it('menuPrice applies 0.6 / 0.4 ratios like runningTotal', async () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: baseSelections(),
+      },
+    });
+    await wrapper.vm.selectChoice('full');
+    expect(wrapper.vm.menuPrice).toBeCloseTo(10);
+    await wrapper.vm.selectChoice('frites');
+    expect(wrapper.vm.menuPrice).toBeCloseTo(6);
+    await wrapper.vm.selectChoice('boisson');
+    expect(wrapper.vm.menuPrice).toBeCloseTo(4);
+    await wrapper.vm.selectChoice('none');
+    expect(wrapper.vm.menuPrice).toBe(0);
+  });
+
+  it('menuInfoBadge is null when sans menu (no false "Frites + Boisson" banner)', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: baseSelections(),
+      },
+    });
+    expect(wrapper.vm.menuInfoBadge).toBe(null);
+  });
+
+  it('frites sauces support multi-select and emit fritesSauceOrder', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: { ...baseSelections(), menuChoice: 'frites' },
+      },
+    });
+    const k = wrapper.vm.fritesSauceList.find((s) => s.key === 'ketchup');
+    const m = wrapper.vm.fritesSauceList.find((s) => s.key === 'mayo');
+    wrapper.vm.toggleFritesSauce(k);
+    wrapper.vm.toggleFritesSauce(m);
+    const orderEvents = wrapper.emitted('update').filter((e) => e[0] === 'fritesSauceOrder');
+    const last = orderEvents[orderEvents.length - 1][1];
+    expect(last).toEqual(['ketchup', 'mayo']);
+  });
+
+  it('boissonList excludes addons whose name contains menu or frites', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      props: {
+        step: {},
+        item: menuItem(),
+        selections: { ...baseSelections(), menuChoice: 'full' },
+      },
+    });
+    const names = wrapper.vm.boissonList.map((b) => b.name);
+    expect(names).toContain('Coca-Cola');
+    expect(names).toContain('Jus d\'orange');
+    expect(names.some((n) => n.toLowerCase().includes('frite'))).toBe(false);
+    expect(names.some((n) => n.toLowerCase().includes('menu'))).toBe(false);
+  });
+});
+
+describe('KioskStepSauceComponent — sauce key / order normalization', () => {
+  const sauceItem = () => ({
+    itemAttributes: [{ id: 99, name: 'Sauce' }],
+    variations: {
+      99: [
+        { id: 201, name: 'Algérienne', convert_price: '0', price: 0 },
+        { id: 202, name: 'Blanche', convert_price: '0.50', price: 0.5 },
+      ],
+    },
+  });
+
+  it('getSauceOrder matches order when sauceOrder mixes number and string ids', () => {
+    const wrapper = mount(KioskStepSauceComponent, {
+      props: {
+        step: {},
+        item: sauceItem(),
+        selections: {
+          sauces: { 201: true, 202: true },
+          sauceOrder: [201, '202'],
+        },
+      },
+    });
+    expect(wrapper.vm.getSauceOrder(201)).toBe(1);
+    expect(wrapper.vm.getSauceOrder('201')).toBe(1);
+    expect(wrapper.vm.getSauceOrder(202)).toBe(2);
+    expect(wrapper.vm.getSauceOrder('202')).toBe(2);
+  });
+
+  it('sauceList reads variations when attribute id is numeric but variation keys are strings', () => {
+    const item = {
+      itemAttributes: [{ id: 99, name: 'Sauce' }],
+      variations: {
+        '99': [
+          { id: 301, name: 'Harissa', thumb: null },
+          { id: 302, name: 'Mayo', thumb: null },
+        ],
+      },
+    };
+    const wrapper = mount(KioskStepSauceComponent, {
+      props: {
+        step: {},
+        item,
+        selections: { sauces: {}, sauceOrder: [] },
+      },
+    });
+    const names = wrapper.vm.sauceList.map((s) => s.name);
+    expect(names).toContain('Harissa');
+    expect(names).toContain('Mayo');
+    expect(names.length).toBe(2);
+  });
+
+  it('sauceList hides variations with status 0', () => {
+    const item = {
+      itemAttributes: [{ id: 99, name: 'Sauce' }],
+      variations: {
+        99: [
+          { id: 401, name: 'Active', status: 1, convert_price: '0' },
+          { id: 402, name: 'Hidden', status: 0, convert_price: '0' },
+        ],
+      },
+    };
+    const wrapper = mount(KioskStepSauceComponent, {
+      props: {
+        step: {},
+        item,
+        selections: { sauces: {}, sauceOrder: [] },
+      },
+    });
+    const names = wrapper.vm.sauceList.map((s) => s.name);
+    expect(names).toContain('Active');
+    expect(names).not.toContain('Hidden');
   });
 });

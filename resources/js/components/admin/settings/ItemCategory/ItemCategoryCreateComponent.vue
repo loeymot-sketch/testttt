@@ -93,6 +93,47 @@
                             </div>
                         </div>
 
+                        <!-- [Phase A] Kiosk upsell — pool + skip screen (Splash suggestion_config) -->
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title">Borne — proposer ces articles en suggestion panier</label>
+                            <div class="db-field-radio-group">
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="1" v-model="props.form.kiosk_upsell_include" type="radio" id="kiosk_upsell_inc_yes" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="kiosk_upsell_inc_yes" class="db-field-label">{{ $t('label.yes') }}</label>
+                                </div>
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="0" v-model="props.form.kiosk_upsell_include" type="radio" id="kiosk_upsell_inc_no" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="kiosk_upsell_inc_no" class="db-field-label">{{ $t('label.no') }}</label>
+                                </div>
+                            </div>
+                            <small class="db-field-alert text-slate-500">Si « Non », aucun article de cette catégorie n’apparaît dans l’écran « Et pour terminer ? ».</small>
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label class="db-field-title">Borne — sauter l’écran suggestion si le panier n’a que cette catégorie</label>
+                            <div class="db-field-radio-group">
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="1" v-model="props.form.kiosk_upsell_skip_after_cart" type="radio" id="kiosk_skip_yes" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="kiosk_skip_yes" class="db-field-label">{{ $t('label.yes') }}</label>
+                                </div>
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="0" v-model="props.form.kiosk_upsell_skip_after_cart" type="radio" id="kiosk_skip_no" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="kiosk_skip_no" class="db-field-label">{{ $t('label.no') }}</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -159,7 +200,9 @@ export default {
                 wizard_template: 'simple',
                 has_menu: 0,
                 default_menu_kiosk: 0,
-                sauce_included_menu: 0
+                sauce_included_menu: 0,
+                kiosk_upsell_include: 1,
+                kiosk_upsell_skip_after_cart: 0,
             }
             if (this.image) {
                 this.image = "";
@@ -177,6 +220,8 @@ export default {
                 fd.append('has_menu', this.props.form.has_menu ?? 0);
                 fd.append('default_menu_kiosk', this.props.form.default_menu_kiosk ?? 0);
                 fd.append('sauce_included_menu', this.props.form.sauce_included_menu ?? 0);
+                fd.append('kiosk_upsell_include', this.props.form.kiosk_upsell_include ?? 1);
+                fd.append('kiosk_upsell_skip_after_cart', this.props.form.kiosk_upsell_skip_after_cart ?? 0);
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -197,7 +242,9 @@ export default {
                         wizard_template: 'simple',
                         has_menu: 0,
                         default_menu_kiosk: 0,
-                        sauce_included_menu: 0
+                        sauce_included_menu: 0,
+                        kiosk_upsell_include: 1,
+                        kiosk_upsell_skip_after_cart: 0,
                     }
                     this.image = "";
                     this.errors = {};

@@ -15,13 +15,20 @@
     <div class="kiosk-viande-grid">
       <div
         v-for="viande in viandeList"
-        :key="viande.id"
+        :key="viande.id ?? viande.key"
         class="kiosk-viande-card"
         :class="{ active: (localSelections[viande.key] || 0) > 0 }"
       >
         <!-- Image/Emoji en haut -->
         <div class="kiosk-viande-visual">
-          <img v-if="viande.thumb" :src="viande.thumb" class="kiosk-viande-img" />
+          <img
+            v-if="viande.displayThumb && !brokenViandeThumbs[viandeThumbKey(viande)]"
+            :src="viande.displayThumb"
+            :alt="viande.name"
+            class="kiosk-viande-img"
+            loading="lazy"
+            @error="onViandeThumbError(viande)"
+          />
           <span class="kiosk-viande-emoji" v-else>{{ viande.emoji }}</span>
         </div>
 
@@ -52,6 +59,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepViande',
   props: {
@@ -62,7 +71,8 @@ export default {
   emits: ['update'],
   data() {
     return {
-      localSelections: { ...this.selections.viandes }
+      localSelections: { ...this.selections.viandes },
+      brokenViandeThumbs: {},
     };
   },
   computed: {
@@ -89,27 +99,35 @@ export default {
         (a.name || '').toLowerCase().includes('viande')
       );
 
-      if (!viandeAttr || !this.item.variations?.[viandeAttr.id]) {
+      const list = kioskVariationsForAttribute(this.item, viandeAttr.id);
+      if (!list?.length) {
         return this.getDefaultViandeList();
       }
 
-      return this.item.variations[viandeAttr.id].map(v => ({
+      return list.map(v => ({
         id: v.id,
         key: v.name.toLowerCase().replace(/\s+/g, '_'),
         name: v.name,
-        thumb: v.thumb || null,
+        displayThumb: kioskResolveImageSrc(v),
         emoji: this.getEmojiForViande(v.name)
       }));
     }
   },
   methods: {
+    viandeThumbKey(viande) {
+      return String(viande.id ?? viande.key ?? '');
+    },
+    onViandeThumbError(viande) {
+      const k = this.viandeThumbKey(viande);
+      this.brokenViandeThumbs = { ...this.brokenViandeThumbs, [k]: true };
+    },
     getDefaultViandeList() {
       // Fallback: no real DB IDs — wizard uses instruction text only
       return [
-        { id: null, key: 'poulet',   name: 'Poulet',   thumb: null, emoji: '🍗' },
-        { id: null, key: 'boeuf',    name: 'Bœuf',     thumb: null, emoji: '🥩' },
-        { id: null, key: 'merguez',  name: 'Merguez',  thumb: null, emoji: '🌭' },
-        { id: null, key: 'nuggets',  name: 'Nuggets',  thumb: null, emoji: '🍗' },
+        { id: null, key: 'poulet',   name: 'Poulet',   displayThumb: null, emoji: '🍗' },
+        { id: null, key: 'boeuf',    name: 'Bœuf',     displayThumb: null, emoji: '🥩' },
+        { id: null, key: 'merguez',  name: 'Merguez',  displayThumb: null, emoji: '🌭' },
+        { id: null, key: 'nuggets',  name: 'Nuggets',  displayThumb: null, emoji: '🍗' },
       ];
     },
     getEmojiForViande(name) {

@@ -898,6 +898,12 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
         Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
     });
+
+    // [C6] Kiosk observability — structured event logging for operators
+    // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
+    Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('kiosk.event');
 });
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {

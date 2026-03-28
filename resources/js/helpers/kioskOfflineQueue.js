@@ -8,7 +8,8 @@
  * Architecture:
  *   - saveOrder(payload)   → persist to localStorage queue
  *   - syncQueue(axios)     → attempt to flush pending orders to server
- *   - getPendingCount()    → how many orders are waiting
+ *   - getPendingCount()    → how many orders are waiting (not yet synced)
+ *   - getAbandonedCount()  → orders that failed after max sync attempts
  *   - startAutoSync(axios) → start a background sync loop (every 30s)
  *   - stopAutoSync()       → stop the background loop
  */
@@ -70,15 +71,23 @@ export function getPendingCount() {
 }
 
 /**
+ * Entries marked abandoned after repeated sync failures (see syncQueue max attempts).
+ */
+export function getAbandonedCount() {
+    return _load().filter(e => e.abandoned === true).length;
+}
+
+/**
  * Attempt to flush all pending orders to the server.
  * @param {Function} postFn  — async function(url, data, config?) → response
  *                             The third argument carries axios config (headers, etc.)
- * @returns {Object}         — { synced: number, failed: number }
+ * @returns {Object}         — { synced, failed, abandonedNew }
  */
 export async function syncQueue(postFn) {
     const queue = _load();
     let synced = 0;
     let failed = 0;
+    let abandonedNew = 0;
 
     for (const entry of queue) {
         if (entry.synced) continue;
@@ -100,6 +109,8 @@ export async function syncQueue(postFn) {
             if (entry.attempts >= 10) {
                 entry.synced = true; // mark as done to stop retrying
                 entry.abandoned = true;
+                entry.abandonedAt = Date.now();
+                abandonedNew++;
             }
             failed++;
         }
@@ -110,7 +121,24 @@ export async function syncQueue(postFn) {
     const pruned = queue.filter(e => !(e.synced && e.savedAt < cutoff));
     _save(pruned);
 
-    return { synced, failed };
+    return { synced, failed, abandonedNew };
+}
+
+/**
+ * [C6] Report abandoned orders to the kiosk-event endpoint for operator visibility.
+ * Non-blocking: failure to report must never break the sync loop.
+ * @param {Function} postFn  — same postFn used by syncQueue
+ * @param {number}   count   — number of newly abandoned orders
+ */
+async function _reportAbandoned(postFn, count) {
+    if (!count || count <= 0) return;
+    try {
+        await postFn('frontend/kiosk-event', {
+            type:    'order_abandoned',
+            count,
+            details: `${count} order(s) abandoned after max sync attempts`,
+        }, {});
+    } catch (_) { /* non-blocking */ }
 }
 
 /**
@@ -124,6 +152,10 @@ export function startAutoSync(postFn, onSync) {
     const run = async () => {
         if (getPendingCount() === 0) return;
         const result = await syncQueue(postFn);
+        // [C6] Report newly abandoned orders to the observability endpoint
+        if (result.abandonedNew > 0) {
+            _reportAbandoned(postFn, result.abandonedNew);
+        }
         if (onSync) onSync(result);
     };
 

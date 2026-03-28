@@ -90,6 +90,26 @@ class UserTableSeeder extends Seeder
         ]);
         $posOperatorLc->assignRole(EnumRole::POS_OPERATOR);
 
+        // Chef KDS — toujours créé (branche 1), même sans DEMO=true
+        // (le compte chef@example.com du bloc DEMO reste un bonus démo Bangladesh)
+        $chefLc = User::firstOrCreate(
+            ['email' => 'chef@lecayenne.fr'],
+            [
+                'name'              => 'Chef Le Cayenne',
+                'phone'             => '0600000003',
+                'username'          => 'chef-lecayenne',
+                'email_verified_at' => now(),
+                'password'          => bcrypt('123456'),
+                'branch_id'         => 1,
+                'status'            => Status::ACTIVE,
+                'country_code'      => '+33',
+                'is_guest'          => Ask::NO,
+            ]
+        );
+        if (!$chefLc->hasRole(EnumRole::CHEF)) {
+            $chefLc->assignRole(EnumRole::CHEF);
+        }
+
         if ($envService->getValue('DEMO')) {
             Address::create([
                 'label'     => 'Domicile',

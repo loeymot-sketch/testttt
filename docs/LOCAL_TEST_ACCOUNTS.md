@@ -36,7 +36,8 @@ php artisan db:seed --class=LeCayenneRoleLandingUrlSeeder
 |--------|--------|------|-------------------|-------------|
 | **Admin** | `admin@lecayenne.fr` *(seed récent)* ou **`admin@example.com`** *(bases déjà seedées)* | Admin | `branch_id` = 0 → **branche par défaut 1** (réglage site) | **Dashboard** (puis menu latéral) |
 | **Caissier POS** | `pos@lecayenne.fr` | POS Operator | **1** (Le Cayenne principal) | **Écran POS** directement |
-| **Chef** | `chef@example.com` | Chef | **1** | **KDS** — *uniquement si seed DEMO* (voir ci-dessous) |
+| **Chef KDS** | `chef@lecayenne.fr` | Chef | **1** | **KDS** (`kitchen-display-system`) — *créé à chaque seed* |
+| **Chef (démo)** | `chef@example.com` | Chef | **1** | **KDS** — *uniquement si `DEMO=true` au moment du seed* |
 | **Ancien démo POS** | `posoperator@example.com` | POS Operator | **1** | **POS** — *uniquement si `DEMO=true` au moment du seed* |
 
 **Client passage (walking)** : `walkingcustomer@example.com` — utile pour les commandes POS ; rôle Customer, pas d’accès back-office.
@@ -63,7 +64,17 @@ php artisan db:seed --class=LeCayenneRoleLandingUrlSeeder
 ## Mode `DEMO` dans `.env`
 
 Si **`DEMO=true`** au moment du **`UserTableSeeder`**, des comptes supplémentaires sont créés (`chef@example.com`, `posoperator@example.com`, clients Bangladesh, etc.).  
-Si **`DEMO=false`**, seuls entre autres **admin**, **walking customer** et **`pos@lecayenne.fr`** (caissier) sont garantis sans comptes « démo » lourds.
+Si **`DEMO=false`**, tu as quand même **admin**, **walking customer**, **`pos@lecayenne.fr`** (caissier) et **`chef@lecayenne.fr`** (KDS).
+
+### Borne kiosk (pas de saisie publique)
+
+- L’API exige un **token machine** ; le visiteur ne voit **pas** d’écran de connexion si **`KIOSK_REQUIRE_MACHINE_LOGIN` n’est pas activé** (défaut).
+- Identifiants **injectés côté serveur** dans la page (`config/kiosk.php`) : par défaut **`kiosk-lecayenne` / `kiosk123`** (aligné sur `KioskMachineTableSeeder`), surcharge possible avec **`KIOSK_MACHINE_USERNAME`** / **`KIOSK_MACHINE_PASSWORD`**.
+- Pour **forcer** l’écran login machine (audit uniquement) : **`KIOSK_REQUIRE_MACHINE_LOGIN=true`** dans `.env`.
+- Si la borne affiche le login après une maintenance : vider **`sessionStorage`** (clé `kiosk_maintenance_mode`) ou recharger sans ce flag.
+- Message **« Identifiants invalides ou compte bloqué »** : mauvais mot de passe en base, borne **inactive** dans Admin → Bornes, ou **utilisateur lié** inactif. Réinitialiser le couple machine / mot de passe :  
+  `php artisan foodking:ensure-kiosk-machine`  
+  (options `--username=`, `--password=`, `--dry-run` ; en prod le script demande confirmation). Puis aligner **`KIOSK_MACHINE_*`** dans `.env` et **`php artisan config:clear`**.
 
 ---
 

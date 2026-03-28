@@ -41,6 +41,18 @@
       </div>
     </transition>
 
+    <!-- Commandes non synchronisées après plusieurs échecs — action personnel requise -->
+    <transition name="slide-down">
+      <div
+        v-if="offlineAbandoned > 0"
+        class="kiosk-abandoned-indicator"
+        :class="{ 'kiosk-abandoned-below-offline': offlinePending > 0 }"
+      >
+        <span class="kiosk-abandoned-icon">⚠</span>
+        <span>{{ offlineAbandoned }} commande{{ offlineAbandoned > 1 ? 's' : '' }} non transmise — prévenez la caisse</span>
+      </div>
+    </transition>
+
     <!-- Vue enfant (page courante) -->
     <router-view
       v-slot="{ Component }"
@@ -93,7 +105,7 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
-import { getPendingCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
+import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
 import KioskAdminComponent from './KioskAdminComponent.vue';
 import KioskToastComponent from './KioskToastComponent.vue';
 import axios from 'axios';
@@ -140,6 +152,7 @@ export default {
       branchLoading: true,
       branchError: null,
       offlinePending: 0,
+      offlineAbandoned: 0,
       offlineCheckTimer: null,
       // Admin panel — accessible via 5 taps rapides sur la zone secrète
       showAdmin: false,
@@ -178,10 +191,13 @@ export default {
     // [FIX-54-4] Pass config (headers) so syncQueue can send X-Idempotency-Key on replay
     startAutoSync((url, data, config) => axios.post(url, data, config || {}), () => {
       this.offlinePending = getPendingCount();
+      this.offlineAbandoned = getAbandonedCount();
     });
     this.offlinePending = getPendingCount();
+    this.offlineAbandoned = getAbandonedCount();
     this.offlineCheckTimer = setInterval(() => {
       this.offlinePending = getPendingCount();
+      this.offlineAbandoned = getAbandonedCount();
     }, 15000);
   },
   beforeUnmount() {
@@ -190,6 +206,7 @@ export default {
     clearInterval(this.offlineCheckTimer);
     stopAutoSync();
     document.removeEventListener('touchstart', this.handleTouch);
+    this._leaveEchoChannel();
   },
   methods: {
     ...mapActions('kioskCart', ['reset', 'setBranch']),
@@ -233,6 +250,8 @@ export default {
           this.branchLoading = false;
           // Pre-warm menu cache in background so Categories screen is instant
           this.$store.dispatch('kioskMenu/fetchMenu', { branchId: branch.id }).catch(() => {});
+          // [C3] Subscribe to item availability updates for this branch
+          this._subscribeEchoChannel(branch.id);
         } else {
           this.branchError = 'Aucune branche disponible. Vérifiez la configuration.';
           this.branchLoading = false;
@@ -243,6 +262,34 @@ export default {
           : 'Connexion au serveur impossible. Vérifiez le réseau.';
         this.branchError = msg;
         this.branchLoading = false;
+      }
+    },
+
+    // [C3] Subscribe to branch Echo channel for real-time item availability updates.
+    // No-op if Echo is not configured (Pusher/Soketi absent) — TTL cache remains the fallback.
+    _subscribeEchoChannel(branchId) {
+      if (!window.Echo || !branchId) return;
+      this._echoBranchId = branchId;
+      try {
+        window.Echo.private(`branch.${branchId}`)
+          .listen('.ItemAvailabilityChanged', (payload) => {
+            this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
+            // If full refetch needed (price/variations changed), trigger it in background
+            if (payload.type === 'full') {
+              this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
+            }
+          });
+      } catch (_) {
+        // Echo auth may fail if token not ready — silent fallback to TTL
+      }
+    },
+
+    _leaveEchoChannel() {
+      if (window.Echo && this._echoBranchId) {
+        try {
+          window.Echo.leave(`branch.${this._echoBranchId}`);
+        } catch (_) { /* ignore */ }
+        this._echoBranchId = null;
       }
     },
 
@@ -420,6 +467,34 @@ export default {
 @keyframes offlinePulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+.kiosk-abandoned-indicator {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  background: rgba(232, 0, 28, 0.12);
+  border: 1px solid rgba(232, 0, 28, 0.45);
+  border-radius: 50px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kiosk-primary, #E8001C);
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+
+.kiosk-abandoned-below-offline {
+  top: 52px;
+}
+
+.kiosk-abandoned-icon {
+  flex-shrink: 0;
 }
 
 /* Barre panier flottante */

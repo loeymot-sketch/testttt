@@ -38,6 +38,8 @@ class ItemCategoryRequest extends FormRequest
             'has_menu'           => ['nullable', 'boolean'],
             'default_menu_kiosk' => ['nullable', 'boolean'],
             'sauce_included_menu'=> ['nullable', 'boolean'],
+            'kiosk_upsell_include'         => ['nullable', 'boolean'],
+            'kiosk_upsell_skip_after_cart' => ['nullable', 'boolean'],
         ];
     }
 }

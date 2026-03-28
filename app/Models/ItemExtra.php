@@ -39,7 +39,7 @@ class ItemExtra extends Model
     public function getThumbAttribute(): ?string
     {
         $basePath = Config::get('menu_images.base_path', 'images/menu');
-        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
 
         $filename = null;
         if (str_starts_with($this->name, 'Sauce supplémentaire:')) {

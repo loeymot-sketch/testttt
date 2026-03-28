@@ -25,6 +25,8 @@ class ItemCategoryResource extends JsonResource
             'cover'           => $this->cover,
             'wizard_template' => $this->wizard_template ?? 'simple',
             'has_menu'        => (bool)($this->has_menu ?? false),
+            'kiosk_upsell_include'         => (bool)($this->kiosk_upsell_include ?? true),
+            'kiosk_upsell_skip_after_cart' => (bool)($this->kiosk_upsell_skip_after_cart ?? false),
         ];
     }
 }

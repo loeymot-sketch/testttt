@@ -16,7 +16,14 @@
         @click="toggleGarniture(garniture.id)"
       >
         <div class="kiosk-garniture-visual">
-          <img v-if="garniture.thumb" :src="garniture.thumb" class="kiosk-garniture-img" />
+          <img
+            v-if="garniture.displayThumb && !brokenGarnitureThumbs[garnitureThumbKey(garniture)]"
+            :src="garniture.displayThumb"
+            :alt="garniture.name"
+            class="kiosk-garniture-img"
+            loading="lazy"
+            @error="onGarnitureThumbError(garniture)"
+          />
           <span class="kiosk-garniture-emoji" v-else>{{ garniture.emoji }}</span>
           <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
@@ -34,6 +41,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepGarnitures',
   props: {
@@ -44,7 +53,8 @@ export default {
   emits: ['update'],
   data() {
     return {
-      localSelections: { ...this.selections.garnitures }
+      localSelections: { ...this.selections.garnitures },
+      brokenGarnitureThumbs: {},
     };
   },
   watch: {
@@ -77,12 +87,19 @@ export default {
       return garnitures.map(g => ({
         id: g.id,
         name: g.name,
-        thumb: g.thumb || null,
+        displayThumb: kioskResolveImageSrc(g),
         emoji: this.getEmojiForGarniture(g.name)
       }));
     }
   },
   methods: {
+    garnitureThumbKey(g) {
+      return String(g.id ?? g.name ?? '');
+    },
+    onGarnitureThumbError(g) {
+      const k = this.garnitureThumbKey(g);
+      this.brokenGarnitureThumbs = { ...this.brokenGarnitureThumbs, [k]: true };
+    },
     getEmojiForGarniture(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('salade') || lower.includes('laitue') || lower.includes('roquette')) return '🥬';

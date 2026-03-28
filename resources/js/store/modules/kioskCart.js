@@ -215,46 +215,18 @@ export const kioskCart = {
                     commit('SET_IDEMPOTENCY_KEY', idempotencyKey);
                 }
 
-                // Construire chaque ligne selon le contrat de CheckoutComponent / OrderRequest
+                // Build order lines — item_variations / item_extras are already in server format
+                // (arrays of { id, variation_name, name } / { id, name }) produced by
+                // KioskWizardComponent.buildCartItem(). No index-based reconstruction needed.
                 const orderItems = state.items.map(item => {
                     const itemPrice = parseFloat(item.convert_price) || 0;
                     const itemVariationTotal = item.item_variation_total || 0;
                     const itemExtraTotal = item.item_extra_total || 0;
                     const totalPrice = (itemPrice + itemVariationTotal + itemExtraTotal) * item.quantity;
 
-                    // [AUDIT-P0] Normalize kiosk wizard shape to the array format expected by
-                    // FrontendOrderService (foreach $var->id) and KDS template (v-for variation_name/name).
-                    //
-                    // Wizard stores:  item_variations = { variations: { attrId: varId }, names: { label: name } }
-                    //                 item_extras     = { extras: [id1, id2], names: ['Tomate', ...] }
-                    //
-                    // Server expects: item_variations = [{ id: varId, variation_name: label, name: name }]
-                    //                 item_extras     = [{ id: extraId, name: extraName }]
-                    const rawVariations = item.item_variations || {};
-                    const variationsObj = rawVariations.variations || {};
-                    const variationNames = rawVariations.names || {};
-                    const normalizedVariations = Object.entries(variationsObj)
-                        .filter(([, varId]) => varId)
-                        .map(([attrId, varId]) => {
-                            const label = Object.keys(variationNames).find(k =>
-                                variationNames[k] !== undefined
-                            ) || '';
-                            // Match label to attrId by position (names object keys align with variations keys)
-                            const attrKeys = Object.keys(variationsObj);
-                            const idx = attrKeys.indexOf(String(attrId));
-                            const nameKeys = Object.keys(variationNames);
-                            const variationName = nameKeys[idx] || '';
-                            const name = variationNames[variationName] || '';
-                            return { id: parseInt(varId), variation_name: variationName, name };
-                        });
-
-                    const rawExtras = item.item_extras || {};
-                    const extrasArr = Array.isArray(rawExtras.extras) ? rawExtras.extras : [];
-                    const extrasNames = Array.isArray(rawExtras.names) ? rawExtras.names : [];
-                    const normalizedExtras = extrasArr.map((extraId, idx) => ({
-                        id: parseInt(extraId),
-                        name: extrasNames[idx] || '',
-                    }));
+                    // Guard: ensure both fields are arrays (defensive for items added via non-wizard paths)
+                    const itemVariations = Array.isArray(item.item_variations) ? item.item_variations : [];
+                    const itemExtras    = Array.isArray(item.item_extras)    ? item.item_extras    : [];
 
                     return {
                         item_id: item.item_id,
@@ -266,8 +238,8 @@ export const kioskCart = {
                         total_price: totalPrice,
                         item_variation_total: itemVariationTotal,
                         item_extra_total: itemExtraTotal,
-                        item_variations: normalizedVariations,
-                        item_extras: normalizedExtras,
+                        item_variations: itemVariations,
+                        item_extras: itemExtras,
                     };
                 });
 

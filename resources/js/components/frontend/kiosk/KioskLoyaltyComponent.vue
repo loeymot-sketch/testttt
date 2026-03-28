@@ -255,6 +255,7 @@
 <script>
 import { mapActions, mapGetters } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import axios from 'axios';
 
 
@@ -288,7 +289,11 @@ export default {
   },
 
   computed: {
-    ...mapGetters('kioskCart', ['total', 'upsellShown']),
+    ...mapGetters('kioskCart', ['total', 'upsellShown', 'items']),
+    ...mapGetters('kioskMenu', ['categories']),
+    shouldSkipKioskUpsell() {
+      return shouldSkipKioskUpsellScreen(this.items, this.categories);
+    },
 
     customerInitials() {
       if (!this.customer?.name) return '?';
@@ -405,14 +410,17 @@ export default {
     },
 
     proceedToPayment() {
-      // Always go through upsell once per session — same logic as KioskCartComponent::proceedToUpsell.
-      // Loyalty must NOT bypass the upsell screen (dessert suggestion after order confirmation).
+      // Same routing as KioskCartComponent::proceedToUpsell (category skip + upsell once per session).
       if (this.upsellShown) {
         this.$router.push({ name: 'kiosk.payment' });
-      } else {
-        this.markUpsellShown();
-        this.$router.push({ name: 'kiosk.upsell' });
+        return;
       }
+      this.markUpsellShown();
+      if (this.shouldSkipKioskUpsell) {
+        this.$router.push({ name: 'kiosk.payment' });
+        return;
+      }
+      this.$router.push({ name: 'kiosk.upsell' });
     },
 
     goBack() {

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\ChangeImageRequest;
+use App\Events\ItemAvailabilityChanged;
 
 class ItemService
 {
@@ -227,7 +228,23 @@ class ItemService
                     }
                 }
             });
-            return $item->refresh();
+            $refreshed = $item->refresh();
+
+            // [C3] Broadcast item change to all kiosk displays so they can update
+            // their menu cache without waiting for the 5-minute TTL.
+            // Determine broadcast type: price change triggers full refetch (variations may differ).
+            $type = 'status';
+            if ($request->has('price') || $request->has('variations') || $request->has('extras')) {
+                $type = 'full';
+            }
+            try {
+                event(new ItemAvailabilityChanged($refreshed, $type));
+            } catch (\Throwable $e) {
+                // Non-blocking: broadcast failure must not break the admin save
+                Log::warning('[C3] ItemAvailabilityChanged broadcast failed: ' . $e->getMessage());
+            }
+
+            return $refreshed;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();

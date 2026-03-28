@@ -52,6 +52,8 @@ return [
         'validation_error' => 'Erreur de validation.',
         'credentials_error' => 'Erreur de connexion.',
         'credentials_invalid' => 'Identifiants invalides ou compte bloqué',
+        'kiosk_machine_inactive' => 'Cette borne est désactivée. Réactivez-la dans Admin → Paramètres → Bornes (statut actif).',
+        'kiosk_user_inactive' => 'Le compte technique lié à cette borne est inactif ou introuvable. Vérifiez l’utilisateur rattaché dans Admin → Bornes.',
         'kiosk_username_not_email' => 'Utilisez le nom d’utilisateur de la borne (ex. kiosk-lecayenne), pas une adresse e-mail.',
         'role_error' => 'Erreur de rôle.',
         'role_exist' => "Le rôle n'existe pas.",

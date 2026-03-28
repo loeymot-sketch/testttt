@@ -63,6 +63,8 @@ function separator(char = '-', width = RECEIPT_WIDTH) {
  * @param {number}   receipt.total
  * @param {string}   receipt.paymentMethod   e.g. "Carte bancaire"
  * @param {string}   [receipt.thankYou]      custom thank-you message
+ * @param {number}   [receipt.loyaltyPointsEarned]
+ * @param {string}   [receipt.loyaltyCustomerName]
  * @returns {string[]} array of ESC/POS command strings (one per "line block")
  */
 export function buildEscPosReceipt(receipt) {
@@ -141,6 +143,20 @@ export function buildEscPosReceipt(receipt) {
     lines.push(LF);
   }
 
+  if (receipt.loyaltyPointsEarned > 0 && receipt.loyaltyCustomerName) {
+    lines.push(separator());
+    lines.push(LF);
+    lines.push(CMD.ALIGN_CENTER);
+    lines.push(CMD.BOLD_ON);
+    lines.push('FIDELITE');
+    lines.push(LF);
+    lines.push(CMD.BOLD_OFF);
+    lines.push(CMD.NORMAL_SIZE);
+    const shortName = String(receipt.loyaltyCustomerName).slice(0, 18);
+    lines.push(`+${receipt.loyaltyPointsEarned} pts — ${shortName}`);
+    lines.push(LF);
+  }
+
   lines.push(separator());
   lines.push(LF);
 
@@ -186,6 +202,8 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
           instruction: i.instruction || null,
         })),
         payment_method: receipt.paymentMethod || '',
+        loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
+        loyalty_customer_name: receipt.loyaltyCustomerName || '',
       };
       const result = await window.borne.printReceipt(orderData);
       if (result?.success || result?.skipped) {
@@ -241,9 +259,21 @@ function formatEur(amount) {
  * @param {number}  opts.discount
  * @param {number}  opts.total
  * @param {string}  opts.paymentMethod
+ * @param {number}  [opts.loyaltyPointsEarned]
+ * @param {string}  [opts.loyaltyCustomerName]
  * @returns {Object}
  */
-export function buildReceiptData({ restaurantName, queueNumber, cartItems, subtotal, discount, total, paymentMethod }) {
+export function buildReceiptData({
+  restaurantName,
+  queueNumber,
+  cartItems,
+  subtotal,
+  discount,
+  total,
+  paymentMethod,
+  loyaltyPointsEarned = 0,
+  loyaltyCustomerName = '',
+}) {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
   const orderDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -266,5 +296,7 @@ export function buildReceiptData({ restaurantName, queueNumber, cartItems, subto
     discount:       parseFloat(discount) || 0,
     total:          parseFloat(total)    || 0,
     paymentMethod:  paymentMethod || '',
+    loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
+    loyaltyCustomerName: loyaltyCustomerName || '',
   };
 }

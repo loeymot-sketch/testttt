@@ -40,6 +40,23 @@ const API_URL = ENV.API_URL;
 const API_KEY = ENV.API_KEY;
 
 axios.defaults.baseURL = API_URL + '/api';
+
+function readTokenFromVuexLocalStorage() {
+    let kioskToken = store.state.kioskCart?.kioskToken || null;
+    let userToken = store.state.auth?.authToken || null;
+    let language = store.state.globalState?.lists?.language_code || null;
+    if (!kioskToken && !userToken && localStorage.getItem('vuex')) {
+        try {
+            const vuex = JSON.parse(localStorage.getItem('vuex'));
+            kioskToken = kioskToken || vuex.kioskCart?.kioskToken || null;
+            userToken = userToken || vuex.auth?.authToken || null;
+            language = language || vuex.globalState?.lists?.language_code || null;
+        } catch (_) { /* ignore */ }
+    }
+    const token = kioskToken || userToken;
+    return { token, language };
+}
+
 axios.interceptors.request.use(
     config => {
         config.headers['x-api-key'] = API_KEY;
@@ -48,49 +65,68 @@ axios.interceptors.request.use(
         const currentLocale = getCurrentLocale();
         config.headers['Accept-Language'] = currentLocale;
 
-        if (localStorage.getItem('vuex')) {
-            try {
-                const vuex = JSON.parse(localStorage.getItem('vuex'));
-                // Kiosk machine token takes priority over regular user session
-                const kioskToken = vuex.kioskCart?.kioskToken;
-                const userToken   = vuex.auth?.authToken;
-                const token       = kioskToken || userToken;
-                const language    = vuex.globalState?.lists?.language_code;
-                config.headers['Authorization'] = token ? `Bearer ${token}` : '';
-                // [PHASE-37] Keep x-localization for backward compatibility, prefer currentLocale
-                const lang = currentLocale || language;
-                if (lang) config.headers['x-localization'] = lang;
-            } catch (_) { /* malformed localStorage — ignore */ }
-        }
+        const { token, language } = readTokenFromVuexLocalStorage();
+        config.headers['Authorization'] = token ? `Bearer ${token}` : '';
+        const lang = currentLocale || language;
+        if (lang) config.headers['x-localization'] = lang;
+
         return config;
     },
     error => Promise.reject(error),
 );
 /**
  * Response interceptor: handle 401 globally.
- * - Kiosk routes → clear kiosk token + redirect to kiosk.login
+ * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)
+ * - Kiosk sans retry possible → clear + kiosk.login
  * - Other routes  → clear user auth + redirect to /login
- * Uses a flag to prevent infinite redirect loops.
  */
 let _401Handling = false;
 axios.interceptors.response.use(
     response => response,
     error => {
         const status = error?.response?.status;
-        if (status === 401 && !_401Handling) {
+        if (status !== 401) {
+            return Promise.reject(error);
+        }
+
+        const path = window.location.pathname || '';
+        if (path.startsWith('/kiosk')) {
+            // [C5] Respect maintenance mode — do not auto-login if staff disabled it
+            const maintenanceMode = (() => {
+                try { return sessionStorage.getItem('kiosk_maintenance_mode') === '1'; } catch (_) { return false; }
+            })();
+            const auto = !maintenanceMode && typeof window !== 'undefined' && window.foodkingConfig?.kioskAutoLogin;
+            const canSilent =
+                auto?.username &&
+                auto.password !== undefined &&
+                auto.password !== null &&
+                String(auto.password) !== '';
+
+            const cfg = error.config;
+            if (canSilent && cfg && !cfg.__retry401Kiosk) {
+                return store
+                    .dispatch('kioskCart/kioskLogin', {
+                        username: String(auto.username).trim(),
+                        password: String(auto.password),
+                    })
+                    .then(() => axios.request({ ...cfg, __retry401Kiosk: true }))
+                    .catch((e) => {
+                        store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+                        router.push({ name: 'kiosk.login' }).catch(() => {});
+                        return Promise.reject(e);
+                    });
+            }
+
+            store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+            router.push({ name: 'kiosk.login' }).catch(() => {});
+            return Promise.reject(error);
+        }
+
+        if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
-
-            const path = window.location.pathname || '';
-            if (path.startsWith('/kiosk')) {
-                // Clear kiosk token from Vuex store
-                store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
-                router.push({ name: 'kiosk.login' }).catch(() => {});
-            } else {
-                // Clear regular auth session
-                store.dispatch('auth/logout').catch(() => {});
-                router.push({ name: 'auth.login' }).catch(() => {});
-            }
+            store.dispatch('auth/logout').catch(() => {});
+            router.push({ name: 'auth.login' }).catch(() => {});
         }
         return Promise.reject(error);
     },

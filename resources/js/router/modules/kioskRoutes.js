@@ -1,19 +1,28 @@
 import store from "../../store/index.js";
-import KioskAppComponent from "../../components/frontend/kiosk/KioskAppComponent.vue";
-import KioskLoginComponent from "../../components/frontend/kiosk/KioskLoginComponent.vue";
-import KioskIdleScreenComponent from "../../components/frontend/kiosk/KioskIdleScreenComponent.vue";
-import KioskCategoriesComponent from "../../components/frontend/kiosk/KioskCategoriesComponent.vue";
-import KioskWizardComponent from "../../components/frontend/kiosk/KioskWizardComponent.vue";
-import KioskCartComponent from "../../components/frontend/kiosk/KioskCartComponent.vue";
-import KioskLoyaltyComponent from "../../components/frontend/kiosk/KioskLoyaltyComponent.vue";
-import KioskUpsellComponent from "../../components/frontend/kiosk/KioskUpsellComponent.vue";
-import KioskPaymentComponent from "../../components/frontend/kiosk/KioskPaymentComponent.vue";
-import KioskWaitingComponent from "../../components/frontend/kiosk/KioskWaitingComponent.vue";
-import KioskConfirmationComponent from "../../components/frontend/kiosk/KioskConfirmationComponent.vue";
-import KioskAdminComponent from "../../components/frontend/kiosk/KioskAdminComponent.vue";
+
+// [C4] Lazy-load all kiosk components into a dedicated "kiosk" webpack chunk.
+// This keeps the initial app.js lighter for non-kiosk surfaces (admin, POS, KDS, OSS).
+// The kiosk chunk is prefetched on the idle screen so navigation feels instant.
+const KioskAppComponent          = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAppComponent.vue");
+const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
+const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
+const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
+const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
+const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
+const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
+const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
+const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
+const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
+const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
+const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
+    // [C5] Maintenance mode: staff activated via KioskAdminComponent — suspend auto-login
+    // until the page is reloaded (sessionStorage is cleared on tab/browser close).
+    try {
+        if (sessionStorage.getItem('kiosk_maintenance_mode') === '1') return null;
+    } catch (_) { /* ignore if sessionStorage unavailable */ }
     const a = window.foodkingConfig?.kioskAutoLogin;
     if (a?.username && a.password !== undefined && a.password !== null && String(a.password) !== '') {
         return { username: String(a.username).trim(), password: String(a.password) };
@@ -41,16 +50,11 @@ function requireKioskAuth(to, from, next) {
     next({ name: 'kiosk.login' });
 }
 
-/** Sur /kiosk/login : si auto-login configuré, ne jamais afficher le formulaire. */
+/**
+ * Sur /kiosk/login : on laisse le composant gérer l'initialisation automatique.
+ * Il n'affiche plus de formulaire de saisie borne ; seulement un écran de retry/diagnostic.
+ */
 function kioskLoginRouteGuard(to, from, next) {
-    const auto = getKioskAutoCredentials();
-    if (auto) {
-        store
-            .dispatch('kioskCart/kioskLogin', auto)
-            .then(() => next({ name: 'kiosk.idle', replace: true }))
-            .catch(() => next());
-        return;
-    }
     next();
 }
 

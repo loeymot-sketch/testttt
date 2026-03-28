@@ -3,7 +3,7 @@
     <h3 class="kiosk-step-title">Quel menu ?</h3>
 
     <div class="kiosk-menu-info">
-      <span class="kiosk-info-badge">Frites + Boisson</span>
+      <span v-if="menuInfoBadge" class="kiosk-info-badge">{{ menuInfoBadge }}</span>
       <span v-if="menuPrice > 0" class="kiosk-menu-price">
         +{{ formatPrice(menuPrice) }}
       </span>
@@ -69,7 +69,17 @@
           :class="{ selected: localBoisson === (boisson.id ?? boisson.name) }"
           @click="selectBoisson(boisson)"
         >
-          <span class="kiosk-boisson-emoji">{{ boisson.emoji }}</span>
+          <div class="kiosk-boisson-visual">
+            <img
+              v-if="boisson.displayThumb && !brokenBoissonThumbs[boissonThumbKey(boisson)]"
+              :src="boisson.displayThumb"
+              :alt="boisson.name"
+              class="kiosk-boisson-img"
+              loading="lazy"
+              @error="onBoissonThumbError(boisson)"
+            />
+            <span v-else class="kiosk-boisson-emoji">{{ boisson.emoji }}</span>
+          </div>
           <span class="kiosk-boisson-name">{{ boisson.name }}</span>
           <span v-if="localBoisson === (boisson.id ?? boisson.name)" class="kiosk-menu-action active">✓</span>
           <span v-else class="kiosk-menu-action">+</span>
@@ -88,12 +98,13 @@
           v-for="sauce in fritesSauceList"
           :key="sauce.key"
           class="kiosk-boisson-card"
-          :class="{ selected: localFritesSauce === sauce.key }"
-          @click="selectFritesSauce(sauce)"
+          :class="{ selected: isFritesSauceSelected(sauce.key) }"
+          @click="toggleFritesSauce(sauce)"
         >
           <span class="kiosk-boisson-emoji">{{ sauce.emoji }}</span>
           <span class="kiosk-boisson-name">{{ sauce.name }}</span>
-          <span v-if="localFritesSauce === sauce.key" class="kiosk-menu-action active">✓</span>
+          <span class="kiosk-frites-sauce-price">{{ fritesSaucePriceLabel(sauce.key) }}</span>
+          <span v-if="getFritesSauceOrder(sauce.key) > 0" class="kiosk-sauce-order">{{ getFritesSauceOrder(sauce.key) }}</span>
           <span v-else class="kiosk-menu-action">+</span>
         </div>
       </div>
@@ -102,6 +113,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepMenu',
   props: {
@@ -114,20 +127,32 @@ export default {
     return {
       localChoice: this.selections.menuChoice || null,
       localBoisson: this.selections.boissonChoice || null,
-      localFritesSauce: this.selections.fritesSauce || null,
+      localFritesSauceOrder: this.normalizeFritesSauceOrder(this.selections),
+      brokenBoissonThumbs: {},
     };
   },
   computed: {
+    menuInfoBadge() {
+      if (this.localChoice === 'none') return null;
+      if (this.localChoice === 'full') return 'Frites + Boisson';
+      if (this.localChoice === 'frites') return 'Frites';
+      if (this.localChoice === 'boisson') return 'Boisson';
+      return null;
+    },
     menuPrice() {
       if (!this.item.addons || this.localChoice === 'none') return 0;
-      
-      const menuAddon = this.item.addons.find(a => 
+
+      const menuAddon = this.item.addons.find(a =>
         (a.addon_item_name || '').toLowerCase().includes('menu')
       );
-      
+
       if (!menuAddon) return 0;
-      
-      return parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
+
+      const fullPrice = parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
+      if (this.localChoice === 'full') return fullPrice;
+      if (this.localChoice === 'frites') return fullPrice * 0.6;
+      if (this.localChoice === 'boisson') return fullPrice * 0.4;
+      return 0;
     },
     showBoissonChoice() {
       return this.localChoice === 'full' || this.localChoice === 'boisson';
@@ -149,13 +174,20 @@ export default {
       // Filter addons for drink/boisson items — map to display objects with REAL addon_item_id
       if (!this.item.addons?.length) return [];
 
-      // Addons may be drink options (specific boissons) — use name heuristic to distinguish
+      // Addons boisson : signaux boisson + blocage explicite des intitulés « food » / accompagnements
+      const isFoodLikeAddon = (n) => {
+        return /frite|menu|patate|nugget|tender|onion|oignon|mozzarella|accompagn|snack|dessert|glace|wrap|cornet|potato|boulette|stick|ring|douille|corbeille|panier|barquette|salade/i.test(n);
+      };
       const isDrinkAddon = (name) => {
         const n = (name || '').toLowerCase();
-        return n.includes('coca') || n.includes('fanta') || n.includes('sprite') ||
-               n.includes('eau') || n.includes('thé') || n.includes('jus') ||
-               n.includes('boisson') || n.includes('soda') || n.includes('drink') ||
-               n.includes('limonade') || n.includes('orangina');
+        if (isFoodLikeAddon(n)) return false;
+        if (n.includes('frite') || n.includes('menu')) return false;
+        return n.includes('coca') || n.includes('cola') || n.includes('pepsi') ||
+               n.includes('fanta') || n.includes('sprite') || n.includes('schweppes') ||
+               n.includes('eau') || n.includes('thé') || n.includes('tea') || n.includes('ice tea') ||
+               n.includes('jus') || n.includes('boisson') || n.includes('soda') || n.includes('drink') ||
+               n.includes('limonade') || n.includes('orangina') || n.includes('oasis') ||
+               n.includes('tropico') || n.includes('café') || n.includes('coffee') || n.includes('red bull');
       };
 
       const boissonAddons = this.item.addons.filter(a => isDrinkAddon(a.addon_item_name || a.name));
@@ -165,22 +197,68 @@ export default {
         return [];
       }
 
-      return boissonAddons.map(b => ({
-        // Use real addon_item_id if numeric, otherwise use addon name as key
-        id:   typeof b.addon_item_id === 'number' ? b.addon_item_id : (b.id || null),
-        name: b.addon_item_name || b.name || 'Boisson',
-        emoji: this.getEmojiForBoisson(b.addon_item_name || b.name),
-        // Keep full addon object for instruction building
-        _addon: b,
-      }));
+      return boissonAddons.map(b => {
+        // API (ItemAddonResource) expose `item_addon_id` = produit lié ; garder compat `addon_item_id`
+        const rawAddonItemId = b.item_addon_id ?? b.addon_item_id;
+        let rowId = null;
+        if (rawAddonItemId != null && rawAddonItemId !== '') {
+          const n = Number(rawAddonItemId);
+          if (!Number.isNaN(n) && Number.isFinite(n)) rowId = n;
+        }
+        if (rowId == null && typeof b.id === 'number') rowId = b.id;
+        return {
+          id: rowId,
+          name: b.addon_item_name || b.name || 'Boisson',
+          emoji: this.getEmojiForBoisson(b.addon_item_name || b.name),
+          displayThumb: kioskResolveImageSrc(b),
+          _addon: b,
+        };
+      });
     },
 
     // Whether we have real DB ids for boissons (vs name-only fallback)
     hasBoissonIds() {
       return this.boissonList.some(b => typeof b.id === 'number');
     },
+    fritesExtraUnitLabel() {
+      const item = this.item;
+      const sauceAttr = item?.itemAttributes?.find(a => (a.name || '').toLowerCase().includes('sauce'));
+      const vars = sauceAttr
+        ? (item.variations?.[String(sauceAttr.id)] || item.variations?.[sauceAttr.id])
+        : null;
+      let unit = 0.50;
+      if (Array.isArray(vars)) {
+        const priced = vars.find(v => parseFloat(v.convert_price || v.price || 0) > 0);
+        if (priced) unit = parseFloat(priced.convert_price || priced.price || 0.50);
+      }
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(unit);
+    },
+  },
+  watch: {
+    selections: {
+      deep: true,
+      handler(sel) {
+        if (Array.isArray(sel.fritesSauceOrder)) {
+          this.localFritesSauceOrder = [...sel.fritesSauceOrder];
+        }
+      },
+    },
   },
   methods: {
+    normalizeFritesSauceOrder(sel) {
+      if (Array.isArray(sel.fritesSauceOrder) && sel.fritesSauceOrder.length) {
+        return [...sel.fritesSauceOrder];
+      }
+      if (sel.fritesSauce) return [sel.fritesSauce];
+      return [];
+    },
+    boissonThumbKey(boisson) {
+      return String(boisson.id ?? boisson.name ?? '');
+    },
+    onBoissonThumbError(boisson) {
+      const k = this.boissonThumbKey(boisson);
+      this.brokenBoissonThumbs = { ...this.brokenBoissonThumbs, [k]: true };
+    },
     getEmojiForBoisson(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('coca') || lower.includes('cola')) return '🥤';
@@ -204,15 +282,43 @@ export default {
         boissonId:   typeof boisson.id === 'number' ? boisson.id : null,
       });
     },
-    selectFritesSauce(sauce) {
-      this.localFritesSauce = sauce.key;
-      this.$emit('update', 'fritesSauce', sauce.key, { fritesSauceName: sauce.name });
+    isFritesSauceSelected(key) {
+      return this.localFritesSauceOrder.includes(key);
+    },
+    getFritesSauceOrder(key) {
+      const i = this.localFritesSauceOrder.indexOf(key);
+      return i >= 0 ? i + 1 : 0;
+    },
+    fritesSaucePriceLabel(key) {
+      const ord = this.getFritesSauceOrder(key);
+      if (ord <= 0) return ' ';
+      return ord > 1 ? this.fritesExtraUnitLabel : '0,00 €';
+    },
+    emitFritesSauceOrder() {
+      const order = [...this.localFritesSauceOrder];
+      this.$emit('update', 'fritesSauceOrder', order);
+      this.$emit('update', 'fritesSauce', order[0] ?? null);
+    },
+    toggleFritesSauce(sauce) {
+      let order = [...this.localFritesSauceOrder];
+      const key = sauce.key;
+      if (key === 'sans') {
+        order = ['sans'];
+      } else {
+        order = order.filter(k => k !== 'sans');
+        const idx = order.indexOf(key);
+        if (idx >= 0) order.splice(idx, 1);
+        else order.push(key);
+      }
+      this.localFritesSauceOrder = order;
+      this.emitFritesSauceOrder();
     },
     selectChoice(choice) {
       this.localChoice = choice;
       // Reset frites sauce when switching away from frites-inclusive choices
       if (choice === 'none' || choice === 'boisson') {
-        this.localFritesSauce = null;
+        this.localFritesSauceOrder = [];
+        this.$emit('update', 'fritesSauceOrder', []);
         this.$emit('update', 'fritesSauce', null);
       }
       this.$emit('update', 'menuChoice', choice);
@@ -380,6 +486,21 @@ export default {
   box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
 }
 
+.kiosk-boisson-visual {
+  width: 102px;
+  height: 102px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-boisson-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .kiosk-boisson-emoji {
   width: 102px;
   height: 102px;
@@ -389,7 +510,6 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  margin-bottom: 10px;
 }
 
 .kiosk-boisson-name {
@@ -415,6 +535,30 @@ export default {
   padding-top: 20px;
   margin-top: 8px;
   animation: fadeInUp 0.3s ease;
+}
+
+.kiosk-frites-sauce-price {
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  margin-top: 4px;
+  min-height: 14px;
+}
+
+.kiosk-frites-sauce-section .kiosk-sauce-order {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  width: 28px;
+  height: 28px;
+  background: #d7263d;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .kiosk-menu-action {

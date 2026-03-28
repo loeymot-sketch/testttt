@@ -105,6 +105,11 @@
       <span>TOTAL</span>
       <span>{{ formatPrice(displayTotal || 0) }}</span>
     </div>
+    <template v-if="pointsEarned > 0 && loyaltyCustomerName">
+      <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+      <p class="receipt-footer receipt-loyalty">FIDÉLITÉ : +{{ pointsEarned }} pts</p>
+      <p class="receipt-footer">{{ loyaltyCustomerName }}</p>
+    </template>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <p class="receipt-footer">Merci de votre visite !</p>
     <p class="receipt-footer">Présentez ce ticket au comptoir.</p>
@@ -253,6 +258,8 @@ export default {
         discount:       this.receiptDiscount,
         total:          this.displayTotal || 0,
         paymentMethod:  this.receiptPaymentMethod,
+        loyaltyPointsEarned: this.pointsEarned,
+        loyaltyCustomerName: this.loyaltyCustomerName || '',
       });
 
       const result = await escPosPrint(receiptData, 'kiosk-print-receipt');

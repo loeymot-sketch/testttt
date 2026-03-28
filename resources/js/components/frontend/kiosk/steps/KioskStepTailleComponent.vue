@@ -9,6 +9,15 @@
         :class="{ selected: localSelection === option.key }"
         @click="selectTaille(option)"
       >
+        <div v-if="option.displayThumb && !brokenTailleThumbs[tailleThumbKey(option)]" class="kiosk-taille-media">
+          <img
+            :src="option.displayThumb"
+            :alt="option.label"
+            class="kiosk-taille-img"
+            loading="lazy"
+            @error="onTailleThumbError(option)"
+          />
+        </div>
         <span class="kiosk-taille-badge">{{ option.badge }}</span>
         <span class="kiosk-taille-label">{{ option.label }}</span>
         <span class="kiosk-taille-viandes">{{ option.viandesLabel }}</span>
@@ -23,6 +32,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+
 // [AUDIT-P2] Dedicated size step for tacos (S / M / L / XL).
 // Replaces the fragile name-based heuristic (detectViandeCount) with an explicit
 // customer choice. The wizard reads selections.taille to set maxViandes on the
@@ -38,6 +49,7 @@ export default {
   data() {
     return {
       localSelection: this.selections.taille || null,
+      brokenTailleThumbs: {},
     };
   },
   computed: {
@@ -49,35 +61,44 @@ export default {
           (a.name || '').toLowerCase().includes('taille') ||
           (a.name || '').toLowerCase().includes('size')
         );
-        if (tailleAttr && this.item.variations?.[tailleAttr.id]?.length) {
-          return this.item.variations[tailleAttr.id].map(v => {
+        const tailleVars = kioskVariationsForAttribute(this.item, tailleAttr?.id);
+        if (tailleAttr && tailleVars?.length) {
+          return tailleVars.map(v => {
             const lower = (v.name || '').toLowerCase();
             const viandeCount = lower.includes('xxl') || lower.includes('4') ? 4
               : lower.includes('xl') || lower.includes('3') ? 3
               : lower.includes(' l') || lower.includes('2') ? 2
               : 1;
             return {
-              key: v.id,                // real DB id
+              key: v.id,
               badge: v.name,
               label: v.name,
               viandesLabel: viandeCount + (viandeCount > 1 ? ' viandes' : ' viande'),
               viandeCount,
               attrId: tailleAttr.id,
               realId: v.id,
+              displayThumb: kioskResolveImageSrc(v),
             };
           });
         }
       }
       // Fallback: static S/M/L/XL options (no catalog variation mapping)
       return [
-        { key: 's',   badge: 'S',   label: 'Small',  viandesLabel: '1 viande',  viandeCount: 1, attrId: null, realId: null },
-        { key: 'm',   badge: 'M',   label: 'Medium', viandesLabel: '2 viandes', viandeCount: 2, attrId: null, realId: null },
-        { key: 'l',   badge: 'L',   label: 'Large',  viandesLabel: '3 viandes', viandeCount: 3, attrId: null, realId: null },
-        { key: 'xl',  badge: 'XL',  label: 'Extra Large', viandesLabel: '4 viandes', viandeCount: 4, attrId: null, realId: null },
+        { key: 's',   badge: 'S',   label: 'Small',  viandesLabel: '1 viande',  viandeCount: 1, attrId: null, realId: null, displayThumb: null },
+        { key: 'm',   badge: 'M',   label: 'Medium', viandesLabel: '2 viandes', viandeCount: 2, attrId: null, realId: null, displayThumb: null },
+        { key: 'l',   badge: 'L',   label: 'Large',  viandesLabel: '3 viandes', viandeCount: 3, attrId: null, realId: null, displayThumb: null },
+        { key: 'xl',  badge: 'XL',  label: 'Extra Large', viandesLabel: '4 viandes', viandeCount: 4, attrId: null, realId: null, displayThumb: null },
       ];
     },
   },
   methods: {
+    tailleThumbKey(option) {
+      return String(option.key ?? option.label ?? '');
+    },
+    onTailleThumbError(option) {
+      const k = this.tailleThumbKey(option);
+      this.brokenTailleThumbs = { ...this.brokenTailleThumbs, [k]: true };
+    },
     selectTaille(option) {
       this.localSelection = option.key;
       // Emit taille key + meta so wizard can update maxViandes for the viande step
@@ -139,6 +160,21 @@ export default {
   border-color: rgba(232,0,28,0.18);
   background: rgba(232,0,28,0.02);
   box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+}
+
+.kiosk-taille-media {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-taille-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .kiosk-taille-badge {

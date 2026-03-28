@@ -4,12 +4,22 @@
     <div class="kiosk-pain-grid">
       <div
         v-for="pain in painList"
-        :key="pain.id"
+        :key="pain.id ?? pain.name"
         class="kiosk-option-card"
         :class="{ selected: localSelection === (pain.id ?? pain.name) }"
         @click="selectPain(pain)"
       >
-        <span class="kiosk-pain-emoji">{{ pain.emoji }}</span>
+        <div class="kiosk-pain-media">
+          <img
+            v-if="pain.displayThumb && !brokenPainThumbs[painThumbKey(pain)]"
+            :src="pain.displayThumb"
+            :alt="pain.name"
+            class="kiosk-pain-thumb"
+            loading="lazy"
+            @error="onPainThumbError(pain)"
+          />
+          <span v-else class="kiosk-pain-emoji">{{ pain.emoji }}</span>
+        </div>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
         <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
         <span v-else class="kiosk-pain-action">+</span>
@@ -22,6 +32,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepPain',
   props: {
@@ -32,7 +44,8 @@ export default {
   emits: ['update'],
   data() {
     return {
-      localSelection: this.selections.pain || null
+      localSelection: this.selections.pain || null,
+      brokenPainThumbs: {},
     };
   },
   computed: {
@@ -49,25 +62,34 @@ export default {
         (a.name || '').toLowerCase().includes('galette')
       );
 
-      if (!painAttr || !this.item.variations?.[painAttr.id]?.length) {
+      const list = kioskVariationsForAttribute(this.item, painAttr.id);
+      if (!list?.length) {
         return this.getDefaultPainList();
       }
 
-      return this.item.variations[painAttr.id].map(v => ({
-        id: v.id,           // Real integer DB id
+      return list.map(v => ({
+        id: v.id,
         name: v.name,
         emoji: this.getEmojiForPain(v.name),
         attrId: painAttr.id,
+        displayThumb: kioskResolveImageSrc(v),
       }));
     },
   },
   methods: {
+    painThumbKey(pain) {
+      return String(pain.id ?? pain.name ?? '');
+    },
+    onPainThumbError(pain) {
+      const k = this.painThumbKey(pain);
+      this.brokenPainThumbs = { ...this.brokenPainThumbs, [k]: true };
+    },
     getDefaultPainList() {
       // IDs are null when we have no catalog data — wizard buildCartItem will
       // only add pain to item_variations when id is a real integer.
       return [
-        { id: null, name: 'Pain', emoji: '🥖', attrId: null },
-        { id: null, name: 'Galette', emoji: '🥙', attrId: null },
+        { id: null, name: 'Pain', emoji: '🥖', attrId: null, displayThumb: null },
+        { id: null, name: 'Galette', emoji: '🥙', attrId: null, displayThumb: null },
       ];
     },
     getEmojiForPain(name) {
@@ -138,6 +160,21 @@ export default {
   box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
 }
 
+.kiosk-pain-media {
+  width: 124px;
+  height: 124px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.kiosk-pain-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .kiosk-pain-emoji {
   width: 124px;
   height: 124px;
@@ -147,7 +184,6 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 60px;
-  margin-bottom: 12px;
   transition: transform 0.2s;
 }
 

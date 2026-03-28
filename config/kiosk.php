@@ -30,6 +30,14 @@ if ($password === '') {
     $password = (string) env('KIOSK_DEFAULT_MACHINE_PASS', 'kiosk123');
 }
 
+// Jamais laisser un identifiant vide (évite kioskAutoLogin null → écran login)
+if (trim($username) === '') {
+    $username = 'kiosk-lecayenne';
+}
+if (trim($password) === '') {
+    $password = 'kiosk123';
+}
+
 $spaPayload = $username !== '' ? [
     'username' => $username,
     'password' => $password,

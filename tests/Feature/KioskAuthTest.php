@@ -31,7 +31,11 @@ class KioskAuthTest extends TestCase
             'zip_code' => '75',
             'address' => '1 rue'
         ]);
-        $user = User::factory()->create(['username' => 'usr_' . uniqid(), 'branch_id' => $branch->id]);
+        $user = User::factory()->create([
+            'username'  => 'usr_' . uniqid(),
+            'branch_id' => $branch->id,
+            'status'    => \App\Enums\Status::ACTIVE,
+        ]);
         return [$branch, $user];
     }
 

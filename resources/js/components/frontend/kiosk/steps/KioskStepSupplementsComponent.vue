@@ -23,7 +23,14 @@
         @click="toggleSupplement(supplement.id)"
       >
         <div class="kiosk-supplement-visual">
-          <img v-if="supplement.thumb" :src="supplement.thumb" class="kiosk-supplement-img" />
+          <img
+            v-if="supplement.thumb && !brokenSupplementThumbs[supplementThumbKey(supplement)]"
+            :src="supplement.thumb"
+            class="kiosk-supplement-img"
+            loading="lazy"
+            :alt="supplement.name"
+            @error="onSupplementThumbError(supplement)"
+          />
           <span class="kiosk-supplement-emoji" v-else>{{ supplement.emoji }}</span>
         </div>
         <div class="kiosk-supplement-details">
@@ -39,6 +46,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepSupplements',
   props: {
@@ -49,7 +58,8 @@ export default {
   emits: ['update'],
   data() {
     return {
-      localSelections: { ...this.selections.supplements }
+      localSelections: { ...this.selections.supplements },
+      brokenSupplementThumbs: {},
     };
   },
   watch: {
@@ -82,7 +92,7 @@ export default {
           name: s.name,
           price: parseFloat(s.convert_price || s.price || 0),
           description: s.description || '',
-          thumb: s.thumb || null,
+          thumb: kioskResolveImageSrc(s),
           emoji: this.getEmojiForSupplement(s.name)
         }));
     },
@@ -96,6 +106,13 @@ export default {
     }
   },
   methods: {
+    supplementThumbKey(supplement) {
+      return String(supplement.id ?? supplement.name ?? '');
+    },
+    onSupplementThumbError(supplement) {
+      const k = this.supplementThumbKey(supplement);
+      this.brokenSupplementThumbs = { ...this.brokenSupplementThumbs, [k]: true };
+    },
     getEmojiForSupplement(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('fromage') || lower.includes('cheddar') || lower.includes('cheese')) return '🧀';
@@ -208,9 +225,9 @@ export default {
 .kiosk-supplement-row:active { transform: scale(0.99); }
 
 .kiosk-supplement-row.selected {
-  border-color: rgba(232,0,28,0.18);
-  background: rgba(232,0,28,0.02);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border: 2px solid rgba(232, 0, 28, 0.42);
+  background: rgba(232, 0, 28, 0.05);
+  box-shadow: 0 0 0 3px rgba(232, 0, 28, 0.1);
 }
 
 .kiosk-supplement-visual {

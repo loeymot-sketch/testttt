@@ -107,7 +107,7 @@ class SecurityComprehensiveTest extends TestCase
         
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/setting/item', [
+            ->postJson('/api/admin/item', [
                 'name' => 'Hacked Item',
                 'price' => 0.01,
                 'item_category_id' => $category->id,
@@ -130,7 +130,7 @@ class SecurityComprehensiveTest extends TestCase
         
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
-            ->putJson("/api/admin/setting/item/{$item->id}", [
+            ->putJson("/api/admin/item/{$item->id}", [
                 'name' => $item->name,
                 'price' => 0.01, // Prix falsifié
                 'item_category_id' => $item->item_category_id,
@@ -222,12 +222,17 @@ class SecurityComprehensiveTest extends TestCase
                 ]]),
             ]);
         
-        // L'ordre doit être créé avec le prix correct de la DB
+        // L'ordre doit être créé avec le prix correct de la DB, ou la requête rejetée (pas d’acceptation silencieuse du prix falsifié)
         if (in_array($response->status(), [200, 201])) {
             $order = Order::first();
             $this->assertNotNull($order);
-            // Le total doit refléter le prix réel de la DB (10.00), pas le prix falsifié
             $this->assertGreaterThan(0.01, $order->total);
+        } else {
+            $this->assertContains(
+                $response->status(),
+                [400, 401, 403, 422],
+                'POS doit rejeter ou valider la payload — pas de 200 avec total falsifié accepté tel quel'
+            );
         }
     }
 

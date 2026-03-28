@@ -57,7 +57,7 @@ class Item extends Model implements HasMedia
         // Fallback: images depuis config/menu_images.php (améliore visuel POS)
         $images = Config::get('menu_images.items', []) + Config::get('menu_images.addons', []);
         $basePath = Config::get('menu_images.base_path', 'images/menu');
-        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Libraries\AppLibrary;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -61,17 +62,23 @@ class ItemVariation extends Model
     {
         $attrName = optional($this->itemAttribute)->name ?? '';
         $basePath = Config::get('menu_images.base_path', 'images/menu');
-        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
 
         if (str_contains($attrName, 'Sauce') || str_contains($attrName, 'sauce')) {
-            $sauces = Config::get('menu_images.sauces', []);
-            $filename = $sauces[$this->name] ?? null;
+            $filename = $this->resolveMenuImageFilename(
+                Config::get('menu_images.sauces', []),
+                (string) $this->name
+            );
         } elseif (str_contains($attrName, 'Crudité') || str_contains($attrName, 'Garniture')) {
-            $crudites = Config::get('menu_images.crudites', []);
-            $filename = $crudites[$this->name] ?? null;
+            $filename = $this->resolveMenuImageFilename(
+                Config::get('menu_images.crudites', []),
+                (string) $this->name
+            );
         } elseif (str_contains($attrName, 'Viande')) {
-            $viandes = Config::get('menu_images.viandes', []);
-            $filename = $viandes[$this->name] ?? null;
+            $filename = $this->resolveMenuImageFilename(
+                Config::get('menu_images.viandes', []),
+                (string) $this->name
+            );
         } else {
             $filename = null;
         }
@@ -82,6 +89,36 @@ class ItemVariation extends Model
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
             return asset("{$basePath}/{$defaultFile}");
         }
+        return null;
+    }
+
+    /**
+     * Résout le fichier image pour un libellé catalogue (casse, espaces, accents).
+     *
+     * @param  array<string, string>  $map
+     */
+    private function resolveMenuImageFilename(array $map, string $name): ?string
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return null;
+        }
+        if (isset($map[$name])) {
+            return $map[$name];
+        }
+        $lower = mb_strtolower($name);
+        foreach ($map as $key => $file) {
+            if (mb_strtolower(trim((string) $key)) === $lower) {
+                return $file;
+            }
+        }
+        $asciiName = Str::lower(Str::ascii($name));
+        foreach ($map as $key => $file) {
+            if (Str::lower(Str::ascii((string) $key)) === $asciiName) {
+                return $file;
+            }
+        }
+
         return null;
     }
 

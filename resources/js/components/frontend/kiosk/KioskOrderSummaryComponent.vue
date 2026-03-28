@@ -72,6 +72,16 @@
           <span>→ {{ getBoissonName() }}</span>
         </div>
       </div>
+
+      <!-- Sauces frites (aligné wizard : 1 gratuite, suivantes au prix sauce supp.) -->
+      <div v-if="fritesSauceRows.length > 0" class="kiosk-summary-section">
+        <h4>Sauces frites ({{ fritesSauceRows.length }})</h4>
+        <div v-for="(row, index) in fritesSauceRows" :key="row.key" class="kiosk-summary-row">
+          <span>{{ row.label }}</span>
+          <span v-if="index === 0" class="kiosk-free">Gratuite</span>
+          <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
+        </div>
+      </div>
     </div>
     
     <!-- Total -->
@@ -138,17 +148,23 @@ export default {
       }
     },
     extraSaucePrice() {
-      // Read sauce extra price from DB variations if available, fallback to 0.50€
       const sauceAttr = this.item.itemAttributes?.find(a =>
         (a.name || '').toLowerCase().includes('sauce')
       );
-      if (sauceAttr && this.item.variations?.[sauceAttr.id]) {
-        const sauceVar = this.item.variations[sauceAttr.id].find(v =>
-          parseFloat(v.convert_price || v.price || 0) > 0
-        );
+      const vars = sauceAttr
+        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
+        : null;
+      if (Array.isArray(vars)) {
+        const sauceVar = vars.find(v => parseFloat(v.convert_price || v.price || 0) > 0);
         if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
       }
       return 0.50;
+    },
+    fritesSauceRows() {
+      const order = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      const hasFrites = this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites';
+      if (!hasFrites || order.length === 0) return [];
+      return order.map(key => ({ key, label: this.fritesSauceLabel(key) }));
     },
     runningTotal() {
       let total = parseFloat(this.item.convert_price) || 0;
@@ -156,6 +172,14 @@ export default {
       // Sauces supplémentaires — prix depuis DB ou fallback 0.50€
       if (this.selections.sauceOrder.length > 1) {
         total += (this.selections.sauceOrder.length - 1) * this.extraSaucePrice;
+      }
+
+      const fryPaid = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      if (
+        (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites') &&
+        fryPaid.length > 1
+      ) {
+        total += (fryPaid.length - 1) * this.extraSaucePrice;
       }
 
       // Suppléments
@@ -186,14 +210,28 @@ export default {
       return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     },
     getSauceName(sauceId) {
-      const sauceAttr = this.item.itemAttributes?.find(a => 
+      const sauceAttr = this.item.itemAttributes?.find(a =>
         (a.name || '').toLowerCase().includes('sauce')
       );
-      if (sauceAttr && this.item.variations?.[sauceAttr.id]) {
-        const sauce = this.item.variations[sauceAttr.id].find(v => v.id === sauceId);
-        return sauce?.name || `Sauce #${sauceId}`;
+      const vars = sauceAttr
+        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
+        : null;
+      if (Array.isArray(vars)) {
+        const sauce = vars.find(v => String(v.id) === String(sauceId));
+        if (sauce) return sauce.name;
       }
       return `Sauce #${sauceId}`;
+    },
+    fritesSauceLabel(key) {
+      const map = {
+        ketchup: 'Ketchup',
+        mayo: 'Mayonnaise',
+        algerienne: 'Algérienne',
+        bbq: 'BBQ',
+        samourai: 'Samouraï',
+        sans: 'Sans sauce',
+      };
+      return map[key] || key;
     },
     getGarnitureName(id) {
       const garniture = this.item.extras?.find(e => e.id === parseInt(id));
@@ -211,14 +249,18 @@ export default {
     getBoissonName() {
       const boissonId = this.selections.boissonChoice;
       if (!boissonId) return 'Non sélectionnée';
-      
-      // Chercher dans les addons
-      const boisson = this.item.addons?.find(a => 
-        (a.addon_item_id || a.id) === boissonId
-      );
-      
+
+      const boisson = this.item.addons?.find(a => {
+        const linked = a.item_addon_id ?? a.addon_item_id;
+        return linked === boissonId
+          || String(linked) === String(boissonId)
+          || a.id === boissonId;
+      });
+
       if (boisson) return boisson.addon_item_name || boisson.name || 'Boisson';
-      
+
+      if (typeof boissonId === 'string') return boissonId;
+
       return `Boisson #${boissonId}`;
     },
     incrementQty() {

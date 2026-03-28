@@ -14,15 +14,23 @@
         v-for="sauce in sauceList"
         :key="sauce.id ?? sauce.name"
         class="kiosk-option-card"
-        :class="{ selected: localSelections[sauceKey(sauce)] }"
+        :class="{ selected: !!localSelections[selectionKey(sauce)] }"
         @click="toggleSauce(sauce)"
       >
         <div class="kiosk-sauce-media">
-          <img v-if="sauce.thumb" :src="sauce.thumb" :alt="sauce.name" class="kiosk-sauce-thumb" />
+          <img
+            v-if="sauce.thumb && !brokenSauceThumbs[sauceThumbKey(sauce)]"
+            :key="`${sauceThumbKey(sauce)}-${sauce.thumb}`"
+            :src="sauce.thumb"
+            :alt="sauce.name"
+            class="kiosk-sauce-thumb"
+            loading="lazy"
+            @error="onSauceThumbError(sauce)"
+          />
           <span v-else class="kiosk-sauce-emoji">{{ sauce.emoji }}</span>
         </div>
         <span class="kiosk-sauce-name">{{ sauce.name }}</span>
-        <span class="kiosk-sauce-price">{{ getSauceOrder(sauceKey(sauce)) > 1 ? extraSaucePriceLabel : '0,00 €' }}</span>
+        <span class="kiosk-sauce-price">{{ sauceUnitPriceLabel(sauce) }}</span>
         <span v-if="getSauceOrder(sauceKey(sauce)) > 0" class="kiosk-sauce-order">{{ getSauceOrder(sauceKey(sauce)) }}</span>
         <span v-else class="kiosk-sauce-add">+</span>
       </div>
@@ -35,6 +43,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepSauce',
   props: {
@@ -46,8 +56,18 @@ export default {
   data() {
     return {
       localSelections: { ...this.selections.sauces },
-      sauceOrder: [...(this.selections.sauceOrder || [])]
+      sauceOrder: [...(this.selections.sauceOrder || [])],
+      brokenSauceThumbs: {},
     };
+  },
+  watch: {
+    selections: {
+      deep: true,
+      handler(s) {
+        this.localSelections = { ...(s.sauces || {}) };
+        this.sauceOrder = [...(s.sauceOrder || [])];
+      },
+    },
   },
   computed: {
     selectedCount() {
@@ -57,8 +77,11 @@ export default {
       const sauceAttr = this.item?.itemAttributes?.find(a =>
         (a.name || '').toLowerCase().includes('sauce')
       );
-      if (sauceAttr && this.item.variations?.[sauceAttr.id]) {
-        const sauceVar = this.item.variations[sauceAttr.id].find(v =>
+      const sauceVars = sauceAttr
+        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
+        : null;
+      if (sauceAttr && sauceVars) {
+        const sauceVar = sauceVars.find(v =>
           parseFloat(v.convert_price || v.price || 0) > 0
         );
         if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
@@ -76,19 +99,30 @@ export default {
         (a.name || '').toLowerCase().includes('sauce')
       );
       
-      if (!sauceAttr || !this.item.variations?.[sauceAttr.id]) {
+      const sauceVariations =
+        sauceAttr &&
+        (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id]);
+      if (!sauceAttr || !sauceVariations) {
         return this.getDefaultSauceList();
       }
-      
-      return this.item.variations[sauceAttr.id].map(v => ({
-        id: v.id,
-        name: v.name,
-        emoji: this.getEmojiForSauce(v.name),
-        thumb: v.thumb || null,
-      }));
+
+      return sauceVariations
+        .filter(v => v.status == null || Number(v.status) === 1)
+        .map(v => ({
+          id: v.id,
+          name: v.name,
+          emoji: this.getEmojiForSauce(v.name),
+          thumb: kioskResolveImageSrc(v),
+        }));
     }
   },
   methods: {
+    sauceUnitPriceLabel(sauce) {
+      return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : '0,00 €';
+    },
+    selectionKey(sauce) {
+      return String(this.sauceKey(sauce));
+    },
     getDefaultSauceList() {
       // Fallback names only — IDs are null so wizard won't map them to item_variations.
       // Kitchen will receive sauce names via instruction text instead.
@@ -111,24 +145,36 @@ export default {
       if (lower.includes('tartare') || lower.includes('poivre')) return '🧂';
       return '🥄';
     },
-    // Use real integer ID when available, otherwise fall back to name as unique key
+    // ID numérique (number ou string JSON) → number pour cohérence avec item.variations
     sauceKey(sauce) {
-      return typeof sauce.id === 'number' ? sauce.id : sauce.name;
+      if (sauce.id !== null && sauce.id !== undefined && sauce.id !== '') {
+        const n = Number(sauce.id);
+        if (!Number.isNaN(n) && Number.isFinite(n)) return n;
+      }
+      return sauce.name;
+    },
+    sauceThumbKey(sauce) {
+      return String(sauce.id ?? sauce.name ?? '');
+    },
+    onSauceThumbError(sauce) {
+      const k = this.sauceThumbKey(sauce);
+      this.brokenSauceThumbs = { ...this.brokenSauceThumbs, [k]: true };
     },
     getSauceOrder(key) {
-      const index = this.sauceOrder.indexOf(key);
+      const index = this.sauceOrder.findIndex(k => String(k) === String(key));
       return index >= 0 ? index + 1 : 0;
     },
     toggleSauce(sauce) {
       const key = this.sauceKey(sauce);
+      const selKey = String(key);
       const newSelections = { ...this.localSelections };
       const newSauceOrder = [...this.sauceOrder];
-      if (newSelections[key]) {
-        delete newSelections[key];
-        const index = newSauceOrder.indexOf(key);
-        if (index > -1) newSauceOrder.splice(index, 1);
+      const orderIndex = newSauceOrder.findIndex(k => String(k) === String(key));
+      if (newSelections[selKey]) {
+        delete newSelections[selKey];
+        if (orderIndex > -1) newSauceOrder.splice(orderIndex, 1);
       } else {
-        newSelections[key] = true;
+        newSelections[selKey] = true;
         newSauceOrder.push(key);
       }
       this.localSelections = newSelections;

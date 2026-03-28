@@ -161,6 +161,7 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
 const ORDER_TYPE_KIOSK    = 25;
@@ -192,6 +193,11 @@ export default {
       upsellShown: 'upsellShown',
       orderType: 'orderType',
     }),
+    ...mapGetters('kioskMenu', ['categories']),
+    /** Phase A — skip upsell when all lines are in "skip after cart" categories */
+    shouldSkipKioskUpsell() {
+      return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
+    },
   },
   methods: {
     ...mapActions('kioskCart', ['updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType']),
@@ -255,10 +261,14 @@ export default {
     proceedToUpsell() {
       if (this.upsellShown) {
         this.$router.push({ name: 'kiosk.payment' });
-      } else {
-        this.markUpsellShown();
-        this.$router.push({ name: 'kiosk.upsell' });
+        return;
       }
+      this.markUpsellShown();
+      if (this.shouldSkipKioskUpsell) {
+        this.$router.push({ name: 'kiosk.payment' });
+        return;
+      }
+      this.$router.push({ name: 'kiosk.upsell' });
     },
 
     // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists

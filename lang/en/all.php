@@ -52,6 +52,8 @@ return [
         'validation_error' => 'Validation Error.',
         'credentials_error' => 'Credentials errors.',
         'credentials_invalid' => 'Invalid credentials or you are blocked',
+        'kiosk_machine_inactive' => 'This kiosk machine is disabled. Enable it in Admin → Settings → Kiosks.',
+        'kiosk_user_inactive' => 'The user account linked to this kiosk is inactive or missing. Check the linked user in Admin → Kiosks.',
         'kiosk_username_not_email' => 'Use the kiosk machine username (e.g. kiosk-lecayenne), not an email address.',
         'role_error' => 'Role errors.',
         'role_exist' => 'Role does not exist.',

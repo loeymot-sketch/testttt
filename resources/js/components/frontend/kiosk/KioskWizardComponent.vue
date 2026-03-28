@@ -124,6 +124,7 @@ import KioskStepSupplements from './steps/KioskStepSupplementsComponent.vue';
 import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../helpers/kioskMedia';
 
 export default {
   name: 'KioskWizardComponent',
@@ -167,6 +168,7 @@ export default {
         menuChoice: null,
         boissonChoice: null,
         fritesSauce: null,
+        fritesSauceOrder: [],
         quantity: 1,
         instruction: ''
       }
@@ -263,17 +265,15 @@ export default {
       // Prix sauces supplémentaires — lire depuis variations DB si disponible, sinon 0.50€
       if (this.selections.sauceOrder.length > 1) {
         const extraSauceCount = this.selections.sauceOrder.length - 1;
-        const sauceAttr = item.itemAttributes?.find(a =>
-          (a.name || '').toLowerCase().includes('sauce')
-        );
-        let sauceExtraPrice = 0.50; // fallback
-        if (sauceAttr && item.variations?.[sauceAttr.id]) {
-          const sauceVar = item.variations[sauceAttr.id].find(v =>
-            parseFloat(v.convert_price || v.price || 0) > 0
-          );
-          if (sauceVar) sauceExtraPrice = parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
-        }
+        const sauceExtraPrice = this.kioskExtraSauceUnitPrice(item);
         total += extraSauceCount * sauceExtraPrice;
+      }
+
+      // Sauces frites (1 gratuite, les suivantes payantes) — même tarif unitaire que sauces article
+      const menuForFrites = this.selections.menuChoice;
+      const fryKeys = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      if ((menuForFrites === 'full' || menuForFrites === 'frites') && fryKeys.length > 1) {
+        total += (fryKeys.length - 1) * this.kioskExtraSauceUnitPrice(item);
       }
 
       // Prix suppléments (extras payants)
@@ -430,12 +430,53 @@ export default {
       if (key === 'boissonChoice' && meta) {
         this.selections._boissonMeta = meta;
       }
+      if (key === 'fritesSauceOrder') {
+        this.selections.fritesSauceOrder = Array.isArray(value) ? [...value] : [];
+        this.selections.fritesSauce = this.selections.fritesSauceOrder[0] ?? null;
+      }
       if (key === 'fritesSauce' && meta) {
         this.selections._fritesSauceMeta = meta;
       }
       if (key === '_viandeMeta') {
         this.selections._viandeMeta = value; // value is the meta array here
       }
+    },
+    kioskSauceAttribute(item) {
+      if (!item?.itemAttributes) return null;
+      return item.itemAttributes.find(a => (a.name || '').toLowerCase().includes('sauce')) || null;
+    },
+    kioskSauceVariationsList(item) {
+      const sauceAttr = this.kioskSauceAttribute(item);
+      if (!sauceAttr) return null;
+      const raw = item.variations?.[String(sauceAttr.id)] ?? item.variations?.[sauceAttr.id];
+      return Array.isArray(raw) ? raw : null;
+    },
+    kioskExtraSauceUnitPrice(item) {
+      const vars = this.kioskSauceVariationsList(item);
+      let unit = 0.50;
+      if (vars) {
+        const priced = vars.find(v => parseFloat(v.convert_price || v.price || 0) > 0);
+        if (priced) unit = parseFloat(priced.convert_price || priced.price || 0.50);
+      }
+      return unit;
+    },
+    kioskFindSauceVariation(item, key) {
+      const vars = this.kioskSauceVariationsList(item);
+      if (!vars) return null;
+      const byId = vars.find(v => String(v.id) === String(key));
+      if (byId) return byId;
+      return vars.find(v => v.name === key) || null;
+    },
+    kioskFritesSauceDisplayName(key) {
+      const map = {
+        ketchup: 'Ketchup',
+        mayo: 'Mayonnaise',
+        algerienne: 'Algérienne',
+        bbq: 'BBQ',
+        samourai: 'Samouraï',
+        sans: 'Sans sauce',
+      };
+      return map[key] || key;
     },
     // formatPrice() provided by kioskPriceMixin
     nextStep() {
@@ -466,7 +507,7 @@ export default {
       if (!item) return null;
 
       if (type === 'recap') {
-        return item.thumb || item.cover || null;
+        return kioskResolveImageSrc(item);
       }
 
       if (type === 'pain') {
@@ -474,43 +515,50 @@ export default {
           (a.name || '').toLowerCase().includes('pain') ||
           (a.name || '').toLowerCase().includes('galette')
         );
-        const variation = painAttr && item.variations?.[painAttr.id]?.[0];
-        return variation?.thumb || null;
+        const list = painAttr ? kioskVariationsForAttribute(item, painAttr.id) : null;
+        const variation = list?.[0];
+        return kioskResolveImageSrc(variation);
       }
 
       if (type === 'taille') {
-        return item.thumb || item.cover || null;
+        return kioskResolveImageSrc(item);
       }
 
       if (type === 'viande') {
         const viandeAttr = item.itemAttributes?.find(a =>
           (a.name || '').toLowerCase().includes('viande')
         );
-        const variation = viandeAttr && item.variations?.[viandeAttr.id]?.[0];
-        return variation?.thumb || null;
+        const list = viandeAttr ? kioskVariationsForAttribute(item, viandeAttr.id) : null;
+        const variation = list?.find(v => kioskResolveImageSrc(v)) || list?.[0];
+        return kioskResolveImageSrc(variation);
       }
 
       if (type === 'sauce') {
         const sauceAttr = item.itemAttributes?.find(a =>
           (a.name || '').toLowerCase().includes('sauce')
         );
-        const variation = sauceAttr && item.variations?.[sauceAttr.id]?.find(v => v.thumb) || sauceAttr && item.variations?.[sauceAttr.id]?.[0];
-        return variation?.thumb || null;
+        const list = sauceAttr ? kioskVariationsForAttribute(item, sauceAttr.id) : null;
+        const variation = list?.find(v => kioskResolveImageSrc(v)) || list?.[0];
+        return kioskResolveImageSrc(variation);
       }
 
       if (type === 'garnitures') {
-        const garniture = item.extras?.find(e => parseFloat(e.convert_price || e.price || 0) === 0 && e.thumb);
-        return garniture?.thumb || null;
+        const garniture = item.extras?.find(e =>
+          parseFloat(e.convert_price || e.price || 0) === 0 && kioskResolveImageSrc(e)
+        );
+        return kioskResolveImageSrc(garniture, item);
       }
 
       if (type === 'supplements') {
-        const supplement = item.extras?.find(e => parseFloat(e.convert_price || e.price || 0) > 0 && e.thumb);
-        return supplement?.thumb || null;
+        const supplement = item.extras?.find(e =>
+          parseFloat(e.convert_price || e.price || 0) > 0 && kioskResolveImageSrc(e)
+        );
+        return kioskResolveImageSrc(supplement, item);
       }
 
       if (type === 'menu') {
-        const addon = item.addons?.find(a => a.addon_item_thumb || a.thumb || a.image);
-        return addon?.addon_item_thumb || addon?.thumb || addon?.image || item.thumb || null;
+        const addon = item.addons?.find(a => kioskResolveImageSrc(a));
+        return kioskResolveImageSrc(addon, item);
       }
 
       return null;
@@ -615,45 +663,49 @@ export default {
       // Sauce variation (first selection only — extras are priced via sauceVariationSurcharge)
       if (this.selections.sauceOrder.length > 0) {
         const firstSauceKey = this.selections.sauceOrder[0];
-        if (item.itemAttributes) {
-          const sauceAttr = item.itemAttributes.find(a =>
-            (a.name || '').toLowerCase().includes('sauce')
-          );
-          if (sauceAttr && item.variations?.[sauceAttr.id]) {
-            const variation = typeof firstSauceKey === 'number'
-              ? item.variations[sauceAttr.id].find(v => v.id === firstSauceKey)
-              : item.variations[sauceAttr.id].find(v => v.name === firstSauceKey);
-            if (variation) {
-              allVariations[sauceAttr.id] = variation.id;
-              allVariationNames[sauceAttr.name] = variation.name;
-            }
-          }
+        const sauceAttr = this.kioskSauceAttribute(item);
+        const variation = sauceAttr ? this.kioskFindSauceVariation(item, firstSauceKey) : null;
+        if (sauceAttr && variation) {
+          allVariations[sauceAttr.id] = variation.id;
+          allVariationNames[sauceAttr.name] = variation.name;
         }
       }
 
-      const sauceVariations = allVariations;
-      const sauceNames = allVariationNames;
+      // Build normalized item_variations array directly in server format:
+      // [{ id: varId, variation_name: attrLabel, name: chosenValueName }]
+      // This avoids the fragile index-based reconstruction in kioskCart.submitOrder.
+      const normalizedVariations = Object.entries(allVariations)
+        .filter(([, varId]) => varId)
+        .map(([attrId, varId]) => {
+          // attrId is the attribute id (key in allVariations); find the matching label
+          // allVariationNames is keyed by attribute name (e.g. 'Pain', 'Viande', 'Sauce')
+          // We stored attrId → varId and attrName → chosenName in parallel, so we look up
+          // the attribute name from itemAttributes to get the label.
+          const attr = item.itemAttributes?.find(a => String(a.id) === String(attrId));
+          const variationName = attr?.name || Object.keys(allVariationNames).find(k =>
+            allVariationNames[k] !== undefined
+          ) || '';
+          const name = allVariationNames[variationName] || allVariationNames[attr?.name] || '';
+          return { id: parseInt(varId), variation_name: variationName, name };
+        });
 
-      const selectedExtras = [];
-      const extraNames = [];
+      // Build normalized item_extras array directly in server format:
+      // [{ id: extraId, name: extraName }]
+      const normalizedExtras = [];
       let itemExtraTotal = 0;
 
       Object.keys(this.selections.garnitures).forEach(id => {
         if (this.selections.garnitures[id]) {
-          selectedExtras.push(parseInt(id));
           const extra = item.extras?.find(e => e.id === parseInt(id));
-          if (extra) {
-            extraNames.push(extra.name);
-          }
+          normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
         }
       });
 
       Object.keys(this.selections.supplements).forEach(id => {
         if (this.selections.supplements[id]) {
-          selectedExtras.push(parseInt(id));
           const extra = item.extras?.find(e => e.id === parseInt(id));
+          normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
           if (extra) {
-            extraNames.push(extra.name);
             itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
           }
         }
@@ -661,17 +713,12 @@ export default {
 
       // Sauce extra price — read from DB variations, fallback 0.50€
       const extraSauceCount = Math.max(0, this.selections.sauceOrder.length - 1);
-      const sauceAttr = item.itemAttributes?.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
-      );
-      let sauceExtraPrice = 0.50;
-      if (sauceAttr && item.variations?.[sauceAttr.id]) {
-        const sauceVar = item.variations[sauceAttr.id].find(v =>
-          parseFloat(v.convert_price || v.price || 0) > 0
-        );
-        if (sauceVar) sauceExtraPrice = parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
-      }
+      const sauceExtraPrice = this.kioskExtraSauceUnitPrice(item);
       const sauceVariationSurcharge = extraSauceCount * sauceExtraPrice;
+
+      const fryPaid = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      const extraFritesSauceCount = Math.max(0, fryPaid.length - 1);
+      const fritesSauceSurcharge = extraFritesSauceCount * sauceExtraPrice;
 
       // Menu addon price — handle all choices (full / frites / boisson)
       let menuAddonPrice = 0;
@@ -688,7 +735,7 @@ export default {
         }
       }
 
-      const itemVariationTotal = sauceVariationSurcharge + menuAddonPrice;
+      const itemVariationTotal = sauceVariationSurcharge + fritesSauceSurcharge + menuAddonPrice;
 
       const basePrice  = parseFloat(item.convert_price) || 0;
       const qty        = this.selections.quantity || 1;
@@ -696,14 +743,17 @@ export default {
 
       return {
         item_id: item.id,
+        item_category_id: item.item_category_id ?? null,
         name: item.name,
         image: item.thumb,
         quantity: qty,
         convert_price: basePrice,
         currency_price: item.currency_price,
         discount: 0,
-        item_variations: { variations: sauceVariations, names: sauceNames },
-        item_extras: { extras: selectedExtras, names: extraNames },
+        // Server-ready format: arrays of { id, variation_name, name } / { id, name }
+        // No further normalization needed in kioskCart.submitOrder.
+        item_variations: normalizedVariations,
+        item_extras: normalizedExtras,
         item_variation_total: parseFloat(itemVariationTotal.toFixed(2)),
         item_extra_total: parseFloat(itemExtraTotal.toFixed(2)),
         // [KIOSK-17] Pre-computed line total so KioskCartComponent and KioskConfirmationComponent
@@ -740,14 +790,8 @@ export default {
       
       if (this.selections.sauceOrder.length > 1 && item) {
         const extraSauces = this.selections.sauceOrder.slice(1).map(id => {
-          const sauceAttr = item.itemAttributes?.find(a => 
-            (a.name || '').toLowerCase().includes('sauce')
-          );
-          if (sauceAttr && item.variations?.[sauceAttr.id]) {
-            const v = item.variations[sauceAttr.id].find(v => v.id === id);
-            return v ? v.name : null;
-          }
-          return null;
+          const v = this.kioskFindSauceVariation(item, id);
+          return v ? v.name : null;
         }).filter(Boolean);
         if (extraSauces.length > 0) parts.push('SAUCES SUPPL: ' + extraSauces.join(', '));
       }
@@ -767,11 +811,12 @@ export default {
         parts.push('MENU: ' + menuLabel);
       }
 
-      // Sauce frites — only when frites are part of the order
+      // Sauce frites — only when frites are part of the order (multi-sélection)
       const hasFrites = this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites';
-      if (hasFrites && this.selections.fritesSauce && this.selections.fritesSauce !== 'sans') {
-        const sauceName = this.selections._fritesSauceMeta?.fritesSauceName || this.selections.fritesSauce;
-        parts.push('SAUCE FRITES: ' + sauceName);
+      const fryOrder = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      if (hasFrites && fryOrder.length > 0) {
+        const labels = fryOrder.map(k => this.kioskFritesSauceDisplayName(k));
+        parts.push('SAUCE FRITES: ' + labels.join(', '));
       }
 
       return parts.join('. ') || null;

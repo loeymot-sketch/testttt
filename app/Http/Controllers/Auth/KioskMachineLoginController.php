@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 
 use App\Enums\Ask;
+use App\Enums\Status;
 use App\Models\User;
 use App\Models\KioskMachine;
 use Illuminate\Http\Request;
@@ -46,15 +47,35 @@ class KioskMachineLoginController extends Controller
 
         $kioskMachine = KioskMachine::where('username', $username)->first();
 
-        if (!$kioskMachine || !Hash::check((string) $request->post('password'), $kioskMachine->password)) {
+        if (!$kioskMachine) {
             return response()->json([
-                'errors' => ['validation' => trans('all.message.credentials_invalid')]
+                'errors' => ['validation' => trans('all.message.credentials_invalid')],
+            ], 400);
+        }
+
+        // Borne désactivée dans Admin → Bornes (status ≠ actif)
+        if ((int) $kioskMachine->status !== (int) Status::ACTIVE) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.kiosk_machine_inactive')],
+            ], 400);
+        }
+
+        $linkedUser = User::query()->find($kioskMachine->user_id);
+        if (! $linkedUser || (int) $linkedUser->status !== (int) Status::ACTIVE) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.kiosk_user_inactive')],
+            ], 400);
+        }
+
+        if (! Hash::check((string) $request->post('password'), $kioskMachine->password)) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.credentials_invalid')],
             ], 400);
         }
 
         DB::transaction(function () use ($kioskMachine) {
             $lockedKiosk = KioskMachine::lockForUpdate()->find($kioskMachine->id);
-            $user = User::find($lockedKiosk->user_id);
+            $user         = User::find($lockedKiosk->user_id);
 
             // Revoke all existing kiosk tokens for this user to allow clean re-login
             $user->tokens()->where('name', 'kiosk-token')->delete();

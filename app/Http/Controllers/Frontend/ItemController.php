@@ -72,22 +72,29 @@ class ItemController extends Controller
             $itemIds   = array_filter(explode(',', $request->input('item_ids', '')));
             $excludeIds = array_map('intval', $itemIds);
 
-            // Priority 1: items explicitly flagged as upsell
+            // Priority 1: items explicitly flagged as upsell (category must allow kiosk upsell pool)
             // [GAP-27-2] Ask::YES = 5 (not boolean true=1) — must use integer comparison
+            // [Phase A] Exclude items whose category has kiosk_upsell_include = false
             $upsellItems = Item::where('status', \App\Enums\Status::ACTIVE)
                 ->where('is_upsell', \App\Enums\Ask::YES)
                 ->whereNotIn('id', $excludeIds)
+                ->whereHas('category', function ($q) {
+                    $q->where('kiosk_upsell_include', true);
+                })
                 ->inRandomOrder()
                 ->take($limit)
                 ->get();
 
-            // Priority 2: if not enough is_upsell items, fallback to is_featured
+            // Priority 2: if not enough is_upsell items, fallback to is_featured (same category rule)
             if ($upsellItems->count() < $limit) {
                 $needed   = $limit - $upsellItems->count();
                 $usedIds  = array_merge($excludeIds, $upsellItems->pluck('id')->toArray());
                 $featured = Item::where('status', \App\Enums\Status::ACTIVE)
                     ->where('is_featured', \App\Enums\Ask::YES)
                     ->whereNotIn('id', $usedIds)
+                    ->whereHas('category', function ($q) {
+                        $q->where('kiosk_upsell_include', true);
+                    })
                     ->inRandomOrder()
                     ->take($needed)
                     ->get();

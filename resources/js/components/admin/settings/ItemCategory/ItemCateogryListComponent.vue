@@ -139,7 +139,13 @@ export default {
                 form: {
                     name: "",
                     status: statusEnum.ACTIVE,
-                    description: ""
+                    description: "",
+                    wizard_template: 'simple',
+                    has_menu: 0,
+                    default_menu_kiosk: 0,
+                    sauce_included_menu: 0,
+                    kiosk_upsell_include: 1,
+                    kiosk_upsell_skip_after_cart: 0,
                 },
                 search: {
                     paginate: 1,
@@ -188,10 +194,17 @@ export default {
             appService.modalShow("#categoryModal");
             this.loading.isActive = true;
             this.$store.dispatch('itemCategory/edit', itemCategory.id);
+            const yn = (v) => (v === true || v === 1 || v === '1') ? 1 : 0;
             this.props.form = {
                 name: itemCategory.name,
                 status: itemCategory.status,
-                description: itemCategory.description
+                description: itemCategory.description || '',
+                wizard_template: itemCategory.wizard_template || 'simple',
+                has_menu: yn(itemCategory.has_menu),
+                default_menu_kiosk: yn(itemCategory.default_menu_kiosk),
+                sauce_included_menu: yn(itemCategory.sauce_included_menu),
+                kiosk_upsell_include: itemCategory.kiosk_upsell_include === false || itemCategory.kiosk_upsell_include === 0 || itemCategory.kiosk_upsell_include === '0' ? 0 : 1,
+                kiosk_upsell_skip_after_cart: yn(itemCategory.kiosk_upsell_skip_after_cart),
             };
             this.loading.isActive = false;
         },

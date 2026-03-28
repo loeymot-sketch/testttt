@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Enums\Ask;
 use App\Models\KioskMachine;
+use App\Enums\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 
@@ -50,7 +51,7 @@ class KioskLoginApiTest extends TestCase
             'branch_id' => $branch->id,
             'user_id' => $user->id,
             'is_login' => Ask::NO,
-            'status' => 1
+            'status' => Status::ACTIVE,
         ]);
 
         // 1. Initial Login

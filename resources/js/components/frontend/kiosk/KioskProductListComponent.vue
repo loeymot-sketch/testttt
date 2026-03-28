@@ -169,7 +169,10 @@ export default {
       this.loadingItemId = product.id;
       try {
         // SimpleItemResource ne contient pas extras/variations — toujours fetch details
-        const res = await this.$store.dispatch('frontendItem/details', product.id);
+        const res = await this.$store.dispatch('frontendItem/details', {
+          id: product.id,
+          surface: 'kiosk',
+        });
         const detail = res?.data?.data || res?.data || product;
         if (this.hasOptions(detail)) {
           this.activeItem = detail;

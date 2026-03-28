@@ -507,7 +507,7 @@ class MenuSeeder extends Seeder
     {
         $images = Config::get("menu_images.{$configKey}", []);
         $basePath = Config::get('menu_images.base_path', 'images/menu');
-        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
 
         $filename = $images[$slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");

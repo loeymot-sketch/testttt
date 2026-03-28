@@ -8,6 +8,10 @@
  * Images stockées dans public/images/menu/
  * Utilisées par: Items, Addons, Sauces, Suppléments, Garnitures
  *
+ * Sauces : SVG génératifs (scripts/generate-menu-sauce-svgs.php) — couleur = type de sauce.
+ * Crudités / suppléments : sources Pexels — voir ATTRIBUTIONS.md et
+ * scripts/fetch-royalty-free-sauces-crudites-supplements.sh
+ *
  * ============================================================================
  */
 
@@ -137,19 +141,30 @@ return [
     |--------------------------------------------------------------------------
     */
     'sauces' => [
-        'Algérienne' => 'sauce_algerienne.png',
-        'Samouraï'   => 'sauce_samourai.png',
-        'Big Burger' => 'sauce_burger.png',
-        'Mayo'       => 'sauce_mayo.png',
-        'Ketchup'    => 'sauce_ketchup.png',
-        'Harissa'    => 'sauce_harissa.png',
-        'Blanche'    => 'sauce_blanche.png',
-        'Andalouse'  => 'sauce_andalouse.png',
-        'Fish'       => 'sauce_fish.png',
-        'Sans Sauce' => 'sauce_sans.png',
-        'Curry'      => 'sauce_curry.png',
-        'Poivre'     => 'sauce_poivre.png',
-        'Sauce César'=> 'sauce_cesar.png',
+        'Algérienne' => 'sauce_algerienne.svg',
+        'Samouraï'   => 'sauce_samourai.svg',
+        'Samourai'   => 'sauce_samourai.svg',
+        'Big Burger' => 'sauce_burger.svg',
+        'Burger'     => 'sauce_burger.svg',
+        'Biggy'      => 'sauce_burger.svg',
+        'Mayo'       => 'sauce_mayo.svg',
+        'Mayonnaise' => 'sauce_mayo.svg',
+        'Ketchup'    => 'sauce_ketchup.svg',
+        'Harissa'    => 'sauce_harissa.svg',
+        'Blanche'    => 'sauce_blanche.svg',
+        'Andalouse'  => 'sauce_andalouse.svg',
+        'Fish'       => 'sauce_fish.svg',
+        'Sans Sauce' => 'sauce_sans.svg',
+        'Curry'      => 'sauce_curry.svg',
+        'Poivre'     => 'sauce_poivre.svg',
+        'Sauce César'=> 'sauce_cesar.svg',
+        'Sauce Cesar'=> 'sauce_cesar.svg',
+        'Barbecue'   => 'sauce_barbecue.svg',
+        'BBQ'        => 'sauce_bbq.svg',
+        'Cocktail'   => 'sauce_cocktail.svg',
+        'Américaine' => 'sauce_americaine.svg',
+        'Americaine' => 'sauce_americaine.svg',
+        'Hannibal'   => 'sauce_hannibal.svg',
     ],
 
     /*
@@ -202,6 +217,6 @@ return [
     | Image par défaut
     |--------------------------------------------------------------------------
     */
-    'default' => 'item-default.png',
+    'default' => 'item-default.svg',
 
 ];

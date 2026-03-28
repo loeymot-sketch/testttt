@@ -25,6 +25,13 @@
           <p v-if="pinError" class="kiosk-pin-error">Code incorrect. Réessayez.</p>
         </transition>
 
+        <!-- [C5] Lockout message -->
+        <transition name="fade">
+          <p v-if="pinLocked" class="kiosk-pin-locked">
+            Trop de tentatives — réessayez dans {{ pinLockSeconds }}s
+          </p>
+        </transition>
+
         <!-- Numpad -->
         <div class="kiosk-pin-numpad">
           <button
@@ -118,6 +125,30 @@
         </transition>
       </div>
     </transition>
+
+    <!-- [C5] Maintenance mode confirmation dialog -->
+    <transition name="fade">
+      <div v-if="showMaintenanceConfirm" class="kiosk-maintenance-overlay" @click.self="cancelMaintenanceMode">
+        <div class="kiosk-maintenance-card">
+          <div class="kiosk-maintenance-icon">⚠️</div>
+          <h3>Déconnexion — mode maintenance</h3>
+          <p>
+            La borne est configurée en <strong>connexion automatique</strong>.<br>
+            Si vous vous déconnectez, elle se reconnectera immédiatement.<br><br>
+            Pour une maintenance, activez le <strong>mode maintenance</strong> :
+            la reconnexion automatique sera suspendue jusqu'au prochain redémarrage.
+          </p>
+          <div class="kiosk-maintenance-actions">
+            <button class="kiosk-admin-btn danger" @click="enterMaintenanceMode">
+              Activer le mode maintenance
+            </button>
+            <button class="kiosk-admin-btn" @click="cancelMaintenanceMode">
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -134,10 +165,16 @@ export default {
   data() {
     return {
       // PIN
-      pinInput:    '',
-      pinUnlocked: false,
-      pinError:    false,
-      _pinErrTimer: null,
+      pinInput:      '',
+      pinUnlocked:   false,
+      pinError:      false,
+      _pinErrTimer:  null,
+      // [C5] Rate-limit: lock after 3 consecutive failures for 30s
+      _pinFailCount: 0,
+      pinLocked:     false,
+      pinLockSeconds: 0,
+      _pinLockTimer:  null,
+      _pinLockCountdown: null,
       // Admin
       busy:              null,
       feedback:          '',
@@ -145,6 +182,8 @@ export default {
       terminalConnected: false,
       terminalModel:     '',
       _feedbackTimer:    null,
+      // [C5] Maintenance mode state
+      showMaintenanceConfirm: false,
     };
   },
 
@@ -178,6 +217,9 @@ export default {
     },
 
     handlePinKey(key) {
+      // [C5] Reject input while locked
+      if (this.pinLocked) return;
+
       if (key === '⌫') {
         this.pinInput = this.pinInput.slice(0, -1);
         this.pinError = false;
@@ -197,14 +239,40 @@ export default {
       if (this.pinInput === this.adminPin) {
         this.pinUnlocked = true;
         this.pinError = false;
+        this._pinFailCount = 0;
       } else {
+        this._pinFailCount++;
         this.pinError = true;
         clearTimeout(this._pinErrTimer);
         this._pinErrTimer = setTimeout(() => {
           this.pinInput = '';
           this.pinError = false;
         }, 1200);
+
+        // [C5] Lock after 3 consecutive failures for 30s
+        if (this._pinFailCount >= 3) {
+          this._startPinLockout();
+        }
       }
+    },
+
+    _startPinLockout() {
+      const LOCK_SECONDS = 30;
+      this.pinLocked = true;
+      this.pinLockSeconds = LOCK_SECONDS;
+      this.pinInput = '';
+      this.pinError = false;
+      this._pinFailCount = 0;
+
+      clearInterval(this._pinLockCountdown);
+      this._pinLockCountdown = setInterval(() => {
+        this.pinLockSeconds--;
+        if (this.pinLockSeconds <= 0) {
+          this.pinLocked = false;
+          clearInterval(this._pinLockCountdown);
+          this._pinLockCountdown = null;
+        }
+      }, 1000);
     },
 
     // ── Admin actions ─────────────────────────────────────────────────────
@@ -309,8 +377,35 @@ export default {
     },
 
     async logout() {
+      const hasAutoLogin = !!(
+        typeof window !== 'undefined' &&
+        window.foodkingConfig?.kioskAutoLogin?.username
+      );
+      if (hasAutoLogin) {
+        // [C5] Auto-login is active — warn staff and offer maintenance mode
+        this.showMaintenanceConfirm = true;
+        return;
+      }
+      await this._doLogout();
+    },
+
+    async _doLogout() {
       await this.reset();
       this.$router.push({ name: 'kiosk.login' });
+    },
+
+    async enterMaintenanceMode() {
+      // [C5] Set sessionStorage flag so getKioskAutoCredentials() returns null
+      // until the page is reloaded (session cleared on next normal boot).
+      try {
+        sessionStorage.setItem('kiosk_maintenance_mode', '1');
+      } catch (_) { /* ignore */ }
+      this.showMaintenanceConfirm = false;
+      await this._doLogout();
+    },
+
+    cancelMaintenanceMode() {
+      this.showMaintenanceConfirm = false;
     },
 
     async quitApp() {
@@ -323,6 +418,8 @@ export default {
   beforeUnmount() {
     clearTimeout(this._feedbackTimer);
     clearTimeout(this._pinErrTimer);
+    clearTimeout(this._pinLockTimer);
+    clearInterval(this._pinLockCountdown);
   },
 };
 </script>
@@ -571,6 +668,58 @@ export default {
   background: rgba(232, 0, 28, 0.1);
   border: 1px solid rgba(232, 0, 28, 0.3);
   color: #ff6b7a;
+}
+
+/* [C5] PIN lockout message */
+.kiosk-pin-locked {
+  font-size: 13px;
+  color: #f39c12;
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+/* [C5] Maintenance mode overlay */
+.kiosk-maintenance-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.kiosk-maintenance-card {
+  background: #1a1a2e;
+  border: 1px solid rgba(243, 156, 18, 0.4);
+  border-radius: 20px;
+  padding: 36px;
+  width: 440px;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.kiosk-maintenance-icon { font-size: 40px; margin-bottom: 12px; }
+
+.kiosk-maintenance-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 12px;
+}
+
+.kiosk-maintenance-card p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.kiosk-maintenance-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Transitions */

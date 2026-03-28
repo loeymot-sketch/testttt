@@ -29,6 +29,14 @@
       </div>
     </div>
 
+    <!-- [C2] Offline snapshot banner — shown when menu is served from IndexedDB cache -->
+    <transition name="slide-down">
+      <div v-if="fromCache && !loading" class="kiosk-cache-banner">
+        <span class="kiosk-cache-banner-icon">📡</span>
+        <span>Menu en cache — prix indicatifs. La connexion sera rétablie automatiquement.</span>
+      </div>
+    </transition>
+
     <div v-if="loading" class="kiosk-catalogue-loading">
       <div class="kiosk-spinner" />
       <p>Chargement du menu...</p>
@@ -70,58 +78,62 @@
         </aside>
 
         <main class="kiosk-product-zone">
-          <div class="kiosk-product-zone-header">
-            <h1 class="kiosk-zone-title">{{ selectedCategoryDisplayName }}</h1>
-            <p class="kiosk-zone-subtitle">
-              {{ filteredProducts.length }} produit{{ filteredProducts.length > 1 ? 's' : '' }}
-            </p>
-          </div>
-
-          <div class="kiosk-product-grid">
-            <div
-              v-for="(product, idx) in filteredProducts"
-              :key="product.id"
-              class="kiosk-product-card"
-              :class="{ 'is-loading': loadingItemId === product.id }"
-              :style="{ animationDelay: (idx * 35) + 'ms' }"
-              @click="openProduct(product)"
-            >
-              <div class="kiosk-product-media">
-                <img
-                  v-if="product.thumb || product.image"
-                  :src="product.thumb || product.image"
-                  :alt="product.name"
-                  class="kiosk-product-image"
-                  loading="lazy"
-                />
-                <div v-else class="kiosk-product-image-fallback">
-                  <span class="kiosk-product-emoji">{{ getCategoryEmoji(product.name) }}</span>
-                </div>
-
-                <span v-if="getProductBadge(product)" class="kiosk-product-badge">
-                  {{ getProductBadge(product) }}
-                </span>
-
-                <button
-                  class="kiosk-product-add"
-                  type="button"
-                  @click.stop="openProduct(product)"
-                  :disabled="!!loadingItemId"
-                >
-                  <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner"></span>
-                  <span v-else>+</span>
-                </button>
+          <transition name="fade-fast" mode="out-in">
+            <div :key="selectedCategoryId" class="kiosk-product-zone-transition">
+              <div class="kiosk-product-zone-header">
+                <h1 class="kiosk-zone-title">{{ selectedCategoryDisplayName }}</h1>
+                <p class="kiosk-zone-subtitle">
+                  {{ filteredProducts.length }} produit{{ filteredProducts.length > 1 ? 's' : '' }}
+                </p>
               </div>
 
-              <div class="kiosk-product-copy">
-                <h3 class="kiosk-product-name">{{ product.name }}</h3>
-                <p v-if="product.description" class="kiosk-product-desc">
-                  {{ truncate(product.description, 68) }}
-                </p>
-                <span class="kiosk-product-price">{{ formatPrice(product.convert_price) }}</span>
+              <div class="kiosk-product-grid">
+                <div
+                  v-for="(product, idx) in filteredProducts"
+                  :key="product.id"
+                  class="kiosk-product-card"
+                  :class="{ 'is-loading': loadingItemId === product.id }"
+                  :style="{ animationDelay: (idx * 35) + 'ms' }"
+                  @click="openProduct(product)"
+                >
+                  <div class="kiosk-product-media">
+                    <img
+                      v-if="product.thumb || product.image"
+                      :src="product.thumb || product.image"
+                      :alt="product.name"
+                      class="kiosk-product-image"
+                      loading="lazy"
+                    />
+                    <div v-else class="kiosk-product-image-fallback">
+                      <span class="kiosk-product-emoji">{{ getCategoryEmoji(product.name) }}</span>
+                    </div>
+
+                    <span v-if="getProductBadge(product)" class="kiosk-product-badge">
+                      {{ getProductBadge(product) }}
+                    </span>
+
+                    <button
+                      class="kiosk-product-add"
+                      type="button"
+                      @click.stop="openProduct(product)"
+                      :disabled="!!loadingItemId"
+                    >
+                      <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner"></span>
+                      <span v-else>+</span>
+                    </button>
+                  </div>
+
+                  <div class="kiosk-product-copy">
+                    <h3 class="kiosk-product-name">{{ product.name }}</h3>
+                    <p v-if="product.description" class="kiosk-product-desc">
+                      {{ truncate(product.description, 68) }}
+                    </p>
+                    <span class="kiosk-product-price">{{ formatPrice(product.convert_price) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </transition>
         </main>
       </div>
 
@@ -192,7 +204,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters('kioskMenu', ['categories', 'allItems', 'selectedCategoryId', 'loading', 'isStale']),
+    ...mapGetters('kioskMenu', ['categories', 'allItems', 'selectedCategoryId', 'loading', 'isStale', 'fromCache']),
     ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
     selectedCategory() {
       return this.categories.find(cat => cat.id === this.selectedCategoryId) || this.categories[0] || null;
@@ -267,7 +279,11 @@ export default {
       if (this.loadingItemId) return;
       this.loadingItemId = product.id;
       try {
-        const res = await this.$store.dispatch('frontendItem/details', product.id);
+        // Même contrat que KioskWizard (surface=kiosk) : variations/extras filtrés borne
+        const res = await this.$store.dispatch('frontendItem/details', {
+          id: product.id,
+          surface: 'kiosk',
+        });
         const detail = res?.data?.data || res?.data || product;
         if (this.hasOptions(detail)) {
           this.activeItem = detail;
@@ -471,6 +487,24 @@ export default {
   font-size: 10px;
 }
 
+/* [C2] Offline snapshot banner */
+.kiosk-cache-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(243, 156, 18, 0.12);
+  border-bottom: 1px solid rgba(243, 156, 18, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+  color: #c87f00;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiosk-cache-banner-icon { flex-shrink: 0; }
+
 .kiosk-catalogue-loading,
 .kiosk-catalogue-empty {
   flex: 1;
@@ -601,6 +635,20 @@ export default {
 }
 
 .kiosk-product-zone::-webkit-scrollbar { display: none; }
+
+.kiosk-product-zone-transition {
+  min-height: 0;
+}
+
+.fade-fast-enter-active,
+.fade-fast-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-fast-enter-from,
+.fade-fast-leave-to {
+  opacity: 0;
+}
 
 .kiosk-product-zone-header {
   padding: 2px 4px 14px;

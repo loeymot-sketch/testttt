@@ -18,6 +18,7 @@ class ItemCategory extends Model implements HasMedia
         'name', 'slug', 'description', 'status', 'sort',
         // [PLAN_11 ARCH-01] Config wizard
         'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
+        'kiosk_upsell_include', 'kiosk_upsell_skip_after_cart',
     ];
     protected $casts = [
         'id'                  => 'integer',
@@ -29,6 +30,8 @@ class ItemCategory extends Model implements HasMedia
         'has_menu'            => 'boolean',
         'default_menu_kiosk'  => 'boolean',
         'sauce_included_menu' => 'boolean',
+        'kiosk_upsell_include'         => 'boolean',
+        'kiosk_upsell_skip_after_cart' => 'boolean',
     ];
 
     public function getThumbAttribute(): string
@@ -40,7 +43,7 @@ class ItemCategory extends Model implements HasMedia
         // Fallback: images depuis config/menu_images.php (améliore visuel POS)
         $images = Config::get('menu_images.categories', []);
         $basePath = Config::get('menu_images.base_path', 'images/menu');
-        $defaultFile = Config::get('menu_images.default', 'item-default.png');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
