@@ -79,6 +79,29 @@ FoodKing — restaurant SaaS platform
 - Graphify not yet tested through isolated POC
 - Graphiti intentionally postponed
 - no full end-to-end Claude → Cursor → Playwright → Claude production cycle has run yet
+- [RISK-NEW] OrderService::changeStatus — $auth===false
+  branch dispatches SendOrderMail/Sms/Push at L1286–1288
+  BEFORE $order->save() at L1290. No DB::transaction in
+  method. Notification can fire for a status change that
+  fails to persist. Severity: MAJOR. Target: CYCLE-002.
+
+- [RISK-NEW] OrderService::changeStatus — $auth===true
+  (customer) branch has NO OrderStatusChanged::dispatch.
+  OSS and KDS will not receive broadcast for customer-
+  triggered status changes. Reachability in production
+  unconfirmed. Must be classified before any changeStatus
+  change is approved.
+
+- [RISK-NEW] BroadcastableOrder class uninspected.
+  Used in OrderStatusChanged constructor. If it
+  eager-loads relationships, a missing relationship
+  silently corrupts the broadcast payload. Required
+  inspection before any OrderStatusChanged change.
+
+- [RISK-NEW] ShouldBroadcastNow exception propagation
+  unverified. OrderCreated and OrderStatusChanged use
+  synchronous broadcast. If Pusher/Soketi is unavailable,
+  the exception impact on the HTTP request is unknown.
 
 ---
 
@@ -90,6 +113,16 @@ FoodKing — restaurant SaaS platform
 - exact output package for Cursor each cycle in real use
 - timing and method for implementing the bot runtime
 - future integration timing for Graphify POC
+- Is the pre-save notification dispatch in
+  OrderService::changeStatus ($auth===false) intentional
+  (performance / legacy pattern) or an unaddressed
+  regression? Human judgment required before CYCLE-002
+  fix plan can be written.
+
+- Is the $auth===true branch in OrderService::changeStatus
+  reachable in production? If yes, the absence of
+  OrderStatusChanged::dispatch is a silent OSS/KDS
+  coherence gap.
 
 ---
 
@@ -137,10 +170,57 @@ FoodKing — restaurant SaaS platform
 - Graphify is considered promising but will only enter through a controlled POC
 - Graphiti is postponed until real cycles prove the need for temporal memory
 - Audit/scoring will be mandatory in the Claude loop
+- CYCLE-001 APPROVED (2026-04-11, high confidence,
+  global score 89). INV-05 baseline established from
+  direct code inspection. All four corrections #1–#4
+  confirmed holding in current codebase.
+
+- INV-05 BASELINE locked:
+    OrderService::myOrderStore     tx L256–467, dispatch after ✓
+    OrderService::tableOrderStore  tx L864–1069, dispatch after ✓
+    OrderService::posOrderStore    tx L508–820, dispatch after ✓
+                                   OrderCreated at L829 ✓
+    OrderService::changeStatus     no tx; OrderStatusChanged
+                                   at L1293–1294 after save() ✓
+                                   (admin/$auth===false path only)
+    KDSOrderService::changeStatus  tx L115–118, dispatch after ✓
+                                   OrderStatusChanged at L127 ✓
+
+- SendOrderGotPush lives in app/Events/ not app/Jobs/.
+  All documentation references to app/Jobs/SendOrderGotPush
+  are stale. Code is correct; docs need update.
+
+- Model routing policy locked: every executable plan
+  must include execution class, preferred model,
+  fallback, reason, and max mode.
+
+- First Claude→Cursor→Claude pipeline cycle completed
+  and validated. Orchestration pipeline is operational.
 
 ---
 
-## 9. Continuity Notes
+## 9. Inspection Priority Queue
+
+Next inspections in order. Do not skip or reorder
+without orchestrator decision.
+
+1. OrderService::changeStatus — classify no-transaction
+   pattern and pre-save dispatch. Requires human answer
+   on intent before fix plan. → CYCLE-002
+2. BroadcastableOrder — inspect constructor and
+   relationship loading. Required before any
+   OrderStatusChanged change is approved.
+3. FrontendOrderService — full INV-05 equivalent
+   inspection. Verify corrections #8 and #9.
+   Verify FrontendOrder.$fillable. → CYCLE-003
+4. Auth after refresh — inspect /api/auth/authcheck
+   response. Confirm landing_url in defaultPermission.
+5. CouponService — inspect MaxDiscount cap and
+   ORDER_TOTAL floor. Required before any pricing cycle.
+
+---
+
+## 10. Continuity Notes
 
 When restarting work:
 1. read CLAUDE.md
@@ -153,7 +233,7 @@ The system must preserve clarity and avoid bloated context.
 
 ---
 
-## 10. Maintenance Rule
+## 11. Maintenance Rule
 
 This file must remain:
 - compact
