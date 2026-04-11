@@ -28,7 +28,7 @@ Utiliser ce format :
 - avant tout nouveau plan Claude
 - avant toute reprise d'un cycle interrompu
 - avant toute review d'une exécution Cursor/Kimi
-- avant toute convocation Claude après rapport Anti-Gravity
+- avant toute convocation Claude après rapport Playwright / E2E
 - avant toute analyse Bugbot significative
 
 Ne pas l'utiliser pour :
@@ -69,7 +69,7 @@ Aucun cycle ne doit commencer sans ces champs.
 
 | Champ | Obligatoire | Description |
 |------|-------------|-------------|
-| `cycle_mode` | Oui | `new-request` \| `post-execution-review` \| `post-antigravity` \| `bugbot-review` \| `resume` |
+| `cycle_mode` | Oui | `new-request` \| `post-execution-review` \| `post-playwright` \| `bugbot-review` \| `resume` |
 | `human_request` | Oui | Demande exacte ou résumé fidèle |
 | `orchestrator_question` | Oui | La question finale exacte à laquelle Claude doit répondre dans ce cycle |
 | `objective` | Oui | Ce qui doit être vrai à la fin du cycle |
@@ -91,7 +91,7 @@ Aucun cycle ne doit commencer sans ces champs.
 
 - `produce a plan`
 - `judge execution quality`
-- `decide if Anti-Gravity is required`
+- `decide if playwright-full-e2e or playwright-critical-flow is required`
 - `review Bugbot findings`
 
 ---
@@ -190,7 +190,7 @@ Avant de produire un plan ou un verdict, `00_ORCHESTRATOR` doit répondre :
 ## 8. Format standard d'intake — manuel
 
 ```text
-Cycle mode: [new-request | post-execution-review | post-antigravity | bugbot-review | resume]
+Cycle mode: [new-request | post-execution-review | post-playwright | bugbot-review | resume]
 
 Human request:
 [texte exact ou résumé fidèle]
@@ -274,7 +274,7 @@ Minimum :
 - risques résiduels
 - `bugbot_status`
 
-### `post-antigravity`
+### `post-playwright`
 Minimum :
 - `orchestrator_question`
 - `reports/antigravity/latest.md`

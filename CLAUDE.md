@@ -301,7 +301,7 @@ When relevant, Claude should prioritize these project materials:
 - docs/DECISION_GRAPHIFY.md
 - latest reports in reports/planning/
 - latest reports in reports/execution/
-- latest reports in reports/antigravity/
+- latest Playwright / E2E cycle reports in reports/antigravity/
 - latest reports in reports/review/
 
 ---

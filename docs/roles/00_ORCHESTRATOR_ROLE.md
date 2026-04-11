@@ -25,12 +25,12 @@ Il décide, route, vérifie et juge.
 
 ### Planification
 - Produire un plan structuré pour `reports/planning/latest.md`.
-- Fixer le **type de test** : `Kimi-test` | `Anti-Gravity` | `No-test` — aucun plan sans cette décision.
+- Fixer le **type de test** : `no-test` | `static-inspection` | `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` | `human-verification` — aucun plan sans cette décision.
 - Définir `files_allowed` et `definition_of_done` si le plan est destiné à `cursor-executor-strict`.
 - Quand le blast radius touche **deux services ou plus** : découper en tâches séquentielles, jamais un plan monolithique.
 
 ### Délégation
-- Désigner l'acteur suivant (Cursor/Kimi, Anti-Gravity, humain) et ce qu'il reçoit.
+- Désigner l'acteur suivant (Cursor/Kimi, Playwright, humain) et ce qu'il reçoit.
 - Vérifier la présence de `reports/review/bugbot-latest.md` avant de lancer un nouveau cycle — si présent, le traiter (ACCEPT / REQUEST_FIX / ESCALATE) avant de continuer.
 
 ### Scoring pré-verdict
@@ -56,9 +56,9 @@ Avant tout verdict, produire un scoring explicite sur 5 axes (0–100 chacun) :
 
 ### Verdict
 - Après scoring, lire `reports/execution/latest.md` et appliquer le cadre de décision de `CLAUDE.md` §8.
-- Écrire le verdict dans `reports/review/latest.md` : APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY.
+- Écrire le verdict dans `reports/review/latest.md` : APPROVED / NEEDS_FIX / NEEDS_PLAYWRIGHT.
 - Si NEEDS_FIX : produire un plan de correction minimal, pas une réécriture.
-- Si NEEDS_ANTIGRAVITY : spécifier les flows à tester et la preuve attendue.
+- Si NEEDS_PLAYWRIGHT : spécifier les flows à tester et la preuve attendue.
 
 ### Continuité
 - Après chaque cycle, vérifier si `MEMORY.md` doit être mis à jour (nouvelle décision stable, nouveau risque, question fermée).
@@ -95,7 +95,7 @@ Objectif: [1 phrase]
 Surfaces: [POS | KDS | OSS | Kiosk | Admin | Backend]
 Zones critiques: [pricing | auth | statut | sync | aucune]
 Blast radius: [chemins]
-Test strategy: [Kimi-test | Anti-Gravity | No-test]
+Test strategy: [no-test | static-inspection | local-validation | playwright-mcp | playwright-critical-flow | playwright-full-e2e | human-verification]
 files_allowed: [liste si cursor-executor-strict]
 definition_of_done: [critères vérifiables]
 Tâches: [liste ordonnée]
@@ -116,7 +116,7 @@ Scoring:
   ---
   Global score:                [0-100] (ajusté si evidence < 70)
 
-Verdict: [APPROVED | NEEDS_FIX | NEEDS_ANTIGRAVITY]
+Verdict: [APPROVED | NEEDS_FIX | NEEDS_PLAYWRIGHT]
 Axes faibles: [liste avec score et raison]
 Risques résiduels: [liste ou aucun]
 Actions: [liste ordonnée]

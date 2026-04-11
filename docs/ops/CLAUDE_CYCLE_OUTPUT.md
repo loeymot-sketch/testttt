@@ -20,7 +20,7 @@ Claude doit rendre un objet exploitable immédiatement dans le cycle réel :
 - un **plan**
 - un **verdict**
 - une **clarification bloquante**
-- un **brief Anti-Gravity**
+- un **playwright-brief**
 - une **décision Bugbot**
 
 ---
@@ -29,10 +29,10 @@ Claude doit rendre un objet exploitable immédiatement dans le cycle réel :
 
 | Type | Quand | Fichier cible |
 |------|------|---------------|
-| `plan` | après intake / après analyse / après Anti-Gravity | `reports/planning/latest.md` |
+| `plan` | après intake / après analyse / après playwright-brief | `reports/planning/latest.md` |
 | `review-verdict` | après exécution ou post-fix | `reports/review/latest.md` |
 | `clarification-block` | intake insuffisant ou contradiction critique | réponse Claude + éventuellement `reports/review/latest.md` |
-| `antigravity-brief` | quand verdict = `NEEDS_ANTIGRAVITY` | `reports/planning/latest.md` ou brief dédié |
+| `playwright-brief` | quand verdict = `NEEDS_PLAYWRIGHT` | `reports/planning/latest.md` ou brief dédié |
 | `bugbot-decision` | quand `bugbot-latest.md` est présent | `reports/review/latest.md` |
 
 Aucun autre type de sortie ne doit être utilisé pour piloter un cycle.
@@ -44,7 +44,7 @@ Aucun autre type de sortie ne doit être utilisé pour piloter un cycle.
 ### Quand
 - nouvelle demande validée
 - reprise après audit
-- reprise après Anti-Gravity
+- reprise après playwright-brief
 - correction après verdict `NEEDS_FIX`
 
 ### Contenu obligatoire
@@ -55,7 +55,7 @@ Aucun autre type de sortie ne doit être utilisé pour piloter un cycle.
 - zones critiques
 - blast radius
 - risques connus
-- test strategy (`Kimi-test` / `Anti-Gravity` / `No-test`)
+- test strategy (`no-test` | `static-inspection` | `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` | `human-verification`)
 - tâches ordonnées
 - definition of done
 - si applicable : `files_allowed`
@@ -65,7 +65,7 @@ Aucun autre type de sortie ne doit être utilisé pour piloter un cycle.
 ```text
 Cycle: [date ISO]
 Type: plan
-Cycle owner: [Claude | Human | Cursor | Anti-Gravity]
+Cycle owner: [Claude | Human | Cursor | Playwright]
 
 Objective:
 [1 à 3 phrases]
@@ -93,7 +93,7 @@ Risks to protect:
 - ...
 
 Test strategy:
-[Kimi-test | Anti-Gravity | No-test]
+[no-test | static-inspection | local-validation | playwright-mcp | playwright-critical-flow | playwright-full-e2e | human-verification]
 
 Definition of done:
 - ...
@@ -113,7 +113,7 @@ Human gate:
 [GO required | clarification required | human exception required]
 
 Next:
-[Cursor/Kimi | Anti-Gravity | Human]
+[Cursor/Kimi | Playwright | Human]
 ```
 
 ### Règles
@@ -171,7 +171,7 @@ Scoring:
   Global score:                [0-100]
 
 Verdict:
-[APPROVED | NEEDS_FIX | NEEDS_ANTIGRAVITY]
+[APPROVED | NEEDS_FIX | NEEDS_PLAYWRIGHT]
 
 Confidence:
 [high | medium | low]
@@ -192,7 +192,7 @@ Minimal actions:
 2. ...
 
 Next:
-[Human validation | Cursor fix | Anti-Gravity | stop]
+[Human validation | Cursor fix | Playwright | stop]
 ```
 
 ### Règles
@@ -247,20 +247,20 @@ Le blocage doit être **précis**, **limité**, **résoluble**.
 
 ---
 
-## 6. Sortie type `antigravity-brief`
+## 6. Sortie type `playwright-brief`
 
 ### Quand
-- `NEEDS_ANTIGRAVITY`
-- plan initial exige Anti-Gravity
+- `NEEDS_PLAYWRIGHT`
+- plan initial exige `playwright-full-e2e` ou `playwright-critical-flow`
 - échec de preuve locale insuffisante sur flow critique
 
 ### Format standard
 
 ```text
 Cycle: [date ISO]
-Type: antigravity-brief
+Type: playwright-brief
 
-Why Anti-Gravity is required:
+Why Playwright verification is required:
 - ...
 
 Flows to test:
@@ -323,7 +323,7 @@ Impact on current cycle:
 - ...
 
 Next:
-[continue | fix plan | Anti-Gravity | human]
+[continue | fix plan | Playwright | human]
 ```
 
 ### Règle
@@ -374,7 +374,7 @@ Si ce document est suivi, chaque cycle manuel réel produit une sortie
 Claude immédiatement exploitable par :
 - l'humain
 - Cursor/Kimi
-- Anti-Gravity
+- Playwright
 - le futur bot pipeline
 
 Sans ambiguïté de format.

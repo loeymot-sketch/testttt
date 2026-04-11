@@ -155,7 +155,7 @@ FoodKing — restaurant SaaS platform
 ### Operational Reports
 - reports/planning/latest.md
 - reports/execution/latest.md
-- reports/antigravity/latest.md
+- Playwright / E2E cycle report: reports/antigravity/latest.md
 - reports/review/latest.md
 
 ---
