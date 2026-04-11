@@ -1,284 +1,161 @@
-# CYCLE-001 — Execution report (read-only)
+# CYCLE-002 — Execution report (classification only)
 
-**Cycle:** CYCLE-001  
-**Execution class:** inspection_readonly_fast  
-**Scope:** Authorized read paths only; **no source edits**; **FrontendOrderService explicitly not inspected** (not in authorized scope).
+**Cycle:** 2026-04-11 — CYCLE-002  
+**Executor:** Cursor  
+**Mode:** Read-only on source; this file only write  
+**Scope:** `OrderService::changeStatus` + Admin callers + `OrderStatusRequest` + `routes/api.php` excerpts per plan  
 
-**Documented corrections reference:** `docs/PROJECT_CONTINUITY_AND_VISION.md` §5 items **1–4** (quoted below in each correction block).
-
----
-
-Correction ID:
-#1
-
-Expected documented state:
-> « **Notifications hors transaction** : pour `myOrderStore` / `tableOrderStore` (et chemins analogues), dispatch notifications / jobs **après** `DB::transaction()` pour éviter des notifications « fantômes » si rollback. »  
-> — `docs/PROJECT_CONTINUITY_AND_VISION.md` L126
-
-Actual code finding:
-- **`OrderService::myOrderStore`**: a single `DB::transaction(function () use ($request) { ... });` wraps persistence; **all** `SendOrder*` / `SendOrderGot*` / `OrderCreated::dispatch` calls occur **after** the closing `});` of that transaction (lines **471–478** follow line **467**).
-- **`OrderService::tableOrderStore`**: a single `DB::transaction(function () use ($request) { ... });` wraps persistence; **all** `SendOrderGot*` / `OrderCreated::dispatch` calls occur **after** the closing `});` of that transaction (lines **1072–1077** follow line **1069**).
-
-Primary file:
-`app/Services/OrderService.php`
-
-Method:
-`myOrderStore` **and** `tableOrderStore`
-
-Transaction boundary:
-
-**`myOrderStore`**
-
-- Opens at line: **256** (`DB::transaction(function () use ($request) {`)
-- Closes at line: **467** (`});` closing the `DB::transaction` callback)
-- No transaction present: **no**
-
-**`tableOrderStore`**
-
-- Opens at line: **864** (`DB::transaction(function () use ($request) {`)
-- Closes at line: **1069** (`});` closing the `DB::transaction` callback)
-- No transaction present: **no**
-
-Dispatch call(s):
-
-**Inside `myOrderStore` transaction closure (lines 256–467)**
-
-- *(none — no `::dispatch(` and no `SendOrder*::dispatch` inside the closure)*
-
-**After `myOrderStore` transaction (lines 471–478)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderMail` | **471** | **after** |
-| `SendOrderSms` | **472** | **after** |
-| `SendOrderPush` | **473** | **after** |
-| `SendOrderGotMail` | **474** | **after** |
-| `SendOrderGotSms` | **475** | **after** |
-| `SendOrderGotPush` | **476** | **after** |
-| `\App\Events\OrderCreated` | **478** | **after** |
-
-**Inside `tableOrderStore` transaction closure (lines 864–1069)**
-
-- *(none — no `::dispatch(` inside the closure)*
-
-**After `tableOrderStore` transaction (lines 1073–1077)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderGotMail` | **1073** | **after** |
-| `SendOrderGotSms` | **1074** | **after** |
-| `SendOrderGotPush` | **1075** | **after** |
-| `\App\Events\OrderCreated` | **1077** | **after** |
-
-Exact line numbers:
-
-**`myOrderStore`**
-
-- Transaction open: **256**
-- Transaction close: **467**
-- Dispatch(es): **471**, **472**, **473**, **474**, **475**, **476**, **478**
-
-**`tableOrderStore`**
-
-- Transaction open: **864**
-- Transaction close: **1069**
-- Dispatch(es): **1073**, **1074**, **1075**, **1077**
-
-Verdict:
-**CONFIRMED** — for both `myOrderStore` and `tableOrderStore`, every dispatch listed above is **after** the `DB::transaction` closure; there are **zero** dispatches inside those transaction closures.
-
-Notes:
-- `SendOrderGotPush` resolves to `App\Events\SendOrderGotPush` (import L29); **`app/Jobs/SendOrderGotPush.php` does not exist** in this repo (glob search found `app/Events/SendOrderGotPush.php` only).
+**Explicit non-inspection (per plan):** `FrontendOrderService.php` and `KitchenDisplaySystemOrderService.php` were **not** re-opened in this cycle. `KitchenDisplaySystemOrderService::changeStatus` transaction usage is cited only from CYCLE-001 / prior evidence.
 
 ---
 
-Correction ID:
-#2
+## Method map (TASK-01–04) — `OrderService::changeStatus`
 
-Expected documented state:
-> « **`posOrderStore`** : notifications KDS / événements **après** transaction ; **`OrderCreated::dispatch`** sur les flux concernés. »  
-> — `docs/PROJECT_CONTINUITY_AND_VISION.md` L127
+**File:** `app/Services/OrderService.php`  
+**Signature:** `public function changeStatus(Order $order, OrderStatusRequest $request, bool $auth = false): Order|array`
 
-Actual code finding:
-- **`OrderService::posOrderStore`**: `DB::transaction(function () use ($request, &$order, $idempotencyKey) { ... });` ends at line **820** (`});`).
-- Immediately after, when `$order` is truthy, a `try` block dispatches **`SendOrderGotMail`**, **`SendOrderGotSms`**, **`SendOrderGotPush`**, and **`\App\Events\OrderCreated::dispatch($order)`** at lines **825–829**, i.e. **after** the transaction closure.
+| Region | Lines | Summary |
+|--------|-------|---------|
+| Method open / outer try | 1229–1231 | `try {` |
+| Status transition gate | 1232–1234 | `ValidStatusTransition` on `$order->status` → `$request->status`; throws `Exception` with 422 if invalid |
+| `$auth === true` branch | 1236–1259 | Comment: customer self-cancellation path; owner check; optional reason; cashback if REJECTED/CANCELED + transaction; SendOrderMail/Sms/Push; assign status; `save()`; else `abort(403)` |
+| `$auth === false` branch | 1260–1310 | Branch isolation for non-Admin; optional reason validation + cashback for REJECTED/CANCELED; `$oldStatus`; SendOrder*; assign; `save()`; `OrderStatusChanged` + `ActionLog` |
+| Return / catch | 1311–1316 | `return $order`; catch rethrows via `QueryExceptionLibrary` |
 
-Primary file:
-`app/Services/OrderService.php`
+**`$auth` source:** Third parameter `bool $auth = false`. No caller in the inspected codebase passes `true` (all `OrderService::changeStatus` invocations use two arguments only).
 
-Method:
-`posOrderStore`
-
-Transaction boundary:
-- Opens at line: **508** (`DB::transaction(function () use ($request, &$order, $idempotencyKey) {`)
-- Closes at line: **820** (`});` closing the `DB::transaction` callback)
-- No transaction present: **no**
-
-Dispatch call(s):
-
-**Inside `posOrderStore` transaction closure (lines 508–820)**
-
-- *(none — no `::dispatch(` inside the closure)*
-
-**After `posOrderStore` transaction (lines 825–829)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderGotMail` | **825** | **after** |
-| `SendOrderGotSms` | **826** | **after** |
-| `SendOrderGotPush` | **827** | **after** |
-| `\App\Events\OrderCreated` | **829** | **after** |
-
-Exact line numbers:
-- Transaction open: **508**
-- Transaction close: **820**
-- Dispatch(es): **825**, **826**, **827**, **829**
-
-Verdict:
-**CONFIRMED** — KDS-related “got order” notifications and `OrderCreated::dispatch` are **after** the `DB::transaction` closure; **`OrderCreated::dispatch` is present** on the POS path at line **829**.
-
-Notes:
-- This method also contains **no** `OrderStatusChanged::dispatch` (not required by correction #2 text).
-- **`FrontendOrderService` was not inspected** (out of scope).
+**Comments in method (TASK-06):** Inline comments include `[FIX-54-7]`, `[AUDIT-FIX P0-2]`, `[PHASE-E]`; **none** explain omitting `DB::transaction` or ordering notifications before `save()`. **Verbatim:** no explanatory comment tying “no transaction” or “pre-save dispatch” to an intentional design.
 
 ---
 
-Correction ID:
-#3
+## Classification target: `OrderService::changeStatus`
 
-Expected documented state:
-> « **`changeStatus` (admin)** : **`OrderStatusChanged::dispatch`** avec ancien et nouveau statut. »  
-> — `docs/PROJECT_CONTINUITY_AND_VISION.md` L128
-
-Actual code finding:
-- **`OrderService::changeStatus`**: there is **no** `DB::transaction(...)` wrapper in this method (full method body inspected approximately **L1229–L1316**).
-- In the **`$auth === false`** branch (non-customer / staff & admin path), after branch isolation and optional cashback handling:
-  - `$oldStatus = $order->status;` at line **1285**
-  - `SendOrderMail::dispatch`, `SendOrderSms::dispatch`, `SendOrderPush::dispatch` at lines **1286–1288** (**before** `$order->status = $request->status;` at **1289** and `$order->save();` at **1290**)
-  - `\App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);` at lines **1293–1294** (**after** `$order->save();` at **1290**)
-- In the **`$auth === true`** branch (customer self-service path), there is **`OrderStatusChanged::dispatch` absent**; only `SendOrderMail` / `SendOrderSms` / `SendOrderPush` at **1251–1253**, then `$order->save()` at **1254–1255**.
-
-Primary file:
-`app/Services/OrderService.php`
-
-Method:
-`changeStatus`
-
-Transaction boundary:
-- Opens at line: **UNCLEAR — no `DB::transaction` in `changeStatus`**
-- Closes at line: **UNCLEAR — no `DB::transaction` in `changeStatus`**
-- No transaction present: **yes** (no `DB::transaction` in this method)
-
-Dispatch call(s):
-
-**`$auth === false` branch (staff / admin path)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderMail` | **1286** | **after** *(relative to any DB transaction: none in method)* |
-| `SendOrderSms` | **1287** | **after** |
-| `SendOrderPush` | **1288** | **after** |
-| `\App\Events\OrderStatusChanged` | **1294** | **after** *(occurs after `save()` at **1290**)* |
-
-**`$auth === true` branch (customer path)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderMail` | **1251** | **after** *(no transaction in method)* |
-| `SendOrderSms` | **1252** | **after** |
-| `SendOrderPush` | **1253** | **after** |
-| `\App\Events\OrderStatusChanged` | **—** | **absent in this branch** |
-
-Exact line numbers:
-- Transaction open: **N/A**
-- Transaction close: **N/A**
-- Dispatch(es): **1286**, **1287**, **1288**, **1294** (admin/staff path); **1251**, **1252**, **1253** (customer path)
-
-Verdict:
-**CONFIRMED for the documented “admin” / non-`$auth` path** — `\App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status)` is present at **1293–1294** with **`$oldStatus` captured at 1285** and **new status `(int) $request->status`**.
-
-Notes:
-- The documentation label **« (admin) »** is interpreted here as the **`else` branch (`$auth === false`)**, not the customer `$auth === true` branch.
-- **Potential inconsistency (not classified as correction #1–#4 failure without doc expansion):** in the **`$auth === false`** branch, `SendOrderMail` / `SendOrderSms` / `SendOrderPush` run **before** `$order->save()` (**1286–1288** vs **1289–1290**), while `OrderStatusChanged` runs **after** `save()` (**1293–1294**). This is **not** a `DB::transaction` boundary issue because **there is no transaction** in this method.
-- **`FrontendOrderService` was not inspected** (out of scope).
+**Method boundaries:**  
+- Opens at line: **1229**  
+- Closes at line: **1316**
 
 ---
 
-Correction ID:
-#4
+## Q1 — Pre-save dispatch assessment
 
-Expected documented state:
-> « **KDS `changeStatus`** : dispatch **`OrderStatusChanged`** pour l’OSS (correctif « OSS ne voyait pas les changements depuis KDS »). »  
-> — `docs/PROJECT_CONTINUITY_AND_VISION.md` L129
+**Pre-save dispatch classes (admin / `$auth === false` branch):**
 
-Actual code finding:
-- **`KitchenDisplaySystemOrderService::changeStatus`** wraps **`$order->status = $request->status; $order->save();`** inside `\Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) { ... });` at lines **115–118**.
-- **After** that transaction, the service dispatches:
-  - `SendOrderMail::dispatch`, `SendOrderSms::dispatch`, `SendOrderPush::dispatch` at lines **121–123**
-  - `OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);` at lines **127–127** (statement spans **127**; `try` opens **126**)
+- `SendOrderMail::dispatch([...])` at line **1286** — before `save()` at line **1290**
+- `SendOrderSms::dispatch([...])` at line **1287** — before `save()` at line **1290**
+- `SendOrderPush::dispatch([...])` at line **1288** — before `save()` at line **1290**
 
-Primary file:
-`app/Services/KitchenDisplaySystemOrderService.php`
+(`$auth === true` branch: same pattern at **1251–1253** before `save()` at **1255**.)
 
-Method:
-`changeStatus`
+**Guard or safeguard present:** **no** — no rollback of queued jobs, no compensating saga, no ordering of notifications after successful `save()` in this method.
 
-Transaction boundary:
-- Opens at line: **115** (`\Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {`)
-- Closes at line: **118** (`});` closing the `DB::transaction` callback)
-- No transaction present: **no**
+**Save() failure impact on prior dispatches:** **notifications already fired (queued) and cannot be recalled** by this method; outer `catch` (1312–1314) runs only after dispatches have been issued on the happy path toward `save()`.
 
-Dispatch call(s):
-
-**Inside `DB::transaction` closure (lines 115–118)**
-
-- *(none — no `::dispatch(` inside the closure)*
-
-**After transaction (lines 121–127)**
-
-| Class | Line | Inside or after transaction |
-|-------|------|----------------------------|
-| `SendOrderMail` | **121** | **after** |
-| `SendOrderSms` | **122** | **after** |
-| `SendOrderPush` | **123** | **after** |
-| `OrderStatusChanged` | **127** | **after** |
-
-Exact line numbers:
-- Transaction open: **115**
-- Transaction close: **118**
-- Dispatch(es): **121**, **122**, **123**, **127**
-
-Verdict:
-**CONFIRMED** — `OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status)` is executed **after** the `DB::transaction` block (**127** is after **118**), matching the documented “post-commit / post-transaction dispatch” intent described in-file at **L111–L114** and **L120–L123**.
-
-Notes:
-- `OrderStatusChanged` is imported as `App\Events\OrderStatusChanged` (file L14) and invoked unqualified at **127**.
-- Verified event class file exists: `app/Events/OrderStatusChanged.php` (constructor `(BroadcastableOrder $order, int $oldStatus, int $newStatus)` — L28–32).
+**Q1 verdict:** **RISK** — If `save()` fails after dispatches, notifications can describe a status not persisted; there is no positive structural safeguard in this code proving that case is impossible or self-healing.
 
 ---
 
-## Event / job class names (task 9)
+## Q2 — No DB::transaction assessment
 
-| Symbol as used in inspected services | Resolved path / kind |
-|----------------------------------------|----------------------|
-| `\App\Events\OrderCreated` | `app/Events/OrderCreated.php` — `class OrderCreated implements ShouldBroadcastNow` |
-| `\App\Events\OrderStatusChanged` | `app/Events/OrderStatusChanged.php` — `class OrderStatusChanged implements ShouldBroadcastNow` |
-| `SendOrderGotPush::dispatch(...)` | `App\Events\SendOrderGotPush` — `app/Events/SendOrderGotPush.php` |
-| **`app/Jobs/SendOrderGotPush.php`** | **Not found** (no such job file in repo) |
+**Transaction present in method:** **no**
+
+**Structural reason transaction may be omitted (single model write, etc.):** The core mutation is primarily `$order->status` + `$order->save()`, but the method also performs **additional side effects** on the staff path: `OrderStatusChanged::dispatch`, `ActionLog::create`, and (for REJECTED/CANCELED) `PaymentService::cashBack`. That is **not** a single atomic write; no comment justifies skipping a transaction.
+
+**Explanatory comment in code:** **none found** (for no-transaction or dispatch ordering).
+
+**Comparable methods with transaction (per plan / prior knowledge):**
+
+- `myOrderStore`: yes (L256–467) — per plan
+- `tableOrderStore`: yes (L864–1069) — per plan
+- `posOrderStore`: yes (L508–820) — per plan
+- `KitchenDisplaySystemOrderService::changeStatus`: yes (L115–118) — **not re-read**; CYCLE-001 evidence
+
+**Q2 verdict:** **ASYMMETRY** — **no evidence either way** that omitting `DB::transaction` here is intentional; asymmetry vs other flows is real and undocumented.
 
 ---
 
-## Explicit non-inspection
+## Q3 — `$auth === true` branch assessment
 
-- **`App\Services\FrontendOrderService`** (and any methods therein): **not inspected** — not in authorized scope for CYCLE-001.
+**Branch entry condition:** Third parameter `$auth === true` on `changeStatus(...)`.
+
+**Actor and surface that reaches this branch:** **No in-repo caller** passes `true`; all inspected Admin controllers call `changeStatus($order, $request)` → **`$auth` is always `false`**.
+
+**Reachable in production:** **no** (given current static call graph in `app/`).
+
+**OrderStatusChanged absent — impact if reachable:** If it were reachable, real-time listeners (e.g. KDS/OSS) would **not** receive `OrderStatusChanged` for that path; **not applicable** to live Admin routes today.
+
+**Q3 verdict:** **UNREACHABLE** — dead path for current `OrderService::changeStatus` usage; **documentation / legacy-code debt** if the parameter was meant for a future or removed customer API.
+
+---
+
+## Q4 — Status transition validation
+
+**Validation location:** **line 1232–1234** in `OrderService::changeStatus` — `(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)` before either branch.
+
+**Additional request rules:** `OrderStatusRequest::rules()` — `'status' => ['required', 'numeric']` only (no transition list in FormRequest).
+
+**Transitions enforced:** **yes** — via `ValidStatusTransition` before any notification dispatch or branch-specific logic.
+
+**Invalid transition possible without rejection:** **no** — failure throws at 1232–1234 before dispatches.
+
+**Q4 verdict:** **VALIDATED**
+
+---
+
+## Q5 — Branch isolation
+
+**Branch isolation mechanism:** **manual comparison** of `Auth::user()->branch_id` to `$order->branch_id` for authenticated users who **do not** have role `Admin`.
+
+**Line:** **1262–1266** (`$auth === false` branch).
+
+**Bypass risk:** **no** for the staff path as written, unless `Auth::user()` lacks `branch_id` while not Admin (then the inner `if ($userBranch && ...)` may skip the check — edge case dependent on user model integrity). Admins explicitly skip this block.
+
+**Controller enforcement:** Controllers inspected **do not** add an extra branch check before the service call; isolation is **in the service** for the `$auth === false` path.
+
+**Q5 verdict:** **CONFIRMED**
+
+---
+
+## Controller caller(s)
+
+`OrderService::changeStatus` is invoked from **three** Admin controllers with the **same** pattern (two arguments → `$auth = false`):
+
+| File | Method | Middleware (constructor `only`) | Route (from `routes/api.php`) |
+|------|--------|-----------------------------------|-------------------------------|
+| `app/Http/Controllers/Admin/PosOrderController.php` | `changeStatus` | `permission:pos-orders` | `POST .../pos-order/change-status/{order}` (L620) |
+| `app/Http/Controllers/Admin/OnlineOrderController.php` | `changeStatus` | `permission:online-orders` | `POST .../online-order/change-status/{order}` (L633) |
+| `app/Http/Controllers/Admin/TableOrderController.php` | `changeStatus` | `permission:table-orders` | `POST .../table-order/change-status/{order}` (L643) |
+
+**Route group middleware** (applies to all above): `Route::prefix('admin')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])` at **line 222** in `routes/api.php`.
+
+**`$request->status` validated before service call:** **yes** — `OrderStatusRequest` runs first (`status` required numeric); transition validation runs **inside** the service at L1232–1234.
+
+**`$auth` derivation:** **not passed**; remains default **`false`**.
+
+---
+
+## FINAL CLASSIFICATION VERDICT
+
+**Pattern classification:** **GAP_REQUIRES_FIX**
+
+**Reasoning:**  
+Q1 is **RISK** (notifications before `save()` with no recall/transaction). Q2 shows **ASYMMETRY** with **no positive intentional documentation**. Q3 is **UNREACHABLE**, so missing `OrderStatusChanged` on the `$auth === true` branch is **not** a current production sync hole, but it does **not** negate the pre-save notification risk on the live staff path. Q4 **VALIDATED** and Q5 **CONFIRMED** show guards exist for transitions and branch isolation, yet the **ordering of side effects** relative to persistence remains a concrete coherence gap if `save()` fails.
+
+**Next cycle recommendation:** **CYCLE-002b: fix plan required** — address (1) dispatch ordering vs `save()` / failure semantics, (2) whether `DB::transaction` (or narrower guarantees) is appropriate for cashback + log + broadcast, (3) either remove or wire/document the `$auth === true` branch if it is legacy. **playwright-critical-flow** or **playwright-full-e2e** after a fix, per ops vocabulary, if behavioral proof of OSS/KDS coherence is required.
+
+**Scope respected:** **yes**  
+**Files outside files_allowed modified:** **none**
 
 ---
 
 ## Definition of done checklist
 
-- [x] `reports/execution/latest.md` exists (this file)
-- [x] Corrections **#1–#4** each have a full structured entry using the required template
-- [x] Every `::dispatch(` in the authorized methods is listed and classified vs `DB::transaction` (or marked **N/A** when no transaction exists)
-- [x] Exact line numbers are present
-- [x] **No source code modified** (read-only inspection)
-- [x] No commit / no push performed in this cycle
+| ID | Status |
+|----|--------|
+| DOD-01 | All sections Q1–Q5 + controller(s) present |
+| DOD-02 | Each Q ends with required verdict label |
+| DOD-03 | Final verdict = `GAP_REQUIRES_FIX` (single, non-composite) |
+| DOD-04 | `$auth` source = third parameter, default false; call sites documented |
+| DOD-05 | Branch isolation lines **1262–1266** or stated absent — **confirmed** |
+| DOD-06 | Controller paths + method names documented |
+| DOD-07 | No source files modified |
+| DOD-08 | `FrontendOrderService` / KDS service **not** re-inspected |
