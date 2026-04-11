@@ -1,5 +1,5 @@
 # CLAUDE.md
-mets dedans ça exactement : # CLAUDE.md — FoodKing Master Operating Memory
+ — FoodKing Master Operating Memory
 
 ## 1. Core Identity
 
