@@ -1,0 +1,63 @@
+﻿---
+description: Architecture FoodKing — contraintes structurelles pour tout agent
+globs:
+  - app/**
+  - resources/js/**
+  - routes/**
+  - config/**
+  - database/**
+alwaysApply: false
+---
+
+# Architecture FoodKing — règles Cursor
+
+## Stack
+
+- **Backend** : Laravel 9 monolithe MVC, MySQL, Sanctum + Spatie Permission.
+- **Frontend** : SPA Vue 3 (admin, POS, KDS, OSS), build Laravel Mix.
+- **Kiosk** : Electron Windows (ou Flutter Android) consommant l'API REST.
+
+## Surfaces et responsabilités
+
+| Surface | Technologie | API principale |
+|---------|-------------|----------------|
+| POS (caisse) | Vue 3 SPA | `POST /api/admin/pos` |
+| KDS (cuisine) | Vue 3 SPA | `GET /api/admin/kds-order` |
+| OSS (écran client) | Vue 3 SPA read-only | `GET /api/admin/oss-order` |
+| Kiosk (borne) | Electron / Flutter | `POST /api/frontend/order` |
+| Dashboard admin | Vue 3 SPA | `/api/admin/dashboard` |
+
+## Couches code (convention)
+
+1. **Controllers** (`app/Http/Controllers`) : transport HTTP, validation, délégation.
+2. **Services** (`app/Services`) : logique métier, persistance, recalcul prix.
+3. **Models** (`app/Models`) : domaine Eloquent, scopes, casts.
+4. **Events / Jobs** : propagation asynchrone (`OrderCreated`, `OrderStatusChanged`, `SendOrderGotPush`).
+5. **Vue 3** (`resources/js`) : composants admin, store Vuex, router.
+
+## Deux chemins de commande
+
+- **POS / tables** → `OrderService` → modèle `Order`.
+- **Kiosk / web client** → `FrontendOrderService` → modèle `FrontendOrder`.
+- Même table SQL `orders` ; modèles Eloquent distincts.
+
+## Zones gelées (NE PAS modifier sans plan explicite)
+
+1. Gateways de paiement héritées (Stripe, Paypal, Credit).
+2. Push Notifications Subsystem (`PushNotificationService`).
+3. Module Analytics Admin (`DashboardController` et sous-modules).
+4. Delivery Boy Logic.
+
+## Dépendances critiques
+
+- **Laravel Sanctum** : auth Kiosk avec abilities réduites. Ne pas dériver sur JWT.
+- **Spatie Permission** : granularité Manager / Chef. Encodé dans les helpers.
+- **Pusher / WebSockets** : lie OSS, KDS et POS. Toute modification de payload event exige rétro-compatibilité stricte.
+
+## Invariants à préserver
+
+- Prix = SSOT serveur (recalcul DB dans `OrderService` et `FrontendOrderService`).
+- Isolation branche (`branch_id`) sur commandes, items, utilisateurs.
+- Transitions de statut unidirectionnelles : `PENDING → ACCEPT → PREPARING → PREPARED → DELIVERED`.
+- Notifications hors transaction (dispatch Jobs **après** `DB::transaction`).
+- `queue_number` cohérent cross-modèle (`Order` + `FrontendOrder`).

@@ -1,0 +1,72 @@
+﻿---
+description: Sécurité & intégrité — garde-fous FoodKing
+globs:
+  - app/Services/**
+  - app/Http/Middleware/**
+  - app/Http/Controllers/**
+  - app/Rules/**
+  - routes/**
+alwaysApply: false
+---
+
+# Sécurité & intégrité — règles Cursor
+
+## Règle n°1 — Prix = Source de Vérité Serveur (SSOT)
+
+Le frontend (Kiosk, POS, App) n'a **JAMAIS** le droit de définir le prix d'un produit.
+
+- Le backend recalcule **toujours** les prix depuis la DB (`Item::find()`, `ItemVariation`, `ItemExtra`).
+- Le `total` du payload client est **ignoré mathématiquement**.
+- Un coupon est validé par `CouponService` (plafond, dates, type).
+- Le total ne peut **jamais** être négatif (plancher `0.00`).
+
+## Règle n°2 — Isolation branche
+
+- Toute commande, item et utilisateur est scopé par `branch_id`.
+- Un chef branche A ne peut pas modifier une commande branche B.
+- `BranchScope` est un Global Scope Eloquent ; utiliser `withoutGlobalScope` uniquement quand nécessaire (admin cross-branch).
+
+## Règle n°3 — Transitions de statut
+
+Pipeline unidirectionnel : `PENDING (5) → ACCEPT (10) → PREPARING (14) → PREPARED → DELIVERED (17)`.
+
+- Interdit de sauter des étapes (ex: PENDING → DELIVERED).
+- Seul un admin dashboard avec confirmation de paiement peut bypasser (tracé dans `action_logs`).
+
+## Règle n°4 — Auth et tokens
+
+- **Sanctum** pour toutes les API auth.
+- Kiosk : token machine avec abilities réduites (`kiosk:order`).
+- **API Key** : middleware `CheckApiKey` utilise `config('app.api_key')` (pas `env()` nu) pour survivre à `config:cache`.
+- Routes admin : `x-api-key` header obligatoire.
+- Routes loyalty sensibles (`add-points`, `redeem`, `balance`, `history`) : derrière `auth:sanctum`.
+
+## Règle n°5 — Notifications hors transaction
+
+- Dispatcher `SendOrderGotPush`, `SendOrderGotMail`, `SendOrderGotSms` **APRÈS** `DB::transaction()` — jamais dedans.
+- Dispatcher `OrderCreated` et `OrderStatusChanged` après commit pour éviter les notifications fantômes sur rollback.
+
+## Règle n°6 — Validation des entrées
+
+- `ValidJsonOrder` exige `item_id` et `quantity` obligatoires sur chaque item.
+- `PosOrderRequest` valide la structure de la commande POS.
+- Ne jamais faire confiance aux données du payload client pour les montants.
+
+## Corrections majeures à ne pas régresser
+
+1. Notifications hors transaction (`myOrderStore`, `tableOrderStore`).
+2. `posOrderStore` : notifications KDS + `OrderCreated::dispatch` après transaction.
+3. `changeStatus` : `OrderStatusChanged::dispatch` avec ancien et nouveau statut.
+4. KDS `changeStatus` : dispatch `OrderStatusChanged` pour l'OSS.
+5. `queue_number` : cohérence `Order` + `FrontendOrder` + scopes branche.
+6. `FrontendOrder` : `$fillable` incluant `queue_number`, `total_tax`.
+7. `FrontendOrderService::myOrderStore` : `OrderCreated::dispatch` après commit.
+8. Loyalty : routes sensibles protégées par Sanctum.
+9. ApiKey : `config()` au lieu de `env()` dans le middleware.
+10. Borne : `openDrawer()` sur le chemin cash.
+
+## En cas de doute
+
+- Lire `docs/SECURITY_NOTES.md` et `docs/BUSINESS_RULES.md`.
+- Lire `docs/AUTHZ_MATRIX.md` pour les permissions par rôle.
+- Si le changement touche auth, pricing, sync ou statuts : **mentionner le risque explicitement** et proposer un test.

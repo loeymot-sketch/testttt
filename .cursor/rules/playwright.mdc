@@ -1,0 +1,60 @@
+﻿---
+description: Playwright / E2E — politique de test FoodKing
+globs:
+  - tests/**
+  - resources/js/**
+alwaysApply: false
+---
+
+# Playwright & E2E — règles Cursor
+
+## Politique de test (AGENTS.md §8)
+
+Chaque tâche reçoit un niveau de test décidé par Claude (architecte) :
+
+| Niveau | Qui exécute | Quand |
+|--------|-------------|-------|
+| `No-test` | — | Docs, commentaires, formatage |
+| `Kimi-test` | Kimi (PHPUnit / Jest / Vitest) | Code localisé, CRUD, wiring |
+| `Anti-Gravity` | Anti-Gravity (Playwright / E2E) | Flows critiques, multi-device |
+
+## Déclencheurs automatiques Anti-Gravity
+
+Un test E2E est **obligatoire** si le changement touche :
+
+- UI principale POS (`PosComponent.vue`, `PaymentComponent.vue`)
+- Panier / checkout (cart, payment flow)
+- Auth (login, tokens, refresh)
+- Navigation Kiosk (wizard, order type, paiement)
+- Pricing display (totaux, sous-totaux, taxes)
+- Flows stateful (transitions de statut, KDS ↔ OSS)
+
+## Flows critiques à couvrir
+
+1. **POS Cash** : Login caissier → ajout item → wizard → paiement cash → commande créée → visible KDS.
+2. **POS Card** : Idem avec paiement carte (4 derniers chiffres).
+3. **Kiosk** : Idle → type commande → menu → item → wizard → panier → paiement → numéro ticket → OSS.
+4. **KDS** : Login chef → voir commandes → changer statut PREPARING → PREPARED → reflet OSS.
+5. **Auth refresh** : F5 sur POS → `authcheck` → retour sur la bonne surface (pas `frontend.home`).
+
+## Rapports
+
+- Résultats Anti-Gravity : `reports/antigravity/latest.md`
+- Résultats Kimi-test : `reports/execution/latest.md`
+- Rapport consolidé de référence : `reports/antigravity/RAPPORT_AUDIT_FINAL_CONSOLIDE_20260310.md`
+
+## Checklist manuelle POS (si pas d'automatisation)
+
+- [ ] Barre progression wizard (badge étape X/Y)
+- [ ] Total temps réel pendant le wizard
+- [ ] Token vide → erreur
+- [ ] Instruction ticket : VIANDES, SUPPLEMENTS, FORMULE
+- [ ] KDS reçoit la commande
+
+## Checklist manuelle Kiosk
+
+- [ ] Type commande en premier (Emporter / Sur place)
+- [ ] Barre progression wizard
+- [ ] Confirmation claire après paiement
+- [ ] Idle 3 min → reset
+- [ ] Upsell dessert si absent du panier

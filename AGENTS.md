@@ -20,6 +20,7 @@ The product includes:
 Always read and respect these files before important decisions:
 
 - README.md
+- docs/PROJECT_CONTINUITY_AND_VISION.md
 - docs/ARCHITECTURE.md
 - docs/API_MAP.md
 - docs/AUTHZ_MATRIX.md
