@@ -1,8 +1,8 @@
 # PLAN_ANTI_GRAVITY — Tests E2E Post-Implémentation KIMI
-**Rôle :** Anti-Gravity (E2E & Critical QA)
+**Rôle :** Playwright / E2E verification (E2E & Critical QA)
 **Architecte :** Claude (Antigravity)
 **Date :** 12 Mars 2026
-**Décision Claude :** ✅ OPTION A — GO pour Anti-Gravity (avec une réserve sur D-010)
+**Décision Claude :** ✅ OPTION A — GO pour Playwright / E2E verification (avec une réserve sur D-010)
 **Serveur :** http://127.0.0.1:8000
 
 ---
@@ -24,7 +24,7 @@
 
 ### ⚠️ GAP identifié — PLAN_06 D-010 (KDS Instruction Parsing)
 **Verdict :** ❌ NON IMPLÉMENTÉ — `grep parseInstruction KitchenDisplaySystemComponent.vue → 0 résultats`
-**Action :** Anti-Gravity doit noter l'absence et KIMI devra implémenter après les tests E2E.
+**Action :** Playwright / E2E verification doit noter l'absence et KIMI devra implémenter après les tests E2E.
 
 ### 🔧 Correction mineure Claude (déjà appliquée)
 - `pos-wizard.js` L675 : ternaire mort corrigé → `totalStepsWithoutRecap = activeStepsCount - 1`

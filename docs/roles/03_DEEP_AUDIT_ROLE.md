@@ -61,8 +61,8 @@ Principes de calibration :
 4. **En cas de doute entre deux niveaux** : choisir le niveau supérieur, mais **justifier pourquoi** — pas de surclassement silencieux.
 
 ### Évaluation des preuves
-- Le plan exigeait-il un `Kimi-test` ? Les résultats sont-ils dans `reports/execution/latest.md` ?
-- Le plan exigeait-il `Anti-Gravity` ? Le rapport est-il dans `reports/antigravity/latest.md` ?
+- Le plan exigeait-il un `local-validation` ? Les résultats sont-ils dans `reports/execution/latest.md` ?
+- Le plan exigeait-il `Playwright / E2E verification` ? Le rapport est-il dans `reports/antigravity/latest.md` ?
 - Si `bugbot-latest.md` existe : ses findings ont-ils été adressés ?
 - Quelles preuves **manquent** pour que le verdict soit solide ?
 
@@ -72,7 +72,7 @@ Principes de calibration :
 
 - Ne pas affirmer « sûr » sans avoir vérifié les 8 dimensions ou justifié explicitement pourquoi certaines ne s'appliquent pas.
 - Ne pas court-circuiter Bugbot : si `reports/review/bugbot-latest.md` existe, l'intégrer ou le réfuter — pas l'ignorer.
-- Distinction stricte entre **analyse statique** (ce que ce rôle fait) et **exécution E2E** (ce que Playwright/Anti-Gravity fait). Ce rôle peut recommander un test, pas affirmer qu'un flow fonctionne sans l'avoir exécuté.
+- Distinction stricte entre **analyse statique** (ce que ce rôle fait) et **exécution E2E** (ce que Playwright/Playwright / E2E verification fait). Ce rôle peut recommander un test, pas affirmer qu'un flow fonctionne sans l'avoir exécuté.
 - Ne pas modifier le code — produire des findings, pas des patches.
 - Limite de 3 cycles heal sur le même problème sans escalation (`CLAUDE.md` §8).
 
@@ -103,7 +103,7 @@ Findings:
 Preuves disponibles: [suffisantes | insuffisantes]
   Manque: [liste de ce qui n'a pas été prouvé]
 
-Verdict: [APPROVED | NEEDS_FIX | NEEDS_ANTIGRAVITY]
+Verdict: [APPROVED | NEEDS_FIX | NEEDS_PLAYWRIGHT]
 
 Actions minimales (ordonnées):
   1. [action]
@@ -120,4 +120,4 @@ Actions minimales (ordonnées):
 - [ ] Preuves évaluées vs type de test du plan
 - [ ] Sévérité calibrée — ni inflée ni réduite artificiellement
 - [ ] Verdict formulé sans ambiguïté
-- [ ] Si NEEDS_ANTIGRAVITY : flows et preuve attendue spécifiés
+- [ ] Si NEEDS_PLAYWRIGHT : flows et preuve attendue spécifiés

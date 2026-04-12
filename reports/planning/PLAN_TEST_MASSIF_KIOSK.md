@@ -1,6 +1,6 @@
 # 📱 MASTER PLAN : Tests Massifs BORNE (Kiosk Android) - PHASE 2
 
-Ce document définit les tests exhaustifs qui seront menés par **Anti-Gravity** sur l'application Kiosk Android (via API/Flutter) **UNE FOIS que la Phase 1 (CAISSE POS) aura été validée à 100% avec 0 bug critique**.
+Ce document définit les tests exhaustifs qui seront menés par **Playwright / E2E verification** sur l'application Kiosk Android (via API/Flutter) **UNE FOIS que la Phase 1 (CAISSE POS) aura été validée à 100% avec 0 bug critique**.
 
 Les rapports respecteront le template imposé dans `workflows/report-format.md`.
 

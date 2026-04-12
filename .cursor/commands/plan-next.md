@@ -1,4 +1,4 @@
-Read `reports/antigravity/latest.md` (always the most recent Anti-Gravity report).
+Read `reports/antigravity/latest.md` (always the most recent Playwright / E2E verification report).
 
 Then:
 - summarize the issue

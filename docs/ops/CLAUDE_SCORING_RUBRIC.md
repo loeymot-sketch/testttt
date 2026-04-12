@@ -3,7 +3,7 @@
 **Statut :** Référence opérationnelle active
 **Usage :** Standardise le scoring et la décision de `00_ORCHESTRATOR`
 **Complète :** `CLAUDE.md` §7-8-11, `docs/roles/00_ORCHESTRATOR_ROLE.md`
-**Portée :** review post-exécution, post-fix, post-Anti-Gravity, bugbot-review si impact cycle
+**Portée :** review post-exécution, post-fix, post-Playwright / E2E verification, bugbot-review si impact cycle
 
 ---
 
@@ -229,7 +229,7 @@ Arrondir à l'entier inférieur pour décision.
 - ou contradiction majeure avec `CLAUDE.md`, `MEMORY.md`, docs métier/archi
 - ou preuve trop faible pour juger une zone business critique
 
-### NEEDS_ANTIGRAVITY si
+### NEEDS_PLAYWRIGHT si
 - la logique semble acceptable mais la preuve comportementale réelle manque
 - ou un flow critique multi-surface reste non prouvé
 - ou le risque principal est comportemental / E2E plutôt que purement code
@@ -285,7 +285,7 @@ Scoring:
   Global score:                [0-100]
 
 Decision:
-[APPROVED | NEEDS_FIX | NEEDS_ANTIGRAVITY | BLOCK | HUMAN]
+[APPROVED | NEEDS_FIX | NEEDS_PLAYWRIGHT | BLOCK | HUMAN]
 
 Rationale:
 - ...

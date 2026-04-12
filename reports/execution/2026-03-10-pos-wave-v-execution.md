@@ -85,7 +85,7 @@
 
 ---
 
-## Suggested Anti-Gravity Tests
+## Suggested Playwright / E2E verification Tests
 
 1. **V1**: Open a Tacos XL (2 viandes), fill both main slots → verify "Viande Supplémentaire" `+` buttons remain clickable and add extras correctly.
 2. **V2**: Add item with 3 variation attributes (e.g. pain + sauce + accompagnement) → verify all 3 variation names appear correctly on receipt and KDS instruction.
@@ -103,7 +103,7 @@
 
 All known issues through Wave V have been addressed. The POS order flow (cashier → wizard → cart → checkout → KDS → receipt) is now at a high level of correctness, security, and UX quality.
 
-Recommended next action: **Anti-Gravity full E2E retest** covering:
+Recommended next action: **Playwright / E2E verification full E2E retest** covering:
 - New order with complex menu (2 viandes + menu + supplements)
 - Edit from cart and re-submit
 - Delivery order with address

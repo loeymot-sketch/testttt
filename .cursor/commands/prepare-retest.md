@@ -1,6 +1,6 @@
 Read `reports/planning/latest.md` and `reports/execution/latest.md`.
 
-Prepare a clear retest brief for Anti-Gravity:
+Prepare a clear retest brief for Playwright / E2E verification:
 - what changed
 - what to verify
 - what edge cases to retest

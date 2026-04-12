@@ -1,7 +1,7 @@
 # 📋 PLAN SPRINT 6 : Réparation des 3 Bugs Critiques E2E
 
 > **Date:** 10 Mars 2026  
-> **Source:** Rapport E2E Anti-Gravity (`report-e2e-audit-01.md`)  
+> **Source:** Rapport E2E Playwright / E2E verification (`report-e2e-audit-01.md`)  
 > **Mission:** Réparer les 3 bugs bloquant le tunnel de commande POS + Kiosk
 
 ---
@@ -124,7 +124,7 @@ $faviconLogo?->faviconLogo ?? asset('images/theme/theme-favicon-logo.png')
 
 ---
 
-## 📝 VALIDATION (Checklist pour Anti-Gravity)
+## 📝 VALIDATION (Checklist pour Playwright / E2E verification)
 
 ### Test 1: Pavé Numérique
 - [ ] Ouvrir POS → Ajouter item → Cliquer Payer

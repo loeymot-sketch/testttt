@@ -1,7 +1,7 @@
 # 🧪 RAPPORT E2E MASSIF (DEEP RUN) - FOODKING
 **Audit Automatisé Profond (Backend & API)**
 Date: 11 Mars 2026
-Agent: Anti-Gravity (QA) / Claude (Architect)
+Agent: Playwright / E2E verification (QA) / Claude (Architect)
 
 À la suite de l'annulation du test visuel navigateur, une exécution "deep" de la totalité des suites de tests backend (`tests/Feature/`) a été lancée pour valider exhaustivement les 34 scénarios de la matrice E2E.
 

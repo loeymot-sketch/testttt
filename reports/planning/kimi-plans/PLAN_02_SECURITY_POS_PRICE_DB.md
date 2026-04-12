@@ -1,6 +1,6 @@
 # PLAN_02 — D-002 : POS Sécurité Prix DB pour Variations et Extras
 **Phase :** P0 — Critique
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Risque :** 🔴 Critique — Caissier ou attaquant peut falsifier prix des variations/suppléments POS
 **Fichiers :** `app/Services/OrderService.php` méthode `posOrderStore()`
 

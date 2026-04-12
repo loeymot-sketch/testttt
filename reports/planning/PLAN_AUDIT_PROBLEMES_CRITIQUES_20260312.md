@@ -383,7 +383,7 @@ Pour chaque problème fixé :
 - [ ] Test unitaire ou E2E ajouté
 - [ ] Commande grep de vérification exécutée
 - [ ] Rapport execution/latest.md mis à jour
-- [ ] Anti-Gravity validation passée
+- [ ] Playwright / E2E verification validation passée
 
 ---
 

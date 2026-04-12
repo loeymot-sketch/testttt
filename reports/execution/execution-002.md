@@ -7,7 +7,7 @@
 
 ## Context
 
-Anti-Gravity report-002 revealed two categories of remaining failures after Sprint 2 Round 1:
+Playwright / E2E verification report-002 revealed two categories of remaining failures after Sprint 2 Round 1:
 
 1. **T12–T20 — `RoleDoesNotExist` (still crashing)**: Root cause was incorrect `setUp()` ordering, not the guard name.
 2. **T07–T10 — Assertion mismatches**: Tests were testing behaviors the API does not implement (e.g. rejecting forged totals vs silently correcting them).
@@ -88,6 +88,6 @@ If T12–T20 still fail with 403 after this fix, the next step is to seed permis
 
 ## Next Steps
 
-1. Anti-Gravity re-runs `AntiGravityTest.php` → produces `report-003.md`.
+1. Playwright / E2E verification re-runs `AntiGravityTest.php` → produces `report-003.md`.
 2. Claude reviews remaining 403s on T12–T20 to determine if permission seeding is needed.
 3. If T12–T20 pass cleanly → Sprint 2 complete → proceed to business logic (Sprint 3).

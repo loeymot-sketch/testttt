@@ -111,7 +111,7 @@ Route::prefix('frontend')->middleware(['installed', 'apiKey', 'localization'])->
 | Initial (Audit AG) | 61/105 (58%) | 44 | - |
 | Après corrections | 75/107 (70%) | 32 | **+14** ✅ |
 
-### Tests Critiques (Anti-Gravity) ✅
+### Tests Critiques (Playwright / E2E verification) ✅
 **20/20 tests passent (100%)**
 - T01-T04: Authentification Kiosk
 - T05-T07: Isolation Kiosk/Admin
@@ -147,7 +147,7 @@ Les 32 échecs sont des **problèmes de test** (permissions, routes, assertions)
 - [x] Notifications KDS temps réel
 - [x] Build Vue.js compilé (pavé numérique fixé)
 - [x] Tests syntaxe Factory corrigés
-- [x] Tests Anti-Gravity 100% passants
+- [x] Tests Playwright / E2E verification 100% passants
 - [x] API Key middleware vérifié
 
 ### ⏳ RESTANT

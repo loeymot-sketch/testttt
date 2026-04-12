@@ -15,10 +15,10 @@ Chaque tâche reçoit un niveau de test décidé par Claude (architecte) :
 | Niveau | Qui exécute | Quand |
 |--------|-------------|-------|
 | `No-test` | — | Docs, commentaires, formatage |
-| `Kimi-test` | Kimi (PHPUnit / Jest / Vitest) | Code localisé, CRUD, wiring |
-| `Anti-Gravity` | Anti-Gravity (Playwright / E2E) | Flows critiques, multi-device |
+| `local-validation` | Kimi / Cursor (PHPUnit / Jest / Vitest) | Code localisé, CRUD, wiring |
+| `playwright-critical-flow` / `playwright-full-e2e` / `playwright-mcp` | Playwright (MCP ou runner) | Flows critiques, multi-device |
 
-## Déclencheurs automatiques Anti-Gravity
+## Déclencheurs automatiques Playwright / E2E
 
 Un test E2E est **obligatoire** si le changement touche :
 
@@ -39,8 +39,8 @@ Un test E2E est **obligatoire** si le changement touche :
 
 ## Rapports
 
-- Résultats Anti-Gravity : `reports/antigravity/latest.md`
-- Résultats Kimi-test : `reports/execution/latest.md`
+- Résultats Playwright / E2E : `reports/antigravity/latest.md`
+- Résultats local-validation : `reports/execution/latest.md`
 - Rapport consolidé de référence : `reports/antigravity/RAPPORT_AUDIT_FINAL_CONSOLIDE_20260310.md`
 
 ## Checklist manuelle POS (si pas d'automatisation)

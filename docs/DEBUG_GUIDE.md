@@ -571,7 +571,7 @@ npx vitest tests/js/KioskWizard.spec.js
 npx vitest
 ```
 
-### Tests E2E (Anti-Gravity)
+### Tests E2E (Playwright / E2E verification)
 
 ```bash
 # Rapports dans reports/antigravity/
@@ -737,7 +737,7 @@ SELECT name, guard_name FROM roles;
 **Workflow Multi-Agent:**
 - **Claude:** Architecture, Planning, Reviews
 - **Kimi:** Implementation, Corrections
-- **Anti-Gravity:** E2E Testing, Rapports
+- **Playwright / E2E verification:** E2E Testing, Rapports
 
 ---
 

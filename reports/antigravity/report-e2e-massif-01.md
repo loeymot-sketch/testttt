@@ -1,5 +1,5 @@
 # 🧪 RAPPORT E2E MASSIF - FOODKING
-**Audit Automatisé & Visuel par Anti-Gravity**
+**Audit Automatisé & Visuel par Playwright / E2E verification**
 Date: 10 Mars 2026
 
 ## 📊 Matrice de Couverture Globale

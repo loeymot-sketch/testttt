@@ -233,7 +233,7 @@ Quand une commande est créée via API, le système déclenche des notifications
    - Vérifier que tous les accès sont null-safe
    - Ajouter tests unitaires pour SettingResource
 
-3. **[Anti-Gravity] Retest complet**
+3. **[Playwright / E2E verification] Retest complet**
    - Relancer les 18 tests AntiGravityTest
    - Vérifier que T05 et T06 passent
 
@@ -253,7 +253,7 @@ Quand une commande est créée via API, le système déclenche des notifications
    - `SyncComprehensiveTest.php` (6 tests)
    - `DashboardReportTest.php` (5 tests)
 
-2. **[Anti-Gravity] Exécuter et valider**
+2. **[Playwright / E2E verification] Exécuter et valider**
    - Exécuter tous les tests
    - Rapporter les échecs
 

@@ -1,7 +1,7 @@
 # 🧠 PLAN CLAUDE — DIRECTION SPRINT 3
 **Rôle:** Claude (Lead Architect & Master Dev)
 **Date:** 11 Mars 2026
-**Prochaine session:** Kimi (Implémentation) → Anti-Gravity (Validation E2E)
+**Prochaine session:** Kimi (Implémentation) → Playwright / E2E verification (Validation E2E)
 
 ---
 
@@ -143,7 +143,7 @@ if (name.toLowerCase().includes('tacos')) { return 'tacos'; }
 ## 🚀 PLAN D'ACTION SPRINT 3 POUR KIMI (Ordonné par Priorité)
 
 ### 📋 Tâche 1 — [CRITIQUE] Sécuriser posOrderStore (POS Price Recalculation)
-**Type Test:** Kimi-test (PHPUnit)
+**Type Test:** local-validation (PHPUnit)
 **Fichier cible:** `app/Services/OrderService.php` (méthode `posOrderStore`, lignes 366-499)
 **Changement:**
 ```php
@@ -186,7 +186,7 @@ $realSubtotal += $verifiedTotalPrice;
 ---
 
 ### 📋 Tâche 2 — [CRITIQUE] Ajouter Notifications KDS pour Commandes POS
-**Type Test:** Kimi-test (PHPUnit)
+**Type Test:** local-validation (PHPUnit)
 **Fichier cible:** `app/Services/OrderService.php` (méthode `posOrderStore`, après ligne 491)
 **Changement:** Ajouter après la transaction :
 ```php
@@ -215,7 +215,7 @@ npm run dev  # ou npm run build selon env
 ---
 
 ### 📋 Tâche 4 — [HAUTE] Refactoriser detectCategory() dans pos-wizard.js
-**Type Test:** Anti-Gravity (test visuel POS)
+**Type Test:** Playwright / E2E verification (test visuel POS)
 **Fichier cible:** `public/js/pos-wizard.js`
 **Principe:** Utiliser `item.category_slug` ou `item.category_id` (disponible dans l'API) au lieu du fuzzy matching sur le nom. Cela rend le wizard robuste aux changements de noms d'items.
 **⚠️ Note:** Ne pas casser les items existants. Faire un fallback sur le matching actuel si `category_slug` non disponible.
@@ -223,7 +223,7 @@ npm run dev  # ou npm run build selon env
 ---
 
 ### 📋 Tâche 5 — [MOYENNE] Placeholder Images pour Items Sans Image
-**Type Test:** Anti-Gravity (visual)
+**Type Test:** Playwright / E2E verification (visual)
 **Fichier cible:** Seeder `GrillHouseMenuSeeder.php` + template Vue
 **Action:** Ajouter une URL de fallback dans le template Vue pour les items sans image:
 ```html
@@ -283,9 +283,9 @@ POS Wizard ───→ Panier ───→ ✅ Modal Paiement ───→ ✅ 
 
 ---
 
-## 🧪 VALIDATION FINALE REQUISE (Anti-Gravity Sprint 3)
+## 🧪 VALIDATION FINALE REQUISE (Playwright / E2E verification Sprint 3)
 
-Après que Kimi ait complété les Tâches 1-3, Anti-Gravity devra:
+Après que Kimi ait complété les Tâches 1-3, Playwright / E2E verification devra:
 1. **Test POS Cash complet:** Login → Item → Wizard → Panier → Modal Paiement → Saisir montant → Confirm → Vérifier ordre créé
 2. **Test KDS Update:** Après création commande POS, vérifier que le KDS montre la commande
 3. **Test Anti-falsification POS:** Envoyer `price=0.01` via API POS → vérifier que DB stocke le vrai prix DB

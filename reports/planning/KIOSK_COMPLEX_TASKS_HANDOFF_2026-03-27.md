@@ -3,7 +3,7 @@
 **Date :** 2026-03-27  
 **Contexte :** suite audit profond (parité Splash, robustesse wizard, perf). Les **tâches simples** ci-dessous ont été traitées dans le code ; ce document liste le **reste** pour validation / design commun avant implémentation.
 
-**Type de tests recommandé (quand on implémentera) :** **Kimi-test** (PHPUnit + Vitest) ; **Anti-Gravity** seulement si parcours E2E borne matériel / TPE.
+**Type de tests recommandé (quand on implémentera) :** **local-validation** (PHPUnit + Vitest) ; **Playwright / E2E verification** seulement si parcours E2E borne matériel / TPE.
 
 ---
 

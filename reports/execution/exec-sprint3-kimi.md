@@ -50,4 +50,4 @@ Gain : +12 tests verts
 
 ## ⏭️ Prochaine étape recommandée
 → **Claude** analyse les 34 échecs restants et décide plan d'action  
-→ Anti-Gravity test E2E sur POS une fois les bugs résolus
+→ Playwright / E2E verification test E2E sur POS une fois les bugs résolus

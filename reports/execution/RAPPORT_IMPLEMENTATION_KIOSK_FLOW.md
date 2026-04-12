@@ -124,7 +124,7 @@ Les fichiers suivants doivent être modifiés (pas de création) :
 
 ---
 
-## 🧪 Scénarios de test Anti-Gravity
+## 🧪 Scénarios de test Playwright / E2E verification
 
 | ID | Scénario | Composant | Attendu |
 |----|----------|-----------|---------|
@@ -238,4 +238,4 @@ code kiosk_implementation/README_INSTALLATION.md
 
 - Plan Claude: `reports/planning/KIOSK_FLOW_PLAN_CLAUDE.md`
 - Guide installation: `kiosk_implementation/README_INSTALLATION.md`
-- Walkthrough Anti-Gravity: `/Users/1millnonstop/.gemini/antigravity/brain/20c3ae55-8d98-4325-8bd1-7fe988fe1d36/walkthrough.md.resolved`
+- Walkthrough Playwright / E2E verification: `/Users/1millnonstop/.gemini/antigravity/brain/20c3ae55-8d98-4325-8bd1-7fe988fe1d36/walkthrough.md.resolved`

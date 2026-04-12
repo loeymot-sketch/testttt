@@ -1,4 +1,4 @@
-# Anti-Gravity Report 005 (Deep Audit)
+# Playwright / E2E verification Report 005 (Deep Audit)
 
 ## Date
 2026-03-10

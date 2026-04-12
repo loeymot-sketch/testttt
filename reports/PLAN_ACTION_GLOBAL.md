@@ -24,7 +24,7 @@
 | **ItemTableSeeder.php** | 🇬🇧 Anglais | Dumplings, Egg Rolls, Burgers US | ⚠️ **UTILISÉ PAR DÉFAUT** |
 | **GrillHouseMenuSeeder.php** | 🇫🇷 Français | Tacos, Sandwichs, Assiettes | ✅ Devrait être utilisé |
 
-**Anti-Gravity teste avec le menu anglais (Dumplings)** - PAS notre menu français !
+**Playwright / E2E verification teste avec le menu anglais (Dumplings)** - PAS notre menu français !
 
 ### Problème 3: Devises Confondues
 - **ItemTableSeeder:** Prix en dollars ($2.5, $1.5)
@@ -115,7 +115,7 @@ Priorité 🔴 Critique:
 
 6. **Créer tests PHPUnit** (Tâche 3.3)
 
-### Pour Anti-Gravity (QA) - Test E2E:
+### Pour Playwright / E2E verification (QA) - Test E2E:
 
 **NOUVEAUX scénarios avec menu français:**
 
@@ -190,7 +190,7 @@ Priorité 🔴 Critique:
 ## 🚀 PROCHAINES ÉTAPES
 
 1. **Maintenant:** Kimi exécute les corrections
-2. **Dans 2h:** Anti-Gravity teste avec menu français
+2. **Dans 2h:** Playwright / E2E verification teste avec menu français
 3. **Demain:** Claude audit architecture complète
 4. **Cette semaine:** Mise en production test (une branche)
 

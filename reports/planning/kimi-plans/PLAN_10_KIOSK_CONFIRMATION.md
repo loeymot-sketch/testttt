@@ -1,6 +1,6 @@
 # PLAN_10 — D-011 + KUX-01 à KUX-05 : Kiosk — Confirmation Forte + Idle Warning
 **Phase :** P2 — Moyenne
-**Test-Type :** Anti-Gravity (test navigateur/device)
+**Test-Type :** Playwright / E2E verification (test navigateur/device)
 **Impact :** 🟡 UX — Confirmation commande faible + reset idle sans avertissement = frustration client
 **Fichiers :** Projet Flutter Kiosk
 - `lib/views/screens/checkout/payment_screen.dart` (ou `success_screen.dart`)
@@ -234,7 +234,7 @@ class _IdleWarningOverlay extends StatelessWidget {
 
 ---
 
-## 3. Tests Anti-Gravity
+## 3. Tests Playwright / E2E verification
 
 **Tests navigateur/device :**
 1. Passer une commande → vérifier l'écran de succès avec animation checkmark verte
@@ -251,7 +251,7 @@ class _IdleWarningOverlay extends StatelessWidget {
 - [ ] Overlay d'avertissement à 2min30 d'inactivité
 - [ ] Bouton "Continuer ma commande" fonctionnel
 - [ ] Reset automatique à 3min d'inactivité
-- [ ] Anti-Gravity valide les deux scénarios
+- [ ] Playwright / E2E verification valide les deux scénarios
 
 ---
 

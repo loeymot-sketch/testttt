@@ -126,7 +126,7 @@
 
 ## 🔨 3. PLAN D'IMPLÉMENTATION KIMI — 6 TÂCHES
 
-> **Test type :** `Anti-Gravity` pour tous les écrans visuels  
+> **Test type :** `Playwright / E2E verification` pour tous les écrans visuels  
 > **Scope :** Uniquement les fichiers Flutter du dossier `projet kiosk/`  
 > **Règle :** `syncAndSubmit()` et le wizard existant sont INTOUCHABLES
 
@@ -376,7 +376,7 @@ const kOrderType = 'order_type'; // 'dine_in' | 'takeaway'
 - [ ] PaymentScreen : récapitulatif + 2 modes paiement + appel orderController
 - [ ] MenuScreen bottom bar : badge panier + montant + slide-in/out
 - [ ] OrderConfirmScreen : countdown 15s + bouton Nouvelle Commande
-- [ ] Tests K01 à K12 validés par Anti-Gravity
+- [ ] Tests K01 à K12 validés par Playwright / E2E verification
 - [ ] Idle timer reset dans chaque nouvel écran
 - [ ] 0 duplication de `_submitOrder()` — dans OrderController uniquement
 

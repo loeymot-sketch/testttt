@@ -44,7 +44,7 @@
 
 | # | Task | Impact | Complexité |
 |---|------|--------|------------|
-| 22 | **Tests E2E Anti-Gravity** | 🚨 CRITIQUE | Moyenne |
+| 22 | **Tests E2E Playwright / E2E verification** | 🚨 CRITIQUE | Moyenne |
 | 23 | Configuration borne admin (UI création machine) | Haute | Faible |
 | 24 | Multi-branche sélection borne | Haute | Moyenne |
 | 25 | Rate limiting API borne | Moyenne | Faible |
@@ -157,7 +157,7 @@ Architecture cible:
 ### Priorité HAUTE (Production)
 
 ```
-[ ] Créer tests Anti-Gravity (browser automation)
+[ ] Créer tests Playwright / E2E verification (browser automation)
 [ ] Documenter API borne pour intégrateurs
 [ ] Créer interface admin gestion machines
 [ ] Ajouter rate limiting routes borne
@@ -200,7 +200,7 @@ Architecture cible:
 □ Code review complet par Claude
 □ Tests unitaires Vue (Vitest) > 80% coverage
 □ Tests API (PHPUnit) > 80% coverage  
-□ Tests E2E (Anti-Gravity) scénarios critiques
+□ Tests E2E (Playwright / E2E verification) scénarios critiques
 □ Audit sécurité OWASP Top 10
 □ Performance audit (Lighthouse > 90)
 □ Documentation technique complète

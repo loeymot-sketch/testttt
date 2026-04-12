@@ -94,7 +94,7 @@ protected function seedSpatieRoles(): void
 
 ## Verification Expected
 
-Anti-Gravity should re-run the test suite:
+Playwright / E2E verification should re-run the test suite:
 
 ```bash
 php artisan test tests/Feature/AntiGravityTest.php
@@ -136,6 +136,6 @@ php artisan test tests/Feature/AntiGravityTest.php
 
 ## Next Steps
 
-1. Anti-Gravity executes retest and produces `reports/antigravity/report-002.md`.
+1. Playwright / E2E verification executes retest and produces `reports/antigravity/report-002.md`.
 2. Claude reviews the new report for any remaining failures that indicate business logic bugs.
 3. If tests T12-T20 still fail with 403/400, Claude must investigate the actual authorization logic in controllers (potential architectural fix needed).

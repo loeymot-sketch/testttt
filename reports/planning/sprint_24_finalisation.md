@@ -8,7 +8,7 @@
 
 ## Contexte
 
-Suite au rapport Anti-Gravity (DOSSIER_AUDIT_E2E_CLAUDE.md.resolved), 3 points bloquants ont été identifiés pour la validation E2E complète du POS :
+Suite au rapport Playwright / E2E verification (DOSSIER_AUDIT_E2E_CLAUDE.md.resolved), 3 points bloquants ont été identifiés pour la validation E2E complète du POS :
 
 1. **Prix addons incorrects** — migration `2026_03_16_000001` non exécutée
 2. **Crudités composées en DB** — migration atomique `2026_03_16_000002` non exécutée  
@@ -61,7 +61,7 @@ npm install && npm run dev
 
 ---
 
-## Tests de validation (Anti-Gravity)
+## Tests de validation (Playwright / E2E verification)
 
 Une fois K1/K3/K4 exécutés manuellement, valider :
 
@@ -129,7 +129,7 @@ php artisan test
 ## Prochaines étapes
 
 1. **Humain** : Exécuter les commandes de la section "Commandes manuelles requises"
-2. **Anti-Gravity** : Lancer les tests E2E AG-10, AG-02, AG-11, AG-13
+2. **Playwright / E2E verification** : Lancer les tests E2E AG-10, AG-02, AG-11, AG-13
 3. **Claude** : Finaliser le rapport de revue si tous les tests passent
 
 ---

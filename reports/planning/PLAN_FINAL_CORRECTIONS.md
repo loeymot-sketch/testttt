@@ -1,4 +1,4 @@
-# 🎯 PLAN FINAL DE CORRECTIONS - Rapport Post-Audit Anti-Gravity
+# 🎯 PLAN FINAL DE CORRECTIONS - Rapport Post-Audit Playwright / E2E verification
 
 > **Date:** 11 Mars 2026  
 > **Agent:** Claude (Architect) + Kimi (Implementation)  
@@ -88,7 +88,7 @@ if ($token) {
 }
 ```
 
-### 6. Nouveaux Tests Anti-Gravity
+### 6. Nouveaux Tests Playwright / E2E verification
 **Fichier:** `tests/Feature/AntiGravityTest.php`
 
 **Tests ajoutés:**
@@ -193,7 +193,7 @@ Les corrections essentielles sont en place:
 - Sécurité prix ✅
 - Notifications KDS ✅  
 - Null-safety ✅
-- 20 tests Anti-Gravity passent ✅
+- 20 tests Playwright / E2E verification passent ✅
 
 **Système prêt pour validation E2E manuelle complète.**
 

@@ -125,14 +125,14 @@ if (data.wizard_template && data.wizard_template !== 'simple') {
 |--------|------------|
 | Migration échoue sur SQLite (dev) | Migration fonctionne sur MySQL/PostgreSQL (prod) |
 | Wizard_template null en prod | Fallback sur string matching existant |
-| Tests frontend KDS/UX | Nécessitent validation Anti-Gravity navigateur |
+| Tests frontend KDS/UX | Nécessitent validation Playwright / E2E verification navigateur |
 
 ---
 
 ## Prochaines Étapes Recommandées
 
 1. **Déployer sur staging** — Exécuter migration + seeder
-2. **Anti-Gravity testing** — Valider KDS (sections colorées) et Wizard (badge étape)
+2. **Playwright / E2E verification testing** — Valider KDS (sections colorées) et Wizard (badge étape)
 3. **Flutter Kiosk** — Implémenter PLAN_10 (confirmation + idle warning)
 4. **Production** — Migration + tests E2E complets
 

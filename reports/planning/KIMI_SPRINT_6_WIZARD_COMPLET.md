@@ -2,7 +2,7 @@
 **Émetteur :** Claude (Architecte)
 **Destinataire :** KIMI (Builder)
 **Priorité :** 🔴 P0 — Fonctionnel caisse — prise de commande incomplète
-**Test type :** Kimi-test (Jest/Vitest sur posCart store)
+**Test type :** local-validation (Jest/Vitest sur posCart store)
 **Dépendances :** Sprint 5 terminé et validé
 
 ---

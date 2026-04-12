@@ -2,7 +2,7 @@
 
 **ID:** audit-massif-e2e-2026-03-11  
 **Date:** 11 Mars 2026 | 18h00  
-**Agent:** Anti-Gravity (QA)  
+**Agent:** Playwright / E2E verification (QA)  
 **Scope:** Chaîne complète — Wizard → Paiement → Ticket → KDS  
 **Statut:** 🟡 Audit en cours — 8 bugs confirmés
 

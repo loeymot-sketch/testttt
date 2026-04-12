@@ -1,5 +1,5 @@
 Read:
-- the latest Anti-Gravity report
+- the latest Playwright / E2E verification report
 - the relevant docs in `docs/`
 - `AGENTS.md`
 - `workflows/task-routing.md`

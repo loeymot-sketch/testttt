@@ -2,7 +2,7 @@
 
 **Architecte :** Claude  
 **Date :** 2026-03-24  
-**Test type :** Kimi-test (build npm + validation manuelle parcours complet)  
+**Test type :** local-validation (build npm + validation manuelle parcours complet)  
 **Priorité :** P0 — fondation borne
 
 ---

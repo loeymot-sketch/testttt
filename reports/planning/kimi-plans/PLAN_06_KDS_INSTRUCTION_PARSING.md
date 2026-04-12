@@ -1,6 +1,6 @@
 # PLAN_06 — D-010 : KDS — Parser et Afficher les Instructions en Sections
 **Phase :** P1 — Haute
-**Test-Type :** Anti-Gravity (test visuel navigateur)
+**Test-Type :** Playwright / E2E verification (test visuel navigateur)
 **Impact :** 🟡 Moyen — Les chefs voient les instructions brutes → erreurs de préparation
 **Fichiers :**
 - `resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue`
@@ -215,9 +215,9 @@ npm run dev
 
 ---
 
-## 5. Tests Anti-Gravity
+## 5. Tests Playwright / E2E verification
 
-Le test doit être exécuté par Anti-Gravity (test navigateur) :
+Le test doit être exécuté par Playwright / E2E verification (test navigateur) :
 
 **Scénario :**
 1. Créer une commande POS avec des viandes, suppléments, une formule
@@ -236,7 +236,7 @@ Le test doit être exécuté par Anti-Gravity (test navigateur) :
 - [ ] Sections colorées visibles dans le KDS
 - [ ] Texte brut (sans format) → affiché normalement dans `.kds-raw`
 - [ ] Compile sans erreur
-- [ ] Anti-Gravity valide visuellement
+- [ ] Playwright / E2E verification valide visuellement
 
 ---
 

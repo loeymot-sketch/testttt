@@ -63,7 +63,7 @@
 
 ## 🎯 LIVRABLES
 
-### Pour Anti-Gravity (QA)
+### Pour Playwright / E2E verification (QA)
 - Rapport audit complet avec métriques
 - Checklist de validation prête
 

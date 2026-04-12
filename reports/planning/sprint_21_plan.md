@@ -158,6 +158,6 @@ if (step.boissonSeule) {
 
 ## Next Steps
 
-1. Anti-Gravity E2E validation of all 8 test checklist items
+1. Playwright / E2E verification E2E validation of all 8 test checklist items
 2. Human validation in staging environment
 3. If all tests pass: mark Sprint 21 COMPLETE and proceed to Sprint 22 (Kiosk deep audit per user request)

@@ -1,4 +1,4 @@
-﻿# FoodKing — Doctrine des Gates de Qualite
+# FoodKing — Doctrine des Gates de Qualite
 
 **Statut :** Doctrine officielle — non implementee. Prete a brancher.
 **Portee :** Les 5 gates decrits ci-dessous s'inserent dans la boucle
@@ -534,7 +534,7 @@ verront les bonnes donnees au bon moment apres ce changement ?"**
 ### Relation avec Cursor
 
 - Cursor execute le gate apres `ux-heuristic-gate` (Step 4b).
-- Les `mandatory_tests` sont ajoutes a la validation Kimi-test.
+- Les `mandatory_tests` sont ajoutes a la validation local-validation.
 - Sur `BLOCKED` : `status: blocked`, aucun test ne compense une
   chaine de sync cassee.
 

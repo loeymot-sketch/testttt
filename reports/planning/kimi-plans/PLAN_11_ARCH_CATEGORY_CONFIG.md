@@ -1,6 +1,6 @@
 # PLAN_11 — ARCH-01 : Enrichir ItemCategory — wizard_template, has_menu, default_menu_kiosk
 **Phase :** P3 — Architecture (long terme)
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Impact :** 🔵 Architecture — Remplace le hardcode JS par une config pilotée par la DB
 **Fichiers :**
 - `database/migrations/XXXX_add_wizard_config_to_item_categories.php` (nouvelle migration)

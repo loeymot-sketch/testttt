@@ -163,7 +163,7 @@ ITEMWIDGET_STOCK_INTEGRATION.md
 □ K12: Stock admin rupture → item grisé sur borne
 ```
 
-### Tests Anti-Gravity
+### Tests Playwright / E2E verification
 
 ```
 □ API: GET /api/categories avec images
@@ -199,7 +199,7 @@ Le dossier `kiosk_implementation/` contient tous les fichiers. Suivre `README_IN
 
 1. **Intégration 30 min** → Copier extensions dans code existant
 2. **Build Flutter** → `flutter build apk --release`
-3. **Test E2E** → Anti-Gravity K01-K12
+3. **Test E2E** → Playwright / E2E verification K01-K12
 4. **Déploiement** → APK sur borne Android
 
 ---

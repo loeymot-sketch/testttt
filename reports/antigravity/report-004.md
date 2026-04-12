@@ -1,4 +1,4 @@
-# Anti-Gravity Report 004
+# Playwright / E2E verification Report 004
 
 ## Date
 2026-03-10

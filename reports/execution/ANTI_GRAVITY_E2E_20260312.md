@@ -1,6 +1,6 @@
 # RAPPPORT D'EXÉCUTION — ANTI-GRAVITY E2E
 **Date :** 12 Mars 2026
-**Exécuteur :** Anti-Gravity Agent
+**Exécuteur :** Playwright / E2E verification Agent
 **Statut Global :** 🟡 PARTIELLEMENT SUCCÈS (2 corrections requises)
 
 ---

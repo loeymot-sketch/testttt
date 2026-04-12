@@ -2,7 +2,7 @@
 
 **Contexte :** Sprint 24 — Validation POS post-migrations (crudités atomiques, prix addons)  
 **Date :** 2026-03-10  
-**Agent :** Anti-Gravity ou humain  
+**Agent :** Playwright / E2E verification ou humain  
 **Serveur :** http://127.0.0.1:8000
 
 ---

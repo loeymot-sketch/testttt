@@ -378,8 +378,8 @@ KIOSK (Flutter — Client guidé)
 - [x] Wizard adapté à chaque contexte (4 étapes vs 9 écrans)
 - [x] Auth appropriée pour chaque rôle (Manager vs Client vs Chef)
 - [x] Recalcul prix sécurisé côté serveur (anti-manipulation)
-- [x] Tests Anti-Gravity passent pour POS (T08b, T08c)
-- [x] Tests Anti-Gravity passent pour Kiosk (T06)
+- [x] Tests Playwright / E2E verification passent pour POS (T08b, T08c)
+- [x] Tests Playwright / E2E verification passent pour Kiosk (T06)
 - [ ] ⏳ Tests E2E manuels à faire (validation humaine)
 
 ---

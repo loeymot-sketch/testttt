@@ -50,9 +50,9 @@ Vérifier que tout le système FoodKing est cohérent, testé et prêt pour prod
 |------|------------|--------|
 | PHPUnit | Auth, Order creation, Pricing recalculation | 🔲 |
 | Vitest JS | KioskWizard, posCart | 🔲 |
-| E2E Anti-Gravity | Parcours complet borne (idle → confirmation) | 🔲 |
+| E2E Playwright / E2E verification | Parcours complet borne (idle → confirmation) | 🔲 |
 
-### Test E2E Anti-Gravity — Scénario complet
+### Test E2E Playwright / E2E verification — Scénario complet
 
 **Scénario 1 : Commande标准 avec fidélité**
 1. Idle screen → sélection langue FR
@@ -144,7 +144,7 @@ Vérifier que tout le système FoodKing est cohérent, testé et prêt pour prod
 **Après la Phase 37 (multi-langue) :**
 1. Exécuter cet audit complet (Partie A)
 2. Corriger les gaps identifiés
-3. Exécuter les tests E2E Anti-Gravity
+3. Exécuter les tests E2E Playwright / E2E verification
 4. Documenter les résultats dans `reports/execution/PHASE_38.md`
 5. Présenter la roadmap (Partie B) à la direction pour validation
 

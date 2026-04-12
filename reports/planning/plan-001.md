@@ -7,7 +7,7 @@
 
 ## 🛑 Context & Objective
 
-The primary objective of this sprint is to stabilize the testing environment in SQLite memory. The Anti-Gravity Report 001 revealed that the basic test harness is broken not because of the application logic itself, but because of missing database fixtures and schema drifts in our factories.
+The primary objective of this sprint is to stabilize the testing environment in SQLite memory. The Playwright / E2E verification Report 001 revealed that the basic test harness is broken not because of the application logic itself, but because of missing database fixtures and schema drifts in our factories.
 
 We must fix these critical blockers before writing new business tests or features.
 
@@ -47,13 +47,13 @@ Once Kimi has completed the setup:
 - **Claude** will review `reports/execution/execution-001.md` to ensure Kimi only touched the factories and test classes, strictly avoiding core app logic.
 
 ### Task 5: Deep Dive into Remaining Failures
-- **Claude** will analyze the next Anti-Gravity report. With roles and factories fixed, any remaining 403s or 500s on T12-T20 will be legitimate business logic or architectural bugs that Claude must resolve via targeted refactoring.
+- **Claude** will analyze the next Playwright / E2E verification report. With roles and factories fixed, any remaining 403s or 500s on T12-T20 will be legitimate business logic or architectural bugs that Claude must resolve via targeted refactoring.
 
 ---
 
-## 🧪 Verification Plan (For Anti-Gravity)
+## 🧪 Verification Plan (For Playwright / E2E verification)
 
-After Kimi's implementation, Anti-Gravity must re-run the exact same test suite:
+After Kimi's implementation, Playwright / E2E verification must re-run the exact same test suite:
 ```bash
 php artisan test tests/Feature/AntiGravityTest.php
 ```

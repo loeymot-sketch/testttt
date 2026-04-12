@@ -292,7 +292,7 @@ try {
 php artisan migrate --force
 php artisan db:seed --class=ItemCategoryWizardSeeder
 
-# 2. Tests Anti-Gravity manuels
+# 2. Tests Playwright / E2E verification manuels
 # - POS: Créer commande avec variations
 # - KDS: Vérifier sections colorées
 # - Wizard: Vérifier badge étape
@@ -306,11 +306,11 @@ php artisan db:seed --class=ItemCategoryWizardSeeder
 
 | Test | Priorité | Qui |
 |------|----------|-----|
-| E2E wizard_template depuis API | P1 | Anti-Gravity |
-| E2E KDS sections colorées | P1 | Anti-Gravity |
-| E2E badge étape wizard | P2 | Anti-Gravity |
-| Sécurité: item_id=0 | P1 | Kimi-test |
-| Sécurité: variation_id=999999 | P1 | Kimi-test |
+| E2E wizard_template depuis API | P1 | Playwright / E2E verification |
+| E2E KDS sections colorées | P1 | Playwright / E2E verification |
+| E2E badge étape wizard | P2 | Playwright / E2E verification |
+| Sécurité: item_id=0 | P1 | local-validation |
+| Sécurité: variation_id=999999 | P1 | local-validation |
 
 ### 6.3 Dette Technique Identifiée
 

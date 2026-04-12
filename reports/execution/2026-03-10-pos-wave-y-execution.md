@@ -67,7 +67,7 @@ Focus: cart-edit quantity sync, null-safety on receipt/KDS, coupon/address error
 
 ---
 
-## Suggested Anti-Gravity Tests
+## Suggested Playwright / E2E verification Tests
 
 1. **Y1**: Add item with qty=3 to cart → edit from cart → verify wizard shows qty=3 and saving doesn't reset to qty=1.
 2. **Y2**: Open receipt for an order with addon rows (menu) → verify no crash; extras/variations display correctly.
@@ -88,4 +88,4 @@ After Waves P, N, W, V, X, Y — the POS order flow is now at a high level of co
 - Receipt/KDS: null-safe, pre-line instructions, stable keys
 - Landing: admin-configurable best sellers, robust category filter
 
-Recommended: **Anti-Gravity full E2E retest** — complex order round-trip (add → edit → checkout → KDS → receipt).
+Recommended: **Playwright / E2E verification full E2E retest** — complex order round-trip (add → edit → checkout → KDS → receipt).

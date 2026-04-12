@@ -78,7 +78,7 @@ Impossible de valider virtuellement car dépend des correctifs du Module 1.6 (Pa
 **Objectif demandé : 100% tests PASS et 0 bugs critique ouvert.**
 **Résultat actuel : Le système Caisse possède 2 failles fatales de fonctionnement.**
 
-Pour pouvoir lancer un robot QA pur (Anti-Gravity) en navigateur et atteindre le `100% PASS`, nous devons **IMPERATIVEMENT** déclencher **KIMI (Builder)** pour implémenter les 3 points du plan de vol défini dans mon précédent rapport `RAPPORT_FINAL_BASE_CLAUDE.md` :
+Pour pouvoir lancer un robot QA pur (Playwright / E2E verification) en navigateur et atteindre le `100% PASS`, nous devons **IMPERATIVEMENT** déclencher **KIMI (Builder)** pour implémenter les 3 points du plan de vol défini dans mon précédent rapport `RAPPORT_FINAL_BASE_CLAUDE.md` :
 
 1. **Kimi DOIT** ajouter le recalcul DB des prix sur `posOrderStore()`.
 2. **Kimi DOIT** ajouter le dispatch event `SendOrderGotPush` à la fin de `posOrderStore()`.

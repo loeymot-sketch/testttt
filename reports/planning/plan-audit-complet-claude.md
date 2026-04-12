@@ -254,7 +254,7 @@
 - [ ] 80 tests MASSIVE_TEST_PLAN créés et 70+ passent
 - [ ] Tests de charge (10 commandes/minute pendant 10 minutes)
 
-**Tests E2E Manuels (Anti-Gravity):**
+**Tests E2E Manuels (Playwright / E2E verification):**
 - [ ] Créer commande POS Cash → Paiement → Ticket
 - [ ] Créer commande POS Carte → Paiement → Ticket
 - [ ] Créer commande Takeaway avec Token → Validation Token
@@ -276,7 +276,7 @@
 
 ## 📁 ARTEFACTS À PRODUIRE
 
-### Pour Anti-Gravity:
+### Pour Playwright / E2E verification:
 - Guide de test E2E détaillé (créé séparément)
 - Scénarios de test avec données attendues
 - Matrice de couverture des fonctionnalités
@@ -295,7 +295,7 @@
 
 ## 🎯 PROCHAINES ÉTAPES RECOMMANDÉES
 
-1. **Cette semaine:** Anti-Gravity exécute les tests E2E complets
+1. **Cette semaine:** Playwright / E2E verification exécute les tests E2E complets
 2. **Semaine prochaine:** Kimi corrige les bugs trouvés
 3. **Dans 2 semaines:** Test de charge + sécurité
 4. **Dans 3 semaines:** Mise en production (soft launch une branche)

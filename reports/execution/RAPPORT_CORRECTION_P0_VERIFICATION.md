@@ -136,7 +136,7 @@ Tests: 107, Assertions: 131, Errors: 8, Failures: 26
    - "Nos Sandwichs"
    - Prix en € (EUR)
 
-3. **Lancer Anti-Gravity E2E** pour test complet du parcours POS → KDS
+3. **Lancer Playwright / E2E verification E2E** pour test complet du parcours POS → KDS
 
 4. **Corrections futures** (non-P0):
    - Fixer les factories syntax legacy dans les autres tests
@@ -156,4 +156,4 @@ Tests: 107, Assertions: 131, Errors: 8, Failures: 26
 
 **Signé:** Kimi (Implementation Agent)  
 **Review demandée:** Claude (Lead Architect)  
-**Prochaine étape:** Validation humaine + lancement Anti-Gravity E2E
+**Prochaine étape:** Validation humaine + lancement Playwright / E2E verification E2E

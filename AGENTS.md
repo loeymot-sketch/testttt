@@ -51,7 +51,7 @@ Responsibilities:
 - Final review of implementation quality
 - Risky refactors and cross-module decisions
 - Auth/sync/pricing/state logic analysis
-- Determines test type in plan: Kimi-test / Anti-Gravity / No-test
+- Determines **test strategy** in plan using the active vocabulary (see **Testing rules**)
 
 ### Kimi (Builder & Tester)
 Responsibilities:
@@ -62,20 +62,20 @@ Responsibilities:
 - Write execution summary with test results
 - Limited-scope patches
 
-### Anti-Gravity (E2E & Critical QA)
+### Playwright / E2E verification (Critical QA)
 Responsibilities:
-- E2E testing (browser, complex flows)
+- E2E testing (browser, Playwright MCP, complex flows)
 - Critical integration testing
 - Functional exploration
-- Structured QA reporting
-- Only invoked when Claude's plan specifies "Anti-Gravity test"
+- Structured QA reporting under `reports/antigravity/` (legacy directory name)
+- Only invoked when Claude's plan specifies **`playwright-critical-flow`**, **`playwright-full-e2e`**, or **`playwright-mcp`**, or when review verdict is **`NEEDS_PLAYWRIGHT`**
 
 ### Bugbot (Passive Diff Scanner — NO authority)
 Responsibilities:
 - Automatically scans PR diffs for bugs, security issues, regressions, edge cases
 - Writes findings ONLY to `reports/review/bugbot-latest.md`
 - NEVER autonomous — generates a file and stops
-- NEVER communicates directly with Kimi or Anti-Gravity
+- NEVER communicates directly with Kimi or the Playwright / E2E executor outside the documented report chain
 - NEVER makes architectural decisions
 - Governed strictly by `.cursor/BUGBOT.md`
 
@@ -87,30 +87,30 @@ Orchestration environment
 ### Normal Cycle (90% of cases)
 1. **Human** requests feature/fix
 2. **Claude** analyzes and writes plan in `reports/planning/latest.md`
-   - Plan MUST specify test type: "Kimi-test" / "Anti-Gravity" / "No-test"
+   - Plan MUST specify test strategy: `no-test` | `static-inspection` | `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` | `human-verification`
 3. **Human** validates plan (GO / MODIFY / STOP)
 4. **Kimi** MUST check FIRST: does `reports/review/bugbot-latest.md` exist?
    - **YES** → Kimi **notifies the Human** with:
      `ℹ️ Bugbot findings detected in reports/review/bugbot-latest.md — Claude review needed (ask Claude to fix when ready).`
      Then Kimi **continues normally to step 5** without stopping.
    - **NO** → Kimi continues normally to step 5
-5. **Kimi** implements following Claude's plan
-6. **Kimi** executes tests if plan says "Kimi-test" (PHPUnit, Jest, etc.)
-7. **Kimi** writes execution summary in `reports/execution/latest.md` with test results
+5. **Kimi** (or **Cursor** per plan) implements following Claude's plan
+6. **Executor** runs **local-validation** (or other declared strategy) when the plan requires it (PHPUnit, Jest, etc.)
+7. **Executor** writes execution summary in `reports/execution/latest.md` with test results
 8. **Bugbot** (if PR exists) scans the diff → writes `reports/review/bugbot-latest.md` passively
 9. **Claude** reads `reports/review/bugbot-latest.md` (when Human convokes Claude) and decides:
    - `ACCEPT` → not blocking, writes verdict in `reports/review/latest.md`
    - `REQUEST_FIX` → writes a minimal correction plan for Kimi
-   - `ESCALATE` → invokes Anti-Gravity (only Claude can do this)
-10. **Claude** writes final review in `reports/review/latest.md` with verdict: APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY
+   - `ESCALATE` → schedules **Playwright / E2E verification** (only Claude can do this)
+10. **Claude** writes final review in `reports/review/latest.md` with verdict: **APPROVED** / **NEEDS_FIX** / **NEEDS_PLAYWRIGHT**
 11. **Kimi** deletes `reports/review/bugbot-latest.md` only after Claude writes `APPROVED` verdict
 12. **Human** validates final result
 
-### Anti-Gravity Cycle (10% of cases - critical tests only)
-1. **Claude's plan** specifies "Anti-Gravity test" OR **Claude's review** says "NEEDS_ANTIGRAVITY"
-2. **Human** explicitly requests Anti-Gravity test
-3. **Anti-Gravity** executes E2E/browser/critical tests
-4. **Anti-Gravity** writes report in `reports/antigravity/latest.md`
+### Playwright / E2E cycle (10% of cases - critical tests only)
+1. **Claude's plan** specifies **`playwright-critical-flow`** / **`playwright-full-e2e`** / **`playwright-mcp`** OR **Claude's review** says **`NEEDS_PLAYWRIGHT`**
+2. **Human** explicitly requests or authorizes the browser / E2E cycle when gating requires it
+3. **Playwright** (MCP or runner) executes E2E/browser/critical tests
+4. **Playwright** writes report in `reports/antigravity/latest.md`
 5. **Claude** analyzes report → back to Normal Cycle step 2
 
 ## Task routing rules
@@ -138,13 +138,13 @@ Orchestration environment
 - Unit/integration testing (PHPUnit, Jest, Vitest)
 - Linting and formatting
 
-### Use Anti-Gravity for:
+### Use Playwright / E2E verification for:
 - E2E testing (browser automation)
 - Complex integration flows
 - Critical business scenarios
 - Multi-device testing
 - Performance testing
-- Only when explicitly requested or when Claude's plan specifies it
+- Only when explicitly requested or when Claude's plan specifies **`playwright-critical-flow`**, **`playwright-full-e2e`**, or **`playwright-mcp`**
 
 ## Repository behavior rules
 1. Always read relevant docs before proposing or implementing a change.
@@ -174,25 +174,27 @@ Orchestration environment
    - files changed
    - why they changed
    - risks
-   - test results (if Kimi-test)
+   - test results (if **local-validation** or other test strategy ran)
 
 ## Testing rules
-1. **Claude decides test type in the plan**:
-   - "Kimi-test": Unit/integration tests (PHPUnit, Jest, Vitest)
-   - "Anti-Gravity": E2E/browser/critical tests
-   - "No-test": Trivial changes (docs, comments, formatting)
+1. **Claude decides test strategy in the plan** (active vocabulary):
+   - **`local-validation`**: Unit/integration tests (PHPUnit, Jest, Vitest)
+   - **`playwright-mcp`** / **`playwright-critical-flow`** / **`playwright-full-e2e`**: E2E / browser / critical paths
+   - **`static-inspection`**: Read-only audit without running the full suite
+   - **`no-test`**: Trivial changes (docs, comments, formatting)
+   - **`human-verification`**: Explicit human sign-off required
 
-2. **Kimi executes "Kimi-test"**:
+2. **Executor runs `local-validation`** when the plan specifies it:
    - Run PHPUnit for backend changes
    - Run Jest/Vitest for frontend changes
    - Run linter (phpcs, eslint)
    - Include test results in execution summary
 
-3. **Anti-Gravity executes "Anti-Gravity" tests**:
+3. **Playwright / E2E** executes when the plan specifies **`playwright-mcp`**, **`playwright-critical-flow`**, or **`playwright-full-e2e`**:
    - E2E browser testing
    - Complex integration scenarios
    - Critical business flows
-   - Generate detailed QA report
+   - Generate detailed QA report under `reports/antigravity/`
 
 4. Prioritize tests for:
    - kiosk auth
@@ -204,10 +206,10 @@ Orchestration environment
    - authorization boundaries
 
 ## Operational output rules
-- Planning output goes to `reports/planning/latest.md` (with test type specified)
+- Planning output goes to `reports/planning/latest.md` (with test strategy specified)
 - Execution summary goes to `reports/execution/latest.md` (with test results if applicable)
 - Review output goes to `reports/review/latest.md` (with verdict)
-- QA findings come from `reports/antigravity/latest.md` (only when Anti-Gravity is invoked)
+- QA findings come from `reports/antigravity/latest.md` (only when Playwright / E2E verification is invoked; path name is legacy)
 - **Bugbot findings** go to `reports/review/bugbot-latest.md` (passive, read only by Claude)
 - Use the report format defined in `workflows/report-format.md`
 - See `.cursor/BUGBOT.md` for Bugbot operating rules
@@ -216,7 +218,7 @@ Orchestration environment
 - If docs and code disagree, say so explicitly.
 - If code and reports disagree, investigate first.
 - If the change is risky, stop and propose a safer phased approach.
-- If uncertain about test type, default to "Kimi-test" for safety.
+- If uncertain about test strategy, default to **`local-validation`** for safety.
 
 ## Definition of good output
 A good result is:

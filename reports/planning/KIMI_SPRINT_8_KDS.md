@@ -2,7 +2,7 @@
 **Émetteur :** Claude (Architecte)
 **Destinataire :** KIMI (Builder)
 **Priorité :** 🟡 P1 — KDS partiellement cassé pour les admins
-**Test type :** Kimi-test (PHPUnit)
+**Test type :** local-validation (PHPUnit)
 **Dépendances :** Sprint 5 terminé (tax fix)
 
 ---

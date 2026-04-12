@@ -162,7 +162,7 @@ Vérifier que `pos-wizard.js` gère bien:
 - Détection "XXL" = 4 viandes (actuellement: M=1, L=2, XL=3)
 - Nouvelles sauces dans l'interface
 
-### Phase 3: Test E2E (Anti-Gravity - 30min)
+### Phase 3: Test E2E (Playwright / E2E verification - 30min)
 - Vérifier tous les items s'affichent
 - Vérifier la logique de commande fonctionne
 - Vérifier les prix sont corrects

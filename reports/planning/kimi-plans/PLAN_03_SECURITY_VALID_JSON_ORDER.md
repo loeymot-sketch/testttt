@@ -1,6 +1,6 @@
 # PLAN_03 — D-004 : ValidJsonOrder — Rejeter items sans item_id
 **Phase :** P0 — Critique
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Risque :** 🔴 Haute — Validation laisse passer `{"quantity":1}` sans item_id
 **Fichier :** `app/Rules/ValidJsonOrder.php`
 

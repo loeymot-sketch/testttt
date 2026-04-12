@@ -17,7 +17,7 @@
 | Structure Base | 9/10 | ✅ Très bon |
 | Tests | 6/10 | ⚠️ À compléter |
 
-**Verdict:** Système architecturalement solide, prêt pour tests E2E Anti-Gravity.
+**Verdict:** Système architecturalement solide, prêt pour tests E2E Playwright / E2E verification.
 
 ---
 
@@ -149,7 +149,7 @@ $taxId = isset($dbItems[$item->item_id]) ? $dbItems[$item->item_id] : 0;
 - ⚠️ Tests utilisent Faker (mots anglais aléatoires)
 - ⚠️ Pas de test spécifique MenuSeeder français
 - ⚠️ Pas de test Wizard unitaire
-- ✅ Solution: Tests E2E Anti-Gravity compensent
+- ✅ Solution: Tests E2E Playwright / E2E verification compensent
 
 ### 2. Petits Ajustements
 - ⚠️ Catégorie "Chicken & Tenders" contient anglais (mais fonctionnel)
@@ -168,7 +168,7 @@ $taxId = isset($dbItems[$item->item_id]) ? $dbItems[$item->item_id] : 0;
 - [ ] Exécuter `php artisan menu:reset --force` (à faire)
 - [ ] Vérifier `php artisan menu:verify` passe (à faire)
 
-### Instructions Anti-Gravity:
+### Instructions Playwright / E2E verification:
 
 **AVANT de tester:**
 ```bash
@@ -206,7 +206,7 @@ php artisan menu:verify
 
 1. **Exécuter menu:reset** pour purger ancien menu
 2. **Vérifier** POS affiche "Nos Tacos"
-3. **Lancer** Anti-Gravity sur tests E2E
+3. **Lancer** Playwright / E2E verification sur tests E2E
 4. **Corriger** si FAILs trouvés
 5. **Valider** mise en production
 

@@ -84,7 +84,7 @@ Stored `{attrA: 1}`, incoming `{attrB: 1}`: same count, enters `else if`. Checks
 
 ## Next Steps
 
-1. Anti-Gravity retest: add same item twice with different viandes → confirm separate cart lines
-2. Anti-Gravity retest: edit-from-cart for Tacos XL (2 viandes) → confirm both viandes pre-selected
-3. Anti-Gravity retest: add menu with boisson → confirm correct drink card selected in modal
+1. Playwright / E2E verification retest: add same item twice with different viandes → confirm separate cart lines
+2. Playwright / E2E verification retest: edit-from-cart for Tacos XL (2 viandes) → confirm both viandes pre-selected
+3. Playwright / E2E verification retest: add menu with boisson → confirm correct drink card selected in modal
 4. Verify KDS renders correctly in browser (no HTML validation warnings)

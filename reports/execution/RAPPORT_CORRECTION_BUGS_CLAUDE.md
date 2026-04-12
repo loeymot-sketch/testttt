@@ -127,7 +127,7 @@ npm run prod
 
 ## 📊 VÉRIFICATION DES CORRECTIONS
 
-### Test visuel requis (Anti-Gravity)
+### Test visuel requis (Playwright / E2E verification)
 
 | Scénario | Attendu | Status |
 |----------|---------|--------|
@@ -159,7 +159,7 @@ npm run prod
 - [x] createItems() passe categorySlug
 - [ ] Menu reset exécuté (à faire manuellement)
 - [ ] npm run prod exécuté (à faire manuellement)
-- [ ] Tests Anti-Gravity validés (à faire manuellement)
+- [ ] Tests Playwright / E2E verification validés (à faire manuellement)
 
 ---
 

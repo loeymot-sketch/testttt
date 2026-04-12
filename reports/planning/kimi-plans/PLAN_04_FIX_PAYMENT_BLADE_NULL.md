@@ -1,6 +1,6 @@
 # PLAN_04 — MA-001 + MA-002 : Null-Safe payment.blade.php + SettingResource
 **Phase :** P1 — Haute
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Risque :** 🔴 Rupture d'affichage en production si settings non configurés
 **Fichiers :**
 - `resources/views/payment.blade.php`

@@ -1,7 +1,7 @@
 # 🚨 Rapport d'Audit E2E Profond (Navigateur & API)
 **Module concerné** : Caisse (POS) et Borne (Kiosk)
 **Date** : 10 Mars 2026
-**Agent** : Anti-Gravity (QA Expert)
+**Agent** : Playwright / E2E verification (QA Expert)
 
 L'audit complet sur navigateur a été exécuté. J'ai simulé un parcours utilisateur réel (clics, sélection de menu, ajout au panier, checkout) via notre Subagent QA. Les résultats sont critiques.
 

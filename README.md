@@ -67,4 +67,4 @@ Le fichier **`.cursor/rules/global-operating-principles.md`** est pensé pour ê
 Ainsi, les mêmes principes s’appliquent même si vous travaillez sur une autre branche ou un autre clone.
 
 ### Instructions projet pour les agents
-Le fichier **`AGENTS.md`** à la racine décrit la boucle QA / planning / exécution et les responsabilités par rôle (Claude, Kimi, Anti-Gravity). Les rapports vivent sous **`reports/`** et les workflows sous **`workflows/`**.
+Le fichier **`AGENTS.md`** à la racine décrit la boucle QA / planning / exécution et les responsabilités par rôle (Claude, Kimi, Playwright / E2E verification). Les rapports vivent sous **`reports/`** et les workflows sous **`workflows/`**.

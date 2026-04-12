@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Tests prioritaires Anti-Gravity automatisables côté API (coupon / adresse livraison).
+ * Tests prioritaires automatisables côté API (coupon / adresse livraison) — alignés local-validation / E2E.
  * Les scénarios wizard complet, édition panier, viandes supplémentaires, reset panier
  * restent à valider en navigateur (Playwright / QA manuel).
  */

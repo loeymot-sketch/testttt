@@ -9,9 +9,9 @@
 ## 🎯 MISSION ACCOMPLIE
 
 ### Objectifs Atteints:
-1. ✅ **Phase 1:** Corriger les 3 bugs critiques E2E identifiés par Anti-Gravity
+1. ✅ **Phase 1:** Corriger les 3 bugs critiques E2E identifiés par Playwright / E2E verification
 2. ✅ **Phase 2:** Compléter le menu Grill House (50+ items)
-3. ✅ **Audits créés:** Plan d'audit pour Claude + Guide de test pour Anti-Gravity
+3. ✅ **Audits créés:** Plan d'audit pour Claude + Guide de test pour Playwright / E2E verification
 4. ✅ **Documentation:** Logique du wizard documentée pour l'équipe
 
 ---
@@ -81,7 +81,7 @@
    - Différences identifiées
    - Plan d'action recommandé
 
-### Pour Anti-Gravity (QA):
+### Pour Playwright / E2E verification (QA):
 3. **`reports/guides/guide-test-e2e-antigravity.md`**
    - 34 scénarios de test détaillés
    - Matrice de couverture
@@ -172,7 +172,7 @@ $ php artisan test --filter=AntiGravityTest
    php artisan db:seed --class=GrillHouseMenuSeeder
    ```
 
-2. **Lancer Anti-Gravity:**
+2. **Lancer Playwright / E2E verification:**
    - Utiliser `reports/guides/guide-test-e2e-antigravity.md`
    - Tester parcours POS Cash
    - Tester parcours POS Carte
@@ -196,7 +196,7 @@ $ php artisan test --filter=AntiGravityTest
 ### Avant mise en production:
 
 **Tests:**
-- [ ] Anti-Gravity: 30+ tests E2E passent
+- [ ] Playwright / E2E verification: 30+ tests E2E passent
 - [ ] Kimi: 3 bugs critiques corrigés
 - [ ] Kimi: 8 bugs haute priorité corrigés
 - [ ] Claude: Audit architecture terminé
@@ -274,7 +274,7 @@ $ php artisan test --filter=AntiGravityTest
 - ✅ Menu complet (50+ items)
 - ✅ Tests automatisés (18/18 passent)
 - ⚠️ Bugs mineurs à corriger (29 trouvés, 11 prioritaires)
-- ⚠️ Tests E2E manuels à compléter (Anti-Gravity)
+- ⚠️ Tests E2E manuels à compléter (Playwright / E2E verification)
 
 **Recommandation:** Une semaine de tests E2E intensifs + corrections, puis soft launch.
 

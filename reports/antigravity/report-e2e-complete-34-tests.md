@@ -268,7 +268,7 @@ Les tests suivants nécessitent une validation manuelle:
 | 4.5 Order in KDS | Test WebSocket | Haute |
 | 5.1-5.4 Delivery flow | Test complet delivery | Critique |
 
-### Priorité 3: Tests Anti-Gravity (E2E Browser)
+### Priorité 3: Tests Playwright / E2E verification (E2E Browser)
 
 Lancer le guide: `reports/guides/guide-test-e2e-antigravity.md`
 
@@ -316,7 +316,7 @@ Sécurité:         ████████████████████
 ### 🚀 Prochaines Étapes
 
 1. **Cette semaine:** Corriger les 3 factories critiques
-2. **Semaine 2:** Exécuter tests E2E navigateur (Anti-Gravity)
+2. **Semaine 2:** Exécuter tests E2E navigateur (Playwright / E2E verification)
 3. **Semaine 3:** Tester module Delivery + impression
 4. **Go/No-Go Production:** Après 30+ tests passants
 

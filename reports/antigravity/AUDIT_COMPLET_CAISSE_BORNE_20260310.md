@@ -1,7 +1,7 @@
 # 🔍 AUDIT COMPLET — Caisse (POS) & Borne Android (Kiosk)
 
 > **Date:** 10 Mars 2026  
-> **Auditeur:** Agent QA (Anti-Gravity / Cursor)  
+> **Auditeur:** Agent QA (Playwright / E2E verification / Cursor)  
 > **Mission:** Audit exhaustif du parcours de commande pour la caisse et la borne Android — identification des problèmes visuels, techniques, UI/UX, comparaison avec logique humaine et concurrence (McDonald's, KFC, etc.)  
 > **Contrainte:** Aucune modification du code — tests éphémères uniquement, rapport et documentation uniquement.
 

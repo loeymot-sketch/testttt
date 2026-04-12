@@ -212,7 +212,7 @@ selections.sauceFrites    // Objet {id: boolean}
 
 ## 🎯 PROCHAINES ÉTAPES
 
-1. **Exécuter les tests Anti-Gravity** W01-W10 pour valider le flux
+1. **Exécuter les tests Playwright / E2E verification** W01-W10 pour valider le flux
 2. **Vérifier** que `syncAndSubmit()` fonctionne correctement
 3. **Tester** les raccourcis clavier en caisse réelle
 4. **Vérifier** l'impression du ticket avec toutes les personnalisations
@@ -229,7 +229,7 @@ selections.sauceFrites    // Objet {id: boolean}
 - [x] Raccourcis clavier Enter/←/→ fonctionnels
 - [x] Boutons ✏️ dans récap naviguent sans reset
 - [x] `syncAndSubmit()` NON MODIFIÉE
-- [ ] Anti-Gravity valide W01 à W10 (à faire par QA)
+- [ ] Playwright / E2E verification valide W01 à W10 (à faire par QA)
 
 ---
 
