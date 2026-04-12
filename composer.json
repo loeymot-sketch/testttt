@@ -10,7 +10,6 @@
     "require": {
         "php": "^8.1.0",
         "ext-exif": "*",
-        "ext-http": "*",
         "ext-json": "*",
         "ext-pdo": "*",
         "aws/aws-sdk-php-laravel": "^3.9",
@@ -73,6 +72,9 @@
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
         ]
+    },
+    "suggest": {
+        "ext-http": "PECL http — optional; not bundled with Windows PHP builds. Use Guzzle (already required) unless you rely on pecl_http APIs."
     },
     "extra": {
         "laravel": {

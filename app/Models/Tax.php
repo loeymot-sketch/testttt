@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\Status;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Tax extends Model
 {
+    use HasFactory;
     protected $table = "taxes";
     protected $fillable = ['name', 'code', 'tax_rate', 'type', 'status'];
     protected $casts = [

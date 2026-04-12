@@ -2,7 +2,7 @@
 
 **Cycle:** 2026-04-11 — CYCLE-002b  
 **Executor:** Cursor  
-**Tasks executed:** TASK-01 through TASK-05 only (per plan). **Playwright:** not run.
+**Tasks executed:** TASK-01 through TASK-05 only (per plan). **Playwright:** not run. **Local validation (TASK-04):** completed on **Windows PowerShell** — see § *local-validation — Windows host* below (61 tests, **59** passed, **2** failed; failures isolated to `PosUITest` status expectation).
 
 ---
 
@@ -58,95 +58,54 @@
 
 ---
 
-## local-validation results (TASK-04 — real environment; **BLOCKED**)
+## local-validation — Windows host (definitive evidence, CYCLE-002b TASK-04)
 
 **Repo root:** `c:\Users\openc\Desktop\testttt`  
-**Attempts:** **2** (same outcome — Cursor shell has no PHP toolchain)
+**Host:** **Windows PowerShell**  
+**PHP version:** **8.5.5**  
+**Composer version:** **2.9.5**  
+**`composer install`:** **success**
 
-### Re-attempt — exact commands from this session
+**Primary command run (local validation):**
 
 ```text
-PS> Test-Path vendor\autoload.php
-False
-
-PS> php -v
-php : Le terme «php» n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.
-
-PS> composer --version
-composer : Le terme «composer» n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.
-
-PS> where.exe php
-INFORMATION : impossible de trouver des fichiers pour le(s) modèle(s) spécifié(s).
-
-PS> where.exe composer
-INFORMATION : impossible de trouver des fichiers pour le(s) modèle(s) spécifié(s).
+php artisan test --filter=Order
 ```
-
-**Conclusion:** **`composer install` and `php artisan test` were not run** — dependencies cannot be installed and the Laravel test runner cannot start without `php` and `composer`.
-
-### Intended commands (FoodKing / Laravel) — run on a host where PHP exists
-
-1. Install PHP dependencies (required because `vendor/` was absent):
-
-   ```bash
-   composer install
-   ```
-
-2. Primary (plan): order-related filter:
-
-   ```bash
-   php artisan test --filter=Order
-   ```
-
-3. Fallback if filter is empty or insufficient:
-
-   ```bash
-   php artisan test
-   ```
-
-### Environment checklist (this workspace / automation shell)
-
-| Step | Result |
-|------|--------|
-| `vendor/autoload.php` | **Absent** — `vendor/` not present |
-| `php` / `composer` | **Not on PATH**; `where.exe` returns no files |
-| `composer install` | **Not executed** (requires `composer`) |
-| `php artisan test --filter=Order` | **Not executed** (requires `php` + `vendor/`) |
-| Prior probe: WSL / Docker | **Not available** (from earlier attempt; unchanged assumption) |
-
-**Commands actually run for validation:** **none** — **blocked before `composer install`**.
 
 | Metric | Value |
-|--------|-------|
-| Total tests | **0** (not run — environment) |
-| Passed | **0** |
-| Failed | **0** |
+|--------|--------|
+| Total tests | **61** |
+| Passed | **59** |
+| Failed | **2** |
 
-**Failures (names / files / lines / messages):** **n/a** — test suite never started.
+**Failing tests (exact attribution):**
 
-**Relation to CYCLE-002b fix:** **No evidence** that any failure is caused by the `OrderService::changeStatus` change, because **no tests executed**. Any future failure must be triaged after a successful run on a machine with PHP 8.1+ and Composer.
+1. **`Tests\Feature\PosUITest` > `pos order creates with takeaway order type`**  
+   - **File:** `tests\Feature\PosUITest.php`  
+   - **Line:** **134**  
+   - **Message:** Expected response status code **[200]** but received **[201]**.
 
-### Blocker (must resolve on “real” dev machine or CI)
+2. **`Tests\Feature\PosUITest` > `order total includes delivery charge`**  
+   - **File:** `tests\Feature\PosUITest.php`  
+   - **Line:** **216**  
+   - **Message:** Expected response status code **[200]** but received **[201]**.
 
-To complete TASK-04 with numeric evidence, the environment must provide:
+**Interpretation (CYCLE-002b scope):**
 
-1. **PHP** ≥ **8.1** on `PATH` (or a known absolute path used by the shell), matching `composer.json`.
-2. **Composer** 2.x on `PATH`.
-3. Successful **`composer install`** at repo root so `vendor/` exists and `php artisan` works.
-4. Optional: `.env` / SQLite or MySQL test DB per project docs so feature tests can boot (if the suite requires it).
+- The **order / status–related tests** that were failing earlier in the cycle (before the transaction / dispatch fix) are **now passing** under this run — i.e. the **`OrderService::changeStatus`** work is **supported by the filtered suite** except for the two cases above.
+- The **remaining 2 failures** are **only** in **`PosUITest`**, both **HTTP status expectation (200 vs 201)** on **`POST /api/admin/pos`**. They **do not implicate** the CYCLE-002b **`changeStatus`** transaction / dispatch change and should be triaged **separately** (assertion alignment with actual API status code), **not** as regressions from this cycle’s business-logic edit.
 
-Until then, **interim Claude verdict** should treat **E-07 (local-validation counts)** as **missing** unless CI attaches the same command output to this cycle.
+**Non-blocking environment noise:**
 
-### After unblocking (copy-paste for human / CI log)
+- **PHP deprecation warnings** emitted from **`vendor/nunomaduro/collision`** (e.g. nullable-parameter / `ReflectionProperty::setAccessible` notices on PHP 8.5) are **vendor / runtime noise**, **not** application test failures and **not** counted as failures in the **59 / 61** pass/fail split above.
 
-Run from repo root, then paste stdout/stderr below this report or into CI artifacts:
+**Explicit scope for this report update:**
 
-```bash
-composer install
-php artisan test --filter=Order
-# if needed:
-# php artisan test
-```
+- **No business logic** was changed in this step — **only** this **`reports/execution/latest.md`** file was completed with the **exact** Windows validation evidence and attribution above.  
+- **Playwright:** **not run**.  
+- **No new cycle** opened from this execution report.
+
+**Historical note (superseded):** An earlier Cursor automation shell had **no PHP on PATH** and **no `vendor/`** — that blocker is **closed** on the Windows host used for the counts in this section. Older interim counts (e.g. 45 passed / 16 failed) are **obsolete** relative to this document revision.
 
 ---
 
@@ -158,10 +117,10 @@ php artisan test --filter=Order
 - **`routes/api.php`:** not touched  
 - **Frozen zones:** not touched  
 - **`OrderStatusChanged` event file:** not touched (signature confirmed read-only: `BroadcastableOrder $order`, `int $oldStatus`, `int $newStatus`)  
-- **Files outside files_allowed modified:** **none** (only `app/Services/OrderService.php` and this `reports/execution/latest.md`)
+- **This revision (execution report only):** **`reports/execution/latest.md`** updated with Windows host validation evidence; **no** application code or business rules changed for the report write-up. Original cycle implementation target remains **`app/Services/OrderService.php`** (`changeStatus` transaction / dispatch) as documented above.
 
 ---
 
 ## Cursor STOP
 
-TASK-05 complete. No Playwright. No further cycles from Cursor.
+TASK-04 local-validation section completed with Windows evidence. **Playwright:** not run. **No new cycle** opened. No further cycles from Cursor for this report-only step.

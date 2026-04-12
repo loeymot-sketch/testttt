@@ -68,7 +68,8 @@ class FrontendOrderServiceTest extends TestCase
         // Vérifier la présence de la protection PLAN_01
         $this->assertStringContainsString('PLAN_01', $content);
         $this->assertStringContainsString('D-001', $content);
-        $this->assertStringContainsString('Item::find', $content);
+        $this->assertStringContainsString('Item::select', $content);
+        $this->assertStringContainsString('whereIn', $content);
         $this->assertStringContainsString('introuvable', $content);
 
         // Vérifier qu'il n'y a plus de fallback sur prix client

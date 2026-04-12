@@ -60,6 +60,12 @@ abstract class TestCase extends BaseTestCase
             ['key' => 'company_name', 'payload' => json_encode('FoodKing Test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'company_email', 'payload' => json_encode('test@foodking.com'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'company_phone', 'payload' => json_encode('+33123456789'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_website', 'payload' => json_encode('https://foodking.test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_city', 'payload' => json_encode('Paris'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_state', 'payload' => json_encode('IDF'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_country_code', 'payload' => json_encode('FR'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_zip_code', 'payload' => json_encode('75001'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'company_address', 'payload' => json_encode('1 rue Test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
             // Theme settings (ThemeSetting model uses 'settings' table, not 'theme_settings') (group = 'theme')
             ['key' => 'theme_favicon_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'theme_logo', 'payload' => json_encode(null), 'group' => 'theme', 'created_at' => now(), 'updated_at' => now()],
