@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "cycle_id": "550e8400-e29b-41d4-a716-446655440000",
+  "task_id": "T-EXAMPLE-01",
+  "response_kind": "plan",
+  "received_at": "2026-04-11T12:30:00+00:00",
+  "objective": "Fix branch scope recursion on User model.",
+  "scope_non_goals": ["Do not change pricing rules"],
+  "risk_class": "authz",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "Kimi-test",
+  "verdict": null,
+  "human_decision": "GO",
+  "files_allowed": ["app/Models/Scopes/BranchScope.php"]
+}

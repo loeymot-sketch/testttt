@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foodking.local/bot/claude_response.schema.json",
+  "title": "FoodKingBotClaudeResponsePacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "task_id",
+    "response_kind",
+    "received_at",
+    "objective",
+    "scope_non_goals",
+    "risk_class",
+    "suggested_next_actor",
+    "test_stance",
+    "verdict",
+    "human_decision",
+    "files_allowed"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "cycle_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string" },
+    "response_kind": { "type": "string", "enum": ["plan", "review"] },
+    "received_at": { "type": "string", "minLength": 1 },
+    "objective": { "type": "string" },
+    "scope_non_goals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "risk_class": { "type": "string" },
+    "suggested_next_actor": { "type": "string" },
+    "test_stance": { "type": "string" },
+    "verdict": {
+      "type": ["string", "null"],
+      "description": "Review only: APPROVED | NEEDS_FIX | NEEDS_ANTIGRAVITY | MANUAL_GATE"
+    },
+    "human_decision": {
+      "type": ["string", "null"],
+      "description": "Plan only: GO | MODIFY | STOP"
+    },
+    "files_allowed": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

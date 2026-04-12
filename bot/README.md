@@ -12,6 +12,9 @@ This tree holds the **autonomous orchestration bot** that will coordinate Claude
 | **`logs/`** | Bot process logs (append-only). Rotate or archive per your ops policy. |
 | **`scripts/`** | Bootstrap and maintenance entrypoints (shell/PowerShell). Full daemon/worker logic will live elsewhere or in a future package. |
 | **`docs/`** | Architecture and state machine reference for operators and future implementers. |
+| **`runtime/`** | Python v0 orchestration core (state, intake, handoffs, cycle controller). Stdlib only. |
+| **`templates/`** | JSON Schemas for persisted packets (validation with external tools). |
+| **`examples/`** | Example JSON payloads aligned with **`templates/`** and **`runtime/models.py`**. |
 
 ## Getting started
 
@@ -20,3 +23,29 @@ This tree holds the **autonomous orchestration bot** that will coordinate Claude
 3. Read `docs/BOT_ARCHITECTURE.md` and `docs/BOT_RUNTIME_STATES.md` before wiring the first cycle.
 
 **Playwright** and **Telegram** are integrated at the architecture level; concrete drivers are TBD in implementation phase.
+
+## Runtime v0
+
+**What exists now**
+
+- **`bot/runtime/`** — Python **stdlib-only** orchestration core (typed dataclasses, no network calls):
+  - **`state_manager.py`** — atomic read/write of `bot/state/cycle_state.json`.
+  - **`intake_builder.py`** — builds **`ClaudeIntakePacket`** from repo paths in `bot/config/paths.json` (with defaults matching `paths.example.json`).
+  - **`handoff_manager.py`** — saves/loads JSON under `bot/state/handoffs/<cycle_id>/` (`claude_intake.json`, `claude_response.json`, `cursor_execution.json`).
+  - **`cycle_controller.py`** — explicit transitions (`idle` / `completed` → `preparing_intake` → `waiting_claude` → … → `completed`), plus **`blocked`** / **`manual_gate`**; **`claude_round`** distinguishes plan vs review while in `waiting_claude`.
+  - **`models.py`** — `CycleState`, intake/response/cursor packets, `ValidationStatus`, `PlaywrightStatus`, `ModelRoute`.
+  - **`init.py`** — `RuntimePaths`, JSON helpers, **`resolve_model_route()`** from `bot/config/model_routing.json`.
+- **`bot/templates/*.schema.json`** — strict JSON Schemas aligned with the Python shapes.
+- **`bot/examples/*.example.json`** — sample payloads for operators and tests.
+
+**How to import** (from repository root, with `PYTHONPATH` including the repo root):
+
+```text
+PYTHONPATH=. python -c "from bot.runtime import CycleController, RuntimePaths; print('ok')"
+```
+
+**Intentionally not automated yet**
+
+- No Claude API, no Telegram send, no Playwright runner, no Git operations, no long-running daemon loop.
+- **`placeholder_*`** methods on **`CycleController`** raise **`NotImplementedError`** with explicit messages until those integrations are added.
+

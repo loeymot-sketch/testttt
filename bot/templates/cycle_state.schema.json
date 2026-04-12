@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foodking.local/bot/cycle_state.schema.json",
+  "title": "FoodKingBotCycleState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "state",
+    "created_at",
+    "updated_at",
+    "validation_status",
+    "validation_detail",
+    "playwright_status",
+    "playwright_detail",
+    "claude_round"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "cycle_id": { "type": "string" },
+    "task_id": { "type": ["string", "null"] },
+    "state": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "preparing_intake",
+        "waiting_claude",
+        "waiting_cursor",
+        "waiting_validation",
+        "waiting_playwright",
+        "completed",
+        "blocked",
+        "manual_gate"
+      ]
+    },
+    "created_at": { "type": "string", "minLength": 1 },
+    "updated_at": { "type": "string", "minLength": 1 },
+    "validation_status": {
+      "type": "string",
+      "enum": ["pending", "passed", "failed", "skipped"]
+    },
+    "validation_detail": { "type": "string" },
+    "playwright_status": {
+      "type": "string",
+      "enum": ["pending", "skipped", "waiting", "passed", "failed"]
+    },
+    "playwright_detail": { "type": "string" },
+    "block_reason": { "type": ["string", "null"] },
+    "manual_gate_reason": { "type": ["string", "null"] },
+    "active_model_route": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "claude_round": {
+      "type": "string",
+      "enum": ["plan", "review"]
+    }
+  }
+}

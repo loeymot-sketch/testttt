@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "cycle_id": "550e8400-e29b-41d4-a716-446655440000",
+  "task_id": "T-EXAMPLE-01",
+  "state": "waiting_claude",
+  "created_at": "2026-04-11T12:00:00+00:00",
+  "updated_at": "2026-04-11T12:01:00+00:00",
+  "validation_status": "pending",
+  "validation_detail": "",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "tier": "high_reasoning",
+    "provider": "placeholder",
+    "model": "placeholder",
+    "notes": "TBD"
+  },
+  "claude_round": "plan"
+}
