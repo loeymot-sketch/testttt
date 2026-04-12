@@ -235,6 +235,21 @@ def cmd_register_review_response(args: argparse.Namespace) -> None:
     cmd_register_claude_review(args)
 
 
+def cmd_run_supervisor_once(args: argparse.Namespace) -> None:
+    from bot.supervisor import run_once
+
+    code = run_once(_load_bot_config_path(args.config))
+    raise SystemExit(code)
+
+
+def cmd_show_dropzones(args: argparse.Namespace) -> None:
+    from bot.supervisor import format_dropzone_report
+
+    bot_dir = _bot_dir()
+    repo = bot_dir.parent
+    print(format_dropzone_report(repo, bot_dir), end="")
+
+
 def _add_config_arg(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--config",
@@ -369,6 +384,20 @@ def main(argv: Sequence[str] | None = None) -> None:
     _add_config_arg(p_rrv)
     p_rrv.add_argument("--file", required=True)
     p_rrv.set_defaults(func=cmd_register_review_response)
+
+    p_sup = sub.add_parser(
+        "run-supervisor-once",
+        help="Single supervisor tick: refresh outbox, consume at most one inbox JSON, archive on success.",
+    )
+    _add_config_arg(p_sup)
+    p_sup.set_defaults(func=cmd_run_supervisor_once)
+
+    p_dz = sub.add_parser(
+        "show-dropzones",
+        help="Print resolved inbox/outbox paths from bot/config/supervisor.json.",
+    )
+    _add_config_arg(p_dz)
+    p_dz.set_defaults(func=cmd_show_dropzones)
 
     ns = parser.parse_args(argv)
     ns.func(ns)

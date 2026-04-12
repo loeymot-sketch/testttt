@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "task_id": "RPT-AUTO-001",
+  "planning_path": "reports/planning/latest.md",
+  "files_allowed": [
+    "bot/README.md"
+  ],
+  "validation_commands": [],
+  "prepared_at": "2026-04-12T02:37:31+00:00"
+}

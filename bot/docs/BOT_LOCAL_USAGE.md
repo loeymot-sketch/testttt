@@ -72,11 +72,14 @@ Même principe pour toutes les commandes ci-dessous.
 | `build-cursor-handoff` | Écrit **`cursor_handoff.md`** (nécessite **`cursor_execution.json`**). |
 | `build-review-handoff` | Écrit **`claude_review_handoff.md`** (état **`waiting_claude`** + **`claude_round=review`** ; voir `bot/docs/BOT_CYCLE_BRIDGE.md`). |
 | `show-cycle-files` | Liste les chemins absolus des fichiers sous **`bot/state/handoffs/<cycle_id>/`**. |
+| `run-supervisor-once` | **Un tick** du superviseur : met à jour **outbox**, consomme **au plus un** fichier **inbox** valide, archive si succès. Voir **`bot/docs/BOT_SUPERVISOR_FLOW.md`**. |
+| `show-dropzones` | Affiche les chemins **inbox/outbox** résolus depuis **`bot/config/supervisor.json`**. |
 
 Option globale : **`--config PATH`** vers un autre `bot_config.json` (défaut : `bot/config/bot_config.json`).
 
 Handoffs Markdown : voir **`bot/docs/BOT_HANDOFFS.md`**.  
 Pont cycle plan / exécution / revue : **`bot/docs/BOT_CYCLE_BRIDGE.md`**.  
+Superviseur inbox/outbox : **`bot/docs/BOT_SUPERVISOR_FLOW.md`**.  
 Boucle opérateur Windows (assistée) : **`bot/docs/BOT_WINDOWS_OPERATOR_FLOW.md`** — script **`bot/scripts/run_manual_cycle.ps1`**.
 
 ## Où sont les fichiers de handoff

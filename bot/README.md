@@ -70,5 +70,5 @@ PYTHONPATH=. python -c "from bot.runtime import CycleController, RuntimePaths; p
    ```
 
 3. **Handoffs** — After `begin-cycle`, edit or copy **`bot/state/handoffs/<cycle_id>/claude_intake.json`** into your Claude project; paste the response into a JSON file and run `register-claude-response` / `register-claude-review` as documented.
-4. **Docs** — Operator procedure and one full manual walkthrough: **`bot/docs/BOT_LOCAL_USAGE.md`**, **`bot/examples/manual_cycle_walkthrough.md`**, **`bot/docs/BOT_WINDOWS_OPERATOR_FLOW.md`**, **`bot/docs/BOT_CYCLE_BRIDGE.md`**. Guided Windows start: **`bot/scripts/run_manual_cycle.ps1`**.
+4. **Docs** — Operator procedure and one full manual walkthrough: **`bot/docs/BOT_LOCAL_USAGE.md`**, **`bot/examples/manual_cycle_walkthrough.md`**, **`bot/docs/BOT_WINDOWS_OPERATOR_FLOW.md`**, **`bot/docs/BOT_CYCLE_BRIDGE.md`**, **`bot/docs/BOT_SUPERVISOR_FLOW.md`**. Local supervisor (one tick): **`python bot/cli.py run-supervisor-once`**. Guided Windows start: **`bot/scripts/run_manual_cycle.ps1`**.
 

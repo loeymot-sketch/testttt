@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "task_id": "RPT-AUTO-001",
+  "response_kind": "review",
+  "received_at": "2026-04-12T19:00:00+00:00",
+  "objective": "Revue rapport",
+  "scope_non_goals": [],
+  "risk_class": "low",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "No-test",
+  "verdict": "APPROVED",
+  "human_decision": null,
+  "files_allowed": []
+}

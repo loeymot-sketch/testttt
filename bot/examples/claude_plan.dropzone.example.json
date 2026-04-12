@@ -1,0 +1,16 @@
+{
+  "_comment": "Drop as any *.json in bot/inbox/claude_plan/ while cycle is waiting_claude + plan round. Same schema as register-plan-response.",
+  "schema_version": 1,
+  "cycle_id": "REPLACE_WITH_CYCLE_UUID",
+  "task_id": "REPLACE_WITH_TASK_ID",
+  "response_kind": "plan",
+  "received_at": "2026-04-12T12:00:00+00:00",
+  "objective": "Example plan from supervisor inbox",
+  "scope_non_goals": [],
+  "risk_class": "low",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "No-test",
+  "verdict": null,
+  "human_decision": "GO",
+  "files_allowed": ["bot/README.md"]
+}

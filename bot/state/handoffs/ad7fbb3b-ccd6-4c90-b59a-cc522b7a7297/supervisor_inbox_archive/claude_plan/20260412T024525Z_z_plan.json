@@ -1,0 +1,1 @@
+{"schema_version":1,"cycle_id":"ad7fbb3b-ccd6-4c90-b59a-cc522b7a7297","task_id":"T-SUP","response_kind":"plan","received_at":"2026-04-12T12:00:00+00:00","objective":"x","scope_non_goals":[],"risk_class":"low","suggested_next_actor":"cursor_execute","test_stance":"No-test","verdict":null,"human_decision":"GO","files_allowed":["bot/README.md"]}
