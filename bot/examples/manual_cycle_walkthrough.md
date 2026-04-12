@@ -1,6 +1,6 @@
 # Walkthrough — un cycle manuel complet (bot v0)
 
-Hypothèse : dépôt cloné sous `C:\Users\you\Desktop\testttt`, PowerShell, `PYTHONPATH=.` à la racine.
+Hypothèse : dépôt cloné sous `C:\Users\you\Desktop\testttt`, PowerShell. Sous Windows, utiliser **`.\bot-cli.ps1 …`** à la place de `python bot/cli.py …` si `python` ouvre le Microsoft Store (voir `bot/docs/BOT_LOCAL_USAGE.md`).
 
 Les **`cycle_id`** ci-dessous sont des **exemples** ; en vrai, `begin-cycle` imprime le JSON d’état : copie la valeur `cycle_id` pour les fichiers JSON suivants.
 
@@ -10,9 +10,8 @@ Les **`cycle_id`** ci-dessous sont des **exemples** ; en vrai, `begin-cycle` imp
 
 ```powershell
 cd C:\Users\you\Desktop\testttt
-$env:PYTHONPATH = "."
-python bot/cli.py reset-idle
-python bot/cli.py show-state
+.\bot-cli.ps1 reset-idle
+.\bot-cli.ps1 show-state
 ```
 
 Tu dois voir `"state": "idle"`.
@@ -22,7 +21,7 @@ Tu dois voir `"state": "idle"`.
 ## 2. Démarrer un cycle (intake généré)
 
 ```powershell
-python bot/cli.py begin-cycle --task-id T-DEMO-01 --goal "Corriger un test flaky sur le filtre Order" --trigger human
+.\bot-cli.ps1 begin-cycle --task-id T-DEMO-01 --goal "Corriger un test flaky sur le filtre Order" --trigger human
 ```
 
 - Le CLI affiche le **nouvel état** (`waiting_claude`, `claude_round: plan`).
@@ -33,6 +32,14 @@ Ouvre :
 `bot/state/handoffs/<cycle_id>/claude_intake.json`
 
 Tu y verras les sections (rapports, `CLAUDE.md`, `MEMORY.md`, bundle `docs/ops` / `docs/roles` selon config).
+
+### 2b. Générer le handoff Markdown pour Claude (optionnel mais recommandé)
+
+```powershell
+.\bot-cli.ps1 build-claude-handoff
+```
+
+Le CLI imprime le chemin absolu vers **`claude_handoff.md`** (même dossier que `claude_intake.json`). Ouvre le fichier : c’est la version **lisible / collable** avec extraits de rapports bornés. Voir **`bot/docs/BOT_HANDOFFS.md`**.
 
 ---
 
@@ -61,7 +68,7 @@ Crée `bot/state/handoffs/_demo_plan.json` (remplace `YOUR_CYCLE_ID` par le vrai
 Enregistre :
 
 ```powershell
-python bot/cli.py register-claude-response --file bot/state/handoffs/_demo_plan.json
+.\bot-cli.ps1 register-claude-response --file bot/state/handoffs/_demo_plan.json
 ```
 
 Effet :
@@ -70,6 +77,14 @@ Effet :
 - **`cursor_execution.json`** est généré (chemins + commandes de validation par défaut).
 - État → **`waiting_cursor`**.
 
+### 3b. Générer le handoff Markdown pour Cursor
+
+```powershell
+.\bot-cli.ps1 build-cursor-handoff
+```
+
+Écrit **`cursor_handoff.md`** à côté des JSON. Utile avant d’ouvrir Cursor pour coller le paquet d’exécution.
+
 ---
 
 ## 4. Fin d’exécution Cursor (humain)
@@ -77,7 +92,7 @@ Effet :
 Après travail dans Cursor :
 
 ```powershell
-python bot/cli.py register-cursor-finished
+.\bot-cli.ps1 register-cursor-finished
 ```
 
 État → **`waiting_validation`**.
@@ -89,10 +104,22 @@ python bot/cli.py register-cursor-finished
 Succès :
 
 ```powershell
-python bot/cli.py register-validation-result --status passed --detail "php artisan test OK"
+.\bot-cli.ps1 register-validation-result --status passed --detail "php artisan test OK"
 ```
 
 État → **`waiting_claude`**, `claude_round` → **`review`**.
+
+### 5b. Handoff de revue + liste des fichiers du cycle
+
+À ce stade, `claude_response.json` contient encore le **plan** (jusqu’à l’enregistrement de la revue).
+
+```powershell
+.\bot-cli.ps1 build-review-handoff
+.\bot-cli.ps1 show-cycle-files
+```
+
+- **`claude_review_handoff.md`** : contexte plan + extraits `reports/execution/latest.md` et `reports/review/latest.md` (troncature fixe). Voir **`bot/docs/BOT_CYCLE_BRIDGE.md`**.
+- **`show-cycle-files`** : imprime les chemins absolus du dossier `bot\state\handoffs\<cycle_id>\`.
 
 ---
 
@@ -119,8 +146,10 @@ Fichier `bot/state/handoffs/_demo_review.json` :
 ```
 
 ```powershell
-python bot/cli.py register-claude-review --file bot/state/handoffs/_demo_review.json
+.\bot-cli.ps1 register-claude-review --file bot/state/handoffs/_demo_review.json
 ```
+
+(Équivalent opérateur : `.\bot-cli.ps1 register-review-response --file …`.)
 
 État → **`completed`**.
 
@@ -129,7 +158,7 @@ python bot/cli.py register-claude-review --file bot/state/handoffs/_demo_review.
 ## 7. Fermer le cycle côté machine
 
 ```powershell
-python bot/cli.py reset-idle
+.\bot-cli.ps1 reset-idle
 ```
 
 ---
@@ -139,7 +168,7 @@ python bot/cli.py reset-idle
 Si le **plan** avait `"suggested_next_actor": "playwright"`, l’état passerait à **`waiting_playwright`**. Tu pourrais alors enregistrer manuellement :
 
 ```powershell
-python bot/cli.py register-playwright-result --status passed --detail "CI job #123 green"
+.\bot-cli.ps1 register-playwright-result --status passed --detail "CI job #123 green"
 ```
 
 puis enchaîner avec une **review** comme ci-dessus. Le bot v0 **n’exécute** pas Playwright ; il ne fait qu’enregistrer l’état et les fichiers.

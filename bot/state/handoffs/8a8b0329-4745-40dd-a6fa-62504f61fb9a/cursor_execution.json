@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "cycle_id": "8a8b0329-4745-40dd-a6fa-62504f61fb9a",
+  "task_id": "T-V",
+  "planning_path": "reports/planning/latest.md",
+  "files_allowed": [
+    "bot/README.md"
+  ],
+  "validation_commands": [
+    "php artisan test --filter=Order"
+  ],
+  "prepared_at": "2026-04-12T02:20:31+00:00"
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "cycle_id": "1c91e0fb-08cb-43a7-83e3-ce74e024beda",
+  "task_id": "T-BRIDGE",
+  "planning_path": "reports/planning/latest.md",
+  "files_allowed": [
+    "bot/README.md"
+  ],
+  "validation_commands": [],
+  "prepared_at": "2026-04-12T02:34:39+00:00"
+}

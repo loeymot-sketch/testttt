@@ -53,7 +53,15 @@ PYTHONPATH=. python -c "from bot.runtime import CycleController, RuntimePaths; p
 ## How to operate locally now
 
 1. **Configs** — Use the committed real files under **`bot/config/`** (`bot_config.json`, `paths.json`, `model_routing.json`, `telegram.json`). Adjust `repo_root` only if the bot config is not under `<repo>/bot/config/`. Keep Telegram disabled until wired.
-2. **CLI** — From repo root (Windows PowerShell example):
+2. **CLI** — From repo root:
+
+   **Windows (recommandé)** — évite le faux `python` du Store :
+
+   ```powershell
+   .\bot-cli.ps1 show-state
+   ```
+
+   **Ou** (si `python` pointe bien vers une installation réelle) :
 
    ```powershell
    $env:PYTHONPATH = "."
@@ -62,5 +70,5 @@ PYTHONPATH=. python -c "from bot.runtime import CycleController, RuntimePaths; p
    ```
 
 3. **Handoffs** — After `begin-cycle`, edit or copy **`bot/state/handoffs/<cycle_id>/claude_intake.json`** into your Claude project; paste the response into a JSON file and run `register-claude-response` / `register-claude-review` as documented.
-4. **Docs** — Operator procedure and one full manual walkthrough: **`bot/docs/BOT_LOCAL_USAGE.md`**, **`bot/examples/manual_cycle_walkthrough.md`**.
+4. **Docs** — Operator procedure and one full manual walkthrough: **`bot/docs/BOT_LOCAL_USAGE.md`**, **`bot/examples/manual_cycle_walkthrough.md`**, **`bot/docs/BOT_WINDOWS_OPERATOR_FLOW.md`**, **`bot/docs/BOT_CYCLE_BRIDGE.md`**. Guided Windows start: **`bot/scripts/run_manual_cycle.ps1`**.
 

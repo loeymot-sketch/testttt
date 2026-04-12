@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "cycle_id": "ef837272-484e-43a8-8867-4e923b953fd9",
+  "task_id": "T-SMOKE-01",
+  "planning_path": "reports/planning/latest.md",
+  "files_allowed": [
+    "bot/README.md"
+  ],
+  "validation_commands": [
+    "php artisan test --filter=Order"
+  ],
+  "prepared_at": "2026-04-12T02:22:44+00:00"
+}

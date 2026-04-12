@@ -12,6 +12,8 @@ from bot.runtime.cycle_controller import CycleController, CycleStateError
 from bot.runtime.handoff_manager import HandoffManager
 from bot.runtime.init import VERSION, RuntimePaths
 from bot.runtime.intake_builder import IntakeBuilder
+from bot.runtime.prompt_compiler import PromptCompiler, PromptCompilerError
+from bot.runtime.review_bridge import ReviewBridge, ReviewBridgeError, format_cycle_files_lines
 from bot.runtime.state_manager import StateManager
 
 __all__ = [
@@ -26,6 +28,11 @@ __all__ = [
     "HandoffManager",
     "IntakeBuilder",
     "PlaywrightStatus",
+    "PromptCompiler",
+    "PromptCompilerError",
+    "ReviewBridge",
+    "ReviewBridgeError",
+    "format_cycle_files_lines",
     "StateManager",
     "ValidationStatus",
 ]

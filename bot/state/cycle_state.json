@@ -1,0 +1,21 @@
+{
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake — Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "block_reason": null,
+  "claude_round": "review",
+  "created_at": "2026-04-12T02:34:39+00:00",
+  "cycle_id": "1c91e0fb-08cb-43a7-83e3-ce74e024beda",
+  "manual_gate_reason": null,
+  "playwright_detail": "",
+  "playwright_status": "skipped",
+  "schema_version": 1,
+  "state": "completed",
+  "task_id": "T-BRIDGE",
+  "updated_at": "2026-04-12T02:34:48+00:00",
+  "validation_detail": "ok",
+  "validation_status": "passed"
+}

@@ -25,6 +25,8 @@ from bot.runtime.init import (
 )
 from bot.runtime.intake_builder import IntakeBuilder
 from bot.runtime.models import ClaudeResponsePacket, PlaywrightStatus, ValidationStatus
+from bot.runtime.prompt_compiler import PromptCompiler, PromptCompilerError
+from bot.runtime.review_bridge import ReviewBridge, ReviewBridgeError, format_cycle_files_lines
 from bot.runtime.state_manager import StateManager
 
 
@@ -68,7 +70,8 @@ def _load_json_file_arg(path_str: str) -> dict[str, Any]:
     if not p.is_file():
         _die(f"File not found: {p}")
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
+        # utf-8-sig: accept UTF-8 BOM (common for PowerShell Set-Content -Encoding utf8).
+        data = json.loads(p.read_text(encoding="utf-8-sig"))
     except json.JSONDecodeError as e:
         _die(f"Invalid JSON in {p}: {e}")
     if not isinstance(data, dict):
@@ -177,6 +180,61 @@ def cmd_reset_idle(args: argparse.Namespace) -> None:
     print(json.dumps(s.to_json_dict(), indent=2, ensure_ascii=False))
 
 
+def cmd_build_claude_handoff(args: argparse.Namespace) -> None:
+    _, s, rt = _build_controller(_load_bot_config_path(args.config))
+    hm = HandoffManager(rt.state_dir)
+    pc = PromptCompiler(rt, hm)
+    try:
+        path = pc.write_claude_handoff(s)
+    except PromptCompilerError as e:
+        _die(str(e))
+    print(str(path))
+
+
+def cmd_build_cursor_handoff(args: argparse.Namespace) -> None:
+    _, s, rt = _build_controller(_load_bot_config_path(args.config))
+    hm = HandoffManager(rt.state_dir)
+    pc = PromptCompiler(rt, hm)
+    try:
+        path = pc.write_cursor_handoff(s)
+    except PromptCompilerError as e:
+        _die(str(e))
+    print(str(path))
+
+
+def cmd_build_review_handoff(args: argparse.Namespace) -> None:
+    _, s, rt = _build_controller(_load_bot_config_path(args.config))
+    hm = HandoffManager(rt.state_dir)
+    rb = ReviewBridge(rt, hm)
+    try:
+        path = rb.write_review_handoff(s)
+    except ReviewBridgeError as e:
+        _die(str(e))
+    print(str(path))
+
+
+def cmd_show_cycle_files(args: argparse.Namespace) -> None:
+    _, s, rt = _build_controller(_load_bot_config_path(args.config))
+    if not s.cycle_id:
+        _die("show-cycle-files: no active cycle_id (idle).")
+    lines = format_cycle_files_lines(rt.state_dir, s.cycle_id)
+    if not lines:
+        print(f"(no files yet under handoffs/{s.cycle_id}/)")
+        return
+    for line in lines:
+        print(line)
+
+
+def cmd_register_plan_response(args: argparse.Namespace) -> None:
+    """Alias for register-claude-response (plan JSON)."""
+    cmd_register_claude_response(args)
+
+
+def cmd_register_review_response(args: argparse.Namespace) -> None:
+    """Alias for register-claude-review (review JSON)."""
+    cmd_register_claude_review(args)
+
+
 def _add_config_arg(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--config",
@@ -267,6 +325,50 @@ def main(argv: Sequence[str] | None = None) -> None:
     p_rst = sub.add_parser("reset-idle", help="Reset cycle state machine to idle (new empty CycleState).")
     _add_config_arg(p_rst)
     p_rst.set_defaults(func=cmd_reset_idle)
+
+    p_bch = sub.add_parser(
+        "build-claude-handoff",
+        help="Write bot/state/handoffs/<cycle_id>/claude_handoff.md (deterministic Markdown).",
+    )
+    _add_config_arg(p_bch)
+    p_bch.set_defaults(func=cmd_build_claude_handoff)
+
+    p_bcu = sub.add_parser(
+        "build-cursor-handoff",
+        help="Write bot/state/handoffs/<cycle_id>/cursor_handoff.md (requires cursor_execution.json).",
+    )
+    _add_config_arg(p_bcu)
+    p_bcu.set_defaults(func=cmd_build_cursor_handoff)
+
+    p_brv = sub.add_parser(
+        "build-review-handoff",
+        help="Write claude_review_handoff.md (waiting_claude + claude_round=review; plan still in claude_response.json).",
+    )
+    _add_config_arg(p_brv)
+    p_brv.set_defaults(func=cmd_build_review_handoff)
+
+    p_scf = sub.add_parser(
+        "show-cycle-files",
+        help="Print absolute paths of files in bot/state/handoffs/<cycle_id>/ for the active cycle.",
+    )
+    _add_config_arg(p_scf)
+    p_scf.set_defaults(func=cmd_show_cycle_files)
+
+    p_pln = sub.add_parser(
+        "register-plan-response",
+        help="Same as register-claude-response: ingest plan JSON and prepare cursor_execution when applicable.",
+    )
+    _add_config_arg(p_pln)
+    p_pln.add_argument("--file", required=True, help="Path to plan JSON file.")
+    p_pln.set_defaults(func=cmd_register_plan_response)
+
+    p_rrv = sub.add_parser(
+        "register-review-response",
+        help="Same as register-claude-review: ingest review JSON and transition state by verdict.",
+    )
+    _add_config_arg(p_rrv)
+    p_rrv.add_argument("--file", required=True)
+    p_rrv.set_defaults(func=cmd_register_review_response)
 
     ns = parser.parse_args(argv)
     ns.func(ns)
