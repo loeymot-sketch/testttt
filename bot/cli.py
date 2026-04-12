@@ -5,7 +5,8 @@ FoodKing bot v0 — local operator CLI (file-based only).
 Run from repository root:
   PYTHONPATH=. python bot/cli.py <command> [options]
 
-No Claude API, Cursor API, Telegram, Git, browser, or daemons.
+No Claude API, Cursor API, Telegram, or Git. Optional one-shot browser steps via
+``browser-run-step`` (Playwright + profiles under ``bot/browser_runner/``).
 """
 
 from __future__ import annotations
@@ -24,7 +25,12 @@ from bot.runtime.init import (
     resolve_repo_root,
 )
 from bot.runtime.intake_builder import IntakeBuilder
-from bot.runtime.models import ClaudeResponsePacket, PlaywrightStatus, ValidationStatus
+from bot.runtime.models import (
+    ClaudeResponsePacket,
+    CycleState,
+    PlaywrightStatus,
+    ValidationStatus,
+)
 from bot.runtime.prompt_compiler import PromptCompiler, PromptCompilerError
 from bot.runtime.review_bridge import ReviewBridge, ReviewBridgeError, format_cycle_files_lines
 from bot.runtime.state_manager import StateManager
@@ -268,6 +274,56 @@ def cmd_browser_bridge_next_action(args: argparse.Namespace) -> None:
     cmd_next_action(_load_bot_config_path(args.config))
 
 
+def cmd_browser_run_step(args: argparse.Namespace) -> None:
+    from bot.browser_runner.run_browser_step import run_step
+
+    r = run_step(
+        _load_bot_config_path(args.config),
+        headless=bool(args.headless),
+        write_inbox_on_success=not bool(args.no_write_inbox),
+    )
+    print(json.dumps(r, indent=2, ensure_ascii=False))
+    raise SystemExit(0 if r.get("ok") else 1)
+
+
+def cmd_browser_open_target(args: argparse.Namespace) -> None:
+    from bot.browser_runner.run_browser_step import cmd_open_target
+
+    r = cmd_open_target(
+        _load_bot_config_path(args.config),
+        str(args.target),
+        headless=bool(args.headless),
+    )
+    print(json.dumps(r, indent=2, ensure_ascii=False))
+    raise SystemExit(0 if r.get("ok") else 1)
+
+
+def cmd_browser_parse_last(args: argparse.Namespace) -> None:
+    from bot.browser_runner.run_browser_step import cmd_parse_last
+
+    kind_raw = getattr(args, "kind", None)
+    parse_kind = kind_raw.strip() if isinstance(kind_raw, str) and kind_raw.strip() else None
+    r = cmd_parse_last(
+        _load_bot_config_path(args.config),
+        from_next_action=bool(args.from_next_action),
+        parse_kind=parse_kind,
+    )
+    print(json.dumps(r, indent=2, ensure_ascii=False))
+    raise SystemExit(0 if r.get("ok") else 1)
+
+
+def cmd_browser_write_inbox(args: argparse.Namespace) -> None:
+    from bot.browser_runner.run_browser_step import cmd_write_inbox
+
+    r = cmd_write_inbox(
+        _load_bot_config_path(args.config),
+        Path(args.file).expanduser().resolve(),
+        dry_run=bool(args.dry_run),
+    )
+    print(json.dumps(r, indent=2, ensure_ascii=False))
+    raise SystemExit(0 if r.get("ok") else 1)
+
+
 def _add_config_arg(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--config",
@@ -437,6 +493,67 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _add_config_arg(p_bbn)
     p_bbn.set_defaults(func=cmd_browser_bridge_next_action)
+
+    p_brs = sub.add_parser(
+        "browser-run-step",
+        help="One-shot: read browser_bridge_next_action.json, run at most one browser/clipboard step.",
+    )
+    _add_config_arg(p_brs)
+    p_brs.add_argument(
+        "--headless",
+        action="store_true",
+        help="Use headless Chromium for Playwright modes (default: headed).",
+    )
+    p_brs.add_argument(
+        "--no-write-inbox",
+        action="store_true",
+        help="Capture/parse only; do not write plan/review/cursor_done JSON to inbox.",
+    )
+    p_brs.set_defaults(func=cmd_browser_run_step)
+
+    p_bot = sub.add_parser(
+        "browser-open-target",
+        help="Open Claude or Cursor start_url once using persistent profile (Playwright).",
+    )
+    _add_config_arg(p_bot)
+    p_bot.add_argument(
+        "--target",
+        required=True,
+        choices=["claude", "cursor"],
+    )
+    p_bot.add_argument("--headless", action="store_true")
+    p_bot.set_defaults(func=cmd_browser_open_target)
+
+    p_bpl = sub.add_parser(
+        "browser-parse-last",
+        help="Parse bot/state/browser_runner_last_capture.txt into JSON (plan/review/cursor_done/validation).",
+    )
+    _add_config_arg(p_bpl)
+    p_bpl.add_argument(
+        "--from-next-action",
+        action="store_true",
+        help="Choose extractor from browser_bridge_next_action.json (requires browser-bridge-prepare).",
+    )
+    p_bpl.add_argument(
+        "--kind",
+        default=None,
+        metavar="KIND",
+        help="Override: plan | review | cursor_done | validation_result",
+    )
+    p_bpl.set_defaults(func=cmd_browser_parse_last)
+
+    p_bwi = sub.add_parser(
+        "browser-write-inbox",
+        help="Validate JSON file and atomically write to inbox path from browser_bridge_next_action.json.",
+    )
+    _add_config_arg(p_bwi)
+    p_bwi.add_argument("--file", required=True, help="Path to JSON file to ingest.")
+    p_bwi.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate only; print would_write path.",
+    )
+    p_bwi.set_defaults(func=cmd_browser_write_inbox)
 
     ns = parser.parse_args(argv)
     ns.func(ns)

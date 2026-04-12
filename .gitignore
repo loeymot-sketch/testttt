@@ -18,6 +18,9 @@ Homestead.json
 Homestead.yaml
 *.log
 .DS_Store
+
+# Local browser runner secrets (copy from browser_profiles.example.json)
+bot/browser_runner/browser_profiles.json
 # Scripts de stress-test et fichiers temporaires à la racine
 stress_test_kds.php
 test_order_simulate.php
