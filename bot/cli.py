@@ -250,6 +250,24 @@ def cmd_show_dropzones(args: argparse.Namespace) -> None:
     print(format_dropzone_report(repo, bot_dir), end="")
 
 
+def cmd_browser_bridge_status(args: argparse.Namespace) -> None:
+    from bot.browser_bridge.bridge_controller import cmd_status
+
+    cmd_status(_load_bot_config_path(args.config))
+
+
+def cmd_browser_bridge_prepare(args: argparse.Namespace) -> None:
+    from bot.browser_bridge.bridge_controller import cmd_prepare
+
+    cmd_prepare(_load_bot_config_path(args.config))
+
+
+def cmd_browser_bridge_next_action(args: argparse.Namespace) -> None:
+    from bot.browser_bridge.bridge_controller import cmd_next_action
+
+    cmd_next_action(_load_bot_config_path(args.config))
+
+
 def _add_config_arg(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--config",
@@ -398,6 +416,27 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _add_config_arg(p_dz)
     p_dz.set_defaults(func=cmd_show_dropzones)
+
+    p_bbs = sub.add_parser(
+        "browser-bridge-status",
+        help="Print browser bridge session + cycle state + paths (JSON). No browser.",
+    )
+    _add_config_arg(p_bbs)
+    p_bbs.set_defaults(func=cmd_browser_bridge_status)
+
+    p_bbp = sub.add_parser(
+        "browser-bridge-prepare",
+        help="Sync session, write bot/state/browser_bridge_next_action.json, print path.",
+    )
+    _add_config_arg(p_bbp)
+    p_bbp.set_defaults(func=cmd_browser_bridge_prepare)
+
+    p_bbn = sub.add_parser(
+        "browser-bridge-next-action",
+        help="Print and write deterministic next-action JSON for Claude/Cursor/supervisor flow.",
+    )
+    _add_config_arg(p_bbn)
+    p_bbn.set_defaults(func=cmd_browser_bridge_next_action)
 
     ns = parser.parse_args(argv)
     ns.func(ns)

@@ -1,0 +1,36 @@
+{
+  "_comment": "EXAMPLE ONLY — Claude UI and Cursor UI change frequently. Copy to selectors.local.json (gitignored by your team policy) and fill real selectors. Do not commit secrets.",
+  "schema_version": 1,
+  "claude_project": {
+    "base_url_hint": "https://claude.ai",
+    "conversation_sidebar": {
+      "conversation_title_contains": "00_ORCHESTRATOR",
+      "notes": "Prefer stable data-testid if Anthropic adds them; avoid brittle full XPath."
+    },
+    "composer": {
+      "textarea_role": "textbox",
+      "textarea_placeholder_hint": "Message",
+      "send_button_aria_label_hint": "Send"
+    },
+    "response_panel": {
+      "assistant_message_selector_strategy": "last_message_in_thread",
+      "notes": "Runner must extract assistant text, strip markdown fences, then json.loads."
+    }
+  },
+  "cursor_web_or_desktop": {
+    "notes": "Cursor may be desktop app (Electron) or web; bridge does not assume either.",
+    "agent_chat": {
+      "open_agent_panel_hint": "keyboard_shortcut_varies_by_os",
+      "input_area": "TO_FILL",
+      "submit": "TO_FILL"
+    }
+  },
+  "foodking_supervisor_paths": {
+    "_comment": "Real paths come from bot/config/supervisor.json at runtime — duplicated here only for runner prototypes.",
+    "inbox_claude_plan": "bot/inbox/claude_plan",
+    "inbox_claude_review": "bot/inbox/claude_review",
+    "inbox_cursor_result": "bot/inbox/cursor_result",
+    "outbox_claude": "bot/outbox/claude",
+    "outbox_cursor": "bot/outbox/cursor"
+  }
+}
