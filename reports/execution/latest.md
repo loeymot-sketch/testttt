@@ -58,12 +58,33 @@
 
 ---
 
-## local-validation results (TASK-04 — follow-up, real environment attempt)
+## local-validation results (TASK-04 — real environment; **BLOCKED**)
 
-**Date of attempt:** 2026-04-11  
-**Repo root:** `c:\Users\openc\Desktop\testttt`
+**Repo root:** `c:\Users\openc\Desktop\testttt`  
+**Attempts:** **2** (same outcome — Cursor shell has no PHP toolchain)
 
-### Intended commands (FoodKing / Laravel)
+### Re-attempt — exact commands from this session
+
+```text
+PS> Test-Path vendor\autoload.php
+False
+
+PS> php -v
+php : Le terme «php» n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.
+
+PS> composer --version
+composer : Le terme «composer» n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.
+
+PS> where.exe php
+INFORMATION : impossible de trouver des fichiers pour le(s) modèle(s) spécifié(s).
+
+PS> where.exe composer
+INFORMATION : impossible de trouver des fichiers pour le(s) modèle(s) spécifié(s).
+```
+
+**Conclusion:** **`composer install` and `php artisan test` were not run** — dependencies cannot be installed and the Laravel test runner cannot start without `php` and `composer`.
+
+### Intended commands (FoodKing / Laravel) — run on a host where PHP exists
 
 1. Install PHP dependencies (required because `vendor/` was absent):
 
@@ -83,19 +104,17 @@
    php artisan test
    ```
 
-### What was executed here
+### Environment checklist (this workspace / automation shell)
 
 | Step | Result |
 |------|--------|
 | `vendor/autoload.php` | **Absent** — `vendor/` not present |
-| `Get-Command php` | **Not found** on `PATH` |
-| `Get-Command composer` | **Not found** on `PATH` |
-| `where.exe php` / `where.exe composer` | **No matches** |
-| Common paths (`scoop`, `xampp`, `Program Files\PHP\*`, `Herd`, etc.) | **No `php.exe` found** |
-| `wsl` | **No Linux distribution installed** |
-| `docker` / `podman` | **Not available** |
+| `php` / `composer` | **Not on PATH**; `where.exe` returns no files |
+| `composer install` | **Not executed** (requires `composer`) |
+| `php artisan test --filter=Order` | **Not executed** (requires `php` + `vendor/`) |
+| Prior probe: WSL / Docker | **Not available** (from earlier attempt; unchanged assumption) |
 
-**Commands actually run:** none of the above — **blocked before `composer install`**.
+**Commands actually run for validation:** **none** — **blocked before `composer install`**.
 
 | Metric | Value |
 |--------|-------|
