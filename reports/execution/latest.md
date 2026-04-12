@@ -58,23 +58,76 @@
 
 ---
 
-## local-validation results
+## local-validation results (TASK-04 — follow-up, real environment attempt)
 
-**Command run:** `php artisan test --filter=Order` (from repo root `c:\Users\openc\Desktop\testttt`)
+**Date of attempt:** 2026-04-11  
+**Repo root:** `c:\Users\openc\Desktop\testttt`
 
-**Outcome:** **not executed in this environment** — `php` is not on `PATH` (PowerShell: command not recognized), and **`vendor/` is not present** in the workspace (no `vendor/bin/phpunit`), so PHPUnit could not be invoked locally from Cursor.
+### Intended commands (FoodKing / Laravel)
+
+1. Install PHP dependencies (required because `vendor/` was absent):
+
+   ```bash
+   composer install
+   ```
+
+2. Primary (plan): order-related filter:
+
+   ```bash
+   php artisan test --filter=Order
+   ```
+
+3. Fallback if filter is empty or insufficient:
+
+   ```bash
+   php artisan test
+   ```
+
+### What was executed here
+
+| Step | Result |
+|------|--------|
+| `vendor/autoload.php` | **Absent** — `vendor/` not present |
+| `Get-Command php` | **Not found** on `PATH` |
+| `Get-Command composer` | **Not found** on `PATH` |
+| `where.exe php` / `where.exe composer` | **No matches** |
+| Common paths (`scoop`, `xampp`, `Program Files\PHP\*`, `Herd`, etc.) | **No `php.exe` found** |
+| `wsl` | **No Linux distribution installed** |
+| `docker` / `podman` | **Not available** |
+
+**Commands actually run:** none of the above — **blocked before `composer install`**.
 
 | Metric | Value |
 |--------|-------|
-| Total tests | **0** (not run) |
+| Total tests | **0** (not run — environment) |
 | Passed | **0** |
 | Failed | **0** |
 
-**Failures (if any):** none — suite did not run.
+**Failures (names / files / lines / messages):** **n/a** — test suite never started.
 
-**Pre-existing failures unrelated to fix:** **n/a** (no run)
+**Relation to CYCLE-002b fix:** **No evidence** that any failure is caused by the `OrderService::changeStatus` change, because **no tests executed**. Any future failure must be triaged after a successful run on a machine with PHP 8.1+ and Composer.
 
-**Action for human / CI:** run `php artisan test --filter=Order` (or full `php artisan test`) on a machine with PHP + Composer dependencies installed to satisfy DOD-09 / E-07 for interim verdict evidence.
+### Blocker (must resolve on “real” dev machine or CI)
+
+To complete TASK-04 with numeric evidence, the environment must provide:
+
+1. **PHP** ≥ **8.1** on `PATH` (or a known absolute path used by the shell), matching `composer.json`.
+2. **Composer** 2.x on `PATH`.
+3. Successful **`composer install`** at repo root so `vendor/` exists and `php artisan` works.
+4. Optional: `.env` / SQLite or MySQL test DB per project docs so feature tests can boot (if the suite requires it).
+
+Until then, **interim Claude verdict** should treat **E-07 (local-validation counts)** as **missing** unless CI attaches the same command output to this cycle.
+
+### After unblocking (copy-paste for human / CI log)
+
+Run from repo root, then paste stdout/stderr below this report or into CI artifacts:
+
+```bash
+composer install
+php artisan test --filter=Order
+# if needed:
+# php artisan test
+```
 
 ---
 
