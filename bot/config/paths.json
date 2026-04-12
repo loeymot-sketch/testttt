@@ -1,6 +1,6 @@
 {
-  "_comment": "Copy to paths.json — optional overrides for report filenames the bot watches.",
   "version": 1,
+  "_comment": "Relative paths from FoodKing repo root. intake_extra_sections omitted here uses runtime defaults (docs/ops + docs/roles bundle in init.py).",
   "planning_latest": "reports/planning/latest.md",
   "execution_latest": "reports/execution/latest.md",
   "review_latest": "reports/review/latest.md",

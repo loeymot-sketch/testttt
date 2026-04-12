@@ -14,7 +14,8 @@ This tree holds the **autonomous orchestration bot** that will coordinate Claude
 | **`docs/`** | Architecture and state machine reference for operators and future implementers. |
 | **`runtime/`** | Python v0 orchestration core (state, intake, handoffs, cycle controller). Stdlib only. |
 | **`templates/`** | JSON Schemas for persisted packets (validation with external tools). |
-| **`examples/`** | Example JSON payloads aligned with **`templates/`** and **`runtime/models.py`**. |
+| **`examples/`** | Example JSON payloads aligned with **`templates/`** and **`runtime/models.py`**, plus walkthroughs. |
+| **`cli.py`** | Local operator entrypoint (`python bot/cli.py …`) — file-backed transitions only. |
 
 ## Getting started
 
@@ -48,4 +49,18 @@ PYTHONPATH=. python -c "from bot.runtime import CycleController, RuntimePaths; p
 
 - No Claude API, no Telegram send, no Playwright runner, no Git operations, no long-running daemon loop.
 - **`placeholder_*`** methods on **`CycleController`** raise **`NotImplementedError`** with explicit messages until those integrations are added.
+
+## How to operate locally now
+
+1. **Configs** — Use the committed real files under **`bot/config/`** (`bot_config.json`, `paths.json`, `model_routing.json`, `telegram.json`). Adjust `repo_root` only if the bot config is not under `<repo>/bot/config/`. Keep Telegram disabled until wired.
+2. **CLI** — From repo root (Windows PowerShell example):
+
+   ```powershell
+   $env:PYTHONPATH = "."
+   python bot/cli.py show-state
+   python bot/cli.py begin-cycle --task-id T-1 --goal "Describe the task"
+   ```
+
+3. **Handoffs** — After `begin-cycle`, edit or copy **`bot/state/handoffs/<cycle_id>/claude_intake.json`** into your Claude project; paste the response into a JSON file and run `register-claude-response` / `register-claude-review` as documented.
+4. **Docs** — Operator procedure and one full manual walkthrough: **`bot/docs/BOT_LOCAL_USAGE.md`**, **`bot/examples/manual_cycle_walkthrough.md`**.
 

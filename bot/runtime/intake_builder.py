@@ -33,13 +33,48 @@ class IntakeBuilder:
         route = resolve_model_route(dict(model_routing), task_kind)
         sections: list[IntakeSection] = []
 
-        for title, rel in (
-            ("planning_latest", paths_cfg["planning_latest"]),
-            ("execution_latest", paths_cfg["execution_latest"]),
-            ("review_latest", paths_cfg["review_latest"]),
-            ("antigravity_latest", paths_cfg["antigravity_latest"]),
-            ("bugbot_latest", paths_cfg["bugbot_latest"]),
-        ):
+        core_keys = (
+            "planning_latest",
+            "execution_latest",
+            "review_latest",
+            "antigravity_latest",
+            "bugbot_latest",
+        )
+        for key in core_keys:
+            rel = str(paths_cfg.get(key, ""))
+            if not rel:
+                continue
+            body, truncated = self._read_bounded(self._paths.repo_root / rel)
+            sections.append(
+                IntakeSection(
+                    title=key,
+                    source_path=rel,
+                    body=body,
+                    truncated=truncated,
+                )
+            )
+
+        for key in ("claude_md", "memory_md"):
+            rel = paths_cfg.get(key)
+            if not isinstance(rel, str) or not rel.strip():
+                continue
+            body, truncated = self._read_bounded(self._paths.repo_root / rel)
+            sections.append(
+                IntakeSection(
+                    title=key,
+                    source_path=rel,
+                    body=body,
+                    truncated=truncated,
+                )
+            )
+
+        for entry in paths_cfg.get("intake_extra_sections") or []:
+            if not isinstance(entry, Mapping):
+                continue
+            rel = entry.get("path")
+            if not isinstance(rel, str) or not rel.strip():
+                continue
+            title = str(entry.get("title") or rel)
             body, truncated = self._read_bounded(self._paths.repo_root / rel)
             sections.append(
                 IntakeSection(

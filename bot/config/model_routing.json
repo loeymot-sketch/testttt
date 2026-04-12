@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "_comment": "Logical model tiers for handoff metadata — no API calls in v0.",
+  "default": {
+    "tier": "default",
+    "provider": "local",
+    "model": "unspecified",
+    "notes": "Set real provider/model names when API routing is implemented."
+  },
+  "routes": {
+    "orchestrator_intake": {
+      "tier": "high_reasoning",
+      "provider": "claude",
+      "model": "project_conversation",
+      "notes": "Planning / intake — Claude project (manual paste in v0)."
+    },
+    "claude_review": {
+      "tier": "high_reasoning",
+      "provider": "claude",
+      "model": "project_conversation",
+      "notes": "Post-execution review."
+    },
+    "cursor_execution": {
+      "tier": "executor",
+      "provider": "cursor",
+      "model": "local_agent",
+      "notes": "Cursor IDE — human-driven in v0."
+    },
+    "playwright_summary": {
+      "tier": "high_reasoning",
+      "provider": "claude",
+      "model": "project_conversation",
+      "notes": "After E2E evidence exists."
+    }
+  }
+}
