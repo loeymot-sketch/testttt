@@ -1,0 +1,9 @@
+{
+  "_comment": "Copy to telegram.json — keep out of git; use env vars or secret manager in production.",
+  "version": 1,
+  "enabled": false,
+  "bot_token": "PLACEHOLDER",
+  "chat_id": "PLACEHOLDER",
+  "alert_on": ["blocked", "manual_gate", "quota_exceeded", "validation_failed"],
+  "rate_limit_seconds": 60
+}
