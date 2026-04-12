@@ -526,8 +526,8 @@ php artisan tinker
 # Exemples d'utilisation:
 >>> $user = User::first();
 >>> $user->orders()->count();
->>> Order::where('status', 5)->get();
->>> Order::find(123)->update(['status' => 10]);
+>>> Order::where('status', \App\Enums\OrderStatus::PENDING)->get();
+>>> Order::find(123)->update(['status' => \App\Enums\OrderStatus::ACCEPT]);
 >>> DB::table('orders')->where('id', 123)->dump();
 ```
 

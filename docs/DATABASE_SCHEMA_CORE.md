@@ -58,7 +58,7 @@ erDiagram
         decimal discount "Via table coupon"
         tinyint payment_method "1 = Cash, 2 = Card, etc."
         tinyint payment_status "5 = Unpaid, 10 = Paid"
-        tinyint status "5=Pending, 10=Accept, 14=Prepared, 17=Delivered"
+        tinyint status "OrderStatus: 1=PENDING,4=ACCEPT,7=PREPARING,8=PREPARED,10=OUT_FOR_DELIVERY,13=DELIVERED,16=CANCELED,19=REJECTED,22=RETURNED (voir app/Enums/OrderStatus.php)"
     }
 
     ITEM {

@@ -92,7 +92,7 @@
 | 3.1 | Créer commande POS | `POST /api/admin/pos` | 201 + Order créée |
 | 3.2 | Lister commandes POS | `GET /api/admin/pos-order` | 200 + paginated |
 | 3.3 | Voir détail commande | `GET /api/admin/pos-order/show/{id}` | 200 |
-| 3.4 | Changer statut (Accept) | `POST /api/admin/pos-order/change-status/{id}` | 200 + status=10 |
+| 3.4 | Changer statut (Accept) | `POST /api/admin/pos-order/change-status/{id}` | 200 + status=4 (`OrderStatus::ACCEPT`) |
 | 3.5 | Changer statut paiement | `POST /api/admin/pos-order/change-payment-status/{id}` | 200 |
 | 3.6 | Supprimer commande | `DELETE /api/admin/pos-order/{id}` | 200 |
 | 3.7 | Export commandes | `GET /api/admin/pos-order/export` | 200 + fichier |
@@ -131,7 +131,7 @@
 |---|------|-------|-----------------|
 | 5.1 | Lister commandes KDS | `GET /api/admin/kds-order` | 200 + filtrées par branch |
 | 5.2 | Items KDS | `GET /api/admin/kds-order/items` | 200 |
-| 5.3 | Accepter → Preparing | `POST /api/admin/kds-order/change-status/{id}` | 200 + status=14 |
+| 5.3 | Accepter → Preparing | `POST /api/admin/kds-order/change-status/{id}` | 200 + status=7 (`OrderStatus::PREPARING`) |
 | 5.4 | Transition invalide | `POST /api/admin/kds-order/change-status/{id}` | Rejeté (422/400) |
 | 5.5 | **Isolation branche KDS** | `GET /api/admin/kds-order` (autre branch) | 0 résultats |
 | 5.6 | **Chef ne voit pas autre branche** | Requête cross-branch | Filtré automatiquement |

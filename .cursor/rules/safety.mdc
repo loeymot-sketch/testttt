@@ -28,7 +28,7 @@ Le frontend (Kiosk, POS, App) n'a **JAMAIS** le droit de définir le prix d'un p
 
 ## Règle n°3 — Transitions de statut
 
-Pipeline unidirectionnel : `PENDING (5) → ACCEPT (10) → PREPARING (14) → PREPARED → DELIVERED (17)`.
+Pipeline unidirectionnel (entiers = `App\Enums\OrderStatus`) : `PENDING (1) → ACCEPT (4) → PREPARING (7) → PREPARED (8) → OUT_FOR_DELIVERY (10) → DELIVERED (13)` (+ états terminaux enum).
 
 - Interdit de sauter des étapes (ex: PENDING → DELIVERED).
 - Seul un admin dashboard avec confirmation de paiement peut bypasser (tracé dans `action_logs`).

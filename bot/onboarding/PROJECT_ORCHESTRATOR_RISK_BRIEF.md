@@ -281,15 +281,13 @@
 ### ORB-025 — `BUSINESS_RULES.md` and `DATABASE_SCHEMA_CORE.md` use wrong status numeric values
 
 **Severity**: HIGH
-**Status**: OPEN
-**Evidence**:
-- `docs/BUSINESS_RULES.md` (line ~41): `PENDING (5) → ACCEPT (10) → PREPARING (14) → DELIVERED (17)`.
-- `docs/DATABASE_SCHEMA_CORE.md` (line ~61): `5=Pending, 10=Accept, 14=Prepared, 17=Delivered`.
-- `.cursor/rules/safety.mdc`: same wrong values.
-- **Actual code** (`app/Enums/OrderStatus.php`): `PENDING=1, ACCEPT=4, PREPARING=7, PREPARED=8, OUT_FOR_DELIVERY=10, DELIVERED=13, CANCELED=16, REJECTED=19, RETURNED=22`.
-- Docs omit `OUT_FOR_DELIVERY`, `CANCELED`, `REJECTED`, `RETURNED` entirely.
-**Why orchestrator must know**: This is the #1 false-approval risk. If Claude reads these docs at face value and approves a plan using status value 5 for PENDING or 10 for ACCEPT, the implementation will be silently wrong. Claude must **always** reference `app/Enums/OrderStatus.php` as the single source of truth for status values, never the docs.
-**Next cycle**: `local-validation` — update docs to match code enum values.
+**Status**: MITIGATED (2026-04-12, REAL-CYCLE-001)
+**Evidence (historical)**:
+- Avant correctif : `BUSINESS_RULES.md`, `DATABASE_SCHEMA_CORE.md`, `.cursor/rules/safety.mdc`, `DEBUG_GUIDE.md`, `ARCHITECTURE_TECHNIQUE.md`, `MASSIVE_TEST_PLAN.md`, `GUIDE_DEVELOPPEUR.md`, `CONTRIBUTING_QA_BOTS.md` utilisaient des entiers erronés (ex. 5/10/14/17).
+- **Code source de vérité** (`app/Enums/OrderStatus.php`): `PENDING=1, ACCEPT=4, PREPARING=7, PREPARED=8, OUT_FOR_DELIVERY=10, DELIVERED=13, CANCELED=16, REJECTED=19, RETURNED=22`.
+**Mitigation**: Docs et règle Cursor `safety.mdc` alignés sur l’enum ; toujours vérifier l’enum avant tout plan qui touche `orders.status`.
+**Why orchestrator must know**: Toute nouvelle doc ou copier-coller depuis d’anciens rapports peut réintroduire de mauvais entiers — croiser systématiquement `OrderStatus.php`.
+**Next cycle**: `static-inspection` — re-grep périodique sur motifs `status.*=.*1[0-9]` hors enum.
 
 ---
 

@@ -87,5 +87,6 @@ if (-not (Test-Path -LiteralPath $cli)) {
     exit 2
 }
 
+$ErrorActionPreference = "Continue"
 & $python $cli @CliArgs
 exit $LASTEXITCODE

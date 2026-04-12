@@ -42,6 +42,8 @@ Le système calcule la taxe en **Cascade**.
 
 Une commande vit via un pipeline unidirectionnel (Enum `OrderStatus`).
 
-- `PENDING (5)` ➔ `ACCEPT (10)` ➔ `PREPARING (14)` ➔ `DELIVERED (17)`.
+- **Source de vérité des entiers :** `app/Enums/OrderStatus.php` (à jour avec la colonne `orders.status`).
+- Pipeline principal : `PENDING (1)` ➔ `ACCEPT (4)` ➔ `PREPARING (7)` ➔ `PREPARED (8)` ➔ `OUT_FOR_DELIVERY (10)` ➔ `DELIVERED (13)`.
+- États terminaux / exceptionnels : `CANCELED (16)`, `REJECTED (19)`, `RETURNED (22)` (voir enum et `ValidStatusTransition`).
 - **Interdit :** Passer de `PENDING` (Non payé par le Front/TPE) directement à `PREPARING` ou `DELIVERED`. Le Backend rejettera (422/400) ou restaurera le statut via ses Observers. Seul un Admin dashboard avec confirmation de paiement peut bypasser ce flow manuellement (Tracé dans `action_logs`).
 - **Isolation Branche :** La succursale B ne peut pas valider une commande passée sur la succursale A. Le Backend vérifie que l'user assigné au changement de statut appartient au même `branch_id` que l'`Order`.

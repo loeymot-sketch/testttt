@@ -280,7 +280,7 @@ erDiagram
         decimal discount
         tinyint payment_method "1=Cash, 2=Card"
         tinyint payment_status "5=Unpaid, 10=Paid"
-        tinyint status "5=PENDING, 10=ACCEPT, 14=PREPARING, 17=DELIVERED"
+        tinyint status "OrderStatus: 1=PENDING,4=ACCEPT,7=PREPARING,8=PREPARED,10=OUT_FOR_DELIVERY,13=DELIVERED (voir app/Enums/OrderStatus.php)"
         string queue_number
     }
 
@@ -462,7 +462,7 @@ Requête entrante
 ```
 ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
 │ PENDING │────>│ ACCEPT  │────>│PREPARING│────>│PREPARED │────>│DELIVERED│
-│   (5)   │     │  (10)   │     │  (14)   │     │  (15)   │     │  (17)   │
+│   (1)   │     │   (4)   │     │   (7)   │     │   (8)   │     │  (13)   │
 └─────────┘     └─────────┘     └─────────┘     └─────────┘     └─────────┘
      │               │               │               │               │
      │               │               │               │               │

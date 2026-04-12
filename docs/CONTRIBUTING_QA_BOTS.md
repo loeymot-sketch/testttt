@@ -42,7 +42,7 @@ Voir `reports/antigravity/AUDIT_BLOCAGE_COMMANDES_20260312.md` pour le détail.
 
 - **Controllers** : Fins (Gèrent la Request JSOn, la Response, l'Auth HTTP).
 - **Services** : Épais. (La logique `FrontendOrderService` calcule le total, crée l'Order, boucle sur les Items).
-- **Traits/Enums** : Utilisez-les. Ne hardcodez pas un `status = 14`. Utilisez `OrderStatus::PREPARED`.
+- **Traits/Enums** : Utilisez-les. Ne vous fiez pas aux anciens entiers de doc erronés (ex. 14 pour PREPARED). Utilisez `OrderStatus::PREPARED` (valeur **8** dans `app/Enums/OrderStatus.php`).
 - **Validation** : Strictement via `FormRequest` ou `$request->validate()`. Ne faites pas confiance aux payloads entrants de la borne Kiosk.
 
 ## conclusion (Bot Acknowledgment)

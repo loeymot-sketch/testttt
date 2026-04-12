@@ -1,4 +1,43 @@
-# CYCLE-002b — Execution report
+# REAL-CYCLE-001 — Execution report
+
+**Task ID:** `REAL-CYCLE-001`  
+**Cycle ID (bot):** `7446a7d3-bd12-48bc-bd7b-827a6c4556f9`  
+**Handoff:** `bot/outbox/cursor/cursor_handoff.md`  
+**Plan objective (`claude_response.json`):** Fix P1-01 doc/code `OrderStatus` integer mismatch — governing docs aligned with `app/Enums/OrderStatus.php`; **no application code changes**.
+
+**Note on scope:** `cursor_execution.json` lists `files_allowed: ["read","write"]` (invalid paths). Execution followed the registered plan objective above and FoodKing invariants.
+
+---
+
+## Cursor pass (latest — handoff re-execution)
+
+**When:** 2026-04-12 (this run)  
+**Actions:**
+- Re-read handoff + `claude_response.json`; confirmed target is P1-01 documentation alignment only.
+- Verified under `docs/` there are **no** remaining legacy order-status lines of the form `PENDING (5) … DELIVERED (17)` / `5=Pending, 10=Accept` for **`orders.status`** (grep on governing business/schema/debug content).
+- **No further doc edits required** in this pass — tree already matches prior Cursor completion.
+- **Validation (handoff command):**
+
+```text
+php artisan test --filter=Order
+```
+
+**Host:** Windows, repo `C:\Users\openc\Desktop\testttt`  
+**Result:** **61 passed**, **0 failed** (~5.9s). PHP 8.5 deprecation notices from vendor `nunomaduro/collision` only.
+
+**Artifact for supervisor:** `bot/inbox/cursor_result/cursor_done.json` written in this run (`status: done`); **files changed in this run:** `reports/execution/latest.md` only.
+
+---
+
+## Earlier Cursor work (same cycle — already in repo before this pass)
+
+The following were updated in a previous execution to satisfy P1-01:
+
+- `docs/BUSINESS_RULES.md`, `docs/DATABASE_SCHEMA_CORE.md`, `docs/DEBUG_GUIDE.md`, `docs/MASSIVE_TEST_PLAN.md`, `docs/ARCHITECTURE_TECHNIQUE.md`, `docs/GUIDE_DEVELOPPEUR.md`, `docs/CONTRIBUTING_QA_BOTS.md`, `.cursor/rules/safety.mdc`, `bot/onboarding/PROJECT_ORCHESTRATOR_RISK_BRIEF.md` (ORB-025 mitigated).
+
+---
+
+# CYCLE-002b — Execution report (archived below)
 
 **Cycle:** 2026-04-11 — CYCLE-002b  
 **Executor:** Cursor  
