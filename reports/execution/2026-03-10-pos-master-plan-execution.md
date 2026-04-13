@@ -89,4 +89,4 @@ All 16 tasks from the POS Master Perfection Plan have been executed. One task (P
 1. **Test P4-1**: Requires a running Soketi instance at `127.0.0.1:6001`. Run `php artisan queue:work` and verify KDS/OSS update in <1s after order status change.
 2. **Test P2-1**: Attempt to submit an order with a variation ID from a different item — should get 422.
 3. **Test P6-1**: Place a menu order with Grande Portion + Cheddar, check printed receipt shows addon instruction.
-4. **Anti-Gravity retest**: Full flow from cashier order to KDS to OSS.
+4. **Playwright / E2E verification retest**: Full flow from cashier order to KDS to OSS.

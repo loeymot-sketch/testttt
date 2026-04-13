@@ -1,0 +1,16 @@
+{
+  "_comment": "Claude plan JSON — use with register-plan-response (same as register-claude-response). Replace cycle_id and task_id with show-state values.",
+  "schema_version": 1,
+  "cycle_id": "REPLACE_WITH_CYCLE_UUID_FROM_show-state",
+  "task_id": "REPLACE_WITH_TASK_ID",
+  "response_kind": "plan",
+  "received_at": "2026-04-12T12:00:00+00:00",
+  "objective": "Short plan objective for Cursor.",
+  "scope_non_goals": ["Do not touch app/, routes/, database/"],
+  "risk_class": "low",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "Kimi-test",
+  "verdict": null,
+  "human_decision": "GO",
+  "files_allowed": ["bot/README.md"]
+}

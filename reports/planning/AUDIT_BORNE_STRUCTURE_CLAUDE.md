@@ -261,7 +261,7 @@ SPRINT 5 BORNE — Ordre d'exécution recommandé :
 6. OrderConfirmScreen countdown           → test K10
 7. ItemWidget rupture overlay (Obx stock) → test K-stock
 
-Tests globaux ensuite : Anti-Gravity K01 → K12 full parcours
+Tests globaux ensuite : Playwright / E2E verification K01 → K12 full parcours
 ```
 
 ---

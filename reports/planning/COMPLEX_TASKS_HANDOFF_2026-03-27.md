@@ -27,5 +27,5 @@
 
 ## Type de tests recommandé pour les prochains lots
 
-- **Kimi-test** : corrections ciblées de Feature tests + alignement clé API.  
+- **local-validation** : corrections ciblées de Feature tests + alignement clé API.  
 - **Claude** : décision sur REGEXP portable + stratégie migrations emergency + revue sécurité logout / Sanctum stateful si `EnsureFrontendRequestsAreStateful` est réactivé un jour.

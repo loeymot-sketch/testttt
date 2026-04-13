@@ -68,7 +68,7 @@ protected function seedSpatieRoles(): void
 
 ## Verification Expected
 
-Anti-Gravity should re-run the test suite:
+Playwright / E2E verification should re-run the test suite:
 
 ```bash
 php artisan test tests/Feature/AntiGravityTest.php

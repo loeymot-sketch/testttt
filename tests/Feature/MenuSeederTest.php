@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 /**
  * MenuSeederTest — Exécutable en sandbox (SQLite in-memory, pas de MySQL)
  *
- * Ce test permet à Anti-Gravity et aux agents de valider le MenuSeeder
+ * Ce test permet la validation Playwright / E2E et aux agents de valider le MenuSeeder
  * SANS exécuter `php artisan db:seed` qui bloque (connexion MySQL).
  *
  * Usage: php artisan test --filter=MenuSeederTest

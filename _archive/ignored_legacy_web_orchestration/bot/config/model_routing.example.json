@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy to model_routing.json — maps task kinds to model tiers (names are illustrative until router is implemented).",
+  "version": 1,
+  "default": {
+    "provider": "placeholder",
+    "model": "placeholder"
+  },
+  "routes": {
+    "orchestrator_intake": { "tier": "high_reasoning", "notes": "TBD" },
+    "claude_review": { "tier": "high_reasoning", "notes": "TBD" },
+    "cursor_execution": { "tier": "executor", "notes": "Cursor / local agent" },
+    "playwright_summary": { "tier": "high_reasoning", "notes": "TBD" }
+  }
+}

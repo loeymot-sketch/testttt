@@ -212,10 +212,10 @@ Attract (home.start: "TOUCHEZ POUR COMMANDER")
 | Chantier | Test type | Justification |
 |----------|-----------|---------------|
 | ~~Carousel UX~~ | — | Hors périmètre |
-| Upsell config | Kimi-test | Feature tests `kioskUpsell` + requêtes SQL / policy catégories |
-| "Comme d'habitude" | Anti-Gravity | Flow cross-session nécessite données réelles |
+| Upsell config | local-validation | Feature tests `kioskUpsell` + requêtes SQL / policy catégories |
+| "Comme d'habitude" | Playwright / E2E verification | Flow cross-session nécessite données réelles |
 | Theming CSS | No-test | CSS pur, revue visuelle suffit |
-| Shell Electron | Anti-Gravity | Test hardware/borne physique requis |
+| Shell Electron | Playwright / E2E verification | Test hardware/borne physique requis |
 
 ---
 

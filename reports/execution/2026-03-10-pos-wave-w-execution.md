@@ -107,7 +107,7 @@ If no walking customer is found, `customer_id` is null. The `orderSubmit` valida
 
 ---
 
-## Next Steps for Anti-Gravity Testing
+## Next Steps for Playwright / E2E verification Testing
 
 1. **W1+W2**: Edit a Tacos XL (2 viandes) from cart → verify both viandes pre-selected, ticket shows both
 2. **W3**: Force a price mismatch (e.g. slow DOM) → verify error message shown instead of silent submit

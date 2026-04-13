@@ -2,7 +2,7 @@
 **Émetteur :** Claude (Architecte)
 **Destinataire :** KIMI (Builder)
 **Priorité :** 🟡 P1 — Sécurité et isolation données borne
-**Test type :** Kimi-test (PHPUnit)
+**Test type :** local-validation (PHPUnit)
 **Dépendances :** Aucune — peut démarrer en parallèle avec Sprint 7
 
 ---

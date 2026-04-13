@@ -78,7 +78,7 @@ Focus: `buildWizardInstruction` correctness, cart-edit restore completeness, `sy
 
 ---
 
-## Suggested Anti-Gravity Tests
+## Suggested Playwright / E2E verification Tests
 
 1. **X1**: Add Tacos XL (2 viandes: Kefta + Viande Hachée) → verify recap shows `VIANDES: Kefta, Viande Hachée`.
 2. **X2**: Add item with menu formule (addon_N) → verify recap shows `FORMULE: <addon name>`.
@@ -99,4 +99,4 @@ All known issues through Wave X have been addressed. The POS system now has:
 - Extra viandes properly represented in structured `item_extras`
 - Better cart display for complex orders
 
-Recommended: **Anti-Gravity full E2E retest** with focus on complex menu orders (2 viandes + menu + extras + sauce frites) and cart edit round-trips.
+Recommended: **Playwright / E2E verification full E2E retest** with focus on complex menu orders (2 viandes + menu + extras + sauce frites) and cart edit round-trips.

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "cycle_id": "550e8400-e29b-41d4-a716-446655440000",
+  "task_id": "T-EXAMPLE-01",
+  "planning_path": "reports/planning/latest.md",
+  "files_allowed": ["app/Models/Scopes/BranchScope.php"],
+  "validation_commands": ["php artisan test --filter=Order"],
+  "prepared_at": "2026-04-11T12:31:00+00:00"
+}

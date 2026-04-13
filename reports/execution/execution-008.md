@@ -111,7 +111,7 @@ Kimi (Builder)
 
 ---
 
-## Vérification attendue par Anti-Gravity
+## Vérification attendue par Playwright / E2E verification
 
 ```bash
 php artisan test tests/Feature/AntiGravityTest.php --verbose

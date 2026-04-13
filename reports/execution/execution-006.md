@@ -109,7 +109,7 @@ Objectif : **18/18 tests verts** (100%)
 
 ---
 
-## Notes pour Anti-Gravity
+## Notes pour Playwright / E2E verification
 
 ```bash
 php artisan test tests/Feature/AntiGravityTest.php --verbose

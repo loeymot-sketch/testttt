@@ -45,8 +45,8 @@ Passer de 16/18 tests à 18/18 tests verts, puis implémenter 80 tests massifs p
    - Vérifier les mêmes patterns
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test (unit/integration)  
-**Validation:** Anti-Gravity Cycle (retest T05, T06)
+**Type de test:** local-validation (unit/integration)  
+**Validation:** Playwright / E2E verification Cycle (retest T05, T06)
 
 ---
 
@@ -61,8 +61,8 @@ Passer de 16/18 tests à 18/18 tests verts, puis implémenter 80 tests massifs p
 **Fichier à vérifier:** `app/Http/Resources/SettingResource.php:97-100`
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -75,8 +75,8 @@ php artisan test --filter=AntiGravityTest
 
 **Résultat attendu:** 18/18 tests passent (T05 et T06 inclus)
 
-**Assigné à:** Anti-Gravity  
-**Type de test:** Anti-Gravity Cycle (E2E complet)  
+**Assigné à:** Playwright / E2E verification  
+**Type de test:** Playwright / E2E verification Cycle (E2E complet)  
 **Output:** `reports/antigravity/report-010.md`
 
 ---
@@ -162,8 +162,8 @@ public function test_access_without_token_returns_401()
 ```
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -196,8 +196,8 @@ public function test_admin_can_list_items()
 ```
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -215,8 +215,8 @@ public function test_admin_can_list_items()
 - 3.8: Re-order
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -234,8 +234,8 @@ public function test_admin_can_list_items()
 - 4.10: Créneaux horaires
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -250,8 +250,8 @@ public function test_admin_can_list_items()
 - 5.4: Transition invalide
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -264,8 +264,8 @@ public function test_admin_can_list_items()
 - 6.2: Items populaires OSS
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -280,8 +280,8 @@ public function test_admin_can_list_items()
 - 7.4: Falsification prix table
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -299,8 +299,8 @@ public function test_admin_can_list_items()
 - 8.10: Token expiré
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -317,8 +317,8 @@ public function test_admin_can_list_items()
 - 9.6: Cohérence bout-en-bout (même order_id)
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -334,8 +334,8 @@ public function test_admin_can_list_items()
 - 10.5: Export rapport
 
 **Assigné à:** Kimi  
-**Type de test:** Kimi-test  
-**Validation:** Kimi-test
+**Type de test:** local-validation  
+**Validation:** local-validation
 
 ---
 
@@ -350,8 +350,8 @@ php artisan test
 
 **Résultat attendu:** 70+/80 tests passent
 
-**Assigné à:** Anti-Gravity  
-**Type de test:** Anti-Gravity Cycle  
+**Assigné à:** Playwright / E2E verification  
+**Type de test:** Playwright / E2E verification Cycle  
 **Output:** `reports/antigravity/report-massive-002.md`
 
 ---
@@ -360,7 +360,7 @@ php artisan test
 
 **Action:** Analyser les échecs et planifier les corrections
 
-**Input:** Rapport Anti-Gravity avec échecs
+**Input:** Rapport Playwright / E2E verification avec échecs
 **Output:** `reports/planning/plan-massive-002.md`
 
 **Assigné à:** Claude  
@@ -404,7 +404,7 @@ php artisan test
 
 ### Phase 3
 - [ ] 70+/80 tests passent
-- [ ] Rapport Anti-Gravity généré
+- [ ] Rapport Playwright / E2E verification généré
 - [ ] Plan de corrections créé si besoin
 
 ---

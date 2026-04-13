@@ -45,7 +45,7 @@ Le prochain niveau de confiance nécessite une exécution sur **browser/device**
 
 **ID:** report-kiosk-structure-01  
 **Date:** 11 Mars 2026 | 16h30  
-**Agent:** Anti-Gravity (QA)  
+**Agent:** Playwright / E2E verification (QA)  
 **Source:** Audit Claude — `AUDIT_BORNE_STRUCTURE_CLAUDE.md`  
 **Cible:** `kiosk_implementation/`  
 
@@ -285,4 +285,4 @@ La structure de base de la borne est complète et conforme aux spécifications. 
 
 ---
 
-*Rapport Anti-Gravity — Structure Kiosk — Sprint 5*
+*Rapport Playwright / E2E verification — Structure Kiosk — Sprint 5*

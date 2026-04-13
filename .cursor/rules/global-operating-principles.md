@@ -29,7 +29,7 @@ You are working inside a high-discipline AI-assisted software development workfl
 9. Respect the separation of responsibilities between models and tools:
    - **Claude** is used for reasoning, architecture, debugging, planning, reviews, risky refactors, synchronization logic, authorization logic, and high-stakes decisions.
    - **Kimi** is used for localized implementation, UI, CRUD, wiring, repetitive code generation, well-scoped code changes, and unit/integration testing.
-   - **Anti-Gravity** is used for E2E testing, critical QA, and complex integration validation (only when explicitly requested).
+   - **Playwright / E2E verification** is used for E2E testing, critical QA, and complex integration validation (only when explicitly requested).
    - **Cursor** is the orchestration environment.
 
 10. Do not modify unrelated modules.
@@ -71,10 +71,10 @@ You are working inside a high-discipline AI-assisted software development workfl
 
 ## Multi-Agent Coordination Principles
 
-- **Claude decides test strategy** in every plan: "Kimi-test" / "Anti-Gravity" / "No-test"
-- **Kimi implements AND tests** when plan specifies "Kimi-test"
-- **Claude reviews** with verdict: APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY
-- **Anti-Gravity only on explicit request** (10% of cases)
+- **Claude decides test strategy** in every plan: "local-validation" / "Playwright / E2E verification" / "No-test"
+- **Kimi implements AND tests** when plan specifies "local-validation"
+- **Claude reviews** with verdict: APPROVED / NEEDS_FIX / NEEDS_PLAYWRIGHT
+- **Playwright / E2E verification only on explicit request** (10% of cases)
 - **Human validates at key points**: plan approval + final result
 
 ## Workflow Autonomy

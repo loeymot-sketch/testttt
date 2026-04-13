@@ -183,4 +183,4 @@ php artisan test --filter=PosUITest
 
 Sprint 17 terminé avec succès. Les 3 bugs critiques et 1 warning identifiés lors de l'audit post-Sprint 16 sont corrigés. Le système est maintenant plus stable, performant, et propre.
 
-Prochaine étape recommandée: Exécution des tests et audit Anti-Gravity pour valider les corrections.
+Prochaine étape recommandée: Exécution des tests et audit Playwright / E2E verification pour valider les corrections.

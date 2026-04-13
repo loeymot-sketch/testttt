@@ -1,5 +1,5 @@
 > **AI NAVIGATION NOTICE**
-> This file is always the copy of the latest Anti-Gravity QA report.
+> This file is always the copy of the latest Playwright / E2E verification QA report.
 > Source document: report-010.md
 > Date: 2026-03-10
 >
@@ -8,7 +8,7 @@
 
 ---
 
-# Anti-Gravity Report 010
+# Playwright / E2E verification Report 010
 
 ## Date
 2026-03-10

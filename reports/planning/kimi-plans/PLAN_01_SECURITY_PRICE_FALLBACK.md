@@ -1,6 +1,6 @@
 # PLAN_01 — D-001 : Sécurité Prix Fallback (Items Inexistants)
 **Phase :** P0 — Critique
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Risque :** 🔴 Critique — Attaque prix possible via item_id inexistant
 **Fichiers concernés :** `app/Services/FrontendOrderService.php`, `app/Services/OrderService.php`
 

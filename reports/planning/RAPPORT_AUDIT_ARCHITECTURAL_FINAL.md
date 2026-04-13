@@ -20,7 +20,7 @@
 | **Flux KDS** | 8/10 | ✅ Bon | GO |
 | **Intégrité Données** | 8/10 | ✅ Bon | GO |
 
-**Verdict Global:** 🟢 **GO pour tests Anti-Gravity avec 3 corrections critiques**
+**Verdict Global:** 🟢 **GO pour tests Playwright / E2E verification avec 3 corrections critiques**
 
 ---
 
@@ -223,7 +223,7 @@ if (!$this->order) {
 - ✅ Menu français correctement structuré
 - ✅ Wizard POS logique et complet
 - ✅ Parcours Kiosk aligné avec POS
-- ✅ Tests Anti-Gravity couvriront les cas critiques
+- ✅ Tests Playwright / E2E verification couvriront les cas critiques
 - ⚠️ 3 failles P0 à corriger AVANT tests massifs
 
 ### 📋 Plan de Correction P0
@@ -284,7 +284,7 @@ if (!$this->order) {
 - [ ] **Corriger P0-003** (KDS Notification)
 - [ ] Exécuter menu:reset
 - [ ] Vérifier POS affiche "Nos Tacos"
-- [ ] Lancer Anti-Gravity
+- [ ] Lancer Playwright / E2E verification
 
 ---
 
@@ -305,7 +305,7 @@ if (!$this->order) {
 - Améliorations UX possibles (persistance carte)
 
 **Recommandation:**
-Corriger les 3 failles P0, puis **GO pour tests Anti-Gravity massifs**.
+Corriger les 3 failles P0, puis **GO pour tests Playwright / E2E verification massifs**.
 
 ---
 

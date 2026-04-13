@@ -154,7 +154,7 @@ Pour compléter la validation du Sprint 13, effectuer ces tests manuels:
    npx vitest tests/js/KioskWizard.spec.js
    ```
 
-3. **Validation E2E** par Anti-Gravity sur:
+3. **Validation E2E** par Playwright / E2E verification sur:
    - Flow POS complet
    - Flow Kiosk complet
    - KDS order display

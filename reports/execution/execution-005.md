@@ -7,7 +7,7 @@
 
 ## Summary
 
-Fixed the 4 remaining test failures from Anti-Gravity Report 005:
+Fixed the 4 remaining test failures from Playwright / E2E verification Report 005:
 
 1. **T05/T06 Crash 500 `faviconLogo on null`** — Added null-safe operator `?->` in 4 files
 2. **T07 Kiosk bypass on `/api/admin/pos-order`** — Added explicit `abort_unless()` check in controller
@@ -134,6 +134,6 @@ php artisan test tests/Feature/AntiGravityTest.php --verbose
 
 ## Next Steps
 
-1. Anti-Gravity executes retest → produces `reports/antigravity/report-006.md`
+1. Playwright / E2E verification executes retest → produces `reports/antigravity/report-006.md`
 2. If all 18 tests pass → Sprint 4 complete, proceed to full test suite coverage
 3. If any failures remain → Claude analyzes for business logic issues

@@ -197,7 +197,7 @@ erDiagram
    ```bash
    # Vérifier statut
    php artisan tinker
-   >>> Order::where('status', 10)->count()  # ACCEPT = 10
+   >>> Order::where('status', \App\Enums\OrderStatus::ACCEPT)->count()  # ACCEPT = 4
    ```
 
 2. **Commandes d'autre branche:**
@@ -229,7 +229,7 @@ erDiagram
    ```bash
    # Vérifier statut
    php artisan tinker
-   >>> Order::where('status', 15)->get()  # PREPARED = 15
+   >>> Order::where('status', \App\Enums\OrderStatus::PREPARED)->get()  # PREPARED = 8
    ```
 
 2. **Pas de mise à jour temps réel:**
@@ -417,7 +417,7 @@ tests/
 ┌─────────────────────────────────────────────────────────────────┐
 │  5. KDS AFFICHAGE                                               │
 │     ├── Polling HTTP GET /api/admin/kds-order                   │
-│     ├── Filtre: status=ACCEPT (10), branch_id=user.branch_id    │
+│     ├── Filtre: status=ACCEPT (4), branch_id=user.branch_id    │
 │     └── Chef voit commande et clique "Préparer"                │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -571,7 +571,7 @@ npx vitest tests/js/KioskWizard.spec.js
 npx vitest
 ```
 
-### Tests E2E (Anti-Gravity)
+### Tests E2E (Playwright / E2E verification)
 
 ```bash
 # Rapports dans reports/antigravity/
@@ -737,7 +737,7 @@ SELECT name, guard_name FROM roles;
 **Workflow Multi-Agent:**
 - **Claude:** Architecture, Planning, Reviews
 - **Kimi:** Implementation, Corrections
-- **Anti-Gravity:** E2E Testing, Rapports
+- **Playwright / E2E verification:** E2E Testing, Rapports
 
 ---
 

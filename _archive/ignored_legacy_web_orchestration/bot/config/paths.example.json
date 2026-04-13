@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to paths.json — optional overrides for report filenames the bot watches.",
+  "version": 1,
+  "planning_latest": "reports/planning/latest.md",
+  "execution_latest": "reports/execution/latest.md",
+  "review_latest": "reports/review/latest.md",
+  "antigravity_latest": "reports/antigravity/latest.md",
+  "bugbot_latest": "reports/review/bugbot-latest.md",
+  "claude_md": "CLAUDE.md",
+  "memory_md": "MEMORY.md"
+}

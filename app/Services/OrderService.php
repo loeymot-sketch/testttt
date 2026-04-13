@@ -1298,55 +1298,60 @@ class OrderService
                     abort(403, 'Access denied: you do not own this order.');
                 }
             } else {
-                // [AUDIT-FIX P0-2] Branch isolation: non-Admin staff can only modify orders of their branch
-                if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-                    $userBranch = Auth::user()->branch_id ?? null;
-                    if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
-                        throw new Exception('Accès refusé : cette commande appartient à une autre succursale.', 403);
+                // [CYCLE-002b] Atomic branch check, cashback, status save + ActionLog; notifications after commit.
+                $oldStatusForBroadcast = null;
+                DB::transaction(function () use ($order, $request, &$oldStatusForBroadcast) {
+                    // [AUDIT-FIX P0-2] Branch isolation: non-Admin staff can only modify orders of their branch
+                    if (Auth::check() && !Auth::user()->hasRole('Admin')) {
+                        $userBranch = Auth::user()->branch_id ?? null;
+                        if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
+                            throw new Exception('Accès refusé : cette commande appartient à une autre succursale.', 403);
+                        }
                     }
-                }
 
-                if ($request->status == OrderStatus::REJECTED || $request->status == OrderStatus::CANCELED) {
-                    $request->validate([
-                        'reason' => 'required|max:700',
+                    if ($request->status == OrderStatus::REJECTED || $request->status == OrderStatus::CANCELED) {
+                        $request->validate([
+                            'reason' => 'required|max:700',
+                        ]);
+                        if ($request->reason) {
+                            $order->reason = $request->reason;
+                        }
+                        if ($order->transaction) {
+                            app(PaymentService::class)->cashBack(
+                                $order,
+                                'credit',
+                                'TXN-' . \Illuminate\Support\Str::random(12)
+                            );
+                        }
+                    }
+
+                    $oldStatusForBroadcast = $order->status;
+                    $order->status = $request->status;
+                    $order->save();
+
+                    \App\Models\ActionLog::create([
+                        'user_id'  => Auth::check() ? Auth::user()->id : null,
+                        'action'   => 'Changement de statut',
+                        'resource' => 'Commande #' . $order->order_serial_no,
+                        'details'  => sprintf(
+                            'Nouveau statut: %s | Par: %s (branch_id=%s)',
+                            trans('all.order.status.' . $request->status),
+                            Auth::check() ? Auth::user()->name : 'Système',
+                            Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
+                        ),
                     ]);
-                    if ($request->reason) {
-                        $order->reason = $request->reason;
-                    }
-                    if ($order->transaction) {
-                        app(PaymentService::class)->cashBack(
-                            $order,
-                            'credit',
-                            'TXN-' . \Illuminate\Support\Str::random(12)
-                        );
-                    }
-                }
+                });
 
-                $oldStatus = $order->status;
-                $order->status = $request->status;
-                $order->save();
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
 
-                // [PHASE-E] Broadcast status change via Soketi WebSockets
+                // [PHASE-E] After commit; ShouldBroadcastNow — must not run inside DB::transaction
                 try {
-                    \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                    \App\Events\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, (int) $request->status);
                 } catch (\Exception $e) {
                     Log::warning('OrderStatusChanged broadcast failed: ' . $e->getMessage());
                 }
-
-                \App\Models\ActionLog::create([
-                    'user_id'  => Auth::check() ? Auth::user()->id : null,
-                    'action'   => 'Changement de statut',
-                    'resource' => 'Commande #' . $order->order_serial_no,
-                    'details'  => sprintf(
-                        'Nouveau statut: %s | Par: %s (branch_id=%s)',
-                        trans('all.order.status.' . $request->status),
-                        Auth::check() ? Auth::user()->name : 'Système',
-                        Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
-                    ),
-                ]);
             }
             return $order;
         } catch (Exception $exception) {

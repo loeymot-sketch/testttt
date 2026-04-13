@@ -131,6 +131,9 @@ Détails : [`docs/HANDOFF_NEW_CURSOR/05_TESTS_ET_SCRIPTS.md`](docs/HANDOFF_NEW_C
 3. Après implémentation : **`reports/execution/latest.md`** avec résultats des tests.  
 4. Review : **`reports/review/latest.md`**.
 
+### Instructions projet pour les agents
+Le fichier **`AGENTS.md`** à la racine décrit la boucle QA / planning / exécution et les responsabilités par rôle (Claude, Kimi, Playwright / E2E verification). Les rapports vivent sous **`reports/`** et les workflows sous **`workflows/`**.
+
 Formats : **`workflows/report-format.md`**, **`workflows/task-routing.md`**.
 
 ---

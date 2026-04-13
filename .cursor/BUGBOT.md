@@ -16,7 +16,7 @@ Bugbot (Scanner de diff passif — RAPPORT SEULEMENT)
     ↓
 Claude (Lit le rapport Bugbot → décide : ACCEPT / REJECT / ESCALATE)
     ↓
-Anti-Gravity (E2E uniquement si Claude l'ordonne)
+Playwright / E2E verification (uniquement si Claude l'ordonne)
     ↓
 Human (Validation finale — autorité absolue)
 ```
@@ -102,7 +102,7 @@ Chaque finding Bugbot DOIT suivre ce format (compatible `workflows/report-format
 3. **Kimi** vérifie si `reports/review/bugbot-latest.md` existe
    - Si OUI → **Kimi informe l'humain** (`ℹ️ Bugbot findings présents — demander à Claude quand prêt`) et **continue son travail normalement**
    - Si NON → Kimi implémente normalement
-4. **Kimi** implémente + tests si `Kimi-test` dans le plan
+4. **Kimi** implémente + tests si **`local-validation`** (ou stratégie équivalente) dans le plan
 5. **Kimi** écrit `reports/execution/latest.md`
 6. **Bugbot** analyse le diff de la PR (passif — génère un fichier seulement)
 7. **Bugbot** écrit `reports/review/bugbot-latest.md`
@@ -111,7 +111,7 @@ Chaque finding Bugbot DOIT suivre ce format (compatible `workflows/report-format
 10. **Claude** lit `reports/review/bugbot-latest.md` et décide :
     - `ACCEPT` → findings non bloquants, écrire verdict dans `reports/review/latest.md`
     - `REQUEST_FIX` → Claude écrit un plan de correction minimal pour Kimi
-    - `ESCALATE` → Anti-Gravity invoqué (seulement si Claude l'ordonne explicitement)
+    - `ESCALATE` → Playwright / E2E verification invoquée (seulement si Claude l'ordonne explicitement)
 11. **Human** valide le verdict de Claude
 12. **Kimi** supprime `reports/review/bugbot-latest.md` une fois la correction terminée et validée
 
@@ -136,7 +136,7 @@ Ces modules sont documentés dans `docs/ARCHITECTURE.md` et `docs/SECURITY_NOTES
 
 1. **Bugbot n'a pas d'autorité.** Ses suggestions sont des inputs pour Claude, jamais des ordres.
 2. **Kimi ne lit pas les commentaires PR de Bugbot directement.** Kimi reçoit ses instructions uniquement via `reports/planning/latest.md` écrit par Claude.
-3. **Anti-Gravity n'est pas déclenché par Bugbot.** Seul Claude peut décider d'invoquer Anti-Gravity.
+3. **Playwright / E2E verification n'est pas déclenché par Bugbot.** Seul Claude peut décider d'invoquer ce cycle.
 4. **Si Bugbot génère > 50% de faux positifs sur 3 PRs consécutives**, Claude recommande de restreindre son scope ou de le désactiver.
 5. **Ce fichier est la Source de Vérité pour le comportement de Bugbot.** Ne pas le modifier sans validation de Claude.
 

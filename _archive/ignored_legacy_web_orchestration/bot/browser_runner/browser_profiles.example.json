@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "_comment": "Copy to browser_profiles.json and fill real URLs. For FoodKing automation PCs prefer bot-local profile (user_data_dir_relative) — not your main Chrome User Data. Never commit secrets.",
+  "claude": {
+    "enabled": true,
+    "start_url": "https://claude.ai/chat/YOUR_ORCHESTRATOR_CHAT_UUID_HERE",
+    "expected_chat_url": "https://claude.ai/chat/YOUR_ORCHESTRATOR_CHAT_UUID_HERE",
+    "_expected_chat_url_hint": "Same string as start_url for the 00_ORCHESTRATOR chat — strict URL guard. Optional hub URLs are documentation-only.",
+    "use_google_chrome": false,
+    "user_data_dir_absolute": "",
+    "_user_data_dir_absolute_hint": "Leave empty for the default automation setup (dedicated folder under bot/browser_runner/profiles/). Only set for advanced reuse of a non-bot Chrome profile (close all Chrome first; fragile on Windows).",
+    "chrome_profile_directory": "",
+    "_chrome_profile_directory_hint": "Optional Chrome profile folder name, e.g. Default or Profile 3 (omit if single profile).",
+    "user_data_dir_relative": "bot/browser_runner/profiles/claude-user-data",
+    "orchestrator_conversation_label": "00_ORCHESTRATOR",
+    "timeouts_ms": {
+      "navigation": 60000,
+      "after_send": 180000,
+      "composer_wait": 30000
+    },
+    "selectors": {
+      "composer_textarea": "textarea,div[contenteditable='true'],[role='textbox'][contenteditable='true'],div.ProseMirror[contenteditable='true'],[data-testid*='composer']",
+      "send_button": "button[aria-label*='Send'], button[data-testid='send-button']",
+      "assistant_turn": "[data-testid='assistant-message'], .font-claude-message, div[data-is-streaming]"
+    },
+    "quota_snippets": ["rate limit", "try again later", "upgrade your plan", "usage limit"],
+    "human_verification_snippets": [],
+    "_human_verification_snippets_hint": "Optional extra substrings (lowercase match on page HTML). Defaults are built-in; see bot/docs/CLAUDE_WEB_LIMITATION.md."
+  },
+  "cursor": {
+    "enabled": true,
+    "automation_mode": "clipboard",
+    "_automation_mode_values": ["clipboard", "playwright"],
+    "start_url": "",
+    "user_data_dir_relative": "bot/browser_runner/profiles/cursor-user-data",
+    "session_label_hint": "FoodKing Agent tab name (for humans only)"
+  }
+}

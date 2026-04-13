@@ -158,7 +158,7 @@ $ git stash list
 
 ## Next Action Required
 
-**Anti-Gravity E2E validation** — The following scenarios must be tested:
+**Playwright / E2E verification E2E validation** — The following scenarios must be tested:
 
 1. Sandwich + Frites individuel → total correct
 2. Sandwich qty=2 + Menu → recap == running total
@@ -166,4 +166,4 @@ $ git stash list
 4. Sandwich + Cheddar + Grande → total +€2.00
 5. Multiple addons → all synced correctly
 
-**Verdict:** Pending Anti-Gravity E2E validation
+**Verdict:** Pending Playwright / E2E verification E2E validation

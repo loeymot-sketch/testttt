@@ -13,12 +13,14 @@ trait DefaultAccessModelTrait
 {
     public function branch()
     {
-        if (Auth::check() && (!App::runningInConsole() || App::runningUnitTests())) {
+        // Mirror BranchScope: in PHPUnit (runningInConsole + testing) we still resolve the real user branch.
+        if ((!App::runningInConsole() || App::runningUnitTests()) && Auth::check()) {
             $access = DefaultAccess::where(['user_id' => Auth::id(), 'name' => 'branch_id'])->first();
             if ($access) {
                 return $access->default_id;
-            } elseif (Auth::user()->branch_id == 0) {
-                return Settings::group('site')->get('site_default_branch');
+            } elseif ((int) Auth::user()->branch_id === 0) {
+                // Admin / cross-branch: BranchScope must not apply a branch filter (see BranchScope FIX-54-8).
+                return 0;
             } else {
                 return Auth::user()->branch_id;
             }
@@ -29,7 +31,7 @@ trait DefaultAccessModelTrait
 
     public function setBranch($branchId)
     {
-        if (Auth::check() && (!App::runningInConsole() || App::runningUnitTests())) {
+        if ((!App::runningInConsole() || App::runningUnitTests()) && Auth::check()) {
             if ($branchId != '0' && ($branchId == '' || $branchId == null)) {
                 $branchId = $this->branch();
             } elseif ($branchId == '0' && $branchId == Auth::user()->branch_id) {

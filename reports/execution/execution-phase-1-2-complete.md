@@ -208,7 +208,7 @@ $attachLogic($tXXL, 4, true, true);
 php artisan db:seed --class=GrillHouseMenuSeeder
 ```
 
-### 2. Tests Anti-Gravity
+### 2. Tests Playwright / E2E verification
 - Tester commande POS Cash avec pavé numérique
 - Tester commande Takeaway avec Token
 - Tester commande Kiosk

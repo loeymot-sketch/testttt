@@ -1,0 +1,164 @@
+﻿=== FoodKing bot — rapport d'exécution automatique ===
+Repo: C:\Users\openc\Desktop\testttt
+Python: python
+
+--- 1. reset-idle ---
+{
+  "schema_version": 1,
+  "cycle_id": "",
+  "state": "idle",
+  "task_id": null,
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:31+00:00",
+  "validation_status": "pending",
+  "validation_detail": "",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": null,
+  "claude_round": "plan"
+}
+--- 2. begin-cycle ---
+python.exe : 
+Au caractère C:\Users\openc\AppData\Local\Temp\ps-script-e2777c95-04b9-4ba3-b160-cfe39fe3beb1.ps1:93 : 3
++   & $py "bot/cli.py" @a 2>&1
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Claude intake written: 
+C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_intake.json
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "state": "waiting_claude",
+  "task_id": "RPT-AUTO-001",
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:31+00:00",
+  "validation_status": "pending",
+  "validation_detail": "",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake ù Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "claude_round": "plan"
+}
+cycle_id extrait: 669e9716-5491-4ff0-ac4b-dc30afc4c57d
+--- 3. build-claude-handoff ---
+Sortie: C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_handoff.md
+Existe: True
+--- 4. show-cycle-files (avant plan) ---
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_handoff.md
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_intake.json
+--- 5. register-plan-response ---
+state=waiting_claude
+--- 6. build-cursor-handoff ---
+cursor_handoff: True
+--- 7. register-cursor-finished ---
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "state": "waiting_validation",
+  "task_id": "RPT-AUTO-001",
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:32+00:00",
+  "validation_status": "pending",
+  "validation_detail": "",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake ù Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "claude_round": "plan"
+}
+--- 8. register-validation-result passed ---
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "state": "waiting_claude",
+  "task_id": "RPT-AUTO-001",
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:32+00:00",
+  "validation_status": "passed",
+  "validation_detail": "auto rapport",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake ù Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "claude_round": "review"
+}
+--- 9. build-review-handoff ---
+review handoff: True
+--- 10. show-cycle-files (complet) ---
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_handoff.md
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_intake.json
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_response.json
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\claude_review_handoff.md
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\cursor_execution.json
+  C:\Users\openc\Desktop\testttt\bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\cursor_handoff.md
+--- 11. register-review-response ---
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "state": "completed",
+  "task_id": "RPT-AUTO-001",
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:32+00:00",
+  "validation_status": "passed",
+  "validation_detail": "auto rapport",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake ù Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "claude_round": "review"
+}
+--- 12. état final ---
+{
+  "schema_version": 1,
+  "cycle_id": "669e9716-5491-4ff0-ac4b-dc30afc4c57d",
+  "state": "completed",
+  "task_id": "RPT-AUTO-001",
+  "created_at": "2026-04-12T02:37:31+00:00",
+  "updated_at": "2026-04-12T02:37:32+00:00",
+  "validation_status": "passed",
+  "validation_detail": "auto rapport",
+  "playwright_status": "skipped",
+  "playwright_detail": "",
+  "block_reason": null,
+  "manual_gate_reason": null,
+  "active_model_route": {
+    "model": "project_conversation",
+    "notes": "Planning / intake ù Claude project (manual paste in v0).",
+    "provider": "claude",
+    "tier": "high_reasoning"
+  },
+  "claude_round": "review"
+}
+
+=== RÉSUMÉ ===
+Cycle terminé (APPROVED): OK si state=completed ci-dessus.
+Artefacts sous: bot\state\handoffs\669e9716-5491-4ff0-ac4b-dc30afc4c57d\

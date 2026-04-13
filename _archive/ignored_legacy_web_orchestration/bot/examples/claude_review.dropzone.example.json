@@ -1,0 +1,16 @@
+{
+  "_comment": "Drop as any *.json in bot/inbox/claude_review/ while waiting_claude + claude_round=review. Same schema as register-review-response.",
+  "schema_version": 1,
+  "cycle_id": "REPLACE_WITH_CYCLE_UUID",
+  "task_id": "REPLACE_WITH_TASK_ID",
+  "response_kind": "review",
+  "received_at": "2026-04-12T14:00:00+00:00",
+  "objective": "Example review",
+  "scope_non_goals": [],
+  "risk_class": "low",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "No-test",
+  "verdict": "APPROVED",
+  "human_decision": null,
+  "files_allowed": []
+}

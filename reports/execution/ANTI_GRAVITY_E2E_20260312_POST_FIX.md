@@ -1,6 +1,6 @@
 # RAPPPORT D'EXÉCUTION FINAL — ANTI-GRAVITY E2E (POST-FIX)
 **Date :** 12 Mars 2026
-**Exécuteur :** Anti-Gravity Agent
+**Exécuteur :** Playwright / E2E verification Agent
 **Statut Global :** ✅ SUCCÈS TOTAL (Validation des Correctifs KIMI)
 **Référence :** `reports/review/latest.md` (Verdict Claude)
 
@@ -8,7 +8,7 @@
 
 ## 📊 RÉSULTATS DE LA RELANCE DES TESTS
 
-Suite au plan de correction exécuté par KIMI et au verdict de Claude, le sous-agent Anti-Gravity a validé les deux points restants (AG-02 et AG-04) :
+Suite au plan de correction exécuté par KIMI et au verdict de Claude, le sous-agent Playwright / E2E verification a validé les deux points restants (AG-02 et AG-04) :
 
 ### ✅ SUITE AG-02 : Wizard piloté par DB (ARCH-02) — PASS
 - **Test Executé :** Navigation sur la caisse (POS) et clic sur l'article `Tacos L`. Observation des requêtes API et des logs JS.
@@ -38,5 +38,5 @@ Tous les tests E2E du plan P0 → P3 sont désormais officiellement au vert.
 - **Architecture :** P3 Wizard DB-driven
 
 ### Prochaine étape :
-Le projet est prêt : **Tout est validé par l'Architecture (Claude) et la QA E2E (Anti-Gravity).**
+Le projet est prêt : **Tout est validé par l'Architecture (Claude) et la QA E2E (Playwright / E2E verification).**
 Fin de cycle validée. Retour à l'Humain pour revue finale ou déploiement.

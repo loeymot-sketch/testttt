@@ -1,6 +1,6 @@
 # PLAN_08 — D-007 : Alignement Token POS Frontend/Backend
 **Phase :** P2 — Moyenne
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Impact :** 🟡 UX — Frontend bloque si token vide, backend accepte null → comportements divergents
 **Fichiers :**
 - `resources/js/components/admin/pos/PosComponent.vue`

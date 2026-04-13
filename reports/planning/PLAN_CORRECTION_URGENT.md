@@ -1,4 +1,4 @@
-# 🚨 PLAN DE CORRECTION URGENT - Post Audit Anti-Gravity
+# 🚨 PLAN DE CORRECTION URGENT - Post Audit Playwright / E2E verification
 
 > **Source:** `reports/antigravity/report-e2e-massif-02-deep.md`
 > **Date:** 11 Mars 2026
@@ -32,7 +32,7 @@
 
 ### 🔴 PROBLÈME CRITIQUE CONFIRMÉ
 **Notifications KDS ne sont PAS dispatchées pour commandes POS**
-- Anti-Gravity a prouvé via audit statique que `posOrderStore()` ne dispatch pas les événements
+- Playwright / E2E verification a prouvé via audit statique que `posOrderStore()` ne dispatch pas les événements
 - **Impact:** Le KDS ne reçoit pas les commandes créées en caisse
 - **Solution:** Tâche 2 du Plan Claude (à exécuter)
 
@@ -223,7 +223,7 @@ public function test_t08c_pos_kds_notification_dispatched()
 
 ---
 
-### PHASE 4: Validation Finale (30 min) - Anti-Gravity
+### PHASE 4: Validation Finale (30 min) - Playwright / E2E verification
 
 #### 4.1 Exécuter Tous les Tests
 ```bash
@@ -259,7 +259,7 @@ php artisan test
 1. **Maintenant:** Kimi corrige syntaxe tests (1h)
 2. **Puis:** Kimi exécute Tâche 1 + 2 + 3 (2h)
 3. **Puis:** Kimi ajoute tests T08b + T08c (30 min)
-4. **Enfin:** Anti-Gravity valide 105/105 tests (30 min)
+4. **Enfin:** Playwright / E2E verification valide 105/105 tests (30 min)
 
 ---
 

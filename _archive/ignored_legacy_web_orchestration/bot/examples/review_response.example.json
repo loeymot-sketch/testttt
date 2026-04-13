@@ -1,0 +1,16 @@
+{
+  "_comment": "Claude review JSON — use with register-review-response (same as register-claude-review). Replace cycle_id. Run build-review-handoff before overwriting plan in claude_response.json.",
+  "schema_version": 1,
+  "cycle_id": "REPLACE_WITH_CYCLE_UUID_FROM_show-state",
+  "task_id": "REPLACE_WITH_TASK_ID",
+  "response_kind": "review",
+  "received_at": "2026-04-12T14:00:00+00:00",
+  "objective": "Post-execution review summary.",
+  "scope_non_goals": [],
+  "risk_class": "low",
+  "suggested_next_actor": "cursor_execute",
+  "test_stance": "Kimi-test",
+  "verdict": "APPROVED",
+  "human_decision": null,
+  "files_allowed": []
+}

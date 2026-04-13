@@ -6,7 +6,7 @@
 
 **Date** : 2026-03-27  
 **Auteur** : Kimi  
-**Type de test** : Kimi-test (PHPUnit ciblé login borne)  
+**Type de test** : local-validation (PHPUnit ciblé login borne)  
 **Priorité** : HAUTE
 
 ---

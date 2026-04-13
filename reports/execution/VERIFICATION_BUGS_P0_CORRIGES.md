@@ -2,7 +2,7 @@
 
 > **Date:** 11 Mars 2026 - 09:15
 > **Agent:** Kimi (Implementation)
-> **Status:** BASE VALIDÉE - Feu vert pour tests E2E Anti-Gravity
+> **Status:** BASE VALIDÉE - Feu vert pour tests E2E Playwright / E2E verification
 
 ---
 
@@ -89,7 +89,7 @@ php artisan test
 
 **Résultat:**
 - **75/107 tests passent** (70%)
-- **20/20 tests Anti-Gravity passent** (100%)
+- **20/20 tests Playwright / E2E verification passent** (100%)
 - **4/4 tests P0 passent** (100%)
 
 **Tests critiques validés:**
@@ -121,7 +121,7 @@ La base est **SOLIDE** et prête pour les tests End-to-End massifs.
 
 ## 🎯 PROCHAINES ÉTAPES RECOMMANDÉES
 
-### 1. Anti-Gravity: Tests E2E Massifs POS
+### 1. Playwright / E2E verification: Tests E2E Massifs POS
 **Priorité:** 🔴 CRITIQUE
 
 Lancer selon plan `tests_e2e_massifs_anti-gravity_3e5df6af.plan.md`:
@@ -136,7 +136,7 @@ Lancer selon plan `tests_e2e_massifs_anti-gravity_3e5df6af.plan.md`:
 - Module 1.9: Flux KDS (critique)
 - Module 1.10: Scénarios E2E complets
 
-### 2. Rapport Anti-Gravity Attendu
+### 2. Rapport Playwright / E2E verification Attendu
 **Format:** `reports/antigravity/RAPPORT_TEST_E2E_POS_MASSIF.md`
 
 Structure par test:
@@ -162,15 +162,15 @@ Structure par test:
 - [x] Build Vue.js compilé (3.9 MiB)
 - [x] Tests P0 passent (T08b, T08c)
 - [x] 75/107 tests globaux passent
-- [ ] Tests E2E Anti-Gravity (à exécuter)
+- [ ] Tests E2E Playwright / E2E verification (à exécuter)
 - [ ] Validation manuelle caisse (à faire)
 - [ ] Ticket impression test (à vérifier)
 
 ---
 
-**VERDICT:** Base technique VALIDÉE. Système prêt pour tests E2E massifs Anti-Gravity.
+**VERDICT:** Base technique VALIDÉE. Système prêt pour tests E2E massifs Playwright / E2E verification.
 
-**Action demandée:** Lancer Anti-Gravity sur la Phase 1 (Tests POS massifs).
+**Action demandée:** Lancer Playwright / E2E verification sur la Phase 1 (Tests POS massifs).
 
 ---
 

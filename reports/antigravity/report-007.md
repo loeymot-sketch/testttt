@@ -1,4 +1,4 @@
-# Anti-Gravity Report 007
+# Playwright / E2E verification Report 007
 
 ## Date
 2026-03-10

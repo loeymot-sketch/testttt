@@ -216,7 +216,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
 
 ---
 
-## 🧪 Tests Anti-Gravity Requis
+## 🧪 Tests Playwright / E2E verification Requis
 
 | ID | Scénario | Attendu |
 |----|----------|---------|

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "_comment": "Telegram is NOT called by bot v0. Keep tokens out of git in real deployments; use env or a secret store.",
+  "enabled": false,
+  "bot_token": "REPLACE_ME",
+  "chat_id": "REPLACE_ME",
+  "alert_on": [
+    "blocked",
+    "manual_gate",
+    "quota_exceeded",
+    "validation_failed"
+  ],
+  "rate_limit_seconds": 60
+}

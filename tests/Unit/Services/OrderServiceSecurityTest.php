@@ -97,7 +97,8 @@ class OrderServiceSecurityTest extends TestCase
         // Vérifier la présence de la protection PLAN_02
         $this->assertStringContainsString('PLAN_02', $content);
         $this->assertStringContainsString('D-002', $content);
-        $this->assertStringContainsString('ItemVariation::find', $content);
-        $this->assertStringContainsString('ItemExtra::find', $content);
+        // [PERF-02] Bulk DB load — same security invariant as find(): prices from DB rows only
+        $this->assertStringContainsString('ItemVariation::whereIn', $content);
+        $this->assertStringContainsString('ItemExtra::whereIn', $content);
     }
 }

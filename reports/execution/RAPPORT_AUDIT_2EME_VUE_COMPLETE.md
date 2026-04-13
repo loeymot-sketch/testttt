@@ -306,7 +306,7 @@ box.write('order_type', type);
 | Commande annulée | OrderStatus | ✅ Status CANCELLED en DB |
 | Token collision | OrderController | ✅ Format timestamp-rand |
 
-### 🔍 Cas limites À TESTER (Anti-Gravity)
+### 🔍 Cas limites À TESTER (Playwright / E2E verification)
 
 | Cas | Priorité | Méthode |
 |-----|----------|---------|
@@ -344,7 +344,7 @@ Aucun risque critique identifié.
 
 ## 8️⃣ ACTIONS RECOMMANDÉES
 
-### Avant tests E2E Anti-Gravity
+### Avant tests E2E Playwright / E2E verification
 
 1. ✅ **Valider** npm run prod pour Vue.js (payment fix compilé)
 2. ✅ **Vérifier** main.dart contient `GetStorage.init()`

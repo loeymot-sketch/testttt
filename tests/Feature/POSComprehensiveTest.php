@@ -7,7 +7,8 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Item;
-use App\Models\ItemCategory;
+use App\Models\Tax;
+use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
@@ -49,9 +50,14 @@ class POSComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
-        // [PLAN_05 FIX] Retirer branch_id (colonne inexistante sur items)
+        // TaxFactory uses type FIXED + random tax_rate (euros) — can exceed pos_received_amount (15).
+        $tax = Tax::factory()->create([
+            'tax_rate' => 0,
+            'type' => TaxType::FIXED,
+        ]);
         $item = \Database\Factories\ItemFactory::new()->create([
             'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
             'price' => 10.00,
         ]);
         

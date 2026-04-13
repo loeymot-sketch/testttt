@@ -11,7 +11,7 @@
 
 | Catégorie | Tests | Passés | Échecs | Status |
 |-----------|-------|--------|--------|--------|
-| **Anti-Gravity** | 20 | 20 | 0 | 🟢 100% |
+| **Playwright / E2E verification** | 20 | 20 | 0 | 🟢 100% |
 | **P0 Fixes** | 4 | 4 | 0 | 🟢 100% |
 | **Bugs Claude** | 4 | 4 | 0 | 🟢 100% |
 | **Intégration** | 6 | 6 | 0 | 🟢 100% |
@@ -261,7 +261,7 @@ POS Order → SendOrderGotPush::dispatch() →
 
 ## ✅ CHECKLIST VALIDATION FINALE
 
-- [x] 20/20 tests Anti-Gravity passent
+- [x] 20/20 tests Playwright / E2E verification passent
 - [x] P0-001: Prix POS sécurisés (T08b)
 - [x] P0-002: OrderStatus auth (T16)
 - [x] P0-003: KDS notification fix (T08c)
@@ -286,7 +286,7 @@ POS Order → SendOrderGotPush::dispatch() →
 
 1. **Re-seeder le menu:** `php artisan menu:reset` ✅
 2. **Rebuild Vue.js:** `npm run prod` ✅  
-3. **Tests E2E Anti-Gravity sur environnement staging:** ⏳
+3. **Tests E2E Playwright / E2E verification sur environnement staging:** ⏳
 4. **Vérification FCM tokens KDS:** ⏳
 5. **Go-Live:** ⏳
 

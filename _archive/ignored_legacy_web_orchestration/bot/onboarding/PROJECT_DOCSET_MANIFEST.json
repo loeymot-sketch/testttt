@@ -1,0 +1,502 @@
+{
+  "manifest_version": "1.0",
+  "generated": "2026-04-12",
+  "project": "FoodKing",
+  "description": "Document set manifest for Claude project onboarding — maps every governing doc with its role, priority, and verification status.",
+
+  "documents": {
+    "constitution": [
+      {
+        "path": "CLAUDE.md",
+        "role": "Operating constitution — Claude identity, principles, judgment framework, memory rules",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_always": true
+      },
+      {
+        "path": "MEMORY.md",
+        "role": "Working memory index — current state, risks, decisions, inspection queue",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_always": true
+      },
+      {
+        "path": "AGENTS.md",
+        "role": "Workflow rules — agent roles, mandatory cycle, test strategy vocabulary, report locations",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_always": true
+      }
+    ],
+
+    "vision_and_architecture": [
+      {
+        "path": "docs/PROJECT_CONTINUITY_AND_VISION.md",
+        "role": "Product vision, deployment state, fix history, prioritized backlog",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_always": true
+      },
+      {
+        "path": "docs/ARCHITECTURE.md",
+        "role": "System architecture — layers, frozen zones, mermaid diagram, critical dependencies",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_always": true
+      },
+      {
+        "path": "docs/BUSINESS_RULES.md",
+        "role": "SSOT pricing, ORDER_TOTAL formula, coupon rules, status pipeline, branch isolation",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_on": ["pricing", "order", "coupon", "branch"]
+      },
+      {
+        "path": "docs/ORDER_FLOW.md",
+        "role": "Order lifecycle stages — PENDING through DELIVERED, actors per stage, forbidden transitions",
+        "priority": "critical",
+        "evidence": "code-confirmed",
+        "load_on": ["order", "status", "kds", "oss", "pos"]
+      },
+      {
+        "path": "docs/AUTHZ_MATRIX.md",
+        "role": "Actor × permission matrix — tokens, allowed/forbidden routes, SSOT enforcement",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["auth", "kiosk", "security", "permission"]
+      },
+      {
+        "path": "docs/DEVICE_FLOW.md",
+        "role": "Per-device behavior — kiosk, POS, KDS, OSS capabilities and constraints",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["kiosk", "pos", "kds", "oss", "device"]
+      }
+    ],
+
+    "technical_reference": [
+      {
+        "path": "docs/CORE_MODULES.md",
+        "role": "Key module descriptions and ownership",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["architecture", "module", "refactor"]
+      },
+      {
+        "path": "docs/DATABASE_SCHEMA_CORE.md",
+        "role": "Core database tables and relationships",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["database", "migration", "model", "schema"]
+      },
+      {
+        "path": "docs/API_MAP.md",
+        "role": "API endpoint inventory",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["api", "endpoint", "route"]
+      },
+      {
+        "path": "docs/ERROR_HANDLING.md",
+        "role": "Error handling patterns and conventions",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["error", "exception", "validation"]
+      },
+      {
+        "path": "docs/SECURITY_NOTES.md",
+        "role": "Security considerations — auth, secrets, validation",
+        "priority": "high",
+        "evidence": "doc-stated",
+        "load_on": ["security", "auth", "secret", "vulnerability"]
+      }
+    ],
+
+    "testing": [
+      {
+        "path": "docs/TEST_PLAN.md",
+        "role": "Standard test plan — unit/feature/integration test strategy",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["test", "validation", "qa"]
+      },
+      {
+        "path": "docs/MASSIVE_TEST_PLAN.md",
+        "role": "Comprehensive test plan — full coverage matrix",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["test", "validation", "qa", "regression"]
+      },
+      {
+        "path": "docs/PLAYWRIGHT_MCP_OPS.md",
+        "role": "Playwright/MCP E2E testing operations guide",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["playwright", "e2e", "browser"]
+      }
+    ],
+
+    "operational_contracts": [
+      {
+        "path": "docs/ops/CLAUDE_CYCLE_INTAKE.md",
+        "role": "Minimum intake package before Claude plans or judges a cycle",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["cycle", "intake", "planning"]
+      },
+      {
+        "path": "docs/ops/CLAUDE_CYCLE_OUTPUT.md",
+        "role": "Standard output formats — plan, verdict, clarification, playwright brief",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["cycle", "output", "review", "verdict"]
+      },
+      {
+        "path": "docs/ops/CLAUDE_SCORING_RUBRIC.md",
+        "role": "5-axis scoring rubric — architecture, UX, business logic, security, evidence",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["review", "scoring", "verdict", "audit"]
+      },
+      {
+        "path": "docs/ops/CURSOR_MODEL_ROUTING_POLICY.md",
+        "role": "Model pinning rules — no auto-routing, execution class matrix",
+        "priority": "medium",
+        "evidence": "code-confirmed",
+        "load_on": ["model", "routing", "cursor", "execution"]
+      },
+      {
+        "path": "docs/ops/BOT_TO_CLAUDE_RUNTIME_CONTRACT.md",
+        "role": "Stable knowledge vs runtime state separation — trust hierarchy",
+        "priority": "medium",
+        "evidence": "code-confirmed",
+        "load_on": ["bot", "handoff", "context"]
+      },
+      {
+        "path": "docs/ops/CYCLE_002b_LOCAL_VALIDATION_COMMAND_PACK.md",
+        "role": "Local validation command pack for Laravel testing",
+        "priority": "low",
+        "evidence": "code-confirmed",
+        "load_on": ["validation", "local-test", "laravel"]
+      }
+    ],
+
+    "role_specializations": [
+      {
+        "path": "docs/roles/00_ORCHESTRATOR_ROLE.md",
+        "role": "Cycle orchestrator — intake, plan, delegation, 5-axis scoring, verdict",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["orchestration", "planning", "review"]
+      },
+      {
+        "path": "docs/roles/01_ARCHITECTURE_MEMORY_ROLE.md",
+        "role": "Structural impact analysis — blast radius, frozen zones, doc drift",
+        "priority": "high",
+        "evidence": "code-confirmed",
+        "load_on": ["architecture", "refactor", "module"]
+      },
+      {
+        "path": "docs/roles/02_PRODUCT_VISION_UX_ROLE.md",
+        "role": "Product/UX per surface — constraints, cross-surface consistency",
+        "priority": "medium",
+        "evidence": "code-confirmed",
+        "load_on": ["ux", "product", "surface", "kiosk", "pos"]
+      },
+      {
+        "path": "docs/roles/03_DEEP_AUDIT_ROLE.md",
+        "role": "Deep QA audit — 8 dimensions, severity tiers, regression checks",
+        "priority": "medium",
+        "evidence": "code-confirmed",
+        "load_on": ["audit", "qa", "regression"]
+      },
+      {
+        "path": "docs/roles/04_RESEARCH_BENCHMARK_ROLE.md",
+        "role": "External research/benchmark — compatibility analysis, anti-hype rules",
+        "priority": "low",
+        "evidence": "code-confirmed",
+        "load_on": ["research", "benchmark", "dependency"]
+      }
+    ],
+
+    "strategy_and_governance": [
+      {
+        "path": "docs/SAAS_VISION.md",
+        "role": "Long-term SaaS evolution vision",
+        "priority": "low",
+        "evidence": "doc-stated",
+        "load_on": ["saas", "multi-tenant", "vision"]
+      },
+      {
+        "path": "docs/GATES_DOCTRINE.md",
+        "role": "Gate doctrines for AI-assisted changes",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["gate", "review", "safety"]
+      },
+      {
+        "path": "docs/DECISION_GRAPHIFY.md",
+        "role": "Decision tracking and research folder conventions",
+        "priority": "low",
+        "evidence": "doc-stated",
+        "load_on": ["decision", "research"]
+      },
+      {
+        "path": "docs/AI_CHANGE_GATES.md",
+        "role": "AI change gating rules",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["gate", "change", "safety"]
+      },
+      {
+        "path": "docs/CONTRIBUTING_QA_BOTS.md",
+        "role": "Contributing and QA bot guidelines",
+        "priority": "low",
+        "evidence": "doc-stated",
+        "load_on": ["contributing", "qa", "bot"]
+      }
+    ],
+
+    "supplementary": [
+      {
+        "path": "docs/ARCHITECTURE_TECHNIQUE.md",
+        "role": "Technical architecture details (FR)",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/API_KIOSK.md",
+        "role": "Kiosk API surface documentation",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["kiosk", "api"]
+      },
+      {
+        "path": "docs/API_INTEGRATION_GUIDE.md",
+        "role": "API integration guide",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/DEPLOYMENT_GUIDE_V1.md",
+        "role": "Deployment guide v1",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/DEPLOIEMENT.md",
+        "role": "Deployment notes (FR)",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/GUIDE_DEVELOPPEUR.md",
+        "role": "Developer guide (FR)",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/MANUEL_CAISSIER.md",
+        "role": "Cashier user manual (FR)",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/QUEUE_WORKER_SETUP.md",
+        "role": "Queue worker setup instructions",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["queue", "worker", "job"]
+      },
+      {
+        "path": "docs/REALTIME_SETUP.md",
+        "role": "Realtime (Pusher/WebSockets) setup",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["realtime", "pusher", "websocket"]
+      },
+      {
+        "path": "docs/FCM_SETUP.md",
+        "role": "FCM / Firebase push setup",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["fcm", "firebase", "push"]
+      },
+      {
+        "path": "docs/WIZARD_LOGIC_DOCUMENTATION.md",
+        "role": "POS wizard flow logic",
+        "priority": "medium",
+        "evidence": "doc-stated",
+        "load_on": ["pos", "wizard"]
+      },
+      {
+        "path": "docs/DEBUG_GUIDE.md",
+        "role": "Debugging guide and tips",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/MAINTENANCE.md",
+        "role": "Maintenance procedures",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/AUDIT_LOGIN_ACCOUNTS.md",
+        "role": "Login and accounts audit",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/LOCAL_TEST_ACCOUNTS.md",
+        "role": "Local test account credentials",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/PHASE_10_AUDIT_REPORT.md",
+        "role": "Phase 10 audit report",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/BRIEF_IMAGES_MENU_PA.md",
+        "role": "Brief for menu images (product)",
+        "priority": "low",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "docs/api_routes.json",
+        "role": "Machine-readable API route export",
+        "priority": "low",
+        "evidence": "code-confirmed"
+      }
+    ],
+
+    "workflows": [
+      {
+        "path": "workflows/qa-loop.md",
+        "role": "QA loop workflow definition",
+        "priority": "medium",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "workflows/task-routing.md",
+        "role": "Task routing rules between agents",
+        "priority": "medium",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "workflows/report-format.md",
+        "role": "Standard report format for all cycle outputs",
+        "priority": "medium",
+        "evidence": "doc-stated"
+      },
+      {
+        "path": "workflows/task-status.md",
+        "role": "Task status tracking conventions",
+        "priority": "low",
+        "evidence": "doc-stated"
+      }
+    ],
+
+    "reports": [
+      {
+        "path": "reports/planning/latest.md",
+        "role": "Latest planning report (runtime artifact, overwritten each cycle)",
+        "priority": "runtime",
+        "evidence": "doc-stated",
+        "load_always": false,
+        "note": "Load during active cycle only"
+      },
+      {
+        "path": "reports/execution/latest.md",
+        "role": "Latest execution report",
+        "priority": "runtime",
+        "evidence": "doc-stated",
+        "load_always": false
+      },
+      {
+        "path": "reports/review/latest.md",
+        "role": "Latest review verdict",
+        "priority": "runtime",
+        "evidence": "doc-stated",
+        "load_always": false
+      },
+      {
+        "path": "reports/antigravity/latest.md",
+        "role": "Latest Playwright/E2E QA report (legacy directory name)",
+        "priority": "runtime",
+        "evidence": "doc-stated",
+        "load_always": false
+      },
+      {
+        "path": "reports/review/bugbot-latest.md",
+        "role": "Bugbot passive diff scan findings",
+        "priority": "runtime",
+        "evidence": "doc-stated",
+        "load_always": false
+      }
+    ]
+  },
+
+  "code_structure": {
+    "framework": "Laravel 9",
+    "frontend": "Vue 3 + Vuex + vue-router",
+    "database": "MySQL",
+    "auth": ["Sanctum", "Spatie Permission", "ApiKeyMiddleware"],
+    "realtime": ["Pusher", "WebSockets", "FCM"],
+    "counts": {
+      "controllers": 111,
+      "services": 86,
+      "models": 49,
+      "migrations": 80,
+      "events": 15,
+      "listeners": 15,
+      "jobs": 1,
+      "middleware": 15,
+      "config_files": 22,
+      "test_classes": 41
+    },
+    "key_namespaces": {
+      "admin_controllers": "App\\Http\\Controllers\\Admin (70)",
+      "frontend_controllers": "App\\Http\\Controllers\\Frontend (24)",
+      "auth_controllers": "App\\Http\\Controllers\\Auth (7)",
+      "table_controllers": "App\\Http\\Controllers\\Table (3)"
+    }
+  },
+
+  "frozen_zones": [
+    "Payment gateways (Stripe, PayPal, Credit, Razorpay, etc.)",
+    "PushNotificationService internal logic",
+    "Admin analytics module",
+    "Delivery boy module"
+  ],
+
+  "critical_services": [
+    "OrderService",
+    "FrontendOrderService",
+    "KitchenDisplaySystemOrderService",
+    "OrderStatusScreenOrderService",
+    "CouponService",
+    "TransactionService"
+  ],
+
+  "inspection_queue": [
+    "OrderService::changeStatus",
+    "BroadcastableOrder / ShouldBroadcastNow",
+    "FrontendOrderService",
+    "Auth token refresh flow",
+    "CouponService edge cases"
+  ],
+
+  "priority_backlog": [
+    { "priority": "P0", "item": "Queue workers + realtime reliability" },
+    { "priority": "P0", "item": "OrderService::changeStatus audit" },
+    { "priority": "P1", "item": "FCM push notification reliability" },
+    { "priority": "P1", "item": "Order amendment on web POS" },
+    { "priority": "P1", "item": "BroadcastableOrder / ShouldBroadcastNow audit" },
+    { "priority": "P2", "item": "Kiosk Electron wrapper" },
+    { "priority": "P2", "item": "ESC/POS + TPE + cash drawer" }
+  ]
+}

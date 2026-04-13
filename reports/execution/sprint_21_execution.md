@@ -135,7 +135,7 @@ if (step.boissonSeule) {
 
 ---
 
-## Test Checklist (pour Anti-Gravity)
+## Test Checklist (pour Playwright / E2E verification)
 
 - [ ] Sandwich + Menu Complet → KDS affiche `FORMULE: Menu Complet (Frites + Boisson)`
 - [ ] Sandwich + Frites Seules individuellement → KDS affiche `FORMULE: Frites Seules`

@@ -1,6 +1,6 @@
 # Sprint 22 — Safety Lock: Sync & Pricing Integrity
 
-**Status:** IMPLEMENTED (Awaiting Anti-Gravity E2E Validation)  
+**Status:** IMPLEMENTED (Awaiting Playwright / E2E verification E2E Validation)  
 **Date:** 2026-03-15  
 **Agent:** Claude (Planning) / Kimi (Implementation)
 
@@ -95,7 +95,7 @@ boissonAddonCards.forEach(function (card) {
 
 ## Test Strategy
 
-**Type:** Anti-Gravity (E2E/browser validation required)
+**Type:** Playwright / E2E verification (E2E/browser validation required)
 
 These patches affect sync logic, pricing display, and DOM interactions that cannot be fully validated by unit tests alone. Browser-based E2E testing is mandatory.
 
@@ -156,7 +156,7 @@ No other files modified.
 
 ## Next Steps
 
-1. **Anti-Gravity E2E validation** — Run all 5 checklist scenarios in browser
+1. **Playwright / E2E verification E2E validation** — Run all 5 checklist scenarios in browser
 2. **Report results** in `reports/antigravity/latest.md`
 3. **If all PASS:** Mark Sprint 22 COMPLETE, proceed to Sprint 23
 4. **If any FAIL:** Return to Kimi for fixes

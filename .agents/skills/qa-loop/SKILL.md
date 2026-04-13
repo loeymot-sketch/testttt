@@ -1,13 +1,13 @@
 ---
 name: qa-loop
-description: Read the latest Anti-Gravity report, identify the next planning action, and prepare the repository for the next QA-fix cycle.
+description: Read the latest Playwright / E2E verification report, identify the next planning action, and prepare the repository for the next QA-fix cycle.
 disable-model-invocation: true
 ---
 
 # QA Loop Skill
 
 Use this skill when:
-- a new Anti-Gravity report exists
+- a new Playwright / E2E verification report exists
 - the next planning cycle must start
 - the user asks what to do next after QA
 

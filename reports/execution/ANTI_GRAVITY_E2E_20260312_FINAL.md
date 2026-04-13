@@ -1,6 +1,6 @@
 # RAPPORT D'EXÉCUTION ANTI-GRAVITY — VÉRIFICATION FINALE (LOGIN & MENU)
 **Date :** 12 Mars 2026
-**Agent :** Anti-Gravity (QA)
+**Agent :** Playwright / E2E verification (QA)
 **Cible :** `foodking-web/web/testttt`
 **Statut Global :** ✅ TOUS LES TESTS PASSÉS (APPROVED)
 
@@ -53,4 +53,4 @@ Les 4 problèmes hérités des audits **sont définitivement clos** :
 3. **[LOGIN-05]** Documentation KDS/OSS ➔ Mise à jour en markdown.
 4. **[LOGIN-06]** Écran OSS public ➔ Recommandé pour développement futur.
 
-**→ Le workflow KIMI2.5 / Anti-Gravity / Claude est achevé avec succès sur ces points critiques. Le système d'authentification et de POS est stable.**
+**→ Le workflow KIMI2.5 / Playwright / E2E verification / Claude est achevé avec succès sur ces points critiques. Le système d'authentification et de POS est stable.**

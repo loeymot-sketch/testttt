@@ -1,6 +1,6 @@
 # PLAN_05 — D-005 + A-002 : Corriger POSComprehensiveTest (6/8 → 8/8)
 **Phase :** P1 — Haute
-**Test-Type :** Kimi-test
+**Test-Type :** local-validation
 **Risque :** 🟡 Moyen — Suite de tests incomplète masque des régressions
 **Fichiers :**
 - `tests/Feature/PosOrderTest.php` (ou équivalent POSComprehensiveTest)

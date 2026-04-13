@@ -12,7 +12,7 @@
 
 | Itération | Tests Passants | Échecs | Actions |
 |-----------|---------------|--------|---------|
-| **Initial** | 61/105 | 44 | Audit Anti-Gravity |
+| **Initial** | 61/105 | 44 | Audit Playwright / E2E verification |
 | **Phase 1** | 67/107 | 40 | Corrections Factory syntax |
 | **Phase 2** | 68/107 | 39 | Ajout champs requis POS |
 | **Phase 3** | 73/107 | 34 | Fix KioskMachine factories |

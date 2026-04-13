@@ -13,6 +13,7 @@ use App\Models\DiningTable;
 use App\Models\Tax;
 use App\Enums\Ask;
 use App\Enums\TaxType;
+use App\Enums\OrderStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
@@ -61,6 +62,8 @@ class SyncComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $chef = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $chef->assignRole('Chef');
+        $chef->givePermissionTo('kitchen-display-system');
+
         return [$branch, $chef];
     }
 
@@ -195,13 +198,15 @@ class SyncComprehensiveTest extends TestCase
     public function test_kds_status_change_reflected_in_oss()
     {
         [$branch, $chef] = $this->setupChef();
-        
-        // Créer une commande en PREPARING
+
+        // Créer une commande en PREPARING (même branche que le chef pour branch isolation)
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
+            'user_id' => $chef->id,
             'status' => \App\Enums\OrderStatus::PREPARING,
             'token' => 'A001', // Token requis pour OSS
             'order_datetime' => now(),
+            'is_advance_order' => Ask::NO,
         ]);
         
         // Vérifier que l'ordre apparaît dans OSS
@@ -218,7 +223,7 @@ class SyncComprehensiveTest extends TestCase
                 'status' => \App\Enums\OrderStatus::PREPARED,
             ]);
         
-        $this->assertTrue(in_array($statusResponse->status(), [200, 202, 400, 403, 422]));
+        $this->assertTrue(in_array($statusResponse->status(), [200, 202, 400, 403, 422], true));
     }
 
     /**
@@ -287,8 +292,10 @@ class SyncComprehensiveTest extends TestCase
         
         // Créer quelques commandes
         \Database\Factories\OrderFactory::new()->count(3)->create([
+            'user_id' => $admin->id,
             'branch_id' => $branch->id,
-            'status' => \App\Enums\OrderStatus::DELIVERED,
+            'status' => OrderStatus::DELIVERED,
+            'subtotal' => 50.00,
             'total' => 50.00,
         ]);
         
@@ -300,9 +307,8 @@ class SyncComprehensiveTest extends TestCase
         $this->assertTrue(in_array($response->status(), [200, 403, 404]));
         
         if ($response->status() == 200) {
-            $data = $response->json();
-            $count = $data['data']['total_orders'] ?? $data['total_orders'] ?? 0;
-            $this->assertGreaterThanOrEqual(3, $count);
+            $total = $response->json('data.total_orders');
+            $this->assertGreaterThanOrEqual(3, (int) ($total ?? 0));
         }
     }
 

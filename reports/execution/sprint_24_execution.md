@@ -122,7 +122,7 @@ ls -la public/js/app.js
 
 ---
 
-## Critères de succès (pour validation Anti-Gravity)
+## Critères de succès (pour validation Playwright / E2E verification)
 
 | Critère | Validation | Statut |
 |---------|------------|--------|
@@ -159,7 +159,7 @@ php artisan test
 
 **Une fois les commandes manuelles exécutées :**
 1. Mettre à jour ce fichier avec les résultats des commandes
-2. Lancer les tests E2E Anti-Gravity (AG-10, AG-02, AG-11, AG-13) — **Checklist :** `reports/antigravity/MANUAL_TEST_CHECKLIST_AG_10_02_11_13.md`
+2. Lancer les tests E2E Playwright / E2E verification (AG-10, AG-02, AG-11, AG-13) — **Checklist :** `reports/antigravity/MANUAL_TEST_CHECKLIST_AG_10_02_11_13.md`
 3. **Audit E2E profond :** `reports/antigravity/AUDIT_E2E_PROFOND_20260310.md` — Synthèse 171 tests, 70 échecs, causes racines, plan d'action P0-P2
 3. Finaliser le rapport de revue Claude
 

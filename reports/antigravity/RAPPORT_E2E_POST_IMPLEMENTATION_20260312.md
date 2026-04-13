@@ -1,6 +1,6 @@
 # RAPPORT E2E — POST-IMPLÉMENTATION (4 Sprints)
 **Date :** 12 Mars 2026  
-**Agent :** Anti-Gravity / KIMI  
+**Agent :** Playwright / E2E verification / KIMI  
 **Contexte :** Audit et tests après implémentation des Sprints 1-A, 1-B, 2, 3
 
 ---

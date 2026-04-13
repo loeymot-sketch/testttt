@@ -19,10 +19,10 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 **Key additions**:
 - Agent role model with explicit responsibilities
 - Normal Cycle (90% of cases) - Fast iteration
-- Anti-Gravity Cycle (10% of cases) - Critical validation
+- Playwright / E2E verification Cycle (10% of cases) - Critical validation
 - Testing rules: Claude decides test type in plan
-- Kimi executes "Kimi-test" (PHPUnit, Jest, Vitest)
-- Anti-Gravity executes "Anti-Gravity" (E2E/browser)
+- Kimi executes "local-validation" (PHPUnit, Jest, Vitest)
+- Playwright / E2E verification executes "Playwright / E2E verification" (E2E/browser)
 
 ### 2. workflows/task-routing.md
 **Status**: ✅ Updated
@@ -31,15 +31,15 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 - Added "determining test strategy" to Claude's responsibilities
 - Added "unit/integration testing" and "linting" to Kimi's responsibilities
 - Added "execution summary with test results" to Kimi's responsibilities
-- New "Execution chain" section with Normal Cycle and Anti-Gravity Cycle
+- New "Execution chain" section with Normal Cycle and Playwright / E2E verification Cycle
 
 ### 3. workflows/qa-loop.md
 **Status**: ✅ Updated
 
 **Changes**:
 - Two distinct loops documented:
-  - Normal Loop (90%): Claude → Human → Kimi → Kimi-test → Claude Review → Human
-  - Anti-Gravity Loop (10%): Claude specifies or review says NEEDS_ANTIGRAVITY → Human requests → Anti-Gravity tests
+  - Normal Loop (90%): Claude → Human → Kimi → local-validation → Claude Review → Human
+  - Playwright / E2E verification Loop (10%): Claude specifies or review says NEEDS_PLAYWRIGHT → Human requests → Playwright / E2E verification tests
 - Updated report flow to include `reports/review/latest.md`
 - Responsibility boundaries updated
 
@@ -60,9 +60,9 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 
 **Changes**:
 - Added `reports/review/` to structure
-- Documented Two Loops (Normal + Anti-Gravity)
-- Documented Test Strategy (Kimi-test / Anti-Gravity / No-test)
-- Documented Verdict Types (APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY)
+- Documented Two Loops (Normal + Playwright / E2E verification)
+- Documented Test Strategy (local-validation / Playwright / E2E verification / No-test)
+- Documented Verdict Types (APPROVED / NEEDS_FIX / NEEDS_PLAYWRIGHT)
 
 ---
 
@@ -71,21 +71,21 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 ### Normal Loop (90% of cases - Cost Optimized)
 ```
 1. Human requests feature/fix
-2. Claude analyzes and plans (specifies test type: Kimi-test / Anti-Gravity / No-test)
+2. Claude analyzes and plans (specifies test type: local-validation / Playwright / E2E verification / No-test)
 3. Human validates plan
 4. Kimi implements
-5. Kimi tests (if "Kimi-test": PHPUnit, Jest, etc.)
+5. Kimi tests (if "local-validation": PHPUnit, Jest, etc.)
 6. Kimi writes execution summary with test results
-7. Claude reviews (verdict: APPROVED / NEEDS_FIX / NEEDS_ANTIGRAVITY)
+7. Claude reviews (verdict: APPROVED / NEEDS_FIX / NEEDS_PLAYWRIGHT)
 8. Human validates final result
 ```
 
-### Anti-Gravity Loop (10% of cases - Critical Only)
+### Playwright / E2E verification Loop (10% of cases - Critical Only)
 ```
-1. Claude's plan specifies "Anti-Gravity test" OR Claude's review says "NEEDS_ANTIGRAVITY"
-2. Human explicitly requests Anti-Gravity
-3. Anti-Gravity executes E2E/browser/critical tests
-4. Anti-Gravity writes report
+1. Claude's plan specifies "Playwright / E2E verification test" OR Claude's review says "NEEDS_PLAYWRIGHT"
+2. Human explicitly requests Playwright / E2E verification
+3. Playwright / E2E verification executes E2E/browser/critical tests
+4. Playwright / E2E verification writes report
 5. Claude analyzes → back to Normal Loop
 ```
 
@@ -94,12 +94,12 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 ## Cost Optimization
 
 **Before**:
-- Anti-Gravity invoked for every cycle (100%)
-- High cost (Anti-Gravity uses expensive models)
+- Playwright / E2E verification invoked for every cycle (100%)
+- High cost (Playwright / E2E verification uses expensive models)
 
 **After**:
 - Kimi handles 90% of cycles (10x cheaper)
-- Anti-Gravity only for critical E2E tests (10%)
+- Playwright / E2E verification only for critical E2E tests (10%)
 - Estimated savings: ~80-90% on test execution costs
 
 ---
@@ -129,13 +129,13 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 1. Ask Claude to plan a feature/fix
 2. Claude will specify test type in plan
 3. Validate plan
-4. Kimi implements and tests (if "Kimi-test")
+4. Kimi implements and tests (if "local-validation")
 5. Claude reviews with verdict
 6. Validate final result
 
-### To invoke Anti-Gravity:
-- Ask Claude to specify "Anti-Gravity test" in plan
-- OR if Claude's review says "NEEDS_ANTIGRAVITY", explicitly request Anti-Gravity
+### To invoke Playwright / E2E verification:
+- Ask Claude to specify "Playwright / E2E verification test" in plan
+- OR if Claude's review says "NEEDS_PLAYWRIGHT", explicitly request Playwright / E2E verification
 
 ---
 
@@ -150,7 +150,7 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 - [x] All files use `latest.md` pattern
 - [x] Claude decides test type in plan
 - [x] Kimi executes tests when specified
-- [x] Anti-Gravity only on explicit request
+- [x] Playwright / E2E verification only on explicit request
 - [x] Human validation at key points
 
 ---
@@ -160,8 +160,8 @@ Complete implementation of the new optimized multi-agent architecture with Claud
 ✅ **Claude decides test type DANS LE PLAN**: Oui, AGENTS.md ligne 80
 ✅ **Kimi implémente ET teste**: Oui, AGENTS.md lignes 55-61
 ✅ **Claude review avec verdict**: Oui, AGENTS.md ligne 86
-✅ **Anti-Gravity uniquement sur demande**: Oui, AGENTS.md lignes 64-70
+✅ **Playwright / E2E verification uniquement sur demande**: Oui, AGENTS.md lignes 64-70
 ✅ **Human valide à chaque étape clé**: Oui, Normal Loop étapes 3 et 9
-✅ **Coût optimisé**: Oui, 90% Kimi (10x moins cher) + 10% Anti-Gravity
+✅ **Coût optimisé**: Oui, 90% Kimi (10x moins cher) + 10% Playwright / E2E verification
 
 **Architecture implémentée avec succès et prête à l'emploi !**

@@ -27,7 +27,7 @@ Toute modification d'une surface métier exige que vous lanciez d'abord `php art
 - Ne modifiez JAMAIS une migration existante déjà jouée. Créez une nouvelle migration (`php artisan make:migration add_xyz_to_table`).
 - Conservez les Foreign Keys rigoureuses existantes dans le SQLite de test. (Le test fail si un `user_id` est manquant sur un Order, respectez cela).
 
-### D. Commandes bloquantes en sandbox (Anti-Gravity, agents)
+### D. Commandes bloquantes en sandbox (Playwright / E2E verification, agents)
 En environnement sandbox, **ne pas exécuter** :
 - `cat .env` ou `grep APP_ENV .env` — accès restreint aux fichiers ignorés
 - `php artisan db:seed --class=MenuSeeder` — connexion MySQL bloquée
@@ -42,7 +42,7 @@ Voir `reports/antigravity/AUDIT_BLOCAGE_COMMANDES_20260312.md` pour le détail.
 
 - **Controllers** : Fins (Gèrent la Request JSOn, la Response, l'Auth HTTP).
 - **Services** : Épais. (La logique `FrontendOrderService` calcule le total, crée l'Order, boucle sur les Items).
-- **Traits/Enums** : Utilisez-les. Ne hardcodez pas un `status = 14`. Utilisez `OrderStatus::PREPARED`.
+- **Traits/Enums** : Utilisez-les. Ne vous fiez pas aux anciens entiers de doc erronés (ex. 14 pour PREPARED). Utilisez `OrderStatus::PREPARED` (valeur **8** dans `app/Enums/OrderStatus.php`).
 - **Validation** : Strictement via `FormRequest` ou `$request->validate()`. Ne faites pas confiance aux payloads entrants de la borne Kiosk.
 
 ## conclusion (Bot Acknowledgment)

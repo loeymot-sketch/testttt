@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foodking.local/bot/cursor_execution_packet.schema.json",
+  "title": "FoodKingBotCursorExecutionPacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "task_id",
+    "planning_path",
+    "files_allowed",
+    "validation_commands",
+    "prepared_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "cycle_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string" },
+    "planning_path": { "type": "string", "minLength": 1 },
+    "files_allowed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "prepared_at": { "type": "string", "minLength": 1 }
+  }
+}

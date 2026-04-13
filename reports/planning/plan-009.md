@@ -122,7 +122,7 @@ Appliquer ce pattern à **toutes** les clés de `$this->info[...]` dans `toArray
 
 ## Tests suggérés
 
-Après implémentation, Anti-Gravity doit :
+Après implémentation, Playwright / E2E verification doit :
 1. Relancer la suite complète `AntiGravityTest`
 2. Vérifier que T05 retourne 401 ou 403 (pas 500)
 3. Vérifier que T06 retourne 200 ou 201 (pas 500)

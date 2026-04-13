@@ -78,7 +78,7 @@ All 3 tasks from Plan 009 have been successfully implemented.
 
 ## Next Steps
 
-1. **Anti-Gravity Retest**: Run the full `AntiGravityTest` suite
+1. **Playwright / E2E verification Retest**: Run the full `AntiGravityTest` suite
 2. **Expected Results**:
    - T05 should return 401 or 403 (not 500)
    - T06 should return 200 or 201 (not 500)

@@ -1,6 +1,6 @@
 # PLAN_12 — ARCH-02 : Wizard POS + Kiosk piloté par DB (remplacement detectCategory hardcodé)
 **Phase :** P3 — Architecture (à faire APRÈS PLAN_11)
-**Test-Type :** Anti-Gravity
+**Test-Type :** Playwright / E2E verification
 **Pré-requis :** PLAN_11 doit être complété et les champs `wizard_template`, `has_menu` doivent être en DB
 **Fichiers :**
 - `public/js/pos-wizard.js`
@@ -168,7 +168,7 @@ public function item_api_returns_wizard_template_from_category()
 }
 ```
 
-### 4.3 Test Anti-Gravity — Régression Wizard
+### 4.3 Test Playwright / E2E verification — Régression Wizard
 1. POS → Tacos L → wizard doit s'ouvrir normalement (viande_sauce → perso → menu → recap)
 2. POS → Nos Salades → wizard doit s'ouvrir (sauce_supplements → recap)
 3. POS → Nos Boissons → pas de wizard (direct panier)

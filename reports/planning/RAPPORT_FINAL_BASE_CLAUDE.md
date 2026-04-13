@@ -2,8 +2,8 @@
 **Version :** 1.0 — Sprint 3
 **Date :** 11 Mars 2026 | 10h39
 **Auteur :** Claude (Lead Architect & Master Dev)
-**Destinataire :** Kimi (Builder), Anti-Gravity (QA)
-**Workflow :** Conforme à `AGENTS.md` — Claude décide, Kimi implémente, Anti-Gravity valide
+**Destinataire :** Kimi (Builder), Playwright / E2E verification (QA)
+**Workflow :** Conforme à `AGENTS.md` — Claude décide, Kimi implémente, Playwright / E2E verification valide
 
 ---
 
@@ -70,32 +70,32 @@ Tests totaux : 105 (dans 21 fichiers Feature)
 **Impact :** CRITIQUE — Un caissier peut créer une commande POS à 0€ en interceptant et modifiant la requête
 **Preuve :** `FrontendOrderService::myOrderStore()` dispose du recalcul DB-side. `posOrderStore()` NON.
 **Règle violée :** `BUSINESS_RULES.md § 1. Règle du Prix Central (SSOT)` + `SECURITY_NOTES.md § 1`
-**Test requis :** Kimi-test PHPUnit
+**Test requis :** local-validation PHPUnit
 
 ### BUG-P0-B : POS → KDS — Notifications Non Dispatchées
 **Fichier :** `app/Services/OrderService.php` → méthode `posOrderStore()` (après ligne 491)
 **Impact :** CRITIQUE — Le KDS (cuisine) ne sait pas qu'une commande a été passée au POS (caisse)
 **Preuve :** Seules `tableOrderStore()` et `myOrderStore()` dispatche `SendOrderGotPush/Mail/Sms`. POS = SILENCIEUX.
 **Règle violée :** `DEVICE_FLOW.md § 3 KDS` — La cuisine doit voir toutes les commandes entrantes
-**Test requis :** Kimi-test PHPUnit (Queue::fake)
+**Test requis :** local-validation PHPUnit (Queue::fake)
 
 ### BUG-P1-A : Vue.js Build Non Confirmé pour le Fix POS Payment
 **Fichier :** `resources/js/components/admin/pos/PaymentComponent.vue`
 **Impact :** HAUTE — Le fix du champ `received_amount` (lecture via DOM `getElementById`) existe dans le `.vue` source mais peut ne pas être compilé dans `public/js/app.js`
 **Action :** Vérifier timestamp `ls -la public/js/app.js`, relancer `npm run dev` si besoin
-**Test requis :** Anti-Gravity (test visuel POS)
+**Test requis :** Playwright / E2E verification (test visuel POS)
 
 ### BUG-P1-B : Sécurité API Key — Route Dashboard Trop Permissive
 **Fichier :** Middleware `app/Http/Middleware/CheckApiKey.php` (ou équivalent)
 **Impact :** HAUTE — Une requête authentifiée mais sans `x-api-key` peut accéder au dashboard admin
 **Règle violée :** `SECURITY_NOTES.md` — toutes les routes admin requièrent le header `x-api-key`
-**Test requis :** Kimi-test (tester avec `actingAs($admin)` SANS `->withHeader('x-api-key', ...)`
+**Test requis :** local-validation (tester avec `actingAs($admin)` SANS `->withHeader('x-api-key', ...)`
 
 ### BUG-P2-A : Token Révoqué Encore Valide
 **Fichier :** Configuration Sanctum + guard dans `config/sanctum.php`
 **Impact :** MOYENNE — Un token supprimé via `PersonalAccessToken::delete()` devrait invalider les appels
 **Note :** Peut être un problème de cache stateless. À investiguer avec `sanctum.expiration` config.
-**Test requis :** Kimi-test
+**Test requis :** local-validation
 
 ### BUG-P2-B : Tests Factory Manquantes (Faux Positifs Bloquants)
 **Fichiers :** Tous les `*ComprehensiveTest.php`
@@ -112,7 +112,7 @@ Tests totaux : 105 (dans 21 fichiers Feature)
 ---
 
 ### TÂCHE 1 — [P0][CRITIQUE] Recalcul Prix POS côté Serveur
-**Type test :** `Kimi-test` (PHPUnit)
+**Type test :** `local-validation` (PHPUnit)
 **Fichier cible :** `app/Services/OrderService.php` — méthode `posOrderStore()`
 **Scope :** UNIQUEMENT les lignes 389-416 (loop items). Ne PAS toucher `tableOrderStore` ni `myOrderStore`.
 
@@ -169,7 +169,7 @@ public function t08b_pos_order_forged_price_uses_db_price(): void
 ---
 
 ### TÂCHE 2 — [P0][CRITIQUE] Dispatcher Notifications KDS pour Commandes POS
-**Type test :** `Kimi-test` (PHPUnit, Queue::fake)
+**Type test :** `local-validation` (PHPUnit, Queue::fake)
 **Fichier cible :** `app/Services/OrderService.php` — méthode `posOrderStore()`
 **Scope :** Ajouter 3 lignes APRÈS la fermeture de `DB::transaction()`.
 
@@ -196,7 +196,7 @@ public function t08c_pos_order_dispatches_kds_notification(): void
 ---
 
 ### TÂCHE 3 — [P1][HAUTE] Vérification et Recompilation du Build Vue.js
-**Type test :** `Anti-Gravity` (vérification visuelle)
+**Type test :** `Playwright / E2E verification` (vérification visuelle)
 **Fichier cible :** `resources/js/components/admin/pos/PaymentComponent.vue` (déjà modifié)
 **Scope :** Instructions shell uniquement, pas de changement de code.
 
@@ -239,7 +239,7 @@ $category = ItemCategory::forceCreate(['name' => 'Burgers', 'slug' => 'burgers',
 ---
 
 ### TÂCHE 5 — [P1][HAUTE] Investiguer et Corriger la Vérification API Key
-**Type test :** `Kimi-test` (PHPUnit)
+**Type test :** `local-validation` (PHPUnit)
 **Fichier cible :** Middleware `CheckApiKey` ou kernel `app/Http/Kernel.php`
 **Scope :** Vérifier pourquoi `actingAs($admin)->getJson('/api/admin/dashboard')` sans `x-api-key` retourne 200 au lieu de 401/403.
 
@@ -328,7 +328,7 @@ Pour sortir du Sprint 3 en production :
 - [ ] `posOrderStore` recalcule les prix depuis DB (Tâche 1)
 - [ ] `posOrderStore` dispatche `SendOrderGotPush` (Tâche 2)
 - [ ] `grep -c "cashInput" public/js/app.js > 0` (Tâche 3 — build confirmé)
-- [ ] Test E2E Anti-Gravity : POS Cash → Créer Commande → Vérifier dans KDS
+- [ ] Test E2E Playwright / E2E verification : POS Cash → Créer Commande → Vérifier dans KDS
 
 ---
 
@@ -336,15 +336,15 @@ Pour sortir du Sprint 3 en production :
 
 ```
 PRIORITÉ  TÂCHE                              TYPE TEST        FICHIER PRINCIPAL
-P0        Recalcul prix POS DB-side          Kimi-test        OrderService.php
-P0        Notifications KDS pour POS        Kimi-test        OrderService.php  
-P1        Recompiler Vue.js (npm run dev)    Anti-Gravity     public/js/app.js
+P0        Recalcul prix POS DB-side          local-validation        OrderService.php
+P0        Notifications KDS pour POS        local-validation        OrderService.php  
+P1        Recompiler Vue.js (npm run dev)    Playwright / E2E verification     public/js/app.js
 P1        Corriger Factory dans tests        Auto-validant    *ComprehensiveTest.php
-P1        API Key middleware investigation   Kimi-test        Kernel.php / Middleware
+P1        API Key middleware investigation   local-validation        Kernel.php / Middleware
 P2        Placeholder images items           No-test          Vue composant POS
 ```
 
-> **Claude autorise Kimi à démarrer les tâches P0 immédiatement.** Les tâches P1 suivent dans le même sprint. Les tâches P2 après validation Anti-Gravity.
+> **Claude autorise Kimi à démarrer les tâches P0 immédiatement.** Les tâches P1 suivent dans le même sprint. Les tâches P2 après validation Playwright / E2E verification.
 
 ---
 

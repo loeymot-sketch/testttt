@@ -502,8 +502,8 @@ Interface admin pour configurer suggestion_config, design_slider, printer_config
 
 ## 8. Test Type
 
-**Kimi-test** pour les sprints A, B, C, D (backend + frontend localisé)  
-**Anti-Gravity** pour le flow complet borne après chaque sprint majeur
+**local-validation** pour les sprints A, B, C, D (backend + frontend localisé)  
+**Playwright / E2E verification** pour le flow complet borne après chaque sprint majeur
 
 ---
 

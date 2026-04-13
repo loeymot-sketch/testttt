@@ -7,7 +7,7 @@ Ce document est une checklist de sécurité. Avant chaque changement d'un Agent 
 - [ ] Le workflow actuel respecte-t-il `AGENTS.md` et `workflows/qa-loop.md` ?
 
 ### 2. Rapport et Planification
-- [ ] Un rapport Anti-Gravity récent (`reports/antigravity/`) atteste-t-il du problème ?
+- [ ] Un rapport Playwright / E2E verification récent (`reports/antigravity/`) atteste-t-il du problème ?
 - [ ] Un Plan de résolution validé par Claude (`reports/planning/`) encadre-t-il la tâche actuelle ?
 - [ ] La tâche est-elle bien routée selon `workflows/task-routing.md` (Kimi pour UI/CRUD léger, Claude pour Architecture) ?
 
@@ -17,6 +17,6 @@ Ce document est une checklist de sécurité. Avant chaque changement d'un Agent 
 
 ### 4. Boucle Finale
 - [ ] Une _Review_ par Claude est-elle prévue avant le signalement de fin pour générer le bilan d'exécution ?
-- [ ] Un _Retest_ par Anti-Gravity est-il prévu dans la boucle ?
+- [ ] Un _Retest_ par Playwright / E2E verification est-il prévu dans la boucle ?
 
 > Note pour l'IA : Si vous vous apprêtez à faire une modification de code métier sans avoir de rapport de test initial ou de plan de travail, **ARRÊTEZ-VOUS** et effectuez l'étape de génération de rapport ou demandez à l'Orchestrateur (Cursor) de vous fournir un plan.

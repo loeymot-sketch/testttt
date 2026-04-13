@@ -115,8 +115,8 @@ $response = $this->actingAs($user)
 3. S'assurer que les utilisateurs Kiosk sont rejetés
 
 **Assigné à:** Kimi  
-**Type:** Kimi-test (unit/integration)  
-**Validation:** Anti-Gravity Cycle
+**Type:** local-validation (unit/integration)  
+**Validation:** Playwright / E2E verification Cycle
 
 ---
 
@@ -129,8 +129,8 @@ $response = $this->actingAs($user)
 2. Exécuter test pour vérifier
 
 **Assigné à:** Kimi  
-**Type:** Kimi-test (unit/integration)  
-**Validation:** Kimi-test
+**Type:** local-validation (unit/integration)  
+**Validation:** local-validation
 
 ---
 

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Fixed the 3 remaining blockers from Anti-Gravity Report 004:
+Fixed the 3 remaining blockers from Playwright / E2E verification Report 004:
 
 1. **T06 Crash 500 `faviconLogo on null`** — theme_settings table now seeded
 2. **T07 Kiosk isolation failure** — missing `x-api-key` header on admin routes
@@ -124,6 +124,6 @@ php artisan test tests/Feature/AntiGravityTest.php --verbose
 
 ## Next Steps
 
-1. Anti-Gravity executes retest → produces `reports/antigravity/report-005.md`
+1. Playwright / E2E verification executes retest → produces `reports/antigravity/report-005.md`
 2. Claude reviews remaining failures (if any) for business logic issues vs test infrastructure issues
 3. If all 18 tests pass → Sprint 3 complete, proceed to business logic hardening (pricing validation strictness, state transition rules)

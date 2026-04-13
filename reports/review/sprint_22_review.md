@@ -3,7 +3,7 @@
 **Sprint:** 22 — Safety Lock: Sync & Pricing Integrity  
 **Reviewer:** Claude (Architecte)  
 **Date:** 2026-03-15  
-**Status:** IMPLEMENTED — NEEDS_ANTIGRAVITY E2E
+**Status:** IMPLEMENTED — NEEDS_PLAYWRIGHT E2E
 
 ---
 
@@ -15,7 +15,7 @@ Sprint 22 addresses 4 critical bugs discovered during post-Sprint-21 audit. Thes
 3. Robustness of addon synchronization to Vue modal
 4. Correct DOM target for boisson card synchronization
 
-**Verdict:** `NEEDS_ANTIGRAVITY` — E2E browser validation mandatory before production.
+**Verdict:** `NEEDS_PLAYWRIGHT` — E2E browser validation mandatory before production.
 
 ---
 
@@ -67,7 +67,7 @@ Sprint 22 addresses 4 critical bugs discovered during post-Sprint-21 audit. Thes
 
 ---
 
-## Mandatory E2E Validation (Anti-Gravity)
+## Mandatory E2E Validation (Playwright / E2E verification)
 
 The following scenarios MUST be validated in a real browser before marking Sprint 22 complete:
 
@@ -100,7 +100,7 @@ The following scenarios MUST be validated in a real browser before marking Sprin
 
 ## Verdict
 
-**Status:** `NEEDS_ANTIGRAVITY`
+**Status:** `NEEDS_PLAYWRIGHT`
 
 **Reasoning:**
 - 4/4 patches correctly implemented
@@ -109,7 +109,7 @@ The following scenarios MUST be validated in a real browser before marking Sprin
 - Browser-based E2E validation is the only way to confirm correct behavior
 
 **Next Actions:**
-1. Anti-Gravity runs E2E validation on all 5 scenarios
+1. Playwright / E2E verification runs E2E validation on all 5 scenarios
 2. If all PASS → Mark Sprint 22 COMPLETE
 3. If any FAIL → Return to Kimi for fixes
 
@@ -137,6 +137,6 @@ The following scenarios MUST be validated in a real browser before marking Sprin
 ## Sign-off
 
 - [x] Claude review complete
-- [ ] Anti-Gravity E2E validation complete
+- [ ] Playwright / E2E verification E2E validation complete
 - [ ] All 5 scenarios PASS
 - [ ] Sprint 22 marked COMPLETE

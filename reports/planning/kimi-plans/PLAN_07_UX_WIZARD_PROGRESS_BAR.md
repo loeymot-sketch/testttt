@@ -1,6 +1,6 @@
 # PLAN_07 — UX-03 : Barre de Progression Wizard POS
 **Phase :** P2 — Moyenne
-**Test-Type :** Anti-Gravity (test visuel navigateur)
+**Test-Type :** Playwright / E2E verification (test visuel navigateur)
 **Impact :** 🟡 UX — Caissier ne sait pas à quelle étape il se trouve
 **Fichiers :**
 - `public/js/pos-wizard.js`
@@ -135,7 +135,7 @@ Ajouter à la fin de `pos-wizard.css` (ou créer une section spécifique) :
 
 ---
 
-## 5. Tests Anti-Gravity
+## 5. Tests Playwright / E2E verification
 
 **Scénario navigateur :**
 1. POS → cliquer sur "Tacos L"

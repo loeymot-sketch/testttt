@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "_comment": "Local supervisor dropzones (paths relative to repo root). One cycle at a time; run-supervisor-once is a single tick.",
+  "enabled": true,
+  "inbox_claude_plan": "bot/inbox/claude_plan",
+  "inbox_claude_review": "bot/inbox/claude_review",
+  "inbox_cursor_result": "bot/inbox/cursor_result",
+  "outbox_claude": "bot/outbox/claude",
+  "outbox_cursor": "bot/outbox/cursor",
+  "archive_subdir": "supervisor_inbox_archive",
+  "cursor_done_filename": "cursor_done.json",
+  "validation_filename": "validation.json",
+  "outbox_claude_handoff_name": "claude_handoff.md",
+  "outbox_claude_review_name": "claude_review_handoff.md",
+  "outbox_cursor_handoff_name": "cursor_handoff.md"
+}

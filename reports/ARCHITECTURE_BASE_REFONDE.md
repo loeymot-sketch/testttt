@@ -147,7 +147,7 @@ return [
 - [ ] Order services - N+1 queries
 - [ ] JSON decode error handling
 
-### AGENT 3: Tests Massifs (Anti-Gravity)
+### AGENT 3: Tests Massifs (Playwright / E2E verification)
 **Mission:** Tester CHAQUE fonctionnalité
 
 **Module 1: Authentification**

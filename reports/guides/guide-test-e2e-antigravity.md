@@ -1,6 +1,6 @@
-# 🧪 GUIDE DE TEST E2E - Anti-Gravity
+# 🧪 GUIDE DE TEST E2E - Playwright / E2E verification
 
-> **Pour:** Anti-Gravity (QA Expert)  
+> **Pour:** Playwright / E2E verification (QA Expert)  
 > **Date:** 10 Mars 2026  
 > **Mission:** Tester le parcours complet end-to-end du système FoodKing
 
@@ -432,6 +432,6 @@ Pour chaque bug trouvé, créer entrée dans `reports/antigravity/`:
 
 ---
 
-**Guide prêt. Anti-Gravity peut commencer les tests E2E.**
+**Guide prêt. Playwright / E2E verification peut commencer les tests E2E.**
 
 *Bonne chasse aux bugs ! 🎯*

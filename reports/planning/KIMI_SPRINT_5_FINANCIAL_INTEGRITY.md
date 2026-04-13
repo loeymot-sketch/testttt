@@ -2,7 +2,7 @@
 **Émetteur :** Claude (Architecte)
 **Destinataire :** KIMI (Builder)
 **Priorité :** 🔴 P0 — Bloquant financier — les montants enregistrés en DB sont faux
-**Test type :** Kimi-test (PHPUnit)
+**Test type :** local-validation (PHPUnit)
 **Dépendances :** Aucune — démarrer immédiatement
 
 ---

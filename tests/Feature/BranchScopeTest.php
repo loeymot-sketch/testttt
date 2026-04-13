@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -42,12 +43,14 @@ class BranchScopeTest extends TestCase
             'branch_id' => $this->branchA->id,
         ]);
         $this->userBranchA->assignRole('POS Operator');
+        $this->userBranchA->givePermissionTo('online-orders');
         
         // User branch B
         $this->userBranchB = User::factory()->create([
             'branch_id' => $this->branchB->id,
         ]);
         $this->userBranchB->assignRole('POS Operator');
+        $this->userBranchB->givePermissionTo('online-orders');
         
         // Admin (branch_id = 0)
         $this->admin = User::factory()->create([
@@ -177,18 +180,45 @@ class BranchScopeTest extends TestCase
     }
 
     /**
-     * Test BS-06: BranchScope avec branch_id = 0 (global records)
+     * Test BS-06: [FIX-54-8] Staff ne voit pas les commandes branch_id=0 (réservé admin / FK branches)
      */
     public function test_global_records_with_branch_id_zero_are_visible(): void
     {
+        if (!Branch::query()->whereKey(0)->exists()) {
+            DB::table('branches')->insert([
+                'id' => 0,
+                'name' => 'Virtual',
+                'city' => '-',
+                'state' => '-',
+                'zip_code' => '0',
+                'address' => '-',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $globalOrder = Order::create([
+            'user_id' => $this->admin->id,
+            'branch_id' => 0,
+            'order_serial_no' => 'TESTGLOBAL',
+            'status' => OrderStatus::ACCEPT,
+            'order_type' => OrderType::POS,
+            'order_datetime' => now(),
+            'subtotal' => 100.00,
+            'total' => 100.00,
+        ]);
+
         $this->actingAs($this->userBranchA);
-        
+
         $orders = Order::all();
-        
-        // Le schéma impose une FK réelle sur branch_id, donc aucun enregistrement branch_id=0
-        // ne peut être inséré. Un utilisateur de branche ne voit donc que sa propre branche.
+
         $this->assertEquals(1, $orders->count());
         $this->assertTrue($orders->contains('id', $this->orderBranchA->id));
+        $this->assertFalse($orders->contains('id', $globalOrder->id));
+
+        $this->actingAs($this->admin);
+        $this->assertTrue(Order::query()->whereKey($globalOrder->id)->exists());
     }
 
     /**

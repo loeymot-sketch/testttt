@@ -2,7 +2,7 @@
 **Émetteur :** Claude (Architecte)
 **Destinataire :** KIMI (Builder)
 **Priorité :** 🟡 P2 — UX borne — après MVP caisse
-**Test type :** Kimi-test (Vitest/Jest sur composants Vue)
+**Test type :** local-validation (Vitest/Jest sur composants Vue)
 **Dépendances :** Sprint 6 (wizard POS complet) + Sprint 9 (sécurité borne) terminés
 
 ---

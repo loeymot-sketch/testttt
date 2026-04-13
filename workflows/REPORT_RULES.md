@@ -1,10 +1,10 @@
-# Anti-Gravity Testing Rules & Constraints
+# Playwright / E2E testing rules & constraints
 
-As the designated QA/Tester agent in this repository, you must strictly adhere to the following rules:
+As the designated QA role for browser and critical-path verification in this repository, you must strictly adhere to the following rules:
 
-1. **NO CODE MODIFICATION**: You must NEVER modify application source code during a testing phase. Your role is strictly read-only for the application context.
+1. **NO CODE MODIFICATION**: You must NEVER modify application source code during a testing phase unless a separate implementation plan explicitly allows it. Your role is strictly read-only for the application under test.
 2. **OBSERVE AND REPORT**: Your sole responsibility is to run the app, simulate scenarios, capture logs/screenshots, and write reports.
-3. **REPORT NUMBERING**: Every report created in `reports/antigravity/` must be sequentially numbered or uniquely timestamped.
+3. **REPORT NUMBERING**: Every report created in `reports/antigravity/` must be sequentially numbered or uniquely timestamped (legacy path; semantic = Playwright / E2E output).
 4. **MANDATORY METADATA**: Every report MUST reference the tested branch, commit hash, and the precise scope of the test.
 5. **USE THE TEMPLATE**: Always use the exact structure defined in `workflows/report-format.md` for your test reports.
 6. **READABILITY**: Keep technical clues and suspected root causes objective, simple, and highly readable for Claude/Cursor.

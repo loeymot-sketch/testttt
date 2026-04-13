@@ -123,7 +123,7 @@
 
 > **RÈGLE AGENTS.md :** Kimi n'invente rien. Kimi suit ce plan à la lettre.  
 > **Scope :** UNIQUEMENT `public/js/pos-wizard.js`. Ne pas toucher le PHP.  
-> **Type test :** Anti-Gravity (test visuel browser)
+> **Type test :** Playwright / E2E verification (test visuel browser)
 
 ### TÂCHE 1 — Refactorer `getAllowedSteps()` vers nouveau flux combiné
 **Scope :** Lignes 208-228. Remplacer les étapes séquentielles par les nouvelles étapes combinées.
@@ -256,10 +256,10 @@ function detectCategory(data) {
 
 ---
 
-## 🧪 4. TESTS REQUIS (Anti-Gravity)
+## 🧪 4. TESTS REQUIS (Playwright / E2E verification)
 
-**Type :** `Anti-Gravity` — tests visuels browser
-**Scénarios à valider par Anti-Gravity :**
+**Type :** `Playwright / E2E verification` — tests visuels browser
+**Scénarios à valider par Playwright / E2E verification :**
 
 | ID | Scénario | Attendu |
 |----|----------|---------|
@@ -312,7 +312,7 @@ Seules les étapes changent — pas la structure de données.
 - [ ] Raccourcis clavier Enter/←/→ fonctionnels
 - [ ] Boutons ✏️ dans récap naviguent sans reset des sélections
 - [ ] `syncAndSubmit()` NON MODIFIÉE (vérifier avec git diff)
-- [ ] Anti-Gravity valide W01 à W10
+- [ ] Playwright / E2E verification valide W01 à W10
 
 ---
 
@@ -321,10 +321,10 @@ Seules les étapes changent — pas la structure de données.
 ```
 PRIORITÉ  TÂCHE                              TYPE TEST     FICHIER
 P0        getAllowedSteps() refactoring       Auto          pos-wizard.js
-P0        New step renderers (6 fonctions)   Anti-Gravity  pos-wizard.js
-P0        Sauce frites inline dans Menu      Anti-Gravity  pos-wizard.js
-P1        Raccourcis clavier                 Anti-Gravity  pos-wizard.js
-P1        Édition depuis Récap (goto step)   Anti-Gravity  pos-wizard.js
+P0        New step renderers (6 fonctions)   Playwright / E2E verification  pos-wizard.js
+P0        Sauce frites inline dans Menu      Playwright / E2E verification  pos-wizard.js
+P1        Raccourcis clavier                 Playwright / E2E verification  pos-wizard.js
+P1        Édition depuis Récap (goto step)   Playwright / E2E verification  pos-wizard.js
 P2        Robustesse detectCategory()        Auto          pos-wizard.js
 ```
 

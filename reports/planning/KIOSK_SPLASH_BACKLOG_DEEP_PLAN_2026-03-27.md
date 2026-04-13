@@ -3,7 +3,7 @@
 **Date** : 2026-03-27  
 **Contexte** : suite à l’analyse `SPLASH_FOODKING_GAP_ANALYSIS_2026-03-27.md`. **Décision produit** : ne pas implémenter le carrousel horizontal de catégories ; conserver la **sidebar + grille** (référence type McDonald’s).
 
-**Type de test global par phase** : voir colonne « Test » (Kimi-test / Anti-Gravity / No-test).
+**Type de test global par phase** : voir colonne « Test » (local-validation / Playwright / E2E verification / No-test).
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Phase | Thème | Effort relatif | Risque métier | Test |
 |-------|--------|----------------|---------------|------|
-| **A** | Upsell piloté par catégorie | Moyen | Moyen (AOV, cohérence menu) | **Kimi-test** |
-| **B** | « Comme d’habitude ? » (recommandation dernière commande) | Élevé | Élevé (RGPD, identité client, prix serveur) | **Anti-Gravity** + Kimi-test API |
-| **C** | Fidélité sur ticket imprimé + polish confirmation | Faible | Faible | **Kimi-test** + revue visuelle |
+| **A** | Upsell piloté par catégorie | Moyen | Moyen (AOV, cohérence menu) | **local-validation** |
+| **B** | « Comme d’habitude ? » (recommandation dernière commande) | Élevé | Élevé (RGPD, identité client, prix serveur) | **Playwright / E2E verification** + local-validation API |
+| **C** | Fidélité sur ticket imprimé + polish confirmation | Faible | Faible | **local-validation** + revue visuelle |
 | **D** | P2 middle (idle slideshow, hors-stock, copy, PMR) | Variable | Faible à moyen | Mix |
-| **E** | P3 structurel (Electron, temps réel étendu) | Très élevé | Élevé | **Anti-Gravity** si GO |
+| **E** | P3 structurel (Electron, temps réel étendu) | Très élevé | Élevé | **Playwright / E2E verification** si GO |
 
 ---
 
@@ -62,7 +62,7 @@ Migration `item_categories` :
 | Incohérence cache menu | Invalider cache kiosk menu si flags catégorie changent (TTL court déjà) ou versionner `menu_updated_at` côté settings. |
 | Régression authz | Route déjà `frontend` + token kiosk ; pas d’exposition admin. |
 
-### A.6 Tests (Kimi-test)
+### A.6 Tests (local-validation)
 
 - PHPUnit : `kioskUpsell` exclut les items dont la catégorie a `kiosk_upsell_include=false`.
 - PHPUnit : avec flags skip, logique pure (service dédié `KioskUpsellEligibilityService` recommandé) testable sans HTTP.
@@ -101,8 +101,8 @@ Splash propose un raccourci vers la **dernière commande** du client. Cela impos
 
 ### B.5 Tests
 
-- **Kimi-test** : contrat API, refus sans customer, recalcul prix.
-- **Anti-Gravity** : parcours complet loyalty → dernière commande → paiement sur borne de test.
+- **local-validation** : contrat API, refus sans customer, recalcul prix.
+- **Playwright / E2E verification** : parcours complet loyalty → dernière commande → paiement sur borne de test.
 
 ---
 
@@ -120,7 +120,7 @@ Splash propose un raccourci vers la **dernière commande** du client. Cela impos
 
 ### C.3 Test
 
-- **Kimi-test** : test unitaire sur helper `buildReceiptData` si existant ; sinon test composant shallow.
+- **local-validation** : test unitaire sur helper `buildReceiptData` si existant ; sinon test composant shallow.
 - **No-test** : ajustement CSS ticket uniquement.
 
 ---
@@ -129,10 +129,10 @@ Splash propose un raccourci vers la **dernière commande** du client. Cela impos
 
 | Item | Description | Fichiers / domaine | Test |
 |------|-------------|-------------------|------|
-| Idle slideshow | Répéter N médias en attract (au-delà d’une seule vidéo) | Settings + `KioskIdleScreenComponent` | Kimi-test léger |
-| Hors-stock | Badge sur cartes produit si `status` ≠ actif | `KioskCategoriesComponent`, API menu | Kimi-test |
+| Idle slideshow | Répéter N médias en attract (au-delà d’une seule vidéo) | Settings + `KioskIdleScreenComponent` | local-validation léger |
+| Hors-stock | Badge sur cartes produit si `status` ≠ actif | `KioskCategoriesComponent`, API menu | local-validation |
 | Copy Splash | Clés i18n `kiosk.*` alignées « TOUCHEZ POUR COMMANDER », etc. | `lang/*`, composants | No-test |
-| PMR | Mode grossissement / contraste (drapeau + classe CSS racine) | `KioskAppComponent` | Anti-Gravity accessibilité basique |
+| PMR | Mode grossissement / contraste (drapeau + classe CSS racine) | `KioskAppComponent` | Playwright / E2E verification accessibilité basique |
 
 ---
 

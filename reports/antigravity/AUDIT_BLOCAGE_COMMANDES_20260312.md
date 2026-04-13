@@ -1,8 +1,8 @@
-# AUDIT BLOCAGE COMMANDES — Anti-Gravity & Terminal
+# AUDIT BLOCAGE COMMANDES — Playwright / E2E QA & Terminal
 ## Pourquoi `cat .env` et `php artisan db:seed` restent bloqués
 
 **Date :** 12 Mars 2026  
-**Contexte :** Anti-Gravity (agent QA) bloque systématiquement sur ces commandes — 10+ tentatives échouées.
+**Contexte :** l’exécuteur Playwright / E2E QA bloque systématiquement sur ces commandes — 10+ tentatives échouées.
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Cause possible | Probabilité | Explication |
 |----------------|-------------|-------------|
-| **.env dans .gitignore** | Haute | Le fichier `.env` est listé dans `.gitignore`. Certains environnements d'agents (Cursor sandbox, Gemini/Anti-Gravity) peuvent **restreindre l'accès aux fichiers ignorés** pour des raisons de sécurité. La commande `cat` tente de lire un fichier "non accessible" → blocage ou timeout. |
+| **.env dans .gitignore** | Haute | Le fichier `.env` est listé dans `.gitignore`. Certains environnements d'agents (Cursor sandbox, Gemini ou autres sandboxes QA) peuvent **restreindre l'accès aux fichiers ignorés** pour des raisons de sécurité. La commande `cat` tente de lire un fichier "non accessible" → blocage ou timeout. |
 | **.env absent** | Moyenne | Si le projet n'a jamais été configuré (`cp .env.example .env`), le fichier n'existe pas. `cat .env` renverrait une erreur immédiate — sauf si le shell ou l'agent attend une entrée. |
 | **Permissions fichier** | Faible | Sur certains systèmes, `.env` peut avoir des permissions restrictives (chmod 600). |
 
@@ -87,7 +87,7 @@ mysql -u root -e "SELECT 1"
 php artisan db:seed --class=MenuSeeder
 ```
 
-### 3.2 Pour Anti-Gravity / agents (sandbox)
+### 3.2 Pour Playwright / E2E QA et agents (sandbox)
 
 **Ne pas exécuter** `cat .env` ou `php artisan db:seed` dans le sandbox. À la place :
 

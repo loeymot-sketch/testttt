@@ -1,0 +1,8 @@
+{
+  "_comment": "For waiting_cursor: save as bot/inbox/cursor_result/cursor_done.json (exact name from supervisor.json).",
+  "schema_version": 1,
+  "kind": "cursor_done",
+  "cycle_id": "REPLACE_WITH_CYCLE_UUID",
+  "task_id": "REPLACE_WITH_TASK_ID",
+  "note": "optional operator note"
+}

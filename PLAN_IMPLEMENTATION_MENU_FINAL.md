@@ -16,7 +16,7 @@ Remplacer définitivement le menu anglais par le menu français "Le Grill House"
 1. MenuSeeder s'arrête si items existent
 2. Pas de détection "forcée" du menu anglais
 3. Pas de mécanisme de purge automatique
-4. Anti-Gravity teste sur mauvais menu
+4. Playwright / E2E verification teste sur mauvais menu
 
 ---
 
@@ -73,7 +73,7 @@ php artisan db:seed --class=MenuSeeder
 - Items = 50+ (Tacos M, L, XL, XXL, etc.)
 - Pas de "Chicken" ou "Dumplings"
 
-### Tâche 5: Test Anti-Gravity
+### Tâche 5: Test Playwright / E2E verification
 **Lancer**: Tests E2E sur vrai menu français
 
 ---
@@ -83,7 +83,7 @@ php artisan db:seed --class=MenuSeeder
 - [ ] POS affiche "Nos Tacos" (pas Chicken Dumplings)
 - [ ] Wizard Tacos fonctionne avec viandes françaises
 - [ ] Prix en € (pas en $)
-- [ ] Anti-Gravity valide le flux complet
+- [ ] Playwright / E2E verification valide le flux complet
 - [ ] Plus de retour possible au menu anglais
 
 ---

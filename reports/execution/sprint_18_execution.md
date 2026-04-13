@@ -129,4 +129,4 @@ Sprint 18 terminé avec succès. Les 2 bugs mineurs identifiés lors de l'audit 
 
 **Résultat de l'audit :** 34/34 vérifications PASS après ce Sprint 18.
 
-Prochaine étape recommandée : Exécution des tests et audit Anti-Gravity pour valider les corrections.
+Prochaine étape recommandée : Exécution des tests et audit Playwright / E2E verification pour valider les corrections.
