@@ -19,8 +19,10 @@ Homestead.yaml
 *.log
 .DS_Store
 
-# Local browser runner secrets (copy from browser_profiles.example.json)
-bot/browser_runner/browser_profiles.json
+# Archived legacy web orchestration — browser runner secrets & heavy local runtime (see _archive/.../ARCHIVE_NOTE.md)
+_archive/ignored_legacy_web_orchestration/bot/browser_runner/browser_profiles.json
+_archive/ignored_legacy_web_orchestration/bot/browser_runner/profiles/
+_archive/ignored_legacy_web_orchestration/bot/state/
 # Scripts de stress-test et fichiers temporaires à la racine
 stress_test_kds.php
 test_order_simulate.php

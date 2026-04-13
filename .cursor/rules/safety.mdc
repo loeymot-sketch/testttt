@@ -28,7 +28,7 @@ Le frontend (Kiosk, POS, App) n'a **JAMAIS** le droit de définir le prix d'un p
 
 ## Règle n°3 — Transitions de statut
 
-Pipeline unidirectionnel (entiers = `App\Enums\OrderStatus`) : `PENDING (1) → ACCEPT (4) → PREPARING (7) → PREPARED (8) → OUT_FOR_DELIVERY (10) → DELIVERED (13)` (+ états terminaux enum).
+Pipeline unidirectionnel (entiers = `App\Enums\OrderStatus`, fichier `app/Enums/OrderStatus.php`) : `PENDING (1) → ACCEPT (4) → PREPARING (7) → PREPARED (8) → OUT_FOR_DELIVERY (10) → DELIVERED (13)` ; états terminaux / exceptionnels explicites : `CANCELED (16)`, `REJECTED (19)`, `RETURNED (22)`.
 
 - Interdit de sauter des étapes (ex: PENDING → DELIVERED).
 - Seul un admin dashboard avec confirmation de paiement peut bypasser (tracé dans `action_logs`).

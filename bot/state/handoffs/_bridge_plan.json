@@ -1,1 +1,0 @@
-{"schema_version":1,"cycle_id":"1c91e0fb-08cb-43a7-83e3-ce74e024beda","task_id":"T-BRIDGE","response_kind":"plan","received_at":"2026-04-12T12:00:00+00:00","objective":"o","scope_non_goals":[],"risk_class":"low","suggested_next_actor":"cursor_execute","test_stance":"No-test","verdict":null,"human_decision":"GO","files_allowed":["bot/README.md"]}
