@@ -89,7 +89,7 @@ class PosPriorityApiTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonFragment(['status' => false]);
-        $this->assertStringContainsString('Coupon', $response->json('message'));
+        $this->assertStringContainsStringIgnoringCase('coupon', $response->json('message'));
         $this->assertEquals(0, Order::count());
     }
 
@@ -126,7 +126,7 @@ class PosPriorityApiTest extends TestCase
             'delivery_charge' => $deliveryCharge,
             'address_id' => $foreignAddress->id,
             'pos_payment_method' => PosPaymentMethod::CASH,
-            'pos_received_amount' => $total,
+            'pos_received_amount' => 999,
             'items' => json_encode([[
                 'item_id' => $item->id,
                 'item_price' => $item->price,
@@ -143,7 +143,7 @@ class PosPriorityApiTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonFragment(['status' => false]);
-        $this->assertStringContainsString('Adresse', $response->json('message'));
+        $this->assertStringContainsStringIgnoringCase('adresse', $response->json('message'));
         $this->assertEquals(0, Order::count());
     }
 }

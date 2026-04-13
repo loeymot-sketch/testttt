@@ -15,13 +15,13 @@
             fill="#FFD700" stroke="#FFA500" stroke-width="1.5"/>
         </svg>
       </div>
-      <h1 class="kiosk-loyalty-title">Programme Fidélité</h1>
+      <h1 class="kiosk-loyalty-title">{{ $t('kiosk.loyalty_screen.title') }}</h1>
     </div>
 
     <!-- Étape 1: Saisie du code -->
     <div v-if="step === 'input'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card">
-        <p class="kiosk-loyalty-subtitle">Entrez votre code fidélité ou votre numéro de téléphone</p>
+        <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.input_sub') }}</p>
 
         <div class="kiosk-loyalty-input-row">
           <input
@@ -29,7 +29,7 @@
             v-model="code"
             type="text"
             class="kiosk-loyalty-input"
-            placeholder="Ex: A1B2C3D4 ou 0612345678"
+            :placeholder="$t('kiosk.loyalty_screen.code_placeholder')"
             maxlength="20"
             @keyup.enter="checkLoyalty"
           />
@@ -63,17 +63,17 @@
           :disabled="!code.trim() || loading"
           @click="checkLoyalty"
         >
-          <span v-if="!loading">Vérifier mon code</span>
+          <span v-if="!loading">{{ $t('kiosk.loyalty_screen.verify_btn') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
 
         <button class="kiosk-loyalty-skip" @click="goBack">
-          Continuer sans fidélité
+          {{ $t('kiosk.loyalty_screen.skip') }}
         </button>
 
         <!-- Register new customer -->
         <button class="kiosk-loyalty-register-btn" @click="step = 'register'">
-          Pas encore membre ? S'inscrire →
+          {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
     </div>
@@ -81,36 +81,36 @@
     <!-- Étape 1b: Inscription nouveau client -->
     <div v-if="step === 'register'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card">
-        <p class="kiosk-loyalty-subtitle">Créer votre compte fidélité</p>
+        <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.register_title') }}</p>
 
         <div class="kiosk-register-fields">
           <div class="kiosk-field-group">
-            <label class="kiosk-field-label">Nom *</label>
+            <label class="kiosk-field-label">{{ $t('kiosk.loyalty_screen.label_name') }}</label>
             <input
               v-model="registerName"
               type="text"
               class="kiosk-loyalty-input"
-              placeholder="Votre prénom et nom"
+              :placeholder="$t('kiosk.loyalty_screen.placeholder_name')"
               maxlength="60"
             />
           </div>
           <div class="kiosk-field-group">
-            <label class="kiosk-field-label">Téléphone *</label>
+            <label class="kiosk-field-label">{{ $t('kiosk.loyalty_screen.label_phone') }}</label>
             <input
               v-model="registerPhone"
               type="tel"
               class="kiosk-loyalty-input"
-              placeholder="0600000000"
+              :placeholder="$t('kiosk.loyalty_screen.placeholder_phone')"
               maxlength="20"
             />
           </div>
           <div class="kiosk-field-group">
-            <label class="kiosk-field-label">Email (optionnel)</label>
+            <label class="kiosk-field-label">{{ $t('kiosk.loyalty_screen.label_email') }}</label>
             <input
               v-model="registerEmail"
               type="email"
               class="kiosk-loyalty-input"
-              placeholder="votre@email.fr"
+              :placeholder="$t('kiosk.loyalty_screen.placeholder_email')"
               maxlength="80"
             />
           </div>
@@ -123,10 +123,10 @@
           :disabled="!registerName.trim() || !registerPhone.trim() || registerLoading"
           @click="submitRegister"
         >
-          <span v-if="!registerLoading">Créer mon compte</span>
+          <span v-if="!registerLoading">{{ $t('kiosk.loyalty_screen.register_submit') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
-        <button class="kiosk-loyalty-skip" @click="step = 'input'">← Retour</button>
+        <button class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
       </div>
     </div>
 
@@ -141,16 +141,16 @@
           </div>
           <div class="kiosk-loyalty-info">
             <h2>{{ customer.name }}</h2>
-            <p class="kiosk-loyalty-member-since">Membre fidélité</p>
+            <p class="kiosk-loyalty-member-since">{{ $t('kiosk.loyalty_screen.member_badge') }}</p>
           </div>
         </div>
 
         <!-- Points disponibles -->
         <div class="kiosk-loyalty-points-badge">
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
-          <span class="kiosk-loyalty-points-label">points disponibles</span>
+          <span class="kiosk-loyalty-points-label">{{ $t('kiosk.loyalty_screen.points_label') }}</span>
           <span v-if="discountValue > 0" class="kiosk-loyalty-points-equiv">
-            = {{ formatPrice(Math.min(discountValue, total)) }} de réduction sur cette commande
+            {{ $t('kiosk.loyalty_screen.points_equiv', { amount: formatPrice(Math.min(discountValue, total)) }) }}
           </span>
         </div>
 
@@ -163,7 +163,7 @@
             ></div>
           </div>
           <p class="kiosk-loyalty-progress-label">
-            Plus que {{ nextTierPoints - customer.loyalty_point }} pts pour le prochain palier
+            {{ $t('kiosk.loyalty_screen.tier_progress', { n: nextTierPoints - customer.loyalty_point }) }}
           </p>
         </div>
 
@@ -180,8 +180,8 @@
               </svg>
             </div>
             <div class="kiosk-loyalty-option-text">
-              <strong>Utiliser mes points</strong>
-              <span>-{{ formatPrice(Math.min(discountValue, total)) }} sur cette commande</span>
+              <strong>{{ $t('kiosk.loyalty_screen.redeem_use') }}</strong>
+              <span>{{ $t('kiosk.loyalty_screen.redeem_use_sub', { amount: formatPrice(Math.min(discountValue, total)) }) }}</span>
             </div>
           </button>
 
@@ -197,15 +197,15 @@
               </svg>
             </div>
             <div class="kiosk-loyalty-option-text">
-              <strong>Garder mes points</strong>
-              <span>Continuer à accumuler</span>
+              <strong>{{ $t('kiosk.loyalty_screen.redeem_keep') }}</strong>
+              <span>{{ $t('kiosk.loyalty_screen.redeem_keep_sub') }}</span>
             </div>
           </button>
         </div>
 
         <div v-else class="kiosk-loyalty-not-enough">
-          <p>Vous avez {{ customer.loyalty_point }} pts — il vous faut {{ minRedeemPoints }} pts minimum pour une réduction.</p>
-          <p class="green">Vous allez gagner des points sur cette commande !</p>
+          <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
+          <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
         <button
@@ -213,11 +213,11 @@
           @click="applyLoyalty"
           :disabled="canRedeem && !redeemChoice"
         >
-          Confirmer
+          {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
 
         <button class="kiosk-loyalty-skip" @click="goBack">
-          Annuler
+          {{ $t('kiosk.loyalty_screen.cancel') }}
         </button>
       </div>
     </div>
@@ -232,19 +232,19 @@
           </svg>
         </div>
         <h2 v-if="appliedDiscount > 0" class="kiosk-loyalty-confirm-title">
-          Réduction appliquée !
+          {{ $t('kiosk.loyalty_screen.confirm_discount_title') }}
         </h2>
         <h2 v-else class="kiosk-loyalty-confirm-title">
-          Fidélité enregistrée
+          {{ $t('kiosk.loyalty_screen.confirm_saved_title') }}
         </h2>
         <p v-if="appliedDiscount > 0" class="kiosk-loyalty-confirm-amount">
           -{{ formatPrice(appliedDiscount) }}
         </p>
         <p class="kiosk-loyalty-confirm-sub">
-          {{ appliedDiscount > 0 ? 'Réduction déduite de votre total' : 'Vos points seront crédités après livraison' }}
+          {{ appliedDiscount > 0 ? $t('kiosk.loyalty_screen.confirm_discount_sub') : $t('kiosk.loyalty_screen.confirm_saved_sub') }}
         </p>
         <button class="kiosk-btn-primary full" @click="proceedToPayment">
-          Continuer vers le paiement
+          {{ $t('kiosk.loyalty_screen.continue_payment') }}
         </button>
       </div>
     </div>
@@ -276,6 +276,7 @@ export default {
       customer: null,
       discountValue: 0,
       minRedeemPoints: 100,
+      rewardTiers: [100, 250, 500, 1000, 2000],
       redeemChoice: null,
       appliedDiscount: 0,
       numpadKeys: ['1','2','3','4','5','6','7','8','9','del','0'],
@@ -307,14 +308,13 @@ export default {
     nextTierPoints() {
       if (!this.customer) return 0;
       const pts = this.customer.loyalty_point;
-      const tiers = [100, 250, 500, 1000, 2000];
-      return tiers.find(t => t > pts) || 0;
+      return this.rewardTiers.find(t => t > pts) || 0;
     },
 
     progressPercent() {
       if (!this.nextTierPoints || !this.customer) return 100;
-      const prev = [0, 100, 250, 500, 1000];
-      const tierIdx = [100, 250, 500, 1000, 2000].findIndex(t => t > this.customer.loyalty_point);
+      const prev = [0, ...this.rewardTiers];
+      const tierIdx = this.rewardTiers.findIndex(t => t > this.customer.loyalty_point);
       const start = prev[tierIdx] || 0;
       const range = this.nextTierPoints - start;
       return Math.min(100, Math.round(((this.customer.loyalty_point - start) / range) * 100));
@@ -334,6 +334,12 @@ export default {
         const res = await axios.get('frontend/loyalty/config');
         const cfg = res.data?.data || res.data || {};
         this.minRedeemPoints = cfg.min_redeem_points || 100;
+        if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
+          this.rewardTiers = cfg.tiers
+            .map((tier) => parseInt(tier, 10))
+            .filter((tier) => Number.isFinite(tier) && tier > 0)
+            .sort((a, b) => a - b);
+        }
       } catch (_) {}
     },
 
@@ -361,7 +367,7 @@ export default {
         this.step = 'balance';
       } catch (err) {
         const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-        this.error = msg || 'Code ou numéro introuvable. Vérifiez et réessayez.';
+        this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
       } finally {
         this.loading = false;
       }
@@ -371,11 +377,15 @@ export default {
       if (this.canRedeem && this.redeemChoice === 'yes') {
         this.appliedDiscount = Math.min(this.discountValue, this.total);
         await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount });
-        this.showToast(`Réduction de ${this.formatPrice(this.appliedDiscount)} appliquée !`, 'success', 3000);
+        this.showToast(
+          this.$t('kiosk.loyalty_screen.toast_discount', { amount: this.formatPrice(this.appliedDiscount) }),
+          'success',
+          3000
+        );
       } else {
         await this.setLoyalty({ customer: this.customer, discount: 0 });
         this.appliedDiscount = 0;
-        this.showToast('Fidélité enregistrée — points crédités après commande', 'info', 3000);
+        this.showToast(this.$t('kiosk.loyalty_screen.toast_saved'), 'info', 3000);
       }
       this.step = 'confirmed';
     },
@@ -399,10 +409,10 @@ export default {
         };
         this.discountValue = 0; // New member: 0 points, no discount yet
         this.code = data.loyalty_code || '';
-        this.showToast(`Bienvenue ${this.customer.name} ! Compte fidélité créé.`, 'success', 3500);
+        this.showToast(this.$t('kiosk.loyalty_screen.toast_welcome', { name: this.customer.name }), 'success', 3500);
         this.step = 'balance';
       } catch (err) {
-        const msg = err.response?.data?.message || 'Inscription impossible. Réessayez.';
+        const msg = err.response?.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic');
         this.registerError = msg;
       } finally {
         this.registerLoading = false;

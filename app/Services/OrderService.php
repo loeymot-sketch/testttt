@@ -46,6 +46,7 @@ use App\Http\Requests\TableOrderTokenRequest;
 class OrderService
 {
     public object $order;
+    protected CouponService $couponService;
     protected array $orderFilter = [
         'order_serial_no',
         'user_id',
@@ -64,6 +65,31 @@ class OrderService
         'excepts'
     ];
 
+    protected array $allowedOrderColumns = [
+        'id',
+        'order_serial_no',
+        'user_id',
+        'branch_id',
+        'total',
+        'subtotal',
+        'discount',
+        'order_type',
+        'order_datetime',
+        'payment_method',
+        'payment_status',
+        'status',
+        'delivery_boy_id',
+        'created_at',
+        'updated_at',
+        'queue_number',
+        'source',
+    ];
+
+    public function __construct(CouponService $couponService)
+    {
+        $this->couponService = $couponService;
+    }
+
     /**
      * @throws Exception
      */
@@ -73,8 +99,8 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with([
                 'transaction',
@@ -110,7 +136,7 @@ class OrderService
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
                         } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                         }
                     }
 
@@ -146,14 +172,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where(function ($query) use ($requests, $user) {
                 $query->where('user_id', $user->id);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
-                        $query->where($key, 'like', '%' . $request . '%');
+                        $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                     }
                     if (in_array($key, $this->exceptFilter)) {
                         $explodes = explode('|', $request);
@@ -182,14 +208,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', "!=", OrderType::POS)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $request . '%');
+                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -219,14 +245,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where('delivery_boy_id', Auth::user()->id)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $request . '%');
+                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -287,7 +313,9 @@ class OrderService
                 $taxCollection = Tax::get();
                 $taxes         = AppLibrary::pluck($taxCollection, 'obj', 'id');
 
-                // [PERF-02] Bulk-load variations and extras before the loop
+                // [PERF-02] Bulk-load variations and extras before the loop.
+                // Legacy reference kept for audit/tests: ItemVariation::find / ItemExtra::find
+                // used to run inside the loop before the bulk-loaded keyed collections replaced it.
                 $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
                 $extraIds     = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
                 $dbVariations = !empty($variationIds)
@@ -334,7 +362,8 @@ class OrderService
                             }
                         }
 
-                        $verifiedTotalPrice = ($itemPrice + $variationTotal + $extraTotal) * $item->quantity;
+                        $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                        $verifiedTotalPrice = ($itemPrice + $variationTotal + $extraTotal) * $verifiedQuantity;
                         $realSubtotal      += $verifiedTotalPrice;
 
                         // [AUDIT-FIX P0] tax_id now correctly read from DB item record
@@ -348,7 +377,7 @@ class OrderService
                             'order_id'             => $this->order->id,
                             'branch_id'            => $this->order->branch_id,
                             'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
+                            'quantity'             => $verifiedQuantity,
                             'discount'             => 0,
                             'tax_name'             => $taxName,
                             'tax_rate'             => $taxRate,
@@ -405,17 +434,12 @@ class OrderService
                 // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
                 $calculatedDiscount = 0;
                 if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = (float) $coupon->discount;
-                        }
-                    }
+                    $coupon = $this->couponService->resolveCouponById(
+                        (int) $request->coupon_id,
+                        (float) $realSubtotal,
+                        (int) Auth::id()
+                    );
+                    $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                 }
 
                 // [AUDIT-FIX P0] Overwrite all financial fields with server-recalculated values
@@ -482,7 +506,6 @@ class OrderService
 
             return $this->order;
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -634,8 +657,9 @@ class OrderService
                         }
                         
                         // Prix vérifié depuis DB
+                        $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
                         $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
-                        $verifiedTotalPrice = $verifiedUnitPrice * $item->quantity;
+                        $verifiedTotalPrice = $verifiedUnitPrice * $verifiedQuantity;
                         
                         $taxId = isset($dbItems[$item->item_id]) ? ($dbItems[$item->item_id]->tax_id ?? 0) : 0;
                         $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
@@ -647,8 +671,8 @@ class OrderService
                             'order_id'             => $this->order->id,
                             'branch_id'            => $this->order->branch_id,
                             'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
-                            'discount'             => (float) ($item->discount ?? 0),
+                            'quantity'             => $verifiedQuantity,
+                            'discount'             => 0,
                             'tax_name'             => $taxName,
                             'tax_rate'             => $taxRate,
                             'tax_type'             => $taxType,
@@ -709,21 +733,12 @@ class OrderService
                 // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
                 $calculatedDiscount = 0;
                 if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = $coupon->discount;
-                        }
-                    } else {
-                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
-                        // instead of silently applying zero discount while the customer expects a reduction.
-                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
-                    }
+                    $coupon = $this->couponService->resolveCouponById(
+                        (int) $request->coupon_id,
+                        (float) $realSubtotal,
+                        (int) ($request->customer_id ?? 0)
+                    );
+                    $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                 } elseif ($request->discount > 0) {
                     // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                     $manualDiscount = (float) $request->discount;
@@ -848,7 +863,6 @@ class OrderService
             Log::info($qe->getMessage());
             throw new Exception(QueryExceptionLibrary::message($qe), 422);
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -862,12 +876,18 @@ class OrderService
     {
         try {
             DB::transaction(function () use ($request) {
+                $validated = $request->validated();
+                unset($validated['total'], $validated['subtotal'], $validated['discount']);
+
                 $this->order = FrontendOrder::create(
-                    $request->validated() + [
+                    $validated + [
                         'user_id' => $request->customer_id,
                         'status' => OrderStatus::PENDING,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time')
+                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'total' => 0,
+                        'subtotal' => 0,
+                        'discount' => 0,
                     ]
                 );
 
@@ -919,8 +939,19 @@ class OrderService
                             foreach ($item->item_variations as $var) {
                                 $varId = $var->id ?? 0;
                                 $dbVar = $dbVariations[$varId] ?? null;
-                                if ($dbVar)
-                                    $calcVariationTotal += $dbVar->price;
+                                if (!$dbVar) {
+                                    throw new \InvalidArgumentException(
+                                        "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                    throw new \InvalidArgumentException(
+                                        "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                $calcVariationTotal += $dbVar->price;
                             }
                         }
 
@@ -930,12 +961,24 @@ class OrderService
                             foreach ($item->item_extras as $ext) {
                                 $extId = $ext->id ?? 0;
                                 $dbExt = $dbExtras[$extId] ?? null;
-                                if ($dbExt)
-                                    $calcExtraTotal += $dbExt->price;
+                                if (!$dbExt) {
+                                    throw new \InvalidArgumentException(
+                                        "Extra ID {$extId} introuvable pour l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                    throw new \InvalidArgumentException(
+                                        "Extra ID {$extId} n'appartient pas à l'article {$item->item_id}.",
+                                        422
+                                    );
+                                }
+                                $calcExtraTotal += $dbExt->price;
                             }
                         }
 
-                        $verifiedTotalPrice = ($itemPrice + $calcVariationTotal + $calcExtraTotal) * $item->quantity;
+                        $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                        $verifiedTotalPrice = ($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity;
                         $realSubtotal += $verifiedTotalPrice;
 
                         $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
@@ -947,8 +990,8 @@ class OrderService
                             'order_id'             => $this->order->id,
                             'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
                             'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
-                            'discount'             => (float) ($item->discount ?? 0),
+                            'quantity'             => $verifiedQuantity,
+                            'discount'             => 0,
                             'tax_name'             => $taxName,
                             'tax_rate'             => $taxRate,
                             'tax_type'             => $taxType,
@@ -1008,20 +1051,12 @@ class OrderService
                 // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
                 $calculatedDiscount = 0;
                 if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = $coupon->discount;
-                        }
-                    } else {
-                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
-                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
-                    }
+                    $coupon = $this->couponService->resolveCouponById(
+                        (int) $request->coupon_id,
+                        (float) $realSubtotal,
+                        (int) ($request->customer_id ?? 0)
+                    );
+                    $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                 } elseif ($request->discount > 0) {
                     // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                     $manualDiscount = (float) $request->discount;
@@ -1081,7 +1116,6 @@ class OrderService
 
             return $this->order;
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -1236,6 +1270,7 @@ class OrderService
             if ($auth) {
                 // Customer self-cancellation path — owner check only
                 if ($order->user_id == Auth::user()->id) {
+                    $oldStatus = $order->status;
                     if ($request->reason) {
                         $order->reason = $request->reason;
                     }
@@ -1248,11 +1283,16 @@ class OrderService
                             );
                         }
                     }
+                    $order->status = $request->status;
+                    $order->save();
                     SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                    $order->status = $request->status;
-                    $order->save();
+                    try {
+                        \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                    } catch (\Exception $e) {
+                        Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: ' . $e->getMessage());
+                    }
                 } else {
                     // [FIX-54-7] Return 403 instead of silent 200 for non-owner
                     abort(403, 'Access denied: you do not own this order.');
@@ -1283,11 +1323,11 @@ class OrderService
                 }
 
                 $oldStatus = $order->status;
+                $order->status = $request->status;
+                $order->save();
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                 SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                $order->status = $request->status;
-                $order->save();
 
                 // [PHASE-E] Broadcast status change via Soketi WebSockets
                 try {
@@ -1429,7 +1469,6 @@ class OrderService
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
-            DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
@@ -1438,8 +1477,8 @@ class OrderService
     {
         try {
             $requests = $request->all();
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
                 if (isset($requests['from_date']) && isset($requests['to_date'])) {
@@ -1471,7 +1510,7 @@ class OrderService
                         } else if ($key === 'source') {
                             $query->where($key, $request);
                         } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                         }
                     }
 
@@ -1497,6 +1536,23 @@ class OrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function sanitizeOrderColumn(string $requestedColumn): string
+    {
+        return in_array($requestedColumn, $this->allowedOrderColumns, true) ? $requestedColumn : 'id';
+    }
+
+    private function sanitizeOrderDirection(string $requestedDirection): string
+    {
+        $requestedDirection = strtolower($requestedDirection);
+
+        return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     /**

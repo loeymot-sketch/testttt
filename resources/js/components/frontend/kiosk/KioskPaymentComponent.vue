@@ -2,19 +2,20 @@
   <div class="kiosk-payment">
     <!-- Header -->
     <div class="kiosk-pay-header">
-      <button class="kiosk-pay-back" @click="$router.push({ name: 'kiosk.cart' })" :disabled="submitting">
+      <button class="kiosk-pay-back" type="button" @click="$router.replace({ name: 'kiosk.cart' })" :disabled="submitting">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
       <div class="kiosk-pay-header-info">
-        <h1 class="kiosk-pay-title">Choisissez votre paiement</h1>
-        <p class="kiosk-pay-total-label">Total à régler : <strong>{{ formatPrice(cartTotal) }}</strong></p>
+        <h1 class="kiosk-pay-title">{{ $t('kiosk.pay_screen.title') }}</h1>
+        <p class="kiosk-pay-total-label">{{ $t('kiosk.pay_screen.total_prefix') }} <strong>{{ formatPrice(cartTotal) }}</strong></p>
       </div>
     </div>
 
-    <!-- Modes de paiement -->
-    <div v-if="!submitting && !submitted" class="kiosk-pay-methods">
+    <!-- Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) -->
+    <div v-if="!submitting && !submitted" class="kiosk-pay-methods-outer">
+      <div class="kiosk-pay-methods">
       <!-- CB -->
       <div class="kiosk-pay-method" :class="{ selected: method === 'card' }" @click="selectMethod('card')">
         <div class="kiosk-pay-method-icon card">
@@ -26,8 +27,8 @@
           </svg>
         </div>
         <div class="kiosk-pay-method-info">
-          <h3>Carte bancaire</h3>
-          <p>Visa · Mastercard · CB</p>
+          <h3>{{ $t('kiosk.pay_screen.card_title') }}</h3>
+          <p>{{ $t('kiosk.pay_screen.card_sub') }}</p>
         </div>
         <div class="kiosk-pay-method-check" v-if="method === 'card'">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -46,8 +47,8 @@
           </svg>
         </div>
         <div class="kiosk-pay-method-info">
-          <h3>Espèces</h3>
-          <p>Paiement à la caisse</p>
+          <h3>{{ $t('kiosk.pay_screen.cash_title') }}</h3>
+          <p>{{ $t('kiosk.pay_screen.cash_sub') }}</p>
         </div>
         <div class="kiosk-pay-method-check" v-if="method === 'cash'">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -66,14 +67,15 @@
           </svg>
         </div>
         <div class="kiosk-pay-method-info">
-          <h3>Ticket Restaurant</h3>
-          <p>Edenred · Swile · Sodexo</p>
+          <h3>{{ $t('kiosk.pay_screen.tr_title') }}</h3>
+          <p>{{ $t('kiosk.pay_screen.tr_sub') }}</p>
         </div>
         <div class="kiosk-pay-method-check" v-if="method === 'tr'">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M5 12l5 5 9-10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
+      </div>
       </div>
     </div>
 
@@ -82,8 +84,8 @@
       <div class="kiosk-pay-processing-ring">
         <div class="kiosk-pay-processing-ring-inner" />
       </div>
-      <h2>Envoi de la commande…</h2>
-      <p>Veuillez patienter</p>
+      <h2>{{ $t('kiosk.pay_screen.processing_title') }}</h2>
+      <p>{{ $t('kiosk.pay_screen.processing_sub') }}</p>
     </div>
 
     <!-- Écran TPE : attente terminal physique (carte ou TR) -->
@@ -102,14 +104,14 @@
           </div>
         </div>
         <h2 class="kiosk-tpe-title">{{ tpeMessage }}</h2>
-        <p class="kiosk-tpe-sub">Suivez les instructions sur le terminal de paiement</p>
+        <p class="kiosk-tpe-sub">{{ $t('kiosk.pay_screen.tpe_follow') }}</p>
         <div class="kiosk-tpe-spinner"></div>
         <button
           v-if="tpeCanCancel"
           class="kiosk-tpe-cancel"
           @click="cancelCardPayment"
         >
-          Annuler le paiement
+          {{ $t('kiosk.pay_screen.cancel_payment') }}
         </button>
       </div>
     </transition>
@@ -117,16 +119,18 @@
     <!-- Bouton confirmer -->
     <div v-if="!submitting && !submitted && !tpeWaiting" class="kiosk-pay-confirm">
       <div v-if="error" class="kiosk-pay-error">{{ error }}</div>
+      <div class="kiosk-pay-confirm-inner">
       <button
         class="kiosk-btn-confirm"
         :disabled="!method"
         @click="confirmPayment"
       >
-        <span>Confirmer — {{ formatPrice(cartTotal) }}</span>
+        <span>{{ $t('kiosk.pay_screen.confirm', { amount: formatPrice(cartTotal) }) }}</span>
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <path d="M6 14h16M16 8l6 6-6 6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+      </div>
     </div>
 
   </div>
@@ -136,11 +140,6 @@
 import { mapGetters, mapActions } from 'vuex';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
-
-const TPE_MESSAGES = {
-  card: 'Insérez votre carte sur le terminal',
-  tr:   'Présentez votre titre-restaurant',
-};
 
 export default {
   name: 'KioskPaymentComponent',
@@ -168,7 +167,7 @@ export default {
     cartTotal() { return this.total; },
   },
   beforeUnmount() {
-    // nothing to clear — no more interval
+    this._lastOrder = null;
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
@@ -197,11 +196,7 @@ export default {
         const loyaltyWasRequested = this.$store.state.kioskCart?.loyaltyDiscount > 0;
         const loyaltyApplied = res?.data?.loyalty_applied;
         if (loyaltyWasRequested && loyaltyApplied === false) {
-          this.showToast(
-            'Votre réduction fidélité n\'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction.',
-            'warning',
-            6000
-          );
+          this.showToast(this.$t('kiosk.pay_screen.loyalty_not_applied_toast'), 'warning', 6000);
         }
 
         // [AUDIT-P0] Guard: if the API response is malformed and orderId is missing,
@@ -210,12 +205,11 @@ export default {
         // [AUDIT-P48-BUG3] Clearer logic: throw if no orderId AND it's not an offline queued order.
         const isOfflineId = typeof orderId === 'string' && orderId.startsWith('offline_');
         if (!orderId && !isOfflineId) {
-          throw new Error('Réponse serveur invalide : identifiant commande manquant. Veuillez réessayer.');
+          throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
         }
 
         this._lastOrder = { id: orderId, queue_number: queueNum, total };
 
-        this.submitted = true;
         this.submitting = false;
 
         const navTarget = {
@@ -237,11 +231,11 @@ export default {
         // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
         let msg;
         if (err?.message === 'TPE_TIMEOUT') {
-          msg = 'Le terminal de paiement ne répond pas. Veuillez appeler un membre du personnel.';
+          msg = this.$t('kiosk.pay_screen.tpe_timeout');
         } else {
           msg = err?.response?.data?.errors
             ? Object.values(err.response.data.errors).flat().join(' ')
-            : (err?.message || 'Une erreur est survenue. Veuillez réessayer.');
+            : (err?.message || this.$t('kiosk.pay_screen.payment_error_generic'));
         }
         this.error = msg;
         this.showToast(msg, 'error', 6000);
@@ -252,7 +246,13 @@ export default {
 
     async processCardPayment(navTarget) {
       this.tpeWaiting = true;
-      this.tpeMessage = TPE_MESSAGES[this.method] || 'Terminal en cours…';
+      const tpeKey =
+        this.method === 'card'
+          ? 'tpe_card'
+          : this.method === 'tr'
+            ? 'tpe_tr'
+            : 'tpe_default';
+      this.tpeMessage = this.$t(`kiosk.pay_screen.${tpeKey}`);
       this.tpeCanCancel = true;
 
       const isElectron = window.borne?.isElectron;
@@ -275,7 +275,7 @@ export default {
         paymentResult = await Promise.race([tpePromise, tpeTimeoutPromise]);
       } else {
         // Browser stub — simulate 2s TPE delay
-        this.tpeMessage = 'Simulation paiement (mode navigateur)…';
+        this.tpeMessage = this.$t('kiosk.pay_screen.tpe_browser_sim');
         await new Promise(r => setTimeout(r, 2000));
         paymentResult = { approved: true, transaction_id: `STUB-${Date.now()}`, card_type: 'VISA' };
       }
@@ -291,23 +291,18 @@ export default {
           axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
             .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
-        throw new Error(paymentResult.error || 'Paiement refusé par le terminal');
+        throw new Error(paymentResult.error || this.$t('kiosk.pay_screen.payment_declined'));
       }
 
-      this.tpeMessage = 'Paiement accepté ✓';
+      this.tpeMessage = this.$t('kiosk.pay_screen.tpe_accepted');
 
       // Step 3 — Confirm payment on backend (stores transaction_id)
       if (this._lastOrder?.id && paymentResult.transaction_id) {
-        try {
-          await axios.post(`frontend/order/${this._lastOrder.id}/payment-confirm`, {
-            transaction_id: paymentResult.transaction_id,
-            card_type:      paymentResult.card_type || 'CARD',
-            payment_method: this.method === 'tr' ? 5 : 4,
-          });
-        } catch (e) {
-          // Non-blocking — order is valid even if confirm call fails
-          console.warn('[KioskPayment] payment-confirm failed:', e.message);
-        }
+        await this.confirmBackendPayment(this._lastOrder.id, {
+          transaction_id: paymentResult.transaction_id,
+          card_type:      paymentResult.card_type || 'CARD',
+          payment_method: this.method === 'tr' ? 5 : 4,
+        });
       }
 
       await new Promise(r => setTimeout(r, 800));
@@ -339,14 +334,31 @@ export default {
       this.tpeCanCancel = false;
       this.submitted = false;
       this.submitting = false;
-      this.error = 'Paiement annulé.';
-      this.showToast('Paiement annulé', 'warning', 2500);
+      this.error = this.$t('kiosk.pay_screen.payment_cancelled');
+      this.showToast(this.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
       // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
       if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
         axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
           .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
         this._lastOrder = null;
       }
+    },
+
+    async confirmBackendPayment(orderId, payload) {
+      let lastError = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await axios.post(`frontend/order/${orderId}/payment-confirm`, payload);
+          return;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 700));
+          }
+        }
+      }
+      console.warn('[KioskPayment] payment-confirm failed after retries:', lastError?.message);
+      throw new Error(this.$t('kiosk.pay_screen.payment_sync_failed'));
     },
 
     // formatPrice() provided by kioskPriceMixin
@@ -358,20 +370,21 @@ export default {
 .kiosk-payment {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-dark);
+  background: var(--kiosk-bg, var(--kiosk-dark));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  color: var(--kiosk-text);
 }
 
-/* Header */
+/* Header — thème clair : texte foncé lisible */
 .kiosk-pay-header {
   display: flex;
   align-items: center;
   gap: 20px;
   padding: 24px 32px 20px;
-  background: var(--kiosk-dark-2);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: var(--kiosk-bg-2, var(--kiosk-dark-2));
+  border-bottom: 1px solid var(--kiosk-border, rgba(0,0,0,0.08));
   flex-shrink: 0;
 }
 
@@ -379,9 +392,9 @@ export default {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  color: white;
+  border: 1.5px solid var(--kiosk-border, rgba(0,0,0,0.12));
+  background: var(--kiosk-bg, #fff);
+  color: var(--kiosk-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -390,7 +403,7 @@ export default {
   transition: all 0.15s ease;
 }
 
-.kiosk-pay-back:active { background: rgba(255,255,255,0.12); transform: scale(0.95); }
+.kiosk-pay-back:active { background: var(--kiosk-bg-3, #efefef); transform: scale(0.95); }
 .kiosk-pay-back:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .kiosk-pay-header-info { flex: 1; }
@@ -398,39 +411,50 @@ export default {
 .kiosk-pay-title {
   font-size: 26px;
   font-weight: 800;
-  color: white;
+  color: var(--kiosk-text);
   margin: 0 0 4px;
 }
 
 .kiosk-pay-total-label {
   font-size: 16px;
-  color: rgba(255,255,255,0.5);
+  color: var(--kiosk-text-muted, #999);
   margin: 0;
 }
 
-.kiosk-pay-total-label strong { color: white; font-size: 18px; }
+.kiosk-pay-total-label strong { color: var(--kiosk-text); font-size: 18px; }
 
-/* Méthodes */
-.kiosk-pay-methods {
+/* Grille méthodes — cartes centrées, pas bandeaux edge-to-edge */
+.kiosk-pay-methods-outer {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 28px 32px;
   overflow-y: auto;
+  padding: 28px 32px;
   scrollbar-width: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
-.kiosk-pay-methods::-webkit-scrollbar { display: none; }
+.kiosk-pay-methods-outer::-webkit-scrollbar { display: none; }
+
+.kiosk-pay-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1000px;
+  align-content: start;
+}
 
 .kiosk-pay-method {
   display: flex;
   align-items: center;
   gap: 20px;
   padding: 24px 28px;
-  background: var(--kiosk-dark-2);
+  min-height: 120px;
+  background: var(--kiosk-bg, #fff);
   border-radius: 20px;
-  border: 2px solid rgba(255,255,255,0.07);
+  border: 2px solid var(--kiosk-border-light, rgba(0,0,0,0.08));
+  box-shadow: var(--kiosk-shadow, 0 2px 8px rgba(0,0,0,0.06));
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -440,8 +464,8 @@ export default {
 
 .kiosk-pay-method.selected {
   border-color: var(--kiosk-primary);
-  background: rgba(232,0,28,0.08);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.2), 0 8px 32px rgba(232,0,28,0.15);
+  background: var(--kiosk-primary-light, rgba(232,0,28,0.08));
+  box-shadow: 0 0 0 1px rgba(232,0,28,0.2), var(--kiosk-shadow-lg, 0 4px 20px rgba(0,0,0,0.1));
 }
 
 .kiosk-pay-method-icon {
@@ -458,18 +482,18 @@ export default {
 .kiosk-pay-method-icon.cash   { background: linear-gradient(135deg, #0a4a20, #16a34a); }
 .kiosk-pay-method-icon.tr     { background: linear-gradient(135deg, #7a2000, #ea580c); }
 
-.kiosk-pay-method-info { flex: 1; }
+.kiosk-pay-method-info { flex: 1; min-width: 0; }
 
 .kiosk-pay-method-info h3 {
   font-size: 22px;
   font-weight: 700;
-  color: white;
+  color: var(--kiosk-text);
   margin: 0 0 4px;
 }
 
 .kiosk-pay-method-info p {
   font-size: 14px;
-  color: rgba(255,255,255,0.4);
+  color: var(--kiosk-text-2, #555);
   margin: 0;
 }
 
@@ -527,13 +551,13 @@ export default {
 .kiosk-pay-processing h2 {
   font-size: 28px;
   font-weight: 800;
-  color: white;
+  color: var(--kiosk-text);
   margin: 0;
 }
 
 .kiosk-pay-processing p {
   font-size: 16px;
-  color: rgba(255,255,255,0.5);
+  color: var(--kiosk-text-muted, #999);
   margin: 0;
 }
 
@@ -549,15 +573,24 @@ export default {
   margin-bottom: 8px;
 }
 
-/* Confirmer */
+/* Confirmer — largeur max centrée (borne) */
 .kiosk-pay-confirm {
   padding: 20px 32px 32px;
   flex-shrink: 0;
 }
 
+.kiosk-pay-confirm-inner {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .kiosk-btn-confirm {
   width: 100%;
-  height: 80px;
+  max-width: 480px;
+  min-height: 80px;
+  height: auto;
+  padding: 20px 32px;
   background: var(--kiosk-primary);
   color: white;
   border: none;
@@ -568,8 +601,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  box-shadow: 0 8px 32px rgba(232,0,28,0.4);
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(232,0,28,0.35);
   transition: all 0.15s ease;
 }
 

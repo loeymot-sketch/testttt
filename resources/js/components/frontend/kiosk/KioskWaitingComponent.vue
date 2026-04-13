@@ -7,10 +7,12 @@
     <div v-if="isOfflineOrder" class="kiosk-waiting-content">
       <div class="kiosk-waiting-offline">
         <div class="kiosk-offline-icon">📡</div>
-        <h1 class="kiosk-waiting-title">Commande enregistrée</h1>
-        <p class="kiosk-waiting-hint">Votre commande a été sauvegardée localement.<br>Elle sera transmise dès que la connexion sera rétablie.</p>
+        <h1 class="kiosk-waiting-title">{{ $t('kiosk.offline_queue.title') }}</h1>
+        <p class="kiosk-waiting-hint">
+          {{ $t('kiosk.offline_queue.saved') }}<br>{{ $t('kiosk.offline_queue.will_send') }}
+        </p>
         <div class="kiosk-offline-spinner"></div>
-        <p class="kiosk-waiting-hint" style="font-size:14px;margin-top:8px">Synchronisation en cours…</p>
+        <p class="kiosk-waiting-hint" style="font-size:14px;margin-top:8px">{{ $t('kiosk.offline_queue.activity') }}</p>
       </div>
     </div>
 
@@ -25,15 +27,15 @@
             <div class="kiosk-wave-ring" v-for="n in 3" :key="n" :style="{ animationDelay: (n * 0.4) + 's' }" />
           </div>
 
-          <h1 class="kiosk-waiting-title">Votre commande est en préparation</h1>
+          <h1 class="kiosk-waiting-title">{{ $t('kiosk.waiting_title') }}</h1>
 
           <!-- Numéro commande — gros, visible de loin -->
           <div class="kiosk-waiting-number-wrap">
-            <span class="kiosk-waiting-number-label">Numéro</span>
+            <span class="kiosk-waiting-number-label">{{ $t('kiosk.waiting_ui.number_label') }}</span>
             <div class="kiosk-waiting-number">{{ queueNumber }}</div>
           </div>
 
-          <p class="kiosk-waiting-hint">Présentez-vous au comptoir quand votre numéro est appelé</p>
+          <p class="kiosk-waiting-hint">{{ $t('kiosk.waiting_ui.preparing_hint') }}</p>
 
           <!-- Barre de progression indéterminée -->
           <div class="kiosk-waiting-progress">
@@ -47,12 +49,12 @@
             <div class="kiosk-ready-ring" />
             <div class="kiosk-ready-check">✓</div>
           </div>
-          <h1 class="kiosk-ready-title">Votre commande est prête !</h1>
+          <h1 class="kiosk-ready-title">{{ $t('kiosk.order_ready_title') }}</h1>
           <div class="kiosk-waiting-number-wrap">
-            <span class="kiosk-waiting-number-label">Numéro</span>
+            <span class="kiosk-waiting-number-label">{{ $t('kiosk.waiting_ui.number_label') }}</span>
             <div class="kiosk-waiting-number">{{ queueNumber }}</div>
           </div>
-          <p class="kiosk-ready-hint">Venez récupérer votre commande au comptoir 🙌</p>
+          <p class="kiosk-ready-hint">{{ $t('kiosk.waiting_ui.ready_hint') }}</p>
         </div>
       </transition>
     </div>
@@ -60,7 +62,7 @@
     <!-- Footer (offline) -->
     <div v-if="isOfflineOrder" class="kiosk-waiting-footer">
       <button class="kiosk-waiting-new-order" @click="newOrder">
-        Nouvelle commande →
+        {{ $t('kiosk.new_order') }}
       </button>
     </div>
 
@@ -68,15 +70,15 @@
     <div v-else class="kiosk-waiting-footer">
       <template v-if="isReady">
         <button class="kiosk-waiting-new-order" @click="newOrder">
-          Nouvelle commande →
+          {{ $t('kiosk.new_order') }}
         </button>
         <span class="kiosk-waiting-auto-reset">
-          Retour automatique dans {{ autoResetSeconds }}s
+          {{ $t('kiosk.auto_redirect', { n: autoResetSeconds }) }}
         </span>
       </template>
       <template v-else>
         <span class="kiosk-waiting-preparing-hint">
-          Merci de patienter…
+          {{ $t('kiosk.waiting_subtitle') }}
         </span>
         <!-- Allow cancellation during preparation (before kitchen starts) -->
         <button
@@ -84,7 +86,7 @@
           class="kiosk-waiting-cancel-btn"
           @click="confirmCancel"
         >
-          Annuler ma commande
+          {{ $t('kiosk.waiting_screen.cancel_order_btn') }}
         </button>
       </template>
     </div>
@@ -93,7 +95,7 @@
     <transition name="slide-down-banner">
       <div v-if="networkLost" class="kiosk-network-banner">
         <span class="kiosk-network-banner-icon">📡</span>
-        <span>Connexion perdue — Reconnexion en cours…</span>
+        <span>{{ $t('kiosk.waiting_screen.network_lost') }}</span>
       </div>
     </transition>
 
@@ -103,10 +105,10 @@
       <div v-if="timedOut" class="kiosk-timeout-overlay" @click.self="dismissTimeoutAndResume">
         <div class="kiosk-timeout-modal">
           <div class="kiosk-timeout-icon">⏱️</div>
-          <h2>Attente prolongée</h2>
-          <p>Votre commande met plus de temps que prévu.</p>
-          <p>Merci de vous adresser au personnel.</p>
-          <button class="kiosk-timeout-btn" @click="newOrder">Retour à l'accueil</button>
+          <h2>{{ $t('kiosk.waiting_screen.timeout_title') }}</h2>
+          <p>{{ $t('kiosk.waiting_screen.timeout_body_1') }}</p>
+          <p>{{ $t('kiosk.waiting_screen.timeout_body_2') }}</p>
+          <button class="kiosk-timeout-btn" @click="newOrder">{{ $t('kiosk.waiting_screen.timeout_home') }}</button>
         </div>
       </div>
     </transition>
@@ -116,16 +118,16 @@
       <div v-if="showCancelConfirm" class="kiosk-cancel-overlay" @click.self="showCancelConfirm = false">
         <div class="kiosk-cancel-modal">
           <div class="kiosk-cancel-icon">⚠️</div>
-          <h2>Annuler la commande ?</h2>
-          <p v-if="!cancelError">Voulez-vous vraiment annuler votre commande ?</p>
+          <h2>{{ $t('kiosk.waiting_screen.cancel_modal_title') }}</h2>
+          <p v-if="!cancelError">{{ $t('kiosk.waiting_screen.cancel_modal_body') }}</p>
           <p v-else class="kiosk-cancel-error-msg">{{ cancelError }}</p>
           <div class="kiosk-cancel-actions">
             <button v-if="!cancelError" class="kiosk-cancel-yes" :disabled="cancelLoading" @click="cancelOrder">
-              <span v-if="!cancelLoading">Oui, annuler</span>
+              <span v-if="!cancelLoading">{{ $t('kiosk.waiting_screen.cancel_yes') }}</span>
               <span v-else class="kiosk-spinner-sm"></span>
             </button>
             <button class="kiosk-cancel-no" @click="closeCancelModal">
-              {{ cancelError ? 'Fermer' : 'Non, continuer' }}
+              {{ cancelError ? $t('kiosk.waiting_screen.close') : $t('kiosk.waiting_screen.cancel_no') }}
             </button>
           </div>
         </div>
@@ -236,8 +238,7 @@ export default {
           if (this._echoListenerCreated) this._echoChannel.stopListening('.OrderCreated');
           if (this._echoListenerStatus)  this._echoChannel.stopListening('.OrderStatusChanged');
         }
-        window.Echo.leave(channelName);
-        console.log(`[KioskWaiting] Echo unsubscribed from ${channelName}`);
+        console.log(`[KioskWaiting] Echo listeners removed from ${channelName}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo unsubscribe error:', e.message);
       }
@@ -325,10 +326,14 @@ export default {
           osc.start(ctx.currentTime + i * 0.18);
           osc.stop(ctx.currentTime + i * 0.18 + 0.5);
         });
+        setTimeout(() => {
+          try { ctx.close(); } catch (_) {}
+        }, 1200);
       } catch (_) {}
     },
 
     startElapsedTimer() {
+      clearInterval(this.elapsedTimer);
       // Show cancel button after 30s — _doPoll() hides it if kitchen already started (PREPARING+)
       // [AUDIT-P1-C] Timeout after 15 minutes — customer should contact staff
       this.elapsedTimer = setInterval(() => {
@@ -366,7 +371,7 @@ export default {
         this.$router.push({ name: 'kiosk.idle' });
       } catch (err) {
         // API refused (e.g. kitchen already started PREPARING)
-        const msg = err.response?.data?.message || 'Impossible d\'annuler : la préparation a déjà commencé.';
+        const msg = err.response?.data?.message || this.$t('kiosk.waiting_screen.cancel_blocked');
         this.cancelError = msg;
       } finally {
         this.cancelLoading = false;

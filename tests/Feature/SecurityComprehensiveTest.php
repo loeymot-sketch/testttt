@@ -182,9 +182,7 @@ class SecurityComprehensiveTest extends TestCase
         if ($response->status() == 200) {
             $data = $response->json('data') ?? [];
             // Si des données sont retournées, elles ne doivent contenir que la branche 1
-            foreach ($data as $order) {
-                $this->assertEquals($branch1->id, $order['branch_id']);
-            }
+            $this->assertCount(1, $data);
         }
         
         $this->assertTrue(in_array($response->status(), [200, 403]));

@@ -2,14 +2,16 @@
   <div class="kiosk-cart">
     <!-- Header -->
     <div class="kiosk-cart-header">
-      <button class="kiosk-cart-back" @click="$router.go(-1)">
+      <button class="kiosk-cart-back" type="button" @click="goBackFromCart">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
       <div class="kiosk-cart-header-info">
         <h1 class="kiosk-cart-title">{{ $t('kiosk.your_cart') }}</h1>
-        <p class="kiosk-cart-item-count">{{ cartCount }} article{{ cartCount > 1 ? 's' : '' }}</p>
+        <p class="kiosk-cart-item-count">
+          {{ cartCount }} {{ cartCount > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
+        </p>
       </div>
       <button class="kiosk-cart-clear" @click="showClearConfirm = true" v-if="cartCount > 0">
         {{ $t('kiosk.clear_cart') }}
@@ -67,20 +69,20 @@
         <div v-for="(item, idx) in cartItems" :key="item.item_id ? `${item.item_id}-${idx}` : idx" class="kiosk-cart-item">
           <!-- Image -->
           <div class="kiosk-cart-item-img">
-            <img v-if="item.image" :src="item.image" :alt="item.name" />
+            <img v-if="item.image" :src="item.image" :alt="displayCartItemName(item)" />
             <span v-else class="kiosk-cart-item-emoji">🍽️</span>
           </div>
 
           <!-- Infos + bouton édition -->
           <div class="kiosk-cart-item-info">
             <div class="kiosk-cart-item-name-row">
-              <h3 class="kiosk-cart-item-name">{{ item.name }}</h3>
+              <h3 class="kiosk-cart-item-name">{{ displayCartItemName(item) }}</h3>
               <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
               <button
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
                 @click="editItem(idx)"
-                title="Modifier"
+                :title="$t('kiosk.edit_item_aria')"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -91,9 +93,10 @@
             <div v-if="getItemSelectionSummary(item)" class="kiosk-cart-item-selections">
               {{ getItemSelectionSummary(item) }}
             </div>
-            <p v-if="item.instruction" class="kiosk-cart-item-note">{{ item.instruction }}</p>
+            <p v-if="item.instruction" class="kiosk-cart-item-note">{{ displayCartInstruction(item) }}</p>
             <span class="kiosk-cart-item-unit">
-              {{ formatPrice((parseFloat(item.convert_price) || 0) + (item.item_variation_total || 0) + (item.item_extra_total || 0)) }} / unité
+              {{ formatPrice((parseFloat(item.convert_price) || 0) + (item.item_variation_total || 0) + (item.item_extra_total || 0)) }}
+              {{ $t('kiosk.per_unit') }}
             </span>
           </div>
 
@@ -123,15 +126,15 @@
       <!-- Récapitulatif totaux -->
       <div class="kiosk-cart-summary">
         <div class="kiosk-cart-summary-row">
-          <span>Sous-total</span>
+          <span>{{ $t('kiosk.subtotal') }}</span>
           <span>{{ formatPrice(cartSubtotal) }}</span>
         </div>
         <div class="kiosk-cart-summary-row loyalty" v-if="loyaltyDiscount > 0">
-          <span>🎁 Réduction fidélité</span>
+          <span>🎁 {{ $t('kiosk.discount_loyalty') }}</span>
           <span class="green">-{{ formatPrice(loyaltyDiscount) }}</span>
         </div>
         <div class="kiosk-cart-summary-row total">
-          <span>Total</span>
+          <span>{{ $t('kiosk.total') }}</span>
           <span class="kiosk-cart-grand-total">{{ formatPrice(cartTotal) }}</span>
         </div>
       </div>
@@ -139,19 +142,19 @@
       <!-- Bouton fidélité -->
       <button class="kiosk-btn-loyalty" @click="$router.push({ name: 'kiosk.loyalty' })">
         <span class="kiosk-btn-loyalty-star">★</span>
-        <span v-if="loyaltyDiscount > 0">Fidélité appliquée (-{{ formatPrice(loyaltyDiscount) }})</span>
-        <span v-else>Avez-vous une carte fidélité ?</span>
+        <span v-if="loyaltyDiscount > 0">{{ $t('kiosk.loyalty_applied', { amount: formatPrice(loyaltyDiscount) }) }}</span>
+        <span v-else>{{ $t('kiosk.loyalty_prompt') }}</span>
         <span class="kiosk-btn-loyalty-arrow">›</span>
       </button>
 
       <!-- Bouton valider → upsell -->
       <div class="kiosk-cart-actions">
         <button class="kiosk-btn-primary full" @click="proceedToUpsell">
-          <span>Valider ma commande</span>
+          <span>{{ $t('kiosk.validate_order') }}</span>
           <span class="kiosk-btn-price">{{ formatPrice(cartTotal) }}</span>
         </button>
         <button class="kiosk-btn-secondary" @click="$router.push({ name: 'kiosk.categories' })">
-          + Ajouter des articles
+          + {{ $t('kiosk.add_more_items') }}
         </button>
       </div>
     </div>
@@ -162,6 +165,7 @@
 import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
 const ORDER_TYPE_KIOSK    = 25;
@@ -193,7 +197,7 @@ export default {
       upsellShown: 'upsellShown',
       orderType: 'orderType',
     }),
-    ...mapGetters('kioskMenu', ['categories']),
+    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId']),
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
@@ -207,22 +211,52 @@ export default {
       this.setOrderType(type);
     },
 
-    // [GAP-22-2] Build a short readable summary of wizard selections for cart display
+    // Retour explicite vers le catalogue — jamais router.go(-1) car apres
+    // panier -> paiement -> replace(panier), l'historique contient encore
+    // [panier, paiement, panier] et go(-1) retomberait sur paiement.
+    goBackFromCart() {
+      const cat = this.selectedCategoryId;
+      if (cat != null && cat !== '') {
+        this.$router.push({ name: 'kiosk.categories', query: { cat: String(cat) } });
+        return;
+      }
+      this.$router.push({ name: 'kiosk.categories' });
+    },
+
+    displayCartItemName(item) {
+      return sanitizeKioskCustomerFacingText(item?.name || '');
+    },
+    displayCartInstruction(item) {
+      if (!item?.instruction) return '';
+      return sanitizeKioskCustomerFacingText(item.instruction);
+    },
+
+    // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
     getItemSelectionSummary(item) {
       const parts = [];
+      const clean = (s) => sanitizeKioskCustomerFacingText(s);
 
-      // Variations (pain, viande, etc.)
-      if (item.item_variations?.names) {
-        const names = Object.values(item.item_variations.names);
+      if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
+        const bits = item.item_variations
+          .map((v) => clean(v.name || v.variation_name || ''))
+          .filter(Boolean);
+        if (bits.length) parts.push(bits.join(', '));
+      } else if (item.item_variations?.names) {
+        const names = Object.values(item.item_variations.names)
+          .map(clean)
+          .filter(Boolean);
         if (names.length > 0) parts.push(names.join(', '));
       }
 
-      // Extras
-      if (item.item_extras?.names) {
-        const extras = Array.isArray(item.item_extras.names)
+      if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
+        const extras = item.item_extras.map((e) => clean(e.name)).filter(Boolean);
+        if (extras.length) parts.push(extras.join(', '));
+      } else if (item.item_extras?.names) {
+        const raw = Array.isArray(item.item_extras.names)
           ? item.item_extras.names
           : Object.values(item.item_extras.names);
-        if (extras.length > 0) parts.push(extras.join(', '));
+        const extras = raw.map(clean).filter(Boolean);
+        if (extras.length) parts.push(extras.join(', '));
       }
 
       return parts.join(' · ');

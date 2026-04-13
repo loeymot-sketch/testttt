@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import ENV from '../config/env';
 import appService from "../services/appService";
+import { ensureKioskLocale } from '../i18n';
 import DashboardComponent from "../components/admin/dashboard/DashboardComponent";
 import NotFoundComponent from "../components/frontend/otherPage/NotFoundComponent";
 import ExceptionComponent from "../components/frontend/otherPage/ExceptionComponent";
@@ -116,6 +117,13 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+    const isKioskRoute =
+        (to.path || '').startsWith('/kiosk') ||
+        to.matched.some((record) => record.meta && record.meta.isKiosk);
+    if (isKioskRoute) {
+        ensureKioskLocale();
+    }
+
     if (to.meta.auth === true) {
         if (!store.getters.authStatus) {
             next({ name: "auth.login" });

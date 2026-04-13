@@ -73,7 +73,11 @@ class LoginController extends Controller
         $user = User::where('email', $request['email'])->first();
         Auth::guard('web')->logout();
 
-        $this->token = $user->createToken('auth_token')->plainTextToken;
+        $this->token = $user->createToken(
+            'auth_token',
+            ['*'],
+            now()->addMinutes((int) config('sanctum.expiration', 480))
+        )->plainTextToken;
 
         if (!isset($user->roles[0])) {
             return new JsonResponse([

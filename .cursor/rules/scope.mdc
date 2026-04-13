@@ -1,0 +1,58 @@
+---
+description: Scope discipline for every FoodKing agent cycle. Enforced at plan phase and reviewed at audit.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Scope Discipline – FoodKing
+
+## Mandatory Before Execution
+Claude must write a plan file containing all of the following before any execution begins:
+
+- `TASK_ID`
+- `PRIMARY_MODEL`
+- `SUBSYSTEMS_TOUCHED` — explicit list with read/write intent per subsystem
+- `SUBSYSTEMS_OFF_LIMITS` — explicit list of adjacent systems excluded from this cycle
+- `GATE_CONDITIONS` — anticipated gate triggers, or: None anticipated
+- `INVARIANTS_AT_RISK` — relevant FoodKing invariants for this cycle
+
+A plan file missing any of these fields is invalid. Execution must not start.
+
+## Blast-Radius Declaration
+For each subsystem in `SUBSYSTEMS_TOUCHED`, the plan must specify:
+- Which service, model, controller, or component is affected
+- Whether the change is read-only or write
+- Whether `branch_id` data scoping is affected
+- Whether dispatch or event logic is involved
+
+Subsystems not listed in `SUBSYSTEMS_TOUCHED` are off-limits for that cycle without exception.
+
+## No Implicit Expansion
+Scope does not grow mid-cycle for any reason — not for cleanliness, not for related bugs, not for convenience.
+If execution requires touching an unlisted subsystem: stop, log, escalate.
+"While I'm here" logic is prohibited.
+
+## SCOPE_PRESSURE Protocol
+When scope pressure is detected mid-cycle, log immediately in the plan file:
+
+SCOPE_PRESSURE:
+  trigger: [what was discovered]
+  subsystem: [what would need to be touched]
+  decision: ESCALATED | DEFERRED
+
+Claude reviews `SCOPE_PRESSURE` entries during audit.
+Unresolved `SCOPE_PRESSURE` blocks cycle close.
+
+## Ambiguous Scope = Hard Stop
+If the task file contains unclear acceptance criteria, conflicting requirements, or undefined subsystem boundaries:
+- Claude stops before writing the plan
+- Claude writes a clarification request in the task file
+- No plan is produced until the ambiguity is resolved by a human
+
+## Audit Enforcement
+Claude checks scope compliance at audit:
+- Were any subsystems touched that are not in `SUBSYSTEMS_TOUCHED`?
+- Are there unresolved `SCOPE_PRESSURE` or `ESCALATION` entries?
+- Did `branch_id` data isolation hold where declared?
+
+Any scope violation found at audit triggers a gate — it is not self-resolvable.

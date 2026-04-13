@@ -66,6 +66,7 @@ return [
         'offer_item_exist'            => 'العنصر مضاف بالفعل في عرض آخر. يمكنك إعادة إضافة هذا العنصر عند انتهاء العرض.',
         'minimum_order_amount'        => 'الحد الأدنى لمبلغ الطلب هو ',
         'coupon_date_expired'         => 'انتهت صلاحية القسيمة.',
+        'coupon_not_yet_active'       => 'القسيمة غير نشطة بعد (صالحة من :date)',
         'coupon_not_exist'            => 'القسيمة غير موجودة.',
         'code_is_invalid'             => 'الرمز غير صالح.',
         'code_is_expired'             => 'الرمز انتهت صلاحيته.',

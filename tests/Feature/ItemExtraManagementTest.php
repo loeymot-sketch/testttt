@@ -9,6 +9,7 @@ use App\Models\ItemCategory;
 use App\Enums\Status;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 
 class ItemExtraManagementTest extends TestCase
 {
@@ -41,12 +42,11 @@ class ItemExtraManagementTest extends TestCase
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => 0]);
         $admin->assignRole('Admin');
         $admin->givePermissionTo(['items', 'items_create', 'items_edit', 'items_show']);
-        $token = $admin->createToken('test')->plainTextToken;
+        Sanctum::actingAs($admin, ['*']);
 
         $category = ItemCategory::create(['name' => 'Test Cat', 'slug' => 'test-cat', 'status' => Status::ACTIVE]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
             'x-api-key' => $this->apiKey(),
         ])->postJson('/api/admin/item', [
             'name' => 'Test Item',
@@ -73,7 +73,7 @@ class ItemExtraManagementTest extends TestCase
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => 0]);
         $admin->assignRole('Admin');
         $admin->givePermissionTo(['items', 'items_create', 'items_edit', 'items_show']);
-        $token = $admin->createToken('test')->plainTextToken;
+        Sanctum::actingAs($admin, ['*']);
 
         $category = ItemCategory::create(['name' => 'Test Cat 2', 'slug' => 'test-cat-2', 'status' => Status::ACTIVE]);
         $item = Item::create([
@@ -84,7 +84,6 @@ class ItemExtraManagementTest extends TestCase
         $extra = ItemExtra::create(['item_id' => $item->id, 'name' => 'Old Extra', 'price' => 1.00, 'status' => Status::ACTIVE]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
             'x-api-key' => $this->apiKey(),
         ])->postJson("/api/admin/item/{$item->id}", [
             'name' => 'Test Item 2',

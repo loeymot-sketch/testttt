@@ -78,10 +78,10 @@ export default {
       dotTimer: null,
       videoSrc: null,
       restaurantLogo: null,
-      restaurantName: 'Notre Restaurant',
-      welcomeTitle: 'Bienvenue !',
-      welcomeSubtitle: 'Commandez en quelques touches',
-      tapHint: 'Touchez l\'écran pour commander',
+      restaurantName: '',
+      welcomeTitle: '',
+      welcomeSubtitle: '',
+      tapHint: '',
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
         fr: 'FR',
@@ -106,6 +106,7 @@ export default {
     },
   },
   mounted() {
+    this.applyLocalizedDefaults();
     this.loadSettings();
     this.startDotAnimation();
     // Always clear any leftover cart when landing on idle (back-nav, timeout, etc.)
@@ -115,6 +116,12 @@ export default {
     clearInterval(this.dotTimer);
   },
   methods: {
+    applyLocalizedDefaults() {
+      this.restaurantName = this.$t('kiosk.idle_screen.default_restaurant_name');
+      this.welcomeTitle = this.$t('kiosk.idle_screen.default_title');
+      this.welcomeSubtitle = this.$t('kiosk.idle_screen.default_subtitle');
+      this.tapHint = this.$t('kiosk.idle_screen.default_tap_hint');
+    },
     handleIdleTouch() {
       // touchstart fires before the synthetic click — set a flag so handleIdleClick ignores it.
       this._touchActivated = true;
@@ -150,13 +157,13 @@ export default {
         const data = res?.data?.data || res?.data || {};
 
         // [KIOSK-12-1] Use logo_full_path (alias of theme_logo added in SettingResource)
-        this.restaurantName = data.company_name || data.site_name || 'Notre Restaurant';
+        this.restaurantName = data.company_name || data.site_name || this.$t('kiosk.idle_screen.default_restaurant_name');
         this.restaurantLogo = data.logo_full_path || data.theme_logo || null;
 
         // [KIOSK-12-1] Kiosk idle video — null means animated gradient fallback
         this.videoSrc = data.kiosk_idle_video || null;
 
-        // [KIOSK-12-2] Configurable idle screen texts with sensible French defaults
+        // [KIOSK-12-2] Configurable idle screen texts with locale-aware defaults
         if (data.kiosk_welcome_title)    this.welcomeTitle    = data.kiosk_welcome_title;
         if (data.kiosk_welcome_subtitle) this.welcomeSubtitle = data.kiosk_welcome_subtitle;
         if (data.kiosk_tap_hint)         this.tapHint         = data.kiosk_tap_hint;

@@ -3,8 +3,8 @@
     <div class="kiosk-login-card">
       <div class="kiosk-login-logo">
         <div class="kiosk-login-icon">🖥️</div>
-        <h1 class="kiosk-login-title">Borne de commande</h1>
-        <p class="kiosk-login-sub">Initialisation automatique</p>
+        <h1 class="kiosk-login-title">{{ $t('kiosk.login_screen.title') }}</h1>
+        <p class="kiosk-login-sub">{{ $t('kiosk.login_screen.sub') }}</p>
       </div>
 
       <div class="kiosk-login-form kiosk-login-auto">
@@ -12,7 +12,7 @@
           <span v-if="loading" class="kiosk-login-spinner"></span>
           <span v-else class="kiosk-login-status-icon">!</span>
           <p class="kiosk-login-status-text">
-            {{ loading ? 'Connexion de la borne en cours...' : 'La borne tente de se reconnecter automatiquement.' }}
+            {{ loading ? $t('kiosk.login_screen.status_loading') : $t('kiosk.login_screen.status_retrying') }}
           </p>
         </div>
 
@@ -21,11 +21,11 @@
         </transition>
 
         <p class="kiosk-login-hint kiosk-login-hint-center">
-          Cette borne est publique : aucun identifiant ne doit être saisi à l’écran.
+          {{ $t('kiosk.login_screen.public_hint') }}
         </p>
 
         <button type="button" class="kiosk-login-btn" :disabled="loading" @click="retryAutoLogin">
-          <span v-if="!loading">Réessayer</span>
+          <span v-if="!loading">{{ $t('kiosk.login_screen.retry') }}</span>
           <span v-else class="kiosk-login-spinner"></span>
         </button>
 
@@ -36,16 +36,15 @@
           :disabled="loading"
           @click="disableMaintenanceMode"
         >
-          Quitter le mode maintenance
+          {{ $t('kiosk.login_screen.exit_maintenance') }}
         </button>
       </div>
 
       <p v-if="showDevSeedHint" class="kiosk-login-devhint">
-        Seed local (non prod) : utilisateur <code>kiosk-lecayenne</code> · mot de passe
-        <code>kiosk123</code> — à changer en admin après la première connexion.
+        {{ $t('kiosk.login_screen.devhint') }}
       </p>
       <p class="kiosk-login-footer">
-        Configurez cette borne dans l'espace admin → Paramètres → Bornes
+        {{ $t('kiosk.login_screen.footer') }}
       </p>
     </div>
   </div>
@@ -73,6 +72,7 @@ export default {
       loading: false,
       error: null,
       retryTimer: null,
+      retryAttempts: 0,
     };
   },
   mounted() {
@@ -85,6 +85,11 @@ export default {
     ...mapActions('kioskCart', ['kioskLogin']),
 
     getAutoCredentials() {
+      try {
+        if (sessionStorage.getItem('kiosk_maintenance_mode') === '1') {
+          return null;
+        }
+      } catch (_) { /* ignore if sessionStorage unavailable */ }
       const auto = window.foodkingConfig?.kioskAutoLogin || null;
       if (!auto?.username || auto.password === undefined || auto.password === null || String(auto.password) === '') {
         return null;
@@ -96,18 +101,22 @@ export default {
     },
 
     scheduleRetry() {
+      if (this.retryAttempts >= 10) {
+        return;
+      }
       clearTimeout(this.retryTimer);
+      const delayMs = Math.min(30000, 4000 * Math.max(1, 2 ** Math.max(0, this.retryAttempts - 1)));
       this.retryTimer = setTimeout(() => {
         this.startAutoLogin();
-      }, 4000);
+      }, delayMs);
     },
 
     async startAutoLogin() {
       const auto = this.getAutoCredentials();
       if (!auto) {
         this.error = this.maintenanceMode
-          ? 'Mode maintenance actif. Quittez le mode maintenance pour relancer la borne.'
-          : 'Connexion automatique indisponible. Vérifiez KIOSK_MACHINE_* ou KIOSK_DEFAULT_MACHINE_* puis php artisan config:clear.';
+          ? this.$t('kiosk.login_screen.err_maintenance')
+          : this.$t('kiosk.login_screen.err_no_credentials');
         return;
       }
       clearTimeout(this.retryTimer);
@@ -115,14 +124,16 @@ export default {
       this.error = null;
       try {
         await this.kioskLogin(auto);
+        this.retryAttempts = 0;
         this.$router.replace({ name: 'kiosk.idle' });
       } catch (err) {
         const msg = err?.response?.data?.errors?.validation
           || err?.response?.data?.errors?.username?.[0]
           || err?.response?.data?.errors?.password?.[0]
           || err?.message
-          || 'Connexion automatique impossible.';
+          || this.$t('kiosk.login_screen.err_login_failed');
         this.error = msg;
+        this.retryAttempts += 1;
         this.scheduleRetry();
       } finally {
         this.loading = false;
@@ -130,6 +141,7 @@ export default {
     },
 
     retryAutoLogin() {
+      this.retryAttempts = 0;
       this.startAutoLogin();
     },
 
@@ -137,6 +149,7 @@ export default {
       try {
         sessionStorage.removeItem('kiosk_maintenance_mode');
       } catch (_) { /* ignore */ }
+      this.retryAttempts = 0;
       this.startAutoLogin();
     },
   },

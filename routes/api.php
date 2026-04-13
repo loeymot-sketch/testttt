@@ -787,6 +787,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::prefix('address')->name('address.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendAddressController::class, 'index']);
+        Route::get('/{address}', [FrontendAddressController::class, 'show']);
         Route::get('/show/{address}', [FrontendAddressController::class, 'show']);
         Route::post('/', [FrontendAddressController::class, 'store']);
         Route::match(['put', 'patch'], '/{address}', [FrontendAddressController::class, 'update']);
@@ -887,7 +888,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         // [AUDIT-P0-D] Add throttle to loyalty endpoints to prevent enumeration and mass registration.
-        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware('throttle:10,1');
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1']);
         Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1');
         // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);

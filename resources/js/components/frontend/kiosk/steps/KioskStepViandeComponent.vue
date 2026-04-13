@@ -1,14 +1,14 @@
 <template>
   <div class="kiosk-step-viande">
     <h3 class="kiosk-step-title">
-      Choisissez {{ maxViandes }} viande{{ maxViandes > 1 ? 's' : '' }}
+      {{ viandeStepTitle }}
     </h3>
 
     <div class="kiosk-viande-counter">
       <div class="kiosk-counter-badge" :class="{ complete: totalSelected >= maxViandes }">
         {{ totalSelected }} / {{ maxViandes }}
       </div>
-      <span v-if="totalSelected >= maxViandes" class="kiosk-complete-badge">✅ Complet</span>
+      <span v-if="totalSelected >= maxViandes" class="kiosk-complete-badge">✅ {{ $t('kiosk.wizard.step.viande.complete') }}</span>
     </div>
 
     <!-- Grille 2 colonnes style Splash -->
@@ -53,7 +53,7 @@
     </div>
 
     <div v-if="totalSelected < maxViandes" class="kiosk-validation-hint">
-      Sélectionnez {{ maxViandes - totalSelected }} viande{{ maxViandes - totalSelected > 1 ? 's' : '' }} pour continuer
+      {{ viandeHintRemaining }}
     </div>
   </div>
 </template>
@@ -91,6 +91,19 @@ export default {
     totalSelected() {
       return Object.values(this.localSelections).reduce((sum, v) => sum + (v || 0), 0);
     },
+    viandeStepTitle() {
+      const n = this.maxViandes;
+      return n === 1
+        ? this.$t('kiosk.wizard.step.viande.title_one', { n })
+        : this.$t('kiosk.wizard.step.viande.title_many', { n });
+    },
+    viandeHintRemaining() {
+      const n = this.maxViandes - this.totalSelected;
+      if (n <= 0) return '';
+      return n === 1
+        ? this.$t('kiosk.wizard.step.viande.hint_need_one', { n })
+        : this.$t('kiosk.wizard.step.viande.hint_need_many', { n });
+    },
     viandeList() {
       // Lire les viandes depuis les variations DB (attribut "Viande")
       if (!this.item.itemAttributes) return this.getDefaultViandeList();
@@ -98,6 +111,9 @@ export default {
       const viandeAttr = this.item.itemAttributes.find(a =>
         (a.name || '').toLowerCase().includes('viande')
       );
+      if (!viandeAttr?.id) {
+        return this.getDefaultViandeList();
+      }
 
       const list = kioskVariationsForAttribute(this.item, viandeAttr.id);
       if (!list?.length) {
@@ -113,6 +129,14 @@ export default {
       }));
     }
   },
+  watch: {
+    'selections.viandes': {
+      deep: true,
+      handler(value) {
+        this.localSelections = { ...(value || {}) };
+      },
+    },
+  },
   methods: {
     viandeThumbKey(viande) {
       return String(viande.id ?? viande.key ?? '');
@@ -124,10 +148,10 @@ export default {
     getDefaultViandeList() {
       // Fallback: no real DB IDs — wizard uses instruction text only
       return [
-        { id: null, key: 'poulet',   name: 'Poulet',   displayThumb: null, emoji: '🍗' },
-        { id: null, key: 'boeuf',    name: 'Bœuf',     displayThumb: null, emoji: '🥩' },
-        { id: null, key: 'merguez',  name: 'Merguez',  displayThumb: null, emoji: '🌭' },
-        { id: null, key: 'nuggets',  name: 'Nuggets',  displayThumb: null, emoji: '🍗' },
+        { id: null, key: 'poulet', name: this.$t('kiosk.wizard.step.viande.fallback_poulet'), displayThumb: null, emoji: '🍗' },
+        { id: null, key: 'boeuf', name: this.$t('kiosk.wizard.step.viande.fallback_boeuf'), displayThumb: null, emoji: '🥩' },
+        { id: null, key: 'merguez', name: this.$t('kiosk.wizard.step.viande.fallback_merguez'), displayThumb: null, emoji: '🌭' },
+        { id: null, key: 'nuggets', name: this.$t('kiosk.wizard.step.viande.fallback_nuggets'), displayThumb: null, emoji: '🍗' },
       ];
     },
     getEmojiForViande(name) {

@@ -15,7 +15,7 @@ class BranchScope implements Scope
 
     public function apply(Builder $builder, Model $model)
     {
-        if (!App::runningInConsole() && Auth::check()) {
+        if (Auth::check() && (!App::runningInConsole() || App::runningUnitTests())) {
             $field = sprintf('%s.%s', $builder->getQuery()->from, 'branch_id');
             $userBranch = $this->branch();
 

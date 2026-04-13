@@ -25,6 +25,7 @@ class OrderFactory extends Factory
             'total' => fake()->randomFloat(2, 5, 50),
             'discount' => 0,
             'delivery_charge' => 0,
+            'order_datetime' => now(),
             'payment_method' => 1, // Cash
             'payment_status' => 5, // Unpaid
             'status' => 5, // PENDING

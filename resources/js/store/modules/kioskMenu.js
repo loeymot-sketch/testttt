@@ -9,8 +9,21 @@
  */
 import axios from 'axios';
 import { saveSnapshot, loadSnapshot, isSnapshotFresh } from '../../helpers/kioskMenuCache';
+import { sortCategoriesForKioskDisplay } from '../../helpers/kioskCategoryOrder';
+import { sortKioskItemsForDisplay } from '../../helpers/kioskItemDisplayOrder';
+import {
+    expandKioskSidebarCategories,
+    filterSandwichItemsForKioskColumn,
+} from '../../helpers/kioskSandwichSplit';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getKioskSandwichSplitConfig() {
+    if (typeof window === 'undefined' || !window.foodkingConfig) {
+        return null;
+    }
+    return window.foodkingConfig.kioskSandwichSplit || null;
+}
 
 export const kioskMenu = {
     namespaced: true,
@@ -19,6 +32,8 @@ export const kioskMenu = {
         categories:         [],
         items:              [],
         selectedCategoryId: null,
+        /** null = signatures (Nos Sandwichs) ; 'cold' = sous-colonne virtuelle « Sandwich froid » */
+        kioskSandwichSubcolumn: null,
         loading:            false,
         lastFetchedAt:      null,
         branchId:           null,
@@ -29,27 +44,62 @@ export const kioskMenu = {
         categories:         (s) => s.categories,
         allItems:           (s) => s.items,
         selectedCategoryId: (s) => s.selectedCategoryId,
+        kioskSandwichSubcolumn: (s) => s.kioskSandwichSubcolumn,
         loading:            (s) => s.loading,
         fromCache:          (s) => s.fromCache,
         isStale:            (s) => !s.lastFetchedAt || (Date.now() - s.lastFetchedAt) > CACHE_TTL_MS,
 
-        itemsByCategory: (s) => (categoryId) => {
-            if (!categoryId) return s.items;
-            // [GAP-26-1] Normalize both sides to int to avoid string vs number mismatch
-            // API may return item_category_id as string; route params are always strings
-            const id = parseInt(categoryId, 10);
-            return s.items.filter(i => {
-                const catId = parseInt(i.item_category_id ?? i.category_id, 10);
-                return catId === id;
+        nosSandwichParentId: (s) => {
+            const split = getKioskSandwichSplitConfig();
+            const slug = String(split?.parent_category_slug || 'nos-sandwichs').toLowerCase();
+            const c = s.categories.find(x => String(x.slug || '').toLowerCase() === slug);
+            return c != null ? parseInt(c.id, 10) : null;
+        },
+
+        sidebarCategories: (s) => {
+            const split = getKioskSandwichSplitConfig();
+            const coldSlugs = split?.cold_item_slugs || [];
+            return expandKioskSidebarCategories(s.categories, {
+                parentSlug: split?.parent_category_slug || 'nos-sandwichs',
+                coldSlugs,
+                coldLabel: split?.cold_sidebar_label || 'Sandwich froid',
             });
         },
 
-        selectedItems: (s, g) => g.itemsByCategory(s.selectedCategoryId),
+        itemsByCategory: (s) => (categoryId) => {
+            // [GAP-26-1] Normalize both sides to int to avoid string vs number mismatch
+            const id = parseInt(categoryId, 10);
+            const filtered = !categoryId
+                ? [...s.items]
+                : s.items.filter(i => {
+                    const catId = parseInt(i.item_category_id ?? i.category_id, 10);
+                    return catId === id;
+                });
+            return sortKioskItemsForDisplay(filtered);
+        },
+
+        /** Articles grille catalogue : filtre sous-colonne sandwich sur la borne uniquement */
+        kioskCatalogItems: (s, g) => {
+            const base = g.itemsByCategory(s.selectedCategoryId);
+            const split = getKioskSandwichSplitConfig();
+            const coldSlugs = (split?.cold_item_slugs || [])
+                .map(x => String(x).toLowerCase().trim())
+                .filter(Boolean);
+            if (!coldSlugs.length) return base;
+            const parentId = g.nosSandwichParentId;
+            const selId = parseInt(s.selectedCategoryId, 10);
+            if (parentId == null || selId !== parentId) return base;
+            const filtered = filterSandwichItemsForKioskColumn(base, s.kioskSandwichSubcolumn, coldSlugs);
+            return sortKioskItemsForDisplay(filtered);
+        },
+
+        selectedItems: (s, g) => g.kioskCatalogItems,
     },
 
     mutations: {
         SET_CATEGORIES(state, categories) {
-            state.categories = categories;
+            state.categories = sortCategoriesForKioskDisplay(categories);
+            state.kioskSandwichSubcolumn = null;
         },
         SET_ITEMS(state, items) {
             state.items = items;
@@ -57,13 +107,17 @@ export const kioskMenu = {
             state.fromCache = false;
         },
         SET_FROM_CACHE(state, { categories, items }) {
-            state.categories = categories;
+            state.categories = sortCategoriesForKioskDisplay(categories);
             state.items = items;
             state.fromCache = true;
+            state.kioskSandwichSubcolumn = null;
             // Do not update lastFetchedAt — keeps isStale=true so next online fetch replaces snapshot
         },
         SET_SELECTED_CATEGORY(state, id) {
             state.selectedCategoryId = id;
+        },
+        SET_KIOSK_SANDWICH_SUBCOLUMN(state, val) {
+            state.kioskSandwichSubcolumn = val;
         },
         SET_LOADING(state, val) {
             state.loading = val;
@@ -116,7 +170,9 @@ export const kioskMenu = {
 
             try {
                 const [catRes, itemRes] = await Promise.all([
-                    axios.get(`frontend/item-category?paginate=0&status=5&surface=kiosk${branchParam}`),
+                    axios.get(
+                        `frontend/item-category?paginate=0&status=5&surface=kiosk&order_column=sort&order_type=asc${branchParam}`
+                    ),
                     axios.get(`frontend/item?paginate=0&status=5&surface=kiosk${branchParam}`),
                 ]);
 
@@ -126,8 +182,8 @@ export const kioskMenu = {
                 commit('SET_CATEGORIES', categories);
                 commit('SET_ITEMS', items);
 
-                // [C2] Persist fresh data to IndexedDB for offline fallback
-                saveSnapshot(categories, items).catch(() => {});
+                // [C2] Persist fresh data — même ordre sidebar que le state (tri kiosk)
+                saveSnapshot(state.categories, state.items).catch(() => {});
 
                 // Auto-select first real category (skip "all" category if id === 0)
                 if (categories.length > 0 && !state.selectedCategoryId) {
@@ -154,6 +210,12 @@ export const kioskMenu = {
 
         selectCategory({ commit }, categoryId) {
             commit('SET_SELECTED_CATEGORY', categoryId);
+            commit('SET_KIOSK_SANDWICH_SUBCOLUMN', null);
+        },
+
+        selectKioskCategory({ commit }, { categoryId, sandwichSubcolumn = null }) {
+            commit('SET_SELECTED_CATEGORY', categoryId);
+            commit('SET_KIOSK_SANDWICH_SUBCOLUMN', sandwichSubcolumn);
         },
 
         setBranch({ commit, dispatch }, branchId) {

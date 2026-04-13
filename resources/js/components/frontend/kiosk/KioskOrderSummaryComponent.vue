@@ -7,7 +7,7 @@
         <span v-else class="kiosk-summary-emoji">🍽️</span>
       </div>
       <div class="kiosk-summary-details">
-        <span class="kiosk-summary-name">{{ item.name }}</span>
+        <span class="kiosk-summary-name">{{ sanitizeItemName(item.name) }}</span>
         <span class="kiosk-summary-price">{{ formatPrice(item.convert_price) }}</span>
       </div>
     </div>
@@ -16,36 +16,36 @@
     <div class="kiosk-summary-sections">
       <!-- Pain -->
       <div v-if="selections.pain" class="kiosk-summary-section">
-        <h4>Type de pain</h4>
+        <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
         <div class="kiosk-summary-row">
           <span>{{ getPainName() }}</span>
-          <span class="kiosk-free">Inclus</span>
+          <span class="kiosk-free">{{ $t('kiosk.wizard.summary.included') }}</span>
         </div>
       </div>
       
       <!-- Viandes -->
       <div v-if="selections.totalViandes > 0" class="kiosk-summary-section">
-        <h4>Viandes ({{ selections.totalViandes }})</h4>
-        <div v-for="(count, key) in selections.viandes" :key="key" class="kiosk-summary-row">
-          <span v-if="count > 0">{{ formatViandeName(key) }} x{{ count }}</span>
+        <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
+        <div v-for="row in viandeDisplayRows" :key="row.key" class="kiosk-summary-row">
+          <span v-if="row.count > 0">{{ row.label }} ×{{ row.count }}</span>
         </div>
       </div>
       
       <!-- Sauces -->
       <div v-if="selections.sauceOrder.length > 0" class="kiosk-summary-section">
-        <h4>Sauces ({{ selections.sauceOrder.length }})</h4>
+        <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ selections.sauceOrder.length }})</h4>
         <div v-for="(sauceId, index) in selections.sauceOrder" :key="sauceId" class="kiosk-summary-row">
           <span>{{ getSauceName(sauceId) }}</span>
-          <span v-if="index === 0" class="kiosk-free">Gratuite</span>
+          <span v-if="index === 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.free') }}</span>
           <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
         </div>
       </div>
       
       <!-- Garnitures -->
       <div v-if="selectedGarnituresCount > 0" class="kiosk-summary-section">
-        <h4>Garnitures ({{ selectedGarnituresCount }})</h4>
+        <h4>{{ $t('kiosk.wizard.summary.garnishes') }} ({{ selectedGarnituresCount }})</h4>
         <div class="kiosk-summary-tags">
-          <span v-for="(selected, id) in selections.garnitures" :key="id" v-if="selected" class="kiosk-tag">
+          <span v-for="id in selectedGarnitureIds" :key="id" class="kiosk-tag">
             {{ getGarnitureName(id) }}
           </span>
         </div>
@@ -53,32 +53,32 @@
       
       <!-- Suppléments -->
       <div v-if="selectedSupplements.length > 0" class="kiosk-summary-section">
-        <h4>Suppléments ({{ selectedSupplements.length }})</h4>
+        <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplements.length }})</h4>
         <div v-for="supplement in selectedSupplements" :key="supplement.id" class="kiosk-summary-row">
-          <span>{{ supplement.name }}</span>
+          <span>{{ displaySupplementName(supplement) }}</span>
           <span class="kiosk-price">+{{ formatPrice(supplement.price) }}</span>
         </div>
       </div>
       
       <!-- Menu -->
       <div v-if="selections.menuChoice && selections.menuChoice !== 'none'" class="kiosk-summary-section">
-        <h4>Menu</h4>
+        <h4>{{ $t('kiosk.wizard.summary.menu') }}</h4>
         <div class="kiosk-summary-row">
           <span>{{ getMenuLabel() }}</span>
           <span v-if="menuPrice > 0" class="kiosk-price">+{{ formatPrice(menuPrice) }}</span>
-          <span v-else class="kiosk-free">Inclus</span>
+          <span v-else class="kiosk-free">{{ $t('kiosk.wizard.summary.included') }}</span>
         </div>
         <div v-if="selections.boissonChoice" class="kiosk-summary-row boisson">
-          <span>→ {{ getBoissonName() }}</span>
+          <span>{{ $t('kiosk.wizard.summary.boisson_line', { name: getBoissonName() }) }}</span>
         </div>
       </div>
 
       <!-- Sauces frites (aligné wizard : 1 gratuite, suivantes au prix sauce supp.) -->
       <div v-if="fritesSauceRows.length > 0" class="kiosk-summary-section">
-        <h4>Sauces frites ({{ fritesSauceRows.length }})</h4>
+        <h4>{{ $t('kiosk.wizard.summary.fry_sauces') }} ({{ fritesSauceRows.length }})</h4>
         <div v-for="(row, index) in fritesSauceRows" :key="row.key" class="kiosk-summary-row">
           <span>{{ row.label }}</span>
-          <span v-if="index === 0" class="kiosk-free">Gratuite</span>
+          <span v-if="index === 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.free') }}</span>
           <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
         </div>
       </div>
@@ -86,13 +86,13 @@
     
     <!-- Total -->
     <div class="kiosk-summary-total">
-      <span>Total</span>
+      <span>{{ $t('kiosk.total') }}</span>
       <span class="kiosk-total-price">{{ formatPrice(runningTotal) }}</span>
     </div>
     
     <!-- Quantité -->
     <div class="kiosk-quantity-section">
-      <span>Quantité :</span>
+      <span>{{ $t('kiosk.wizard.summary.quantity') }}</span>
       <div class="kiosk-qty-controls">
         <button @click="decrementQty" :disabled="selections.quantity <= 1">−</button>
         <span>{{ selections.quantity }}</span>
@@ -104,6 +104,8 @@
 
 <script>
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { calculateKioskRunningTotal, getKioskExtraSauceUnitPrice, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
 
 export default {
   name: 'KioskOrderSummary',
@@ -118,9 +120,14 @@ export default {
     selectedGarnituresCount() {
       return Object.values(this.selections.garnitures || {}).filter(Boolean).length;
     },
+    selectedGarnitureIds() {
+      return Object.entries(this.selections.garnitures || {})
+        .filter(([, selected]) => !!selected)
+        .map(([id]) => id);
+    },
     selectedSupplements() {
       if (!this.item.extras) return [];
-      
+
       return this.item.extras
         .filter(e => this.selections.supplements?.[e.id] && parseFloat(e.convert_price || e.price || 0) > 0)
         .map(e => ({
@@ -129,36 +136,31 @@ export default {
           price: parseFloat(e.convert_price || e.price || 0)
         }));
     },
-    menuPrice() {
-      if (!this.item.addons || this.selections.menuChoice === 'none') return 0;
-      
-      const menuAddon = this.item.addons.find(a => 
-        (a.addon_item_name || '').toLowerCase().includes('menu')
-      );
-      
-      if (!menuAddon) return 0;
-      
-      const fullPrice = parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
-      
-      switch (this.selections.menuChoice) {
-        case 'full': return fullPrice;
-        case 'frites': return fullPrice * 0.6;
-        case 'boisson': return fullPrice * 0.4;
-        default: return 0;
+    viandeDisplayRows() {
+      const meta = this.selections._viandeMeta;
+      if (Array.isArray(meta) && meta.length > 0) {
+        return meta
+          .filter((m) => (m.count || 0) > 0)
+          .map((m, idx) => ({
+            key: `meta-${idx}-${m.name}`,
+            label: sanitizeKioskCustomerFacingText(m.name || ''),
+            count: m.count,
+          }))
+          .filter((r) => r.label);
       }
+      return Object.entries(this.selections.viandes || {})
+        .filter(([, c]) => c > 0)
+        .map(([key, count]) => ({
+          key,
+          label: this.formatViandeName(key),
+          count,
+        }));
+    },
+    menuPrice() {
+      return getKioskMenuAddonPrice(this.item, this.selections.menuChoice);
     },
     extraSaucePrice() {
-      const sauceAttr = this.item.itemAttributes?.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
-      );
-      const vars = sauceAttr
-        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
-        : null;
-      if (Array.isArray(vars)) {
-        const sauceVar = vars.find(v => parseFloat(v.convert_price || v.price || 0) > 0);
-        if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
-      }
-      return 0.50;
+      return getKioskExtraSauceUnitPrice(this.item);
     },
     fritesSauceRows() {
       const order = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
@@ -167,47 +169,33 @@ export default {
       return order.map(key => ({ key, label: this.fritesSauceLabel(key) }));
     },
     runningTotal() {
-      let total = parseFloat(this.item.convert_price) || 0;
-
-      // Sauces supplémentaires — prix depuis DB ou fallback 0.50€
-      if (this.selections.sauceOrder.length > 1) {
-        total += (this.selections.sauceOrder.length - 1) * this.extraSaucePrice;
-      }
-
-      const fryPaid = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
-      if (
-        (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites') &&
-        fryPaid.length > 1
-      ) {
-        total += (fryPaid.length - 1) * this.extraSaucePrice;
-      }
-
-      // Suppléments
-      total += this.selectedSupplements.reduce((sum, s) => sum + s.price, 0);
-
-      // Menu
-      total += this.menuPrice;
-
-      return total * (this.selections.quantity || 1);
+      return calculateKioskRunningTotal(this.item, this.selections);
     }
   },
   methods: {
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
+    },
+    displaySupplementName(supplement) {
+      return sanitizeKioskCustomerFacingText(supplement?.name || '');
+    },
     // formatPrice() provided by kioskPriceMixin
     getPainName() {
       const painId = this.selections.pain;
-      if (!painId) return 'Non sélectionné';
-      
-      const painAttr = this.item.itemAttributes?.find(a => 
+      if (!painId) return this.$t('kiosk.wizard.summary.not_selected_bread');
+
+      const painAttr = this.item.itemAttributes?.find(a =>
         (a.name || '').toLowerCase().includes('pain')
       );
       if (painAttr && this.item.variations?.[painAttr.id]) {
         const pain = this.item.variations[painAttr.id].find(v => v.id === painId);
-        return pain?.name || painId;
+        return sanitizeKioskCustomerFacingText(pain?.name || String(painId));
       }
-      return painId;
+      return sanitizeKioskCustomerFacingText(String(painId));
     },
     formatViandeName(key) {
-      return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const raw = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      return sanitizeKioskCustomerFacingText(raw);
     },
     getSauceName(sauceId) {
       const sauceAttr = this.item.itemAttributes?.find(a =>
@@ -218,37 +206,34 @@ export default {
         : null;
       if (Array.isArray(vars)) {
         const sauce = vars.find(v => String(v.id) === String(sauceId));
-        if (sauce) return sauce.name;
+        if (sauce) return sanitizeKioskCustomerFacingText(sauce.name);
       }
-      return `Sauce #${sauceId}`;
+      return this.$t('kiosk.wizard.summary.sauce_fallback', { id: sauceId });
     },
     fritesSauceLabel(key) {
-      const map = {
-        ketchup: 'Ketchup',
-        mayo: 'Mayonnaise',
-        algerienne: 'Algérienne',
-        bbq: 'BBQ',
-        samourai: 'Samouraï',
-        sans: 'Sans sauce',
-      };
-      return map[key] || key;
+      const k = `kiosk.wizard.frites_sauce.${key}`;
+      const t = this.$t(k);
+      return t !== k ? t : key;
     },
     getGarnitureName(id) {
       const garniture = this.item.extras?.find(e => e.id === parseInt(id));
-      return garniture?.name || `Garniture #${id}`;
+      if (garniture?.name) return sanitizeKioskCustomerFacingText(garniture.name);
+      return this.$t('kiosk.wizard.summary.garniture_fallback', { id });
     },
     getMenuLabel() {
-      const labels = {
-        full: 'Menu complet (frites + boisson)',
-        frites: 'Avec frites',
-        boisson: 'Avec boisson',
-        none: 'Sans menu'
+      const mc = this.selections.menuChoice;
+      const map = {
+        full: 'kiosk.wizard.summary.menu_label_full',
+        frites: 'kiosk.wizard.summary.menu_label_frites',
+        boisson: 'kiosk.wizard.summary.menu_label_boisson',
+        none: 'kiosk.wizard.summary.menu_label_none',
       };
-      return labels[this.selections.menuChoice] || this.selections.menuChoice;
+      const path = map[mc];
+      return path ? this.$t(path) : mc;
     },
     getBoissonName() {
       const boissonId = this.selections.boissonChoice;
-      if (!boissonId) return 'Non sélectionnée';
+      if (!boissonId) return this.$t('kiosk.wizard.summary.not_selected_drink');
 
       const boisson = this.item.addons?.find(a => {
         const linked = a.item_addon_id ?? a.addon_item_id;
@@ -257,11 +242,15 @@ export default {
           || a.id === boissonId;
       });
 
-      if (boisson) return boisson.addon_item_name || boisson.name || 'Boisson';
+      if (boisson) {
+        return sanitizeKioskCustomerFacingText(
+          boisson.addon_item_name || boisson.name || this.$t('kiosk.wizard.summary.drink_generic')
+        );
+      }
 
-      if (typeof boissonId === 'string') return boissonId;
+      if (typeof boissonId === 'string') return sanitizeKioskCustomerFacingText(boissonId);
 
-      return `Boisson #${boissonId}`;
+      return this.$t('kiosk.wizard.summary.drink_fallback_id', { id: boissonId });
     },
     incrementQty() {
       this.$emit('update', 'quantity', (this.selections.quantity || 1) + 1);

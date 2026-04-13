@@ -24,23 +24,23 @@
       </svg>
     </div>
 
-    <h1 class="kiosk-confirmation-title">Commande confirmée !</h1>
+    <h1 class="kiosk-confirmation-title">{{ $t('kiosk.confirmation.title') }}</h1>
 
     <div class="kiosk-confirmation-card">
       <div class="kiosk-confirmation-row">
-        <span class="kiosk-confirmation-label">Numéro de commande</span>
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.order_number') }}</span>
         <span class="kiosk-confirmation-number">#{{ displayNumber }}</span>
       </div>
       <!-- [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly -->
       <div v-if="displayTotal !== null && displayTotal !== undefined" class="kiosk-confirmation-row">
-        <span class="kiosk-confirmation-label">Total payé</span>
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.total_paid') }}</span>
         <span class="kiosk-confirmation-price">{{ formatPrice(displayTotal) }}</span>
       </div>
     </div>
 
     <div class="kiosk-confirmation-message">
-      <p>Votre commande a été envoyée en cuisine.</p>
-      <p>Présentez-vous au comptoir avec votre numéro.</p>
+      <p>{{ $t('kiosk.confirmation.message_kitchen') }}</p>
+      <p>{{ $t('kiosk.confirmation.message_counter') }}</p>
     </div>
 
     <!-- [GAP-35-7] Points fidélité gagnés — style Splash -->
@@ -49,14 +49,14 @@
         <div class="kiosk-points-icon">⭐</div>
         <div class="kiosk-points-text">
           <span class="kiosk-points-name">{{ loyaltyCustomerName }},</span>
-          <span class="kiosk-points-value">vous gagnez <strong>+{{ pointsEarned }} points</strong> fidélité !</span>
+          <span class="kiosk-points-value">{{ $t('kiosk.confirmation.loyalty_points', { n: pointsEarned }) }}</span>
         </div>
       </div>
     </transition>
 
     <!-- Progress timer -->
     <div class="kiosk-confirmation-timer">
-      <span class="kiosk-timer-label">Retour automatique dans {{ countdown }}s</span>
+      <span class="kiosk-timer-label">{{ $t('kiosk.confirmation.auto_return', { n: countdown }) }}</span>
       <div class="kiosk-timer-bar">
         <div class="kiosk-timer-fill" :style="{ width: progressWidth + '%' }"></div>
       </div>
@@ -68,14 +68,14 @@
       @click="printReceipt"
       :disabled="printStatus === 'printing'"
     >
-      <span v-if="printStatus === 'printing'">⏳ Impression…</span>
-      <span v-else-if="printStatus === 'done'">✅ Ticket imprimé</span>
-      <span v-else-if="printStatus === 'error'">❌ Erreur impression</span>
-      <span v-else>🖨️ Imprimer le ticket</span>
+      <span v-if="printStatus === 'printing'">⏳ {{ $t('kiosk.confirmation.printing') }}</span>
+      <span v-else-if="printStatus === 'done'">✅ {{ $t('kiosk.confirmation.printed') }}</span>
+      <span v-else-if="printStatus === 'error'">❌ {{ $t('kiosk.confirmation.print_error') }}</span>
+      <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
     </button>
 
     <button class="kiosk-btn-home" @click="goHome">
-      Nouvelle commande →
+      {{ $t('kiosk.confirmation.new_order') }} →
     </button>
   </div>
 
@@ -87,38 +87,39 @@
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <div class="receipt-queue">
-      <span>NUMÉRO</span>
+      <span>{{ $t('kiosk.confirmation.receipt_number') }}</span>
       <span class="receipt-queue-number">#{{ displayNumber }}</span>
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <!-- [AUDIT-P2-C] Use index in key to prevent duplicate keys when same item_id appears multiple times -->
     <div v-for="(item, index) in receiptItems" :key="item.item_id + '_' + index" class="receipt-line">
-      <span>{{ item.quantity }}x {{ item.name }}</span>
+      <span>{{ item.quantity }}x {{ sanitizeItemName(item.name) }}</span>
       <span>{{ formatPrice(item.total) }}</span>
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <div v-if="receiptDiscount > 0" class="receipt-line receipt-discount">
-      <span>Réduction fidélité</span>
+      <span>{{ $t('kiosk.confirmation.receipt_discount') }}</span>
       <span>-{{ formatPrice(receiptDiscount) }}</span>
     </div>
     <div class="receipt-line receipt-total">
-      <span>TOTAL</span>
+      <span>{{ $t('kiosk.confirmation.receipt_total') }}</span>
       <span>{{ formatPrice(displayTotal || 0) }}</span>
     </div>
     <template v-if="pointsEarned > 0 && loyaltyCustomerName">
       <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
-      <p class="receipt-footer receipt-loyalty">FIDÉLITÉ : +{{ pointsEarned }} pts</p>
+      <p class="receipt-footer receipt-loyalty">{{ $t('kiosk.confirmation.receipt_loyalty', { n: pointsEarned }) }}</p>
       <p class="receipt-footer">{{ loyaltyCustomerName }}</p>
     </template>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
-    <p class="receipt-footer">Merci de votre visite !</p>
-    <p class="receipt-footer">Présentez ce ticket au comptoir.</p>
+    <p class="receipt-footer">{{ $t('kiosk.confirmation.receipt_thanks') }}</p>
+    <p class="receipt-footer">{{ $t('kiosk.confirmation.receipt_present') }}</p>
   </div>
 </template>
 
 <script>
 import { printReceipt as escPosPrint, buildReceiptData } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
 export default {
   name: 'KioskConfirmationComponent',
@@ -128,7 +129,6 @@ export default {
     orderNumber: { type: String, default: '' },
     orderTotal:  { type: Number, default: null },
   },
-  emits: ['close'],
   data() {
     return {
       countdown:      30,
@@ -182,7 +182,7 @@ export default {
       const map = {
         card: this.$t('kiosk.card'),
         cash: this.$t('kiosk.cash'),
-        tr: 'Ticket Restaurant',
+        tr: this.$t('kiosk.pay_screen.tr_title'),
       };
       const method = this.$store.state.kioskCart?.paymentMethod;
       return map[method] || method || '';
@@ -193,7 +193,9 @@ export default {
       return lists?.company_name || lists?.site_name || 'FoodKing';
     },
     receiptDate() {
-      return new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+      const locale = this.$i18n?.locale || 'fr';
+      const browserLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'fr-FR';
+      return new Date().toLocaleString(browserLocale, { dateStyle: 'short', timeStyle: 'short' });
     },
   },
   mounted() {
@@ -207,7 +209,7 @@ export default {
     const methodMap = {
       card: this.$t('kiosk.card'),
       cash: this.$t('kiosk.cash'),
-      tr: 'Ticket Restaurant',
+      tr: this.$t('kiosk.pay_screen.tr_title'),
     };
     const rawMethod = state?.paymentMethod;
     this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
@@ -248,6 +250,7 @@ export default {
 
     async printReceipt() {
       if (this.printStatus === 'printing') return;
+      this.clearTimer();
       this.printStatus = 'printing';
 
       const receiptData = buildReceiptData({
@@ -260,24 +263,46 @@ export default {
         paymentMethod:  this.receiptPaymentMethod,
         loyaltyPointsEarned: this.pointsEarned,
         loyaltyCustomerName: this.loyaltyCustomerName || '',
+        thankYou: this.$t('kiosk.confirmation.receipt_thanks'),
+        labels: {
+          queueNumberTitle: this.$t('kiosk.confirmation.receipt_number'),
+          subtotal: this.$t('kiosk.subtotal'),
+          discount: this.$t('kiosk.confirmation.receipt_discount'),
+          total: this.$t('kiosk.confirmation.receipt_total'),
+          payment: this.$t('label.payment_method'),
+          loyalty: this.$t('kiosk.loyalty_card'),
+          seeYouSoon: this.$t('message.please_come_again'),
+        },
       });
 
-      const result = await escPosPrint(receiptData, 'kiosk-print-receipt');
+      try {
+        const result = await escPosPrint(receiptData, 'kiosk-print-receipt');
 
-      if (result.method === 'none') {
+        if (result.method === 'none') {
+          this.printStatus = 'error';
+          setTimeout(() => { this.printStatus = null; }, 3000);
+        } else {
+          this.printStatus = 'done';
+          setTimeout(() => { this.printStatus = null; }, 2000);
+        }
+      } catch (_) {
         this.printStatus = 'error';
         setTimeout(() => { this.printStatus = null; }, 3000);
-      } else {
-        this.printStatus = 'done';
-        setTimeout(() => { this.printStatus = null; }, 2000);
+      } finally {
+        if (this.countdown > 0 && !this.timer) {
+          this.startTimer();
+        }
       }
     },
 
     goHome() {
       this.clearTimer();
-      this.$emit('close');
-      // Cart already reset at mount — just navigate
-      this.$router.push({ name: 'kiosk.idle' });
+      // Router child — parent does not handle @close; must navigate here.
+      this.$router.push({ name: 'kiosk.idle' }).catch(() => {});
+    },
+
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
     },
 
     // formatPrice() provided by kioskPriceMixin

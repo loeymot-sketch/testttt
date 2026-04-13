@@ -1,10 +1,10 @@
 <template>
   <div class="kiosk-step-garnitures">
-    <h3 class="kiosk-step-title">Quelle crudité ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.garnitures.title') }}</h3>
 
     <div class="kiosk-garnitures-info">
-      <span class="kiosk-info-badge">Toutes les garnitures sont incluses</span>
-      <span class="kiosk-info-text">Désélectionnez celles que vous ne voulez pas</span>
+      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.step.garnitures.all_included') }}</span>
+      <span class="kiosk-info-text">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
     </div>
 
     <div class="kiosk-garnitures-list">
@@ -28,14 +28,14 @@
           <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
-        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? 'AVEC' : 'SANS' }}</span>
+        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
         <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
         <span v-else class="kiosk-garniture-action">+</span>
       </div>
     </div>
 
     <div class="kiosk-garnitures-summary">
-      {{ selectedCount }} garniture{{ selectedCount > 1 ? 's' : '' }} sélectionnée{{ selectedCount > 1 ? 's' : '' }}
+      {{ garnituresSummaryText }}
     </div>
   </div>
 </template>
@@ -73,6 +73,12 @@ export default {
   computed: {
     selectedCount() {
       return Object.values(this.localSelections).filter(Boolean).length;
+    },
+    garnituresSummaryText() {
+      const n = this.selectedCount;
+      if (n === 0) return this.$t('kiosk.wizard.step.garnitures.summary_zero');
+      if (n === 1) return this.$t('kiosk.wizard.step.garnitures.summary_one', { n });
+      return this.$t('kiosk.wizard.step.garnitures.summary_many', { n });
     },
     garnitureList() {
       // Les garnitures sont des extras avec prix = 0 (gratuites), excluant les sauces

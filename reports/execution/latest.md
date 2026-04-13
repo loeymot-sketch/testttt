@@ -1,36 +1,94 @@
-# Execution — Wizard Kiosk Bug Fixes
+# Execution — Post-Stabilisation Robustness Cycle
 
-**Date:** 2026-03-28  
-**Type:** Kimi-test  
-**Scope:** Vue kiosk wizard steps + categories (no backend / `buildCartItem` unchanged)
+**Date:** 2026-03-31  
+**Type:** Claude deep hardening + QA stabilization  
+**Status:** READY_FOR_HEADLESS_VALIDATION / NEEDS_DEVICE_VALIDATION
 
 ## Summary
 
-- **Bug 7 (`showFritesSauce`)** : déjà correct dans `KioskStepMenuComponent.vue` (`localChoice === 'frites'`).
-- **Sauces** : `KioskStepSauceComponent.vue` — accès `variations[String(id)]`, `getSauceOrder` / `toggleSauce` avec `findIndex` + comparaison `String`, `sauceKey` normalise les IDs numériques en `number`, images `lazy` + `@error` + état `brokenSauceThumbs`.
-- **Menu** : `menuPrice()` ratios 1 / 0.6 / 0.4 ; `isDrinkAddon` exclut noms contenant `menu`, `frite`, `frites`.
-- **Catégories** : `KioskCategoriesComponent.vue` — `<transition name="fade-fast" mode="out-in">` + clé `selectedCategoryId` + CSS.
-- **Suppléments** : `KioskStepSupplementsComponent.vue` — même pattern fallback image.
-- **Tests** : `tests/js/KioskWizard.spec.js` — montage réel des steps menu/sauce ; **Vitest** : `vitest.config.mjs` + `@vitejs/plugin-vue@5.2.1` (Node 18).
+- Le socle kiosk/POS/KDS/OSS a été stabilisé après audit :
+  - permissions/roles legacy réalignés sur les contrôleurs réels
+  - fixtures/tests incomplets réparés
+  - routes, statuts HTTP et payloads de test réalignés sur les contrats actuels
+  - `OrderStatusChanged` ajouté sur le path client self-cancel pour éviter un délai de 30s côté KDS/OSS
+  - `BranchScope` et `DefaultAccess` remis en cohérence en environnement de test
+  - `CompanyResource` et `DiningTableService` durcis pour mieux tolérer les données/config partielles
 
-## Tests
+- La validation PHP monolithique n’est plus bloquée par une vague d’échecs métier, mais par une limite mémoire du runner.
+- En compensation, une stratégie de validation PHP **par lots** a été mise en place via scripts dédiés.
+
+## Validation exécutée
+
+### JS
 
 ```bash
-npx vitest run tests/js/KioskWizard.spec.js
+npm test
+npm test -- --run tests/js/KioskWizard.spec.js
+npm run production
 ```
 
-**Résultat:** 33 passed.
+**Résultats :**
+- Vitest complet : **108 passed**
+- `KioskWizard.spec.js` isolé : **66 passed**
+- Build production : **OK**
 
-## Risques
+### PHP ciblé critique
 
-- `buildInstruction` / `buildCartItem` côté `KioskWizardComponent` utilisent encore `v.id === id` pour les sauces supplémentaires ; les clés émises restent des **nombres** pour les IDs DB grâce à `sauceKey` — cohérent avec l’existant.
+Suites repassées en vert individuellement :
+- `tests/Feature/AddressSecurityTest.php`
+- `tests/Feature/AdminCrudComprehensiveTest.php`
+- `tests/Feature/AntiGravityFinalTest.php`
+- `tests/Feature/AntiGravityLoginRedirectionTest.php`
+- `tests/Feature/AntiGravityManualTest.php`
+- `tests/Feature/AntiGravityTest.php`
+- `tests/Feature/BranchScopeTest.php`
+- `tests/Feature/KDSFlowTest.php`
+- `tests/Feature/KDSScopeRestrictionTest.php`
+- `tests/Feature/KioskScopeIsolationTest.php`
+- `tests/Feature/KioskSecurityTest.php`
+- `tests/Feature/LoyaltyApiTest.php`
+- `tests/Feature/OrderFlowTest.php`
+- `tests/Feature/PosDiscountTest.php`
+- `tests/Feature/PosUITest.php`
+- `tests/Feature/SecurityComprehensiveTest.php`
+- `tests/Feature/SyncComprehensiveTest.php`
 
-## Fichiers touchés
+### Validation par lots
 
-- `resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue`
-- `resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue`
-- `resources/js/components/frontend/kiosk/steps/KioskStepSupplementsComponent.vue`
-- `resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue`
-- `tests/js/KioskWizard.spec.js`
-- `vitest.config.mjs` (remplace `vitest.config.js`)
-- `package.json` / `package-lock.json` (`@vitejs/plugin-vue`)
+```bash
+bash scripts/run_php_feature_batches.sh all
+bash scripts/profile_php_memory.sh
+```
+
+**Résultats :**
+- `auth-security` : OK
+- `kiosk-pos-sync` : OK
+- `admin-seeders-reports` : OK
+- Profil mémoire écrit dans `reports/execution/php_memory_profile_latest.md`
+
+## Outils ajoutés
+
+- `scripts/run_php_feature_batches.sh`
+- `scripts/profile_php_memory.sh`
+
+## Documentation mise à jour
+
+- `docs/TEST_PLAN.md`
+- `docs/API_MAP.md`
+- `scripts/README.md`
+
+## Residual Risks
+
+- `php artisan test` complet reste sensible à la mémoire du runner malgré les suites vertes isolées et par lots.
+- Le flux réel borne/TPE/device n’a pas encore été validé sur un environnement browser/device configuré.
+- Le runtime local actuel indique :
+  - `broadcast=pusher`
+  - `queue=database`
+  - `kiosk_auto=no`
+  Ce dernier point bloque un tunnel borne browser réellement autonome sans préparation runtime supplémentaire.
+
+## Next Step
+
+- Lire `reports/antigravity/latest.md` pour la synthèse de validation headless sync
+- Lire `reports/review/latest.md` pour le verdict readiness actualisé
+- Utiliser `scripts/run_php_feature_batches.sh` comme pipeline PHP de référence tant que le run monolithique reste limité par la mémoire

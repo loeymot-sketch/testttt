@@ -8,8 +8,8 @@
     <template v-else>
       <!-- Header -->
       <div class="kiosk-upsell-header">
-        <h1 class="kiosk-upsell-title">Et pour terminer ?</h1>
-        <p class="kiosk-upsell-subtitle">Ajoutez quelque chose à votre commande</p>
+        <h1 class="kiosk-upsell-title">{{ $t('kiosk.upsell_screen.title') }}</h1>
+        <p class="kiosk-upsell-subtitle">{{ $t('kiosk.upsell_screen.subtitle') }}</p>
       </div>
 
       <!-- Grille suggestions -->
@@ -29,7 +29,7 @@
 
           <!-- Infos -->
           <div class="kiosk-upsell-info">
-            <h3 class="kiosk-upsell-item-name">{{ item.name }}</h3>
+            <h3 class="kiosk-upsell-item-name">{{ sanitizeItemName(item.name) }}</h3>
             <span class="kiosk-upsell-item-price">{{ formatPrice(item.convert_price) }}</span>
           </div>
 
@@ -55,15 +55,16 @@
         <button
           v-if="selectedIds.length > 0"
           class="kiosk-btn-primary"
+          :disabled="_adding"
           @click="addAndContinue"
         >
-          <span>Ajouter ({{ selectedIds.length }}) et continuer</span>
+          <span>{{ $t('kiosk.upsell_screen.add_continue', { n: selectedIds.length }) }}</span>
           <span class="kiosk-btn-price">+{{ formatPrice(addedTotal) }}</span>
         </button>
         <button class="kiosk-upsell-skip" @click="skip">
-          Non merci, continuer sans
+          {{ $t('kiosk.upsell_screen.skip') }}
           <span class="kiosk-upsell-skip-timer" v-if="autoSkipRemaining < AUTO_SKIP_SECONDS">
-            ({{ autoSkipRemaining }}s)
+            {{ $t('kiosk.upsell_screen.skip_timer', { n: autoSkipRemaining }) }}
           </span>
         </button>
 
@@ -79,6 +80,7 @@
 <script>
 import { mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
 const DESSERT_EMOJI = { dessert: '🍰', gâteau: '🎂', glace: '🍦', boisson: '🥤', café: '☕', jus: '🧃', eau: '💧', coca: '🥤', frite: '🍟' };
 
@@ -100,6 +102,7 @@ export default {
       autoSkipRemaining: AUTO_SKIP_SECONDS,
       autoSkipPct: 100,
       _autoSkipTimer: null,
+      _adding: false,
     };
   },
   computed: {
@@ -171,6 +174,8 @@ export default {
     },
 
     addAndContinue() {
+      if (this._adding || this.selectedItems.length === 0) return;
+      this._adding = true;
       this.selectedItems.forEach(item => {
         this.addItem({
           item_id: item.id,
@@ -188,11 +193,16 @@ export default {
         });
       });
       const count = this.selectedItems.length;
+      const firstName = this.sanitizeItemName(this.selectedItems[0]?.name || '');
       this.showToast(
-        count === 1 ? `${this.selectedItems[0].name} ajouté !` : `${count} articles ajoutés !`,
+        count === 1
+          ? this.$t('kiosk.upsell_screen.toast_added_one', { name: firstName })
+          : this.$t('kiosk.upsell_screen.toast_added_many', { n: count }),
         'success'
       );
-      this.$router.push({ name: 'kiosk.payment' });
+      this.$router.push({ name: 'kiosk.payment' }).catch(() => {
+        this._adding = false;
+      });
     },
 
     skip() {
@@ -205,6 +215,10 @@ export default {
         if (n.includes(key)) return emoji;
       }
       return '🍽️';
+    },
+
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
     },
 
     // formatPrice() provided by kioskPriceMixin

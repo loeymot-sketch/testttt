@@ -1,0 +1,85 @@
+---
+description: Human gate policy for FoodKing. Defines all halt conditions, gate artifact format, and resumption rules. No gate is ever self-approvable.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Human Gate Policy – FoodKing
+
+## Principle
+A gate is a hard loop block. No model may approve, bypass, or silently downgrade a gate.
+The cycle does not resume until a human explicitly resolves it.
+
+---
+
+## Hard Gates — immediate halt, no exceptions
+
+| Trigger | Required resolution |
+|---|---|
+| Schema migration (table, field, index, constraint) | Human written approval |
+| Auth logic change (auth files, middleware, guards, tokens) | Security review sign-off |
+| New external API or third-party service | Product decision |
+| Manual UX test required (new flow, redesign, critical path change) | QA sign-off |
+| Frozen zone file edit required | Explicit human approval |
+| FoodKing invariant violation detected at any phase | Human reviews finding and decides |
+| Scope expansion required mid-cycle | Human re-scopes or cancels |
+| `branch_id` isolation logic added or modified | Data isolation review |
+| Two consecutive validation failures | Human review — do not retry autonomously |
+
+## Soft Gates — halt pending human clarification
+
+| Trigger | Required resolution |
+|---|---|
+| Planning ambiguity unresolvable from task context | Human clarifies before plan is written |
+| Claude audit detects plan drift | Human reviews audit finding before close |
+| Unresolved `ESCALATION` in plan file | Claude surfaces to human — does not self-resolve |
+| Unresolved `SYMMETRY_NOTE` in plan file | Human reviews before cycle closes |
+
+---
+
+## Gate Brief Format
+File: `docs/gates/GATE_[TASK_ID]_[DATE].md`
+Author: Claude only
+
+# Gate Brief – [TASK_ID] – [DATE]
+
+## Trigger
+[Exact condition that opened this gate]
+
+## Affected Subsystems
+[Every subsystem involved in or adjacent to this gate]
+
+## Invariants at Risk
+[Relevant FoodKing invariants, or: None]
+
+## Decision Required
+[Precise question the human must answer]
+
+## Options
+1. [Option A — action and consequence]
+2. [Option B — action and consequence]
+3. Cancel cycle
+
+## Approval
+[ ] Approved — option selected: ___
+[ ] Cancelled
+Approved by: ___
+Date: ___
+
+---
+
+## Resumption Protocol
+The loop resumes only after all three conditions are met:
+1. The approval field in the gate brief is populated by a human
+2. The decision is recorded in `docs/gates/GATE_LOG.md`
+3. Claude reads the cleared gate brief and updates the plan file to reflect the resolution
+
+If the cycle is cancelled at a gate: record in `GATE_LOG.md`, mark cycle closed, no further action.
+
+## Absolute Prohibitions
+- No model fills in its own gate approval field
+- No loop resumes because a gate condition "appears resolved"
+- No soft gate is silently treated as no gate
+- No frozen zone edit proceeds without a cleared gate on record
+- No schema migration proceeds without written human approval
+- No `branch_id` isolation change proceeds without a data isolation review on record

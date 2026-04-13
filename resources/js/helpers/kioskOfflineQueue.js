@@ -18,6 +18,7 @@ const QUEUE_KEY = 'kiosk_offline_queue_v1';
 const SYNC_INTERVAL_MS = 30_000;
 
 let _syncTimer = null;
+let _syncInFlight = null;
 
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
@@ -84,6 +85,11 @@ export function getAbandonedCount() {
  * @returns {Object}         — { synced, failed, abandonedNew }
  */
 export async function syncQueue(postFn) {
+    if (_syncInFlight) {
+        return _syncInFlight;
+    }
+
+    _syncInFlight = (async () => {
     const queue = _load();
     let synced = 0;
     let failed = 0;
@@ -122,6 +128,13 @@ export async function syncQueue(postFn) {
     _save(pruned);
 
     return { synced, failed, abandonedNew };
+    })();
+
+    try {
+        return await _syncInFlight;
+    } finally {
+        _syncInFlight = null;
+    }
 }
 
 /**

@@ -13,6 +13,8 @@ class LoyaltyApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
         config(['app.api_key' => '123456']);
         $this->withHeaders([
             'x-api-key' => '123456',
@@ -58,6 +60,16 @@ class LoyaltyApiTest extends TestCase
 
     public function test_loyalty_add_points()
     {
+        $admin = \App\Models\User::forceCreate([
+            'name' => 'Admin Loyalty',
+            'username' => 'admin_loyalty',
+            'email' => 'admin-loyalty@example.com',
+            'phone' => '5234567890',
+            'password' => bcrypt('password'),
+            'status' => 1,
+        ]);
+        $admin->assignRole('Admin');
+
         $user = \App\Models\User::forceCreate([
             'name' => 'Jane Add',
             'username' => 'jane_add',
@@ -69,7 +81,7 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
-        $response = $this->postJson('/api/frontend/loyalty/add-points', [
+        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/frontend/loyalty/add-points', [
             'code' => 'ADD99',
             'points' => 20
         ]);
@@ -91,13 +103,13 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
-        $response = $this->postJson('/api/frontend/loyalty/redeem', [
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/frontend/loyalty/redeem', [
             'code' => 'RED55',
-            'points' => 30
+            'points' => 100
         ]);
 
         $response->assertStatus(200);
-        $this->assertDatabaseHas('users', ['loyalty_code' => 'RED55', 'loyalty_points' => 70]);
+        $this->assertDatabaseHas('users', ['loyalty_code' => 'RED55', 'loyalty_points' => 0]);
     }
 
     public function test_loyalty_redeem_not_enough_points()

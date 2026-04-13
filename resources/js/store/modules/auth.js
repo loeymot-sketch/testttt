@@ -9,7 +9,8 @@ export const auth = {
         authInfo: {},
         authMenu: [],
         resetInfo: {
-            email: null
+            email: null,
+            resetToken: null,
         },
         authPermission: {},
         authDefaultPermission: {},
@@ -92,6 +93,10 @@ export const auth = {
         verifyCode: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.post('auth/forgot-password/verify-code', payload).then((res) => {
+                    context.commit('verifyCode', {
+                        email: payload.email,
+                        resetToken: res?.data?.reset_token || null,
+                    });
                     resolve(res);
                 }).catch((err) => {
                     reject(err);
@@ -161,12 +166,20 @@ export const auth = {
         },
         forgetPassword: function (state, payload) {
             state.resetInfo = {
-                email: payload.email
+                email: payload.email,
+                resetToken: null,
+            }
+        },
+        verifyCode: function (state, payload) {
+            state.resetInfo = {
+                email: payload.email,
+                resetToken: payload.resetToken,
             }
         },
         resetPassword: function (state) {
             state.resetInfo = {
-                email: null
+                email: null,
+                resetToken: null,
             }
         },
         authInfo: function (state, payload) {

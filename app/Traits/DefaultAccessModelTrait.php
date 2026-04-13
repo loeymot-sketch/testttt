@@ -13,7 +13,7 @@ trait DefaultAccessModelTrait
 {
     public function branch()
     {
-        if (!App::runningInConsole() && Auth::check()) {
+        if (Auth::check() && (!App::runningInConsole() || App::runningUnitTests())) {
             $access = DefaultAccess::where(['user_id' => Auth::id(), 'name' => 'branch_id'])->first();
             if ($access) {
                 return $access->default_id;
@@ -29,7 +29,7 @@ trait DefaultAccessModelTrait
 
     public function setBranch($branchId)
     {
-        if (!App::runningInConsole() && Auth::check()) {
+        if (Auth::check() && (!App::runningInConsole() || App::runningUnitTests())) {
             if ($branchId != '0' && ($branchId == '' || $branchId == null)) {
                 $branchId = $this->branch();
             } elseif ($branchId == '0' && $branchId == Auth::user()->branch_id) {

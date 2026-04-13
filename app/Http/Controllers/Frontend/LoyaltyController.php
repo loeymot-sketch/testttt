@@ -182,7 +182,7 @@ class LoyaltyController extends Controller
     {
         // Only staff roles can add points manually (not kiosk machines or customers)
         $caller = $request->user();
-        if (!$caller || !$caller->hasAnyRole(['admin', 'manager', 'staff'])) {
+        if (!$caller || !$caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff'])) {
             return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -252,7 +252,7 @@ class LoyaltyController extends Controller
     {
         $caller = $request->user();
         $isKiosk = $caller && $caller->tokenCan('kiosk:order');
-        $isStaff = $caller && $caller->hasAnyRole(['admin', 'manager', 'staff', 'cashier']);
+        $isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
 
         try {
             $validator = $this->validatePoints($request);
@@ -349,6 +349,27 @@ class LoyaltyController extends Controller
             $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
             $pointsFor1Euro = (int)   Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
             $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+            $rawTiers       = Settings::group('loyalty_setup')->get('loyalty_tiers', '100,250,500,1000,2000');
+
+            if (is_string($rawTiers)) {
+                $tiers = collect(explode(',', $rawTiers))
+                    ->map(fn ($tier) => (int) trim($tier))
+                    ->filter(fn ($tier) => $tier > 0)
+                    ->values()
+                    ->all();
+            } elseif (is_array($rawTiers)) {
+                $tiers = collect($rawTiers)
+                    ->map(fn ($tier) => (int) $tier)
+                    ->filter(fn ($tier) => $tier > 0)
+                    ->values()
+                    ->all();
+            } else {
+                $tiers = [];
+            }
+
+            if (empty($tiers)) {
+                $tiers = [100, 250, 500, 1000, 2000];
+            }
 
             return response()->json([
                 'status' => true,
@@ -356,6 +377,7 @@ class LoyaltyController extends Controller
                     'points_per_euro'             => $pointsPerEuro,
                     'points_for_1_euro_discount'  => $pointsFor1Euro,
                     'min_redeem_points'           => $minRedeem,
+                    'tiers'                       => $tiers,
                     'label'                       => "Dépensez {$pointsFor1Euro} points = 1€ de remise",
                 ],
             ]);

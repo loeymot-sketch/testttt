@@ -80,7 +80,11 @@ class KioskMachineLoginController extends Controller
             // Revoke all existing kiosk tokens for this user to allow clean re-login
             $user->tokens()->where('name', 'kiosk-token')->delete();
 
-            $this->token = $user->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
+            $this->token = $user->createToken(
+                'kiosk-token',
+                ['kiosk:order'],
+                now()->addMinutes((int) config('sanctum.expiration', 480))
+            )->plainTextToken;
             $lockedKiosk->update(['is_login' => Ask::YES]);
         });
 

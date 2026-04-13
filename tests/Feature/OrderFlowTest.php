@@ -8,6 +8,13 @@ class OrderFlowTest extends TestCase
 {
     use \Illuminate\Foundation\Testing\RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+    }
+
     public function test_order_without_auth_returns_401()
     {
         $response = $this->postJson('/api/frontend/order', []);
@@ -41,19 +48,25 @@ class OrderFlowTest extends TestCase
 
         // Le hacker tente d'envoyer un prix de 0.01€
         $payload = [
-            'order_type' => 5, // Takeaway
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'branch_id' => $branch->id,
             'subtotal' => 0.01,
             'total' => 0.01,
-            'items' => [
+            'delivery_charge' => 0,
+            'is_advance_order' => 0,
+            'source' => 1,
+            'items' => json_encode([
                 [
                     'item_id' => $item->id,
                     'price' => 0.01, // Tentative de falsification
                     'quantity' => 1
                 ]
-            ]
+            ])
         ];
 
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', $payload);
+        $response = $this->actingAs($user, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/frontend/order', $payload);
 
         // La validation finale sur ce payload (subtotal = 0.01 au lieu de calculé) échoue en 400 Bad Request
         $this->assertTrue(in_array($response->status(), [200, 201, 400]), "La commande a échoué avec le statut " . $response->status());
@@ -82,6 +95,7 @@ class OrderFlowTest extends TestCase
             'password' => bcrypt('password123'),
             'branch_id' => $branch->id
         ]);
+        $admin->assignRole('Admin');
 
         // Créer une commande PENDING sans factory
         $order = new \App\Models\Order();
@@ -99,9 +113,11 @@ class OrderFlowTest extends TestCase
         $order->save();
 
         // Essayer de la passer directement en PREPARED (14) sans passer par ACCEPT (10)
-        $response = $this->actingAs($admin)->postJson('/api/admin/pos-order/change-status/' . $order->id, [
-            'status' => 14
-        ]);
+        $response = $this->actingAs($admin, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
+                'status' => 14
+            ]);
 
         // Doit être rejeté formellement (business constraint violation : 400 Bad Request)
         $this->assertTrue(in_array($response->status(), [400, 403, 422]), "La transition d'état illégale n'a pas été bloquée (Statut: " . $response->status() . ")");

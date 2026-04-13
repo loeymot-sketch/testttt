@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Models\Address;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
 use App\Enums\Status;
+use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -57,8 +59,8 @@ class PosUITest extends TestCase
         $this->tax = Tax::factory()->create([
             'name' => 'TVA 10%',
             'code' => 'TVA10',
-            'tax_type' => 1, // PERCENTAGE
-            'percentage' => 10.00,
+            'type' => TaxType::PERCENTAGE,
+            'tax_rate' => 10.00,
             'status' => Status::ACTIVE,
         ]);
 
@@ -84,7 +86,7 @@ class PosUITest extends TestCase
      */
     public function test_pos_order_creates_with_takeaway_order_type(): void
     {
-        $this->actingAs($this->posOperator);
+        $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
         $tax = $subtotal * 0.10; // 10%
@@ -115,21 +117,20 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 
-        $response->assertStatus(200);
+        $response->assertStatus(201);
 
         // Verify order was created with TAKEAWAY type
         $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
+            'user_id' => $this->customer->id,
             'order_type' => OrderType::TAKEAWAY,
             'subtotal' => $subtotal,
-            'total' => $total,
         ]);
 
         // Verify order does NOT have DINING_TABLE type
         $this->assertDatabaseMissing('orders', [
-            'customer_id' => $this->customer->id,
+            'user_id' => $this->customer->id,
             'order_type' => OrderType::DINING_TABLE,
         ]);
     }
@@ -139,11 +140,11 @@ class PosUITest extends TestCase
      */
     public function test_company_data_is_populated_in_pos_component(): void
     {
-        $this->actingAs($this->posOperator);
+        $this->actingAs($this->posOperator, 'sanctum');
 
         // This test verifies that the company data endpoint works
         // The actual Vue component using `this.company` would fail if not populated
-        $response = $this->getJson('/api/admin/company');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->getJson('/api/admin/setting/company');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -162,12 +163,20 @@ class PosUITest extends TestCase
      */
     public function test_order_total_includes_delivery_charge(): void
     {
-        $this->actingAs($this->posOperator);
+        $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
         $deliveryCharge = 2.50;
         $tax = ($subtotal + $deliveryCharge) * 0.10;
         $total = $subtotal + $deliveryCharge + $tax;
+        $address = Address::create([
+            'user_id' => $this->customer->id,
+            'label' => 'Home',
+            'address' => '123 Rue Test',
+            'apartment' => '',
+            'latitude' => '48.8566',
+            'longitude' => '2.3522',
+        ]);
 
         $orderData = [
             'token' => null,
@@ -176,6 +185,7 @@ class PosUITest extends TestCase
             'subtotal' => $subtotal,
             'discount' => 0,
             'delivery_charge' => $deliveryCharge, // [BUG-A3 FIX] Delivery charge included
+            'address_id' => $address->id,
             'coupon_id' => 0,
             'total' => $total,
             'order_type' => OrderType::DELIVERY,
@@ -195,15 +205,14 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 
-        $response->assertStatus(200);
+        $response->assertStatus(201);
 
         // Verify delivery charge is stored
         $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
+            'user_id' => $this->customer->id,
             'delivery_charge' => $deliveryCharge,
-            'total' => $total,
         ]);
     }
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="kiosk-step-taille">
-    <h3 class="kiosk-step-title">Choisissez votre taille</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.taille.title') }}</h3>
     <div class="kiosk-taille-grid">
       <div
         v-for="option in tailleOptions"
@@ -26,7 +26,7 @@
       </div>
     </div>
     <div v-if="!localSelection" class="kiosk-validation-hint">
-      Sélectionnez une taille pour continuer
+      {{ $t('kiosk.wizard.step.taille.hint') }}
     </div>
   </div>
 </template>
@@ -73,7 +73,7 @@ export default {
               key: v.id,
               badge: v.name,
               label: v.name,
-              viandesLabel: viandeCount + (viandeCount > 1 ? ' viandes' : ' viande'),
+              viandesLabel: this.formatViandesCountLabel(viandeCount),
               viandeCount,
               attrId: tailleAttr.id,
               realId: v.id,
@@ -84,14 +84,23 @@ export default {
       }
       // Fallback: static S/M/L/XL options (no catalog variation mapping)
       return [
-        { key: 's',   badge: 'S',   label: 'Small',  viandesLabel: '1 viande',  viandeCount: 1, attrId: null, realId: null, displayThumb: null },
-        { key: 'm',   badge: 'M',   label: 'Medium', viandesLabel: '2 viandes', viandeCount: 2, attrId: null, realId: null, displayThumb: null },
-        { key: 'l',   badge: 'L',   label: 'Large',  viandesLabel: '3 viandes', viandeCount: 3, attrId: null, realId: null, displayThumb: null },
-        { key: 'xl',  badge: 'XL',  label: 'Extra Large', viandesLabel: '4 viandes', viandeCount: 4, attrId: null, realId: null, displayThumb: null },
+        { key: 's', badge: 'S', label: this.$t('kiosk.wizard.step.taille.label_s'), viandesLabel: this.formatViandesCountLabel(1), viandeCount: 1, attrId: null, realId: null, displayThumb: null },
+        { key: 'm', badge: 'M', label: this.$t('kiosk.wizard.step.taille.label_m'), viandesLabel: this.formatViandesCountLabel(2), viandeCount: 2, attrId: null, realId: null, displayThumb: null },
+        { key: 'l', badge: 'L', label: this.$t('kiosk.wizard.step.taille.label_l'), viandesLabel: this.formatViandesCountLabel(3), viandeCount: 3, attrId: null, realId: null, displayThumb: null },
+        { key: 'xl', badge: 'XL', label: this.$t('kiosk.wizard.step.taille.label_xl'), viandesLabel: this.formatViandesCountLabel(4), viandeCount: 4, attrId: null, realId: null, displayThumb: null },
       ];
     },
   },
+  watch: {
+    'selections.taille'(value) {
+      this.localSelection = value || null;
+    },
+  },
   methods: {
+    formatViandesCountLabel(count) {
+      if (count === 1) return this.$t('kiosk.wizard.step.taille.meats_1', { n: count });
+      return this.$t('kiosk.wizard.step.taille.meats_n', { n: count });
+    },
     tailleThumbKey(option) {
       return String(option.key ?? option.label ?? '');
     },

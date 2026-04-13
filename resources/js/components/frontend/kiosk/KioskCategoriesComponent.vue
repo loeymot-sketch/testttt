@@ -12,19 +12,19 @@
           <div v-else class="kiosk-brand-thumb-fallback">{{ getCategoryEmoji(selectedCategoryDisplayName) }}</div>
         </div>
         <div class="kiosk-catalogue-breadcrumb">
-          <span class="kiosk-breadcrumb-muted">NOS</span>
-          <span class="kiosk-breadcrumb-current">{{ selectedCategoryDisplayName || 'PRODUITS' }}</span>
+          <span class="kiosk-breadcrumb-muted">{{ $t('kiosk.catalog.nos') }}</span>
+          <span class="kiosk-breadcrumb-current">{{ selectedCategoryDisplayName || $t('kiosk.catalog.products_fallback') }}</span>
         </div>
       </div>
 
       <div class="kiosk-catalogue-top-actions">
         <button class="kiosk-top-chip" type="button" disabled>
           <span class="kiosk-top-chip-icon">👤</span>
-          MON COMPTE
+          {{ $t('kiosk.catalog.my_account') }}
         </button>
         <button class="kiosk-top-chip" type="button" disabled>
           <span class="kiosk-top-chip-icon">i</span>
-          ALLERGÈNES
+          {{ $t('kiosk.catalog.allergens') }}
         </button>
       </div>
     </div>
@@ -33,32 +33,32 @@
     <transition name="slide-down">
       <div v-if="fromCache && !loading" class="kiosk-cache-banner">
         <span class="kiosk-cache-banner-icon">📡</span>
-        <span>Menu en cache — prix indicatifs. La connexion sera rétablie automatiquement.</span>
+        <span>{{ $t('kiosk.catalog.cache_banner') }}</span>
       </div>
     </transition>
 
     <div v-if="loading" class="kiosk-catalogue-loading">
       <div class="kiosk-spinner" />
-      <p>Chargement du menu...</p>
+      <p>{{ $t('kiosk.catalog.loading_menu') }}</p>
     </div>
 
     <div v-else-if="!loading && categories.length === 0" class="kiosk-catalogue-empty">
       <div v-if="loadError" class="kiosk-catalogue-error">
         <span class="kiosk-catalogue-error-icon">📡</span>
-        <p>Impossible de charger le menu.</p>
-        <button class="kiosk-catalogue-retry-btn" @click="loadCatalogue">Réessayer</button>
+        <p>{{ $t('kiosk.catalog.load_error_title') }}</p>
+        <button class="kiosk-catalogue-retry-btn" @click="loadCatalogue">{{ $t('kiosk.retry') }}</button>
       </div>
-      <p v-else>Aucune catégorie disponible pour le moment.</p>
+      <p v-else>{{ $t('kiosk.catalog.no_categories') }}</p>
     </div>
 
     <template v-else>
       <div class="kiosk-catalogue-body">
         <aside class="kiosk-sidebar">
           <button
-            v-for="cat in categories"
-            :key="cat.id"
+            v-for="cat in sidebarCategories"
+            :key="cat.kioskRowKey"
             class="kiosk-sidebar-item"
-            :class="{ active: selectedCategoryId === cat.id }"
+            :class="{ active: isCategoryActive(cat) }"
             @click="selectCategory(cat)"
           >
             <span class="kiosk-sidebar-name">{{ displayCategoryName(cat) }}</span>
@@ -77,30 +77,34 @@
           </button>
         </aside>
 
-        <main class="kiosk-product-zone">
-          <transition name="fade-fast" mode="out-in">
-            <div :key="selectedCategoryId" class="kiosk-product-zone-transition">
+        <main ref="productZone" class="kiosk-product-zone">
+          <!-- Transition locale (le shell ne refait plus slide-left à chaque ?cat= — voir KioskAppComponent) -->
+          <transition name="kiosk-cat-pane" mode="out-in">
+            <div
+              :key="`${selectedCategoryId}-${kioskSandwichSubcolumn || 'sig'}`"
+              class="kiosk-product-zone-transition"
+            >
               <div class="kiosk-product-zone-header">
                 <h1 class="kiosk-zone-title">{{ selectedCategoryDisplayName }}</h1>
                 <p class="kiosk-zone-subtitle">
-                  {{ filteredProducts.length }} produit{{ filteredProducts.length > 1 ? 's' : '' }}
+                  {{ filteredProducts.length }}
+                  {{ filteredProducts.length > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
                 </p>
               </div>
 
               <div class="kiosk-product-grid">
                 <div
-                  v-for="(product, idx) in filteredProducts"
+                  v-for="product in filteredProducts"
                   :key="product.id"
                   class="kiosk-product-card"
                   :class="{ 'is-loading': loadingItemId === product.id }"
-                  :style="{ animationDelay: (idx * 35) + 'ms' }"
                   @click="openProduct(product)"
                 >
                   <div class="kiosk-product-media">
                     <img
                       v-if="product.thumb || product.image"
                       :src="product.thumb || product.image"
-                      :alt="product.name"
+                      :alt="sanitizeItemName(product.name)"
                       class="kiosk-product-image"
                       loading="lazy"
                     />
@@ -124,7 +128,7 @@
                   </div>
 
                   <div class="kiosk-product-copy">
-                    <h3 class="kiosk-product-name">{{ product.name }}</h3>
+                    <h3 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h3>
                     <p v-if="product.description" class="kiosk-product-desc">
                       {{ truncate(product.description, 68) }}
                     </p>
@@ -147,7 +151,10 @@
                 <circle cx="17" cy="19" r="1.6" fill="currentColor"/>
               </svg>
             </span>
-            <span>{{ cartCount }} article{{ cartCount > 1 ? 's' : '' }}</span>
+            <span>
+              {{ cartCount }}
+              {{ cartCount > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
+            </span>
           </button>
 
           <div class="kiosk-bottom-total">{{ formatPrice(cartTotal) }}</div>
@@ -155,11 +162,11 @@
 
         <div class="kiosk-bottom-actions">
           <button class="kiosk-bottom-abandon" @click="abandonOrder">
-            ABANDONNER MA COMMANDE
+            {{ $t('kiosk.catalog.abandon_order') }}
           </button>
 
           <button class="kiosk-bottom-pay" @click="goToCart" :disabled="cartCount === 0">
-            PAYER
+            {{ $t('kiosk.catalog.pay') }}
           </button>
         </div>
       </div>
@@ -178,9 +185,10 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters, mapState } from 'vuex';
 import KioskWizardComponent from './KioskWizardComponent.vue';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
 const EMOJI_MAP = {
   tacos: '🌮', burger: '🍔', sandwich: '🥪', pizza: '🍕',
@@ -204,10 +212,36 @@ export default {
     };
   },
   computed: {
-    ...mapGetters('kioskMenu', ['categories', 'allItems', 'selectedCategoryId', 'loading', 'isStale', 'fromCache']),
+    ...mapState('kioskMenu', ['kioskSandwichSubcolumn']),
+    ...mapGetters('kioskMenu', [
+      'categories',
+      'allItems',
+      'selectedCategoryId',
+      'loading',
+      'isStale',
+      'fromCache',
+      'sidebarCategories',
+      'kioskCatalogItems',
+    ]),
     ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
+    selectedSidebarRow() {
+      const sid = parseInt(this.selectedCategoryId, 10);
+      const sub = this.kioskSandwichSubcolumn;
+      return this.sidebarCategories.find(
+        (r) => parseInt(r.id, 10) === sid && (r.kioskSandwichSub ?? null) === (sub ?? null),
+      );
+    },
     selectedCategory() {
-      return this.categories.find(cat => cat.id === this.selectedCategoryId) || this.categories[0] || null;
+      const sid = this.selectedCategoryId;
+      const raw =
+        this.categories.find((cat) => parseInt(cat.id, 10) === parseInt(sid, 10)) ||
+        this.categories[0] ||
+        null;
+      const row = this.selectedSidebarRow;
+      if (raw && row) {
+        return { ...raw, name: row.name };
+      }
+      return raw;
     },
     selectedCategoryName() {
       return this.selectedCategory?.name || 'Menu';
@@ -217,15 +251,16 @@ export default {
     },
     filteredProducts() {
       if (!this.selectedCategoryId) return this.allItems || [];
-      return this.$store.getters['kioskMenu/itemsByCategory'](this.selectedCategoryId);
+      return this.kioskCatalogItems;
     },
   },
   watch: {
-    '$route.query.cat': {
+    '$route.query': {
+      deep: true,
       immediate: true,
-      handler(catId) {
-        if (catId) {
-          this.syncCategoryFromRoute(catId);
+      handler(q) {
+        if (q?.cat && this.categories.length > 0) {
+          this.syncCategoryFromRoute(q.cat, q.sf);
         }
       },
     },
@@ -233,11 +268,11 @@ export default {
   async mounted() {
     await this.loadCatalogue();
     if (!this.$route.query.cat && this.selectedCategoryId) {
-      this.replaceCategoryQuery(this.selectedCategoryId);
+      this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
     }
   },
   methods: {
-    ...mapActions('kioskMenu', { fetchMenu: 'fetchMenu', setSelectedCategory: 'selectCategory' }),
+    ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
     ...mapActions('kioskCart', ['addItem', 'reset']),
 
     async loadCatalogue() {
@@ -246,33 +281,58 @@ export default {
         const branchId = this.$store.state.kioskCart?.branchId;
         await this.fetchMenu({ branchId });
         if (this.$route.query.cat) {
-          this.syncCategoryFromRoute(this.$route.query.cat);
+          this.syncCategoryFromRoute(this.$route.query.cat, this.$route.query.sf);
         } else if (this.categories.length > 0 && this.selectedCategoryId) {
-          this.replaceCategoryQuery(this.selectedCategoryId);
+          this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
         }
       } catch (_) {
         this.loadError = true;
       }
     },
 
-    syncCategoryFromRoute(catId) {
-      const normalizedId = parseInt(catId, 10);
-      const match = this.categories.find(cat => parseInt(cat.id, 10) === normalizedId);
-      if (match) {
-        this.setSelectedCategory(match.id);
-      }
+    scrollProductZoneTop() {
+      this.$nextTick(() => {
+        const el = this.$refs.productZone;
+        if (el && typeof el.scrollTop === 'number') el.scrollTop = 0;
+      });
     },
 
-    replaceCategoryQuery(categoryId) {
+    syncCategoryFromRoute(catId, sf) {
+      const normalizedId = parseInt(catId, 10);
+      const match = this.categories.find(cat => parseInt(cat.id, 10) === normalizedId);
+      if (!match) return;
+      const cold = sf === '1' || sf === 1 || sf === true || sf === 'true';
+      this.selectKioskCategory({
+        categoryId: match.id,
+        sandwichSubcolumn: cold ? 'cold' : null,
+      });
+      this.scrollProductZoneTop();
+    },
+
+    replaceCategoryQuery(categoryId, isCold) {
+      const q = { cat: String(categoryId) };
+      if (isCold) q.sf = '1';
       this.$router.replace({
         name: 'kiosk.categories',
-        query: { cat: String(categoryId) },
+        query: q,
       });
     },
 
     selectCategory(cat) {
-      this.setSelectedCategory(cat.id);
-      this.replaceCategoryQuery(cat.id);
+      const cold = cat.kioskSandwichSub === 'cold';
+      this.selectKioskCategory({
+        categoryId: cat.id,
+        sandwichSubcolumn: cold ? 'cold' : null,
+      });
+      this.replaceCategoryQuery(cat.id, cold);
+      this.scrollProductZoneTop();
+    },
+
+    isCategoryActive(cat) {
+      return (
+        parseInt(cat.id, 10) === parseInt(this.selectedCategoryId, 10) &&
+        (cat.kioskSandwichSub ?? null) === (this.kioskSandwichSubcolumn ?? null)
+      );
     },
 
     async openProduct(product) {
@@ -289,11 +349,11 @@ export default {
           this.activeItem = detail;
         } else {
           this.addItem(this.buildSimpleCartItem(detail));
-          this.showToast(`${detail.name} ajouté au panier`, 'success', 1800);
+          this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(detail.name) }), 'success', 1800);
         }
       } catch (_) {
         this.addItem(this.buildSimpleCartItem(product));
-        this.showToast(`${product.name} ajouté au panier`, 'success', 1800);
+        this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(product.name) }), 'success', 1800);
       } finally {
         this.loadingItemId = null;
       }
@@ -327,7 +387,7 @@ export default {
     addToCartAndClose(cartItem) {
       this.addItem(cartItem);
       this.closeWizard();
-      this.showToast(`${cartItem.name} ajouté au panier`, 'success', 1800);
+      this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(cartItem.name) }), 'success', 1800);
     },
 
     closeWizard() {
@@ -349,12 +409,16 @@ export default {
       return text.length > max ? text.slice(0, max) + '...' : text;
     },
 
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
+    },
+
     stripLeadingNos(name) {
       let s = (name || '').trim();
       while (/^nos\s+/i.test(s)) {
         s = s.replace(/^nos\s+/i, '').trim();
       }
-      return s || 'Menu';
+      return s || this.$t('kiosk.menu_fallback');
     },
 
     displayCategoryName(cat) {
@@ -370,8 +434,8 @@ export default {
     },
 
     getProductBadge(product) {
-      if (product.is_featured == 5) return 'NOUVEAU';
-      if (this.hasOptions(product)) return 'PERSONNALISER';
+      if (product.is_featured == 5) return this.$t('kiosk.catalog.badge_new');
+      if (this.hasOptions(product)) return this.$t('kiosk.catalog.badge_customize');
       return '';
     },
   },
@@ -640,14 +704,18 @@ export default {
   min-height: 0;
 }
 
-.fade-fast-enter-active,
-.fade-fast-leave-active {
-  transition: opacity 0.15s ease;
+/* Changement de catégorie : fondu doux local, sans glissement plein écran. */
+.kiosk-cat-pane-enter-active,
+.kiosk-cat-pane-leave-active {
+  transition:
+    opacity 0.18s ease-out,
+    filter 0.18s ease-out;
 }
 
-.fade-fast-enter-from,
-.fade-fast-leave-to {
+.kiosk-cat-pane-enter-from,
+.kiosk-cat-pane-leave-to {
   opacity: 0;
+  filter: blur(4px);
 }
 
 .kiosk-product-zone-header {
@@ -680,12 +748,7 @@ export default {
   min-height: 350px;
   padding: 4px 8px 10px;
   cursor: pointer;
-  animation: productIn 0.35s ease both;
-}
-
-@keyframes productIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* Pas d’animation par carte au changement de catégorie : évite l’effet en cascade / livre */
 }
 
 .kiosk-product-card:active {

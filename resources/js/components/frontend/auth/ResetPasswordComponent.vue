@@ -45,6 +45,7 @@ export default {
             },
             form: {
                 email: null,
+                reset_token: null,
                 password: null,
                 password_confirmation: null
             },
@@ -61,8 +62,9 @@ export default {
     },
     methods: {
         emailChecking: function () {
-            if (this.$store.getters.resetInfo.email) {
+            if (this.$store.getters.resetInfo.email && this.$store.getters.resetInfo.resetToken) {
                 this.form.email = this.$store.getters.resetInfo.email;
+                this.form.reset_token = this.$store.getters.resetInfo.resetToken;
             } else {
                 this.$router.push({name: 'auth.verifyEmail'});
             }

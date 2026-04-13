@@ -21,8 +21,12 @@ class ItemCategoryResource extends JsonResource
             'slug'            => $this->slug,
             'description'     => $this->description === null ? '' : $this->description,
             'status'          => $this->status,
+            'sort'            => (int) ($this->sort ?? 0),
             'thumb'           => $this->thumb,
             'cover'           => $this->cover,
+            // Kiosk catalogue legacy fields expected by older Vue components.
+            'image'           => $this->thumb ?: $this->cover,
+            'image_full_path' => $this->cover ?: $this->thumb,
             'wizard_template' => $this->wizard_template ?? 'simple',
             'has_menu'        => (bool)($this->has_menu ?? false),
             'kiosk_upsell_include'         => (bool)($this->kiosk_upsell_include ?? true),

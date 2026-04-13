@@ -1,7 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { createI18n } from 'vue-i18n';
+import { mount, shallowMount } from '@vue/test-utils';
+import KioskWizardComponent from '../../resources/js/components/frontend/kiosk/KioskWizardComponent.vue';
 import KioskStepMenuComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue';
 import KioskStepSauceComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue';
+import KioskStepPainComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepPainComponent.vue';
+import KioskStepViandeComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepViandeComponent.vue';
+import frMessages from '../../resources/js/languages/fr.json';
+
+/** i18n pour composants wizard réels (clés kiosk.wizard.*) */
+const kioskWizardTestI18n = createI18n({
+  legacy: false,
+  locale: 'fr',
+  fallbackLocale: 'fr',
+  messages: { fr: frMessages },
+});
 
 /**
  * Tests du Wizard Borne Tactile (Kiosk)
@@ -815,6 +828,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('showFritesSauce is false when menuChoice is none', () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -826,6 +840,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('showFritesSauce is true for full or frites-only menu choice', async () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -843,6 +858,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('menuPrice applies 0.6 / 0.4 ratios like runningTotal', async () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -861,6 +877,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('menuInfoBadge is null when sans menu (no false "Frites + Boisson" banner)', () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -872,6 +889,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('frites sauces support multi-select and emit fritesSauceOrder', () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -889,6 +907,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
 
   it('boissonList excludes addons whose name contains menu or frites', () => {
     const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: menuItem(),
@@ -916,6 +935,7 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
 
   it('getSauceOrder matches order when sauceOrder mixes number and string ids', () => {
     const wrapper = mount(KioskStepSauceComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item: sauceItem(),
@@ -942,6 +962,7 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
       },
     };
     const wrapper = mount(KioskStepSauceComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item,
@@ -954,17 +975,18 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
     expect(names.length).toBe(2);
   });
 
-  it('sauceList hides variations with status 0', () => {
+  it('sauceList hides variations with status INACTIVE (10) — ACTIVE en base = 5', () => {
     const item = {
       itemAttributes: [{ id: 99, name: 'Sauce' }],
       variations: {
         99: [
-          { id: 401, name: 'Active', status: 1, convert_price: '0' },
-          { id: 402, name: 'Hidden', status: 0, convert_price: '0' },
+          { id: 401, name: 'Active', status: 5, convert_price: '0' },
+          { id: 402, name: 'Hidden', status: 10, convert_price: '0' },
         ],
       },
     };
     const wrapper = mount(KioskStepSauceComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
       props: {
         step: {},
         item,
@@ -974,5 +996,600 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
     const names = wrapper.vm.sauceList.map((s) => s.name);
     expect(names).toContain('Active');
     expect(names).not.toContain('Hidden');
+  });
+
+  it('sauceList uses fallback when toutes les variations sont inactives (étape non bloquée)', () => {
+    const item = {
+      itemAttributes: [{ id: 99, name: 'Sauce' }],
+      variations: {
+        99: [{ id: 402, name: 'Hidden', status: 10, convert_price: '0' }],
+      },
+    };
+    const wrapper = mount(KioskStepSauceComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item,
+        selections: { sauces: {}, sauceOrder: [] },
+      },
+    });
+    const names = wrapper.vm.sauceList.map((s) => s.name);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names).not.toContain('Hidden');
+    expect(names).toContain(frMessages.kiosk.wizard.step.sauce.fallback_ketchup);
+  });
+});
+
+/** P0 : même règle que le wizard réel (étape menu) */
+const wizardStubNames = [
+  'KioskStepPain',
+  'KioskStepTaille',
+  'KioskStepViande',
+  'KioskStepSauce',
+  'KioskStepGarnitures',
+  'KioskStepSupplements',
+  'KioskStepMenu',
+  'KioskOrderSummary',
+];
+
+describe('KioskWizardComponent — P0 menu obligatoire (réel)', () => {
+  const burgerWithMenuOnlySteps = {
+    id: 901,
+    name: 'Burger Test Menu',
+    convert_price: 6.5,
+    currency_price: '6,50 €',
+    wizard_template: 'burger',
+    category_name: 'Burgers',
+    has_menu: true,
+    itemAttributes: [{ id: 10, name: 'Sauce' }],
+    variations: {
+      10: [{ id: 201, name: 'Ketchup', convert_price: '0', price: 0 }],
+    },
+    extras: [],
+    addons: [
+      {
+        addon_item_name: 'Menu',
+        addon_item_convert_price: 2,
+        price: 2,
+      },
+    ],
+  };
+
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+
+  it('canAdvance false on menu step when menuChoice is null', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerWithMenuOnlySteps,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const steps = wrapper.vm.activeSteps;
+    const menuIdx = steps.findIndex((s) => s.type === 'menu');
+    expect(menuIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = menuIdx;
+    wrapper.vm.selections.menuChoice = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(false);
+  });
+
+  it('canAdvance true on menu step for none, or full when aucun addon boisson', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerWithMenuOnlySteps,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    wrapper.vm.currentStepIndex = menuIdx;
+
+    wrapper.vm.selections.menuChoice = 'none';
+    wrapper.vm.selections.boissonChoice = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+
+    wrapper.vm.selections.menuChoice = 'full';
+    wrapper.vm.selections.boissonChoice = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+  });
+});
+
+describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (réel)', () => {
+  const burgerMenuPlusDrink = {
+    id: 902,
+    name: 'Burger Menu Boisson',
+    convert_price: 6.5,
+    currency_price: '6,50 €',
+    wizard_template: 'burger',
+    category_name: 'Burgers',
+    has_menu: true,
+    itemAttributes: [{ id: 10, name: 'Sauce' }],
+    variations: {
+      10: [{ id: 201, name: 'Ketchup', convert_price: '0', price: 0 }],
+    },
+    extras: [],
+    addons: [
+      { addon_item_name: 'Menu', addon_item_convert_price: 2, price: 2 },
+      { addon_item_name: 'Coca-Cola', addon_item_id: 44 },
+    ],
+  };
+
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+
+  it('canAdvance false on menu when full + liste boisson mais boissonChoice vide', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerMenuPlusDrink,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    wrapper.vm.currentStepIndex = menuIdx;
+    wrapper.vm.selections.menuChoice = 'full';
+    wrapper.vm.selections.boissonChoice = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(false);
+  });
+
+  it('canAdvance true when full + boissonChoice renseigné', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerMenuPlusDrink,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    wrapper.vm.currentStepIndex = menuIdx;
+    wrapper.vm.selections.menuChoice = 'full';
+    wrapper.vm.selections.boissonChoice = 44;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+  });
+
+  it('canAdvance false for boisson-only formula when boissonChoice vide', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerMenuPlusDrink,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    wrapper.vm.currentStepIndex = menuIdx;
+    wrapper.vm.selections.menuChoice = 'boisson';
+    wrapper.vm.selections.boissonChoice = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(false);
+  });
+
+  it('canAdvance true for boisson-only menu formula with drink selected', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: burgerMenuPlusDrink,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    wrapper.vm.currentStepIndex = menuIdx;
+    wrapper.vm.selections.menuChoice = 'boisson';
+    wrapper.vm.selections.boissonChoice = 44;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canAdvance).toBe(true);
+  });
+});
+
+describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
+  it('shows validation hint when localChoice is null', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          addons: [{ addon_item_name: 'Menu', addon_item_convert_price: 1 }],
+        },
+        selections: {
+          menuChoice: null,
+          boissonChoice: null,
+          fritesSauceOrder: [],
+        },
+      },
+    });
+    expect(wrapper.find('.kiosk-menu-validation-hint').exists()).toBe(true);
+  });
+
+  it('hides validation hint after sans menu selected', async () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          addons: [{ addon_item_name: 'Menu', addon_item_convert_price: 1 }],
+        },
+        selections: {
+          menuChoice: null,
+          boissonChoice: null,
+          fritesSauceOrder: [],
+        },
+      },
+    });
+    await wrapper.vm.selectChoice('none');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.kiosk-menu-validation-hint').exists()).toBe(false);
+  });
+
+  it('P1: shows boisson hint when menu complet + liste boisson sans sélection', async () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          addons: [
+            { addon_item_name: 'Menu', addon_item_convert_price: 1 },
+            { addon_item_name: 'Coca-Cola', addon_item_id: 9 },
+          ],
+        },
+        selections: {
+          menuChoice: null,
+          boissonChoice: null,
+          fritesSauceOrder: [],
+        },
+      },
+    });
+    await wrapper.vm.selectChoice('full');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.kiosk-boisson-validation-hint').exists()).toBe(true);
+    await wrapper.vm.selectBoisson({
+      id: 9,
+      name: 'Coca-Cola',
+      emoji: '🥤',
+      displayThumb: null,
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.kiosk-boisson-validation-hint').exists()).toBe(false);
+  });
+});
+
+describe('KioskWizardComponent — P2 modale abandon (réel)', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+
+  const minimalItem = {
+    id: 1,
+    name: 'Item',
+    convert_price: 5,
+    currency_price: '5',
+    wizard_template: 'simple',
+    itemAttributes: [],
+    variations: {},
+    extras: [],
+  };
+
+  it('onAbandonClick ouvre la modale sans appeler onClose', async () => {
+    const onClose = vi.fn();
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: minimalItem,
+        onAddToCart: vi.fn(),
+        onClose,
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.onAbandonClick();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.showAbandonConfirm).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('onAbandonCancel ferme la modale', async () => {
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: minimalItem,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.showAbandonConfirm = true;
+    wrapper.vm.onAbandonCancel();
+    expect(wrapper.vm.showAbandonConfirm).toBe(false);
+  });
+
+  it('onAbandonConfirm appelle onClose', async () => {
+    const onClose = vi.fn();
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: minimalItem,
+        onAddToCart: vi.fn(),
+        onClose,
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.showAbandonConfirm = true;
+    wrapper.vm.onAbandonConfirm();
+    expect(wrapper.vm.showAbandonConfirm).toBe(false);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('KioskWizardComponent — P3 i18n wizard (réel)', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+  const minimalItem = {
+    id: 1,
+    name: 'Item',
+    convert_price: 5,
+    currency_price: '5',
+    wizard_template: 'simple',
+    itemAttributes: [],
+    variations: {},
+    extras: [],
+  };
+
+  it('modale abandon affiche les libellés kiosk.wizard (fr)', async () => {
+    const w = frMessages.kiosk.wizard;
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: minimalItem,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.onAbandonClick();
+    await wrapper.vm.$nextTick();
+    const txt = wrapper.text();
+    expect(txt).toContain(w.abandon_title);
+    expect(txt).toContain(w.abandon_yes);
+    expect(txt).toContain(w.abandon_continue);
+  });
+});
+
+describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_template)', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+  const minimalForTemplate = (overrides) => ({
+    id: 1,
+    name: 'Produit',
+    category_name: '',
+    convert_price: 5,
+    currency_price: '5',
+    extras: [],
+    itemAttributes: [],
+    variations: {},
+    ...overrides,
+  });
+
+  const mountWizardTemplateProbe = (item) =>
+    shallowMount(KioskWizardComponent, {
+      props: {
+        item,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+
+  const cases = [
+    { name: 'Tacos XL 2 viandes', category_name: 'Tacos', exp: 'tacos' },
+    { name: 'Wrap poulet', category_name: 'Sandwichs', exp: 'sandwich' },
+    { name: 'Double Cheese', category_name: 'Burgers', exp: 'burger' },
+    { name: 'Assiette kebab', category_name: '', exp: 'assiette' },
+    { name: 'Nuggets x9', category_name: 'Snacking', exp: 'snacking' },
+    { name: 'Goujons de poulet', category_name: 'Accompagnements', exp: 'snacking' },
+    { name: 'Omelette complète', category_name: 'Petit déjeuner', exp: 'omelette' },
+    { name: 'Salade César', category_name: 'Salades', exp: 'salade' },
+    { name: 'Coca-Cola 33cl', category_name: 'Boissons', exp: 'simple' },
+  ];
+
+  it.each(cases)(
+    'heuristique: « $name » / cat « $category_name » → $exp',
+    ({ name, category_name, exp }) => {
+      const item = minimalForTemplate({ name, category_name });
+      const w = mountWizardTemplateProbe(item);
+      expect(w.vm.detectTemplateFromName()).toBe(exp);
+    }
+  );
+
+  it('wizard_template explicite prime sur le nom (override catalogue)', async () => {
+    const item = minimalForTemplate({
+      name: 'Nuggets',
+      category_name: 'Snacking',
+      wizard_template: 'burger',
+    });
+    const w = mountWizardTemplateProbe(item);
+    await w.vm.$nextTick();
+    const resolved =
+      w.vm.resolvedItem.wizard_template || w.vm.detectTemplateFromName();
+    expect(resolved).toBe('burger');
+  });
+
+  it('sans wizard_template, activeSteps suit la même branche que l’heuristique (burger)', async () => {
+    const item = minimalForTemplate({
+      name: 'Classic Burger',
+      category_name: 'Burgers',
+    });
+    const w = mountWizardTemplateProbe(item);
+    await w.vm.$nextTick();
+    expect(w.vm.detectTemplateFromName()).toBe('burger');
+    const types = w.vm.activeSteps.map((s) => s.type);
+    expect(types).toContain('sauce');
+    expect(types).toContain('recap');
+  });
+
+  it('wizard_template « simple » (défaut API) n’empêche pas l’heuristique burger → étape sauce', async () => {
+    const item = minimalForTemplate({
+      name: 'Classic Burger',
+      category_name: 'Burgers',
+      wizard_template: 'simple',
+    });
+    const w = mountWizardTemplateProbe(item);
+    await w.vm.$nextTick();
+    expect(w.vm.effectiveWizardTemplate()).toBe('burger');
+    const types = w.vm.activeSteps.map((s) => s.type);
+    expect(types).toContain('sauce');
+  });
+});
+
+describe('KioskWizardComponent — P4 i18n étapes pain/sauce (réel)', () => {
+  it('KioskStepPain affiche titres et pain par défaut (fr)', () => {
+    const st = frMessages.kiosk.wizard.step;
+    const wrapper = mount(KioskStepPainComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {},
+        selections: { pain: null },
+      },
+    });
+    expect(wrapper.text()).toContain(st.pain.title);
+    expect(wrapper.text()).toContain(st.pain.default_bread);
+  });
+
+  it('KioskStepSauce affiche le titre (fr, liste fallback)', () => {
+    const st = frMessages.kiosk.wizard.step;
+    const wrapper = mount(KioskStepSauceComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {},
+        selections: { sauces: {}, sauceOrder: [] },
+      },
+    });
+    expect(wrapper.text()).toContain(st.sauce.title);
+  });
+});
+
+describe('Kiosk step fallbacks — missing catalog attributes', () => {
+  it('KioskStepPain falls back to default list when itemAttributes exist but no pain attribute is present', () => {
+    const wrapper = mount(KioskStepPainComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          itemAttributes: [{ id: 99, name: 'Sauce' }],
+          variations: { 99: [{ id: 1, name: 'Harissa' }] },
+        },
+        selections: { pain: null },
+      },
+    });
+
+    const names = wrapper.vm.painList.map((p) => p.name);
+    expect(names).toContain(frMessages.kiosk.wizard.step.pain.default_bread);
+    expect(names).toContain(frMessages.kiosk.wizard.step.pain.default_galette);
+  });
+
+  it('KioskStepViande falls back to default list when itemAttributes exist but no viande attribute is present', () => {
+    const wrapper = mount(KioskStepViandeComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          name: 'Produit test',
+          itemAttributes: [{ id: 88, name: 'Sauce' }],
+          variations: { 88: [{ id: 1, name: 'Algérienne' }] },
+        },
+        selections: { viandes: {}, _tailleMeta: null },
+      },
+    });
+
+    const names = wrapper.vm.viandeList.map((v) => v.name);
+    expect(names).toContain(frMessages.kiosk.wizard.step.viande.fallback_poulet);
+    expect(names).toContain(frMessages.kiosk.wizard.step.viande.fallback_boeuf);
   });
 });

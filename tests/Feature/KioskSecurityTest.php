@@ -14,6 +14,7 @@ use App\Enums\Status;
 use App\Enums\OrderType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
+use Laravel\Sanctum\Sanctum;
 
 class KioskSecurityTest extends TestCase
 {
@@ -106,12 +107,7 @@ class KioskSecurityTest extends TestCase
             'is_login' => Ask::NO,
         ]);
 
-        $loginResponse = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk_test_002',
-            'password' => 'password123',
-        ]);
-        $loginResponse->assertStatus(201);
-        $kioskToken = $loginResponse->json('token');
+        Sanctum::actingAs($user, ['kiosk:order']);
 
         $category = ItemCategory::forceCreate([
             'name' => 'Test Category',
@@ -126,9 +122,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $kioskToken,
-        ])->postJson('/api/frontend/order', [
+        $response = $this->postJson('/api/frontend/order', [
             'branch_id' => $branch->id,
             'subtotal' => $item->price,
             'total' => $item->price,
@@ -194,12 +188,7 @@ class KioskSecurityTest extends TestCase
             'is_login' => Ask::NO,
         ]);
 
-        $loginResponse = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk_test_003',
-            'password' => 'password123',
-        ]);
-        $loginResponse->assertStatus(201);
-        $kioskToken = $loginResponse->json('token');
+        Sanctum::actingAs($user, ['kiosk:order']);
 
         $category = ItemCategory::forceCreate([
             'name' => 'Cat 3',
@@ -214,9 +203,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $kioskToken,
-        ])->postJson('/api/frontend/order', [
+        $response = $this->postJson('/api/frontend/order', [
             'branch_id' => $branchOther->id,
             'subtotal' => $item->price,
             'total' => $item->price,

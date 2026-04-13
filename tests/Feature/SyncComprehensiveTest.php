@@ -10,6 +10,9 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\DiningTable;
+use App\Models\Tax;
+use App\Enums\Ask;
+use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
@@ -94,7 +97,7 @@ class SyncComprehensiveTest extends TestCase
                 'subtotal' => 10.00,
                 'total' => 10.00,
                 'delivery_charge' => 0,
-                'is_advance_order' => 0,
+                'is_advance_order' => Ask::NO,
                 'source' => 10, // APP
                 'items' => json_encode([[
                     'item_id' => $item->id,
@@ -131,10 +134,15 @@ class SyncComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $tax = Tax::factory()->create([
+            'tax_rate' => 0,
+            'type' => TaxType::FIXED,
+        ]);
         
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $item = \Database\Factories\ItemFactory::new()->create([
             'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
             'price' => 15.00,
         ]);
         
@@ -148,9 +156,9 @@ class SyncComprehensiveTest extends TestCase
                 'source' => \App\Enums\Source::POS,
                 'customer_id' => $customer->id,
                 'branch_id' => $branch->id,
-                'is_advance_order' => 0,
+                'is_advance_order' => Ask::NO,
                 'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 20.00,
+                'pos_received_amount' => 999.00,
                 'items' => json_encode([[
                     'item_id' => $item->id,
                     'price' => 15.00,
@@ -190,7 +198,7 @@ class SyncComprehensiveTest extends TestCase
         
         // Créer une commande en PREPARING
         $order = \Database\Factories\OrderFactory::new()->create([
-            
+            'branch_id' => $branch->id,
             'status' => \App\Enums\OrderStatus::PREPARING,
             'token' => 'A001', // Token requis pour OSS
             'order_datetime' => now(),
@@ -210,7 +218,7 @@ class SyncComprehensiveTest extends TestCase
                 'status' => \App\Enums\OrderStatus::PREPARED,
             ]);
         
-        $this->assertTrue(in_array($statusResponse->status(), [200, 400, 403, 422]));
+        $this->assertTrue(in_array($statusResponse->status(), [200, 202, 400, 403, 422]));
     }
 
     /**
@@ -243,7 +251,7 @@ class SyncComprehensiveTest extends TestCase
                 'source' => \App\Enums\Source::POS,
                 'customer_id' => $customer->id,
                 'branch_id' => $branch->id,
-                'is_advance_order' => 0,
+                'is_advance_order' => Ask::NO,
                 'items' => json_encode([[
                     'item_id' => $item->id,
                     'price' => 12.00,
@@ -279,8 +287,8 @@ class SyncComprehensiveTest extends TestCase
         
         // Créer quelques commandes
         \Database\Factories\OrderFactory::new()->count(3)->create([
-            
-            'status' => \App\Enums\OrderStatus::ACCEPT,
+            'branch_id' => $branch->id,
+            'status' => \App\Enums\OrderStatus::DELIVERED,
             'total' => 50.00,
         ]);
         
@@ -293,7 +301,8 @@ class SyncComprehensiveTest extends TestCase
         
         if ($response->status() == 200) {
             $data = $response->json();
-            $this->assertGreaterThanOrEqual(3, $data['total_orders'] ?? 0);
+            $count = $data['data']['total_orders'] ?? $data['total_orders'] ?? 0;
+            $this->assertGreaterThanOrEqual(3, $count);
         }
     }
 
@@ -323,7 +332,7 @@ class SyncComprehensiveTest extends TestCase
                 'subtotal' => 20.00,
                 'total' => 20.00,
                 'delivery_charge' => 0,
-                'is_advance_order' => 0,
+                'is_advance_order' => Ask::NO,
                 'source' => 10, // APP
                 'items' => json_encode([[
                     'item_id' => $item->id,

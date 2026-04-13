@@ -7,8 +7,8 @@
         <button class="kiosk-admin-close" @click="$emit('close')">✕</button>
 
         <div class="kiosk-pin-icon">🔐</div>
-        <h2 class="kiosk-pin-title">Accès administration</h2>
-        <p class="kiosk-pin-sub">Entrez le code PIN à 4 chiffres</p>
+        <h2 class="kiosk-pin-title">{{ $t('kiosk.admin_screen.pin_title') }}</h2>
+        <p class="kiosk-pin-sub">{{ $t('kiosk.admin_screen.pin_sub') }}</p>
 
         <!-- Dots display -->
         <div class="kiosk-pin-dots">
@@ -22,13 +22,13 @@
 
         <!-- Error message -->
         <transition name="fade">
-          <p v-if="pinError" class="kiosk-pin-error">Code incorrect. Réessayez.</p>
+          <p v-if="pinError" class="kiosk-pin-error">{{ $t('kiosk.admin_screen.pin_wrong') }}</p>
         </transition>
 
         <!-- [C5] Lockout message -->
         <transition name="fade">
           <p v-if="pinLocked" class="kiosk-pin-locked">
-            Trop de tentatives — réessayez dans {{ pinLockSeconds }}s
+            {{ $t('kiosk.admin_screen.pin_locked', { n: pinLockSeconds }) }}
           </p>
         </transition>
 
@@ -51,69 +51,77 @@
       <div v-else key="panel" class="kiosk-admin-card">
         <div class="kiosk-admin-header">
           <div>
-            <h2>Administration Borne</h2>
-            <p class="kiosk-admin-sub">Accès réservé au personnel</p>
+            <h2>{{ $t('kiosk.admin_screen.panel_title') }}</h2>
+            <p class="kiosk-admin-sub">{{ $t('kiosk.admin_screen.panel_sub') }}</p>
           </div>
           <button class="kiosk-admin-close" @click="$emit('close')">✕</button>
         </div>
 
         <!-- Imprimante -->
         <div class="kiosk-admin-section">
-          <h3>Imprimante thermique</h3>
+          <h3>{{ $t('kiosk.admin_screen.section_printer') }}</h3>
           <button class="kiosk-admin-btn" @click="testPrint" :disabled="busy === 'print'">
             <span class="btn-icon">🖨️</span>
-            <span>{{ busy === 'print' ? 'Impression…' : 'Imprimer ticket test' }}</span>
+            <span>{{ busy === 'print' ? $t('kiosk.admin_screen.print_busy') : $t('kiosk.admin_screen.print_test') }}</span>
           </button>
           <button class="kiosk-admin-btn" @click="openDrawer" :disabled="busy === 'drawer'">
             <span class="btn-icon">🗄️</span>
-            <span>{{ busy === 'drawer' ? 'Ouverture…' : 'Ouvrir le tiroir caisse' }}</span>
+            <span>{{ busy === 'drawer' ? $t('kiosk.admin_screen.drawer_busy') : $t('kiosk.admin_screen.drawer_open') }}</span>
           </button>
         </div>
 
         <!-- Terminal de paiement -->
         <div class="kiosk-admin-section">
-          <h3>Terminal de paiement</h3>
+          <h3>{{ $t('kiosk.admin_screen.section_terminal') }}</h3>
           <div class="kiosk-admin-status-row">
-            <span>Statut :</span>
+            <span>{{ $t('kiosk.admin_screen.status_label') }}</span>
             <span :class="terminalConnected ? 'status-ok' : 'status-err'">
-              {{ terminalConnected ? `Connecté (${terminalModel})` : 'Non connecté' }}
+              {{
+                terminalConnected
+                  ? $t('kiosk.admin_screen.terminal_connected', { model: terminalModel })
+                  : $t('kiosk.admin_screen.terminal_disconnected')
+              }}
             </span>
           </div>
           <button class="kiosk-admin-btn" @click="checkTerminal" :disabled="busy === 'terminal'">
             <span class="btn-icon">🔌</span>
-            <span>{{ busy === 'terminal' ? 'Vérification…' : 'Vérifier la connexion' }}</span>
+            <span>{{ busy === 'terminal' ? $t('kiosk.admin_screen.terminal_check_busy') : $t('kiosk.admin_screen.terminal_check') }}</span>
           </button>
         </div>
 
         <!-- Menu cache -->
         <div class="kiosk-admin-section">
-          <h3>Menu</h3>
+          <h3>{{ $t('kiosk.admin_screen.section_menu') }}</h3>
           <div class="kiosk-admin-status-row">
-            <span>Cache :</span>
+            <span>{{ $t('kiosk.admin_screen.cache_label') }}</span>
             <span :class="menuCacheAge !== null ? 'status-ok' : 'status-err'">
-              {{ menuCacheAge !== null ? `Frais (${menuCacheAge}min)` : 'Vide' }}
+              {{
+                menuCacheAge !== null
+                  ? $t('kiosk.admin_screen.cache_fresh', { n: menuCacheAge })
+                  : $t('kiosk.admin_screen.cache_empty')
+              }}
             </span>
           </div>
           <button class="kiosk-admin-btn" @click="refreshMenu" :disabled="busy === 'menu'">
             <span class="btn-icon">🔄</span>
-            <span>{{ busy === 'menu' ? 'Rechargement…' : 'Forcer rechargement menu' }}</span>
+            <span>{{ busy === 'menu' ? $t('kiosk.admin_screen.menu_refresh_busy') : $t('kiosk.admin_screen.menu_refresh') }}</span>
           </button>
         </div>
 
         <!-- Application -->
         <div class="kiosk-admin-section">
-          <h3>Application</h3>
+          <h3>{{ $t('kiosk.admin_screen.section_app') }}</h3>
           <button class="kiosk-admin-btn" @click="reloadApp">
             <span class="btn-icon">🔄</span>
-            <span>Recharger l'application</span>
+            <span>{{ $t('kiosk.admin_screen.app_reload') }}</span>
           </button>
           <button class="kiosk-admin-btn danger" @click="logout">
             <span class="btn-icon">🔓</span>
-            <span>Se déconnecter</span>
+            <span>{{ $t('kiosk.admin_screen.logout') }}</span>
           </button>
           <button class="kiosk-admin-btn danger" @click="quitApp" v-if="isElectron">
             <span class="btn-icon">⏻</span>
-            <span>Quitter l'application</span>
+            <span>{{ $t('kiosk.admin_screen.quit_app') }}</span>
           </button>
         </div>
 
@@ -131,19 +139,14 @@
       <div v-if="showMaintenanceConfirm" class="kiosk-maintenance-overlay" @click.self="cancelMaintenanceMode">
         <div class="kiosk-maintenance-card">
           <div class="kiosk-maintenance-icon">⚠️</div>
-          <h3>Déconnexion — mode maintenance</h3>
-          <p>
-            La borne est configurée en <strong>connexion automatique</strong>.<br>
-            Si vous vous déconnectez, elle se reconnectera immédiatement.<br><br>
-            Pour une maintenance, activez le <strong>mode maintenance</strong> :
-            la reconnexion automatique sera suspendue jusqu'au prochain redémarrage.
-          </p>
+          <h3>{{ $t('kiosk.admin_screen.maintenance_title') }}</h3>
+          <p class="kiosk-maintenance-body-text">{{ $t('kiosk.admin_screen.maintenance_body') }}</p>
           <div class="kiosk-maintenance-actions">
             <button class="kiosk-admin-btn danger" @click="enterMaintenanceMode">
-              Activer le mode maintenance
+              {{ $t('kiosk.admin_screen.maintenance_enable') }}
             </button>
             <button class="kiosk-admin-btn" @click="cancelMaintenanceMode">
-              Annuler
+              {{ $t('kiosk.admin_screen.maintenance_cancel') }}
             </button>
           </div>
         </div>
@@ -155,8 +158,8 @@
 <script>
 import { mapActions } from 'vuex';
 
-// PIN default — overridden by kiosk_admin_pin from settings (loaded via globalState)
-const DEFAULT_PIN = '1234';
+// No default PIN fallback: the admin code must come from server settings.
+const DEFAULT_PIN = '';
 
 export default {
   name: 'KioskAdminComponent',
@@ -236,6 +239,18 @@ export default {
     },
 
     _checkPin() {
+      if (!this.adminPin) {
+        this.pinInput = '';
+        this.pinError = true;
+        clearTimeout(this._pinErrTimer);
+        this._pinErrTimer = setTimeout(() => {
+          this.pinError = false;
+        }, 1600);
+        this.feedback = this.$t('kiosk.admin_screen.pin_unconfigured');
+        this.feedbackType = 'error';
+        return;
+      }
+
       if (this.pinInput === this.adminPin) {
         this.pinUnlocked = true;
         this.pinError = false;
@@ -288,22 +303,27 @@ export default {
       this.busy = 'print';
       try {
         if (!this.isElectron) {
-          this.showFeedback('Mode navigateur — impression simulée ✓');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_print_browser'));
           return;
         }
         const result = await window.borne.printReceipt({
           queue_number:    'TEST',
           total:           0,
-          items:           [{ name: 'Ticket de test', quantity: 1, total_price: 0 }],
+          items:           [{ name: this.$t('kiosk.admin_screen.test_ticket_name'), quantity: 1, total_price: 0 }],
           restaurant_name: 'FoodKing',
         });
         if (result?.success || result?.skipped) {
-          this.showFeedback('Ticket imprimé avec succès ✓');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_print_ok'));
         } else {
-          this.showFeedback(`Erreur imprimante : ${result?.error || 'inconnue'}`, 'error');
+          this.showFeedback(
+            this.$t('kiosk.admin_screen.fb_print_err', {
+              detail: result?.error || this.$t('kiosk.admin_screen.unknown_detail'),
+            }),
+            'error'
+          );
         }
       } catch (e) {
-        this.showFeedback(`Erreur : ${e.message}`, 'error');
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_err_generic', { detail: e.message }), 'error');
       } finally {
         this.busy = null;
       }
@@ -313,17 +333,22 @@ export default {
       this.busy = 'drawer';
       try {
         if (!this.isElectron) {
-          this.showFeedback('Mode navigateur — tiroir simulé ✓');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_drawer_browser'));
           return;
         }
         const result = await window.borne.openDrawer();
         if (result?.success || result?.skipped) {
-          this.showFeedback('Tiroir caisse ouvert ✓');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_drawer_ok'));
         } else {
-          this.showFeedback(`Erreur tiroir : ${result?.error || 'inconnue'}`, 'error');
+          this.showFeedback(
+            this.$t('kiosk.admin_screen.fb_drawer_err', {
+              detail: result?.error || this.$t('kiosk.admin_screen.unknown_detail'),
+            }),
+            'error'
+          );
         }
       } catch (e) {
-        this.showFeedback(`Erreur : ${e.message}`, 'error');
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_err_generic', { detail: e.message }), 'error');
       } finally {
         this.busy = null;
       }
@@ -334,21 +359,25 @@ export default {
       try {
         if (!this.isElectron) {
           this.terminalConnected = true;
-          this.terminalModel = 'stub (navigateur)';
-          this.showFeedback('Mode navigateur — terminal simulé connecté');
+          this.terminalModel = this.$t('kiosk.admin_screen.fb_terminal_stub');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_terminal_browser'));
           return;
         }
         const status = await window.borne.getPaymentStatus();
         this.terminalConnected = !!status?.connected;
         this.terminalModel = status?.model || '';
         if (status?.connected) {
-          this.showFeedback(`Terminal connecté : ${status.model || 'inconnu'} ✓`);
+          this.showFeedback(
+            this.$t('kiosk.admin_screen.fb_terminal_ok', {
+              model: status.model || this.$t('kiosk.admin_screen.unknown_detail'),
+            })
+          );
         } else {
-          this.showFeedback('Terminal non disponible', 'error');
+          this.showFeedback(this.$t('kiosk.admin_screen.fb_terminal_err'), 'error');
         }
       } catch (e) {
         this.terminalConnected = false;
-        this.showFeedback(`Erreur : ${e.message}`, 'error');
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_err_generic', { detail: e.message }), 'error');
       } finally {
         this.busy = null;
       }
@@ -360,9 +389,12 @@ export default {
         const branchId = this.$store.state.kioskCart?.branchId;
         await this.fetchMenu({ force: true, branchId });
         const count = this.$store.getters['kioskMenu/allItems'].length;
-        this.showFeedback(`Menu rechargé — ${count} articles ✓`);
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_menu_ok', { count }));
       } catch (e) {
-        this.showFeedback(`Erreur rechargement menu : ${e.message}`, 'error');
+        this.showFeedback(
+          this.$t('kiosk.admin_screen.fb_menu_err', { detail: e.message }),
+          'error'
+        );
       } finally {
         this.busy = null;
       }

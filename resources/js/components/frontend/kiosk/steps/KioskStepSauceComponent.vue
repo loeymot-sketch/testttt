@@ -1,18 +1,18 @@
 <template>
   <div class="kiosk-step-sauce">
-    <h3 class="kiosk-step-title">Quelle sauce ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.sauce.title') }}</h3>
 
     <div class="kiosk-sauce-info">
-      <span class="kiosk-sauce-badge">1ere sauce gratuite</span>
+      <span class="kiosk-sauce-badge">{{ $t('kiosk.wizard.step.sauce.first_free') }}</span>
       <span v-if="selectedCount > 1" class="kiosk-sauce-extra">
-        +{{ selectedCount - 1 }} sauce{{ selectedCount > 2 ? 's' : '' }} supplémentaire ({{ extraSaucePriceLabel }})
+        {{ sauceExtraLine }}
       </span>
     </div>
 
     <div class="kiosk-sauce-grid">
       <div
-        v-for="sauce in sauceList"
-        :key="sauce.id ?? sauce.name"
+        v-for="(sauce, sIdx) in sauceList"
+        :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"
         class="kiosk-option-card"
         :class="{ selected: !!localSelections[selectionKey(sauce)] }"
         @click="toggleSauce(sauce)"
@@ -37,16 +37,19 @@
     </div>
 
     <div v-if="selectedCount === 0" class="kiosk-validation-hint">
-      Sélectionnez au moins une sauce
+      {{ $t('kiosk.wizard.step.sauce.hint') }}
     </div>
   </div>
 </template>
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
+import { getKioskExtraSauceUnitPrice } from '../../../../helpers/kioskPricing';
 
 export default {
   name: 'KioskStepSauce',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -74,66 +77,109 @@ export default {
       return Object.values(this.localSelections).filter(Boolean).length;
     },
     extraSaucePrice() {
-      const sauceAttr = this.item?.itemAttributes?.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
-      );
-      const sauceVars = sauceAttr
-        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
-        : null;
-      if (sauceAttr && sauceVars) {
-        const sauceVar = sauceVars.find(v =>
-          parseFloat(v.convert_price || v.price || 0) > 0
-        );
-        if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
-      }
-      return 0.50;
+      return getKioskExtraSauceUnitPrice(this.item);
     },
     extraSaucePriceLabel() {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(this.extraSaucePrice);
+      return this.formatPrice(this.extraSaucePrice);
+    },
+    sauceExtraLine() {
+      const n = this.selectedCount - 1;
+      const price = this.extraSaucePriceLabel;
+      return n === 1
+        ? this.$t('kiosk.wizard.step.sauce.extra_one', { n, price })
+        : this.$t('kiosk.wizard.step.sauce.extra_many', { n, price });
     },
     sauceList() {
-      // Lire les sauces depuis les variations DB (attribut "Sauce")
-      if (!this.item.itemAttributes) return this.getDefaultSauceList();
-      
-      const sauceAttr = this.item.itemAttributes.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
+      try {
+        return this.computeSauceList();
+      } catch (e) {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[KioskStepSauce] sauceList → fallback', e);
+        }
+        return this.getDefaultSauceList();
+      }
+    }
+  },
+  methods: {
+    /** API / JSON : itemAttributes parfois objet indexé ; .find sinon TypeError → grille vide */
+    normalizeAttributes(attrs) {
+      if (attrs == null) return [];
+      if (Array.isArray(attrs)) return attrs;
+      return Object.values(attrs);
+    },
+    /** variations[attrId] : tableau ou objet ; clés string/number */
+    variationsRowsForAttribute(variations, attrId) {
+      if (variations == null || attrId == null) return [];
+      const raw =
+        variations[String(attrId)] ??
+        variations[attrId];
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'object') return Object.values(raw);
+      return [];
+    },
+    isSauceLikeAttributeName(name) {
+      const n = (name || '').toLowerCase();
+      return (
+        n.includes('sauce') ||
+        n.includes('condiment') ||
+        n.includes('dressing') ||
+        n.includes('dip')
       );
-      
-      const sauceVariations =
-        sauceAttr &&
-        (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id]);
-      if (!sauceAttr || !sauceVariations) {
+    },
+    computeSauceList() {
+      const attrs = this.normalizeAttributes(this.item?.itemAttributes);
+      const sauceAttr = attrs.find((a) => this.isSauceLikeAttributeName(a.name));
+
+      const sauceVariations = sauceAttr
+        ? this.variationsRowsForAttribute(this.item?.variations, sauceAttr.id)
+        : [];
+
+      if (!sauceAttr || sauceVariations.length === 0) {
         return this.getDefaultSauceList();
       }
 
-      return sauceVariations
-        .filter(v => v.status == null || Number(v.status) === 1)
-        .map(v => ({
+      // Backend : Status::ACTIVE = 5, INACTIVE = 10 (pas 0/1)
+      const list = sauceVariations
+        .filter((v) => v != null && Number(v.status) !== 10)
+        .map((v) => ({
+          rowKey: v.id != null && v.id !== '' ? `sauce-var-${v.id}` : null,
           id: v.id,
           name: v.name,
           emoji: this.getEmojiForSauce(v.name),
           thumb: kioskResolveImageSrc(v),
         }));
-    }
-  },
-  methods: {
+
+      if (list.length === 0) {
+        return this.getDefaultSauceList();
+      }
+
+      return list;
+    },
     sauceUnitPriceLabel(sauce) {
-      return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : '0,00 €';
+      return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : this.formatPrice(0);
     },
     selectionKey(sauce) {
       return String(this.sauceKey(sauce));
     },
     getDefaultSauceList() {
       // Fallback names only — IDs are null so wizard won't map them to item_variations.
-      // Kitchen will receive sauce names via instruction text instead.
-      return [
-        { id: null, name: 'Algérienne', emoji: '🌶️', thumb: null },
-        { id: null, name: 'Blanche', emoji: '🥛', thumb: null },
-        { id: null, name: 'Ketchup', emoji: '🍅', thumb: null },
-        { id: null, name: 'Mayonnaise', emoji: '🥚', thumb: null },
-        { id: null, name: 'Biggy', emoji: '🍔', thumb: null },
-        { id: null, name: 'Samouraï', emoji: '🌶️', thumb: null },
+      // rowKey : évite clés Vue dupliquées (id null + noms i18n identiques) → v-for qui n’affiche rien
+      const rows = [
+        { rowKey: 'fb-algerienne', t: 'fallback_algerienne', emoji: '🌶️' },
+        { rowKey: 'fb-blanche', t: 'fallback_blanche', emoji: '🥛' },
+        { rowKey: 'fb-ketchup', t: 'fallback_ketchup', emoji: '🍅' },
+        { rowKey: 'fb-mayo', t: 'fallback_mayo', emoji: '🥚' },
+        { rowKey: 'fb-biggy', t: 'fallback_biggy', emoji: '🍔' },
+        { rowKey: 'fb-samourai', t: 'fallback_samourai', emoji: '🌶️' },
       ];
+      return rows.map((r) => ({
+        rowKey: r.rowKey,
+        id: null,
+        name: this.$t(`kiosk.wizard.step.sauce.${r.t}`),
+        emoji: r.emoji,
+        thumb: null,
+      }));
     },
     getEmojiForSauce(name) {
       const lower = (name || '').toLowerCase();

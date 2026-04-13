@@ -8,37 +8,49 @@
  *
  * Pour afficher l’écran login (tests, audit) : KIOSK_REQUIRE_MACHINE_LOGIN=true
  *
- * Identifiants : KIOSK_MACHINE_* sinon valeurs seed (KioskMachineTableSeeder) :
- * kiosk-lecayenne / kiosk123 — à faire tourner en admin sur une vraie borne en prod.
+ * Identifiants : KIOSK_MACHINE_* obligatoires pour l'auto-login.
+ * Aucun fallback hardcodé n'est autorisé ici pour éviter d'exposer des credentials connus.
  */
 $requireForm = filter_var(env('KIOSK_REQUIRE_MACHINE_LOGIN', false), FILTER_VALIDATE_BOOLEAN);
+
+$defaultLocale = strtolower(trim((string) env('KIOSK_DEFAULT_LOCALE', 'fr')));
+if (! in_array($defaultLocale, ['fr', 'en', 'ar'], true)) {
+    $defaultLocale = 'fr';
+}
+
+/*
+| Slugs items = Item::slug (Str::slug du nom FR) — alignés sur config/menu.php + MenuSeeder.
+| POS : une seule catégorie « Nos Sandwichs » ; la borne duplique visuellement la ligne « Sandwich froid » en bas.
+*/
+$sandwichColdSlugs = [
+    'sandwich-froid',
+    'panini',
+    'sandwich-classique-pain',
+    'sandwich-classique-galette',
+];
 
 if ($requireForm) {
     return [
         'spa_auto_login' => false,
         'spa_payload'    => null,
+        'default_locale' => $defaultLocale,
+        'menu_pricing'   => [
+            'full_ratio'   => 1.0,
+            'fries_ratio'  => 0.6,
+            'drink_ratio'  => 0.4,
+        ],
+        'sandwich_split' => [
+            'parent_category_slug' => 'nos-sandwichs',
+            'cold_item_slugs'      => $sandwichColdSlugs,
+            'cold_sidebar_label'   => 'Sandwich froid',
+        ],
     ];
 }
 
 $username = trim((string) env('KIOSK_MACHINE_USERNAME', ''));
 $password = (string) env('KIOSK_MACHINE_PASSWORD', '');
 
-if ($username === '') {
-    $username = trim((string) env('KIOSK_DEFAULT_MACHINE_USER', 'kiosk-lecayenne'));
-}
-if ($password === '') {
-    $password = (string) env('KIOSK_DEFAULT_MACHINE_PASS', 'kiosk123');
-}
-
-// Jamais laisser un identifiant vide (évite kioskAutoLogin null → écran login)
-if (trim($username) === '') {
-    $username = 'kiosk-lecayenne';
-}
-if (trim($password) === '') {
-    $password = 'kiosk123';
-}
-
-$spaPayload = $username !== '' ? [
+$spaPayload = ($username !== '' && trim($password) !== '') ? [
     'username' => $username,
     'password' => $password,
 ] : null;
@@ -46,4 +58,15 @@ $spaPayload = $username !== '' ? [
 return [
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
+    'default_locale' => $defaultLocale,
+    'menu_pricing'   => [
+        'full_ratio'   => 1.0,
+        'fries_ratio'  => 0.6,
+        'drink_ratio'  => 0.4,
+    ],
+    'sandwich_split' => [
+        'parent_category_slug' => 'nos-sandwichs',
+        'cold_item_slugs'      => $sandwichColdSlugs,
+        'cold_sidebar_label'   => 'Sandwich froid',
+    ],
 ];

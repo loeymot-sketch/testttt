@@ -1,6 +1,6 @@
 <template>
   <div class="kiosk-step-pain">
-    <h3 class="kiosk-step-title">Choisissez votre type de pain</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.pain.title') }}</h3>
     <div class="kiosk-pain-grid">
       <div
         v-for="pain in painList"
@@ -26,7 +26,7 @@
       </div>
     </div>
     <div v-if="!localSelection" class="kiosk-validation-hint">
-      Sélectionnez un type de pain pour continuer
+      {{ $t('kiosk.wizard.step.pain.hint') }}
     </div>
   </div>
 </template>
@@ -61,6 +61,9 @@ export default {
         (a.name || '').toLowerCase().includes('pain') ||
         (a.name || '').toLowerCase().includes('galette')
       );
+      if (!painAttr?.id) {
+        return this.getDefaultPainList();
+      }
 
       const list = kioskVariationsForAttribute(this.item, painAttr.id);
       if (!list?.length) {
@@ -76,6 +79,11 @@ export default {
       }));
     },
   },
+  watch: {
+    'selections.pain'(value) {
+      this.localSelection = value || null;
+    },
+  },
   methods: {
     painThumbKey(pain) {
       return String(pain.id ?? pain.name ?? '');
@@ -88,8 +96,8 @@ export default {
       // IDs are null when we have no catalog data — wizard buildCartItem will
       // only add pain to item_variations when id is a real integer.
       return [
-        { id: null, name: 'Pain', emoji: '🥖', attrId: null, displayThumb: null },
-        { id: null, name: 'Galette', emoji: '🥙', attrId: null, displayThumb: null },
+        { id: null, name: this.$t('kiosk.wizard.step.pain.default_bread'), emoji: '🥖', attrId: null, displayThumb: null },
+        { id: null, name: this.$t('kiosk.wizard.step.pain.default_galette'), emoji: '🥙', attrId: null, displayThumb: null },
       ];
     },
     getEmojiForPain(name) {

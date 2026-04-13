@@ -13,6 +13,9 @@ use App\Http\Requests\PaginateRequest;
 use App\Services\FrontendOrderService;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Resources\OrderDetailsResource;
+use App\Enums\PaymentStatus;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -79,16 +82,46 @@ class OrderController extends Controller
                 'card_type'      => ['nullable', 'string', 'max:50'],
                 'payment_method' => ['nullable', 'integer'],
             ]);
+            $authenticatedUserId = $request->user('sanctum')?->id
+                ?? $request->user()?->id
+                ?? Auth::id();
 
-            // [SPLASH SECURITY] Ownership: kiosk machine is the order owner
-            // user_id on a kiosk order = kiosk machine's user id
-            if ($frontendOrder->user_id !== \Illuminate\Support\Facades\Auth::id()) {
+            if (!$authenticatedUserId) {
+                return response(['status' => false, 'message' => 'Unauthenticated'], 401);
+            }
+            $authenticatedUserId = (int) $authenticatedUserId;
+
+            if ((int) $frontendOrder->user_id !== $authenticatedUserId) {
                 return response(['status' => false, 'message' => 'Unauthorized'], 403);
             }
 
-            // [SPLASH IDEMPOTENCY] If already PAID → return success without re-processing
-            // Prevents double-confirmation from network retry or UI bug
-            if ($frontendOrder->payment_status === \App\Enums\PaymentStatus::PAID) {
+            $alreadyPaid = false;
+            $promoted = false;
+
+            DB::transaction(function () use ($frontendOrder, $request, &$alreadyPaid) {
+                $locked = FrontendOrder::where('id', $frontendOrder->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ((int) $locked->payment_status === PaymentStatus::PAID) {
+                    $alreadyPaid = true;
+                    return;
+                }
+
+                $locked->payment_status = PaymentStatus::PAID;
+                $locked->payment_method = $request->payment_method ?? $locked->payment_method;
+                $locked->transaction_id = $request->transaction_id;
+                $locked->card_type = $request->card_type;
+                $locked->save();
+
+                $frontendOrder->refresh();
+            });
+
+            $promoted = $this->frontendOrderService->finalizePaidKioskOrder(
+                $frontendOrder->fresh()
+            );
+
+            if ($alreadyPaid && !$promoted) {
                 return response([
                     'status'  => true,
                     'message' => 'Paiement déjà confirmé',
@@ -96,23 +129,20 @@ class OrderController extends Controller
                 ], 200);
             }
 
-            $frontendOrder->update([
-                'payment_status' => \App\Enums\PaymentStatus::PAID,
-                'payment_method' => $request->payment_method ?? $frontendOrder->payment_method,
-                'transaction_id' => $request->transaction_id,
-                'card_type'      => $request->card_type,
-            ]);
-
-            \App\Models\ActionLog::create([
-                'user_id'  => \Illuminate\Support\Facades\Auth::id(),
-                'action'   => 'Paiement carte confirmé (borne)',
-                'resource' => 'Commande #' . $frontendOrder->order_serial_no,
-                'details'  => sprintf(
-                    'Transaction: %s | Carte: %s',
-                    $request->transaction_id,
-                    $request->card_type ?? 'N/A'
-                ),
-            ]);
+            try {
+                \App\Models\ActionLog::create([
+                    'user_id'  => $authenticatedUserId,
+                    'action'   => 'Paiement carte confirmé (borne)',
+                    'resource' => 'Commande #' . $frontendOrder->order_serial_no,
+                    'details'  => sprintf(
+                        'Transaction: %s | Carte: %s',
+                        $request->transaction_id,
+                        $request->card_type ?? 'N/A'
+                    ),
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[Kiosk] ActionLog write failed: ' . $e->getMessage());
+            }
 
             return response(['status' => true, 'message' => 'Paiement confirmé', 'data' => ['order_id' => $frontendOrder->id]], 200);
         } catch (Exception $exception) {

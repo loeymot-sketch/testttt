@@ -1,9 +1,9 @@
 <template>
   <div class="kiosk-step-supplements">
-    <h3 class="kiosk-step-title">Quel supplément ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.supplements_step_title') }}</h3>
 
     <div class="kiosk-supplements-info">
-      <span class="kiosk-info-badge">Options payantes</span>
+      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.supplements_badge_paid') }}</span>
       <span v-if="totalPrice > 0" class="kiosk-supplements-price">
         +{{ formatPrice(totalPrice) }}
       </span>
@@ -11,7 +11,7 @@
 
     <div v-if="supplementList.length === 0" class="kiosk-empty-state">
       <span class="kiosk-empty-emoji">🍽️</span>
-      <p>Aucun supplément disponible pour cet article</p>
+      <p>{{ $t('kiosk.wizard.supplements_empty') }}</p>
     </div>
 
     <div v-else class="kiosk-supplements-list">
@@ -35,7 +35,7 @@
         </div>
         <div class="kiosk-supplement-details">
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
-          <span class="kiosk-supplement-desc">{{ supplement.description || 'Supplément' }}</span>
+          <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
         </div>
         <span class="kiosk-supplement-price">{{ formatPrice(supplement.price) }}</span>
         <span v-if="localSelections[supplement.id]" class="kiosk-supplement-action active">✓</span>
@@ -47,9 +47,11 @@
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 
 export default {
   name: 'KioskStepSupplements',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -66,9 +68,7 @@ export default {
     'selections.supplements': {
       deep: true,
       handler(newVal) {
-        if (Object.keys(this.localSelections).length === 0) {
-          this.localSelections = { ...newVal };
-        }
+        this.localSelections = { ...(newVal || {}) };
       },
     },
   },
@@ -124,12 +124,6 @@ export default {
       if (lower.includes('boisson') || lower.includes('soda') || lower.includes('drink')) return '🥤';
       if (lower.includes('glace') || lower.includes('ice cream')) return '🍦';
       return '➕';
-    },
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(price || 0);
     },
     toggleSupplement(id) {
       const newSelections = { ...this.localSelections };

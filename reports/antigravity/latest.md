@@ -1,3 +1,46 @@
+# Anti-Gravity — Headless Sync Validation
+
+**Date:** 2026-03-31  
+**Mode:** Headless local validation (API/tests)  
+**Verdict:** PASS_HEADLESS / NEEDS_DEVICE_VALIDATION
+
+## Scope
+
+Validation du flux borne -> paiement -> waiting -> KDS -> OSS sans device physique, à partir des suites ciblées et des validations synchronisation déjà exécutées.
+
+## Scénarios validés
+
+- Carte validée : `PENDING` -> `paymentConfirm` -> `ACCEPT` -> apparition KDS  
+  - Vérifié par `tests/Feature/KioskPaymentStateMachineTest.php`
+- Cash borne : apparition immédiate en KDS  
+  - Vérifié par `tests/Feature/KioskPaymentStateMachineTest.php`
+- Kiosk -> KDS -> OSS  
+  - Vérifié par `tests/Feature/SyncComprehensiveTest.php`
+- Annulation client avant cuisine  
+  - Le dispatch `OrderStatusChanged` sur self-cancel a été ajouté dans `app/Services/OrderService.php`
+- Loyalty/coupon edge cases  
+  - Vérifiés par `tests/Feature/LoyaltyApiTest.php`, `tests/Feature/FrontendDiscountIntegrityTest.php`, `tests/Feature/CouponSecurityTest.php`
+- Isolation kiosk/admin/branch  
+  - Vérifiée par `tests/Feature/KioskScopeIsolationTest.php`, `tests/Feature/SecurityComprehensiveTest.php`, `tests/Feature/BranchScopeTest.php`
+
+## Runtime observé
+
+```text
+broadcast=pusher
+queue=database
+kiosk_auto=no
+```
+
+## Limites connues
+
+- Pas de validation TPE physique réelle
+- Pas de validation navigateur borne complète avec auto-login, car le runtime local actuel n’injecte pas de credentials kiosk (`kiosk_auto=no`)
+- Pas de validation de périphériques (imprimante, cash drawer, device bridge)
+
+## Conclusion
+
+Le flux métier et la synchronisation inter-surfaces sont validés **en headless local**.  
+Le prochain niveau de confiance nécessite une exécution sur **browser/device** avec environnement kiosk configuré et bridge matériel disponible.
 # RAPPORT DE TEST — STRUCTURE BASE BORNE (Kiosk Flutter)
 
 **ID:** report-kiosk-structure-01  

@@ -1,0 +1,65 @@
+---
+description: Always-on rules for the FoodKing Cursor local agent. Applied to every cycle, every model, every task.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Global Rules – FoodKing
+
+## Cycle Structure
+PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
+
+Phases are sequential and non-skippable.
+Audit precedes close on every cycle without exception.
+
+## Model Discipline
+- Auto/Premium routing is disabled
+- PRIMARY_MODEL is declared in the plan file before execution begins
+- One PRIMARY_MODEL per cycle
+- Mid-cycle model switch requires Claude confirmation logged under `ESCALATION` in the plan file
+- Full routing policy: `.cursor/routing.md`
+
+## Autonomy Contract
+The agent operates autonomously within declared scope.
+It halts and escalates — it never self-approves — on:
+- Any gate trigger (`.cursor/rules/human-gates.mdc`)
+- Any scope expansion beyond the declared boundary
+- Any FoodKing invariant violation (`.cursor/rules/foodking-invariants.mdc`)
+- Two consecutive validation failures
+- Planning ambiguity unresolvable from task context
+
+## Scope Enforcement
+- `SUBSYSTEMS_TOUCHED` and `SUBSYSTEMS_OFF_LIMITS` must be declared in the plan before execution
+- Any subsystem not listed in `SUBSYSTEMS_TOUCHED` is off-limits for that cycle
+- Scope pressure mid-cycle is logged under `SCOPE_PRESSURE` in the plan file and reviewed at audit
+- Ambiguous scope = Claude stops and writes a clarification request before producing a plan
+
+## FoodKing Invariants (enforced here, defined in `foodking-invariants.mdc`)
+- Backend is pricing SSOT — no frontend price logic
+- `OrderStatus` enum is authoritative — no hardcoded strings
+- `branch_id` is business data isolation — no cross-boundary data access without explicit plan authorization
+- Dispatch strictly after DB commit
+- `OrderService` / `FrontendOrderService` symmetry mandatory when either is touched
+- Frozen zone edits require gate clearance — no exceptions
+
+## Token Discipline
+- Do not re-read files already in context
+- Do not re-explain decisions already recorded in the plan file
+- Structured output only in reports — no narrative
+- Flag real risks only — no speculative commentary on out-of-scope subsystems
+
+## Reports Discipline
+- All cycle outputs go to `reports/` following existing FoodKing structure
+- Composer generates — Claude audits
+- No new reporting structure without a plan-phase decision
+
+## Absolute Prohibitions
+The agent must never:
+- Self-approve a gate
+- Expand scope without explicit human instruction
+- Edit a frozen zone file without cleared gate in `docs/gates/`
+- Modify `.cursor/routing.md` during an active cycle
+- Hardcode `OrderStatus` string values
+- Place pricing logic on the frontend
+- Dispatch before DB commit
+- Access or mutate data across `branch_id` boundaries without declared plan authorization

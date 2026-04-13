@@ -1,5 +1,7 @@
 # Continuité projet & vision — passation pour nouvelle session IDE
 
+**Nouvelle conversation Cursor (autre abonnement / sans mémoire du chat)** : commencer par le hub **[`README.md`](../README.md)** puis le guide structuré **[`docs/HANDOFF_NEW_CURSOR/00_INDEX.md`](HANDOFF_NEW_CURSOR/00_INDEX.md)** (architecture, synchro, fichiers pivots, tests, multi-agent, rapports).
+
 **Objectif de ce document** : donner à tout assistant (ou développeur) qui ouvre une **nouvelle discussion** l’état réel du projet **FoodKing / déploiement « Le Cayenne »**, la **vision produit** telle qu’elle a été exprimée, les **choix techniques**, **où se trouve le code**, **ce qui a été corrigé**, et **ce qui reste à faire**.  
 **Complément obligatoire** : lire aussi `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/ORDER_FLOW.md`, `docs/DEVICE_FLOW.md`, `docs/API_MAP.md`, `docs/AUTHZ_MATRIX.md`, `docs/BUSINESS_RULES.md`.
 

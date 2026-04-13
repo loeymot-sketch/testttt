@@ -5,7 +5,7 @@
     <transition name="fade">
       <div v-if="branchLoading" class="kiosk-init-overlay">
         <div class="kiosk-init-spinner"></div>
-        <p class="kiosk-init-label">Démarrage en cours…</p>
+        <p class="kiosk-init-label">{{ $t('kiosk.app.init_loading') }}</p>
       </div>
     </transition>
 
@@ -13,9 +13,9 @@
     <transition name="fade">
       <div v-if="branchError && !branchLoading" class="kiosk-init-overlay kiosk-init-error">
         <div class="kiosk-init-error-icon">⚠️</div>
-        <p class="kiosk-init-error-title">Service temporairement indisponible</p>
+        <p class="kiosk-init-error-title">{{ $t('kiosk.app.service_unavailable') }}</p>
         <p class="kiosk-init-error-sub">{{ branchError }}</p>
-        <button class="kiosk-init-retry-btn" @click="loadBranch">Réessayer</button>
+        <button class="kiosk-init-retry-btn" @click="loadBranch">{{ $t('kiosk.app.retry') }}</button>
       </div>
     </transition>
 
@@ -24,7 +24,7 @@
       <div v-if="showCartBar && cartCount > 0" class="kiosk-cart-bar" @click.stop="goToCart">
         <div class="kiosk-cart-bar-left">
           <span class="kiosk-cart-bar-badge">{{ cartCount }}</span>
-          <span class="kiosk-cart-bar-label">Mon panier</span>
+          <span class="kiosk-cart-bar-label">{{ $t('kiosk.app.cart_bar_label') }}</span>
         </div>
         <div class="kiosk-cart-bar-right">
           <span class="kiosk-cart-bar-total">{{ formatPrice(cartTotal) }}</span>
@@ -37,7 +37,11 @@
     <transition name="slide-down">
       <div v-if="offlinePending > 0" class="kiosk-offline-indicator">
         <span class="kiosk-offline-dot" />
-        <span>{{ offlinePending }} commande{{ offlinePending > 1 ? 's' : '' }} en attente de sync</span>
+        <span>{{
+          offlinePending > 1
+            ? $t('kiosk.app.offline_pending_many', { n: offlinePending })
+            : $t('kiosk.app.offline_pending_one', { n: offlinePending })
+        }}</span>
       </div>
     </transition>
 
@@ -49,7 +53,11 @@
         :class="{ 'kiosk-abandoned-below-offline': offlinePending > 0 }"
       >
         <span class="kiosk-abandoned-icon">⚠</span>
-        <span>{{ offlineAbandoned }} commande{{ offlineAbandoned > 1 ? 's' : '' }} non transmise — prévenez la caisse</span>
+        <span>{{
+          offlineAbandoned > 1
+            ? $t('kiosk.app.offline_abandoned_many', { n: offlineAbandoned })
+            : $t('kiosk.app.offline_abandoned_one', { n: offlineAbandoned })
+        }}</span>
       </div>
     </transition>
 
@@ -62,7 +70,12 @@
       @reset-kiosk="resetKiosk"
     >
       <transition :name="transitionName" mode="out-in">
-        <component :is="Component" :key="$route.fullPath" />
+        <!--
+          Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
+          catégorie refait toute la transition slide-left du shell (effet « toujours pareil »).
+          La liste produits anime alors localement dans KioskCategoriesComponent.
+        -->
+        <component :is="Component" :key="kioskRouterViewKey" />
       </transition>
     </router-view>
 
@@ -76,10 +89,10 @@
       <div v-if="showStillHere" class="kiosk-still-here-overlay" @click.stop="dismissStillHere">
         <div class="kiosk-still-here-modal">
           <div class="kiosk-still-here-icon">😴</div>
-          <h2 class="kiosk-still-here-title">Vous êtes toujours là ?</h2>
-          <p class="kiosk-still-here-sub">Votre session va expirer dans quelques secondes</p>
+          <h2 class="kiosk-still-here-title">{{ $t('kiosk.app.still_here_title') }}</h2>
+          <p class="kiosk-still-here-sub">{{ $t('kiosk.app.still_here_sub') }}</p>
           <button class="kiosk-still-here-btn" @click.stop="dismissStillHere">
-            Oui, je continue
+            {{ $t('kiosk.app.still_here_continue') }}
           </button>
         </div>
       </div>
@@ -89,7 +102,7 @@
     <div
       class="kiosk-admin-trigger"
       @click="handleAdminTap"
-      title="Admin"
+      :title="$t('kiosk.app.admin_trigger_title')"
     />
     <transition name="fade">
       <KioskAdminComponent
@@ -171,9 +184,28 @@ export default {
     rippleStyle() {
       return { left: this.ripple.x + 'px', top: this.ripple.y + 'px' };
     },
+    /**
+     * Clé du <component> sous le router-view : si elle change, toute la page repasse
+     * par slide-left/slide-right (0.3s). Sur le catalogue, ?cat= ne doit PAS changer la clé.
+     * On s’appuie sur meta.kioskStableShell + repli path/name (sans query : route.path).
+     */
+    kioskRouterViewKey() {
+      const r = this.$route;
+      if (r.meta?.kioskStableShell) return 'kiosk-shell-catalog';
+      const n = r.name;
+      if (n === 'kiosk.categories') return 'kiosk-shell-catalog';
+      const p = (r.path || '').replace(/\/+$/, '') || '';
+      if (p.endsWith('/kiosk/categories')) return 'kiosk-shell-catalog';
+      return r.fullPath;
+    },
   },
   watch: {
     $route(to, from) {
+      if (to.meta?.kioskStableShell && from.meta?.kioskStableShell) {
+        this.transitionName = 'kiosk-shell-static';
+        this.resetIdleTimer();
+        return;
+      }
       const toIdx   = ROUTE_ORDER.indexOf(to.name);
       const fromIdx = ROUTE_ORDER.indexOf(from.name);
       // Unknown routes (e.g. deep links): default forward
@@ -202,6 +234,7 @@ export default {
   },
   beforeUnmount() {
     this.clearIdleTimer();
+    clearTimeout(this._adminTapTimer);
     clearTimeout(this.rippleTimer);
     clearInterval(this.offlineCheckTimer);
     stopAutoSync();
@@ -253,13 +286,13 @@ export default {
           // [C3] Subscribe to item availability updates for this branch
           this._subscribeEchoChannel(branch.id);
         } else {
-          this.branchError = 'Aucune branche disponible. Vérifiez la configuration.';
+          this.branchError = this.$t('kiosk.app.branch_unavailable');
           this.branchLoading = false;
         }
       } catch (err) {
         const msg = err?.response?.status === 401
-          ? 'Session expirée. Veuillez recharger la borne.'
-          : 'Connexion au serveur impossible. Vérifiez le réseau.';
+          ? this.$t('kiosk.app.session_expired')
+          : this.$t('kiosk.app.server_unreachable');
         this.branchError = msg;
         this.branchLoading = false;
       }
@@ -584,6 +617,11 @@ export default {
 .slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
 .slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
 .slide-right-leave-to   { transform: translateX(100%); opacity: 0; }
+
+.kiosk-shell-static-enter-active,
+.kiosk-shell-static-leave-active {
+  transition: none;
+}
 
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
 .slide-down-enter-from, .slide-down-leave-to { transform: translateX(-50%) translateY(120%); opacity: 0; }

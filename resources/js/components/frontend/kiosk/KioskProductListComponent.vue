@@ -9,7 +9,10 @@
       </button>
       <div class="kiosk-prod-header-info">
         <h1 class="kiosk-prod-title">{{ categoryName }}</h1>
-        <p class="kiosk-prod-count" v-if="!loading">{{ products.length }} article{{ products.length > 1 ? 's' : '' }}</p>
+        <p class="kiosk-prod-count" v-if="!loading">
+          {{ products.length }}
+          {{ products.length > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
+        </p>
       </div>
     </div>
 
@@ -48,14 +51,14 @@
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M6 1l1.5 3 3.3.5-2.4 2.3.6 3.2L6 8.5l-3 1.5.6-3.2L1.2 4.5l3.3-.5L6 1z" fill="white"/>
             </svg>
-            Populaire
+            {{ $t('kiosk.popular') }}
           </div>
           <!-- Badge personnalisable -->
           <div v-if="hasOptions(product)" class="kiosk-prod-badge-custom">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M9.5 2.5L7 5l-1.5-.5L5 3l2.5-2.5L9.5 2.5zM3 7l1.5 1.5-2 2.5L1 11l.5-1.5L3 7z" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
             </svg>
-            À personnaliser
+            {{ $t('kiosk.catalog.badge_customize') }}
           </div>
           <!-- Spinner de chargement -->
           <div v-if="loadingItemId === product.id" class="kiosk-prod-loading-overlay">
@@ -65,7 +68,7 @@
 
         <!-- Infos (bas de carte) -->
         <div class="kiosk-prod-content">
-          <h3 class="kiosk-prod-name">{{ product.name }}</h3>
+          <h3 class="kiosk-prod-name">{{ sanitizeItemName(product.name) }}</h3>
           <p v-if="product.description" class="kiosk-prod-desc">{{ truncate(product.description, 55) }}</p>
 
           <!-- Prix + bouton -->
@@ -113,6 +116,7 @@
 import KioskWizardComponent from './KioskWizardComponent.vue';
 import { mapActions, mapGetters } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
 export default {
   name: 'KioskProductListComponent',
@@ -191,7 +195,7 @@ export default {
             item_extras: { extras: [], names: [] },
             instruction: null,
           });
-          this.showToast(`${detail.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
+          this.showToast(this.$t('kiosk.item_added', { name: detail.name }), 'success', 1800);
         }
       } catch (_) {
         // Fallback : ajout simple sans wizard
@@ -209,7 +213,7 @@ export default {
           item_extras: { extras: [], names: [] },
           instruction: null,
         });
-        this.showToast(`${product.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
+        this.showToast(this.$t('kiosk.item_added', { name: product.name }), 'success', 1800);
       } finally {
         this.loadingItemId = null;
       }
@@ -226,7 +230,7 @@ export default {
     addToCartAndClose(cartItem) {
       this.addItem(cartItem);
       this.closeWizard();
-      this.showToast(`${cartItem.name} ${this.$t('kiosk.add')} ✓`, 'success', 1800);
+      this.showToast(this.$t('kiosk.item_added', { name: cartItem.name }), 'success', 1800);
     },
 
     closeWizard() {
@@ -257,6 +261,10 @@ export default {
       if (n.includes('wrap')) return '🫓';
       if (n.includes('assiette') || n.includes('plat')) return '🍽️';
       return '🍽️';
+    },
+
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
     },
   },
 };

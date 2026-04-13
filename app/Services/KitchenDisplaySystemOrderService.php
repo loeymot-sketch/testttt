@@ -39,8 +39,11 @@ class KitchenDisplaySystemOrderService
     {
         try {
             $requests = $request->all();
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $allowedColumns = ['id', 'order_datetime', 'queue_number', 'order_serial_no', 'status', 'created_at'];
+            $requestedColumn = (string) ($request->get('order_column') ?? 'id');
+            $orderColumn = in_array($requestedColumn, $allowedColumns, true) ? $requestedColumn : 'id';
+            $requestedType = strtolower((string) ($request->get('order_by') ?? 'desc'));
+            $orderType = in_array($requestedType, ['asc', 'desc'], true) ? $requestedType : 'desc';
 
             $userBranchId = auth()->user()->branch_id ?? 0;
 
@@ -73,8 +76,10 @@ class KitchenDisplaySystemOrderService
                     if (in_array($key, $this->orderFilter)) {
                         if ($key === "status" && $request) {
                             $query->where($key, (int) $request);
+                        } else if ($key === "payment_method" && $request !== null && $request !== '') {
+                            $query->where($key, (int) $request);
                         } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                            $query->where($key, 'like', '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $request) . '%');
                         }
                     }
 

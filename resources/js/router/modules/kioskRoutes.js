@@ -44,7 +44,7 @@ function requireKioskAuth(to, from, next) {
         store
             .dispatch('kioskCart/kioskLogin', auto)
             .then(() => next())
-            .catch(() => next({ name: 'kiosk.login', query: { auto_failed: '1' } }));
+            .catch(() => next({ name: 'kiosk.login' }));
         return;
     }
     next({ name: 'kiosk.login' });
@@ -76,8 +76,16 @@ function requireOrderRef(to, from, next) {
     //   - No valid orderId param (undefined, "undefined", "null", empty string)
     // This prevents a raw URL like /kiosk/waiting/undefined from loading the waiting screen
     // and polling GET frontend/order/undefined in an infinite loop.
-    const isValidParam = paramId && paramId !== 'undefined' && paramId !== 'null' && paramId !== '';
+    const isValidParam = /^(offline_)?\d+$/.test(String(paramId || '').trim());
     if (!orderRef && !isValidParam) return next({ name: 'kiosk.idle' });
+    next();
+}
+
+function requireConfirmationContext(to, from, next) {
+    const orderRef = store.state.kioskCart?.orderRef;
+    if (!orderRef) {
+        return next({ name: 'kiosk.idle' });
+    }
     next();
 }
 
@@ -110,11 +118,14 @@ export default [
                 path: "categories",
                 name: "kiosk.categories",
                 component: KioskCategoriesComponent,
-                meta: { isKiosk: true },
+                // Clé stable du router-view (KioskApp) : ne pas refaire slide-left à chaque ?cat=
+                meta: { isKiosk: true, kioskStableShell: true },
             },
             {
                 path: "products/:categoryId",
                 name: "kiosk.products",
+                // Legacy deep-link kept for backward compatibility; the active catalogue
+                // surface is `kiosk.categories` with query-driven category selection.
                 redirect: (to) => ({
                     name: 'kiosk.categories',
                     query: {
@@ -171,6 +182,7 @@ export default [
                 name: "kiosk.confirmation",
                 component: KioskConfirmationComponent,
                 meta: { isKiosk: true },
+                beforeEnter: requireConfirmationContext,
                 props: (route) => ({
                     orderNumber: route.query.number || '',
                     orderTotal: route.query.total !== undefined && route.query.total !== '' ? parseFloat(route.query.total) : null, // [AUDIT-P47-BUG6] preserve zero (0 is valid total, not "null")

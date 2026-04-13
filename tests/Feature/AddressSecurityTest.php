@@ -40,8 +40,8 @@ class AddressSecurityTest extends TestCase
             'user_id' => $this->userA->id,
             'label' => 'Home',
             'address' => '123 Rue A',
-            'city' => 'Paris',
-            'country' => 'France',
+            'latitude' => '48.8566',
+            'longitude' => '2.3522',
         ]);
         
         // User B avec adresse
@@ -54,8 +54,8 @@ class AddressSecurityTest extends TestCase
             'user_id' => $this->userB->id,
             'label' => 'Work',
             'address' => '456 Rue B',
-            'city' => 'Lyon',
-            'country' => 'France',
+            'latitude' => '45.7640',
+            'longitude' => '4.8357',
         ]);
     }
 
@@ -128,8 +128,8 @@ class AddressSecurityTest extends TestCase
             ->putJson("/api/frontend/address/{$this->addressA->id}", [
                 'label' => 'Updated Home',
                 'address' => '789 Rue C',
-                'city' => 'Marseille',
-                'country' => 'France',
+                'latitude' => '43.2965',
+                'longitude' => '5.3698',
             ]);
         
         $response->assertStatus(200);

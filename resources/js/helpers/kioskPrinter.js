@@ -69,6 +69,7 @@ function separator(char = '-', width = RECEIPT_WIDTH) {
  */
 export function buildEscPosReceipt(receipt) {
   const lines = [];
+  const labels = receipt.labels || {};
 
   lines.push(CMD.INIT);
 
@@ -88,7 +89,7 @@ export function buildEscPosReceipt(receipt) {
   // ── Queue number ─────────────────────────────────────────────────────────
   lines.push(CMD.ALIGN_CENTER);
   lines.push(CMD.BOLD_ON);
-  lines.push('VOTRE NUMÉRO');
+  lines.push(labels.queueNumberTitle || 'YOUR NUMBER');
   lines.push(LF);
   lines.push(CMD.DOUBLE_SIZE);
   lines.push(receipt.queueNumber || '---');
@@ -127,19 +128,19 @@ export function buildEscPosReceipt(receipt) {
   lines.push(CMD.ALIGN_LEFT);
 
   if (receipt.discount && receipt.discount > 0) {
-    lines.push(padLine('Sous-total', formatEur(receipt.subtotal)));
+    lines.push(padLine(labels.subtotal || 'Subtotal', formatEur(receipt.subtotal)));
     lines.push(LF);
-    lines.push(padLine('Réduction fidélité', '-' + formatEur(receipt.discount)));
+    lines.push(padLine(labels.discount || 'Loyalty discount', '-' + formatEur(receipt.discount)));
     lines.push(LF);
   }
 
   lines.push(CMD.BOLD_ON);
-  lines.push(padLine('TOTAL', formatEur(receipt.total)));
+  lines.push(padLine(labels.total || 'TOTAL', formatEur(receipt.total)));
   lines.push(LF);
   lines.push(CMD.BOLD_OFF);
 
   if (receipt.paymentMethod) {
-    lines.push(padLine('Paiement', receipt.paymentMethod));
+    lines.push(padLine(labels.payment || 'Payment', receipt.paymentMethod));
     lines.push(LF);
   }
 
@@ -148,7 +149,7 @@ export function buildEscPosReceipt(receipt) {
     lines.push(LF);
     lines.push(CMD.ALIGN_CENTER);
     lines.push(CMD.BOLD_ON);
-    lines.push('FIDELITE');
+    lines.push(labels.loyalty || 'LOYALTY');
     lines.push(LF);
     lines.push(CMD.BOLD_OFF);
     lines.push(CMD.NORMAL_SIZE);
@@ -162,9 +163,9 @@ export function buildEscPosReceipt(receipt) {
 
   // ── Footer ───────────────────────────────────────────────────────────────
   lines.push(CMD.ALIGN_CENTER);
-  lines.push(receipt.thankYou || 'Merci pour votre commande !');
+  lines.push(receipt.thankYou || 'Thank you for your order!');
   lines.push(LF);
-  lines.push('À bientôt !');
+  lines.push(labels.seeYouSoon || 'See you soon!');
   lines.push(LF + LF + LF);
 
   // ── Cut ──────────────────────────────────────────────────────────────────
@@ -273,6 +274,7 @@ export function buildReceiptData({
   paymentMethod,
   loyaltyPointsEarned = 0,
   loyaltyCustomerName = '',
+  labels = {},
 }) {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -298,5 +300,6 @@ export function buildReceiptData({
     paymentMethod:  paymentMethod || '',
     loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
     loyaltyCustomerName: loyaltyCustomerName || '',
+    labels,
   };
 }

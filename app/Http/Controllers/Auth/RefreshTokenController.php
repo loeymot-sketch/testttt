@@ -18,8 +18,13 @@ class RefreshTokenController extends Controller
             $sanctumToken = $request->token;
             $token = PersonalAccessToken::findToken($sanctumToken);
             $user = $token->tokenable;
+            $token->delete();
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken(
+                'auth_token',
+                ['*'],
+                now()->addMinutes((int) config('sanctum.expiration', 480))
+            )->plainTextToken;
 
             return new JsonResponse([
                 'token'      => $token,

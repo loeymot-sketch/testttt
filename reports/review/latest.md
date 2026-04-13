@@ -1,66 +1,99 @@
-# Rapport de Review — Phase 49 + Audit Phase 50 (Claude Architect)
+# Review — Post-Stabilisation Readiness
 
-**Date**: 2026-03-24  
+**Date**: 2026-03-31  
 **Agent**: Claude (Architect & Reviewer)  
-**Verdict**: NEEDS_FIX (Phase 50 requise)
+**Verdict**: NEEDS_ANTIGRAVITY
 
 ---
 
-## Verdict Phase 49
+## Findings
 
-Phase 49 correctement implémentée par Kimi (8/8 bugs). Aucune régression Vue/PHP détectée.
+### 1. Les flux critiques métier sont stabilisés
+- state machine kiosk paiement/KDS validée sur suites ciblées
+- validation coupon/loyalty stabilisée
+- isolation kiosk/admin/branch stabilisée
+- CRUD admin critique réaligné sur les contrats réels
 
-**MAIS** : L'audit Phase 50 révèle que la correction BUG-P49-6 (idempotence POS) est **silencieusement inopérante** car :
-- `idempotency_key` absent du `$fillable` de `Order` → jamais sauvegardé
-- `PosComponent.vue` n'envoie pas le header `X-Idempotency-Key`
+### 2. La synchronisation inter-surfaces est cohérente en headless
+- `OrderCreated` et `OrderStatusChanged` sont propagés correctement dans les chemins critiques validés
+- `OrderService` dispatch maintenant `OrderStatusChanged` sur le path client self-cancel
+- `SyncComprehensiveTest.php`, `KDSFlowTest.php`, `KioskPaymentStateMachineTest.php` et `AntiGravityTest.php` sont verts
 
----
+### 3. La validation globale PHP est désormais un problème de runner, plus de logique
+- les suites PHP ciblées majeures passent individuellement
+- les lots PHP passent via `scripts/run_php_feature_batches.sh`
+- le run monolithique `php artisan test` reste sensible à la mémoire, malgré `memory_limit=512M`
 
-## Audit Phase 50 — Nouveaux bugs détectés
-
-Après lecture complète de :
-- `app/Models/Order.php` + `FrontendOrder.php`
-- `app/Services/OrderService.php` (posOrderStore)
-- `app/Http/Requests/OrderRequest.php` + `PosOrderRequest.php`
-- `resources/js/components/admin/pos/PosComponent.vue`
-- `resources/js/store/modules/kioskCart.js`
-- `resources/js/components/frontend/kiosk/KioskWaitingComponent.vue`
-- `resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue`
-- `app/Http/Controllers/Frontend/LoyaltyController.php`
-- `app/Listeners/AwardLoyaltyPointsOnDelivery.php`
-
-### Bugs identifiés
-
-| ID | Priorité | Description |
-|----|----------|-------------|
-| BUG-P50-1 | 🔴 CRITIQUE | `Order::$fillable` manque `idempotency_key` → idempotence POS jamais sauvegardée |
-| BUG-P50-2 | 🔴 CRITIQUE | `PosComponent.vue` n'envoie pas `X-Idempotency-Key` → idempotence POS inopérante |
-| BUG-P50-3 | 🟠 IMPORTANT | `FrontendOrder::$fillable` manque `source_surface` → risque futur |
-| BUG-P50-4 | 🟠 IMPORTANT | `OrderRequest.total` sans `min:0` → total négatif accepté |
-| BUG-P50-5 | 🟠 IMPORTANT | Points fidélité calculés sur total client, pas total serveur → divergence possible |
-| BUG-P50-7 | 🟡 MOYEN | `KioskWaiting` : orderId invalide → poll en boucle sur `/show/undefined` |
-| BUG-P50-8 | 🟡 MOYEN | `LoyaltyController.register()` : email doublon → 500 non gérée |
-| BUG-P50-9 | 🟡 MOYEN | `kioskCart.idempotencyKey` non réinitialisé après commande → hit idempotence sur nouvelle commande |
-| BUG-P50-10 | 🟡 MOYEN | Points attribués sur commande PREPARED puis CANCELED → perte financière |
+### 4. Le frontend kiosk est plus propre
+- `npm test` vert
+- `npm run production` OK
+- les warnings Vue du wizard ont été réduits par la sécurisation du mixin `kioskFormatPrice`
 
 ---
 
-## Score global
+## Residual Risks
 
-| Domaine | Score |
-|---------|-------|
-| Sécurité | 9.5/10 |
-| Synchronisation queue | 9.8/10 |
-| Idempotence | 6.0/10 (POS inopérant) |
-| Fidélité | 9.3/10 |
-| UX kiosk | 9.5/10 |
-| KDS/OSS | 9.7/10 |
-| **Global** | **9.4/10** |
+### Medium
+- `php artisan test` complet n’est pas encore fiable comme unique commande de validation CI locale à cause de la mémoire
+- `kiosk_auto=no` sur le runtime local empêche un parcours borne browser réellement autonome sans préparation runtime supplémentaire
+- le vrai device flow (TPE, imprimante, tiroir) n’a pas encore été validé en environnement physique
+
+### Low
+- `KioskProductListComponent.vue` reste une surface legacy
+- il reste une dette documentaire légère autour des contrats admin/HTTP historiques
 
 ---
 
-## Verdict final
+## Validation Performed
 
-**NEEDS_FIX** — Phase 50 requise.
+### PHP vert ciblé
+- `AddressSecurityTest`
+- `AdminCrudComprehensiveTest`
+- `AntiGravityTest`
+- `AntiGravityFinalTest`
+- `AntiGravityLoginRedirectionTest`
+- `AntiGravityManualTest`
+- `BranchScopeTest`
+- `KDSFlowTest`
+- `KioskScopeIsolationTest`
+- `KioskSecurityTest`
+- `SecurityComprehensiveTest`
+- `SyncComprehensiveTest`
+- `PosDiscountTest`
+- `PosUITest`
+- `LoyaltyApiTest`
+- `KioskFrontendComprehensiveTest`
+- `FrontendDiscountIntegrityTest`
+- `KioskPaymentStateMachineTest`
+- `MenuSeederTest`
 
-Après Phase 50 + configuration Redis + tests E2E manuels : **APPROVED pour production**.
+### Validation par lots
+- `bash scripts/run_php_feature_batches.sh all` → OK
+- `bash scripts/profile_php_memory.sh` → rapport généré
+
+### Frontend
+- `npm test` → **108 passed**
+- `npm test -- --run tests/js/KioskWizard.spec.js` → **66 passed**
+- `npm run production` → **OK**
+
+### Runtime config observée
+- `broadcast=pusher`
+- `queue=database`
+- `kiosk_auto=no`
+
+---
+
+## Verdict
+
+**NEEDS_ANTIGRAVITY**
+
+Le socle code/tests est désormais robuste et les risques critiques initiaux ont été fortement réduits.  
+Le bloc restant avant un vrai verdict production-ready n’est plus une dette logique majeure, mais la validation **browser/device** du tunnel borne réel avec environnement kiosk configuré et périphériques disponibles.
+
+### Anti-Gravity encore recommandé
+- Carte validée → `paymentConfirm` → apparition KDS en conditions réelles
+- Carte refusée / timeout TPE → absence de ticket fantôme en cuisine
+- Cash borne → apparition immédiate KDS + cash drawer
+- Loyalty + coupon edge cases sur UI réelle
+- Maintenance mode → pas d’auto-login parasite
+- Validation broadcast/queue sur l’environnement effectif
