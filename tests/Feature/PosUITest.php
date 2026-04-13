@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Address;
 use App\Models\Branch;
-use App\Models\Address;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
@@ -14,7 +13,6 @@ use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
 use App\Enums\Status;
-use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
