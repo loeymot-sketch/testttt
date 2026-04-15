@@ -1,5 +1,5 @@
 ---
-description: Human gate policy for FoodKing. Defines all halt conditions, gate artifact format, and resumption rules. No gate is ever self-approvable.
+description: Human gate policy for this repository. Defines all halt conditions, gate artifact format, and resumption rules. No gate is ever self-approvable.
 globs: ["**/*"]
 alwaysApply: true
 ---

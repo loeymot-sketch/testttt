@@ -26,6 +26,10 @@ class Kernel extends ConsoleKernel
                 ->where('created_at', '<', now()->subMinutes($expireMinutes + 1))
                 ->delete();
         })->everyFifteenMinutes()->name('purge-expired-otps')->withoutOverlapping();
+
+        $schedule->command('foodking:outbox:rescue')
+            ->everyMinute()
+            ->withoutOverlapping();
     }
 
     /**

@@ -1,12 +1,12 @@
 import axios from "axios";
 import { saveOrder, getPendingCount, startAutoSync } from "../../helpers/kioskOfflineQueue";
+import { isSnapshotStale, loadSnapshot } from "../../helpers/kioskMenuCache";
 
 // Source identique à sourceEnum.WEB (pas de valeur KIOSK côté frontend)
 const SOURCE_KIOSK = 5;
 
-// Map kiosk UI payment strings → PaymentGateway numeric IDs stored in DB
-// cash=1 (CASH_ON_DELIVERY), card=4 (CARD), tr=5 (TICKET_RESTAURANT)
 const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
+const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
 
 export const kioskCart = {
     namespaced: true,
@@ -52,10 +52,11 @@ export const kioskCart = {
             const existing = state.items.findIndex(i =>
                 i.item_id === item.item_id &&
                 JSON.stringify(i.item_variations) === JSON.stringify(item.item_variations) &&
-                JSON.stringify(i.item_extras) === JSON.stringify(item.item_extras)
+                JSON.stringify(i.item_extras) === JSON.stringify(item.item_extras) &&
+                (i.instruction || '') === (item.instruction || '')
             );
             if (existing >= 0) {
-                const qty = state.items[existing].quantity + (item.quantity || 1);
+                const qty = Math.min(state.items[existing].quantity + (item.quantity || 1), MAX_ITEM_QTY);
                 state.items[existing].quantity = qty;
                 // [KIOSK-17] Keep line total in sync when merging identical items
                 const base = parseFloat(state.items[existing].convert_price) || 0;
@@ -81,7 +82,7 @@ export const kioskCart = {
             if (quantity <= 0) {
                 state.items.splice(index, 1);
             } else {
-                state.items[index].quantity = quantity;
+                state.items[index].quantity = Math.min(quantity, MAX_ITEM_QTY);
                 // [KIOSK-17] Keep line total in sync when quantity changes
                 const base = parseFloat(state.items[index].convert_price) || 0;
                 const varE = parseFloat(state.items[index].item_variation_total) || 0;
@@ -199,6 +200,12 @@ export const kioskCart = {
         },
         submitOrder({ commit, state, getters }, { branchId, orderType, paymentMethod } = {}) {
             return new Promise((resolve, reject) => {
+                loadSnapshot().then(snap => {
+                    if (snap && isSnapshotStale(snap.savedAt)) {
+                        console.warn('[Kiosk] Menu snapshot is stale (>4h). Server will recalculate prices at order time (SSOT).');
+                    }
+                }).catch(() => {});
+
                 const resolvedBranchId = branchId || state.branchId;
                 const subtotal = getters.subtotal;
                 const total = getters.total;

@@ -84,7 +84,7 @@ export default {
           const groupLabel = (e.group_label || '').toLowerCase();
           const name = (e.name || '').toLowerCase();
           // Exclure si c'est une sauce (par group_label ou par nom en fallback)
-          const isSauce = groupLabel.includes('sauce') || (groupLabel === '' && name.includes('sauce'));
+          const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
           return price > 0 && !isSauce;
         })
         .map(s => ({

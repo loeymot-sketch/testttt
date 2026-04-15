@@ -87,6 +87,7 @@
             kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
+            maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

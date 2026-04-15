@@ -19,6 +19,19 @@ No phase may be skipped. Audit always precedes close.
 One PRIMARY_MODEL per cycle. Roles do not overlap.
 Full routing policy: `.cursor/routing.md`
 
+## Authoritative multi-agent bounded cycle (SSOT)
+
+For **TASK_ID-driven** work in Cursor, this path is **authoritative** and overrides any conflicting step elsewhere in this document:
+
+1. **Command:** `.cursor/commands/run-cycle.md` (invoke with a `TASK_ID`, e.g. `run-cycle SMOKE-001`).
+2. **Cycle state:** `.cursor/ACTIVE_CYCLE.md` (`RUNNER_MODE: single-session`, `PHASE`, `PLAN_FILE`, `REPORT_FILE`, completion rows).
+3. **Plan artifact:** `plans/PLAN_[TASK_ID]_[DATE].md` per `.cursor/context/plan-context.md` (from `plans/PLAN_TEMPLATE.md` when applicable).
+4. **Phase instructions:** `.cursor/context/plan-context.md` (PLAN), `.cursor/context/execute-context.md` (EXECUTE), `.cursor/context/audit-context.md` (AUDIT); VALIDATE per `run-cycle.md` when `validate-context.md` is absent.
+
+**EXECUTE delegation:** Implementation is performed only after **explicit** delegation to the subagent matching `PRIMARY_MODEL` and routing intent (see `.cursor/routing.md` and **Step 2** in `run-cycle.md`): **`foodking-routine-implementer`** for Composer (routine), **`foodking-complex-implementer`** for GPT-5.4 (complex). Do not treat a cycle as properly executed if product edits were made without that delegation pattern (or the documented exception in `run-cycle.md`).
+
+Sections below labeled **Legacy workflow** remain valid for **PR-centric / review-loop** habits but **do not replace** this SSOT for bounded cycles.
+
 ## Source of truth (extended)
 - README.md
 - docs/PROJECT_CONTINUITY_AND_VISION.md
@@ -60,6 +73,23 @@ Halt and generate a gate brief on any of:
 
 ## MCP
 Phase 1: Filesystem MCP only.
+Phase 2: Graphiti MCP (mémoire inter-cycles — décisions architecture, contexte passé, historique cycles).
+Phase 3: Playwright MCP (tests E2E automatiques sur flows critiques FoodKing).
+  Package : @playwright/mcp@latest (npx, pas d'install global)
+  Browser : Chromium
+  BASE_URL : http://localhost:8000
+  Config : .cursor/mcp/playwright.json
+  Flows couverts : POS Cash, POS Card, Kiosk, KDS, Auth refresh (F5)
+  Déclencheur : plan déclare playwright-mcp | playwright-critical-flow | playwright-full-e2e
+  Rapport : reports/antigravity/latest.md
+  Règle : le Planner-Orchestrator seul décide si un cycle requiert E2E — jamais auto-déclenché.
+  Server : github.com/getzep/graphiti — `mcp_server/graphiti_mcp_server.py`
+  Clone local : `/Users/1millnonstop/graphiti` (commit épinglé — voir `.cursor/mcp/graphiti.json`)
+  Backend : Neo4j AuraDB Free Tier
+  Config : `.cursor/mcp/graphiti.json`
+  Scope : lecture avant PLAN (query subsystem), écriture après CLOSE (episode + décisions clés).
+  Group ID : `foodking` (isolation des entités FoodKing dans le graphe Graphiti)
+  Règle : ne jamais bloquer la phase PLAN si Graphiti est indisponible — continuer sans contexte.
 
 ## Pre-Execution
 Run `.cursor/hooks/safety-check.sh` manually before every execution phase.
@@ -108,11 +138,13 @@ Responsibilities:
 ### Cursor
 Orchestration environment
 
-## Mandatory workflow
+## Legacy workflow (PR / review loop — optional)
+
+Use this loop for **historical PR-centric** review habits. It **does not** replace the **Authoritative multi-agent bounded cycle (SSOT)** above for `TASK_ID` + `run-cycle` work.
 
 ### Normal Cycle (90% of cases)
 1. **Human** requests feature/fix
-2. **Claude** analyzes and writes plan in `reports/planning/latest.md`
+2. **Claude** analyzes and may write a **narrative or scratch** plan in `reports/planning/latest.md` **only when not** using the bounded SSOT; for bounded cycles the plan **must** be `plans/PLAN_[TASK_ID]_[DATE].md` as in `plan-context.md`.
    - Plan MUST specify test strategy: `no-test` | `static-inspection` | `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` | `human-verification`
 3. **Human** validates plan (GO / MODIFY / STOP)
 4. **Kimi** MUST check FIRST: does `reports/review/bugbot-latest.md` exist?
@@ -232,7 +264,8 @@ Orchestration environment
    - authorization boundaries
 
 ## Operational output rules
-- Planning output goes to `reports/planning/latest.md` (with test strategy specified)
+- **Bounded SSOT cycles:** plan under `plans/` per `ACTIVE_CYCLE.md` / `plan-context.md`; execution evidence in `REPORT_FILE` and `reports/post_execute_latest.log` as in `run-cycle.md`.
+- **Legacy loop:** planning narrative may go to `reports/planning/latest.md` (with test strategy specified) when not using the bounded SSOT.
 - Execution summary goes to `reports/execution/latest.md` (with test results if applicable)
 - Review output goes to `reports/review/latest.md` (with verdict)
 - QA findings come from `reports/antigravity/latest.md` (only when Playwright / E2E verification is invoked; path name is legacy)

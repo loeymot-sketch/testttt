@@ -10,8 +10,8 @@ One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
 | Phase | Model | Permitted scope |
 |---|---|---|
 | PLAN | Claude | Read task, write scoped plan, flag invariant risks and gate conditions |
-| EXECUTE — complex | GPT-5.4 | Backend logic, sync, data layer, API contracts, non-trivial algorithms |
-| EXECUTE — routine | Composer | CRUD, config, UI copy, boilerplate, scaffold-only migrations |
+| EXECUTE — complex | GPT-5.4 | Backend logic, sync, data layer, API contracts, non-trivial algorithms; **schema/migrations (non-routine)** |
+| EXECUTE — routine | Composer | CRUD, config, UI copy, boilerplate, scaffold generation **excluding** database migrations and any schema/DDL work |
 | VALIDATE | Composer | Diff summary, test results, anomaly flags, report draft |
 | AUDIT | Claude | Plan adherence, invariant check, drift assessment, gate brief or close |
 | GATE BRIEF | Claude → Human | Claude writes, human decides, loop blocked until resolved |
@@ -22,18 +22,21 @@ One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
 ## Hard Boundaries
 
 **Claude**
-- No implementation code
-- No direct file edits
+- No product/application implementation code (`app/`, `resources/`, `routes/`, etc.)
+- No edits to product/application source files
+- **May** write governance artifacts: plan files under `plans/`, gate briefs under `docs/gates/`, and cycle metadata per workflow (e.g. `ACTIVE_CYCLE.md` where the procedure requires it)
 - Sole author of plan files, audit records, and gate briefs
 
 **GPT-5.4**
 - No planning, no self-routing, no auditing
 - Executes within plan scope only — does not redefine it
-- No schema migrations, auth changes, or external service wiring unless explicitly scoped
+- **Schema, migrations, and DDL** are **non-routine**: only here, only when explicitly listed in `SUBSYSTEMS_TOUCHED` with gates satisfied as required
+- No auth changes or external service wiring unless explicitly scoped
 - No frozen zone edits without gate clearance
 
 **Composer**
-- No schema, auth, sync, pricing, dispatch, or `branch_id` filtering logic
+- **No** `database/migrations`, migration stubs, schema, or DDL — not even “scaffold-only”; route schema work to GPT-5.4 (complex) with explicit plan scope
+- No auth, sync, pricing, dispatch, or `branch_id` filtering logic
 - No frozen zone edits
 - No architectural decisions
 - No gate briefs
@@ -50,6 +53,7 @@ One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
 | Dispatch logic in scope | GPT-5.4 + post-commit constraint explicit in plan |
 | `branch_id` filtering or scoping in scope | GPT-5.4 + isolation logic declared in plan |
 | Frozen zone file in scope | Gate brief required before any implementation begins |
+| Schema / migrations / DDL in scope | **Complex (GPT-5.4)** only, explicitly declared; **never** Composer (routine) |
 
 ---
 

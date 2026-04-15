@@ -311,19 +311,27 @@ export default {
     },
 
     async processCashPayment(navTarget) {
-      // [SPLASH-FIX] Open cash drawer via Electron IPC on cash payment
       if (window.borne?.isElectron && window.borne?.openDrawer) {
         try {
           const drawerResult = await window.borne.openDrawer();
           if (!drawerResult?.success && !drawerResult?.skipped) {
             console.warn('[KioskPayment] Cash drawer failed:', drawerResult?.error);
-            // Non-blocking — order is still valid
+            this._reportDrawerFailure(drawerResult?.error || 'no success');
           }
         } catch (e) {
           console.warn('[KioskPayment] Cash drawer error:', e.message);
+          this._reportDrawerFailure(e.message);
         }
       }
       this.$router.push(navTarget);
+    },
+    _reportDrawerFailure(errorMsg) {
+      try {
+        window.axios?.post('frontend/kiosk-event', {
+          type: 'cash_drawer_failure',
+          details: `error=${errorMsg || 'unknown'}`,
+        }).catch(() => {});
+      } catch (_) {}
     },
 
     async cancelCardPayment() {

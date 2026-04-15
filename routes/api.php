@@ -104,6 +104,7 @@ use App\Http\Controllers\Frontend\SubscriberController as FrontendSubscriberCont
 use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeController;
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
+use App\Http\Controllers\HealthController;
 
 
 /*
@@ -117,6 +118,10 @@ use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDelivery
 |
 */
 
+// Health check endpoints (no auth required)
+Route::get('/health', [HealthController::class, 'full']);
+Route::get('/health/live', [HealthController::class, 'live']);
+Route::get('/health/ready', [HealthController::class, 'ready']);
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
@@ -126,12 +131,12 @@ Route::match(['get', 'post'], '/login', function () {
 Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed', 'apiKey']);
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
-    // [SEC-02] Rate limiting — 5 tentatives par minute
+    // [SEC-02] Rate limiting — login lockout (named limiter)
     Route::post('/login', [LoginController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:login-lockout');
 
     Route::post('/kiosk-login', [KioskMachineLoginController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:login-lockout');
 
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
@@ -219,7 +224,7 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
@@ -609,7 +614,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
 
     Route::prefix('pos')->name('pos.')->group(function () {
-        Route::post('/', [PosController::class, 'store']);
+        Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
@@ -617,9 +622,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);
-        Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus']);
-        Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy']);
+        Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
+            ->middleware('throttle:pos-order-update');
+        Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
+            ->middleware('throttle:pos-order-update');
+        Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
+            ->middleware('throttle:pos-order-update');
         // [SPRINT-5] Quick re-order — returns structured cart payload for rapid re-import
         Route::get('/reorder-items/{order}', [PosOrderController::class, 'reorderItems'])->name('reorderItems');
     });
@@ -808,8 +816,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
-        // [SPLASH SECURITY] Rate limit: 10 orders/min max per user/kiosk — prevents runaway kiosk spam
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:kiosk-orders');
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);

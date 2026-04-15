@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "status": "READY — ajouter dans Cursor Settings > MCP",
+    "package": "@playwright/mcp@latest",
+    "version_at_setup": "0.0.70",
+    "installed_at": "2026-04-14",
+    "base_url": "http://localhost:8000",
+    "browser": "chromium",
+    "note": "npx télécharge le package au premier lancement — pas d'install global nécessaire"
+  },
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--browser", "chromium"
+      ],
+      "env": {
+        "PLAYWRIGHT_BASE_URL": "http://localhost:8000"
+      }
+    }
+  }
+}

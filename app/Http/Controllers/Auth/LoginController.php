@@ -90,9 +90,11 @@ class LoginController extends Controller
         $defaultPermission = AppLibrary::defaultPermission($permission);
         $defaultMenu       = (object)AppLibrary::defaultMenu($this->menuService->menu($user->roles[0]), $defaultPermission);
 
-        // [LOGIN-FIX] Priorité landing_url du rôle pour redirection post-login
         if ($user->roles->count() > 0 && !empty($user->roles[0]->landing_url)) {
-            $defaultPermission->url = $user->roles[0]->landing_url;
+            $landingUrl = $user->roles[0]->landing_url;
+            if (preg_match('/^[a-zA-Z0-9\-_\/]*$/', $landingUrl)) {
+                $defaultPermission->url = $landingUrl;
+            }
         }
 
         return new JsonResponse([

@@ -1,0 +1,480 @@
+{
+  "config": {
+    "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/playwright.config.js",
+    "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/antigravity/playwright-latest.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 5,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "01-auth-refresh.spec.js",
+      "file": "01-auth-refresh.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Auth Refresh — F5 sur POS",
+          "file": "01-auth-refresh.spec.js",
+          "line": 11,
+          "column": 6,
+          "specs": [
+            {
+              "title": "login POS → F5 → reste sur /admin/pos",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5388,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:37.268Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "81675b48eccb812da7fd-f37efeab19c3cb455849",
+              "file": "01-auth-refresh.spec.js",
+              "line": 12,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "02-pos-cash.spec.js",
+      "file": "02-pos-cash.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POS Cash — commande complète",
+          "file": "02-pos-cash.spec.js",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "surface POS chargée sur /admin/pos",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2173,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:37.268Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6798ae4d119786f0120-4249bdfd35ebce452404",
+              "file": "02-pos-cash.spec.js",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "panier démarre vide — pas de commande fantôme",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1355,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:40.639Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6798ae4d119786f0120-c03ea61daba51f53fa8c",
+              "file": "02-pos-cash.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "pas de crash JavaScript visible sur la surface POS",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3781,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:42.000Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6798ae4d119786f0120-0ab80aeb92b6d8e9a85f",
+              "file": "02-pos-cash.spec.js",
+              "line": 36,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "03-kiosk-wizard.spec.js",
+      "file": "03-kiosk-wizard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Kiosk — écran login borne",
+          "file": "03-kiosk-wizard.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page /kiosk/login accessible sans crash",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1316,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:37.262Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7ccea324dbbbe62a48d-113fde96bc751458937e",
+              "file": "03-kiosk-wizard.spec.js",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "écran login borne visible — message de configuration affiché",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3049,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:39.783Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7ccea324dbbbe62a48d-c92d44236ab0da00ab16",
+              "file": "03-kiosk-wizard.spec.js",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "pas d'erreur JavaScript fatale sur la borne",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4072,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:42.843Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7ccea324dbbbe62a48d-d51f363715866d684e9f",
+              "file": "03-kiosk-wizard.spec.js",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "window.foodkingConfig présent et kioskMenuPricing configuré",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 419,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:46.923Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7ccea324dbbbe62a48d-64916e16be5e48f9baf4",
+              "file": "03-kiosk-wizard.spec.js",
+              "line": 43,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "04-kds-status.spec.js",
+      "file": "04-kds-status.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "KDS — interface cuisine",
+          "file": "04-kds-status.spec.js",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page /kds accessible — redirige vers login si non authentifié",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:37.271Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9d204cd80e7226e34828-efe73d00d19092e6f54a",
+              "file": "04-kds-status.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "login chef via /login → redirection vers surface chef",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1775,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-14T18:01:39.934Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9d204cd80e7226e34828-192fcdf077faa5a80194",
+              "file": "04-kds-status.spec.js",
+              "line": 26,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-14T18:01:36.527Z",
+    "duration": 10854.925000000001,
+    "expected": 10,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

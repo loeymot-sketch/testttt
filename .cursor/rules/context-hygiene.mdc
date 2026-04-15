@@ -1,0 +1,109 @@
+---
+description: Context hygiene rules for Cursor agents. Controls which files are loaded per phase, prevents redundant reads, and enforces cycle artifact discipline.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Context Hygiene – FoodKing
+
+## 1. Per-phase load boundaries
+
+Each phase loads only the files listed below. Do not load additional files unless a task or plan explicitly references them by path.
+
+### PLAN phase
+| File | Purpose |
+|---|---|
+| `.cursor/ACTIVE_CYCLE.md` | Confirm TASK_ID and PHASE |
+| `tasks/[TASK_ID].md` | Task definition |
+| `.cursor/routing.md` | PRIMARY_MODEL assignment |
+| `.cursor/context/plan-context.md` | Plan production instructions |
+
+Do not load: previous plans, previous reports, gate files, or any source code file.
+
+### EXECUTE phase
+| File | Purpose |
+|---|---|
+| `.cursor/ACTIVE_CYCLE.md` | Confirm PHASE, PLAN_FILE, PRIMARY_MODEL |
+| `plans/[PLAN_FILE]` | Active plan — implementation targets |
+
+Do not load: previous plans, validation reports, audit reports, or any file not listed in `SUBSYSTEMS_TOUCHED`.
+Implementation target files are loaded one at a time as required by the execution steps.
+
+### VALIDATE phase
+| File | Purpose |
+|---|---|
+| `.cursor/ACTIVE_CYCLE.md` | Confirm PHASE |
+| `plans/[PLAN_FILE]` | Declared scope for subsystem check |
+| `reports/post_execute_latest.log` | Hook output — primary validation input |
+| `.cursor/context/execute-context.md` | Handoff / validation protocol |
+
+Do not load: gate files, archived cycle records, or source code files.
+
+### AUDIT phase
+| File | Purpose |
+|---|---|
+| `.cursor/ACTIVE_CYCLE.md` | Confirm PHASE, PLAN_FILE, REPORT_FILE |
+| `plans/[PLAN_FILE]` | Original declared scope and invariants |
+| `reports/[REPORT_FILE]` | Validation report |
+| `.cursor/context/audit-context.md` | Audit checklist |
+
+Do not load: previous cycle archives, source code, or unrelated reports.
+
+---
+
+## 2. No-reload rule
+
+If a file's content is already visible in the current context window, do not open it again.
+Check for the file's header or section title before issuing a read.
+Violating this rule wastes tokens and risks loading a stale snapshot.
+
+---
+
+## 3. Cycle artifact discipline
+
+### During a cycle
+- `ACTIVE_CYCLE.md` is the single source of truth for current cycle state.
+- Plans live in `plans/`. Reports live in `reports/execution/`. Gates live in `docs/gates/`.
+- Do not create parallel reporting structures outside these paths.
+
+### After CLOSED
+- Archive a summary to `docs/orchestration/cycles/CYCLE_[TASK_ID]_[DATE].md`.
+- After archiving, reset `ACTIVE_CYCLE.md` to a blank ready-state:
+  ```
+  TASK_ID:
+  PHASE: (none)
+  RUNNER_MODE:
+  PRIMARY_MODEL:
+  PLAN_FILE:
+  REPORT_FILE:
+  GATE_FILE:
+  ```
+  This ensures the next cycle starts from a clean state without stale references.
+
+---
+
+## 4. Large-cycle token discipline
+
+For cycles with more than 3 execution steps or 2+ subagent handoffs, do not re-read completed phase files in full. Instead, produce a 3-line summary of each completed phase before transitioning:
+
+```
+→ PLAN summary: [subsystems in scope] / [gate conditions] / [PRIMARY_MODEL]
+→ EXECUTE summary: [files touched] / [delegation evidence] / [escalations]
+→ VALIDATE summary: [verdict] / [hook exit] / [subsystem match]
+```
+
+Use this summary as the carry-forward context. Do not reload the plan or reports in full unless an audit discrepancy requires it.
+
+---
+
+## 5. Playwright MCP — chargement conditionnel
+
+Playwright MCP est chargé **uniquement** quand le plan déclare une stratégie E2E explicite.
+Ne jamais ouvrir `playwright.mdc` ni appeler les outils MCP Playwright pour un cycle sans cette déclaration.
+Règles détaillées (flows, fichiers autorisés, rapports) : voir `playwright.mdc` (chargé par glob sur les fichiers UI).
+
+## 6. Scope of this rule
+
+This file applies to all agents (Planner-Orchestrator, Routine-Implementer, Complex-Implementer).
+It does not override load instructions in context files — context files are authoritative for their phase.
+This file fills the gap when no context file is loaded or available.

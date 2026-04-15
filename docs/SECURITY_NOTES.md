@@ -18,3 +18,24 @@ Le projet **FoodKing SaaS** possède de nombreux contrôles côté serveur géra
 
 ## 5. Rate Limiting
 - Les APIs Frontend Kiosk / Mobile sont protégées par le middleware natif `ThrottleRequests` configuré à e.g `200 appels / minute`.
+
+## XSS Prevention
+
+### Policy
+`v-html` is prohibited by default in Vue components. All user-facing HTML rendering must go through `safeHtml()` from `resources/js/utils/safeHtml.js`.
+
+### Audit (2026-04-15)
+| # | File | Pattern | Resolution |
+|---|---|---|---|
+| 1 | table/page/PageComponent.vue | v-html | Sanitized via safeHtml() |
+| 2 | admin/settings/Page/PageShowComponent.vue | v-html | Sanitized via safeHtml() |
+| 3 | frontend/page/PageComponent.vue | v-html | Sanitized via safeHtml() |
+| 4 | frontend/account/chat/ChatComponent.vue | innerHTML | Replaced with textContent |
+| 5 | admin/messages/MessageListComponent.vue | innerHTML | Replaced with textContent |
+
+### Exceptions
+- `v-html` with `safeHtml()` is allowed for Quill editor rich-text output only.
+- Blade `{!! !!}` in master.blade.php for analytics scripts (admin-configured) is an accepted risk.
+
+### Adding new exceptions
+Requires explicit PR review and documentation update.

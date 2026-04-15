@@ -70,15 +70,25 @@ export const posOrder = {
         },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
-                // [AUDIT-P50-BUG2] Send idempotency key header to prevent duplicate POS orders on double-clicks
-                const idempotencyKey = payload?.idempotency_key || null;
-                const config = idempotencyKey
-                    ? { headers: { 'X-Idempotency-Key': idempotencyKey } }
-                    : {};
+                const idempotencyKey = payload?.idempotency_key
+                    || crypto.randomUUID?.()
+                    || (`pos-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const config = {
+                    headers: { 'X-Idempotency-Key': idempotencyKey },
+                    signal: controller.signal,
+                };
                 axios.post("admin/pos", payload, config).then((res) => {
+                    clearTimeout(timeoutId);
                     resolve(res);
                 }).catch((err) => {
-                    reject(err);
+                    clearTimeout(timeoutId);
+                    if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
+                        reject({ _paymentTimeout: true, message: 'Délai de paiement dépassé (30s). Ne relancez pas — vérifiez le statut.' });
+                    } else {
+                        reject(err);
+                    }
                 });
             });
         },

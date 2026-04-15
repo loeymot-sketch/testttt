@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\SendOrderDeliveryBoyMail;
 use App\Events\SendOrderDeliveryBoyPush;
 use App\Events\SendOrderDeliveryBoySms;
+use App\Events\ItemAvailabilityChanged;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Events\SendOrderGotMail;
@@ -19,6 +20,10 @@ use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
+use App\Listeners\PersistItemAvailabilityChangedToOutbox;
+use App\Listeners\DecrementItemAvailabilityOnOrder;
+use App\Listeners\PersistOrderCreatedToOutbox;
+use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -84,10 +89,16 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+            PersistOrderStatusChangedToOutbox::class,
         ],
         // [PHASE-36-P1] FCM push notifications on new order
         OrderCreated::class => [
             SendFcmOnOrderCreated::class,
+            PersistOrderCreatedToOutbox::class,
+            DecrementItemAvailabilityOnOrder::class,
+        ],
+        ItemAvailabilityChanged::class => [
+            PersistItemAvailabilityChangedToOutbox::class,
         ],
     ];
 

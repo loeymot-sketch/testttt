@@ -9,7 +9,12 @@
       </span>
     </div>
 
-    <div class="kiosk-sauce-grid">
+    <div v-if="sauceList.length === 0" class="kiosk-step-empty">
+      <p>Aucune sauce disponible pour ce produit.</p>
+      <button @click="$emit('update', 'sauceOrder', ['_skip'])" class="kiosk-btn-continue">Continuer</button>
+    </div>
+
+    <div v-else class="kiosk-sauce-grid">
       <div
         v-for="(sauce, sIdx) in sauceList"
         :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"

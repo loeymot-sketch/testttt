@@ -91,7 +91,7 @@ Six invariants enforced at plan, execution, and audit. Violation triggers immedi
 
 ### Group 3 — Control and safety system
 - .cursor/rules/scope.mdc
-- .cursor/rules/foodking-invariants.mdc
+- .cursor/rules/project-invariants.mdc
 - .cursor/rules/human-gates.mdc
 
 ### Group 4 — Execution artifacts

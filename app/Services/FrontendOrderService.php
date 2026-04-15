@@ -35,9 +35,20 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
+use App\Domain\Order\OrderStateMachine;
+use App\Services\CouponService;
+use App\Services\Pricing\DiscountCalculator;
+use App\Services\Pricing\PricingRequest;
+use App\Services\Pricing\PricingService;
 
 class FrontendOrderService
 {
+    public function __construct(
+        protected CouponService $couponService,
+        protected PricingService $pricingService,
+        protected DiscountCalculator $discountCalculator,
+    ) {
+    }
 
     public object $frontendOrder;
     // [AUDIT-P2] Flag set to true when loyalty discount is successfully applied server-side.
@@ -188,143 +199,166 @@ class FrontendOrderService
                     ]
                 );
 
-                $i = 0;
-                $totalTax = 0;
-                $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
+                $requestItems = is_array($requestItems) ? $requestItems : [];
 
-                $realSubtotal = 0;
-                
-                // [PERF-02] Bulk-load toutes les items, variations et extras avant la boucle
-                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $dbItems = Item::select('id', 'price', 'tax_id')
-                    ->whereIn('id', $requestedItemIds)
-                    ->get()
-                    ->keyBy('id');
-                
-                // Extraire tax_id pour compatibilité avec code existant
-                $items = $dbItems->pluck('tax_id', 'id');
-                
-                $variationIds = collect($requestItems)
-                    ->pluck('item_variations')
-                    ->flatten(1)
-                    ->pluck('id')
-                    ->filter()
-                    ->unique()
-                    ->toArray();
-                
-                $extraIds = collect($requestItems)
-                    ->pluck('item_extras')
-                    ->flatten(1)
-                    ->pluck('id')
-                    ->filter()
-                    ->unique()
-                    ->toArray();
-                
-                $dbVariations = !empty($variationIds)
-                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
-                    : collect();
-                
-                $dbExtras = !empty($extraIds)
-                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
-                    : collect();
-                
-                if (!blank($requestItems)) {
-                    foreach ($requestItems as $item) {
-                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                        $dbItem = $dbItems[$item->item_id] ?? null;
-                        if (!$dbItem) {
-                            throw new \InvalidArgumentException(
-                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
-                                422
-                            );
-                        }
-                        $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
-
-                        // [PERF-02] Calculer prix variations depuis collection pre-chargée
-                        $calcVariationTotal = 0;
-                        if (!empty($item->item_variations)) {
-                            foreach ($item->item_variations as $var) {
-                                $varId = $var->id ?? 0;
-                                $dbVar = $dbVariations[$varId] ?? null;
-                                if (!$dbVar) {
-                                    throw new \InvalidArgumentException(
-                                        "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
-                                        422
-                                    );
-                                }
-                                // [GAP-21-3] Cross-item injection guard: reject variation that
-                                // belongs to a different item — prevents price manipulation via
-                                // a cheap item's variation applied to an expensive item.
-                                if ((int) $dbVar->item_id !== (int) $item->item_id) {
-                                    throw new \InvalidArgumentException(
-                                        "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
-                                        422
-                                    );
-                                }
-                                $calcVariationTotal += $dbVar->price;
-                            }
-                        }
-                        
-                        // [PERF-02] Calculer prix extras depuis collection pre-chargée
-                        $calcExtraTotal = 0;
-                        if (!empty($item->item_extras)) {
-                            foreach ($item->item_extras as $ext) {
-                                $extId = $ext->id ?? 0;
-                                $dbExt = $dbExtras[$extId] ?? null;
-                                if (!$dbExt) {
-                                    throw new \InvalidArgumentException(
-                                        "Extra ID {$extId} introuvable pour l'article {$item->item_id}.",
-                                        422
-                                    );
-                                }
-                                // [GAP-21-3] Cross-item injection guard: reject extra that
-                                // belongs to a different item.
-                                if ((int) $dbExt->item_id !== (int) $item->item_id) {
-                                    throw new \InvalidArgumentException(
-                                        "Extra ID {$extId} n'appartient pas à l'article {$item->item_id}.",
-                                        422
-                                    );
-                                }
-                                $calcExtraTotal += $dbExt->price;
-                            }
-                        }
-
-                        $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
-                        $verifiedTotalPrice = ($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity;
-                        $realSubtotal += $verifiedTotalPrice;
-
-                        $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
-                        $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
-                        $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
-                        $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
-                        $itemsArray[$i] = [
-                            'order_id' => $this->frontendOrder->id,
-                            'branch_id' => $this->frontendOrder->branch_id,
-                            'item_id' => $item->item_id,
-                            'quantity' => $verifiedQuantity,
-                            'discount' => 0,
-                            'tax_name' => $taxName,
-                            'tax_rate' => $taxRate,
-                            'tax_type' => $taxType,
-                            'tax_amount' => $taxPrice,
-                            'price' => $itemPrice,
-                            'item_variations' => json_encode($item->item_variations ?? []),
-                            'item_extras' => json_encode($item->item_extras ?? []),
-                            'instruction' => $item->instruction ?? null,
-                            'item_variation_total' => $calcVariationTotal,
-                            'item_extra_total' => $calcExtraTotal,
-                            'total_price' => $verifiedTotalPrice,
-                        ];
-                        $totalTax = $totalTax + $taxPrice;
-                        $i++;
+                if (config('pricing.use_ssot_service', true)) {
+                    $kioskSsot = $this->pricingService->calculateOrder(
+                        PricingRequest::forKiosk(
+                            $this->frontendOrder->id,
+                            (int) $this->frontendOrder->branch_id,
+                            $requestItems,
+                            (int) $request->coupon_id,
+                            (int) Auth::id(),
+                            (float) ($this->frontendOrder->delivery_charge ?? 0)
+                        ),
+                        $this->couponService
+                    );
+                    $itemsArray = $kioskSsot->orderItemInsertRows;
+                    $realSubtotal = $kioskSsot->accumulatedSubtotal;
+                    $totalTax = $kioskSsot->totalTax;
+                    $calculatedDiscount = $kioskSsot->discount;
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
                     }
-                }
+                } else {
+                    $i = 0;
+                    $totalTax = 0;
+                    $itemsArray = [];
+                    $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
 
-                if (!blank($itemsArray)) {
-                    OrderItem::insert($itemsArray);
+                    $realSubtotal = 0;
+                    
+                    // [PERF-02] Bulk-load toutes les items, variations et extras avant la boucle
+                    $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                    $dbItems = Item::select('id', 'price', 'tax_id')
+                        ->whereIn('id', $requestedItemIds)
+                        ->get()
+                        ->keyBy('id');
+                    
+                    // Extraire tax_id pour compatibilité avec code existant
+                    $items = $dbItems->pluck('tax_id', 'id');
+                    
+                    $variationIds = collect($requestItems)
+                        ->pluck('item_variations')
+                        ->flatten(1)
+                        ->pluck('id')
+                        ->filter()
+                        ->unique()
+                        ->toArray();
+                    
+                    $extraIds = collect($requestItems)
+                        ->pluck('item_extras')
+                        ->flatten(1)
+                        ->pluck('id')
+                        ->filter()
+                        ->unique()
+                        ->toArray();
+                    
+                    $dbVariations = !empty($variationIds)
+                        ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                        : collect();
+                    
+                    $dbExtras = !empty($extraIds)
+                        ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+                    
+                    if (!blank($requestItems)) {
+                        foreach ($requestItems as $item) {
+                            // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
+                            $dbItem = $dbItems[$item->item_id] ?? null;
+                            if (!$dbItem) {
+                                throw new \InvalidArgumentException(
+                                    "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                    422
+                                );
+                            }
+                            $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
+
+                            // [PERF-02] Calculer prix variations depuis collection pre-chargée
+                            $calcVariationTotal = 0;
+                            if (!empty($item->item_variations)) {
+                                foreach ($item->item_variations as $var) {
+                                    $varId = $var->id ?? 0;
+                                    $dbVar = $dbVariations[$varId] ?? null;
+                                    if (!$dbVar) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    // [GAP-21-3] Cross-item injection guard: reject variation that
+                                    // belongs to a different item — prevents price manipulation via
+                                    // a cheap item's variation applied to an expensive item.
+                                    if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcVariationTotal += $dbVar->price;
+                                }
+                            }
+                            
+                            // [PERF-02] Calculer prix extras depuis collection pre-chargée
+                            $calcExtraTotal = 0;
+                            if (!empty($item->item_extras)) {
+                                foreach ($item->item_extras as $ext) {
+                                    $extId = $ext->id ?? 0;
+                                    $dbExt = $dbExtras[$extId] ?? null;
+                                    if (!$dbExt) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extId} introuvable pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    // [GAP-21-3] Cross-item injection guard: reject extra that
+                                    // belongs to a different item.
+                                    if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcExtraTotal += $dbExt->price;
+                                }
+                            }
+
+                            $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity, 2);
+                            $realSubtotal += $verifiedTotalPrice;
+
+                            $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
+                            $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
+                            $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
+                            $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
+                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            $itemsArray[$i] = [
+                                'order_id' => $this->frontendOrder->id,
+                                'branch_id' => $this->frontendOrder->branch_id,
+                                'item_id' => $item->item_id,
+                                'quantity' => $verifiedQuantity,
+                                'discount' => 0,
+                                'tax_name' => $taxName,
+                                'tax_rate' => $taxRate,
+                                'tax_type' => $taxType,
+                                'tax_amount' => $taxPrice,
+                                'price' => $itemPrice,
+                                'item_variations' => json_encode($item->item_variations ?? []),
+                                'item_extras' => json_encode($item->item_extras ?? []),
+                                'instruction' => $item->instruction ?? null,
+                                'item_variation_total' => $calcVariationTotal,
+                                'item_extra_total' => $calcExtraTotal,
+                                'total_price' => $verifiedTotalPrice,
+                            ];
+                            $totalTax = $totalTax + $taxPrice;
+                            $i++;
+                        }
+                    }
+
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
+                    }
                 }
 
                 // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
@@ -360,18 +394,26 @@ class FrontendOrderService
                     $lock->release();
                 }
 
-                // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT
-                $calculatedDiscount = 0;
+                // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT (legacy path recalc; SSOT keeps totals from PricingService)
                 $validatedCoupon = null;
-                if ($request->coupon_id > 0) {
-                    $validatedCoupon = app(CouponService::class)->resolveCouponById(
+                if (!config('pricing.use_ssot_service', true)) {
+                    $calculatedDiscount = 0;
+                    if ($request->coupon_id > 0) {
+                        $validatedCoupon = $this->couponService->resolveCouponById(
+                            (int) $request->coupon_id,
+                            (float) $realSubtotal,
+                            (int) Auth::id()
+                        );
+                        $calculatedDiscount = $this->couponService->calculateDiscountAmount(
+                            $validatedCoupon,
+                            (float) $realSubtotal
+                        );
+                    }
+                } elseif ($request->coupon_id > 0) {
+                    $validatedCoupon = $this->couponService->resolveCouponById(
                         (int) $request->coupon_id,
                         (float) $realSubtotal,
                         (int) Auth::id()
-                    );
-                    $calculatedDiscount = app(CouponService::class)->calculateDiscountAmount(
-                        $validatedCoupon,
-                        (float) $realSubtotal
                     );
                 }
 
@@ -416,12 +458,16 @@ class FrontendOrderService
                                 ->first();
 
                             if ($loyaltyUser && $loyaltyUser->loyalty_points >= $pointsRequired) {
+                                Log::info('[Loyalty] Lock acquired, deducting points', [
+                                    'user_id' => $loyaltyUser->id,
+                                    'order_id' => $this->frontendOrder->id,
+                                    'requested' => $pointsRequired,
+                                    'available' => $loyaltyUser->loyalty_points,
+                                ]);
                                 $calculatedDiscount += $maxDiscount;
-                                // Atomic decrement — safe inside the DB transaction
                                 \Illuminate\Support\Facades\DB::table('users')
                                     ->where('id', $loyaltyUser->id)
                                     ->decrement('loyalty_points', $pointsRequired);
-                                // [AUDIT-P2] Signal to the controller that loyalty was honored
                                 $this->loyaltyApplied = true;
                                 // [AUDIT-P49-BUG8] Write redemption to loyalty_transactions ledger for complete audit trail.
                                 // This ensures the customer's history shows the redeem event even when inline (not via LoyaltyController).
@@ -438,7 +484,12 @@ class FrontendOrderService
                                 ]);
                                 Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount}€)");
                             } elseif ($loyaltyUser) {
-                                Log::warning("[Loyalty] Insufficient points for user #{$loyaltyUser->id}: has {$loyaltyUser->loyalty_points}, needs {$pointsRequired}");
+                                Log::warning('[Loyalty] Insufficient points after lock', [
+                                    'user_id' => $loyaltyUser->id,
+                                    'order_id' => $this->frontendOrder->id,
+                                    'requested' => $pointsRequired,
+                                    'available' => $loyaltyUser->loyalty_points,
+                                ]);
                             }
                             }
                         }
@@ -449,10 +500,10 @@ class FrontendOrderService
 
                 $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                 $this->frontendOrder->queue_number = $queueNumber;
-                $this->frontendOrder->total_tax = $totalTax;
-                $this->frontendOrder->subtotal = $realSubtotal;
+                $this->frontendOrder->total_tax = round($totalTax, 2);
+                $this->frontendOrder->subtotal = round($realSubtotal, 2);
                 $this->frontendOrder->discount = $calculatedDiscount;
-                $this->frontendOrder->total = max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount);
+                $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
                 // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
                 // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
                 if ($request->loyalty_code) {
@@ -503,6 +554,14 @@ class FrontendOrderService
             });
 
             if ($statusChangedAfterCreate) {
+                OrderStateMachine::recordTransition(
+                    FrontendOrder::class,
+                    (int) $this->frontendOrder->id,
+                    OrderStatus::PENDING,
+                    OrderStatus::ACCEPT,
+                    null,
+                    null
+                );
                 $this->dispatchOrderStatusSignals($this->frontendOrder, OrderStatus::PENDING, OrderStatus::ACCEPT);
             }
 
@@ -597,9 +656,18 @@ class FrontendOrderService
                             'TXN-' . \Illuminate\Support\Str::random(12)
                         );
                     }
+                    app(LoyaltyService::class)->refundPoints($frontendOrder, 'kiosk');
                     $oldStatus = $frontendOrder->status;
                     $frontendOrder->status = $request->status;
                     $frontendOrder->save();
+                    OrderStateMachine::recordTransition(
+                        FrontendOrder::class,
+                        (int) $frontendOrder->id,
+                        (int) $oldStatus,
+                        (int) $request->status,
+                        Auth::check() ? (int) Auth::id() : null,
+                        null
+                    );
                     // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens
                     try {
                         event(new \App\Events\OrderStatusChanged(
@@ -673,6 +741,15 @@ class FrontendOrderService
         if (!$promoted) {
             return false;
         }
+
+        OrderStateMachine::recordTransition(
+            FrontendOrder::class,
+            (int) $frontendOrder->id,
+            OrderStatus::PENDING,
+            OrderStatus::ACCEPT,
+            null,
+            null
+        );
 
         $frontendOrder->refresh();
 

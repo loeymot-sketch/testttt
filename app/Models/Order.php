@@ -5,12 +5,16 @@ namespace App\Models;
 use App\Contracts\BroadcastableOrder;
 use App\Enums\OrderStatus;
 use App\Models\Scopes\BranchScope;
+use App\Traits\HasDomainEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model implements BroadcastableOrder
 {
     use HasFactory;
+    use HasDomainEvents;
+    use SoftDeletes;
 
     protected $table = "orders";
     protected $fillable = [

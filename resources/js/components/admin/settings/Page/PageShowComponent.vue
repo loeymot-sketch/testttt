@@ -17,7 +17,8 @@
                     <label class="db-badge mb-3" :class="statusClass(page.status)">
                         {{ enums.statusEnumArray[page.status] }}
                     </label>
-                    <div class="ql-editor" v-html="page.description"></div>
+                    <!-- eslint-disable-next-line vue/no-v-html -- sanitized via DOMPurify -->
+                    <div class="ql-editor" v-html="safeHtml(page.description)"></div>
                 </div>
             </div>
         </div>
@@ -26,6 +27,7 @@
 
 <script>
 import LoadingComponent from "../../components/LoadingComponent";
+import { safeHtml as sanitizePageHtml } from '../../../../utils/safeHtml';
 import statusEnum from "../../../../enums/modules/statusEnum";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
@@ -67,6 +69,9 @@ export default {
             });
     },
     methods: {
+        safeHtml: function (raw) {
+            return sanitizePageHtml(raw);
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

@@ -1,4 +1,5 @@
 <template>
+  <ConnectionStatusBanner />
   <div class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 ">
     <PopularItemComponent />
     <div class="col-span-2 grid grid-cols-2 gap-4 md:mt-0 mt-[-20px]">
@@ -9,11 +10,13 @@
 <script>
 import PopularItemComponent from "./PopularItemComponent";
 import PreparingAndReadyComponent from "./PreparingAndReadyComponent";
+import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
 
 
 export default {
   name: "OrderStatusScreenComponent",
   components: {
+    ConnectionStatusBanner,
     PopularItemComponent,
     PreparingAndReadyComponent
   },

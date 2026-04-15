@@ -1,6 +1,8 @@
 <template>
   <div class="kiosk-app" @touchstart="resetIdleTimer" @click="resetIdleTimer" @keydown="resetIdleTimer">
 
+    <ConnectionStatusBanner />
+
     <!-- Initialisation : overlay pendant le chargement de la branche -->
     <transition name="fade">
       <div v-if="branchLoading" class="kiosk-init-overlay">
@@ -121,11 +123,13 @@ import { mapGetters, mapActions } from 'vuex';
 import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
 import KioskAdminComponent from './KioskAdminComponent.vue';
 import KioskToastComponent from './KioskToastComponent.vue';
+import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { onEvent } from '../../../services/eventContract';
 
-const IDLE_TIMEOUT_MS  = 60000; // 60s sans interaction
-const STILL_HERE_MS    = 50000; // Afficher "Toujours là ?" 10s avant reset
+const IDLE_TIMEOUT_MS  = 180000; // 3 min sans interaction
+const STILL_HERE_MS    = 150000; // Afficher "Toujours là ?" 30s avant reset
 // Ordre canonique pour l'animation de transition directionnelle
 const ROUTE_ORDER = [
   'kiosk.idle',
@@ -143,7 +147,7 @@ const ROUTE_ORDER = [
 export default {
   name: 'KioskAppComponent',
   mixins: [kioskPriceMixin],
-  components: { KioskAdminComponent, KioskToastComponent },
+  components: { ConnectionStatusBanner, KioskAdminComponent, KioskToastComponent },
 
   // Provide showToast to all kiosk child components via inject('showToast')
   provide() {
@@ -171,6 +175,7 @@ export default {
       showAdmin: false,
       _adminTapCount: 0,
       _adminTapTimer: null,
+      _eventSub: null,
     };
   },
   computed: {
@@ -221,16 +226,22 @@ export default {
     document.addEventListener('touchstart', this.handleTouch, { passive: true });
     // Start offline sync and check pending count every 15s
     // [FIX-54-4] Pass config (headers) so syncQueue can send X-Idempotency-Key on replay
-    startAutoSync((url, data, config) => axios.post(url, data, config || {}), () => {
+    const syncCb = () => {
       this.offlinePending = getPendingCount();
       this.offlineAbandoned = getAbandonedCount();
-    });
+    };
+    startAutoSync((url, data, config) => axios.post(url, data, config || {}), syncCb);
     this.offlinePending = getPendingCount();
     this.offlineAbandoned = getAbandonedCount();
-    this.offlineCheckTimer = setInterval(() => {
-      this.offlinePending = getPendingCount();
-      this.offlineAbandoned = getAbandonedCount();
-    }, 15000);
+    this.offlineCheckTimer = setInterval(syncCb, 15000);
+    if (window._wsService) {
+      this._onWsReconnect = () => {
+        if (getPendingCount() > 0) {
+          startAutoSync((url, data, config) => axios.post(url, data, config || {}), syncCb);
+        }
+      };
+      window._wsService.on('connected', this._onWsReconnect);
+    }
   },
   beforeUnmount() {
     this.clearIdleTimer();
@@ -240,6 +251,9 @@ export default {
     stopAutoSync();
     document.removeEventListener('touchstart', this.handleTouch);
     this._leaveEchoChannel();
+    if (window._wsService && this._onWsReconnect) {
+      window._wsService.off('connected', this._onWsReconnect);
+    }
   },
   methods: {
     ...mapActions('kioskCart', ['reset', 'setBranch']),
@@ -302,28 +316,24 @@ export default {
     // No-op if Echo is not configured (Pusher/Soketi absent) — TTL cache remains the fallback.
     _subscribeEchoChannel(branchId) {
       if (!window.Echo || !branchId) return;
-      this._echoBranchId = branchId;
+      this._leaveEchoChannel();
       try {
-        window.Echo.private(`branch.${branchId}`)
-          .listen('.ItemAvailabilityChanged', (payload) => {
-            this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
-            // If full refetch needed (price/variations changed), trigger it in background
-            if (payload.type === 'full') {
-              this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
-            }
-          });
+        this._eventSub = onEvent(branchId, 'ItemAvailabilityChanged', (event) => {
+          const payload = event.payload;
+          this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
+          // If full refetch needed (price/variations changed), trigger it in background
+          if (payload.type === 'full') {
+            this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
+          }
+        });
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
       }
     },
 
     _leaveEchoChannel() {
-      if (window.Echo && this._echoBranchId) {
-        try {
-          window.Echo.leave(`branch.${this._echoBranchId}`);
-        } catch (_) { /* ignore */ }
-        this._echoBranchId = null;
-      }
+      this._eventSub?.unsubscribe();
+      this._eventSub = null;
     },
 
     startIdleTimer() {

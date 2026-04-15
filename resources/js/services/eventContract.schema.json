@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FoodKing Domain Event Envelope V1",
+  "type": "object",
+  "required": ["version", "type", "aggregate_id", "occurred_at", "payload"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "type": { "type": "string", "pattern": "^[a-z_]+\\.[a-z_]+$" },
+    "aggregate_id": { "type": ["integer", "string"] },
+    "branch_id": { "type": ["integer", "null"] },
+    "occurred_at": { "type": "string" },
+    "correlation_id": { "type": ["string", "null"] },
+    "payload": { "type": "object" }
+  }
+}

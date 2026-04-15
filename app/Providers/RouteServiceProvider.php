@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -53,6 +54,40 @@ class RouteServiceProvider extends ServiceProvider
         // Per-route stricter limits (order creation = 10/min, login = 5/min) still apply.
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('kiosk-orders', function (Request $request) {
+            return Limit::perMinute(
+                (int) config('kiosk.order_rate_limit', 5)
+            )->by($request->ip())->response(function () {
+                return response()->json([
+                    'message' => 'Trop de commandes. Veuillez patienter.',
+                    'retry_after' => 60,
+                ], 429);
+            });
+        });
+
+        RateLimiter::for('admin-mutation', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('pos-order-create', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('pos-order-update', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('login-lockout', function (Request $request) {
+            $key = Str::lower($request->input('email', '')).'|'.$request->ip();
+
+            return Limit::perMinutes(10, 10)->by($key)->response(function () {
+                return response()->json([
+                    'message' => 'Too many login attempts. Please try again later.',
+                    'retry_after' => 900,
+                ], 429);
+            });
         });
     }
 

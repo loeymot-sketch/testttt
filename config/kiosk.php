@@ -44,6 +44,8 @@ if ($requireForm) {
             'cold_item_slugs'      => $sandwichColdSlugs,
             'cold_sidebar_label'   => 'Sandwich froid',
         ],
+        'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
+        'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
     ];
 }
 
@@ -69,4 +71,6 @@ return [
         'cold_item_slugs'      => $sandwichColdSlugs,
         'cold_sidebar_label'   => 'Sandwich froid',
     ],
+    'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
+    'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
 ];

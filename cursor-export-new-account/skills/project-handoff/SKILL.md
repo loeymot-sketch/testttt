@@ -1,13 +1,13 @@
 ---
-name: foodking-handoff
+name: project-handoff
 description: >-
-  Charge le contexte FoodKing SaaS (Laravel + Vue) pour une nouvelle session Cursor sans historique de chat.
+  Charge le contexte du dépôt (FoodKing SaaS — Laravel + Vue) pour une nouvelle session Cursor sans historique de chat.
   Lit README, passation HANDOFF_NEW_CURSOR, cache mémoire, PROJECT_CONTINUITY, AGENTS.md et priorités backlog.
-  Use when the user opens the FoodKing project on a new Cursor account, says "nouvelle session", "handoff",
+  Use when the user opens this repository on a new Cursor account, says "nouvelle session", "handoff",
   "sans mémoire", "autre compte Cursor", "reprendre le projet", or wants multi-agent orchestration aligned with AGENTS.md.
 ---
 
-# FoodKing — session handoff & orchestration
+# Session handoff & orchestration
 
 ## Quand appliquer ce skill
 
@@ -41,4 +41,4 @@ Après lecture, résumer en **≤15 lignes** : stack, surfaces (POS, KDS, OSS, k
 
 ## Installation globale (optionnel, tous projets sur ce compte)
 
-Copier ce dossier `foodking-handoff` vers `~/.cursor/skills/foodking-handoff/` pour invoquer le même skill hors workspace.
+Copier ce dossier `project-handoff` vers `~/.cursor/skills/project-handoff/` pour invoquer le même skill hors workspace.

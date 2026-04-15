@@ -109,7 +109,7 @@
                 </svg>
               </button>
               <span class="kiosk-qty-num">{{ item.quantity }}</span>
-              <button class="kiosk-qty-btn plus" @click="changeQty(idx, item.quantity + 1)">
+              <button class="kiosk-qty-btn plus" :disabled="item.quantity >= maxItemQty" @click="changeQty(idx, item.quantity + 1)">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
@@ -184,6 +184,7 @@ export default {
       showClearConfirm: false,
       ORDER_TYPE_KIOSK,
       ORDER_TYPE_TAKEAWAY,
+      maxItemQty: window.foodkingConfig?.maxItemQty ?? 20,
     };
   },
 
@@ -266,6 +267,8 @@ export default {
       if (qty <= 0) {
         this.removeItem(index);
         this.showToast(this.$t('kiosk.item_removed'), 'info', 1800);
+      } else if (qty > this.maxItemQty) {
+        this.showToast(this.$t('kiosk.max_quantity_reached') || `Maximum ${this.maxItemQty} atteint`, 'warning', 1800);
       } else {
         this.updateQuantity({ index, quantity: qty });
       }

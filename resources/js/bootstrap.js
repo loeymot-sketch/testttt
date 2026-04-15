@@ -24,6 +24,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Requires VITE_PUSHER_* env vars and a running Soketi/Pusher server
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { wsService, WS_STATE } from './services/WebSocketService';
 window.Pusher = Pusher;
 
 if (import.meta.env.VITE_PUSHER_APP_KEY) {
@@ -70,4 +71,11 @@ if (import.meta.env.VITE_PUSHER_APP_KEY) {
             window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
         }
     };
+
+    wsService.start();
+    window._wsService = wsService;
+} else {
+    wsService._setState(WS_STATE.UNAVAILABLE);
+    window._wsService = wsService;
+    console.warn('[WS] VITE_PUSHER_APP_KEY not set — WebSocket disabled, polling-only mode.');
 }

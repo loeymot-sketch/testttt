@@ -49,7 +49,7 @@
                     </thead>
 
                     <tbody class="border-b border-dashed border-gray-400">
-                        <tr v-if="orderItems.length > 0" v-for="item in orderItems" :key="item">
+                        <tr v-if="orderItems.length > 0" v-for="(item, idx) in orderItems" :key="item.id || `item-${idx}`">
                             <td class="text-left font-normal align-top py-1">
                                 <p class="text-xs leading-5 text-heading">{{ item.quantity }}</p>
                             </td>

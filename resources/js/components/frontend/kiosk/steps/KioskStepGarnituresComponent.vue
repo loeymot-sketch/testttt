@@ -55,18 +55,26 @@ export default {
     return {
       localSelections: { ...this.selections.garnitures },
       brokenGarnitureThumbs: {},
+      userInteracted: false,
     };
   },
+  mounted() {
+    // Adopt parent garnitures immediately if already populated at mount time
+    const parentGarnitures = this.selections.garnitures;
+    if (parentGarnitures && Object.keys(parentGarnitures).length > 0 && Object.keys(this.localSelections).length === 0) {
+      this.localSelections = { ...parentGarnitures };
+    }
+  },
   watch: {
-    // Sync when parent initialises garniture defaults after this child mounts
-    // (Vue lifecycle: child mounted() runs before parent mounted())
     'selections.garnitures': {
       deep: true,
       handler(newVal) {
-        // Only sync when localSelections is still empty (not yet interacted with)
-        if (Object.keys(this.localSelections).length === 0) {
-          this.localSelections = { ...newVal };
-        }
+        if (this.userInteracted) return;
+        this.$nextTick(() => {
+          if (!this.userInteracted && Object.keys(this.localSelections).length === 0) {
+            this.localSelections = { ...newVal };
+          }
+        });
       },
     },
   },
@@ -119,6 +127,7 @@ export default {
       return '🥗';
     },
     toggleGarniture(id) {
+      this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
       this.localSelections = newSelections;

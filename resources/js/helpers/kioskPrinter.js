@@ -243,6 +243,21 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
 }
 
 /**
+ * Report a printer failure to the backend hardware log.
+ * Non-blocking — never throws.
+ */
+export function reportPrinterFailure(orderId, errorMessage) {
+    try {
+        const axios = window.axios;
+        if (!axios) return;
+        axios.post('frontend/kiosk-event', {
+            type: 'printer_failure',
+            details: `order_id=${orderId} | error=${errorMessage || 'unknown'}`,
+        }).catch(() => {});
+    } catch (_) {}
+}
+
+/**
  * Format a number as EUR currency string for receipt (e.g. "12.50 EUR")
  */
 function formatEur(amount) {

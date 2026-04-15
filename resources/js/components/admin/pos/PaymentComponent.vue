@@ -45,7 +45,17 @@
                     <div class="mb-4">
                         <h3 class="capitalize font-medium mb-2">{{ $t("label.received_amount") }}</h3>
                         <input id="cashInput" ref="cashInput" type="text" v-on:keypress="floatNumber($event)"
+                            @input="onCashInput"
                             class="h-12 w-full rounded-lg border py-1.5 px-4 border-[#D9DBE9] text-black">
+                    </div>
+                    <div v-if="cashChange > 0"
+                        class="mb-4 flex justify-between items-center h-12 w-full rounded-lg py-1.5 px-3 bg-green-50 border border-green-300">
+                        <span class="text-sm font-semibold text-green-700">{{ $t("label.change_due") || 'Monnaie à rendre' }}</span>
+                        <span class="text-green-700 text-lg font-bold">{{
+                            currencyFormat(cashChange,
+                                setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
+                                setting.site_currency_position)
+                        }}</span>
                     </div>
                 </div>
                 <div id="card" class="data-tab hidden"
@@ -60,42 +70,28 @@
 
                 <div class="grid grid-cols-4 gap-x-4 gap-y-3.5 mb-6"
                     v-if="props.form.pos_payment_method === posPaymentMethodEnum.CASH || props.form.pos_payment_method === posPaymentMethodEnum.CARD">
-                    <button :onclick="`solve('1', '${inputIdName}')`" value="1"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">1</button>
-                    <button :onclick="`solve('2', '${inputIdName}')`" value="2"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">2</button>
-                    <button :onclick="`solve('3', '${inputIdName}')`" value="3"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">3</button>
-                    <button :onclick="`Back('${inputIdName}')`" value="cut"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
+                    <button @click="numpadInput('1')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">1</button>
+                    <button @click="numpadInput('2')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">2</button>
+                    <button @click="numpadInput('3')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">3</button>
+                    <button @click="numpadBack()" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path
                                 d="M16.9997 3.75H10.2797C8.86969 3.75 7.52969 4.34 6.57969 5.39L3.04969 9.27C1.63969 10.82 1.63969 13.18 3.04969 14.73L6.57969 18.61C7.52969 19.65 8.86969 20.25 10.2797 20.25H16.9997C19.7597 20.25 21.9997 18.01 21.9997 15.25V8.75C21.9997 5.99 19.7597 3.75 16.9997 3.75ZM16.5297 13.94C16.8197 14.23 16.8197 14.71 16.5297 15C16.3797 15.15 16.1897 15.22 15.9997 15.22C15.8097 15.22 15.6197 15.15 15.4697 15L13.5297 13.06L11.5897 15C11.4397 15.15 11.2497 15.22 11.0597 15.22C10.8697 15.22 10.6797 15.15 10.5297 15C10.2397 14.71 10.2397 14.23 10.5297 13.94L12.4697 12L10.5297 10.06C10.2397 9.77 10.2397 9.29 10.5297 9C10.8197 8.71 11.2997 8.71 11.5897 9L13.5297 10.94L15.4697 9C15.7597 8.71 16.2397 8.71 16.5297 9C16.8197 9.29 16.8197 9.77 16.5297 10.06L14.5897 12L16.5297 13.94Z"
                                 fill="#1F1F39" />
                         </svg>
                     </button>
-                    <button :onclick="`solve('4', '${inputIdName}')`" value="4"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">4</button>
-                    <button :onclick="`solve('5', '${inputIdName}')`" value="5"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">5</button>
-                    <button :onclick="`solve('6', '${inputIdName}')`" value="6"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">6</button>
-                    <button :onclick="`solve('7', '${inputIdName}')`" value="7"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">7</button>
-                    <button :onclick="`solve('8', '${inputIdName}')`" value="8"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">8</button>
-                    <button :onclick="`solve('9', '${inputIdName}')`" value="9"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">9</button>
-                    <button :onclick="`Clear('${inputIdName}')`" value="clear" type="reset"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
+                    <button @click="numpadInput('4')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">4</button>
+                    <button @click="numpadInput('5')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">5</button>
+                    <button @click="numpadInput('6')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">6</button>
+                    <button @click="numpadInput('7')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">7</button>
+                    <button @click="numpadInput('8')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">8</button>
+                    <button @click="numpadInput('9')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">9</button>
+                    <button @click="numpadClear()" type="reset" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
                         Clear
                     </button>
-                    <button :onclick="`solve('00', '${inputIdName}')`" value="00"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">00</button>
-                    <button :onclick="`solve('0', '${inputIdName}')`" value="0"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">0</button>
-                    <button :onclick="`solve('.', '${inputIdName}')`" value="point"
-                        class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">.</button>
+                    <button @click="numpadInput('00')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">00</button>
+                    <button @click="numpadInput('0')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">0</button>
+                    <button @click="numpadInput('.')" class="num bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">.</button>
                 </div>
                 <!-- [AUDIT-P2] :disabled prevents a second click while the order is being submitted -->
                 <button @click="confirmOrder" type="button" :disabled="loading.isActive"
@@ -130,12 +126,18 @@ export default {
             },
             order: {},
             posPaymentMethodEnum: posPaymentMethodEnum,
-            inputIdName: "cashInput"
+            inputIdName: "cashInput",
+            cashReceivedRaw: 0,
         };
     },
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        cashChange: function () {
+            const received = parseFloat(this.cashReceivedRaw) || 0;
+            const total = parseFloat(this.props?.form?.total) || 0;
+            return received > total ? Math.round((received - total) * 100) / 100 : 0;
         },
     },
     mounted() {
@@ -147,12 +149,28 @@ export default {
         floatNumber(e) {
             return appService.floatNumber(e);
         },
+        onCashInput(e) {
+            this.cashReceivedRaw = e.target.value;
+        },
+        numpadInput(val) {
+            const el = document.getElementById(this.inputIdName);
+            if (el) { el.value += val; el.dispatchEvent(new Event('input')); }
+        },
+        numpadBack() {
+            const el = document.getElementById(this.inputIdName);
+            if (el) { el.value = el.value.slice(0, -1); el.dispatchEvent(new Event('input')); }
+        },
+        numpadClear() {
+            const el = document.getElementById(this.inputIdName);
+            if (el) { el.value = ''; el.dispatchEvent(new Event('input')); }
+        },
         reset: function () {
             Object.keys(this.$refs).forEach(refName => {
                 if (this.$refs[refName].value !== undefined) {
                     this.$refs[refName].value = "";
                 }
             });
+            this.cashReceivedRaw = 0;
             this.$props.props.form.pos_payment_note = "";
             appService.modalHide('#orderpayment');
         },
@@ -168,6 +186,7 @@ export default {
             });
             this.$props.props.form.pos_payment_method = method;
             this.$props.props.form.pos_payment_note = "";
+            this.cashReceivedRaw = 0;
         },
         confirmOrder: function () {
             // [AUDIT-P2] Strict single-flight guard: if already submitting, bail out immediately.
@@ -225,8 +244,10 @@ export default {
                         appService.modalShow('#receiptModal');
                     }).catch((err) => {
                         this.loading.isActive = false;
-                        // [AUDIT-52-BUG4] Use optional chaining: err.response is undefined on network
-                        // timeout or connection drop, causing a fatal TypeError that freezes the POS page.
+                        if (err?._paymentTimeout) {
+                            alertService.error(err.message);
+                            return;
+                        }
                         const errors = err?.response?.data?.errors;
                         if (errors && typeof errors === 'object') {
                             _.forEach(errors, (error) => {

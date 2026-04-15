@@ -1,5 +1,9 @@
 <template>
+  <ConnectionStatusBanner />
   <LoadingComponent :props="loading" />
+  <div v-if="!wsConnected" class="ws-reconnect-banner">
+    Connexion temps réel perdue — actualisation automatique toutes les 10s...
+  </div>
   <div class="row md:mt-4 lg:mt-0">
     <div class="lg:hidden flex items-center w-full px-4">
       <button
@@ -101,6 +105,9 @@
             <div class="p-3 pb-2" :class="dineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
             </div>
+            <div v-if="dineinOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+              Aucune commande sur place en cours.
+            </div>
             <div v-if="dineinOrders.length > 0" class="p-3" v-for="dineinOrder in dineinOrders" :key="dineinOrder.id">
               <div class="w-full rounded-lg border border-[#EFF0F6]">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
@@ -186,6 +193,9 @@
             <div class="p-3 pb-2" :class="onlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.online_orders") }}</h3>
             </div>
+            <div v-if="onlineOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+              Aucune commande en ligne en cours.
+            </div>
             <div v-if="onlineOrders.length > 0" class="p-3" v-for="onlineOrder in onlineOrders" :key="onlineOrder.id">
               <div class="w-full rounded-lg border border-[#EFF0F6]">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]">
@@ -269,6 +279,9 @@
           <div class="db-card rounded-[10px] h-fit">
             <div class="p-3 pb-2" :class="takeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.takeaway") }}</h3>
+            </div>
+            <div v-if="takeawayOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+              Aucune commande à emporter en cours.
             </div>
             <div v-if="takeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in takeawayOrders"
               :key="takeawayOrder.id">
@@ -448,12 +461,15 @@ import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
+import { onEvents } from "../../../services/eventContract";
 import { Swiper, SwiperSlide } from "swiper/vue";
+import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
 
 
 export default {
   name: "KitchenDisplaySystemComponent",
   components: {
+    ConnectionStatusBanner,
     LoadingComponent,
     Swiper,
     SwiperSlide
@@ -483,6 +499,8 @@ export default {
         askEnum: askEnum,
       },
       autoRefreshInterval: null,
+      wsConnected: !!(window._wsService?.isConnected()),
+      _eventSub: null,
     };
   },
   computed: {
@@ -498,15 +516,43 @@ export default {
     this.refreshOrderList();
     this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.refreshOrderList);
-    // [P4-1] Subscribe to branch Echo channel for sub-second push updates
     this.subscribeEcho();
+    this._bindWsService();
   },
   methods: {
+    _bindWsService() {
+      const ws = window._wsService;
+      if (!ws) return;
+      this._onWsConnected = () => {
+        this.wsConnected = true;
+        this.refreshOrderList();
+        this._restartPolling();
+      };
+      this._onWsDisconnected = () => {
+        this.wsConnected = false;
+        this._restartPolling();
+      };
+      ws.on('connected', this._onWsConnected);
+      ws.on('disconnected', this._onWsDisconnected);
+    },
+    _unbindWsService() {
+      const ws = window._wsService;
+      if (!ws) return;
+      if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+      if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+    },
+    _pollingInterval() {
+      return this.wsConnected ? 60000 : 10000;
+    },
+    _restartPolling() {
+      this.stopAutoRefresh();
+      this.startAutoRefresh();
+    },
     startAutoRefresh() {
       if (this.$route.path.includes('kitchen-display-system')) {
         this.autoRefreshInterval = setInterval(() => {
           this.refreshOrderList();
-        }, 30000); // 30s fallback polling — Echo push is primary
+        }, this._pollingInterval());
       }
     },
     // [P4-1] Subscribe to branch Echo channel for real-time order updates
@@ -518,40 +564,26 @@ export default {
       // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
       try {
-        const channelName = `branch.${branchId}`;
-        this._echoChannel = window.Echo.private(channelName);
-        // Store listener references for proper cleanup
-        this._echoListenerStatus = () => { this._debouncedRefresh(); };
-        this._echoListenerCreated = () => { this._debouncedRefresh(); };
-        this._echoChannel
-          .listen('.OrderStatusChanged', this._echoListenerStatus)
-          .listen('.OrderCreated', this._echoListenerCreated);
-        console.log(`[KDS] Echo subscribed to ${channelName}`);
+        this._eventSub = onEvents(branchId, [
+          { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
+          { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
+        ]);
+        console.log(`[KDS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         // Echo not available or auth failed — polling fallback handles it
         console.warn('[KDS] Echo subscription failed:', e.message);
       }
     },
     unsubscribeEcho() {
-      if (!window.Echo) return;
       const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
       if (branchId <= 0) return;
-      const channelName = `branch.${branchId}`;
       try {
-        // [AUDIT-P51-BUG2] Properly stop listening before leaving channel
-        if (this._echoChannel && this._echoListenerStatus) {
-          this._echoChannel.stopListening('.OrderStatusChanged');
-          this._echoChannel.stopListening('.OrderCreated');
-        }
-        // Force leave the channel
-        window.Echo.leave(channelName);
-        console.log(`[KDS] Echo unsubscribed from ${channelName}`);
+        this._eventSub?.unsubscribe();
+        console.log(`[KDS] Echo unsubscribed from branch.${branchId}`);
       } catch (e) {
         console.warn('[KDS] Echo unsubscribe error:', e.message);
       }
-      this._echoChannel = null;
-      this._echoListenerStatus = null;
-      this._echoListenerCreated = null;
+      this._eventSub = null;
     },
     refreshOrderList() {
       this.items();
@@ -583,6 +615,7 @@ export default {
         })
         .catch((err) => {
           this.loading.isActive = false;
+          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
         });
     },
     openFilterSlide(event) {
@@ -625,6 +658,7 @@ export default {
         })
         .catch((err) => {
           this.loading.isActive = false;
+          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
         });
     },
     items: function () {
@@ -636,6 +670,7 @@ export default {
         })
         .catch((err) => {
           this.loading.isActive = false;
+          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
         });
     },
     openSidebar: function () {
@@ -763,7 +798,7 @@ export default {
         clearTimeout(this._refreshTimeout);
       }
       this._refreshTimeout = setTimeout(() => {
-        this.list();
+        this._refreshWithCurrentFilter();
         this.items();
       }, 300); // 300ms debounce — sufficient to absorb Echo broadcast + manual call
     },
@@ -780,8 +815,8 @@ export default {
     this.stopAutoRefresh();
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
-    // [P4-1] Unsubscribe Echo channel on unmount
     this.unsubscribeEcho();
+    this._unbindWsService();
   },
 };
 </script>
@@ -789,5 +824,13 @@ export default {
 <style scoped>
 .kds-instruction {
   line-height: 1.5;
+}
+.ws-reconnect-banner {
+  background: #f59e0b;
+  color: #fff;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 </style>

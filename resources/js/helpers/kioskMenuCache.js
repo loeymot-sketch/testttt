@@ -78,6 +78,17 @@ export function isSnapshotFresh(savedAt, maxAgeMs = DEFAULT_MAX_AGE) {
 }
 
 /**
+ * Check whether a snapshot is too old to trust for display.
+ * @param {number} savedAt       — timestamp from snapshot.savedAt
+ * @param {number} [thresholdMs] — staleness threshold in ms (default 4h)
+ * @returns {boolean}
+ */
+export function isSnapshotStale(savedAt, thresholdMs = 4 * 60 * 60 * 1000) {
+    if (!savedAt || typeof savedAt !== 'number') return true;
+    return (Date.now() - savedAt) > thresholdMs;
+}
+
+/**
  * Remove the snapshot (for testing or manual reset).
  */
 export async function clearSnapshot() {

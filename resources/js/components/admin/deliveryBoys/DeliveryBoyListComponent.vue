@@ -89,7 +89,7 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="deliveryBoys.length > 0">
-                        <tr class="db-table-body-tr" v-for="deliveryBoy in deliveryBoys" :key="deliveryBoy">
+                        <tr class="db-table-body-tr" v-for="deliveryBoy in deliveryBoys" :key="deliveryBoy.id">
                             <td class="db-table-body-td">{{ textShortener(deliveryBoy.name, 20) }}</td>
                             <td class="db-table-body-td">{{ deliveryBoy.email }}</td>
                             <td class="db-table-body-td">{{ deliveryBoy.phone ? deliveryBoy.country_code + '' +

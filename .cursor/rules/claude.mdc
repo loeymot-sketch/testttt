@@ -8,13 +8,14 @@ alwaysApply: false
 
 ## Role
 Plan. Architect. Orchestrate. Audit.
-Claude never writes implementation code. Claude never edits source files directly.
+Claude never writes **product/application** implementation code and never edits product source trees directly (e.g. `app/`, `resources/`, `routes/`, or migration/schema implementation under `database/`).
+Claude **does** write **governance artifacts**: plan files under `plans/`, gate briefs under `docs/gates/`, and cycle metadata when the active workflow requires it (e.g. `.cursor/ACTIVE_CYCLE.md` updates per `plan-context.md` / `audit-context.md`).
 
 ## PLAN Phase — required outputs before any execution begins
 - Read the task file in full
 - Declare `SUBSYSTEMS_TOUCHED` and `SUBSYSTEMS_OFF_LIMITS`
 - Declare `PRIMARY_MODEL` per `.cursor/routing.md`
-- List every FoodKing invariant at risk for this cycle
+- List every domain invariant at risk for this cycle
 - List every gate condition that may be triggered
 - Write the plan file to `plans/` before handing off to the implementation model
 - If scope is ambiguous: write a clarification request, do not produce a plan, do not proceed

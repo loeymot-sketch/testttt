@@ -57,11 +57,12 @@ export function getKioskMenuAddonPrice(item, menuChoice) {
   const fullPrice = parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
   const pricing = getKioskMenuPricingConfig();
 
-  if (menuChoice === 'full') return fullPrice * pricing.fullRatio;
-  if (menuChoice === 'frites') return fullPrice * pricing.friesRatio;
-  if (menuChoice === 'boisson') return fullPrice * pricing.drinkRatio;
+  let result = 0;
+  if (menuChoice === 'full') result = fullPrice * pricing.fullRatio;
+  else if (menuChoice === 'frites') result = fullPrice * pricing.friesRatio;
+  else if (menuChoice === 'boisson') result = fullPrice * pricing.drinkRatio;
 
-  return 0;
+  return Math.round(result * 100) / 100;
 }
 
 export function calculateKioskRunningTotal(item, selections = {}) {
@@ -89,7 +90,7 @@ export function calculateKioskRunningTotal(item, selections = {}) {
       const price = parseFloat(extra.convert_price || extra.price || 0);
       const groupLabel = (extra.group_label || '').toLowerCase();
       const name = (extra.name || '').toLowerCase();
-      const isSauce = groupLabel.includes('sauce') || (groupLabel === '' && name.includes('sauce'));
+      const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
 
       if (price > 0 && !isSauce) {
         total += price;
@@ -99,5 +100,6 @@ export function calculateKioskRunningTotal(item, selections = {}) {
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);
 
-  return total * Math.max(1, parseInt(selections.quantity, 10) || 1);
+  const rawTotal = total * Math.max(1, parseInt(selections.quantity, 10) || 1);
+  return Math.round(rawTotal * 100) / 100;
 }

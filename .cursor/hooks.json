@@ -5,6 +5,12 @@
       {
         "command": "./.cursor/hooks/post-edit-check.sh"
       }
+    ],
+    "preCompact": [
+      {
+        "command": "./.cursor/hooks/pre-compact.sh",
+        "description": "Write cycle summary snapshot before Cursor compacts context. Preserves phase state and critical decisions."
+      }
     ]
   }
 }

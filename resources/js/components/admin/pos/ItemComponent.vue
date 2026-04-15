@@ -682,7 +682,7 @@ export default {
                     total_price: addon.total_convert_price,
                     instruction: "",
                 };
-                if (addon.variations !== "undefined" && Object.keys(addon.variations).length !== 0) {
+                if (typeof addon.variations !== 'undefined' && addon.variations && Object.keys(addon.variations).length !== 0) {
                     _.forEach(addon.variations, (variationId, attributeId) => {
                         this.addons[addon.id].item_variations.variations[attributeId] = variationId;
                     });

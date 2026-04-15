@@ -19,7 +19,7 @@ Permitted:
 - CRUD edits on existing models and controllers
 - Config file changes
 - UI copy and minor Vue template edits
-- Boilerplate and scaffold generation
+- Boilerplate and scaffold generation **excluding** anything under `database/migrations` or other schema/DDL surfaces
 - Dependency updates
 - Minor refactors with no logic change
 

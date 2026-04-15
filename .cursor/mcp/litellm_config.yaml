@@ -1,0 +1,51 @@
+# LiteLLM Proxy Config — FoodKing Phase 2
+# Route: Graphiti → LiteLLM (localhost:4000) → Moonshot (chat) + fastembed (embeddings)
+# Doc: https://docs.litellm.ai/docs/proxy/configs
+
+model_list:
+
+  # --- Chat completions → Moonshot ---
+  # Graphiti-core 0.28.x defaults to gpt-4o-mini for entity extraction
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: moonshot/moonshot-v1-8k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+      api_base: https://api.moonshot.cn/v1
+
+  # Fallback si graphiti demande gpt-4o ou gpt-4
+  - model_name: gpt-4o
+    litellm_params:
+      model: moonshot/moonshot-v1-32k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+      api_base: https://api.moonshot.cn/v1
+
+  - model_name: gpt-4
+    litellm_params:
+      model: moonshot/moonshot-v1-32k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+      api_base: https://api.moonshot.cn/v1
+
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: moonshot/moonshot-v1-8k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+      api_base: https://api.moonshot.cn/v1
+
+  # --- Embeddings → fastembed (local, no API key) ---
+  # fastembed télécharge le modèle au premier appel (~90 MB), puis tourne hors-ligne
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      model: fastembed/BAAI/bge-small-en-v1.5
+
+  - model_name: text-embedding-3-small
+    litellm_params:
+      model: fastembed/BAAI/bge-small-en-v1.5
+
+  - model_name: text-embedding-3-large
+    litellm_params:
+      model: fastembed/BAAI/bge-base-en-v1.5
+
+litellm_settings:
+  drop_params: true          # ignore params non supportés (ex: seed, logprobs)
+  request_timeout: 60        # timeout par requête en secondes
+  num_retries: 2             # retries auto sur timeout Moonshot

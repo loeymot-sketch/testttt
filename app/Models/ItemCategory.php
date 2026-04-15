@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Status;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Config;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -12,7 +13,9 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class ItemCategory extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory;
+    use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $table = "item_categories";
     protected $fillable = [

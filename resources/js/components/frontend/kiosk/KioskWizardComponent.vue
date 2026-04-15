@@ -340,8 +340,13 @@ export default {
     effectiveWizardTemplate() {
       const item = this.resolvedItem;
       if (!item) return 'simple';
+      // Priority 1: item-level wizard_template (from API, derived from category)
       const raw = item.wizard_template;
       if (raw && raw !== 'simple') return raw;
+      // Priority 2: nested category object (present on ItemResource, absent on NormalItemResource)
+      const catTemplate = item.category?.wizard_template;
+      if (catTemplate && catTemplate !== 'simple') return catTemplate;
+      // Priority 3: name/category heuristic fallback
       return this.detectTemplateFromName();
     },
     detectTemplateFromName() {
@@ -382,12 +387,10 @@ export default {
       const item = this.resolvedItem;
       if (!item) return 1;
       const name = (item.name || '').toLowerCase();
-      // [KIOSK-18] Check '4 viande' and 'xxl' BEFORE 'xl' to avoid false match
-      // ('xxl' contains 'xl' — checking xl first would return 3 for XXL items)
-      if (name.includes('1 viande')) return 1;
-      if (name.includes('4 viande') || name.includes('xxl')) return 4;
-      if (name.includes('3 viande') || name.includes('xl')) return 3;
-      if (name.includes('2 viande') || name.includes(' l ')) return 2;
+      if (/\b4\s*viandes?\b/i.test(name) || /\bxxl\b/i.test(name)) return 4;
+      if (/\b3\s*viandes?\b/i.test(name) || /\bxl\b/i.test(name)) return 3;
+      if (/\b2\s*viandes?\b/i.test(name) || /\bl\b/i.test(name)) return 2;
+      if (/\b1\s*viandes?\b/i.test(name)) return 1;
       return 1;
     },
     shouldShowStep(type) {
@@ -398,12 +401,18 @@ export default {
           const price = parseFloat(e.convert_price || e.price || 0);
           const groupLabel = (e.group_label || '').toLowerCase();
           const name = (e.name || '').toLowerCase();
-          const isSauce = groupLabel.includes('sauce') || (groupLabel === '' && name.includes('sauce'));
+          const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
           return price > 0 && !isSauce;
         });
       }
       if (type === 'garnitures') {
         return item.extras && item.extras.some(e => parseFloat(e.convert_price || e.price || 0) === 0);
+      }
+      if (type === 'sauce') {
+        if (!item?.itemAttributes) return false;
+        return item.itemAttributes.some(a =>
+          (a.name || '').toLowerCase().includes('sauce')
+        );
       }
       if (type === 'menu') {
         return item.has_menu && item.addons && item.addons.length > 0;
@@ -452,10 +461,17 @@ export default {
     },
     hasViandeVariations() {
       const item = this.resolvedItem;
-      if (!item?.itemAttributes) return false;
-      return item.itemAttributes.some(a => 
+      if (!item) return false;
+      const hasViandeAttr = item.itemAttributes?.some(a =>
         (a.name || '').toLowerCase().includes('viande')
       );
+      if (hasViandeAttr) return true;
+      const hasViandeExtra = item.extras?.some(e =>
+        ((e.group_label || '').toLowerCase().includes('viande') ||
+         (e.name || '').toLowerCase().includes('viande')) &&
+        parseFloat(e.convert_price || e.price || 0) > 0
+      );
+      return !!hasViandeExtra;
     },
     updateSelection(key, value, meta) {
       this.selections[key] = value;
@@ -689,8 +705,33 @@ export default {
         this.selections.garnitures = garnitures;
       }
     },
+    resetSelections() {
+      this.currentStepIndex = 0;
+      this.selections = {
+        pain: null,
+        taille: null,
+        _painMeta: null,
+        _tailleMeta: null,
+        _boissonMeta: null,
+        _viandeMeta: [],
+        _fritesSauceMeta: null,
+        viandes: {},
+        totalViandes: 0,
+        sauces: {},
+        sauceOrder: [],
+        garnitures: {},
+        supplements: {},
+        menuChoice: null,
+        boissonChoice: null,
+        fritesSauce: null,
+        fritesSauceOrder: [],
+        quantity: 1,
+        instruction: ''
+      };
+    },
     async fetchItemById(id) {
       if (!id) return;
+      this.resetSelections();
       this.fetchLoading = true;
       this.fetchError = null;
       try {
@@ -703,6 +744,14 @@ export default {
           if (inferredTaille) {
             this.selections._tailleMeta = inferredTaille;
             this.selections.taille = inferredTaille.label;
+          } else if (!this.selections._tailleMeta?.viandeCount) {
+            // Non-tacos or generic tacos needing taille step: pre-seed viandeCount
+            // so the viande step component has a single source of truth.
+            const count = this.detectViandeCount();
+            this.selections._tailleMeta = {
+              ...(this.selections._tailleMeta || {}),
+              viandeCount: count,
+            };
           }
         } else {
           this.fetchError = this.$t('kiosk.wizard.product_not_found');
@@ -913,6 +962,7 @@ export default {
   },
   mounted() {
     if (this.item) {
+      this.resetSelections();
       this.initGarnitures();
       const inferredTaille = this.inferTacosPresetMeta();
       if (inferredTaille) {

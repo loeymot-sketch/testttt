@@ -22,13 +22,19 @@ use Illuminate\Support\Facades\Log;
  */
 class KioskEventController extends Controller
 {
-    // Allowed event types — whitelist prevents log spam from malformed clients
     private const ALLOWED_TYPES = [
-        'order_abandoned',   // offline order gave up after max sync attempts
-        'sync_failed',       // offline sync attempt failed
-        'auth_error',        // 401 on kiosk route
-        'menu_cache_used',   // menu served from IndexedDB snapshot (offline)
-        'admin_action',      // staff action via KioskAdminComponent
+        'order_abandoned',
+        'sync_failed',
+        'auth_error',
+        'menu_cache_used',
+        'admin_action',
+        'printer_failure',
+        'cash_drawer_failure',
+    ];
+
+    private const HARDWARE_TYPES = [
+        'printer_failure',
+        'cash_drawer_failure',
     ];
 
     public function store(Request $request): JsonResponse
@@ -66,8 +72,15 @@ class KioskEventController extends Controller
                 'details'  => $details,
             ]);
         } catch (\Throwable $e) {
-            // Non-blocking — log failure must not break the kiosk
             Log::warning('[C6] KioskEvent ActionLog failed: ' . $e->getMessage());
+        }
+
+        if (in_array($type, self::HARDWARE_TYPES, true)) {
+            try {
+                Log::channel('hardware')->warning($details);
+            } catch (\Throwable $e) {
+                Log::warning('[C6] Hardware log channel failed: ' . $e->getMessage());
+            }
         }
 
         return response()->json(['status' => true], 200);

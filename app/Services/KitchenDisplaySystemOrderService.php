@@ -11,6 +11,7 @@ use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
+use App\Domain\Order\OrderStateMachine;
 use App\Events\OrderStatusChanged;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
@@ -42,7 +43,7 @@ class KitchenDisplaySystemOrderService
             $allowedColumns = ['id', 'order_datetime', 'queue_number', 'order_serial_no', 'status', 'created_at'];
             $requestedColumn = (string) ($request->get('order_column') ?? 'id');
             $orderColumn = in_array($requestedColumn, $allowedColumns, true) ? $requestedColumn : 'id';
-            $requestedType = strtolower((string) ($request->get('order_by') ?? 'desc'));
+            $requestedType = strtolower((string) ($request->get('order_by') ?? 'asc'));
             $orderType = in_array($requestedType, ['asc', 'desc'], true) ? $requestedType : 'desc';
 
             $userBranchId = auth()->user()->branch_id ?? 0;
@@ -121,6 +122,15 @@ class KitchenDisplaySystemOrderService
                 $order->status = $request->status;
                 $order->save();
             });
+
+            OrderStateMachine::recordTransition(
+                Order::class,
+                (int) $order->id,
+                (int) $oldStatus,
+                (int) $request->status,
+                auth()->check() ? (int) auth()->id() : null,
+                null
+            );
 
             // Post-commit: dispatch notifications and broadcast now that DB is consistent.
             SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);

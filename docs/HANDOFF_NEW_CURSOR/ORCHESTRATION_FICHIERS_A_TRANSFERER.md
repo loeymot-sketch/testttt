@@ -12,7 +12,7 @@
 | Commandes Cursor | `.cursor/commands/*.md` (si présentes) |
 | Hooks | `.cursor/hooks.json`, scripts associés |
 | Bugbot | `.cursor/BUGBOT.md` |
-| Skill projet (optionnel) | `.cursor/skills/foodking-handoff/SKILL.md` |
+| Skill projet (optionnel) | `.cursor/skills/project-handoff/SKILL.md` |
 | Doc handoff | `docs/HANDOFF_NEW_CURSOR/*` |
 | Workflow | `AGENTS.md`, `workflows/` |
 
@@ -25,7 +25,7 @@
 | Élément | Où le remettre |
 |---------|----------------|
 | **User Rules** (texte global) | Cursor **Settings → Rules** : coller le contenu de `.cursor/rules/global-operating-principles.md` si tu veux les mêmes principes partout |
-| **Skills personnels** | Si tu copies le skill dans `~/.cursor/skills/foodking-handoff/` (voir ci-dessous), il est disponible **tous projets** sur ce compte |
+| **Skills personnels** | Si tu copies le skill dans `~/.cursor/skills/project-handoff/` (voir ci-dessous), il est disponible **tous projets** sur ce compte |
 | Clés API / secrets | `.env` local (non commité) — recréer depuis `.env.example` |
 
 ---
@@ -44,10 +44,10 @@
 ## 4. Skill « FoodKing handoff » (recommandé pour changement de compte)
 
 - **Paquet prêt à copier** : dossier **`cursor-export-new-account/`** à la racine du repo (`README.md` + `skills/` + `rules/` pour import manuel).
-- **Version projet** : `.cursor/skills/foodking-handoff/SKILL.md` (versionné avec Git).
-- **Version tous projets** : copier le dossier `foodking-handoff/` dans `~/.cursor/skills/` sur la machine du nouveau compte (ou utiliser la copie depuis `cursor-export-new-account/skills/foodking-handoff/`).
+- **Version projet** : `.cursor/skills/project-handoff/SKILL.md` (versionné avec Git).
+- **Version tous projets** : copier le dossier `project-handoff/` dans `~/.cursor/skills/` sur la machine du nouveau compte (ou utiliser la copie depuis `cursor-export-new-account/skills/project-handoff/`).
 
-Ensuite, dans n’importe quel chat, tu peux écrire : *« Applique le skill foodking-handoff »* ou *« Session FoodKing handoff »* pour forcer la lecture des docs listées dans le skill.
+Ensuite, dans n’importe quel chat, tu peux écrire : *« Applique le skill project-handoff »* ou *« Session handoff »* pour forcer la lecture des docs listées dans le skill.
 
 ---
 

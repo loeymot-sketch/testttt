@@ -9,7 +9,7 @@
 | [`PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md`](./PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md) | **Texte à coller** dans le 1er message du chat |
 | [`CACHE_MEMOIRE_TRANSFERT.md`](./CACHE_MEMOIRE_TRANSFERT.md) | **Mémoire projet** dense (à lire par l’agent) |
 | [`ORCHESTRATION_FICHIERS_A_TRANSFERER.md`](./ORCHESTRATION_FICHIERS_A_TRANSFERER.md) | Checklist règles, skill, autre compte |
-| [`.cursor/skills/foodking-handoff/SKILL.md`](../../.cursor/skills/foodking-handoff/SKILL.md) | Skill Cursor « foodking-handoff » (invocation : *Session FoodKing handoff*) |
+| [`.cursor/skills/project-handoff/SKILL.md`](../../.cursor/skills/project-handoff/SKILL.md) | Skill Cursor « project-handoff » (invocation : *Session handoff*) |
 
 ## Ordre de lecture recommandé (45–90 min la première fois)
 

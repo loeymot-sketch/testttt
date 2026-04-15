@@ -117,6 +117,23 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'hardware' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/hardware.log'),
+            'level' => 'info',
+            'days' => 30,
+        ],
+
+        'production_json' => [
+            'driver' => 'monolog',
+            'handler' => StreamHandler::class,
+            'with' => [
+                'stream' => storage_path('logs/laravel.json.log'),
+            ],
+            'formatter' => \App\Logging\JsonFormatter::class,
+            'level' => 'info',
+        ],
     ],
 
 ];

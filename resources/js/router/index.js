@@ -45,6 +45,18 @@ const baseRoutes = [
         name: "root"
     },
     {
+        path: "/kds",
+        redirect: { name: "admin.kitchen-display-system" },
+    },
+    {
+        path: "/delivery",
+        redirect: { name: "admin.delivery-boys" },
+    },
+    {
+        path: "/order-status",
+        redirect: { name: "admin.order-status-screen" },
+    },
+    {
         path: "/:pathMatch(.*)*",
         name: "route.notFound",
         component: NotFoundComponent,

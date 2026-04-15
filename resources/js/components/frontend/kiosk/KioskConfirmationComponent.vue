@@ -38,6 +38,12 @@
       </div>
     </div>
 
+    <div v-if="printFailed" class="kiosk-printer-fallback">
+      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') || 'Impression indisponible — notez votre numéro :' }}</p>
+      <div class="kiosk-printer-fallback-number">#{{ displayNumber }}</div>
+      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') || 'Présentez ce numéro au comptoir.' }}</p>
+    </div>
+
     <div class="kiosk-confirmation-message">
       <p>{{ $t('kiosk.confirmation.message_kitchen') }}</p>
       <p>{{ $t('kiosk.confirmation.message_counter') }}</p>
@@ -117,7 +123,7 @@
 </template>
 
 <script>
-import { printReceipt as escPosPrint, buildReceiptData } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 
@@ -135,6 +141,7 @@ export default {
       progressWidth:  100,
       timer:          null,
       printStatus:    null,  // null | 'printing' | 'done' | 'error'
+      printFailed:    false,
       // Snapshot cart data at mount time — captured before cart reset
       _snapshotItems:        null,
       _snapshotDiscount:     null,
@@ -280,14 +287,17 @@ export default {
 
         if (result.method === 'none') {
           this.printStatus = 'error';
-          setTimeout(() => { this.printStatus = null; }, 3000);
+          this.printFailed = true;
+          reportPrinterFailure(this.displayNumber, result.error || 'no print method');
         } else {
           this.printStatus = 'done';
+          this.printFailed = false;
           setTimeout(() => { this.printStatus = null; }, 2000);
         }
-      } catch (_) {
+      } catch (err) {
         this.printStatus = 'error';
-        setTimeout(() => { this.printStatus = null; }, 3000);
+        this.printFailed = true;
+        reportPrinterFailure(this.displayNumber, err?.message || 'exception');
       } finally {
         if (this.countdown > 0 && !this.timer) {
           this.startTimer();
@@ -534,5 +544,29 @@ export default {
     font-size: 14px;
     color: #000;
   }
+}
+.kiosk-printer-fallback {
+  background: #fef3cd;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  text-align: center;
+}
+.kiosk-printer-fallback-label {
+  font-size: 1.1rem;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+.kiosk-printer-fallback-number {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  line-height: 1.2;
+  margin: 8px 0;
+}
+.kiosk-printer-fallback-hint {
+  font-size: 1rem;
+  color: #78350f;
 }
 </style>

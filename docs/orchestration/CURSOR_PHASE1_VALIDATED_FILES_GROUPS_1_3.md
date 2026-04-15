@@ -37,7 +37,7 @@ Full routing policy: `.cursor/routing.md`
 Halt and generate a gate brief on any of:
 - Gate trigger detected
 - Scope expansion beyond declared boundary
-- FoodKing invariant violation
+- domain invariant violation
 - Two consecutive validation failures
 - Planning ambiguity unresolvable from task context
 
@@ -172,7 +172,7 @@ The agent operates autonomously within declared scope.
 It halts and escalates — it never self-approves — on:
 - Any gate trigger (`.cursor/rules/human-gates.mdc`)
 - Any scope expansion beyond the declared boundary
-- Any FoodKing invariant violation (`.cursor/rules/foodking-invariants.mdc`)
+- Any domain invariant violation (`.cursor/rules/project-invariants.mdc`)
 - Two consecutive validation failures
 - Planning ambiguity unresolvable from task context
 
@@ -182,7 +182,7 @@ It halts and escalates — it never self-approves — on:
 - Scope pressure mid-cycle is logged under `SCOPE_PRESSURE` in the plan file and reviewed at audit
 - Ambiguous scope = Claude stops and writes a clarification request before producing a plan
 
-## FoodKing Invariants (enforced here, defined in `foodking-invariants.mdc`)
+## FoodKing Invariants (enforced here, defined in `project-invariants.mdc`)
 - Backend is pricing SSOT — no frontend price logic
 - `OrderStatus` enum is authoritative — no hardcoded strings
 - `branch_id` is business data isolation — no cross-boundary data access without explicit plan authorization
@@ -236,7 +236,7 @@ Claude never writes implementation code. Claude never edits source files directl
 - Read the task file in full
 - Declare `SUBSYSTEMS_TOUCHED` and `SUBSYSTEMS_OFF_LIMITS`
 - Declare `PRIMARY_MODEL` per `.cursor/routing.md`
-- List every FoodKing invariant at risk for this cycle
+- List every domain invariant at risk for this cycle
 - List every gate condition that may be triggered
 - Write the plan file to `plans/` before handing off to the implementation model
 - If scope is ambiguous: write a clarification request, do not produce a plan, do not proceed
@@ -434,7 +434,7 @@ Claude must write a plan file containing all of the following before any executi
 - `SUBSYSTEMS_TOUCHED` — explicit list with read/write intent per subsystem
 - `SUBSYSTEMS_OFF_LIMITS` — explicit list of adjacent systems excluded from this cycle
 - `GATE_CONDITIONS` — anticipated gate triggers, or: None anticipated
-- `INVARIANTS_AT_RISK` — relevant FoodKing invariants for this cycle
+- `INVARIANTS_AT_RISK` — relevant domain invariants for this cycle
 
 A plan file missing any of these fields is invalid. Execution must not start.
 
@@ -480,7 +480,7 @@ Any scope violation found at audit triggers a gate — it is not self-resolvable
 
 ---
 
-### `.cursor/rules/foodking-invariants.mdc`
+### `.cursor/rules/project-invariants.mdc`
 
 ```markdown
 ---
@@ -593,7 +593,7 @@ The cycle does not resume until a human explicitly resolves it.
 | New external API or third-party service | Product decision |
 | Manual UX test required (new flow, redesign, critical path change) | QA sign-off |
 | Frozen zone file edit required | Explicit human approval |
-| FoodKing invariant violation detected at any phase | Human reviews finding and decides |
+| domain invariant violation detected at any phase | Human reviews finding and decides |
 | Scope expansion required mid-cycle | Human re-scopes or cancels |
 | `branch_id` isolation logic added or modified | Data isolation review |
 | Two consecutive validation failures | Human review — do not retry autonomously |
@@ -622,7 +622,7 @@ Author: Claude only
 [Every subsystem involved in or adjacent to this gate]
 
 ## Invariants at Risk
-[Relevant FoodKing invariants, or: None]
+[Relevant domain invariants, or: None]
 
 ## Decision Required
 [Precise question the human must answer]

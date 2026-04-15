@@ -9,46 +9,23 @@
         <h3 class="font-semibold text-[26px] leading-10 capitalize text-primary">{{ visitorMessage() }}</h3>
         <h4 class="font-medium text-[22px] leading-[34px] capitalize">{{ authInfo.name }}</h4>
     </div>
-    <!--========OVERVIEW START=============-->
-    <OverviewComponent/>
-    <!--========OVERVIEW END=============-->
+    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
 
-    <!--========PHASE 6: BOSS DASHBOARD START=============-->
-    <RealtimeReportComponent/>
+    <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
     <div class="row">
-        <SlaAlertsComponent/>
-        <ChannelStatsComponent/>
+        <ErrorBoundary><SlaAlertsComponent/></ErrorBoundary>
+        <ErrorBoundary><ChannelStatsComponent/></ErrorBoundary>
     </div>
-    <AuditTrailComponent/>
-    <!--========PHASE 6: BOSS DASHBOARD END=============-->
+    <ErrorBoundary><AuditTrailComponent/></ErrorBoundary>
 
-    <!--========ORDER STATISTIC START=============-->
-    <OrderStatisticsComponent/>
-    <!--========ORDER STATISTIC END=============-->
+    <ErrorBoundary><OrderStatisticsComponent/></ErrorBoundary>
     <div class="row">
-        <!--========SALES SUMMARY START=============-->
-        <SalesSummaryComponent/>
-        <!--========SALES SUMMARY END=============-->
-
-        <!--========ORDERS SUMMARY START=============-->
-        <OrderSummaryComponent/>
-        <!--========ORDERS SUMMARY END=============-->
-
-        <!--========CUSTOMER STATS START=============-->
-        <CustomerStatsComponent/>
-        <!--========CUSTOMER STATS END=============-->
-
-        <!--========TOP CUSTOMERS START=============-->
-        <TopCustomersComponent/>
-        <!--========TOP CUSTOMERS END=============-->
-
-        <!--========FEATURED ITEMS START=============-->
-        <FeaturedItemsComponent/>
-        <!--========FEATURED ITEMS END=============-->
-
-        <!--========MOST POPULAR ITEMS START=============-->
-        <MostPopularItemsComponent/>
-        <!--========MOST POPULAR ITEMS END=============-->
+        <ErrorBoundary><SalesSummaryComponent/></ErrorBoundary>
+        <ErrorBoundary><OrderSummaryComponent/></ErrorBoundary>
+        <ErrorBoundary><CustomerStatsComponent/></ErrorBoundary>
+        <ErrorBoundary><TopCustomersComponent/></ErrorBoundary>
+        <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
+        <ErrorBoundary><MostPopularItemsComponent/></ErrorBoundary>
     </div>
 </template>
 
@@ -66,6 +43,7 @@ import RealtimeReportComponent from "./RealtimeReportComponent";
 import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
 import AuditTrailComponent from "./AuditTrailComponent";
+import ErrorBoundary from "../components/ErrorBoundary";
 import ENV from "../../../config/env";
 
 export default {
@@ -83,7 +61,8 @@ export default {
         RealtimeReportComponent,
         SlaAlertsComponent,
         ChannelStatsComponent,
-        AuditTrailComponent
+        AuditTrailComponent,
+        ErrorBoundary
     },
     data() {
         return {

@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Branch;
+use App\Models\FrontendOrder;
+use App\Models\ItemCategory;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
@@ -26,9 +32,31 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
 
+        $audit = SoftDeleteAuditObserver::class;
+        Order::observe($audit);
+        FrontendOrder::observe($audit);
+        OrderItem::observe($audit);
+        Branch::observe($audit);
+        ItemCategory::observe($audit);
+
         // SQLite (tests CI / phpunit.xml :memory:) n'implémente pas REGEXP par défaut.
         // OrderService / FrontendOrderService filtrent queue_number avec REGEXP '^A[0-9]+$'.
         $this->registerSqliteRegexpIfNeeded();
+
+        if (app()->environment('production')) {
+            if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
+                throw new \RuntimeException(
+                    'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '
+                    . 'Set BROADCAST_DRIVER in your .env file.'
+                );
+            }
+            if (config('queue.default') === 'sync') {
+                throw new \RuntimeException(
+                    'QUEUE_CONNECTION must not be sync in production (expected: redis|database). '
+                    . 'Set QUEUE_CONNECTION in your .env file.'
+                );
+            }
+        }
     }
 
     private function registerSqliteRegexpIfNeeded(): void

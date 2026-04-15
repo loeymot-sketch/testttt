@@ -77,16 +77,9 @@ export default {
   },
   computed: {
     maxViandes() {
-      // [AUDIT-P2] Prefer explicit taille selection from parent wizard
-      if (this.selections._tailleMeta?.viandeCount) {
-        return this.selections._tailleMeta.viandeCount;
-      }
-      // Fallback to name heuristic only when no explicit taille choice
-      const name = (this.item.name || '').toLowerCase();
-      if (name.includes('xxl') || name.includes('4 viande')) return 4;
-      if (name.includes('xl') || name.includes('3 viande')) return 3;
-      if (name.includes(' l ') || name.includes('2 viande')) return 2;
-      return 1;
+      // Single source of truth: the parent wizard always seeds _tailleMeta.viandeCount
+      // via detectViandeCount() or the taille step selection. No local heuristic.
+      return this.selections._tailleMeta?.viandeCount || 1;
     },
     totalSelected() {
       return Object.values(this.localSelections).reduce((sum, v) => sum + (v || 0), 0);

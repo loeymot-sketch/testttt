@@ -140,6 +140,7 @@
 import { mapActions } from 'vuex';
 import axios from 'axios';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+import { onEvents } from '../../../services/eventContract';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
@@ -174,7 +175,7 @@ export default {
       pollFailCount: 0,
       networkLost: false,
       timedOut: false, // [AUDIT-P1-C] true after 15 min timeout
-      _echoChannel: null,
+      _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
     };
   },
@@ -204,47 +205,43 @@ export default {
       // [FIX-53-1] Always unsubscribe first to prevent duplicate listeners on re-mount
       this._unsubscribeEcho();
       try {
-        const channelName = `branch.${branchId}`;
-        this._echoChannel = window.Echo.private(channelName);
-        // Store listener references for proper cleanup (same pattern as KDS/OSS Phase 51/52 fix)
-        this._echoListenerCreated = (data) => {
-          // [AUDIT-P3] React to OrderCreated to confirm queue number immediately
-          if (parseInt(data.order_id) === parseInt(this.orderId)) {
-            if (data.queue_number) this.queueNumber = data.queue_number;
-          }
-        };
-        this._echoListenerStatus = (data) => {
-          if (parseInt(data.order_id) === parseInt(this.orderId)) {
-            this._doPoll();
-          }
-        };
-        this._echoChannel
-          .listen('.OrderCreated', this._echoListenerCreated)
-          .listen('.OrderStatusChanged', this._echoListenerStatus);
-        console.log(`[KioskWaiting] Echo subscribed to ${channelName}`);
+        this._eventSub = onEvents(branchId, [
+          {
+            broadcastAs: 'OrderCreated',
+            handler: (event) => {
+              const data = event.payload || {};
+              // [AUDIT-P3] React to OrderCreated to confirm queue number immediately
+              if (parseInt(data.order_id, 10) === parseInt(this.orderId, 10)) {
+                if (data.queue_number) this.queueNumber = data.queue_number;
+              }
+            },
+          },
+          {
+            broadcastAs: 'OrderStatusChanged',
+            handler: (event) => {
+              const data = event.payload || {};
+              if (parseInt(data.order_id, 10) === parseInt(this.orderId, 10)) {
+                this._doPoll();
+              }
+            },
+          },
+        ]);
+        console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo subscription failed:', e.message);
       }
     },
 
     _unsubscribeEcho() {
-      if (!window.Echo) return;
       const branchId = parseInt(this.$store.getters['kioskCart/branchId'] || 0);
       if (branchId <= 0) return;
-      const channelName = `branch.${branchId}`;
       try {
-        // [FIX-53-1] Properly stop listening before leaving channel to prevent memory leak
-        if (this._echoChannel) {
-          if (this._echoListenerCreated) this._echoChannel.stopListening('.OrderCreated');
-          if (this._echoListenerStatus)  this._echoChannel.stopListening('.OrderStatusChanged');
-        }
-        console.log(`[KioskWaiting] Echo listeners removed from ${channelName}`);
+        this._eventSub?.unsubscribe();
+        console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo unsubscribe error:', e.message);
       }
-      this._echoChannel = null;
-      this._echoListenerCreated = null;
-      this._echoListenerStatus = null;
+      this._eventSub = null;
     },
 
     startPolling() {

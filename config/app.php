@@ -95,6 +95,7 @@ return [
     |
     */
 
+    // Must match the server timezone — change via TIMEZONE env variable
     'timezone' => env('TIMEZONE') ?: 'UTC',
 
     /*
@@ -242,3 +243,5 @@ return [
     ])->toArray(),
 
 ];
+
+// smoke-test: run-cycle validated 2026-04-14
