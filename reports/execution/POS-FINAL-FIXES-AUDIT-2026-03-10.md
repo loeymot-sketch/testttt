@@ -11,6 +11,7 @@
 ### 1. Extras menu mal positionnés ❌
 
 **Symptôme :**
+
 ```
 + Frites Seules (+2.00€)
   ↳ Sauce frites: Harissa    ← Affiché UNE SEULE FOIS
@@ -26,6 +27,7 @@
 ### 2. Wizard édition ne pré-sélectionne rien ❌
 
 **Symptôme :**
+
 - Clic "Modifier" sur produit panier
 - Clic bouton wizard
 - **Toutes les sélections à zéro** : viandes, sauces, garnitures, menu
@@ -45,6 +47,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 ```
 
 **Ordre d'exécution incorrect :**
+
 1. `buildSteps()` → OK
 2. Reset `selections` à vide → ❌
 3. `renderSinglePage()` → HTML généré avec selections vides → ❌
@@ -59,6 +62,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 **Fichier :** `resources/js/components/admin/pos/PosComponent.vue`
 
 **Avant :**
+
 ```vue
 <ul v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0">
     <li v-for="(bundled, bi) in cart.pos_line_addons">
@@ -74,6 +78,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 ```
 
 **Après :**
+
 ```vue
 <!-- Menu bundled -->
 <ul v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0">
@@ -91,6 +96,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 ```
 
 **Résultat :**
+
 ```
 + Frites Seules (+2.00€)
 ↳ Sauce frites: Harissa
@@ -106,6 +112,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 **Changement :** Déplacer la restauration `Object.assign(selections, restored)` **AVANT** `renderSinglePage()`.
 
 **Ordre Correct :**
+
 1. `buildSteps(lastItemData)` → Construit structure steps
 2. Reset `selections` à vide (défaut)
 3. **[NOUVEAU]** Lire `data-wizard-restore-selections` et fusionner dans `selections`
@@ -113,6 +120,7 @@ Object.assign(selections, restored);            // Trop tard, HTML déjà géné
 5. `bindSinglePageEvents()` → Events attachés
 
 **Code :**
+
 ```javascript
 // Reset selections (défaut nouvelle commande)
 selections = { viandes: {}, sauces: {}, ... };
@@ -143,22 +151,26 @@ wizardEl.innerHTML = renderSinglePage();  // ← Maintenant correct
 
 ### Fix 1 : Position Extras
 
-| Critère | Résultat |
-|---------|----------|
-| **Structure HTML** | ✅ Sémantique correcte (2 listes séparées) |
+
+| Critère                 | Résultat                                     |
+| ----------------------- | -------------------------------------------- |
+| **Structure HTML**      | ✅ Sémantique correcte (2 listes séparées)    |
 | **Condition affichage** | ✅ `v-if` avec double check (addons + extras) |
-| **Performance** | ✅ Aucun impact (même nombre d'itérations) |
-| **Non-régression** | ✅ Sans menu = inchangé |
+| **Performance**         | ✅ Aucun impact (même nombre d'itérations)    |
+| **Non-régression**      | ✅ Sans menu = inchangé                       |
+
 
 ### Fix 2 : Ordre Restauration
 
-| Critère | Résultat |
-|---------|----------|
-| **Timing** | ✅ Restauration AVANT render |
+
+| Critère          | Résultat                                             |
+| ---------------- | ---------------------------------------------------- |
+| **Timing**       | ✅ Restauration AVANT render                          |
 | **État initial** | ✅ Viandes, sauces, garnitures, menu pré-sélectionnés |
-| **Compteurs** | ✅ Viandes supplémentaires restaurées |
-| **Instruction** | ✅ Texte restauré |
-| **Fallback** | ✅ Nouvelle commande = reset propre |
+| **Compteurs**    | ✅ Viandes supplémentaires restaurées                 |
+| **Instruction**  | ✅ Texte restauré                                     |
+| **Fallback**     | ✅ Nouvelle commande = reset propre                   |
+
 
 ---
 
@@ -167,6 +179,7 @@ wizardEl.innerHTML = renderSinglePage();  // ← Maintenant correct
 ### Test 1 : Affichage Extras Menu
 
 **Setup :**
+
 ```
 Tacos L (2 Viandes)
 Viande 1: Viande Hachée
@@ -177,63 +190,71 @@ Instruction: 2×Viande Hachée STO Harissa Frites SFr Sauce supplémentaire: Bla
 ```
 
 **Vérification :**
-- [ ] "Frites Seules" sur une ligne
-- [ ] "Sauce frites: Harissa" indentée sous Frites Seules
-- [ ] "Sauce supplémentaire: Blanche" indentée sous Frites Seules
-- [ ] Flèche verte `↳` visible
-- [ ] Pas de duplication
+
+- "Frites Seules" sur une ligne
+- "Sauce frites: Harissa" indentée sous Frites Seules
+- "Sauce supplémentaire: Blanche" indentée sous Frites Seules
+- Flèche verte `↳` visible
+- Pas de duplication
 
 ---
 
 ### Test 2 : Édition Wizard Pré-rempli
 
 **Setup :**
+
 1. Ajouter Tacos L :
-   - 2 viandes : Viande Hachée (×2)
-   - Sauce : Harissa
-   - Menu : Frites Seules
-   - Sauce frites : Harissa
-   - Sauce supplémentaire : Blanche
+  - 2 viandes : Viande Hachée (×2)
+  - Sauce : Harissa
+  - Menu : Frites Seules
+  - Sauce frites : Harissa
+  - Sauce supplémentaire : Blanche
 
 **Action :**
+
 1. Cliquer "Modifier" (icône crayon)
 2. Cliquer bouton wizard
 
 **Vérification :**
-- [ ] Viandes : 2 compteurs "Viande Hachée" affichés
-- [ ] Sauce : "Harissa" sélectionnée (chip coloré)
-- [ ] Menu : "Frites Seules" sélectionné (carte verte)
-- [ ] Sauce frites : "Harissa" sélectionnée
-- [ ] Sauce supplémentaire : "Blanche" cochée
-- [ ] Instruction : texte pré-rempli
+
+- Viandes : 2 compteurs "Viande Hachée" affichés
+- Sauce : "Harissa" sélectionnée (chip coloré)
+- Menu : "Frites Seules" sélectionné (carte verte)
+- Sauce frites : "Harissa" sélectionnée
+- Sauce supplémentaire : "Blanche" cochée
+- Instruction : texte pré-rempli
 
 ---
 
 ### Test 3 : Modification Après Restauration
 
 **Action :**
+
 1. Wizard pré-rempli (test 2)
 2. Changer 1 viande : retirer "Viande Hachée", ajouter "Kefta"
 3. Cliquer "Ajouter"
 
 **Vérification :**
-- [ ] Panier mis à jour : "Viande 1: Viande Hachée, Viande 2: Kefta"
-- [ ] Pas de duplication (ancien produit remplacé)
-- [ ] Total recalculé correctement
+
+- Panier mis à jour : "Viande 1: Viande Hachée, Viande 2: Kefta"
+- Pas de duplication (ancien produit remplacé)
+- Total recalculé correctement
 
 ---
 
 ### Test 4 : Nouvelle Commande (Non-régression)
 
 **Action :**
+
 1. Cliquer sur un nouveau produit
 2. Cliquer bouton wizard
 
 **Vérification :**
-- [ ] Wizard vide (pas de pré-sélections)
-- [ ] Quantité = 1
-- [ ] Instruction vide
-- [ ] Comportement normal
+
+- Wizard vide (pas de pré-sélections)
+- Quantité = 1
+- Instruction vide
+- Comportement normal
 
 ---
 
@@ -241,10 +262,12 @@ Instruction: 2×Viande Hachée STO Harissa Frites SFr Sauce supplémentaire: Bla
 
 ### Changements
 
-| Fichier | Lignes Modifiées | Complexité |
-|---------|------------------|------------|
-| `PosComponent.vue` | 20 (template) | Faible |
-| `pos-wizard.js` | 15 (ordre exécution) | Faible |
+
+| Fichier            | Lignes Modifiées     | Complexité |
+| ------------------ | -------------------- | ---------- |
+| `PosComponent.vue` | 20 (template)        | Faible     |
+| `pos-wizard.js`    | 15 (ordre exécution) | Faible     |
+
 
 ### Build
 
@@ -258,11 +281,13 @@ npm run production
 
 ## Risques Résiduels
 
-| Risque | Probabilité | Mitigation |
-|--------|-------------|------------|
-| **Extras menu multiples** | Très faible | Structure liste unique |
-| **Parse JSON échoue** | Très faible | `try/catch` + log console |
-| **Sélection non restaurée** | Faible | Fallback gracieux (ignoré) |
+
+| Risque                      | Probabilité | Mitigation                 |
+| --------------------------- | ----------- | -------------------------- |
+| **Extras menu multiples**   | Très faible | Structure liste unique     |
+| **Parse JSON échoue**       | Très faible | `try/catch` + log console  |
+| **Sélection non restaurée** | Faible      | Fallback gracieux (ignoré) |
+
 
 ---
 
@@ -271,12 +296,15 @@ npm run production
 ✅ **Les deux problèmes critiques sont résolus**
 
 ### Avant
+
 - ❌ Extras menu dans la boucle addons
 - ❌ Wizard édition vide (sélections perdues)
 
 ### Après
+
 - ✅ Extras menu affichés après tous les menus
 - ✅ Wizard édition pré-rempli (viandes, sauces, menu, extras)
 
 ### Prochaine Étape
+
 **Hard refresh obligatoire** (Cmd+Shift+R) puis test manuel selon scénarios ci-dessus.

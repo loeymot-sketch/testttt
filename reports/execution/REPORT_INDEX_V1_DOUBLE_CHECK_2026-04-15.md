@@ -3,6 +3,7 @@
 ## Method
 
 9-point deep audit covering every V1 implementation across all 4 vagues:
+
 1. PHP syntax check on all 36 new/modified V1 files
 2. Line-by-line PricingService vs legacy inline code parity (4 surfaces)
 3. OrderStateMachine transition matrix vs original ValidStatusTransition
@@ -23,14 +24,17 @@ All files in `app/Services/Pricing/`, `app/Domain/`, new models, observers, list
 
 ### 2. PricingService parity — 4/4 surfaces PASS (with fixes applied)
 
-| Surface | Item lookup | Variation/extra | Rounding | Tax | Coupon/manual | Total formula | OrderItem rows |
-|---------|------------|-----------------|----------|-----|---------------|---------------|----------------|
-| Web | PASS | PASS | PASS (no round) | PASS | PASS | PASS | PASS |
-| POS | PASS | PASS | PASS (round all) | PASS | PASS | PASS | PASS |
-| Table | PASS | PASS | PASS (no round) | PASS | PASS | PASS | PASS |
-| Kiosk | PASS | PASS | PASS (round all) | PASS | PASS | PASS | PASS |
+
+| Surface | Item lookup | Variation/extra | Rounding         | Tax  | Coupon/manual | Total formula | OrderItem rows |
+| ------- | ----------- | --------------- | ---------------- | ---- | ------------- | ------------- | -------------- |
+| Web     | PASS        | PASS            | PASS (no round)  | PASS | PASS          | PASS          | PASS           |
+| POS     | PASS        | PASS            | PASS (round all) | PASS | PASS          | PASS          | PASS           |
+| Table   | PASS        | PASS            | PASS (no round)  | PASS | PASS          | PASS          | PASS           |
+| Kiosk   | PASS        | PASS            | PASS (round all) | PASS | PASS          | PASS          | PASS           |
+
 
 **Divergences found and resolved:**
+
 - Error messages: short-form → long-form with item context (fixed in `PricingService`)
 - Kiosk `OrderItem` timestamps: SSOT explicitly sets `created_at`/`updated_at` vs legacy omission — accepted as **improvement** (no fix needed; DB defaults would fill them anyway)
 - `itemPrice` float cast: SSOT always casts `(float)` — accepted as **normalization improvement**
@@ -38,6 +42,7 @@ All files in `app/Services/Pricing/`, `app/Domain/`, new models, observers, list
 ### 3. OrderStateMachine — PASS
 
 Full transition matrix verified for all states:
+
 - PENDING → ACCEPT, CANCELED, REJECTED (allowed); all others (blocked)
 - ACCEPT → PREPARING, CANCELED (allowed); DELIVERED with POS permission (allowed)
 - PREPARING → PREPARED, CANCELED (allowed); DELIVERED with POS (allowed)
@@ -50,6 +55,7 @@ Full transition matrix verified for all states:
 `ValidStatusTransition::passes()` correctly delegates to `OrderStateMachine::allows()`.
 
 `recordTransition()` now called in ALL 5 status-change paths:
+
 - `OrderService::changeStatus` ($auth=true)
 - `OrderService::changeStatus` ($auth=false)
 - `OrderService::deliveryBoyOrderChangeStatus` (**fixed** during double-check)
@@ -60,13 +66,15 @@ Full transition matrix verified for all states:
 
 ### 4. SoftDeletes + BranchScope — PASS
 
-| Model | SoftDeletes | BranchScope | Coexistence |
-|-------|-------------|-------------|-------------|
-| Order | Yes | Yes (booted) | PASS |
-| FrontendOrder | Yes | Yes (booted) | PASS |
-| OrderItem | Yes | N/A | PASS |
-| Branch | Yes | N/A | PASS |
-| ItemCategory | Yes | N/A | PASS |
+
+| Model         | SoftDeletes | BranchScope  | Coexistence |
+| ------------- | ----------- | ------------ | ----------- |
+| Order         | Yes         | Yes (booted) | PASS        |
+| FrontendOrder | Yes         | Yes (booted) | PASS        |
+| OrderItem     | Yes         | N/A          | PASS        |
+| Branch        | Yes         | N/A          | PASS        |
+| ItemCategory  | Yes         | N/A          | PASS        |
+
 
 - `withoutGlobalScopes()` usage on Order/FrontendOrder: **ZERO** (only on User model elsewhere)
 - `SoftDeleteAuditObserver`: correctly checks `isForceDeleting()` before logging
@@ -113,22 +121,26 @@ Zero failures, zero errors, zero skipped.
 
 ## Fixes applied during this double-check
 
-| Fix | File | Description |
-|-----|------|-------------|
-| Error message parity | `app/Services/Pricing/PricingService.php` | Short-form → long-form with item context for variation/extra not-found errors |
-| Missing audit trail | `app/Services/OrderService.php` | Added `recordTransition()` to `deliveryBoyOrderChangeStatus` |
-| Missing audit trail | `app/Services/FrontendOrderService.php` | Added `recordTransition()` to `finalizePaidKioskOrder` and kiosk auto-accept in `myOrderStore` |
+
+| Fix                  | File                                      | Description                                                                                    |
+| -------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Error message parity | `app/Services/Pricing/PricingService.php` | Short-form → long-form with item context for variation/extra not-found errors                  |
+| Missing audit trail  | `app/Services/OrderService.php`           | Added `recordTransition()` to `deliveryBoyOrderChangeStatus`                                   |
+| Missing audit trail  | `app/Services/FrontendOrderService.php`   | Added `recordTransition()` to `finalizePaidKioskOrder` and kiosk auto-accept in `myOrderStore` |
+
 
 ---
 
 ## V1 completion status (post double-check)
 
-| Vague | Tasks | Status |
-|-------|-------|--------|
-| 1 — Synchro | SYNC_BACKBONE, OUTBOX, EVENT_CONTRACT | 3/3 PASS |
-| 2 — Domain SSOT | PRICING_SSOT, STATUS_MACHINE, MENU_86 | 3/3 IMPLEMENTED |
-| 3 — Security | SEC_XSS, SEC_CORS_RATELIMIT | 2/2 PASS |
+
+| Vague              | Tasks                                                                | Status          |
+| ------------------ | -------------------------------------------------------------------- | --------------- |
+| 1 — Synchro        | SYNC_BACKBONE, OUTBOX, EVENT_CONTRACT                                | 3/3 PASS        |
+| 2 — Domain SSOT    | PRICING_SSOT, STATUS_MACHINE, MENU_86                                | 3/3 IMPLEMENTED |
+| 3 — Security       | SEC_XSS, SEC_CORS_RATELIMIT                                          | 2/2 PASS        |
 | 4 — Data/Obs/Tests | DATA_SOFTDELETE, OBS_HEALTH_CORR, TEST_PW_5FLOWS, TEST_PRICING_STATE | 4/4 IMPLEMENTED |
+
 
 **12/12 Index V1 tasks have production code in the repository.**
 
@@ -143,6 +155,9 @@ Zero failures, zero errors, zero skipped.
 
 ## Sign-off
 
-| Role | Name | Date |
-|------|------|------|
+
+| Role                | Name         | Date       |
+| ------------------- | ------------ | ---------- |
 | Double-check author | Cursor Agent | 2026-04-15 |
+
+
