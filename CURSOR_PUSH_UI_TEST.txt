@@ -1,0 +1,5 @@
+Test UI Git / push (Cursor) — créé par l’assistant le 2026-04-16.
+Tu peux supprimer ce fichier après vérification.
+
+Réglage Cursor corrigé (2026-04-16) : git.autoRepositoryDetection = true dans User settings.
+Redémarre la fenêtre Cursor (Command Palette → « Developer: Reload Window »).

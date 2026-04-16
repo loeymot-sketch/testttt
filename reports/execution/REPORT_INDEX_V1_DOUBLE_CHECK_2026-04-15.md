@@ -20,7 +20,7 @@
 
 ### 1. PHP syntax — 36/36 PASS
 
-All files in `app/Services/Pricing/`, `app/Domain/`, new models, observers, listeners, config, migrations, services, providers — zero syntax errors.
+All files in `app/Services/Pricing/`, `app/Domain/`, new models, observers, listeners, config, migrations, services, providers — zero syntax errors...
 
 ### 2. PricingService parity — 4/4 surfaces PASS (with fixes applied)
 
