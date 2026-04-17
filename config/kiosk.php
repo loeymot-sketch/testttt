@@ -52,6 +52,19 @@ if ($requireForm) {
 $username = trim((string) env('KIOSK_MACHINE_USERNAME', ''));
 $password = (string) env('KIOSK_MACHINE_PASSWORD', '');
 
+// Local uniquement : alignement sur KioskMachineTableSeeder (kiosk-lecayenne / kiosk123).
+// Évite l'écran « connexion auto indisponible » quand le .env n'a pas encore KIOSK_MACHINE_*.
+// Jamais appliqué en production / staging / testing.
+// Ne pas utiliser app() ici : les fichiers de config sont chargés avant que le container soit prêt.
+if (env('APP_ENV') === 'local') {
+    if ($username === '') {
+        $username = 'kiosk-lecayenne';
+    }
+    if (trim($password) === '') {
+        $password = 'kiosk123';
+    }
+}
+
 $spaPayload = ($username !== '' && trim($password) !== '') ? [
     'username' => $username,
     'password' => $password,

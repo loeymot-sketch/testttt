@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\CountryCodeController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\ItemsReportController;
+use App\Http\Controllers\Admin\MenuProjectionController;
 use App\Http\Controllers\Admin\MenuSectionController;
 use App\Http\Controllers\Admin\OnlineOrderController;
 use App\Http\Controllers\Admin\PosCategoryController;
@@ -229,6 +230,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
     });
+
+    // [V1 SECTION 5] Dual-channel menu SSOT projection (read-only, admin-only).
+    Route::get('/menu-projection', [MenuProjectionController::class, 'show'])
+        ->name('menu-projection.show');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {

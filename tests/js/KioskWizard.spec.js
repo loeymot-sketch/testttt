@@ -1110,6 +1110,7 @@ describe('KioskWizardComponent — P0 menu obligatoire (réel)', () => {
 
     wrapper.vm.selections.menuChoice = 'full';
     wrapper.vm.selections.boissonChoice = null;
+    wrapper.vm.selections.fritesSauceOrder = ['sans'];
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });
@@ -1183,6 +1184,7 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
     wrapper.vm.currentStepIndex = menuIdx;
     wrapper.vm.selections.menuChoice = 'full';
     wrapper.vm.selections.boissonChoice = 44;
+    wrapper.vm.selections.fritesSauceOrder = ['sans'];
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });

@@ -38,11 +38,32 @@ import kioskRoutes from "./modules/kioskRoutes";
 
 
 
+// [STAFF-ONLY-V1] Helper: lit le flag + état d'auth pour router la racine intelligemment.
+const isStaffOnly = () => !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
+const isAuthenticated = () => !!store.getters.authStatus;
+
+// [STAFF-ONLY-V1] Liste blanche des frontend routes accessibles même en staff-only mode.
+// Tout ce qui n'est pas ici est redirigé vers /login quand staffOnlyMode=true.
+const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
+    "auth.login",
+    "auth.signup",
+    "auth.forgetPassword",
+    "auth.resetPassword",
+    "auth.guest",
+    "route.notFound",
+    "route.exception",
+]);
+
 const baseRoutes = [
     {
         path: "/",
-        redirect: { name: "frontend.home" },
-        name: "root"
+        name: "root",
+        redirect: () => {
+            if (isStaffOnly()) {
+                return isAuthenticated() ? { name: "admin.dashboard" } : { name: "auth.login" };
+            }
+            return { name: "frontend.home" };
+        },
     },
     {
         path: "/kds",
@@ -136,6 +157,14 @@ router.beforeEach((to, from, next) => {
         ensureKioskLocale();
     }
 
+    // [STAFF-ONLY-V1] Bloque toutes les routes "vitrine client" (Home/Menu/Offers/etc.)
+    // et redirige vers /login quand STAFF_ONLY_MODE=true. Kiosk reste public autonome.
+    if (isStaffOnly() && !isKioskRoute && to.meta && to.meta.isFrontend === true) {
+        if (!STAFF_ONLY_FRONTEND_ALLOWLIST.has(to.name)) {
+            return next({ name: isAuthenticated() ? "admin.dashboard" : "auth.login" });
+        }
+    }
+
     if (to.meta.auth === true) {
         if (!store.getters.authStatus) {
             next({ name: "auth.login" });
@@ -153,7 +182,8 @@ router.beforeEach((to, from, next) => {
             }
         }
     } else if (to.name === "auth.login" && store.getters.authStatus) {
-        next({ name: "frontend.home" });
+        // [STAFF-ONLY-V1] En staff-only, si déjà connecté, on envoie directement au dashboard.
+        next({ name: isStaffOnly() ? "admin.dashboard" : "frontend.home" });
     } else {
         next();
     }

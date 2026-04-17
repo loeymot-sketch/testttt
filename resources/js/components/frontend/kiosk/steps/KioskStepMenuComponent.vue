@@ -17,11 +17,17 @@
       {{ $t('kiosk.wizard.menu.hint_need_choice') }}
     </div>
 
-    <div class="kiosk-menu-options">
+    <div class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'full' }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localChoice === 'full'"
+        :aria-label="$t('kiosk.wizard.menu.full_name')"
         @click="selectChoice('full')"
+        @keydown.enter.prevent="selectChoice('full')"
+        @keydown.space.prevent="selectChoice('full')"
       >
         <span class="kiosk-menu-emoji">🍟🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.full_name') }}</span>
@@ -29,11 +35,17 @@
         <span v-if="localChoice === 'full'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
-      
+
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'frites' }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localChoice === 'frites'"
+        :aria-label="$t('kiosk.wizard.menu.frites_name')"
         @click="selectChoice('frites')"
+        @keydown.enter.prevent="selectChoice('frites')"
+        @keydown.space.prevent="selectChoice('frites')"
       >
         <span class="kiosk-menu-emoji">🍟</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_name') }}</span>
@@ -41,11 +53,18 @@
         <span v-if="localChoice === 'frites'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
-      
+
       <div
+        v-if="showBoissonOnlyMenuCard"
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'boisson' }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localChoice === 'boisson'"
+        :aria-label="$t('kiosk.wizard.menu.boisson_name')"
         @click="selectChoice('boisson')"
+        @keydown.enter.prevent="selectChoice('boisson')"
+        @keydown.space.prevent="selectChoice('boisson')"
       >
         <span class="kiosk-menu-emoji">🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.boisson_name') }}</span>
@@ -53,11 +72,17 @@
         <span v-if="localChoice === 'boisson'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
-      
+
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'none' }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localChoice === 'none'"
+        :aria-label="$t('kiosk.wizard.menu.none_name')"
         @click="selectChoice('none')"
+        @keydown.enter.prevent="selectChoice('none')"
+        @keydown.space.prevent="selectChoice('none')"
       >
         <span class="kiosk-menu-emoji">🚫</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.none_name') }}</span>
@@ -67,8 +92,63 @@
       </div>
     </div>
 
+    <!-- Upgrade frites (catalogue extras) — avant boisson / sauces -->
+    <div v-if="showMenuFritesUpgrade" class="kiosk-boisson-section kiosk-frites-upgrade-section">
+      <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_upgrade_title') }}</h4>
+      <p class="kiosk-upgrade-hint">{{ $t('kiosk.wizard.menu.frites_upgrade_hint') }}</p>
+      <div class="kiosk-menu-options kiosk-upgrade-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.frites_upgrade_title')">
+        <div
+          class="kiosk-menu-card kiosk-upgrade-card"
+          :class="{ selected: selectedBundledUpgradeId === null }"
+          role="radio"
+          tabindex="0"
+          :aria-checked="selectedBundledUpgradeId === null"
+          :aria-label="$t('kiosk.wizard.menu.frites_upgrade_standard')"
+          @click="applyBundledUpgradeSelection(null)"
+          @keydown.enter.prevent="applyBundledUpgradeSelection(null)"
+          @keydown.space.prevent="applyBundledUpgradeSelection(null)"
+        >
+          <span class="kiosk-menu-emoji">🍟</span>
+          <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_upgrade_standard') }}</span>
+          <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.frites_upgrade_standard_desc') }}</span>
+          <span v-if="selectedBundledUpgradeId === null" class="kiosk-menu-action active">✓</span>
+          <span v-else class="kiosk-menu-action">+</span>
+        </div>
+        <div
+          v-for="row in menuFritesUpgradeRows"
+          :key="row.id"
+          class="kiosk-menu-card kiosk-upgrade-card"
+          :class="{ selected: selectedBundledUpgradeId === row.id }"
+          role="radio"
+          tabindex="0"
+          :aria-checked="selectedBundledUpgradeId === row.id"
+          :aria-label="row.name"
+          @click="applyBundledUpgradeSelection(row.id)"
+          @keydown.enter.prevent="applyBundledUpgradeSelection(row.id)"
+          @keydown.space.prevent="applyBundledUpgradeSelection(row.id)"
+        >
+          <div class="kiosk-boisson-visual">
+            <img
+              v-if="row.thumb && !brokenUpgradeThumbs[String(row.id)]"
+              :src="row.thumb"
+              :alt="row.name"
+              class="kiosk-boisson-img"
+              loading="lazy"
+              @error="onUpgradeThumbError(row.id)"
+            />
+            <span v-else class="kiosk-boisson-emoji">🧀</span>
+          </div>
+          <span class="kiosk-menu-name">{{ row.name }}</span>
+          <span class="kiosk-menu-desc">+{{ formatPrice(row.price) }}</span>
+          <span v-if="selectedBundledUpgradeId === row.id" class="kiosk-menu-action active">✓</span>
+          <span v-else class="kiosk-menu-action">+</span>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showBoissonChoice && boissonList.length > 0" class="kiosk-boisson-section">
       <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
+      <p v-if="localChoice === 'full'" class="kiosk-boisson-included">{{ $t('kiosk.wizard.menu.boisson_one_included') }}</p>
       <div
         v-if="needsExplicitBoissonSelection"
         class="kiosk-validation-hint kiosk-boisson-validation-hint"
@@ -76,13 +156,19 @@
       >
         {{ $t('kiosk.wizard.menu.boisson_hint') }}
       </div>
-      <div class="kiosk-boisson-grid">
+      <div class="kiosk-boisson-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.boisson_section_title')">
         <div
           v-for="boisson in boissonList"
           :key="boisson.id ?? boisson.name"
           class="kiosk-boisson-card"
           :class="{ selected: localBoisson === (boisson.id ?? boisson.name) }"
+          role="radio"
+          tabindex="0"
+          :aria-checked="localBoisson === (boisson.id ?? boisson.name)"
+          :aria-label="boisson.name"
           @click="selectBoisson(boisson)"
+          @keydown.enter.prevent="selectBoisson(boisson)"
+          @keydown.space.prevent="selectBoisson(boisson)"
         >
           <div class="kiosk-boisson-visual">
             <img
@@ -105,18 +191,41 @@
       <p class="kiosk-boisson-placeholder">{{ $t('kiosk.wizard.menu.boisson_counter') }}</p>
     </div>
 
-    <!-- Sauce frites — shown when frites are included (full menu or frites only) -->
+    <!-- Sauces frites — catalogue variations (comme étape sauce), en bas -->
     <div v-if="showFritesSauce" class="kiosk-boisson-section kiosk-frites-sauce-section">
       <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_sauce_title') }}</h4>
-      <div class="kiosk-boisson-grid">
+      <div
+        v-if="needsExplicitFritesSauceSelection"
+        class="kiosk-validation-hint kiosk-frites-sauce-validation-hint"
+        role="status"
+      >
+        {{ $t('kiosk.wizard.menu.frites_sauce_hint') }}
+      </div>
+      <div class="kiosk-boisson-grid" role="group" :aria-label="$t('kiosk.wizard.menu.frites_sauce_title')">
         <div
-          v-for="sauce in fritesSauceList"
+          v-for="sauce in fritesSauceRows"
           :key="sauce.key"
           class="kiosk-boisson-card"
           :class="{ selected: isFritesSauceSelected(sauce.key) }"
+          role="checkbox"
+          tabindex="0"
+          :aria-checked="isFritesSauceSelected(sauce.key)"
+          :aria-label="sauce.name"
           @click="toggleFritesSauce(sauce)"
+          @keydown.enter.prevent="toggleFritesSauce(sauce)"
+          @keydown.space.prevent="toggleFritesSauce(sauce)"
         >
-          <span class="kiosk-boisson-emoji">{{ sauce.emoji }}</span>
+          <div class="kiosk-boisson-visual">
+            <img
+              v-if="sauce.thumb && !brokenFritesSauceThumbs[sauce.key]"
+              :src="sauce.thumb"
+              :alt="sauce.name"
+              class="kiosk-boisson-img"
+              loading="lazy"
+              @error="onFritesSauceThumbError(sauce.key)"
+            />
+            <span v-else class="kiosk-boisson-emoji">{{ sauce.emoji }}</span>
+          </div>
           <span class="kiosk-boisson-name">{{ sauce.name }}</span>
           <span class="kiosk-frites-sauce-price">{{ fritesSaucePriceLabel(sauce.key) }}</span>
           <span v-if="getFritesSauceOrder(sauce.key) > 0" class="kiosk-sauce-order">{{ getFritesSauceOrder(sauce.key) }}</span>
@@ -132,6 +241,8 @@ import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { kioskDrinkAddonRowsFromItem } from '../../../../helpers/kioskDrinkAddons';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 import { getKioskExtraSauceUnitPrice, getKioskMenuAddonPrice } from '../../../../helpers/kioskPricing';
+import { kioskSauceVariationRowsForItem } from '../../../../helpers/kioskSauceCatalog';
+import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../../helpers/kioskMenuBundledExtras';
 
 export default {
   name: 'KioskStepMenu',
@@ -139,7 +250,9 @@ export default {
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    /** Sur repas type sandwich : masquer la carte « Boisson seule » (réservée aux parcours boisson / catégories adaptées). */
+    showBoissonOnlyMenuCard: { type: Boolean, default: true },
   },
   emits: ['update'],
   data() {
@@ -148,18 +261,22 @@ export default {
       localBoisson: this.selections.boissonChoice || null,
       localFritesSauceOrder: this.normalizeFritesSauceOrder(this.selections),
       brokenBoissonThumbs: {},
+      brokenFritesSauceThumbs: {},
+      brokenUpgradeThumbs: {},
     };
   },
   computed: {
-    /** Aligné sur KioskWizard canAdvance : null = pas encore choisi */
     needsExplicitMenuChoice() {
       return this.localChoice === null || this.localChoice === undefined;
     },
-    /** P1 : menu full/boisson + liste boissons chargée depuis l’API */
     needsExplicitBoissonSelection() {
       if (!this.showBoissonChoice || this.boissonList.length === 0) return false;
       const b = this.localBoisson;
       return b === null || b === undefined || b === '';
+    },
+    needsExplicitFritesSauceSelection() {
+      if (!this.showFritesSauce) return false;
+      return this.localFritesSauceOrder.length === 0;
     },
     menuInfoBadge() {
       if (this.localChoice === 'none') return null;
@@ -177,26 +294,74 @@ export default {
     showFritesSauce() {
       return this.localChoice === 'full' || this.localChoice === 'frites';
     },
+    menuFritesUpgradeRows() {
+      if (!this.item?.extras || !this.item.has_menu) return [];
+      return this.item.extras
+        .filter((e) => kioskIsBundledFritesMenuUpgradeExtra(e, this.item))
+        .map((e) => ({
+          id: e.id,
+          name: e.name,
+          price: parseFloat(e.convert_price || e.price || 0),
+          thumb: kioskResolveImageSrc(e),
+        }));
+    },
+    showMenuFritesUpgrade() {
+      return (
+        (this.localChoice === 'full' || this.localChoice === 'frites') &&
+        this.menuFritesUpgradeRows.length > 0
+      );
+    },
+    selectedBundledUpgradeId() {
+      for (const r of this.menuFritesUpgradeRows) {
+        if (this.selections.supplements?.[r.id]) return r.id;
+      }
+      return null;
+    },
+    /**
+     * Backward-compat alias: anciens tests / code externe utilisent `fritesSauceList`.
+     */
     fritesSauceList() {
-      const rows = [
-        { key: 'ketchup', emoji: '🍅' },
-        { key: 'mayo', emoji: '🥚' },
-        { key: 'algerienne', emoji: '🌶️' },
-        { key: 'bbq', emoji: '🔥' },
-        { key: 'samourai', emoji: '⚔️' },
-        { key: 'sans', emoji: '🚫' },
-      ];
-      return rows.map((r) => ({
-        ...r,
-        name: this.$t(`kiosk.wizard.frites_sauce.${r.key}`),
+      return this.fritesSauceRows;
+    },
+    fritesSauceRows() {
+      const fromCatalog = kioskSauceVariationRowsForItem(this.item);
+      if (fromCatalog.length > 0) {
+        return [
+          ...fromCatalog.map((r) => ({
+            key: r.rowKey,
+            name: r.name,
+            emoji: r.emoji,
+            thumb: r.thumb || null,
+          })),
+          {
+            key: 'sans',
+            name: this.$t('kiosk.wizard.frites_sauce.sans'),
+            emoji: '🚫',
+            thumb: null,
+          },
+        ];
+      }
+      const legacy = ['ketchup', 'mayo', 'algerienne', 'bbq', 'samourai', 'sans'];
+      return legacy.map((key) => ({
+        key,
+        name: this.$t(`kiosk.wizard.frites_sauce.${key}`),
+        emoji:
+          {
+            ketchup: '🍅',
+            mayo: '🥚',
+            algerienne: '🌶️',
+            bbq: '🔥',
+            samourai: '⚔️',
+            sans: '🚫',
+          }[key] || '🥄',
+        thumb: null,
       }));
     },
     boissonList() {
       const boissonAddons = kioskDrinkAddonRowsFromItem(this.item);
       if (boissonAddons.length === 0) return [];
 
-      return boissonAddons.map(b => {
-        // API (ItemAddonResource) expose `item_addon_id` = produit lié ; garder compat `addon_item_id`
+      return boissonAddons.map((b) => {
         const rawAddonItemId = b.item_addon_id ?? b.addon_item_id;
         let rowId = null;
         if (rawAddonItemId != null && rawAddonItemId !== '') {
@@ -228,6 +393,20 @@ export default {
     },
   },
   methods: {
+    bundledUpgradeExtraIds() {
+      return this.menuFritesUpgradeRows.map((r) => r.id);
+    },
+    applyBundledUpgradeSelection(extraId) {
+      const ids = this.bundledUpgradeExtraIds();
+      const next = { ...(this.selections.supplements || {}) };
+      for (const id of ids) {
+        next[id] = extraId != null && id === extraId;
+      }
+      this.$emit('update', 'supplements', next);
+    },
+    clearBundledUpgrades() {
+      this.applyBundledUpgradeSelection(null);
+    },
     normalizeFritesSauceOrder(sel) {
       if (Array.isArray(sel.fritesSauceOrder) && sel.fritesSauceOrder.length) {
         return [...sel.fritesSauceOrder];
@@ -242,6 +421,12 @@ export default {
       const k = this.boissonThumbKey(boisson);
       this.brokenBoissonThumbs = { ...this.brokenBoissonThumbs, [k]: true };
     },
+    onFritesSauceThumbError(key) {
+      this.brokenFritesSauceThumbs = { ...this.brokenFritesSauceThumbs, [key]: true };
+    },
+    onUpgradeThumbError(id) {
+      this.brokenUpgradeThumbs = { ...this.brokenUpgradeThumbs, [String(id)]: true };
+    },
     getEmojiForBoisson(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('coca') || lower.includes('cola')) return '🥤';
@@ -249,14 +434,14 @@ export default {
       if (lower.includes('sprite') || lower.includes('citron') || lower.includes('lemon')) return '🍋';
       if (lower.includes('eau') || lower.includes('water')) return '💧';
       if (lower.includes('thé') || lower.includes('tea') || lower.includes('ice tea')) return '🧊';
-      if (lower.includes('jus') || lower.includes('orange') || lower.includes('juice')) return '🧃';
+      if (lower.includes('jus') || lower.includes('juice')) return '🧃';
       return '🥤';
     },
     selectBoisson(boisson) {
       this.localBoisson = boisson.id ?? boisson.name;
       this.$emit('update', 'boissonChoice', this.localBoisson, {
         boissonName: boisson.name,
-        boissonId:   typeof boisson.id === 'number' ? boisson.id : null,
+        boissonId: typeof boisson.id === 'number' ? boisson.id : null,
       });
     },
     isFritesSauceSelected(key) {
@@ -282,7 +467,7 @@ export default {
       if (key === 'sans') {
         order = ['sans'];
       } else {
-        order = order.filter(k => k !== 'sans');
+        order = order.filter((k) => k !== 'sans');
         const idx = order.indexOf(key);
         if (idx >= 0) order.splice(idx, 1);
         else order.push(key);
@@ -292,20 +477,21 @@ export default {
     },
     selectChoice(choice) {
       this.localChoice = choice;
-      // Reset frites sauce when switching away from frites-inclusive choices
       if (choice === 'none' || choice === 'boisson') {
         this.localFritesSauceOrder = [];
         this.$emit('update', 'fritesSauceOrder', []);
         this.$emit('update', 'fritesSauce', null);
       }
-      // Plus de formule « boisson » : nettoyer choix boisson (évite fantôme au récap)
+      if (choice === 'none' || choice === 'boisson') {
+        this.clearBundledUpgrades();
+      }
       if (choice === 'none' || choice === 'frites') {
         this.localBoisson = null;
         this.$emit('update', 'boissonChoice', null);
       }
       this.$emit('update', 'menuChoice', choice);
     },
-  }
+  },
 };
 </script>
 
@@ -329,18 +515,19 @@ export default {
   margin: 0 12px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #E8001C;
+  color: #e8001c;
   padding: 10px 14px;
   background: rgba(232, 0, 28, 0.06);
   border-radius: 12px;
 }
 
-.kiosk-validation-hint.kiosk-boisson-validation-hint {
+.kiosk-validation-hint.kiosk-boisson-validation-hint,
+.kiosk-validation-hint.kiosk-frites-sauce-validation-hint {
   text-align: center;
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #E8001C;
+  color: #e8001c;
   padding: 10px 14px;
   background: rgba(232, 0, 28, 0.06);
   border-radius: 12px;
@@ -355,9 +542,9 @@ export default {
 }
 
 .kiosk-info-badge {
-  background: rgba(232,0,28,0.06);
-  border: 1px solid rgba(232,0,28,0.2);
-  color: #E8001C;
+  background: rgba(232, 0, 28, 0.06);
+  border: 1px solid rgba(232, 0, 28, 0.2);
+  color: #e8001c;
   padding: 6px 16px;
   border-radius: 50px;
   font-size: 12px;
@@ -367,8 +554,8 @@ export default {
 .kiosk-menu-price {
   font-size: 16px;
   font-weight: 800;
-  color: #E8001C;
-  background: rgba(232,0,28,0.06);
+  color: #e8001c;
+  background: rgba(232, 0, 28, 0.06);
   padding: 4px 12px;
   border-radius: 50px;
 }
@@ -381,6 +568,26 @@ export default {
   max-width: 820px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.kiosk-upgrade-grid {
+  max-width: 900px;
+}
+
+.kiosk-upgrade-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  margin: -6px 12px 14px;
+  line-height: 1.35;
+}
+
+.kiosk-boisson-included {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin: -6px 0 12px;
 }
 
 .kiosk-menu-card {
@@ -399,12 +606,25 @@ export default {
   position: relative;
 }
 
-.kiosk-menu-card:active { transform: scale(0.96); }
+.kiosk-upgrade-card {
+  min-height: 168px;
+}
+
+.kiosk-menu-card:active {
+  transform: scale(0.96);
+}
+
+/* [AUDIT 2026-04-17 C6] Keyboard focus ring — cards are role=radio / radiogroup. */
+.kiosk-menu-card:focus-visible,
+.kiosk-boisson-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 3px;
+}
 
 .kiosk-menu-card.selected {
-  border-color: rgba(232,0,28,0.18);
-  background: rgba(232,0,28,0.02);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border-color: rgba(232, 0, 28, 0.18);
+  background: rgba(232, 0, 28, 0.02);
+  box-shadow: 0 0 0 1px rgba(232, 0, 28, 0.06);
 }
 
 .kiosk-menu-emoji {
@@ -420,7 +640,15 @@ export default {
   transition: transform 0.2s;
 }
 
-.kiosk-menu-card.selected .kiosk-menu-emoji { transform: scale(1.1); }
+.kiosk-upgrade-card .kiosk-menu-emoji {
+  width: 88px;
+  height: 88px;
+  font-size: 36px;
+}
+
+.kiosk-menu-card.selected .kiosk-menu-emoji {
+  transform: scale(1.1);
+}
 
 .kiosk-menu-name {
   font-size: 12px;
@@ -437,17 +665,25 @@ export default {
   margin-top: 3px;
 }
 
-.kiosk-menu-card.selected .kiosk-menu-name { color: #E8001C; }
+.kiosk-menu-card.selected .kiosk-menu-name {
+  color: #e8001c;
+}
 
 .kiosk-boisson-section {
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid #e0e0e0;
   padding-top: 16px;
   animation: fadeInUp 0.3s ease;
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .kiosk-subtitle {
@@ -482,12 +718,14 @@ export default {
   position: relative;
 }
 
-.kiosk-boisson-card:active { transform: scale(0.95); }
+.kiosk-boisson-card:active {
+  transform: scale(0.95);
+}
 
 .kiosk-boisson-card.selected {
-  border-color: rgba(232,0,28,0.18);
-  background: rgba(232,0,28,0.02);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border-color: rgba(232, 0, 28, 0.18);
+  background: rgba(232, 0, 28, 0.02);
+  box-shadow: 0 0 0 1px rgba(232, 0, 28, 0.06);
 }
 
 .kiosk-boisson-visual {
@@ -525,7 +763,9 @@ export default {
   text-transform: uppercase;
 }
 
-.kiosk-boisson-card.selected .kiosk-boisson-name { color: #E8001C; }
+.kiosk-boisson-card.selected .kiosk-boisson-name {
+  color: #e8001c;
+}
 
 .kiosk-boisson-placeholder {
   text-align: center;
@@ -535,7 +775,7 @@ export default {
 }
 
 .kiosk-frites-sauce-section {
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid #e0e0e0;
   padding-top: 20px;
   margin-top: 8px;
   animation: fadeInUp 0.3s ease;
@@ -579,8 +819,8 @@ export default {
   justify-content: center;
   font-size: 20px;
   line-height: 1;
-  box-shadow: 0 3px 10px rgba(215,38,61,0.2);
-  outline: 2px solid rgba(255,255,255,0.85);
+  box-shadow: 0 3px 10px rgba(215, 38, 61, 0.2);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
 }
 
 .kiosk-menu-action.active {

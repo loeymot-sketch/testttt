@@ -6,6 +6,7 @@ use App\Enums\EventType;
 use App\Enums\OrderStatus;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
+use App\Exceptions\PayloadMismatchException;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\Branch;
 use App\Models\DomainEvent;
@@ -137,6 +138,51 @@ class EventContractTest extends TestCase
 
         $this->assertNotNull($domainEvent->correlation_id);
         $this->assertTrue(Str::isUuid($domainEvent->correlation_id));
+    }
+
+    public function test_dispatch_job_rejects_envelope_that_violates_contract(): void
+    {
+        // Build a corrupt row: ORDER_STATUS_CHANGED without the required new_status key.
+        $domainEvent = DomainEvent::query()->create([
+            'event_type' => EventType::ORDER_STATUS_CHANGED,
+            'aggregate_type' => Order::class,
+            'aggregate_id' => 999,
+            'branch_id' => 1,
+            'payload' => ['order_id' => 999, 'old_status' => 2],
+            'channel' => json_encode(['private-branch.1']),
+            'broadcast_as' => 'OrderStatusChanged',
+            'correlation_id' => (string) Str::uuid(),
+            'occurred_at' => now(),
+        ]);
+
+        // Pusher must NOT be called when the envelope is invalid.
+        $pusher = Mockery::mock();
+        $pusher->shouldNotReceive('trigger');
+
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getPusher')->zeroOrMoreTimes()->andReturn($pusher);
+
+        $manager = Mockery::mock(BroadcastManager::class);
+        $manager->shouldReceive('connection')->zeroOrMoreTimes()->with('pusher')->andReturn($connection);
+
+        $this->app->instance(BroadcastManager::class, $manager);
+        $this->app->instance('broadcast.manager', $manager);
+
+        try {
+            (new DispatchDomainEventsJob($domainEvent->id))->handle();
+            $this->fail('Expected PayloadMismatchException for invalid envelope.');
+        } catch (PayloadMismatchException $exception) {
+            $this->assertSame(EventType::ORDER_STATUS_CHANGED, $exception->eventType);
+            $this->assertNotEmpty($exception->errors);
+        }
+
+        $domainEvent->refresh();
+
+        // The row must NOT be marked dispatched — the attempt is counted,
+        // and the error must be persisted for ops visibility.
+        $this->assertNull($domainEvent->dispatched_at);
+        $this->assertStringContainsString('contract_violation', (string) $domainEvent->last_error);
+        $this->assertSame(1, $domainEvent->attempts);
     }
 
     protected function tearDown(): void

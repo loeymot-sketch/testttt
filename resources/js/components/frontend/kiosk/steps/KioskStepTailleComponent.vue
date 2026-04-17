@@ -25,7 +25,7 @@
         <span v-else class="kiosk-taille-action">+</span>
       </div>
     </div>
-    <div v-if="!localSelection" class="kiosk-validation-hint">
+    <div v-if="!localSelection" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ $t('kiosk.wizard.step.taille.hint') }}
     </div>
   </div>

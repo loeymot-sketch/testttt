@@ -23,8 +23,18 @@
 | Table dining order | 20 / min | IP | QR order spam prevention |
 | All other API routes | 120 / min | user_id or IP | Global API baseline |
 
+## Baseline
+Every API route inherits the global `throttle:api` (120 req/min, keyed by user id or IP) from the `api` middleware group in `app/Http/Kernel.php`. Named limiters (`admin-mutation`, `pos-order-create`, `pos-order-update`, `kiosk-orders`, `login-lockout`) layer **stricter** caps on top of this baseline — they never loosen it.
+
+Web routes (`routes/web.php`) are limited to installer bootstrap and a payment callback, which are explicitly excluded from throttling because they are user-initiated redirects or first-run setup.
+
+## Test coverage
+- `tests/Feature/Security/CorsTest.php` — asserts no wildcard origin, rejects unknown origins on preflight, echoes whitelisted `APP_URL` back.
+- `tests/Feature/Security/RateLimitTest.php` — exercises the admin-mutation cap and the login-lockout ceiling via HTTP.
+- `tests/Unit/Security/RateLimiterConfigTest.php` — regression guard that every named limiter is still registered with its documented per-minute cap.
+
 ## Adding new limits
-1. Define limiter in `RouteServiceProvider::configureRateLimiting()`
-2. Apply via `throttle:limiter-name` middleware on route or group
-3. Update this matrix
-4. Add test in `tests/Feature/Security/RateLimitTest.php`
+1. Define limiter in `RouteServiceProvider::configureRateLimiting()`.
+2. Apply via `throttle:limiter-name` middleware on the route or group.
+3. Update this matrix.
+4. Add a case in `RateLimiterConfigTest::EXPECTED_LIMITERS` (static cap guard) and a live test in `RateLimitTest.php` (end-to-end).

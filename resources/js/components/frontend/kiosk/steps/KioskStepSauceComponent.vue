@@ -9,9 +9,14 @@
       </span>
     </div>
 
-    <div v-if="sauceList.length === 0" class="kiosk-step-empty">
-      <p>Aucune sauce disponible pour ce produit.</p>
-      <button @click="$emit('update', 'sauceOrder', ['_skip'])" class="kiosk-btn-continue">Continuer</button>
+    <div v-if="sauceList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.sauce.empty_hint') }}</p>
+      <button
+        type="button"
+        class="kiosk-btn-continue"
+        :aria-label="$t('kiosk.wizard.step.sauce.skip_btn')"
+        @click="$emit('update', 'sauceOrder', ['_skip'])"
+      >{{ $t('kiosk.wizard.step.sauce.skip_btn') }}</button>
     </div>
 
     <div v-else class="kiosk-sauce-grid">
@@ -20,7 +25,13 @@
         :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"
         class="kiosk-option-card"
         :class="{ selected: !!localSelections[selectionKey(sauce)] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[selectionKey(sauce)]"
+        :aria-label="sauce.name"
         @click="toggleSauce(sauce)"
+        @keydown.enter.prevent="toggleSauce(sauce)"
+        @keydown.space.prevent="toggleSauce(sauce)"
       >
         <div class="kiosk-sauce-media">
           <img
@@ -41,7 +52,7 @@
       </div>
     </div>
 
-    <div v-if="selectedCount === 0" class="kiosk-validation-hint">
+    <div v-if="selectedCount === 0" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ $t('kiosk.wizard.step.sauce.hint') }}
     </div>
   </div>
@@ -305,6 +316,12 @@ export default {
 }
 
 .kiosk-option-card:active { transform: scale(0.95); }
+
+/* [AUDIT 2026-04-17 C6] Keyboard focus ring — tactile cards are now role=checkbox. */
+.kiosk-option-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-option-card.selected {
   border-color: rgba(232,0,28,0.14);

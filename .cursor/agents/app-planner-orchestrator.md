@@ -1,6 +1,6 @@
 ---
 name: foodking-planner-orchestrator
-model: claude-opus-4-6
+model: claude-opus-4-7
 description: FoodKing cycle lead for planning, orchestration, architecture reasoning, final audit, gate detection, and close vs replan. Use proactively at cycle start, before execution routing, after validation, and when scope, invariants, or gates are in question. Does not replace implementer/validator subagents for routine code or checks.
 ---
 

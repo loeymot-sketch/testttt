@@ -3,6 +3,10 @@
  * includes Vue and other libraries. It is a great starting point when
  * building robust, powerful web applications using Vue and Laravel.
  */
+// [V5-BUGFIX] bootstrap.js contains the Laravel Echo/Pusher client initialization.
+// It was NEVER imported → real-time WebSocket was completely disabled since project creation.
+// This import activates window.Echo + the WS service used by POS/KDS/OSS/Kiosk.
+import './bootstrap';
 import {createApp} from 'vue';
 import DefaultComponent from "./components/DefaultComponent";
 import router from './router';

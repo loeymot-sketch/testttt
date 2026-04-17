@@ -20,6 +20,7 @@ use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
+use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\PersistOrderCreatedToOutbox;
@@ -99,6 +100,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         ItemAvailabilityChanged::class => [
             PersistItemAvailabilityChangedToOutbox::class,
+            BumpMenuSnapshotOnItemAvailabilityChanged::class,
         ],
     ];
 

@@ -48,6 +48,7 @@
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
+import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../../helpers/kioskMenuBundledExtras';
 
 export default {
   name: 'KioskStepSupplements',
@@ -85,7 +86,10 @@ export default {
           const name = (e.name || '').toLowerCase();
           // Exclure si c'est une sauce (par group_label ou par nom en fallback)
           const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
-          return price > 0 && !isSauce;
+          if (price <= 0 || isSauce) return false;
+          // Upgrade frites/menu : choisi sur l'étape « Formule » (KioskStepMenu), pas ici
+          if (kioskIsBundledFritesMenuUpgradeExtra(e, this.item)) return false;
+          return true;
         })
         .map(s => ({
           id: s.id,

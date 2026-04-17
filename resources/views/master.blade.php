@@ -88,6 +88,9 @@
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
+            // [STAFF-ONLY-V1] Feature flags for surface restructuring
+            staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
+            kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

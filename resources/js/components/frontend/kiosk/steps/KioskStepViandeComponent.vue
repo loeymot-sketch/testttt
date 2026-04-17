@@ -52,7 +52,7 @@
       </div>
     </div>
 
-    <div v-if="totalSelected < maxViandes" class="kiosk-validation-hint">
+    <div v-if="totalSelected < maxViandes" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ viandeHintRemaining }}
     </div>
   </div>

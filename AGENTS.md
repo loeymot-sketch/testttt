@@ -86,7 +86,8 @@ Phase 3: Playwright MCP (tests E2E automatiques sur flows critiques FoodKing).
   Server : github.com/getzep/graphiti — `mcp_server/graphiti_mcp_server.py`
   Clone local : `/Users/1millnonstop/graphiti` (commit épinglé — voir `.cursor/mcp/graphiti.json`)
   Backend : Neo4j AuraDB Free Tier
-  Config : `.cursor/mcp/graphiti.json`
+  Config : `.cursor/mcp/graphiti.json` (gitignored — copier depuis `graphiti.json.example` vers `~/.cursor/mcp.json` si besoin)
+  Dépannage : `.cursor/mcp/GRAPHITI_TROUBLESHOOTING.md` (LiteLLM `healthy_count`, clé Moonshot 401, stop/restart proxy)
   Scope : lecture avant PLAN (query subsystem), écriture après CLOSE (episode + décisions clés).
   Group ID : `foodking` (isolation des entités FoodKing dans le graphe Graphiti)
   Règle : ne jamais bloquer la phase PLAN si Graphiti est indisponible — continuer sans contexte.

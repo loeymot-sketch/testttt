@@ -98,7 +98,13 @@
                   :key="product.id"
                   class="kiosk-product-card"
                   :class="{ 'is-loading': loadingItemId === product.id }"
+                  role="button"
+                  tabindex="0"
+                  :aria-label="sanitizeItemName(product.name)"
+                  :aria-busy="loadingItemId === product.id ? 'true' : 'false'"
                   @click="openProduct(product)"
+                  @keydown.enter.prevent="openProduct(product)"
+                  @keydown.space.prevent="openProduct(product)"
                 >
                   <div class="kiosk-product-media">
                     <img
@@ -753,6 +759,12 @@ export default {
 
 .kiosk-product-card:active {
   transform: scale(0.985);
+}
+
+/* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */
+.kiosk-product-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 3px;
 }
 
 .kiosk-product-media {

@@ -8,6 +8,7 @@ const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk" */ 
 const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
 const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
 const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
+const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
 const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
 const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
 const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
@@ -138,7 +139,11 @@ export default [
             {
                 path: "wizard/:itemId",
                 name: "kiosk.wizard",
-                component: KioskWizardComponent,
+                // [STAFF-ONLY-V1][V4] Feature flag : KIOSK_USE_POS_WIZARD=true => wrapper POS (V4.1 déploiera la vraie unification)
+                component: () => {
+                    const usePosWizard = !!(window.foodkingConfig && window.foodkingConfig.kioskUsePosWizard);
+                    return usePosWizard ? KioskPosWizardComponent() : KioskWizardComponent();
+                },
                 meta: { isKiosk: true },
                 props: true,
             },

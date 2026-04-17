@@ -2,12 +2,12 @@
   <div :dir="direction">
     <div v-if="theme === 'frontend'">
       <FrontendNavbarComponent />
-      <FrontendCartComponent />
+      <FrontendCartComponent v-if="!staffOnlyMode" />
       <router-view></router-view>
-      <FrontendMobileNavBarComponent />
-      <FrontendMobileAccountComponent />
-      <FrontendCookiesComponent />
-      <FrontendFooterComponent />
+      <FrontendMobileNavBarComponent v-if="!staffOnlyMode" />
+      <FrontendMobileAccountComponent v-if="!staffOnlyMode" />
+      <FrontendCookiesComponent v-if="!staffOnlyMode" />
+      <FrontendFooterComponent v-if="!staffOnlyMode" />
     </div>
 
     <div v-if="theme === 'backend'">
@@ -73,6 +73,10 @@ export default {
     logged: function () {
       return this.$store.getters.authStatus;
     },
+    // [STAFF-ONLY-V1] Masque tout l'habillage vitrine client (cart, footer, cookies, mobile nav).
+    staffOnlyMode: function () {
+      return !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
+    },
   },
   beforeMount() {
     this.$store
@@ -89,7 +93,8 @@ export default {
     if (this.$store.getters.authStatus) {
       this.$store.dispatch("authcheck").then(res => {
         if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
-          this.$router.push({ name: "frontend.home" });
+          // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.
+          this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
         }
       }).catch();
     }

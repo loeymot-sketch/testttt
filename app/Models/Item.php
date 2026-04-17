@@ -30,6 +30,9 @@ class Item extends Model implements HasMedia
         'caution',
         'status',
         'order',
+        'channels',
+        'allergen_flags',
+        'kiosk_emoji',
     ];
     protected $dates = ['deleted_at'];
     protected $casts = [
@@ -46,7 +49,19 @@ class Item extends Model implements HasMedia
         'caution'          => 'string',
         'status'           => 'integer',
         'order'            => 'integer',
+        'channels'         => 'array', // null = all surfaces (back-compat V1)
+        'allergen_flags'   => 'array',
+        'kiosk_emoji'      => 'string',
     ];
+
+    /**
+     * Dual-channel projection helper — section 5 MENU SSOT.
+     * NULL `channels` = visible on every surface (legacy default).
+     */
+    public function isVisibleOn(string $channel): bool
+    {
+        return $this->channels === null || in_array($channel, (array) $this->channels, true);
+    }
 
     public function getThumbAttribute(): string
     {

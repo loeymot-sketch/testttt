@@ -39,3 +39,15 @@ Le projet **FoodKing SaaS** possède de nombreux contrôles côté serveur géra
 
 ### Adding new exceptions
 Requires explicit PR review and documentation update.
+
+### CI enforcement
+The ESLint toolchain is not installed (V1 bundler is Laravel Mix / webpack, no lint step). Enforcement is provided by a **static PHPUnit guard** that scans every `resources/js/**/*.vue` at test time:
+
+- Test: `tests/Unit/Security/VHtmlStaticGuardTest.php`
+- Rules:
+  - Every `v-html="..."` **must** be wrapped in `safeHtml(...)` (or listed in the test's `EXPLICIT_EXCEPTIONS` array with a documented reason).
+  - Every `v-html="safeHtml(...)"` **must** be preceded by `<!-- eslint-disable-next-line vue/no-v-html -- ... -->` so the intent is reviewable.
+  - Any raw `.innerHTML = x` assignment is banned unless the RHS goes through `DOMPurify.sanitize(...)` / `safeHtml(...)`.
+- JS-side smoke coverage of the sanitizer itself lives in `tests/js/safeHtml.spec.js` (vitest).
+
+Re-introducing an unsafe `v-html` or `.innerHTML` therefore fails the PHPUnit suite in CI before any review step.

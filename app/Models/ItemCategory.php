@@ -23,6 +23,8 @@ class ItemCategory extends Model implements HasMedia
         // [PLAN_11 ARCH-01] Config wizard
         'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
         'kiosk_upsell_include', 'kiosk_upsell_skip_after_cart',
+        // [V1 SECTION 5] Dual-channel projections
+        'channels', 'kiosk_sort', 'pos_sort', 'kiosk_label',
     ];
     protected $casts = [
         'id'                  => 'integer',
@@ -36,7 +38,48 @@ class ItemCategory extends Model implements HasMedia
         'sauce_included_menu' => 'boolean',
         'kiosk_upsell_include'         => 'boolean',
         'kiosk_upsell_skip_after_cart' => 'boolean',
+        // [V1 SECTION 5] Dual-channel projections
+        'channels'            => 'array',
+        'kiosk_sort'          => 'integer',
+        'pos_sort'            => 'integer',
+        'kiosk_label'         => 'string',
     ];
+
+    /**
+     * Dual-channel projection helpers — section 5 MENU SSOT.
+     * NULL `channels` = visible on every surface (legacy default).
+     */
+    public function isVisibleOn(string $channel): bool
+    {
+        return $this->channels === null || in_array($channel, (array) $this->channels, true);
+    }
+
+    /**
+     * Channel-aware display name. Falls back to `name` when no override exists.
+     */
+    public function displayNameFor(string $channel): string
+    {
+        if ($channel === 'kiosk' && !empty($this->kiosk_label)) {
+            return (string) $this->kiosk_label;
+        }
+
+        return (string) $this->name;
+    }
+
+    /**
+     * Channel-aware sort key. Falls back to `sort` when no override exists.
+     */
+    public function sortFor(string $channel): int
+    {
+        if ($channel === 'kiosk' && $this->kiosk_sort !== null) {
+            return (int) $this->kiosk_sort;
+        }
+        if ($channel === 'pos' && $this->pos_sort !== null) {
+            return (int) $this->pos_sort;
+        }
+
+        return (int) ($this->sort ?? 0);
+    }
 
     public function getThumbAttribute(): string
     {

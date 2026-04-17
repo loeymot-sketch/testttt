@@ -38,7 +38,7 @@ class ItemCategoryService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            return ItemCategory::with('media')->where(function ($query) use ($requests) {
+            $query = ItemCategory::with('media')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemCateFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
@@ -53,13 +53,39 @@ class ItemCategoryService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+            });
+
+            // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
+            // See App\Services\ItemService::applyChannelsFilter() for contract.
+            $this->applyChannelsFilter($query, $request->get('surface'));
+
+            return $query->orderBy($orderColumn, $orderType)->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * [AUDIT 2026-04-17 R1] Restrict an `item_categories` query to a client-declared surface.
+     *
+     * Same contract as {@see App\Services\ItemService::applyChannelsFilter()}:
+     *   - Valid surfaces: 'pos', 'kiosk', 'web' (else no-op).
+     *   - NULL `channels` = visible everywhere (V1 back-compat).
+     */
+    private function applyChannelsFilter($query, ?string $surface): void
+    {
+        if ($surface === null) {
+            return;
+        }
+        $surface = strtolower(trim($surface));
+        if (!in_array($surface, ['pos', 'kiosk', 'web'], true)) {
+            return;
+        }
+        $query->where(function ($q) use ($surface) {
+            $q->whereNull('channels')
+                ->orWhereJsonContains('channels', $surface);
+        });
     }
 
     /**

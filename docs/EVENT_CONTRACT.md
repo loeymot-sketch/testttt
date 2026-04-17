@@ -96,6 +96,35 @@ Field descriptions:
 }
 ```
 
+## Required payload keys (V1)
+
+The backend helper `App\Domain\Events\EventContract::assertPayloadValid($type, $payload)`
+enforces the following minimal payload keys. Additional keys are allowed
+(forward-compatible payload extension).
+
+| Event type | Required keys |
+|---|---|
+| `order.created` | `order_id` |
+| `order.status_changed` | `order_id`, `old_status`, `new_status` |
+| `order.item_added` | `order_id`, `item_id` |
+| `order.cancelled` | `order_id` |
+| `menu.item_availability_changed` | `item_id`, `status` |
+| `stock.low` | `item_id` |
+
+## Backend validation (emission side)
+
+`App\Jobs\DispatchDomainEventsJob` builds the envelope via `EventContract::buildEnvelope()`
+and validates it with `EventContract::assertEnvelopeValid()` immediately before
+calling Pusher. Any violation throws `App\Exceptions\PayloadMismatchException`:
+
+- Pusher is NOT called (zero risk of broadcasting a malformed event).
+- The `domain_events` row is flagged: `last_error = "contract_violation: ..."`.
+- The job is retried with backoff `[1, 5, 30, 300]` — a drifted schema keeps
+  failing loudly until someone fixes the listener or the enum.
+
+Frontend validation (reception side) lives in `resources/js/services/eventContract.js`
+and logs a warning through `validateEnvelope()` before dispatching to handlers.
+
 ## Versioning Rules
 
 - V1 remains a flat envelope with the required top-level fields shown above.

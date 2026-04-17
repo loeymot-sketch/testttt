@@ -88,6 +88,7 @@
             :step="currentStep"
             :item="resolvedItem"
             :selections="selections"
+            v-bind="kioskMenuStepExtraProps"
             @update="updateSelection"
           />
         </transition>
@@ -169,6 +170,8 @@ import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../help
 import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
+import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../helpers/kioskMenuBundledExtras';
+import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
 
 export default {
   name: 'KioskWizardComponent',
@@ -305,6 +308,20 @@ export default {
     runningTotal() {
       return calculateKioskRunningTotal(this.resolvedItem, this.selections);
     },
+    /** « + Boisson » (formule boisson seule) : pertinent catégorie boissons, pas à côté de Menu complet / Frites sur sandwich-burger-tacos. */
+    kioskShowBoissonOnlyMenuCard() {
+      const item = this.resolvedItem;
+      if (!item) return true;
+      const t = this.effectiveWizardTemplate();
+      if (['sandwich', 'burger', 'tacos'].includes(t)) return false;
+      if (t === 'assiette' && item.has_menu) return false;
+      return true;
+    },
+    /** Évite de passer des props inconnues aux autres étapes du wizard. */
+    kioskMenuStepExtraProps() {
+      if (this.currentStep?.type !== 'menu') return {};
+      return { showBoissonOnlyMenuCard: this.kioskShowBoissonOnlyMenuCard };
+    },
     canAdvance() {
       const step = this.currentStep;
       if (!step) return false;
@@ -324,6 +341,15 @@ export default {
         if (wantsDrink && drinkRows.length > 0) {
           const bc = this.selections.boissonChoice;
           if (bc === null || bc === undefined || bc === '') return false;
+        }
+        // Frites (menu complet ou frites seules) : au moins une sauce frites (dont « Sans sauce »)
+        // Uniquement si le catalogue expose des sauces (attribut sauce + variations) — sinon on ne bloque pas.
+        if (mc === 'full' || mc === 'frites') {
+          const hasSauceCatalog = kioskSauceVariationRowsForItem(this.resolvedItem).length > 0;
+          if (hasSauceCatalog) {
+            const order = this.selections.fritesSauceOrder || [];
+            if (order.length === 0) return false;
+          }
         }
         return true;
       }
@@ -402,17 +428,28 @@ export default {
           const groupLabel = (e.group_label || '').toLowerCase();
           const name = (e.name || '').toLowerCase();
           const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
-          return price > 0 && !isSauce;
+          if (price <= 0 || isSauce) return false;
+          if (kioskIsBundledFritesMenuUpgradeExtra(e, item)) return false;
+          return true;
         });
       }
       if (type === 'garnitures') {
         return item.extras && item.extras.some(e => parseFloat(e.convert_price || e.price || 0) === 0);
       }
       if (type === 'sauce') {
+        // [AUDIT 2026-04-17 D6] Accept common synonyms so a category named
+        // "Condiment", "Assaisonnement", "Dressing" or "Dip" still triggers
+        // the sauce step. Stays aligned with
+        // KioskStepSauceComponent.isSauceLikeAttributeName.
         if (!item?.itemAttributes) return false;
-        return item.itemAttributes.some(a =>
-          (a.name || '').toLowerCase().includes('sauce')
-        );
+        return item.itemAttributes.some(a => {
+          const name = (a.name || '').toLowerCase();
+          return name.includes('sauce')
+            || name.includes('condiment')
+            || name.includes('assaisonn')
+            || name.includes('dressing')
+            || name.includes('dip');
+        });
       }
       if (type === 'menu') {
         return item.has_menu && item.addons && item.addons.length > 0;
@@ -549,9 +586,21 @@ export default {
       return vars.find(v => v.name === key) || null;
     },
     kioskFritesSauceDisplayName(key) {
+      if (key == null || key === '') return '';
+      const item = this.resolvedItem;
+      const strKey = String(key);
+      if (strKey.startsWith('sauce-var-')) {
+        const id = strKey.replace('sauce-var-', '');
+        const v = item ? this.kioskFindSauceVariation(item, id) : null;
+        if (v?.name) return v.name;
+      }
+      if (item) {
+        const v = this.kioskFindSauceVariation(item, key);
+        if (v?.name) return v.name;
+      }
       const k = `kiosk.wizard.frites_sauce.${key}`;
       const t = this.$t(k);
-      return t !== k ? t : key;
+      return t !== k ? t : strKey;
     },
     sanitizeItemName(name) {
       return sanitizeKioskCustomerFacingText(name || '');

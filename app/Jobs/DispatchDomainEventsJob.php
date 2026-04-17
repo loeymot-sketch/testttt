@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Domain\Events\EventContract;
+use App\Exceptions\PayloadMismatchException;
 use App\Models\DomainEvent;
 use App\Traits\HasCorrelationId;
 use Illuminate\Broadcasting\BroadcastManager;
@@ -46,15 +48,24 @@ class DispatchDomainEventsJob implements ShouldQueue
                 $channels = [$domainEvent->channel];
             }
 
-            $envelope = [
-                'version' => 1,
-                'type' => $domainEvent->event_type,
-                'aggregate_id' => $domainEvent->aggregate_id,
-                'branch_id' => $domainEvent->branch_id,
-                'occurred_at' => $domainEvent->occurred_at?->toIso8601String(),
-                'correlation_id' => $domainEvent->correlation_id,
-                'payload' => $domainEvent->payload,
-            ];
+            $envelope = EventContract::buildEnvelope($domainEvent);
+
+            // Validate the envelope against the V1 contract before broadcast.
+            // A PayloadMismatchException short-circuits this job and marks the
+            // outbox row as failed, preventing garbage from reaching the clients.
+            try {
+                EventContract::assertEnvelopeValid($envelope, $domainEvent->event_type);
+            } catch (PayloadMismatchException $exception) {
+                Log::error('[DispatchDomainEventsJob] Envelope contract violation', [
+                    'domain_event_id' => $domainEvent->id,
+                    'event_type' => $domainEvent->event_type,
+                    'errors' => $exception->errors,
+                ]);
+                $domainEvent->forceFill([
+                    'last_error' => 'contract_violation: ' . $exception->getMessage(),
+                ])->save();
+                throw $exception;
+            }
 
             /** @var \Illuminate\Broadcasting\Broadcasters\PusherBroadcaster $connection */
             $connection = app(BroadcastManager::class)->connection('pusher');

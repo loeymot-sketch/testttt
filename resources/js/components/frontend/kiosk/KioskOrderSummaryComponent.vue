@@ -163,10 +163,14 @@ export default {
       return getKioskExtraSauceUnitPrice(this.item);
     },
     fritesSauceRows() {
-      const order = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
+      const orderAll = this.selections.fritesSauceOrder || [];
       const hasFrites = this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites';
-      if (!hasFrites || order.length === 0) return [];
-      return order.map(key => ({ key, label: this.fritesSauceLabel(key) }));
+      if (!hasFrites || orderAll.length === 0) return [];
+      const paid = orderAll.filter((k) => k && k !== 'sans');
+      if (paid.length === 0 && orderAll.includes('sans')) {
+        return [{ key: 'sans', label: this.fritesSauceLabel('sans') }];
+      }
+      return paid.map((key) => ({ key, label: this.fritesSauceLabel(key) }));
     },
     runningTotal() {
       return calculateKioskRunningTotal(this.item, this.selections);
@@ -211,9 +215,25 @@ export default {
       return this.$t('kiosk.wizard.summary.sauce_fallback', { id: sauceId });
     },
     fritesSauceLabel(key) {
+      if (key == null || key === '') return '';
+      const strKey = String(key);
+      if (strKey.startsWith('sauce-var-')) {
+        const id = strKey.replace('sauce-var-', '');
+        return this.getSauceName(id);
+      }
+      const sauceAttr = this.item.itemAttributes?.find((a) =>
+        (a.name || '').toLowerCase().includes('sauce')
+      );
+      const vars = sauceAttr
+        ? this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id]
+        : null;
+      if (Array.isArray(vars)) {
+        const byId = vars.find((v) => String(v.id) === String(key));
+        if (byId?.name) return sanitizeKioskCustomerFacingText(byId.name);
+      }
       const k = `kiosk.wizard.frites_sauce.${key}`;
       const t = this.$t(k);
-      return t !== k ? t : key;
+      return t !== k ? t : strKey;
     },
     getGarnitureName(id) {
       const garniture = this.item.extras?.find(e => e.id === parseInt(id));

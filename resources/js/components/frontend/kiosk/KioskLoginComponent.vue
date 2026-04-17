@@ -12,7 +12,9 @@
           <span v-if="loading" class="kiosk-login-spinner"></span>
           <span v-else class="kiosk-login-status-icon">!</span>
           <p class="kiosk-login-status-text">
-            {{ loading ? $t('kiosk.login_screen.status_loading') : $t('kiosk.login_screen.status_retrying') }}
+            <template v-if="loading">{{ $t('kiosk.login_screen.status_loading') }}</template>
+            <template v-else-if="setupRequired">{{ $t('kiosk.login_screen.status_missing_env') }}</template>
+            <template v-else>{{ $t('kiosk.login_screen.status_retrying') }}</template>
           </p>
         </div>
 
@@ -71,6 +73,8 @@ export default {
     return {
       loading: false,
       error: null,
+      /** True when KIOSK_MACHINE_* / kioskAutoLogin absent — not a "reconnecting" WebSocket state */
+      setupRequired: false,
       retryTimer: null,
       retryAttempts: 0,
     };
@@ -114,11 +118,13 @@ export default {
     async startAutoLogin() {
       const auto = this.getAutoCredentials();
       if (!auto) {
+        this.setupRequired = true;
         this.error = this.maintenanceMode
           ? this.$t('kiosk.login_screen.err_maintenance')
           : this.$t('kiosk.login_screen.err_no_credentials');
         return;
       }
+      this.setupRequired = false;
       clearTimeout(this.retryTimer);
       this.loading = true;
       this.error = null;
