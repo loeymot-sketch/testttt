@@ -35,4 +35,4 @@
 ## Status
 
 - **ACTIVE — PREVENTIVE (file unchanged)** depuis 2026-04-18.
-- Passera à `RELEASED` avec le commit de closeout P9.5 et la diffusion `BROADCAST_P9_5_MERGED`.
+- **RELEASED (preventive, no OrderService edit landed, this commit)** le 2026-04-18 — aucun diff n'a touché `app/Services/OrderService.php` pendant P9.5 ; lock clos au closeout de vague.

@@ -84,14 +84,14 @@ _(Lignes initialisées open, enrichies au démarrage de chaque vague. Voir `PLAN
 
 | id | title | criticity | file:line | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|---|
-| 9.5.1 | Migration `order_items.allergens_snapshot` + persistance `FrontendOrderService` | P0 | `app/Services/FrontendOrderService.php` + nouvelle migration | open | — | — |
-| 9.5.2 | `KDSOrderDetailsResource` + `OrderItemResource` exposent `allergens_snapshot` + KDS UI | P1 | `KDSOrderDetailsResource.php` + `KitchenDisplaySystemComponent.vue:404-427` | open | — | — |
-| 9.5.3 | Job `CleanupStalePendingKioskOrders` (cron 5 min, PENDING>15 min → REJECTED) | P1 | `app/Jobs/CleanupStalePendingKioskOrders.php` + `Kernel.php` | open | — | — |
-| 9.5.4 | Migration `idempotency_key` UNIQUE scopé `(branch_id, idempotency_key)` | P0 | nouvelle migration ALTER INDEX | open | — | — |
-| 9.5.5 | Feature test E2E `kiosk_order_full_flow_to_kds_with_allergens` | P1 | `tests/Feature/OrderPipeline/KioskFullFlowE2ETest.php` | open | — | — |
-| 9.5.6 | Cross-item guard systématique POS/Table/Web | P1 | `PricingRequest::forPos/forTable/forWeb` | open | — | — |
-| 9.5.7 | Payload POS drawer enrichi expandable (variations/extras/instructions) | P1 | `PosComponent.vue:599-605` | open | — | — |
-| 9.5.8 | Retirer prix du payload client `kioskCart.js` | P1 | `resources/js/store/modules/kioskCart.js:235-258` | open | — | — |
+| 9.5.1 | Migration `order_items.allergens_snapshot` + persistance `FrontendOrderService` | P0 | `app/Services/FrontendOrderService.php` + nouvelle migration | fixed | `e5be3763f` | — |
+| 9.5.2 | `KDSOrderDetailsResource` + `OrderItemResource` exposent `allergens_snapshot` + KDS UI | P1 | `KDSOrderDetailsResource.php` + `KitchenDisplaySystemComponent.vue:404-427` | fixed | `79591eb39` | — |
+| 9.5.3 | Job `CleanupStalePendingKioskOrders` (cron 5 min, PENDING>15 min → REJECTED) | P1 | `app/Jobs/CleanupStalePendingKioskOrders.php` + `Kernel.php` | fixed | `49da79cf3` | — |
+| 9.5.4 | Migration `idempotency_key` UNIQUE scopé `(branch_id, idempotency_key)` | P0 | nouvelle migration ALTER INDEX | fixed | `37b78a6ce` | — |
+| 9.5.5 | Feature test E2E `kiosk_order_full_flow_to_kds_with_allergens` | P1 | `tests/Feature/OrderPipeline/KioskFullFlowE2ETest.php` | fixed | `1f145bdbe` | — |
+| 9.5.6 | Cross-item guard systématique POS/Table/Web | P1 | `PricingRequest::forPos/forTable/forWeb` | fixed | `f34fce213` | — |
+| 9.5.7 | Payload POS drawer enrichi expandable (variations/extras/instructions) | P1 | `PosComponent.vue:599-605` | fixed | `c8102ee2c` | — |
+| 9.5.8 | Retirer prix du payload client `kioskCart.js` | P1 | `resources/js/store/modules/kioskCart.js:235-258` | fixed | `eb6343d46` | — |
 
 **Gate P9.5.** Tous `verified`. Migrations rollback-safe. Cron schedulé. KDS affiche allergens snapshotés. Idempotency cross-branch OK. Cross-item guard actif sur POS/Table/Web. Zéro prix client. LOCK_A_* libérés avant merge.
 
@@ -111,3 +111,4 @@ _(Lignes initialisées open, enrichies au démarrage de chaque vague. Voir `PLAN
 
 - **2026-04-18 — initialisation.** 14 lignes P9.1 créées `open`. Lignes placeholder P9.2 → P9.10 ajoutées pour visibilité. Tracker activé.
 - **2026-04-18 — P9.1 STOP-THE-BLEED clos.** 14 commits atomiques posés (`eb980ab31` → `bd1143a18`) + commit tracker `2fd1f9bcc`. Sous-agent verifier indépendant exécuté (lecture code HEAD, sans contexte implémentation) → rapport `reports/review/VERIFY_P9_1_2026-04-18.md` : **14/14 RESOLVED, 0 PARTIAL, 0 STILL_BROKEN**. Status des 14 lignes P9.1 passé à `verified`. Gate merge P9.1 levé (Vitest 46 files / 377 tests verts sur HEAD 2fd1f9bcc ; PHPUnit MySQL programmé en CI via `phpunit.yml`). Observations incidentes (non bloquantes, à traiter en P9.2/9.5) listées dans le rapport verifier §"Incidental observations".
+- **2026-04-18 — P9.5 order pipeline hardening exécuté.** 8 commits atomiques posés : `37b78a6ce` (9.5.4 idempotency composite), `e5be3763f` (9.5.1 allergens_snapshot persistance), `79591eb39` (9.5.2 KDS/resources allergens), `f34fce213` (9.5.6 cross-item guard POS/Table/Web), `eb6343d46` (9.5.8 payload kiosk IDs-only), `49da79cf3` (9.5.3 cleanup stale pending kiosk orders), `c8102ee2c` (9.5.7 POS drawer expandable) et `1f145bdbe` (9.5.5 E2E full flow + runtime idempotency lock scope). Les 8 lignes P9.5 passent à `fixed`; LOCK_A FrontendOrderService et OrderService clos au closeout; blocker `P9_5_BLOCKER_9.5.5_frontend_order_idempotency_lock_scope.md` résolu par extension de scope strictement additive.
