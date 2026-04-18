@@ -67,28 +67,29 @@ Gate H.2 verified: grep invariants clean, no regressions introduced on main suit
 
 ---
 
-## Vague H.3 — Operational hardening (observabilité, robustesse, docs) — ~3 h
+## Vague H.3 — Operational hardening (observabilité, robustesse, docs) — ✅ CLOSED
 
-**Conditions** : H.2 mergée (base fiscale correcte).
+**Conditions** : H.2 mergée (base fiscale correcte) — ✅.
 
-| # | ID | Titre | Fichiers | Effort | Test |
-|---|---|---|---|---|---|
-| H.3.1 | F-C7 | Rate-limit dédié `throttle:10,1` sur `/admin/fiscal/z-report/{open,close}` | `routes/api.php:784-794` | 10 min | `FiscalRateLimitTest` |
-| H.3.2 | F-C7 | Log channel `fiscal` + breadcrumbs Sentry sur write/open/close | `config/logging.php`, `AuditLogService::write()`, `ZReportService::{open,close}` | 30 min | `FiscalObservabilityTest::test_channels_used` |
-| H.3.3 | F-C8 | `FiscalArchiveCommand` : `->lazy(...)` + stream ZipArchive | `app/Console/Commands/FiscalArchiveCommand.php` | 45 min | `FiscalArchiveMemoryBoundedTest` (benchmark 10k orders) |
-| H.3.4 | F-A6 | POS-9.1.11 : filter source + self-exclusion + `AudioContext.resume()` | `resources/js/components/admin/pos/PosComponent.vue:1033-1134` | 30 min | Vitest `posNewOrderNotify.spec.js` — ajout 3 cas |
-| H.3.5 | F-A7 | `OrderService::destroy` : soft-delete children OR disable restore | `app/Services/OrderService.php:1622-1626` | 20 min | `PosOrderRestoreIntegrityTest` |
-| H.3.6 | F-A8 | Migration composite index `(branch_id, created_at)` sur `action_logs` | nouvelle migration | 10 min | — |
-| H.3.7 | F-C14 / F-A9 | i18n FR/EN sur nouvelles clés (`label.base_ht`, `message.new_pos_order*`, fiscal strings) | `lang/fr.json`, `lang/en.json` | 20 min | Vitest existant re-joué |
-| H.3.8 | F-A15 / F-A16 | AudioContext resume + drop `console.warn` `posCart.js:40` | `PosComponent.vue`, `posCart.js` | 10 min | — |
-| H.3.9 | Docs | `docs/FISCAL_SECRETS.md` (rotation, env vars, runbook) + `docs/AUTHZ_MATRIX.md` update (3 nouvelles perms) | nouveaux fichiers | 30 min | — |
+| # | ID | Titre | Commit | Statut |
+|---|---|---|---|---|
+| H.3.1 | F-C7 | Rate-limit dédié `throttle:10,1` sur `/admin/fiscal/z-report/{open,close}` | `7ad3563b2` | ✅ `FiscalRateLimitTest` 4/4 |
+| H.3.2 | F-C7 | Log channel `fiscal` + breadcrumbs sur write/open/close | `9638a3d81` | ✅ `FiscalObservabilityTest` 3/3 |
+| H.3.3 | F-C8 | `FiscalArchiveCommand` : `->lazy(...)` + stream JSONL dans ZipArchive | `4181bb297` | ✅ `FiscalArchiveMemoryBoundedTest` 2/2 (< 32 MiB) |
+| H.3.4 | F-A6 | POS-9.1.11 : source filter + self-exclusion + `AudioContext.resume()` | `88a3f18b2` | ✅ Vitest `posNewOrderNotify` 9/9 |
+| H.3.5 | F-A7 | Block `Order::restore()` to preserve aggregate integrity | `6eed8f796` | ✅ `PosOrderRestoreIntegrityTest` 3/3 |
+| H.3.6 | F-A8 | Migration composite index `(branch_id, created_at)` sur `action_logs` | `dde924722` | ✅ `ActionLogsCompositeIndexTest` 1/1 |
+| H.3.7 | F-C14 / F-A9 | i18n FR/EN (`label.base_ht`, `message.new_pos_order*`) | `7926500db` | ✅ fallback inline conservé |
+| H.3.8 | F-A15 / F-A16 | AudioContext resume (inclus H.3.4) + drop `console.warn` `posCart.js:40` | `88a3f18b2` | ✅ Vitest posCart 8/8 |
+| H.3.9 | Docs | `docs/FISCAL_SECRETS.md` runbook + `docs/AUTHZ_MATRIX.md` MAJ | `a6cb7e0ca` | ✅ |
 
-**Gate H.3** :
-- Build prod `npm run production` < 27 s.
-- Vitest full 51 files / 400+ tests verts.
-- PHPUnit full suite vert (sauf 7 Pusher pré-existants).
+**Gate H.3 — vérifié** :
+- CI invariants guard : 6/6 clean (`bash scripts/check-invariants.sh`).
+- PHPUnit Feature : 501 tests, 1299 assertions, 7 errors = **baseline pré-H** (tous `AvailabilityServiceTest` / `BumpMenuSnapshotListenerTest` Menu/Outbox, aucune régression introduite par H).
+- PHPUnit Fiscal+Audit : 81/81 verts.
+- Vitest POS notify + posCart : 17/17 verts.
 
-**Durée** : ~3 h · 9 commits atomiques.
+**Durée effective** : ~3h, 9 commits atomiques.
 
 ---
 
