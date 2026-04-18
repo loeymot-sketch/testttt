@@ -18,8 +18,8 @@
 | id | title | criticity | file:line | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|---|
 | 9.1.1 | Exposer `is_available` + `allergens[]` dans `NormalItemResource` | P0 | `app/Http/Resources/NormalItemResource.php:35-71` | fixed | `eb980ab31` | — |
-| 9.1.2 | Intégrer `KsAllergenBadge` persistent dans header wizard | P0 | `resources/js/components/frontend/kiosk/KioskWizardComponent.vue:17-36` | fixed | (pending) | — |
-| 9.1.3 | Câbler `/api/frontend/pricing/preview` (debounce 400 ms) | P0 | `resources/js/helpers/kioskPricing.js` + `KioskWizardComponent.vue` | open | — | — |
+| 9.1.2 | Intégrer `KsAllergenBadge` persistent dans header wizard | P0 | `resources/js/components/frontend/kiosk/KioskWizardComponent.vue:17-36` | fixed | `964500c52` | — |
+| 9.1.3 | Câbler `/api/frontend/pricing/preview` (debounce 400 ms) | P0 | `resources/js/helpers/kioskPricingPreview.js` + `KioskWizardComponent.vue` | fixed | (pending) | — |
 | 9.1.4 | Listener `InvalidateKioskMenuCacheOnItemAvailabilityChanged` | P0 | `app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php` + `EventServiceProvider.php` | open | — | — |
 | 9.1.5 | Mutation `kioskMenu/UPDATE_ITEM` patch `is_available` + `unavailable_reason` | P0 | `resources/js/store/modules/kioskMenu.js:159-173` | open | — | — |
 | 9.1.6 | Champ code promo panier + `POST /api/frontend/promo/validate` | P0 | `KioskCartComponent.vue` + `store/modules/kioskCart.js` | open | — | — |

@@ -177,6 +177,10 @@ import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
 // Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard (safety FIC).
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
+// Kiosk Phase 9.1.3 — SSOT pricing preview debounced (400 ms) côté wizard.
+// Le helper pur `calculateKioskRunningTotal` est conservé en fallback pour
+// éviter tout scénario d'affichage "0,00 €" si la requête échoue.
+import { createKioskPricingPreview } from '../../../helpers/kioskPricingPreview';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../helpers/kioskMedia';
 import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
@@ -235,7 +239,13 @@ export default {
         fritesSauceOrder: [],
         quantity: 1,
         instruction: ''
-      }
+      },
+      // Kiosk Phase 9.1.3 — total SSOT renvoyé par `POST /pricing/preview`.
+      // `null` tant qu'aucune réponse valide n'a été reçue → `runningTotal`
+      // retombe sur le calcul local (fallback). Pas de flicker : on ne met à
+      // jour qu'en cas de succès, jamais en cas d'erreur (dégradé gracieux).
+      serverPreviewTotal: null,
+      serverPreviewLoading: false,
     };
   },
   computed: {
@@ -344,8 +354,20 @@ export default {
     currentStepComponent() {
       return this.currentStep?.component;
     },
-    runningTotal() {
+    // Kiosk Phase 9.1.3 — Total local (pur, synchrone) conservé comme fallback
+    // SSOT côté client. Jamais utilisé pour envoyer un prix au serveur — seul
+    // le backend fait autorité via `PricingService` (`/order` + `/preview`).
+    runningTotalLocal() {
       return calculateKioskRunningTotal(this.resolvedItem, this.selections);
+    },
+    // Total affiché dans le footer du wizard : priorité au total serveur dès
+    // qu'il est arrivé, sinon fallback synchrone local. Aucun flicker "0,00 €"
+    // possible car `runningTotalLocal` renvoie toujours au moins le prix de
+    // base de l'item.
+    runningTotal() {
+      return this.serverPreviewTotal != null
+        ? this.serverPreviewTotal
+        : this.runningTotalLocal;
     },
     /** « + Boisson » (formule boisson seule) : pertinent catégorie boissons, pas à côté de Menu complet / Frites sur sandwich-burger-tacos. */
     kioskShowBoissonOnlyMenuCard() {
@@ -863,6 +885,36 @@ export default {
         this.fetchLoading = false;
       }
     },
+    // Kiosk Phase 9.1.3 — Déclenche un preview SSOT debounced. Silencieux en
+    // cas d'erreur : `serverPreviewTotal` reste à sa dernière valeur connue
+    // (ou `null`) et `runningTotal` retombe sur `runningTotalLocal`.
+    refreshServerPreviewTotal() {
+      if (!this._kioskPricingPreview) return;
+      const cartItem = this.buildCartItem();
+      if (!cartItem || !cartItem.item_id) return;
+
+      this.serverPreviewLoading = true;
+      this._kioskPricingPreview
+        .request({
+          items: [{
+            item_id: cartItem.item_id,
+            quantity: cartItem.quantity,
+            instruction: cartItem.instruction || '',
+            item_variations: (cartItem.item_variations || []).map((v) => ({ id: v.id })),
+            item_extras: (cartItem.item_extras || []).map((e) => ({ id: e.id })),
+          }],
+        })
+        .then((res) => {
+          this.serverPreviewLoading = false;
+          if (res && Number.isFinite(res.total)) {
+            this.serverPreviewTotal = Math.round(res.total * 100) / 100;
+          }
+          // res === null : on garde le total précédent (UX > affichage 0,00).
+        })
+        .catch(() => {
+          this.serverPreviewLoading = false;
+        });
+    },
     buildCartItem() {
       const item = this.resolvedItem;
       if (!item) return null;
@@ -1090,6 +1142,18 @@ export default {
     }
     // Phase 8.8 — fire first wizard_step_entered event.
     this.$nextTick(() => this.emitWizardStepEntered(this.currentStep?.type));
+
+    // Kiosk Phase 9.1.3 — Initialise le debouncer SSOT (non-reactif pour éviter
+    // overhead Vue). `onError` silent en prod (fallback local prend le relais).
+    this._kioskPricingPreview = createKioskPricingPreview({
+      onError: (err) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[kiosk] pricing preview failed:', err && err.message ? err.message : err);
+        }
+      },
+    });
+    // Premier appel pour initialiser le total serveur dès que l'item est connu.
+    this.$nextTick(() => this.refreshServerPreviewTotal());
   },
   beforeDestroy() {
     // Phase 8.8 — wizard closed without completion (global abandon).
@@ -1102,8 +1166,29 @@ export default {
         });
       } catch (_) { /* silent */ }
     }
+    // Kiosk Phase 9.1.3 — libère le debouncer (cancel timer + axios).
+    if (this._kioskPricingPreview && typeof this._kioskPricingPreview.destroy === 'function') {
+      this._kioskPricingPreview.destroy();
+      this._kioskPricingPreview = null;
+    }
   },
   watch: {
+    // Kiosk Phase 9.1.3 — tout changement de sélection retrigger le preview
+    // SSOT (debounced 400 ms côté helper, donc pas de storm réseau). `deep`
+    // nécessaire car selections.viandes/sauces/supplements sont des objets.
+    selections: {
+      deep: true,
+      handler() { this.refreshServerPreviewTotal(); },
+    },
+    // Changement d'item (edit mode, fetch par id) → reset du total serveur
+    // pour éviter d'afficher un ancien total pendant que la nouvelle requête
+    // est en vol.
+    resolvedItem(newItem, oldItem) {
+      if ((newItem && newItem.id) !== (oldItem && oldItem.id)) {
+        this.serverPreviewTotal = null;
+        this.refreshServerPreviewTotal();
+      }
+    },
     currentStepIndex(newIdx, oldIdx) {
       if (newIdx === oldIdx) return;
       const steps = this.activeSteps || [];
