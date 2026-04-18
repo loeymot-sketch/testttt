@@ -1527,6 +1527,69 @@ describe('KioskWizardComponent — add to cart submission guard', () => {
   });
 });
 
+describe('KioskWizardComponent — resume snapshot', () => {
+  it('wizard_resume_snapshot_restores_state', async () => {
+    window.sessionStorage.clear();
+    const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+    const wizardItem = {
+      id: 777,
+      name: 'Burger Snapshot',
+      convert_price: 8,
+      wizard_template: 'burger',
+      category_name: 'Burgers',
+      itemAttributes: [{ id: 10, name: 'Sauce' }],
+      variations: { 10: [{ id: 201, name: 'Ketchup' }] },
+      extras: [],
+      addons: [],
+    };
+
+    const global = {
+      plugins: [kioskWizardTestI18n],
+      stubs,
+      mocks: {
+        $store: {
+          getters: { 'kioskCart/branchId': 7 },
+          state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
+          dispatch: vi.fn(),
+        },
+        $t: (key) => key,
+        $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
+      },
+    };
+
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: wizardItem,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global,
+    });
+
+    wrapper.vm.selections.sauceOrder = [201];
+    wrapper.vm.currentStepIndex = 1;
+    wrapper.vm.saveWizardSnapshot();
+    wrapper.unmount();
+
+    const resumed = shallowMount(KioskWizardComponent, {
+      props: {
+        item: wizardItem,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global,
+    });
+
+    await resumed.vm.$nextTick();
+
+    expect(resumed.vm.currentStepIndex).toBe(1);
+    expect(resumed.vm.selections.sauceOrder).toEqual([201]);
+
+    resumed.unmount();
+    window.sessionStorage.clear();
+  });
+});
+
 describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
   it('shows validation hint when localChoice is null', () => {
     const wrapper = mount(KioskStepMenuComponent, {

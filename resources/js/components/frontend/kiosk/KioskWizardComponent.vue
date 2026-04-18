@@ -846,6 +846,7 @@ export default {
     },
     onAbandonConfirm() {
       this.showAbandonConfirm = false;
+      this.clearWizardSnapshot();
       this.performCloseWizard();
     },
     performCloseWizard() {
@@ -891,6 +892,55 @@ export default {
         quantity: 1,
         instruction: ''
       };
+    },
+    wizardSnapshotStorageKey() {
+      const itemId = parseInt(this.resolvedItem?.id || this.itemId || 0, 10);
+      return itemId > 0 ? `kiosk:wizard-snapshot:${itemId}` : null;
+    },
+    saveWizardSnapshot() {
+      if (typeof window === 'undefined' || !window.sessionStorage || !this.resolvedItem) return;
+      const key = this.wizardSnapshotStorageKey();
+      if (!key) return;
+
+      window.sessionStorage.setItem(key, JSON.stringify({
+        version: 1,
+        item_id: parseInt(this.resolvedItem.id, 10),
+        step_index: this.currentStepIndex,
+        selections: this.selections,
+      }));
+    },
+    restoreWizardSnapshot() {
+      if (typeof window === 'undefined' || !window.sessionStorage || !this.resolvedItem) return false;
+      const key = this.wizardSnapshotStorageKey();
+      if (!key) return false;
+
+      try {
+        const raw = window.sessionStorage.getItem(key);
+        if (!raw) return false;
+
+        const snapshot = JSON.parse(raw);
+        if (parseInt(snapshot?.item_id || 0, 10) !== parseInt(this.resolvedItem.id, 10)) {
+          return false;
+        }
+
+        this.selections = {
+          ...this.selections,
+          ...(snapshot?.selections || {}),
+        };
+
+        const maxIndex = Math.max((this.activeSteps?.length || 1) - 1, 0);
+        const nextIndex = Math.min(Math.max(parseInt(snapshot?.step_index || 0, 10), 0), maxIndex);
+        this.currentStepIndex = nextIndex;
+        return true;
+      } catch (_) {
+        return false;
+      }
+    },
+    clearWizardSnapshot() {
+      if (typeof window === 'undefined' || !window.sessionStorage) return;
+      const key = this.wizardSnapshotStorageKey();
+      if (!key) return;
+      window.sessionStorage.removeItem(key);
     },
     async fetchItemById(id) {
       if (!id) return;
@@ -1170,6 +1220,7 @@ export default {
 
       this.isSubmitting = true;
       this.selections._summaryConfirmed = true;
+      this.clearWizardSnapshot();
       const cartItem = this.buildCartItem();
       try {
         if (this.onAddToCart) {
@@ -1229,6 +1280,7 @@ export default {
         this.selections._tailleMeta = inferredTaille;
         this.selections.taille = inferredTaille.label;
       }
+      this.restoreWizardSnapshot();
     } else if (this.itemId) {
       this.fetchItemById(this.itemId);
     }
@@ -1275,7 +1327,10 @@ export default {
     // nécessaire car selections.viandes/sauces/supplements sont des objets.
     selections: {
       deep: true,
-      handler() { this.refreshServerPreviewTotal(); },
+      handler() {
+        this.refreshServerPreviewTotal();
+        this.saveWizardSnapshot();
+      },
     },
     // Changement d'item (edit mode, fetch par id) → reset du total serveur
     // pour éviter d'afficher un ancien total pendant que la nouvelle requête
@@ -1284,10 +1339,12 @@ export default {
       if ((newItem && newItem.id) !== (oldItem && oldItem.id)) {
         this.serverPreviewTotal = null;
         this.refreshServerPreviewTotal();
+        this.restoreWizardSnapshot();
       }
     },
     currentStepIndex(newIdx, oldIdx) {
       if (newIdx === oldIdx) return;
+      this.saveWizardSnapshot();
       const steps = this.activeSteps || [];
       const prev = steps[oldIdx];
       const next = steps[newIdx];
