@@ -28,9 +28,9 @@
 | 9.1.9 | Fix whitelist analytics `idle_warning` → `idle_warning_shown` | P0 | `KioskInactivityOverlayComponent.vue:130` | fixed | d9c2e6d6d | — |
 | 9.1.10 | Fix event name mismatch `@accept` / `@accepted` loyalty consent | P0 | `KioskLoyaltyComponent.vue:228` ou `KsConsentModal.vue:297` | fixed | 485b47df1 | — |
 | 9.1.11 | Redirection `kiosk.error.payment-refused` après 2 échecs | P0 | `KioskPaymentComponent.vue:348-354` | fixed | 66ea2c618 | — |
-| 9.1.12 | Persister last-order localStorage (F5-proof receipt) | P0 | nouveau `kioskReceiptPersistence.js` + `KioskConfirmationComponent.vue:236` | fixed | (pending) | — |
-| 9.1.13 | Retirer/wire chips dead UI "My Account" / "Allergens" | P0 | `KioskCategoriesComponent.vue:24-43` | open | — | — |
-| 9.1.14 | Fix 3 tests `FrontendSurfaceFilteringTest` (MySQL CI) | P0 | `.github/workflows/ci.yml` + `phpunit.xml` | open | — | — |
+| 9.1.12 | Persister last-order localStorage (F5-proof receipt) | P0 | nouveau `kioskReceiptPersistence.js` + `KioskConfirmationComponent.vue:236` | fixed | 379797ae0 | — |
+| 9.1.13 | Retirer/wire chips dead UI "My Account" / "Allergens" | P0 | `KioskCategoriesComponent.vue:24-43` | fixed | `fcbda283f` | — |
+| 9.1.14 | Fix 3 tests `FrontendSurfaceFilteringTest` (MySQL CI) | P0 | `.github/workflows/phpunit.yml` + `tests/Feature/Menu/FrontendSurfaceFilteringTest.php` | fixed | `bd1143a18` | — |
 
 **Gate P9.1.** Tous `verified`. Vitest + PHPUnit full green. Build prod < 27 s. axe-core 0 AA violations sur écrans touchés.
 
