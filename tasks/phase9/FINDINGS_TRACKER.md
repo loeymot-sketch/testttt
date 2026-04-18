@@ -89,3 +89,4 @@ _(Lignes initialisées open, enrichies au démarrage de chaque vague. Voir `PLAN
 ## Journal des mises à jour
 
 - **2026-04-18 — initialisation.** 14 lignes P9.1 créées `open`. Lignes placeholder P9.2 → P9.10 ajoutées pour visibilité. Tracker activé.
+- **2026-04-18 — P9.1 STOP-THE-BLEED clos.** 14 commits atomiques posés (`eb980ab31` → `bd1143a18`) + commit tracker `2fd1f9bcc`. Sous-agent verifier indépendant exécuté (lecture code HEAD, sans contexte implémentation) → rapport `reports/review/VERIFY_P9_1_2026-04-18.md` : **14/14 RESOLVED, 0 PARTIAL, 0 STILL_BROKEN**. Status des 14 lignes P9.1 passé à `verified`. Gate merge P9.1 levé (Vitest 46 files / 377 tests verts sur HEAD 2fd1f9bcc ; PHPUnit MySQL programmé en CI via `phpunit.yml`). Observations incidentes (non bloquantes, à traiter en P9.2/9.5) listées dans le rapport verifier §"Incidental observations".
