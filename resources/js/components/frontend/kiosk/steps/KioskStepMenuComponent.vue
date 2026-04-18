@@ -36,6 +36,7 @@
         data-testid="kiosk-step-menu-option-full"
       >
         <span class="kiosk-menu-emoji">🍟🥤</span>
+        <span v-if="showRecommendedBadge" class="kiosk-menu-recommended-badge">{{ $t('kiosk.wizard.menu.recommended_badge') }}</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.full_name') }}</span>
         <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.full_desc') }}</span>
         <span v-if="localChoice === 'full'" class="kiosk-menu-action active">✓</span>
@@ -313,6 +314,9 @@ export default {
       if (this.localChoice === 'boisson') return this.$t('kiosk.wizard.menu.badge_boisson');
       return null;
     },
+    showRecommendedBadge() {
+      return Boolean(this.item?.has_menu && this.item?.default_menu_kiosk);
+    },
     menuPrice() {
       return getKioskMenuAddonPrice(this.item, this.localChoice);
     },
@@ -426,20 +430,6 @@ export default {
         }
       },
     },
-  },
-  mounted() {
-    // [AUDIT 2026-04-17 C5] Politique catégorie default_menu_kiosk :
-    // si la catégorie impose la formule par défaut ET que le client n'a
-    // encore rien choisi ET que l'item a réellement un menu disponible,
-    // pré-sélectionner « full » pour réduire la friction.
-    if (
-      this.localChoice === null &&
-      this.item?.has_menu &&
-      this.item?.default_menu_kiosk &&
-      this.boissonList.length > 0
-    ) {
-      this.selectChoice('full');
-    }
   },
   methods: {
     bundledUpgradeExtraIds() {
@@ -687,6 +677,19 @@ export default {
   font-size: 48px;
   margin-bottom: 12px;
   transition: transform 0.2s;
+}
+
+.kiosk-menu-recommended-badge {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .kiosk-upgrade-card .kiosk-menu-emoji {

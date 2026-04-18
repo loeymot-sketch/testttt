@@ -646,6 +646,7 @@
                 "title": "Quel menu ?",
                 "hint_need_choice": "Touchez une option pour continuer — y compris « Sans menu » si vous ne voulez pas de formule.",
                 "full_name": "Menu Complet",
+                "recommended_badge": "Recommandé",
                 "full_desc": "Frites + Boisson",
                 "frites_name": "+ Frites",
                 "frites_desc": "Seulement les frites",

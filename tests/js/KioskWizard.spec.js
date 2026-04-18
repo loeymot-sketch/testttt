@@ -1350,6 +1350,40 @@ describe('KioskOrderSummaryComponent — recap abandonment analytics', () => {
   });
 });
 
+describe('KioskStepMenuComponent — recommended full meal badge', () => {
+  it('no_auto_select_default_shows_badge_only', () => {
+    const wrapper = mount(KioskStepMenuComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          id: 77,
+          name: 'Burger Recommande',
+          has_menu: true,
+          default_menu_kiosk: true,
+          itemAttributes: [{ id: 10, name: 'Sauce' }],
+          variations: { 10: [{ id: 'ketchup', name: 'Ketchup' }] },
+          extras: [],
+          addons: [
+            { addon_item_name: 'Menu', addon_item_convert_price: 2, price: 2 },
+            { addon_item_name: 'Coca-Cola', addon_item_id: 1 },
+          ],
+        },
+        selections: {
+          menuChoice: null,
+          boissonChoice: null,
+          fritesSauceOrder: [],
+        },
+      },
+    });
+
+    expect(wrapper.vm.localChoice).toBe(null);
+    expect(wrapper.find('.kiosk-menu-card.selected').exists()).toBe(false);
+    expect(wrapper.text()).toContain(frMessages.kiosk.wizard.menu.recommended_badge);
+    expect(wrapper.emitted('update')).toBeFalsy();
+  });
+});
+
 describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
   it('shows validation hint when localChoice is null', () => {
     const wrapper = mount(KioskStepMenuComponent, {

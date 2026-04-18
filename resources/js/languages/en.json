@@ -1293,6 +1293,7 @@
                 "title": "Meal deal?",
                 "hint_need_choice": "Tap an option to continue — including “No meal deal” if you prefer.",
                 "full_name": "Full meal",
+                "recommended_badge": "Recommended",
                 "full_desc": "Fries + drink",
                 "frites_name": "+ Fries",
                 "frites_desc": "Fries only",
