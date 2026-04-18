@@ -80,6 +80,30 @@ class Order extends Model implements BroadcastableOrder
     {
         parent::boot();
         static::addGlobalScope(new BranchScope());
+
+        // [POS-9-H.3.5 / F-A7]
+        // OrderService::destroy() soft-deletes the Order itself but
+        // HARD-deletes its related OrderAddress and OrderCoupon (those
+        // models don't use the SoftDeletes trait). Re-hydrating the
+        // Order via $order->restore() would leave the aggregate in a
+        // permanently inconsistent state: missing address line, missing
+        // coupon discount, but a Z/X report that still counts its total.
+        //
+        // Rather than add SoftDeletes to those two child models (which
+        // would pollute every query and is a schema change we can't
+        // retrofit onto live branches safely), we block restore at the
+        // model level. Soft-delete becomes a ONE-WAY audit trail: the
+        // row is retained for forensic purposes (NF525) but the
+        // aggregate is never resurrected.
+        static::restoring(function (self $order) {
+            throw new \RuntimeException(
+                'Order::restore() is disabled — OrderService::destroy() performs '
+                . 'hard deletes on child rows (address, coupon) that cannot be '
+                . 'rebuilt. A soft-deleted order is kept for audit only. '
+                . 'To reopen an order, create a new one and reference the '
+                . 'soft-deleted id in its notes.'
+            );
+        });
     }
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany

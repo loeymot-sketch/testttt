@@ -85,9 +85,44 @@ class ActionLogBranchIsolationTest extends TestCase
 
         $this->assertContains('A.1', $trail);
         $this->assertContains('A.2', $trail);
-        $this->assertContains('LEGACY.1', $trail);
         $this->assertNotContains('B.1', $trail);
         $this->assertNotContains('B.2', $trail);
+        // [POS-9-H.1.3] F-A3 fix: NULL-branch rows are legacy/system-only and
+        // must NOT leak to branch-scoped staff. Only Admin sees them.
+        $this->assertNotContains('LEGACY.1', $trail,
+            'Branch staff must not see NULL-branch audit rows (F-A3 fix).');
+    }
+
+    public function test_audit_trail_admin_sees_null_branch_legacy_rows(): void
+    {
+        ActionLog::create(['user_id' => null, 'action' => 'LEGACY.1', 'branch_id' => null]);
+        ActionLog::create(['user_id' => $this->userA->id, 'action' => 'A.1', 'branch_id' => $this->branchA->id]);
+
+        $this->actingAs($this->admin, 'sanctum');
+        $service = app(DashboardService::class);
+        $trail = $service->auditTrail()->pluck('action')->all();
+
+        $this->assertContains('LEGACY.1', $trail,
+            'Admin must still see legacy NULL-branch rows.');
+        $this->assertContains('A.1', $trail);
+    }
+
+    public function test_admin_action_log_gets_branch_id_zero_not_null(): void
+    {
+        // [POS-9-H.1.3] Before the booted() is_null fix, Admin's branch_id=0 was
+        // treated as "empty" and the row fell back to branch_id=NULL → cross-tenant leak.
+        $this->actingAs($this->admin, 'sanctum');
+
+        $log = ActionLog::create([
+            'user_id' => $this->admin->id,
+            'action'  => 'admin.ping',
+            'resource'=> 'Admin #1',
+        ]);
+
+        $fresh = $log->fresh();
+        $this->assertNotNull($fresh->branch_id,
+            'Admin-authored row must carry a concrete branch_id (0), not NULL.');
+        $this->assertSame(0, (int) $fresh->branch_id);
     }
 
     public function test_audit_trail_admin_sees_every_branch(): void

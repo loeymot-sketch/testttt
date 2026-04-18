@@ -36,8 +36,11 @@ function saveCartToStorage(state) {
             userId: _scope.userId,
         }));
     } catch (e) {
-        // localStorage peut être indisponible (mode privé, quota dépassé)
-        console.warn('[posCart] localStorage save failed:', e);
+        // localStorage peut être indisponible (mode privé, quota dépassé).
+        // [H.3.8 F-A16] console.warn removed — the cart re-save retry
+        // loop would otherwise flood DevTools on every mutation. The
+        // failure is inherently transient (quota, private-mode) and
+        // non-fatal: on next mutation we try again.
     }
 }
 

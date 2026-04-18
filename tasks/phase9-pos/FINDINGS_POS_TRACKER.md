@@ -15,10 +15,10 @@
 
 | ID | P | Title | File:line | Wave | Sync kiosk | Status |
 |---|---|---|---|---|---|---|
-| POS-GA-F-01 | P0 | MISSING `ZReport` (NF525 / loi Finance 2018) | backlog | POS-9.4 | — | open |
-| POS-GA-F-02 | P0 | MISSING `XReport` (snapshot intraday) | backlog | POS-9.4 | — | open |
+| POS-GA-F-01 | P0 | MISSING `ZReport` (NF525 / loi Finance 2018) | backlog | POS-9.4 | — | resolved (POS-9.4.6/7/9/11 — service + controller + archive) |
+| POS-GA-F-02 | P0 | MISSING `XReport` (snapshot intraday) | backlog | POS-9.4 | — | resolved (POS-9.4.8/9 — service + endpoint) |
 | POS-GA-F-03 | P0 | MISSING `cash_drawer_sessions` + comptage + écarts | backlog | POS-9.5 | — | open |
-| POS-GA-F-04 | P0 | `action_logs` mutable + sans `branch_id` → fuite cross-tenant | `app/Models/ActionLog.php:8-22`, `app/Services/DashboardService.php:305-326`, migration `2026_03_06_182733` | POS-9.4 | sync (audit infra) | partial (POS-9.1.4 adds branch_id scoping; immutability = POS-9.4) |
+| POS-GA-F-04 | P0 | `action_logs` mutable + sans `branch_id` → fuite cross-tenant | `app/Models/ActionLog.php:8-22`, `app/Services/DashboardService.php:305-326`, migration `2026_03_06_182733` | POS-9.4 | sync (audit infra) | partial (POS-9.1.4 branch_id scope + POS-9.4.3/4 audit_logs INSERT-only with HMAC chain built; F-A3/H.1.3 closed remaining cross-tenant leak in DashboardService::auditTrail; call-site adoption of AuditLogService still gated by BLOCKER_POS_9_4_5) |
 | POS-GA-F-05 | P0 | Stock non libéré sur CANCELED/REJECTED/RETURNED | `app/Services/Menu/AvailabilityService.php:118-163` | POS-9.5 | sync (listener shared) | open |
 | POS-GA-F-06 | P0 | Discount manuel sans permission / seuil / audit structuré | `app/Services/Pricing/PricingService.php:213-217`, `app/Services/Pricing/DiscountCalculator.php`, `resources/js/components/admin/pos/PosComponent.vue:1139-1158`, `app/Http/Requests/PosOrderRequest.php:38` | POS-9.1 | — | resolved (POS-9.1.1) |
 | POS-GA-F-07 | P0 | MISSING endpoint admin toggle 86 (`AvailabilityService::toggle` non exposé) | `app/Services/Menu/AvailabilityService.php:32-74` | POS-9.5 | sync (controller shared) | open |
@@ -28,7 +28,7 @@
 | POS-GA-F-11 | P0 | Events dispatchés hors `DB::afterCommit()` explicite + `OrderStatusChanged(PENDING→ACCEPT)` jamais émis POS | `app/Services/OrderService.php:898-908, 1397-1404, 1464-1473` | POS-9.2 | sync | open |
 | POS-GA-F-12 | P0 | Endpoints POS mutatifs sans `DB::transaction` (`changePaymentStatus`, `deliveryBoyOrderChangeStatus`, `selectDeliveryBoy`, `changeStatus auth=true`) | `app/Services/OrderService.php:1312-1358, 1370-1404, 1485-1526, 1554-1580` | POS-9.2 | — | open |
 | POS-GA-F-13 | P0 | `PaymentService::cashBack` ne logue pas / rate cas "pas de Transaction préalable" | `app/Services/PaymentService.php:29-50` | POS-9.3 | — | open |
-| POS-GA-F-14 | P0 | `OrderService::destroy` physique sans branch check, sans event, sans ActionLog | `app/Services/OrderService.php:1585-1598`, `app/Http/Controllers/Admin/PosOrderController.php:59-68`, `routes/api.php:628` | POS-9.1 | — | resolved (POS-9.1.2) |
+| POS-GA-F-14 | P0 | `OrderService::destroy` physique sans branch check, sans event, sans ActionLog | `app/Services/OrderService.php:1585-1598`, `app/Http/Controllers/Admin/PosOrderController.php:59-68`, `routes/api.php:628` | POS-9.1 | — | partial (POS-9.1.2 — branch check + permission + ActionLog OK, but child rows order_details/order_item_extras orphaned after soft-delete of parent; restore now leaves inconsistent order. Gated to F-A7 / H.3.5 for children cleanup or restore disable) |
 | POS-GA-F-15 | P0 | Drawer POS ne centralise que kiosk cash (1 source sur 5+) | `resources/js/components/admin/pos/PosComponent.vue:1018-1040` | POS-9.6 | — | open |
 | POS-GA-F-16 | P0 | `BranchIsolationTest` est un placeholder (`assertTrue(true)`) | `tests/Feature/BranchIsolationTest.php:9-13` | POS-9.1 | sync | resolved (POS-9.1.3) |
 | POS-GA-F-17 | P0 | Dine-in et table selector hardcodés `v-if="false"` | `resources/js/components/admin/pos/PosComponent.vue:121, 235` | POS-9.1 | — | resolved (POS-9.1.6 — flag pos_dine_in_enabled) |
@@ -52,7 +52,7 @@
 | POS-GA-F-35 | P1 | Ticket n'imprime pas `queue_number` (seul `token` client) | `resources/js/components/admin/pos/ReceiptComponent.vue:152-156`, `app/Services/OrderService.php:801-802` | POS-9.8 | — | open |
 | POS-GA-F-36 | P1 | Allergens absents d'`ItemResource` admin (POS) → caissier aveugle | `app/Http/Resources/ItemResource.php:19-65` | POS-9.1 | sync | resolved (POS-9.1.14 — allergens + allergen_flags) |
 | POS-GA-F-37 | P1 | TVA sans cascade `order_type` (dine-in 10 % / takeaway 5.5 % / alcool 20 %) | `app/Services/Pricing/PricingService.php:141-152`, `app/Services/Pricing/TaxCalculator.php:9-17` | POS-9.8 | — | open |
-| POS-GA-F-38 | P1 | `order_serial_no` non séquentiel par branche (`date('dmy').id`) | `app/Services/OrderService.php:475, 801` | POS-9.4 | — | open |
+| POS-GA-F-38 | P1 | `order_serial_no` non séquentiel par branche (`date('dmy').id`) | `app/Services/OrderService.php:475, 801` | POS-9.4 | — | partial (POS-9.4.1/2a/12 — migration + FiscalSequenceService + permissions built; wire-in of FiscalSequenceService::next() into OrderService::posOrderStore gated by BLOCKER_POS_9_4_2b — no order currently receives a fiscal_sequence_no at runtime) |
 | POS-GA-F-39 | P1 | `action_logs.branch_id` absent → fuite cross-tenant dashboard | migration `2026_03_06_182733:15-22`, `app/Services/DashboardService.php:305-326` | POS-9.1 | sync | resolved (POS-9.1.4) |
 | POS-GA-F-40 | P1 | Couverture tests POS backend faible (pas double-submit POS, pas `changePaymentStatus`, pas symétrie) | `tests/Feature/` | POS-9.10 | sync | open |
 | POS-GA-F-41 | P1 | Panier localStorage `pos_cart_v2` non scopé par `branch_id`/`user_id` — fuite entre caissiers | `resources/js/store/pos/posCart.js:6-44` | POS-9.1 | — | resolved (POS-9.1.9 — clé pos_cart_v3:b<branch>:u<user>) |
@@ -87,6 +87,17 @@
 - **Sync kiosk (shared zones)** : 14 findings nécessitent coordination Track A/B.
 - **Wave la plus chargée** : POS-9.10 (13 findings — build final + observabilité) puis POS-9.9 (10 findings — parité + perms).
 
+## Nouvelles findings (audit hardening 2026-04-18 — post POS-9.4)
+
+| ID | Sévérité | Titre | Localisation | Wave | Sync | Statut |
+|---|---|---|---|---|---|---|
+| POS-H-F-A1 | P0 | `HttpException(403)` swallowed et re-wrappé en `422` dans 4 méthodes OrderService | `app/Services/OrderService.php` changeStatus / changePaymentStatus / tokenCreate / deliveryBoyOrderChangeStatus | H.1 | — | resolved (H.1.1 — catch HttpException avant catch Exception ; + abort(403) au lieu de `throw new Exception(..., 403)`) |
+| POS-H-F-A2 | P0 | `RolePermissionTableSeeder` silencieusement vide pour Branch Manager / POS Operator / Chef (`[['name'=>x]]` vs flat string) | `database/seeders/RolePermissionTableSeeder.php` | H.1 | — | resolved (H.1.2 — whereIn flat strings + test `RolePermissionSeederTest`) |
+| POS-H-F-A3 | P0 | `DashboardService::auditTrail` leak cross-tenant : `->orWhereNull('branch_id')` + `empty($user->branch_id)` traitait `branch_id=0` (Admin) comme null | `app/Services/DashboardService.php`, `app/Models/ActionLog.php` | H.1 | — | resolved (H.1.3 — drop orWhereNull + is_null; ActionLogBranchIsolationTest + 2 nouveaux cas Admin) |
+| POS-H-F-A4 | P0 | `BranchIsolationTest` accepte 422 ou 403 ou 404 indifféremment — régression F-A1 invisible | `tests/Feature/BranchIsolationTest.php` | H.1 | — | resolved (H.1.4 — assertStatus(403\|404) strict + suppression early return KDS) |
+| POS-H-F-A5 | P0 | `PosOrderRequest` : gate `DINING_TABLE` côté serveur absent + comparaison strict `===` string vs int jamais true | `app/Http/Requests/PosOrderRequest.php` | H.1 | — | resolved (H.1.5 — cast (int) + check `pos_dine_in_enabled` avant règles ; PosDineInServerGateTest 3 cas) |
+
 ## Changelog
 
 - 2026-04-18 — Création du tracker. 64 findings enregistrées, toutes en `status=open`. Rapport source `AUDIT_POS_GLOBAL_2026-04-18.md`.
+- 2026-04-18 (hardening) — Audit cross-cutting post POS-9.4 détecte 5 P0 non couverts (F-A1..A5). F-04/F-14/F-38 ramenées de `resolved` à `partial` suite audit transverse : l'infrastructure est livrée mais l'adoption runtime est gated par Kiosk P9.5. F-A1..A5 ajoutées et résolues via vague H.1.

@@ -134,6 +134,24 @@ return [
             'formatter' => \App\Logging\JsonFormatter::class,
             'level' => 'info',
         ],
+
+        // [POS-9-H.3.2 / F-C7]
+        // Dedicated fiscal channel. Two reasons to isolate it:
+        //   1. Retention: NF525 requires 6 years of audit evidence. A
+        //      generic `laravel.log` is typically rotated at 14 days,
+        //      which would silently throw away the breadcrumbs of a
+        //      disputed Z close. 400 days here is an operational floor
+        //      that still fits inside the offline archive pipeline
+        //      (FiscalArchiveCommand handles the long-tail 6-year tail).
+        //   2. Signal-to-noise: fiscal events (open / close / write)
+        //      are rare but high-value. Keeping them on their own
+        //      stream makes SIEM search + alert-on-silence trivial.
+        'fiscal' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/fiscal.log'),
+            'level'  => 'info',
+            'days'   => 400,
+        ],
     ],
 
 ];

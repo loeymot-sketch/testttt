@@ -37,6 +37,13 @@ class PosOrderRequest extends FormRequest
      */
     public function rules(): array
     {
+        // [POS-9-H.1.5] F-A5 fix: `request('order_type')` is a string-ish HTTP value
+        // and `OrderType::DINING_TABLE` is an int enum value. Strict `===` always
+        // returned false, so `dining_table_id` was ALWAYS `nullable` in practice.
+        // Cast to int and use ==-style comparison to actually enforce the rule.
+        $orderTypeInt = (int) request('order_type', 0);
+        $dineInEnabled = (bool) Settings::group('pos')->get('pos_dine_in_enabled', false);
+
         return [
             // Numeric daily counter OR delivery call-out name (prénom) — must not be digits-only
             'token' => ['nullable', 'string', 'max:191'],
@@ -47,7 +54,7 @@ class PosOrderRequest extends FormRequest
             'discount' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.1] Mandatory motif for any discount above 0
             'discount_reason' => ['nullable', 'string', 'max:191'],
-            'dining_table_id' => request('order_type') === OrderType::DINING_TABLE ? [
+            'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
                 'numeric'
             ] : ['nullable'],
@@ -81,9 +88,20 @@ class PosOrderRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (request('order_type') == OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
+            // [POS-9-H.1.5] F-A5: Server-side dine-in feature gate.
+            // The UI hides dine-in when `pos_dine_in_enabled` is off, but nothing
+            // was enforcing it server-side. An attacker posting order_type=15
+            // (DINING_TABLE) would bypass the UI and create a dine-in order.
+            $orderTypeInt = (int) request('order_type', 0);
+            if ($orderTypeInt === OrderType::DINING_TABLE
+                && !(bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
+                $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+                return;
+            }
+
+            if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
-            } else if (request('order_type') == OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
+            } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             } else if (blank(request('order_type'))) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');

@@ -763,7 +763,8 @@
         "add_waiter": "Add Waiter",
         "add_chef": "Add Chef",
         "add_kiosk_machine": "Add Kiosk Machine",
-        "confirm_and_print": "Confirm & Print Reciept"
+        "confirm_and_print": "Confirm & Print Reciept",
+        "base_ht": "Net"
     },
     "number": {
         "10": "10",
@@ -777,6 +778,8 @@
         "something_wrong": "Something Wrong."
     },
     "message": {
+        "new_pos_order": "New order",
+        "new_pos_order_with_id": "New order #{id}",
         "pagination_label": "Showing {from} to {to} of {total} entries",
         "password_update": "Password Updated Successfully.",
         "photo_update": "Photo Updated Successfully.",

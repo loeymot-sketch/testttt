@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# ------------------------------------------------------------------------------
+# [POS-9-H.1.7] POS invariants CI guard — source: POS_INVARIANTS_AND_GATES.md §3
+# ------------------------------------------------------------------------------
+# Runs the six invariant greps as fast fail checks. Any hit => exit 1.
+# Designed to be called from:
+#   * a pre-push/pre-commit hook
+#   * GitHub Actions (.github/workflows/ci.yml)
+#   * `composer invariants` (add to composer.json scripts)
+#
+# Usage:
+#   bash scripts/check-invariants.sh          # quiet mode
+#   bash scripts/check-invariants.sh -v       # verbose: show context on hit
+# ------------------------------------------------------------------------------
+
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+VERBOSE=0
+[[ "${1:-}" == "-v" || "${1:-}" == "--verbose" ]] && VERBOSE=1
+
+if [[ -t 1 ]]; then
+    RED=$'\033[0;31m'
+    GREEN=$'\033[0;32m'
+    YELLOW=$'\033[0;33m'
+    NC=$'\033[0m'
+else
+    RED=""; GREEN=""; YELLOW=""; NC=""
+fi
+
+FAILED=0
+TOTAL_HITS=0
+
+# run_check <label> <regex> <exclude-regex> <scope...>
+run_check() {
+    local label="$1"; shift
+    local pattern="$1"; shift
+    local exclude="$1"; shift
+    local -a scope=("$@")
+
+    echo -n "  [${label}] ... "
+
+    local hits
+    # -e is required so BSD grep on macOS does not mistake a `->` prefixed
+    # pattern for a CLI option.
+    hits=$(grep -rEn --include='*.php' -e "$pattern" "${scope[@]}" 2>/dev/null || true)
+    if [[ -n "$exclude" ]]; then
+        hits=$(echo "$hits" | grep -vE "$exclude" || true)
+    fi
+
+    # Strip grep files-not-found style empty lines.
+    hits=$(echo "$hits" | grep -v '^$' || true)
+
+    local count=0
+    if [[ -n "$hits" ]]; then
+        count=$(echo "$hits" | wc -l | tr -d ' ')
+    fi
+
+    if [[ $count -eq 0 ]]; then
+        echo "${GREEN}OK${NC}"
+    else
+        echo "${RED}FAIL (${count} hit(s))${NC}"
+        FAILED=$((FAILED + 1))
+        TOTAL_HITS=$((TOTAL_HITS + count))
+        if [[ $VERBOSE -eq 1 ]]; then
+            echo "$hits" | head -20 | sed 's/^/      /'
+        fi
+    fi
+}
+
+echo "== POS invariants CI guard (${YELLOW}POS_INVARIANTS_AND_GATES.md §3${NC}) =="
+
+# 1. SSOT pricing — price/total/subtotal must never come from payload in POS layer.
+run_check "1/6 SSOT pricing (no payload pricing)" \
+    '->input\(.(price|total|subtotal).\)|\$request\[.(price|total|subtotal).\]' \
+    '// allow:|_archive/|tests/' \
+    app/Http/Controllers/Admin/PosController.php \
+    app/Http/Controllers/Admin/PosOrderController.php \
+    app/Services/OrderService.php \
+    app/Services/Pricing/
+
+# 2. branch_id server-side — never from request payload in ORDER FLOW code.
+#    (Admin staff provisioning services that legitimately receive branch_id
+#    from an admin form are out of scope — the invariant targets order
+#    creation/update leakage, not CRUD for Waiters/Chefs/KioskMachines.)
+run_check "2/6 branch_id server-side only" \
+    '->input\(.branch_id.\)|\$request->branch_id' \
+    '// allow:|_archive/|tests/' \
+    app/Http/Controllers/Admin/PosController.php \
+    app/Http/Controllers/Admin/PosOrderController.php \
+    app/Services/OrderService.php \
+    app/Services/FrontendOrderService.php \
+    app/Services/KitchenDisplaySystemOrderService.php
+
+# 3. Direct status writes on ORDERS — must go through OrderStateMachine.
+#    (KioskMachine.status / User.status / Payment.status are legitimate
+#    domain-specific state transitions handled by their own models.)
+run_check "3/6 status via OrderStateMachine" \
+    "->update\\(\\[[[:space:]]*['\"]status['\"]" \
+    "OrderStateMachine|_archive/|tests/|// allow:" \
+    app/Services/OrderService.php \
+    app/Services/FrontendOrderService.php \
+    app/Services/KitchenDisplaySystemOrderService.php \
+    app/Http/Controllers/Admin/PosController.php \
+    app/Http/Controllers/Admin/PosOrderController.php
+
+# 4. Event broadcast dispatched without afterCommit — scope to App\Events\* only
+#    (jobs are already queued/async; this rule targets broadcast events).
+run_check "4/6 App\\Events\\* dispatch afterCommit" \
+    'App\\\\Events\\\\[A-Za-z]+::dispatch\(' \
+    'afterCommit|shouldDispatchAfterCommit|// allow:' \
+    app/Services/OrderService.php \
+    app/Services/FrontendOrderService.php
+
+# 5. EventContract bypass — broadcast() must build & assert envelope.
+run_check "5/6 EventContract envelope" \
+    'broadcast\(' \
+    'buildEnvelope|assertEnvelopeValid|// allow:' \
+    app/Events/
+
+# 6. Sensitive actions without audit log.
+run_check "6/6 audit log on sensitive actions" \
+    '(OrderCancel|OrderRefund|applyDiscount)' \
+    'AuditLog|audit_log|ActionLog|action_log|// allow:' \
+    app/Services/
+
+echo
+if [[ $FAILED -eq 0 ]]; then
+    echo "${GREEN}==> All 6 POS invariants clean.${NC}"
+    exit 0
+else
+    echo "${RED}==> ${FAILED} invariant(s) violated (${TOTAL_HITS} total hit(s)).${NC}"
+    echo "    Run with -v to see offending lines."
+    echo "    Reference: tasks/phase9-pos/POS_INVARIANTS_AND_GATES.md §3"
+    exit 1
+fi
