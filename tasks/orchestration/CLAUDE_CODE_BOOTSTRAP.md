@@ -72,36 +72,46 @@ Chaque nouvelle session après la première, lis **uniquement** :
 
 ---
 
-## 4. État courant du projet (à la date du handoff — 2026-04-18)
+## 4. État courant du projet (dernière maj — 2026-04-18 soir)
 
 ### Track A — Kiosk (Phase 9)
 
 | Vague | Statut | Branche | Notes |
 |---|---|---|---|
-| P9.1 stop-the-bleed | **MERGED** (sha `0fd3aceac`) | `feat/kiosk-phase-9-1` | Verifier 14/14 RESOLVED. Vitest 377/377. PHPUnit 542/542. |
-| P9.2 catalog SSOT backend hardening | **EN COURS** | `feat/kiosk-phase-9-2` | 9 items P1 du findings tracker. Cursor #1 exécute. |
-| P9.3 wizard robustness | À venir | — | Attendre P9.2 mergé. |
-| P9.4 UX hors-wizard | À venir | — | Touche peu de shared. |
-| P9.5 order pipeline backend | À venir | — | **BLOQUANT pour POS-9.2/9.3** (shared state machine). |
-| P9.6 → P9.10 | À venir | — | Voir plan `PLAN_PHASE_9_KIOSK.md` (produit par Cursor #1). |
+| P9.1 stop-the-bleed | **MERGED main** (`0fd3aceac`) | `feat/kiosk-phase-9-1` | 14/14 RESOLVED. Vitest 377/377. PHPUnit 542/542. |
+| P9.2 catalog SSOT backend | **MERGE READY** 9/9 verified | `feat/kiosk-phase-9-2` | Pending human merge. |
+| P9.3 wizard robustness | **EN COURS** | `feat/kiosk-phase-9-3` | Cursor #1 exécute en autonomie. Items auto-décomposés. |
+| P9.4 UX hors-wizard | **MERGE READY** 12/12 verified | `feat/kiosk-phase-9-4` | Pending human merge. |
+| P9.5 order pipeline backend | **MERGED main** (`2df255140`) | `feat/kiosk-phase-9-5` | 8/8 RESOLVED. BROADCAST_P9_5_MERGED débloque Track B. Shapes : `order_items.allergens_snapshot`, payload IDs-only, `UNIQUE(branch_id, idempotency_key)`, `CleanupStalePendingKioskOrders` via OrderStateMachine. |
+| P9.6 analytics + observability + admin | Prêt démarrage | — | Zones exclusives, pas de dépendance Track B. Démarre après P9.3. |
+| P9.7 → P9.10 | À venir | — | Vision consignée par Cursor #1 dans `tasks/phase9/VISION_KIOSK_FINAL.md`. |
 
 ### Track B — POS (Phase POS)
 
 | Vague | Statut | Branche | Notes |
 |---|---|---|---|
-| POS-9.1 stop-the-bleed | **MERGED** | `feat/pos-phase-9-1` | Verifier 14/14 P0 RESOLVED. PHPUnit 41/41. Vitest 23/23. |
-| POS-9.2 catalog admin hardening | **BLOQUÉ** | — | Dépend de Kiosk P9.5 (shared `OrderService`, `PricingService`). |
-| POS-9.3 order management POS | **BLOQUÉ** | — | Idem dépendance Kiosk P9.5. |
-| POS-9.4 fiscal audit infra (ZReport/XReport) | **EN COURS** | `feat/pos-phase-9-4` | Zone exclusive B, pas de dépendance Kiosk. Cursor #2 exécute. |
-| POS-9.5 → POS-9.10 | À venir | — | Voir `POS_MASTER_BRIEF.md`. |
+| POS-9.1 stop-the-bleed | **MERGED main** | `feat/pos-phase-9-1` | 14/14 P0 RESOLVED. |
+| POS-9.4 fiscal audit (phases A-G) | **MERGED main** | `feat/pos-phase-9-4` | — |
+| POS-9.H Hardening (H.1+H.2+H.3) | **PR prête, pending merge** | `feat/pos-phase-9-hardening` | 26 commits atomiques. Gate H = PASS. PHPUnit 81/81, Vitest 17/17, CI invariants 6/6, zéro régression prouvée. Frozen zone dérogation H.1.1 justifiée. |
+| POS-9.4.BL (clôture BLOCKERS) | En attente merge H | `feat/pos-phase-9-2-3` | 3 commits. Fiscal seq wire-in, audit call-sites, destroy-after-Z guard. |
+| POS-9.2 state machine canonicalisation | En attente BL | `feat/pos-phase-9-2-3` | 10 commits. CI grep anti `$order->status =`. |
+| POS-9.3 multi-tender + events | En attente 9.2 | `feat/pos-phase-9-2-3` | 10 commits. `order_payments` + `OrderPaymentStateMachine` + 3 events + `X-Correlation-ID`. Overpayment cash-only acté, CB/tickets/bons/gift-card → 422. |
+| POS-9.INT E2E cross-surface + BROADCAST | En attente 9.3 | `feat/pos-phase-9-2-3` | 2 commits. `BROADCAST_POS_<date>.md` pour Track A. |
+| POS-9.5 → POS-9.10 | À venir | — | Vision dans `tasks/phase9-pos/VISION_POS_FINAL.md` (produit par Cursor #2). D-1 PDF / D-2 chiffrement archive absorbés dans POS-9.8. |
+
+### Décisions produit actées (2026-04-18)
+
+1. Split-payment overpayment : **cash-only** accepté (rendu monnaie), CB/tickets resto/bons/gift-card → 422. Trace audit `tender_amount` / `order_amount` / `change_returned` / `tender_type`.
+2. Ownership écran "Gestion commande Kiosk en caisse" : reporté à POS-9.6, non-bloquant.
+3. Vague H.4 séparée : annulée. D-1/D-2 absorbés POS-9.8.
 
 ### Blockers / questions humaines ouvertes
 
-Lire à chaque session : `tasks/phase9-pos/QUESTIONS_HUMAN_*.md`, `tasks/phase9-sync/BLOCKER_*.md`. Si présents → statuer ou escalader à Kossay avant de prompter Cursor.
+À chaque session : `tasks/phase9-pos/QUESTIONS_HUMAN_*.md`, `tasks/phase9-sync/BLOCKER_*.md`, `tasks/phase9-sync/LOCK_*.md`. Statuer ou escalader à Kossay avant prompt.
 
-### Règle d'or séquencement
+### Règle d'or séquencement (historique)
 
-**Kiosk P9.5 doit merger AVANT POS-9.2.** Les deux touchent `app/Services/OrderService.php`, `OrderStateMachine.php`. Sinon conflit garanti et invariants en risque.
+Kiosk P9.5 devait merger avant POS-9.2. **Fait** — POS peut désormais avancer BL → 9.2 → 9.3 → INT dès merge Phase H.
 
 ---
 
@@ -385,7 +395,44 @@ Court, sans préambule, exemple :
 
 ---
 
-## 19. Règle finale
+## 19. Queues de travail actives (à la bascule)
+
+### Cursor #1 (Kiosk) — ordre d'exécution
+
+1. **P9.3 Wizard robustness** — en cours, autonomie totale.
+2. **P9.6 Analytics + observability + admin** — démarre après P9.3 + rebase main.
+3. **AUDIT 110 % Kiosk** (read-only, multi-fichiers) — prompt détaillé dans `tasks/orchestration/AUDIT_110_KIOSK.md` (à créer si absent ; le contenu est dans l'historique Cowork, Cursor doit le demander à Claude Code si besoin).
+4. **Queue #K-1 à #K-10** — 10 demandes thématiques (wizard stress, menu availability, offline, hardware, perf, security, UX polish, multi-branch deploy, observability, acceptance suite). Chaque demande = scope d'une vague autonome.
+5. **P9.7 → P9.10** — selon vision Kiosk finale.
+
+### Cursor #2 (POS) — ordre d'exécution
+
+1. **Merge Phase H** (action humaine Kossay).
+2. **POS-9.4.BL** → **POS-9.2** → **POS-9.3** → **POS-9.INT** (26 commits totaux, ~4 jours autonome).
+3. **AUDIT 110 % POS** (read-only, multi-fichiers, 19 axes dont NF525 readiness).
+4. **Queue #P-1 à #P-10** — 10 demandes thématiques (stock sync POS↔Kiosk↔KDS, multi-tender, refund lifecycle, KDS coherence, perf rush hour, security, fiscal archive, reporting, drawer reconciliation, offline + acceptance).
+5. **POS-9.5 → POS-9.10** — selon vision POS finale.
+
+### Track C — E2E Global Sync (horizon post-queues)
+
+Après convergence des 2 tracks sur main + livraison de K-10 et P-10, lancement d'un **Cursor #3** dédié aux tests E2E multi-surfaces production (SYNC_PROTOCOL §10).
+
+### 4 chantiers stratégiques post-Track C
+
+| # | Chantier | Responsable | Livrable |
+|---|---|---|---|
+| C-1 | Production Readiness Gate | Cursor #1 + #2 coordonnés | Go/No-Go binaire, checklist 200 items, evidence par item |
+| C-2 | Certification NF525 formelle | Cursor #2 | Dossier envoyable commissaire aux comptes |
+| C-3 | Déploiement prod multi-branch + runbook ops | Cursor #1 ou #2 | Playbook go-live + runbook on-call + disaster recovery + rollback |
+| C-4 | Red team / pentest simulé | Cursor #3 ou sous-agent | Rapport attaques + remédiations prioritaires |
+
+### Règle de queue
+
+Tu ne laisses jamais plus d'une demande active par Cursor. Tu envoies la suivante **uniquement** quand le verifier 100 % + RUN + HANDOFF sont validés sur la précédente. Escalade humaine si un Cursor propose de cumuler.
+
+---
+
+## 20. Règle finale
 
 Tu es responsable de **préserver l'intelligence du projet** à travers les sessions. Tu protèges :
 - Le projet de la dérive.
