@@ -1,6 +1,6 @@
 # LOCK_A — `app/Models/ItemAttribute.php` + migration role enum — P9.3 Kiosk
 
-**Status.** ACTIVE
+**Status.** RELEASED
 **Opened.** 2026-04-18 — Track A Kiosk, démarrage P9.3.
 **Owner.** Kiosk Phase 9.3 (wizard robustness, item 9.3.1).
 **Branch.** `feat/kiosk-phase-9-3` (HEAD baseline `b890209f8` — merge main + P9.2).
@@ -46,6 +46,7 @@ Le modèle `App\Models\ItemAttribute` est **partagé POS/kiosk** :
 | Date | Event | SHA | Notes |
 |---|---|---|---|
 | 2026-04-18 | OPENED | `b890209f8` | Baseline merge main + P9.2 ; prêt pour 9.3.1 migration + seeder. |
+| 2026-04-18 | RELEASED | `3f0d86f9b` | Item 9.3.1 committé ; lock libéré pour les travaux suivants. |
 
 ## Release
 

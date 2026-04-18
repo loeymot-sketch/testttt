@@ -56,21 +56,21 @@
 
 | id | title | criticity | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|
-| 9.3.1 | Migration `item_attributes.role` enum + seeder rétrocompat (LOCK_A) | P1 | in-progress | — | — |
-| 9.3.2 | Refacto helpers sauces/viandes/pains → role | P1 | in-progress | — | — |
-| 9.3.3 | Pricer chaque sauce extra individuellement (client-only) | P1 | in-progress | — | — |
-| 9.3.4 | Supprimer fallback S/M/L/XL fabriqué | P1 | in-progress | — | — |
-| 9.3.5 | Regex robuste `shouldAskTacosTaille` | P2 | in-progress | — | — |
-| 9.3.6 | `data-testid` systématiques sur 7 steps | P2 | in-progress | — | — |
-| 9.3.7 | Tracker `wizard_abandoned` sur recap | P2 | in-progress | — | — |
-| 9.3.8 | Ne pas pré-sélectionner `menuChoice='full'` (badge Recommandé) | P1 | in-progress | — | — |
-| 9.3.9 | Bouton "Tout désélectionner" garnitures | P2 | in-progress | — | — |
-| 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` | P3 | in-progress | — | — |
-| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | in-progress | — | — |
-| 9.3.12 | **Double-submit guard wizard CTAs** (Next/Back/Confirm) — prévient double-tap → 2 transitions | P1 (robustness) | in-progress | — | — |
-| 9.3.13 | **Wizard resume snapshot** — F5/crash mid-wizard → overlay "Reprendre ou Recommencer" (TTL 10 min, no-PII) | P1 (robustness) | in-progress | — | — |
-| 9.3.14 | **Pricing preview resilience** — timeout 3 s, exp backoff, fallback local + pill "provisoire" | P1 (robustness) | in-progress | — | — |
-| 9.3.15 | **Focus + scroll memory + a11y transitions** — focus 1er control, scrollTop restore, aria-live step title, focus ring gloves-compatible | P2 (robustness) | in-progress | — | — |
+| 9.3.1 | Migration `item_attributes.role` enum + seeder rétrocompat (LOCK_A) | P1 | fixed | `3f0d86f9b` | — |
+| 9.3.2 | Refacto helpers sauces/viandes/pains → role | P1 | fixed | `3578c3904` | — |
+| 9.3.3 | Pricer chaque sauce extra individuellement (client-only) | P1 | fixed | `ec2f24963` | — |
+| 9.3.4 | Supprimer fallback S/M/L/XL fabriqué | P1 | fixed | `467d69cfd` | — |
+| 9.3.5 | Regex robuste `shouldAskTacosTaille` | P2 | fixed | `9971877e8` | — |
+| 9.3.6 | `data-testid` systématiques sur 7 steps | P2 | fixed | `7e6df89e6` | — |
+| 9.3.7 | Tracker `wizard_abandoned` sur recap | P2 | fixed | `42fb6ddca` | — |
+| 9.3.8 | Ne pas pré-sélectionner `menuChoice='full'` (badge Recommandé) | P1 | fixed | `59f875fdf` | — |
+| 9.3.9 | Bouton "Tout désélectionner" garnitures | P2 | fixed | `3b743198b` | — |
+| 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` | P3 | fixed | `fe9f03e6f` | — |
+| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | fixed | `3988c796b` | — |
+| 9.3.12 | **Double-submit guard wizard CTAs** (Next/Back/Confirm) — prévient double-tap → 2 transitions | P1 (robustness) | fixed | `561166f6f` | — |
+| 9.3.13 | **Wizard resume snapshot** — F5/crash mid-wizard → overlay "Reprendre ou Recommencer" (TTL 10 min, no-PII) | P1 (robustness) | fixed | `cb0dea467` | — |
+| 9.3.14 | **Pricing preview resilience** — timeout 3 s, exp backoff, fallback local + pill "provisoire" | P1 (robustness) | fixed | `998e2598f` | — |
+| 9.3.15 | **Focus + scroll memory + a11y transitions** — focus 1er control, scrollTop restore, aria-live step title, focus ring gloves-compatible | P2 (robustness) | fixed | `005738b51` | — |
 
 ---
 
