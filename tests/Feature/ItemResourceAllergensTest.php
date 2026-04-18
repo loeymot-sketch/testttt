@@ -31,6 +31,14 @@ class ItemResourceAllergensTest extends TestCase
             'wizard_template' => 'tacos',
         ]);
 
+        // Allergen rows MUST exist before the Item is persisted, otherwise
+        // ItemObserver::saving() → AllergenService::projectFlags() will
+        // resolve the `allergen_flags` JSON against an empty allergens table
+        // and silently clear the user-supplied codes.
+        $gluten  = Allergen::create(['code' => 'gluten',  'name_key' => 'allergen.gluten',  'icon' => null, 'sort' => 1]);
+        $lait    = Allergen::create(['code' => 'lait',    'name_key' => 'allergen.lait',    'icon' => null, 'sort' => 2]);
+        $sesame  = Allergen::create(['code' => 'sesame',  'name_key' => 'allergen.sesame',  'icon' => null, 'sort' => 3]);
+
         $item = Item::factory()->create([
             'item_category_id' => $cat->id,
             'name' => 'Tacos M',
@@ -39,14 +47,16 @@ class ItemResourceAllergensTest extends TestCase
             'allergen_flags' => ['gluten', 'lait'],
         ]);
 
-        $gluten  = Allergen::create(['code' => 'gluten',  'name_key' => 'allergen.gluten',  'icon' => null, 'sort' => 1]);
-        $lait    = Allergen::create(['code' => 'lait',    'name_key' => 'allergen.lait',    'icon' => null, 'sort' => 2]);
-        $sesame  = Allergen::create(['code' => 'sesame',  'name_key' => 'allergen.sesame',  'icon' => null, 'sort' => 3]);
-
-        $item->allergens()->attach($gluten->id,  ['is_trace' => false]);
-        $item->allergens()->attach($lait->id,    ['is_trace' => false]);
-        // sesame is added as a TRACE — must round-trip through the resource.
-        $item->allergens()->attach($sesame->id,  ['is_trace' => true]);
+        // Use sync() instead of attach(): the ItemObserver saving hook has
+        // already attached gluten/lait via AllergenService::projectFlags(),
+        // and attach() would raise a UNIQUE(item_id, allergen_id) violation.
+        // sync() overwrites with the exact pivot state the test cares about
+        // (including sesame as a trace allergen).
+        $item->allergens()->sync([
+            $gluten->id => ['is_trace' => false],
+            $lait->id   => ['is_trace' => false],
+            $sesame->id => ['is_trace' => true],
+        ]);
 
         $admin = User::factory()->create();
         $admin->assignRole('Admin');

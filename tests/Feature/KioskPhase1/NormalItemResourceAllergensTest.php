@@ -93,7 +93,7 @@ class NormalItemResourceAllergensTest extends TestCase
         $item = $this->makeItem();
 
         $gluten = Allergen::where('code', 'gluten')->firstOrFail();
-        $milk = Allergen::where('code', 'milk')->firstOrFail();
+        $milk = Allergen::where('code', 'lait')->firstOrFail();
 
         $item->allergens()->attach($gluten->id, ['is_trace' => false]);
         $item->allergens()->attach($milk->id, ['is_trace' => true]);
@@ -119,9 +119,9 @@ class NormalItemResourceAllergensTest extends TestCase
 
         $codes = collect($payload['allergens'])->pluck('code')->all();
         $this->assertContains('gluten', $codes);
-        $this->assertContains('milk', $codes);
+        $this->assertContains('lait', $codes);
 
-        $milkPayload = collect($payload['allergens'])->firstWhere('code', 'milk');
+        $milkPayload = collect($payload['allergens'])->firstWhere('code', 'lait');
         $this->assertTrue(
             $milkPayload['is_trace'],
             'Le pivot `is_trace` doit être propagé pour afficher "traces de lait" dans le kiosk.'

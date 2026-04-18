@@ -36,5 +36,19 @@
         <env name="MIX_PUSHER_APP_KEY" value="local-test-key"/>
         <env name="MIX_PUSHER_HOST" value="127.0.0.1"/>
         <env name="MIX_PUSHER_PORT" value="6001"/>
+        <!-- [POS-9.4.BL] Force empty Pusher creds in test env so
+             DispatchDomainEventsJob short-circuits the broadcast (mirrors
+             CI where .env.example leaves PUSHER_* empty). Without this a
+             developer with a local .env pointing at a soketi dev instance
+             would see cURL errors on Kiosk Menu/Allergen listener tests. -->
+        <env name="PUSHER_APP_KEY" value=""/>
+        <env name="PUSHER_APP_SECRET" value=""/>
+        <env name="PUSHER_APP_ID" value=""/>
+        <!-- [POS-9.4.BL] AuditLogService / ZReportService require a non-empty
+             HMAC secret even in APP_ENV=testing. These 48-char strings are
+             NOT in fiscal.dev_sentinels, so production still rejects any
+             attempt to reuse them via assertProductionSafe(). -->
+        <env name="FISCAL_AUDIT_SECRET" value="testing-fiscal-audit-secret-padding-48chars-ok"/>
+        <env name="FISCAL_Z_REPORT_SECRET" value="testing-fiscal-zreport-secret-padding-48chars-ok"/>
     </php>
 </phpunit>

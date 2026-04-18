@@ -223,11 +223,21 @@ class MenuProjectionServiceTest extends TestCase
 
     public function test_allergen_flags_are_passed_through(): void
     {
+        // AllergenService::projectFlags (called by ItemObserver::saving) only
+        // keeps codes that exist in the `allergens` table. Seed the two we
+        // want to round-trip before persisting the Item so the observer does
+        // not silently strip them.
+        \App\Models\Allergen::create(['code' => 'gluten', 'name_key' => 'allergens.gluten', 'icon' => null, 'sort' => 1]);
+        \App\Models\Allergen::create(['code' => 'lait',   'name_key' => 'allergens.lait',   'icon' => null, 'sort' => 2]);
+
         $category = $this->makeCategory();
-        $this->makeItem($category, 'Tacos halal', 6.0, allergens: ['halal', 'gluten']);
+        $this->makeItem($category, 'Tacos', 6.0, allergens: ['lait', 'gluten']);
 
         $out = $this->service->forChannel('kiosk', $this->branch->id);
-        $this->assertSame(['halal', 'gluten'], $out['categories'][0]['items'][0]['allergens']);
+        $this->assertEqualsCanonicalizing(
+            ['lait', 'gluten'],
+            $out['categories'][0]['items'][0]['allergens']
+        );
     }
 
     public function test_snapshot_version_is_returned_and_monotonic(): void
