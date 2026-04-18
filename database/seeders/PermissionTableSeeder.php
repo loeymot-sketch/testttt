@@ -149,6 +149,15 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [POS-9.1.2] Destroying a PAID order requires elevated permission.
+            [
+                'title'      => 'POS Destroy Paid Order',
+                'name'       => 'pos-destroy-paid',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/destroy-paid',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',

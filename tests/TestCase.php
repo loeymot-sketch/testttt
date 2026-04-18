@@ -134,6 +134,8 @@ abstract class TestCase extends BaseTestCase
             'pos-discount-up-to-10',
             'pos-discount-over-10-requires-manager',
             'pos-discount-unlimited',
+            // [POS-9.1.2] destroy paid orders
+            'pos-destroy-paid',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);

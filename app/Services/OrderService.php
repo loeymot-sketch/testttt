@@ -1585,11 +1585,47 @@ class OrderService
     public function destroy(Order $order)
     {
         try {
-            DB::transaction(function () use ($order) {
+            // [POS-9.1.2] Branch isolation + payment guard + audit log.
+            $actor = Auth::user();
+            $actorBranchId = (int) ($actor->branch_id ?? 0);
+            $orderBranchId = (int) $order->branch_id;
+
+            // Admin (branch_id=0) can destroy any; branch staff only own branch.
+            if ($actorBranchId > 0 && $actorBranchId !== $orderBranchId) {
+                abort(403, 'Access denied: order does not belong to your branch.');
+            }
+
+            // Block PAID orders unless the actor carries the dedicated permission.
+            if ((int) $order->payment_status === PaymentStatus::PAID
+                && $actor && !$actor->can('pos-destroy-paid')) {
+                abort(403, 'Paid orders cannot be destroyed without elevated permission.');
+            }
+
+            $reason = trim((string) request('destroy_reason', ''));
+
+            DB::transaction(function () use ($order, $actor, $reason) {
                 $order->address()?->delete();
                 $order->coupon()?->delete();
                 $order->orderItems()?->delete();
+                // Soft-delete only (Order model uses SoftDeletes)
                 $order->delete();
+
+                \App\Models\ActionLog::create([
+                    'user_id'  => $actor?->id,
+                    'action'   => 'order.destroyed',
+                    'resource' => 'Order #' . $order->id,
+                    'details'  => json_encode([
+                        'order_id'       => $order->id,
+                        'branch_id'      => $order->branch_id,
+                        'order_type'     => $order->order_type,
+                        'status'         => $order->status,
+                        'payment_status' => $order->payment_status,
+                        'total'          => $order->total,
+                        'reason'         => $reason ?: null,
+                        'actor_id'       => $actor?->id,
+                        'actor_branch'   => $actor?->branch_id,
+                    ]),
+                ]);
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
