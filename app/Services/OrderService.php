@@ -573,7 +573,7 @@ class OrderService
                 // [AUDIT-P1-A] Validate branch_id ownership: cashier can only create orders for their own branch.
                 // Admin (branch_id=0) can create orders for any branch.
                 $authUser = \Illuminate\Support\Facades\Auth::user();
-                if ($authUser->branch_id !== 0 && (int) $request->branch_id !== (int) $authUser->branch_id) {
+                if ($authUser->branch_id !== 0 && (int) $request->branch_id !== (int) $authUser->branch_id) { // allow: defensive branch comparison (not a write)
                     throw new \InvalidArgumentException(
                         'Vous ne pouvez pas créer une commande pour une autre branche.',
                         403
