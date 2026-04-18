@@ -86,11 +86,17 @@
         </button>
       </div>
 
-      <div class="kiosk-step-question">
+      <div
+        ref="stepQuestion"
+        class="kiosk-step-question"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+      >
         {{ currentStep.type === 'recap' ? $t('kiosk.wizard.recap_order_title') : getQuestionLabel(currentStep.type) }}
       </div>
 
-      <div class="kiosk-step-content">
+      <div ref="stepContent" class="kiosk-step-content">
         <transition name="step-slide" mode="out-in">
           <component
             :is="currentStepComponent"
@@ -241,6 +247,7 @@ export default {
       showAbandonConfirm: false,
       showRemovedOverlay: false,
       isSubmitting: false,
+      stepScrollMemory: {},
       currentStepIndex: 0,
       fetchedItem: null,
       fetchLoading: false,
@@ -1151,7 +1158,8 @@ export default {
     buildInstruction() {
       const item = this.resolvedItem;
       const parts = [];
-      const ti = (key, values) => this.$t(`kiosk.wizard.instruction.${key}`, values);
+      const translate = typeof this.$t === 'function' ? this.$t.bind(this) : ((key) => key);
+      const ti = (key, values) => translate(`kiosk.wizard.instruction.${key}`, values);
 
       if (this.selections._tailleMeta?.label) {
         parts.push(ti('taille', { label: this.selections._tailleMeta.label }));
@@ -1279,6 +1287,34 @@ export default {
     goToCategoriesAfterRemoval() {
       this.showRemovedOverlay = false;
       this.$router?.push({ name: 'kiosk.categories' }).catch(() => {});
+    },
+    rememberStepScroll(stepType) {
+      if (!stepType || !this.$refs.stepContent) return;
+      this.stepScrollMemory = {
+        ...this.stepScrollMemory,
+        [stepType]: this.$refs.stepContent.scrollTop || 0,
+      };
+    },
+    restoreStepScroll(stepType) {
+      if (!stepType || !this.$refs.stepContent) return;
+      this.$refs.stepContent.scrollTop = this.stepScrollMemory[stepType] || 0;
+    },
+    focusFirstStepControl() {
+      const root = this.$refs.stepContent;
+      if (!root || typeof root.querySelector !== 'function') return;
+
+      const firstControl = root.querySelector(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [role="radio"], [role="checkbox"], [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (firstControl && typeof firstControl.focus === 'function') {
+        firstControl.focus({ preventScroll: true });
+        return;
+      }
+
+      if (this.$refs.stepQuestion && typeof this.$refs.stepQuestion.focus === 'function') {
+        this.$refs.stepQuestion.focus({ preventScroll: true });
+      }
     }
   },
   mounted() {
@@ -1309,6 +1345,7 @@ export default {
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(() => this.refreshServerPreviewTotal());
     this.$nextTick(() => this._subscribeAvailabilityEcho());
+    this.$nextTick(() => this.focusFirstStepControl());
   },
   beforeUnmount() {
     this._unsubscribeAvailabilityEcho();
@@ -1354,10 +1391,15 @@ export default {
     },
     currentStepIndex(newIdx, oldIdx) {
       if (newIdx === oldIdx) return;
+      this.rememberStepScroll(this.activeSteps?.[oldIdx]?.type);
       this.saveWizardSnapshot();
       const steps = this.activeSteps || [];
       const prev = steps[oldIdx];
       const next = steps[newIdx];
+      this.$nextTick(() => {
+        this.restoreStepScroll(next?.type);
+        this.focusFirstStepControl();
+      });
       if (prev && newIdx > oldIdx) {
         try {
           kioskAnalytics.track('wizard_step_completed', {

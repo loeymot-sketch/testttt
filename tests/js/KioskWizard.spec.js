@@ -1415,6 +1415,7 @@ describe('KioskWizardComponent — item availability echo', () => {
             state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
             dispatch: vi.fn(),
           },
+          $t: (key) => key,
           $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
         },
       },
@@ -1627,6 +1628,56 @@ describe('KioskWizardComponent — pricing preview fallback', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.text()).toContain(frMessages.kiosk.wizard.preview_provisional);
+
+    wrapper.unmount();
+  });
+});
+
+describe('KioskWizardComponent — focus and scroll memory', () => {
+  it('restores_scroll_and_focuses_first_control', () => {
+    const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: {
+          id: 889,
+          name: 'Produit Focus',
+          convert_price: 8,
+          wizard_template: 'simple',
+          category_name: 'Divers',
+          itemAttributes: [],
+          variations: {},
+          extras: [],
+          addons: [],
+        },
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: {
+            getters: { 'kioskCart/branchId': 7 },
+            state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
+            dispatch: vi.fn(),
+          },
+          $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
+        },
+      },
+    });
+
+    const focus = vi.fn();
+    wrapper.vm.stepScrollMemory = { recap: 42 };
+    wrapper.vm.$refs.stepContent.scrollTop = 0;
+    wrapper.vm.$refs.stepContent.querySelector = vi.fn(() => ({ focus }));
+    wrapper.vm.$refs.stepQuestion.focus = vi.fn();
+
+    wrapper.vm.restoreStepScroll('recap');
+    wrapper.vm.focusFirstStepControl();
+
+    expect(wrapper.vm.$refs.stepContent.scrollTop).toBe(42);
+    expect(focus).toHaveBeenCalled();
+    expect(wrapper.find('.kiosk-step-question').attributes('aria-live')).toBe('polite');
 
     wrapper.unmount();
   });
