@@ -144,19 +144,62 @@ class AuditLogService
 
     private function secretFor(?int $branchId): string
     {
+        // Support per-branch override via env: FISCAL_AUDIT_SECRET_BRANCH_{id}
+        if ($branchId !== null) {
+            $override = env('FISCAL_AUDIT_SECRET_BRANCH_' . $branchId);
+            if (is_string($override) && $override !== '') {
+                return $this->assertProductionSafe($override, 'fiscal.audit_secret[branch=' . $branchId . ']');
+            }
+        }
+
         $configured = Config::get('fiscal.audit_secret');
 
         if (is_array($configured) && $branchId !== null && isset($configured[$branchId])) {
-            return (string) $configured[$branchId];
+            return $this->assertProductionSafe((string) $configured[$branchId], 'fiscal.audit_secret[branch=' . $branchId . ']');
         }
         if (is_string($configured) && $configured !== '') {
-            return $configured;
+            return $this->assertProductionSafe($configured, 'fiscal.audit_secret');
         }
 
         throw new RuntimeException(
             'AuditLogService: fiscal.audit_secret is not configured — '
             . 'refusing to write an unsigned audit row.'
         );
+    }
+
+    /**
+     * [POS-9-H.2.1 / F-C1]
+     *
+     * Reject weak / default secrets when APP_ENV=production. Outside of
+     * production we tolerate short dev strings so local testing stays
+     * fast. This is the last line of defense: a deployment that forgot
+     * to set FISCAL_AUDIT_SECRET will now crash the first write()
+     * attempt instead of silently forging an NF525-compliant chain.
+     */
+    private function assertProductionSafe(string $secret, string $key): string
+    {
+        $env = app()->environment();
+        if ($env !== 'production') {
+            return $secret;
+        }
+
+        $sentinels = (array) Config::get('fiscal.dev_sentinels', []);
+        if (in_array($secret, $sentinels, true)) {
+            throw new RuntimeException(
+                "AuditLogService: {$key} is set to a known dev sentinel in APP_ENV=production. "
+                . 'Rotate the secret (see docs/FISCAL_SECRETS.md).'
+            );
+        }
+
+        $min = (int) Config::get('fiscal.min_secret_length', 32);
+        if (strlen($secret) < $min) {
+            throw new RuntimeException(
+                "AuditLogService: {$key} is shorter than {$min} characters in APP_ENV=production. "
+                . 'Generate a strong secret (e.g. openssl rand -hex 32).'
+            );
+        }
+
+        return $secret;
     }
 
     /**

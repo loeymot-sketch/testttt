@@ -238,6 +238,7 @@ class ZReportService
         if (!is_string($secret) || $secret === '') {
             throw new RuntimeException('ZReportService: fiscal.z_report_secret is not configured.');
         }
+        $secret = $this->assertProductionSafe($secret, 'fiscal.z_report_secret');
 
         ksort($aggregates);
         $canonical = json_encode(
@@ -251,5 +252,37 @@ class ZReportService
         );
 
         return hash_hmac('sha256', $prevHash . '|' . $canonical, $secret);
+    }
+
+    /**
+     * [POS-9-H.2.1 / F-C1]
+     *
+     * Refuse to sign with a weak or default secret when APP_ENV=production.
+     * In local/testing we keep short dev strings so CI stays fast.
+     */
+    private function assertProductionSafe(string $secret, string $key): string
+    {
+        $env = app()->environment();
+        if ($env !== 'production') {
+            return $secret;
+        }
+
+        $sentinels = (array) Config::get('fiscal.dev_sentinels', []);
+        if (in_array($secret, $sentinels, true)) {
+            throw new RuntimeException(
+                "ZReportService: {$key} is set to a known dev sentinel in APP_ENV=production. "
+                . 'Rotate the secret (see docs/FISCAL_SECRETS.md).'
+            );
+        }
+
+        $min = (int) Config::get('fiscal.min_secret_length', 32);
+        if (strlen($secret) < $min) {
+            throw new RuntimeException(
+                "ZReportService: {$key} is shorter than {$min} characters in APP_ENV=production. "
+                . 'Generate a strong secret (e.g. openssl rand -hex 32).'
+            );
+        }
+
+        return $secret;
     }
 }
