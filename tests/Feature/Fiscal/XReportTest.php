@@ -43,20 +43,23 @@ class XReportTest extends TestCase
         // After the Z close, a PAID order comes in.
         Carbon::setTestNow(Carbon::create(2026, 4, 22, 10, 15, 0));
         Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'total'          => 12.34,
-            'payment_status' => PaymentStatus::PAID,
+            'branch_id'          => $branch->id,
+            'total'              => 12.34,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 1,
         ]);
         Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'total'          => 8.00,
-            'payment_status' => PaymentStatus::PAID,
+            'branch_id'          => $branch->id,
+            'total'              => 8.00,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 2,
         ]);
         // UNPAID must not count.
         Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'total'          => 5.00,
-            'payment_status' => PaymentStatus::UNPAID,
+            'branch_id'          => $branch->id,
+            'total'              => 5.00,
+            'payment_status'     => PaymentStatus::UNPAID,
+            'fiscal_sequence_no' => 3,
         ]);
 
         Carbon::setTestNow(Carbon::create(2026, 4, 22, 14, 0, 0));
@@ -78,9 +81,10 @@ class XReportTest extends TestCase
 
         Carbon::setTestNow(Carbon::create(2026, 4, 22, 9, 0, 0));
         Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'total'          => 4.20,
-            'payment_status' => PaymentStatus::PAID,
+            'branch_id'          => $branch->id,
+            'total'              => 4.20,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 1,
         ]);
 
         Carbon::setTestNow(Carbon::create(2026, 4, 22, 13, 0, 0));
@@ -97,9 +101,10 @@ class XReportTest extends TestCase
     {
         $branch = Branch::factory()->create();
         Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'total'          => 9.99,
-            'payment_status' => PaymentStatus::PAID,
+            'branch_id'          => $branch->id,
+            'total'              => 9.99,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 1,
         ]);
 
         $service = app(XReportService::class);

@@ -60,28 +60,31 @@ class ZReportCloseTest extends TestCase
         // PAID within window
         Carbon::setTestNow($start->copy()->addHour());
         Order::factory()->create([
-            'branch_id'      => $this->branch->id,
-            'total'          => 42.50,
-            'payment_status' => PaymentStatus::PAID,
-            'status'   => OrderStatus::DELIVERED,
+            'branch_id'          => $this->branch->id,
+            'total'              => 42.50,
+            'payment_status'     => PaymentStatus::PAID,
+            'status'             => OrderStatus::DELIVERED,
+            'fiscal_sequence_no' => 1,
         ]);
 
         // UNPAID within window — must NOT count
         Carbon::setTestNow($start->copy()->addHour()->addMinutes(30));
         Order::factory()->create([
-            'branch_id'      => $this->branch->id,
-            'total'          => 100.00,
-            'payment_status' => PaymentStatus::UNPAID,
-            'status'   => OrderStatus::PENDING,
+            'branch_id'          => $this->branch->id,
+            'total'              => 100.00,
+            'payment_status'     => PaymentStatus::UNPAID,
+            'status'             => OrderStatus::PENDING,
+            'fiscal_sequence_no' => 2,
         ]);
 
         // PAID but before the window — must NOT count
         Carbon::setTestNow($start->copy()->subHour());
         Order::factory()->create([
-            'branch_id'      => $this->branch->id,
-            'total'          => 999.00,
-            'payment_status' => PaymentStatus::PAID,
-            'status'   => OrderStatus::DELIVERED,
+            'branch_id'          => $this->branch->id,
+            'total'              => 999.00,
+            'payment_status'     => PaymentStatus::PAID,
+            'status'             => OrderStatus::DELIVERED,
+            'fiscal_sequence_no' => 3,
         ]);
 
         Carbon::setTestNow($start->copy()->addHours(5));
@@ -115,9 +118,10 @@ class ZReportCloseTest extends TestCase
     {
         $this->service->open($this->branch->id);
         Order::factory()->create([
-            'branch_id'      => $this->branch->id,
-            'total'          => 10.00,
-            'payment_status' => PaymentStatus::PAID,
+            'branch_id'          => $this->branch->id,
+            'total'              => 10.00,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 1,
         ]);
         $closed = $this->service->close($this->branch->id);
 

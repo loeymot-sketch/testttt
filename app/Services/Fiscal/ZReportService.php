@@ -152,8 +152,21 @@ class ZReportService
      */
     public function aggregate(int $branchId, ?Carbon $from, Carbon $to): array
     {
-        $query = Order::withoutGlobalScopes()
+        // [POS-9-H.2.4 / F-C4]
+        // Only orders that received a fiscal_sequence_no are NF525 fiscal
+        // events. Legacy orders (pre-POS-9.4 migration) and orders whose
+        // sequence allocation failed must NOT be aggregated into a Z,
+        // otherwise the signed totals would include untraceable rows
+        // and silently break the "sequential, gap-free" invariant.
+        //
+        // [POS-9-H.2.5 / F-B5]
+        // withoutGlobalScopes() drops BranchScope AND SoftDeletingScope
+        // — undesirable for soft-deletes, which must stay excluded so
+        // a cancelled-then-restored order is never double-counted.
+        // Scope reset to `BranchScope` only.
+        $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('branch_id', $branchId)
+            ->whereNotNull('fiscal_sequence_no')
             ->where('created_at', '<=', $to);
 
         if ($from) {
