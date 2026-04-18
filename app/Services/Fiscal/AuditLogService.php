@@ -77,7 +77,20 @@ class AuditLogService
 
         $branchId = $this->resolveBranchId($data);
 
-        $lockKey = 'audit_chain_b' . ($branchId ?? 'global');
+        // [POS-9-H.2.3 / F-C5]
+        // Reject null branch_id: a call that does not pin a branch would
+        // read the tail across ALL chains (lastHashFor(null) has no WHERE
+        // clause) and poison whichever chain happens to be latest. CLI
+        // jobs must pass branch_id=0 explicitly to write to the system
+        // chain, or a positive branch_id for a tenant chain.
+        if ($branchId === null) {
+            throw new \InvalidArgumentException(
+                'AuditLogService::write() requires an explicit branch_id. '
+                . 'Pass branch_id=0 for system/CLI events, or a positive int for a tenant chain.'
+            );
+        }
+
+        $lockKey = 'audit_chain_b' . $branchId;
         $lock    = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
 
         if (!$lock->block(self::CHAIN_LOCK_WAIT)) {
