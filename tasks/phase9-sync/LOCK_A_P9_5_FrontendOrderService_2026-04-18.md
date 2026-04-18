@@ -35,5 +35,5 @@
 
 ## Status
 
-- **ACTIVE** depuis 2026-04-18 (création de la branche `feat/kiosk-phase-9-5`).
-- Sera mis à jour `RELEASED` après le commit d'implémentation et confirmation tests verts.
+- **RELEASED (`this commit`)** le 2026-04-18.
+- Modif additive confirmée sur `FrontendOrderService::myOrderStore`; tests verts sur `OrderAllergenSnapshotTest`.

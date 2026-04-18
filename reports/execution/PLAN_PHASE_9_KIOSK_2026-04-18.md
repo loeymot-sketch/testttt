@@ -367,3 +367,7 @@ Validation humaine demandée avant démarrage effectif.
 ## ESCALATION
 
 - 2026-04-18 — EXECUTE P9.2 bloqué côté gouvernance: le plan ne contenait aucun bloc `SUBSYSTEMS_TOUCHED`. **Résolu** par le commit `af4139b01` qui ajoute la section `SUBSYSTEMS_TOUCHED` couvrant les périmètres P9.1 (clos) et P9.2 (actif), ainsi qu'un rappel des frozen zones et le pattern d'escalade BLOCKER. Voir aussi `tasks/phase9/P9_2_BLOCKER_SCOPE_GOVERNANCE_2026-04-18.md` qui consigne le blocker initial avant résolution.
+
+## SYMMETRY_NOTE
+
+- 2026-04-18 — P9.5.1 a touché `FrontendOrderService.php` de façon strictement additive pour enrichir les lignes `order_items` avec `allergens_snapshot` au moment du `insert()`. Vérifié: aucun changement sur pricing SSOT, idempotency, state machine, `branch_id` server-resolved, ni besoin de symétrie immédiate dans `OrderService.php` (hors scope P9.5 et toujours frozen).

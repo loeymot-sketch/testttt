@@ -215,6 +215,7 @@ class FrontendOrderService
                         $this->couponService
                     );
                     $itemsArray = $kioskSsot->orderItemInsertRows;
+                    $itemsArray = $this->hydrateAllergenSnapshots($itemsArray);
                     $realSubtotal = $kioskSsot->accumulatedSubtotal;
                     $totalTax = $kioskSsot->totalTax;
                     $calculatedDiscount = $kioskSsot->discount;
@@ -355,6 +356,8 @@ class FrontendOrderService
                             $i++;
                         }
                     }
+
+                    $itemsArray = $this->hydrateAllergenSnapshots($itemsArray);
 
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
@@ -702,6 +705,63 @@ class FrontendOrderService
         }
         $decoded = json_decode($json);
         return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $itemsArray
+     * @return array<int, array<string, mixed>>
+     */
+    private function hydrateAllergenSnapshots(array $itemsArray): array
+    {
+        if ($itemsArray === []) {
+            return $itemsArray;
+        }
+
+        $itemsById = Item::query()
+            ->select('id', 'allergen_flags')
+            ->with(['allergens' => function ($query): void {
+                $query->select('allergens.id', 'code')->orderBy('sort');
+            }])
+            ->whereIn('id', collect($itemsArray)->pluck('item_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
+        foreach ($itemsArray as $index => $row) {
+            $itemsArray[$index]['allergens_snapshot'] = json_encode(
+                $this->resolveAllergenSnapshot($itemsById->get((int) ($row['item_id'] ?? 0))),
+                JSON_UNESCAPED_UNICODE
+            );
+        }
+
+        return $itemsArray;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveAllergenSnapshot(?Item $item): array
+    {
+        if (!$item) {
+            return [];
+        }
+
+        $pivotCodes = $item->relationLoaded('allergens')
+            ? $item->allergens->pluck('code')->filter()->values()->all()
+            : $item->allergens()->orderBy('sort')->pluck('code')->filter()->values()->all();
+
+        if ($pivotCodes !== []) {
+            return $pivotCodes;
+        }
+
+        if (!method_exists(AllergenService::class, 'projectFlags')) {
+            // Legacy fallback only for environments that have not yet shipped AllergenService::projectFlags.
+            return collect($item->allergen_flags ?? [])
+                ->filter(fn ($code): bool => is_string($code) && $code !== '')
+                ->values()
+                ->all();
+        }
+
+        return [];
     }
 
     public function finalizePaidKioskOrder(FrontendOrder $frontendOrder): bool

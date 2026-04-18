@@ -37,5 +37,5 @@
 
 ## Status
 
-- **ACTIVE** depuis 2026-04-18.
-- Passera à `RELEASED` au commit 9.5.1.
+- **RELEASED (`this commit`)** le 2026-04-18.
+- Modèle + migration validés par `OrderAllergenSnapshotTest`.
