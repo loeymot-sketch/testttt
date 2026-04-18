@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Enums\Status;
+use App\Enums\TaxType;
 use App\Models\Item;
 use App\Models\ItemAddon;
 use App\Models\ItemAttribute;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
+use App\Models\Tax;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +57,12 @@ class MenuSeeder extends Seeder
     protected array $addonIds = [];
 
     /**
+     * Resolved default tax for items (config default_tax_id may not exist after
+     * MySQL transaction rollbacks: AUTO_INCREMENT is not reset, first row ≠ 1).
+     */
+    protected ?int $defaultTaxId = null;
+
+    /**
      * Item attributes
      */
     protected ?ItemAttribute $attrViande1 = null;
@@ -81,6 +89,7 @@ class MenuSeeder extends Seeder
         $this->config = Config::get('menu');
         $this->categoryIds = [];
         $this->addonIds = [];
+        $this->defaultTaxId = null;
 
         echo "=== MENU SEEDER - Le Grill House ===\n";
         echo "Restaurant: {$this->config['restaurant']['name']}\n";
@@ -350,6 +359,37 @@ class MenuSeeder extends Seeder
     }
 
     /**
+     * Items reference taxes.id; config default_tax_id is often 1 but tests/CI
+     * may have no row at 1 (e.g. InnoDB rollback leaves AUTO_INCREMENT > 1).
+     */
+    protected function defaultTaxId(): int
+    {
+        if ($this->defaultTaxId !== null) {
+            return $this->defaultTaxId;
+        }
+
+        $configured = (int) ($this->config['settings']['default_tax_id'] ?? 0);
+        if ($configured > 0 && Tax::query()->whereKey($configured)->exists()) {
+            return $this->defaultTaxId = $configured;
+        }
+
+        $existing = Tax::query()->orderBy('id')->value('id');
+        if ($existing) {
+            return $this->defaultTaxId = (int) $existing;
+        }
+
+        $tax = Tax::create([
+            'name' => 'VAT',
+            'code' => 'VAT-MENUSEEDER-DEFAULT',
+            'tax_rate' => 10,
+            'type' => TaxType::PERCENTAGE,
+            'status' => Status::ACTIVE,
+        ]);
+
+        return $this->defaultTaxId = (int) $tax->id;
+    }
+
+    /**
      * Create categories from config
      */
     protected function createCategories(): void
@@ -420,7 +460,7 @@ class MenuSeeder extends Seeder
                 'price' => $addon['price'],
                 'description' => 'Upsell item',
                 'status' => Status::ACTIVE,
-                'tax_id' => $this->config['settings']['default_tax_id'],
+                'tax_id' => $this->defaultTaxId(),
             ]);
 
             $this->attachItemImage($item, Str::slug($addon['name']), 'addons');
@@ -471,7 +511,7 @@ class MenuSeeder extends Seeder
             'price' => $data['price'],
             'description' => $data['description'] ?? '',
             'status' => Status::ACTIVE,
-            'tax_id' => $this->config['settings']['default_tax_id'],
+            'tax_id' => $this->defaultTaxId(),
         ]);
 
         // Attach addons
