@@ -1028,7 +1028,16 @@ export default {
             if (branchId <= 0) return;
             try {
                 this._eventSub = onEvents(branchId, [
-                    { broadcastAs: 'OrderCreated', handler: () => this.loadKioskCashOrders() },
+                    {
+                        broadcastAs: 'OrderCreated',
+                        handler: (event) => {
+                            // [POS-9.1.11] Audible + visual notification for new POS orders.
+                            // Audit POS-GA-F-55 — cashier had zero feedback on new
+                            // kiosk-cash / online orders, only a silent list refresh.
+                            this._notifyNewOrder(event);
+                            this.loadKioskCashOrders();
+                        },
+                    },
                     { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
                     // so freshly out-of-stock tiles grey out without an F5.
@@ -1073,6 +1082,55 @@ export default {
         _unsubscribeEcho() {
             this._eventSub?.unsubscribe();
             this._eventSub = null;
+        },
+        /**
+         * [POS-9.1.11] Audible + visual cue when a new order is broadcast on
+         * the POS branch channel. Audit POS-GA-F-55.
+         *  - Toast (alertService.info) so the cashier sees the order ID;
+         *  - Short beep via Web Audio API (no asset to ship); silently
+         *    skipped if AudioContext is unavailable or denied by autoplay.
+         *  - Honors the `pos_new_order_sound_enabled` frontend setting (defaults true).
+         */
+        _notifyNewOrder(event) {
+            const payload = (event && event.payload) ? event.payload : event || {};
+            const orderId = payload.order_id || payload.id || null;
+            try {
+                const label = orderId
+                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
+                    : (this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande';
+                alertService.info(label);
+            } catch (e) { /* defensive */ }
+
+            // Sound — opt-out via setting; default ON.
+            try {
+                const s = this.setting || {};
+                const soundFlag = s.pos_new_order_sound_enabled;
+                const soundOn = soundFlag === undefined || soundFlag === null
+                    ? true
+                    : (String(soundFlag) === '1' || soundFlag === true);
+                if (!soundOn) return;
+                this._playNewOrderBeep();
+            } catch (e) { /* defensive */ }
+        },
+        _playNewOrderBeep() {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!this._audioCtx) {
+                try { this._audioCtx = new Ctx(); } catch (e) { return; }
+            }
+            const ctx = this._audioCtx;
+            try {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880; // A5 — short ding
+                gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                osc.connect(gain).connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) { /* autoplay or context blocked */ }
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────

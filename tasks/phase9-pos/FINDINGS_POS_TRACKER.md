@@ -69,7 +69,7 @@
 | POS-GA-F-52 | P2 | Aucun historique commandes closes cross-source depuis POS | `routes/api.php:625-638` | POS-9.8 | — | open |
 | POS-GA-F-53 | P2 | Dashboard sans tuile rupture / hardware / uptime borne / ticket moyen / conversion | `resources/js/components/admin/dashboard/` | POS-9.10 | — | open |
 | POS-GA-F-54 | P2 | Polling POS borné à kiosk cash — catalogue non polé en mode dégradé | `resources/js/components/admin/pos/PosComponent.vue:988-997` | POS-9.10 | — | open |
-| POS-GA-F-55 | P2 | Aucune notification sonore / toast sur nouvelle commande POS | `resources/js/components/admin/pos/PosComponent.vue:1005` | POS-9.8 | — | open |
+| POS-GA-F-55 | P2 | Aucune notification sonore / toast sur nouvelle commande POS | `resources/js/components/admin/pos/PosComponent.vue:1005` | POS-9.1 | — | resolved (POS-9.1.11 — toast + WebAudio beep) |
 | POS-GA-F-56 | P2 | Money en `decimal:6` au lieu de cents int (dérive possible) | `app/Models/Order.php:59-63`, `app/Models/Transaction.php:11-18` | deferred-v2 | — | open |
 | POS-GA-F-57 | P2 | Rôles Runner / Kitchen Lead absents du seed | `database/seeders/RoleTableSeeder.php:17-67` | POS-9.9 | — | open |
 | POS-GA-F-58 | P2 | Aucune permission POS granulaire (cancel-after-paid, refund, discount-X, amend, manage-drawer, reopen-z) | `database/seeders/PermissionTableSeeder.php:113-125` | POS-9.9 | — | open |
