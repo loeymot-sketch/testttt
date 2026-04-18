@@ -2,16 +2,16 @@
   <div class="kiosk-step-garnitures">
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.garnitures.title') }}</h3>
 
-    <div class="kiosk-garnitures-info">
-      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.step.garnitures.all_included') }}</span>
-      <span class="kiosk-info-text">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
+    <div class="kiosk-garnitures-info" data-testid="kiosk-step-garnitures-info">
+      <span class="kiosk-info-badge" data-testid="kiosk-step-garnitures-badge">{{ $t('kiosk.wizard.step.garnitures.all_included') }}</span>
+      <span class="kiosk-info-text" data-testid="kiosk-step-garnitures-hint">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
     </div>
 
     <div v-if="garnitureList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
       <p>{{ $t('kiosk.wizard.step.garnitures.empty_hint') }}</p>
     </div>
 
-    <div v-else class="kiosk-garnitures-list">
+    <div v-else class="kiosk-garnitures-list" data-testid="kiosk-step-garnitures-list">
       <div
         v-for="garniture in garnitureList"
         :key="garniture.id"
@@ -24,6 +24,7 @@
         @click="toggleGarniture(garniture.id)"
         @keydown.enter.prevent="toggleGarniture(garniture.id)"
         @keydown.space.prevent="toggleGarniture(garniture.id)"
+        data-testid="kiosk-step-garnitures-option"
       >
         <div class="kiosk-garniture-visual">
           <img
@@ -38,7 +39,9 @@
           <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
-        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
+        <span class="kiosk-garniture-status" data-testid="kiosk-step-garnitures-counter">
+          {{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}
+        </span>
         <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
         <span v-else class="kiosk-garniture-action">+</span>
       </div>

@@ -6,7 +6,13 @@
       <p>{{ $t('kiosk.wizard.step.pain.empty_hint') }}</p>
     </div>
 
-    <div v-else class="kiosk-pain-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.step.pain.title')">
+    <div
+      v-else
+      class="kiosk-pain-grid"
+      role="radiogroup"
+      :aria-label="$t('kiosk.wizard.step.pain.title')"
+      data-testid="kiosk-step-pain-grid"
+    >
       <div
         v-for="pain in painList"
         :key="pain.id ?? pain.name"
@@ -19,8 +25,9 @@
         @click="selectPain(pain)"
         @keydown.enter.prevent="selectPain(pain)"
         @keydown.space.prevent="selectPain(pain)"
+        data-testid="kiosk-step-pain-option"
       >
-        <div class="kiosk-pain-media">
+        <div class="kiosk-pain-media" data-testid="kiosk-step-pain-media">
           <img
             v-if="pain.displayThumb && !brokenPainThumbs[painThumbKey(pain)]"
             :src="pain.displayThumb"
@@ -31,7 +38,7 @@
           />
           <span v-else class="kiosk-pain-emoji">{{ pain.emoji }}</span>
         </div>
-        <span class="kiosk-pain-name">{{ pain.name }}</span>
+        <span class="kiosk-pain-name" data-testid="kiosk-step-pain-name">{{ pain.name }}</span>
         <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
         <span v-else class="kiosk-pain-action">+</span>
       </div>

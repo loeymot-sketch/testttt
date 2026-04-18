@@ -2,8 +2,8 @@
   <div class="kiosk-step-supplements">
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.supplements_step_title') }}</h3>
 
-    <div class="kiosk-supplements-info">
-      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.supplements_badge_paid') }}</span>
+    <div class="kiosk-supplements-info" data-testid="kiosk-step-supplements-info">
+      <span class="kiosk-info-badge" data-testid="kiosk-step-supplements-badge">{{ $t('kiosk.wizard.supplements_badge_paid') }}</span>
       <span v-if="totalPrice > 0" class="kiosk-supplements-price">
         +{{ formatPrice(totalPrice) }}
       </span>
@@ -14,7 +14,7 @@
       <p>{{ $t('kiosk.wizard.supplements_empty') }}</p>
     </div>
 
-    <div v-else class="kiosk-supplements-list">
+    <div v-else class="kiosk-supplements-list" data-testid="kiosk-step-supplements-list">
       <div
         v-for="supplement in supplementList"
         :key="supplement.id"
@@ -27,6 +27,7 @@
         @click="toggleSupplement(supplement.id)"
         @keydown.enter.prevent="toggleSupplement(supplement.id)"
         @keydown.space.prevent="toggleSupplement(supplement.id)"
+        data-testid="kiosk-step-supplements-option"
       >
         <div class="kiosk-supplement-visual">
           <img
@@ -43,7 +44,7 @@
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
           <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
         </div>
-        <span class="kiosk-supplement-price">{{ formatPrice(supplement.price) }}</span>
+        <span class="kiosk-supplement-price" data-testid="kiosk-step-supplements-counter">{{ formatPrice(supplement.price) }}</span>
         <span v-if="localSelections[supplement.id]" class="kiosk-supplement-action active">✓</span>
         <span v-else class="kiosk-supplement-action">+</span>
       </div>

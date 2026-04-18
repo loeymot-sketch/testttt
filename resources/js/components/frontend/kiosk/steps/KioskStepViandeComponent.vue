@@ -4,8 +4,12 @@
       {{ viandeStepTitle }}
     </h3>
 
-    <div class="kiosk-viande-counter">
-      <div class="kiosk-counter-badge" :class="{ complete: totalSelected >= maxViandes }">
+    <div class="kiosk-viande-counter" data-testid="kiosk-step-viande-counter-wrap">
+      <div
+        class="kiosk-counter-badge"
+        :class="{ complete: totalSelected >= maxViandes }"
+        data-testid="kiosk-step-viande-counter"
+      >
         {{ totalSelected }} / {{ maxViandes }}
       </div>
       <span v-if="totalSelected >= maxViandes" class="kiosk-complete-badge">✅ {{ $t('kiosk.wizard.step.viande.complete') }}</span>
@@ -15,12 +19,13 @@
       <p>{{ $t('kiosk.wizard.step.viande.empty_hint') }}</p>
     </div>
 
-    <div v-else class="kiosk-viande-grid">
+    <div v-else class="kiosk-viande-grid" data-testid="kiosk-step-viande-grid">
       <div
         v-for="viande in viandeList"
         :key="viande.key"
         class="kiosk-viande-card"
         :class="{ active: (localSelections[viande.key] || 0) > 0, 'is-paid': viande.price > 0 }"
+        data-testid="kiosk-step-viande-option"
       >
         <span v-if="viande.price > 0" class="kiosk-viande-badge-paid">
           +{{ formatPrice(viande.price) }}
@@ -40,21 +45,30 @@
 
         <span class="kiosk-viande-name">{{ viande.name }}</span>
 
-        <div class="kiosk-viande-controls" role="group" :aria-label="viande.name">
+        <div
+          class="kiosk-viande-controls"
+          role="group"
+          :aria-label="viande.name"
+          data-testid="kiosk-step-viande-controls"
+        >
           <button
             type="button"
             @click="decrement(viande.key)"
             class="kiosk-viande-qty-btn"
             :disabled="(localSelections[viande.key] || 0) === 0"
             :aria-label="$t('kiosk.wizard.step.viande.remove_one', { name: viande.name })"
+            data-testid="kiosk-step-viande-minus"
           >−</button>
-          <span class="kiosk-viande-qty-value" aria-live="polite">{{ localSelections[viande.key] || 0 }}</span>
+          <span class="kiosk-viande-qty-value" aria-live="polite" data-testid="kiosk-step-viande-qty">
+            {{ localSelections[viande.key] || 0 }}
+          </span>
           <button
             type="button"
             @click="increment(viande.key)"
             class="kiosk-viande-qty-btn plus"
             :disabled="totalSelected >= maxViandes"
             :aria-label="$t('kiosk.wizard.step.viande.add_one', { name: viande.name })"
+            data-testid="kiosk-step-viande-plus"
           >+</button>
         </div>
       </div>

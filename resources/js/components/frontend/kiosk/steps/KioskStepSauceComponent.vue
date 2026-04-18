@@ -16,10 +16,11 @@
         class="kiosk-btn-continue"
         :aria-label="$t('kiosk.wizard.step.sauce.skip_btn')"
         @click="$emit('update', 'sauceOrder', ['_skip'])"
+        data-testid="kiosk-step-sauce-skip"
       >{{ $t('kiosk.wizard.step.sauce.skip_btn') }}</button>
     </div>
 
-    <div v-else class="kiosk-sauce-grid">
+    <div v-else class="kiosk-sauce-grid" data-testid="kiosk-step-sauce-grid">
       <div
         v-for="(sauce, sIdx) in sauceList"
         :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"
@@ -32,8 +33,9 @@
         @click="toggleSauce(sauce)"
         @keydown.enter.prevent="toggleSauce(sauce)"
         @keydown.space.prevent="toggleSauce(sauce)"
+        data-testid="kiosk-step-sauce-option"
       >
-        <div class="kiosk-sauce-media">
+        <div class="kiosk-sauce-media" data-testid="kiosk-step-sauce-media">
           <img
             v-if="sauce.thumb && !brokenSauceThumbs[sauceThumbKey(sauce)]"
             :key="`${sauceThumbKey(sauce)}-${sauce.thumb}`"
@@ -46,7 +48,7 @@
           <span v-else class="kiosk-sauce-emoji">{{ sauce.emoji }}</span>
         </div>
         <span class="kiosk-sauce-name">{{ sauce.name }}</span>
-        <span class="kiosk-sauce-price">{{ sauceUnitPriceLabel(sauce) }}</span>
+        <span class="kiosk-sauce-price" data-testid="kiosk-step-sauce-counter">{{ sauceUnitPriceLabel(sauce) }}</span>
         <span v-if="getSauceOrder(sauceKey(sauce)) > 0" class="kiosk-sauce-order">{{ getSauceOrder(sauceKey(sauce)) }}</span>
         <span v-else class="kiosk-sauce-add">+</span>
       </div>

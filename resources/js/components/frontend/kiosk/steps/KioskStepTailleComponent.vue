@@ -6,6 +6,7 @@
       class="kiosk-taille-grid"
       role="radiogroup"
       :aria-label="$t('kiosk.wizard.step.taille.title')"
+      data-testid="kiosk-step-taille-grid"
     >
       <div
         v-for="option in tailleOptions"
@@ -19,8 +20,13 @@
         @click="selectTaille(option)"
         @keydown.enter.prevent="selectTaille(option)"
         @keydown.space.prevent="selectTaille(option)"
+        data-testid="kiosk-step-taille-option"
       >
-        <div v-if="option.displayThumb && !brokenTailleThumbs[tailleThumbKey(option)]" class="kiosk-taille-media">
+        <div
+          v-if="option.displayThumb && !brokenTailleThumbs[tailleThumbKey(option)]"
+          class="kiosk-taille-media"
+          data-testid="kiosk-step-taille-media"
+        >
           <img
             :src="option.displayThumb"
             :alt="option.label"
@@ -29,9 +35,9 @@
             @error="onTailleThumbError(option)"
           />
         </div>
-        <span class="kiosk-taille-badge">{{ option.badge }}</span>
-        <span class="kiosk-taille-label">{{ option.label }}</span>
-        <span class="kiosk-taille-viandes">{{ option.viandesLabel }}</span>
+        <span class="kiosk-taille-badge" data-testid="kiosk-step-taille-badge">{{ option.badge }}</span>
+        <span class="kiosk-taille-label" data-testid="kiosk-step-taille-label">{{ option.label }}</span>
+        <span class="kiosk-taille-viandes" data-testid="kiosk-step-taille-counter">{{ option.viandesLabel }}</span>
         <span v-if="localSelection === option.key" class="kiosk-taille-action active">✓</span>
         <span v-else class="kiosk-taille-action">+</span>
       </div>

@@ -17,7 +17,12 @@
       {{ $t('kiosk.wizard.menu.hint_need_choice') }}
     </div>
 
-    <div class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
+    <div
+      class="kiosk-menu-options"
+      role="radiogroup"
+      :aria-label="$t('kiosk.wizard.menu.title')"
+      data-testid="kiosk-step-menu-grid"
+    >
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'full' }"
@@ -28,6 +33,7 @@
         @click="selectChoice('full')"
         @keydown.enter.prevent="selectChoice('full')"
         @keydown.space.prevent="selectChoice('full')"
+        data-testid="kiosk-step-menu-option-full"
       >
         <span class="kiosk-menu-emoji">🍟🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.full_name') }}</span>
@@ -46,6 +52,7 @@
         @click="selectChoice('frites')"
         @keydown.enter.prevent="selectChoice('frites')"
         @keydown.space.prevent="selectChoice('frites')"
+        data-testid="kiosk-step-menu-option-frites"
       >
         <span class="kiosk-menu-emoji">🍟</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_name') }}</span>
@@ -65,6 +72,7 @@
         @click="selectChoice('boisson')"
         @keydown.enter.prevent="selectChoice('boisson')"
         @keydown.space.prevent="selectChoice('boisson')"
+        data-testid="kiosk-step-menu-option-boisson"
       >
         <span class="kiosk-menu-emoji">🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.boisson_name') }}</span>
@@ -83,6 +91,7 @@
         @click="selectChoice('none')"
         @keydown.enter.prevent="selectChoice('none')"
         @keydown.space.prevent="selectChoice('none')"
+        data-testid="kiosk-step-menu-option-none"
       >
         <span class="kiosk-menu-emoji">🚫</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.none_name') }}</span>
@@ -96,7 +105,12 @@
     <div v-if="showMenuFritesUpgrade" class="kiosk-boisson-section kiosk-frites-upgrade-section">
       <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_upgrade_title') }}</h4>
       <p class="kiosk-upgrade-hint">{{ $t('kiosk.wizard.menu.frites_upgrade_hint') }}</p>
-      <div class="kiosk-menu-options kiosk-upgrade-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.frites_upgrade_title')">
+      <div
+        class="kiosk-menu-options kiosk-upgrade-grid"
+        role="radiogroup"
+        :aria-label="$t('kiosk.wizard.menu.frites_upgrade_title')"
+        data-testid="kiosk-step-menu-upgrade-grid"
+      >
         <div
           class="kiosk-menu-card kiosk-upgrade-card"
           :class="{ selected: selectedBundledUpgradeId === null }"
@@ -107,6 +121,7 @@
           @click="applyBundledUpgradeSelection(null)"
           @keydown.enter.prevent="applyBundledUpgradeSelection(null)"
           @keydown.space.prevent="applyBundledUpgradeSelection(null)"
+          data-testid="kiosk-step-menu-upgrade-standard"
         >
           <span class="kiosk-menu-emoji">🍟</span>
           <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_upgrade_standard') }}</span>
@@ -126,6 +141,7 @@
           @click="applyBundledUpgradeSelection(row.id)"
           @keydown.enter.prevent="applyBundledUpgradeSelection(row.id)"
           @keydown.space.prevent="applyBundledUpgradeSelection(row.id)"
+          data-testid="kiosk-step-menu-upgrade-option"
         >
           <div class="kiosk-boisson-visual">
             <img
@@ -156,7 +172,12 @@
       >
         {{ $t('kiosk.wizard.menu.boisson_hint') }}
       </div>
-      <div class="kiosk-boisson-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.boisson_section_title')">
+      <div
+        class="kiosk-boisson-grid"
+        role="radiogroup"
+        :aria-label="$t('kiosk.wizard.menu.boisson_section_title')"
+        data-testid="kiosk-step-menu-drink-grid"
+      >
         <div
           v-for="boisson in boissonList"
           :key="boisson.id ?? boisson.name"
@@ -169,6 +190,7 @@
           @click="selectBoisson(boisson)"
           @keydown.enter.prevent="selectBoisson(boisson)"
           @keydown.space.prevent="selectBoisson(boisson)"
+          data-testid="kiosk-step-menu-drink-option"
         >
           <div class="kiosk-boisson-visual">
             <img
@@ -201,7 +223,12 @@
       >
         {{ $t('kiosk.wizard.menu.frites_sauce_hint') }}
       </div>
-      <div class="kiosk-boisson-grid" role="group" :aria-label="$t('kiosk.wizard.menu.frites_sauce_title')">
+      <div
+        class="kiosk-boisson-grid"
+        role="group"
+        :aria-label="$t('kiosk.wizard.menu.frites_sauce_title')"
+        data-testid="kiosk-step-menu-sauce-grid"
+      >
         <div
           v-for="sauce in fritesSauceRows"
           :key="sauce.key"
@@ -214,6 +241,7 @@
           @click="toggleFritesSauce(sauce)"
           @keydown.enter.prevent="toggleFritesSauce(sauce)"
           @keydown.space.prevent="toggleFritesSauce(sauce)"
+          data-testid="kiosk-step-menu-sauce-option"
         >
           <div class="kiosk-boisson-visual">
             <img
@@ -227,7 +255,7 @@
             <span v-else class="kiosk-boisson-emoji">{{ sauce.emoji }}</span>
           </div>
           <span class="kiosk-boisson-name">{{ sauce.name }}</span>
-          <span class="kiosk-frites-sauce-price">{{ fritesSaucePriceLabel(sauce.key) }}</span>
+          <span class="kiosk-frites-sauce-price" data-testid="kiosk-step-menu-sauce-counter">{{ fritesSaucePriceLabel(sauce.key) }}</span>
           <span v-if="getFritesSauceOrder(sauce.key) > 0" class="kiosk-sauce-order">{{ getFritesSauceOrder(sauce.key) }}</span>
           <span v-else class="kiosk-menu-action">+</span>
         </div>
