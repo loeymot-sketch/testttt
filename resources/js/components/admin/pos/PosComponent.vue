@@ -117,8 +117,10 @@
 
                 <div class="db-field-radio-group gap-1 active-group">
 
-                    <!-- Dine-In masqué : uniquement Emporter et Livraison -->
-                    <label v-if="false" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
+                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false).
+                         Enable via /api/admin/settings.pos.dine_in_enabled = 1 once floor-plan + table
+                         selector UX is validated. Logic kept live so flipping the flag is zero-code. -->
+                    <label v-if="dineInEnabled" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
                         class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
                         <div class="custom-radio sm">
                             <input ref="dineInInput" type="radio" id="dinein" name="orderType"
@@ -231,8 +233,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Table selector masqué -->
-                <div v-if="false" ref="dineInDiv" id="dine" class="h-auto hidden transition">
+                <!-- [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag -->
+                <div v-if="dineInEnabled" ref="dineInDiv" id="dine" class="h-auto hidden transition">
                     <div class="mt-3">
                         <div class="db-field flex-grow">
                             <vue-select
@@ -675,6 +677,8 @@ export default {
             company: {},
             order: {},
             discount: null,
+            // [POS-9.1.1] mandatory motif for any POS discount
+            discountReason: '',
             // Kiosk cash orders notification
             kioskCashOrders: [],
             kioskCashLoading: false,
@@ -702,6 +706,8 @@ export default {
                     dining_table_id: null,
                     pos_received_amount: null,
                     loyalty_customer_code: null,
+                    // [POS-9.1.1] motif mandatory when discount > 0
+                    discount_reason: null,
                 }
             },
             selectedCustomerLoyalty: {
@@ -803,6 +809,16 @@ export default {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
         },
+        /**
+         * [POS-9.1.6] POS dine-in feature flag.
+         * Reads `pos_dine_in_enabled` from the frontend settings store;
+         * defaults to FALSE so a regressed/empty backend stays safe.
+         */
+        dineInEnabled: function () {
+            const s = this.setting || {};
+            const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+            return String(raw) === '1' || raw === true;
+        },
         categories: function () {
             return this.$store.getters["posCategory/lists"];
         },
@@ -871,6 +887,16 @@ export default {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
                 this.checkoutProps.form.branch_id = res.data.data.branch_id
+                // [POS-9.1.9] Bind the POS cart to the active cashier (branch + user).
+                // Without this, all carts share `pos_cart_v2` and a cashier B
+                // logging in after cashier A inherits A's lines (POS-GA-F-41).
+                try {
+                    const authInfo = this.$store.getters['auth/authInfo'] || {};
+                    this.$store.dispatch('posCart/setScope', {
+                        branchId: res.data.data.branch_id,
+                        userId: authInfo.id || null,
+                    });
+                } catch (e) { /* defensive: never block POS bootstrap */ }
                 this.$store.dispatch("frontendBranch/show", this.checkoutProps.form.branch_id).then(res => {
                     this.location = {
                         lat: res.data.data.latitude,
@@ -1002,16 +1028,109 @@ export default {
             if (branchId <= 0) return;
             try {
                 this._eventSub = onEvents(branchId, [
-                    { broadcastAs: 'OrderCreated', handler: () => this.loadKioskCashOrders() },
+                    {
+                        broadcastAs: 'OrderCreated',
+                        handler: (event) => {
+                            // [POS-9.1.11] Audible + visual notification for new POS orders.
+                            // Audit POS-GA-F-55 — cashier had zero feedback on new
+                            // kiosk-cash / online orders, only a silent list refresh.
+                            this._notifyNewOrder(event);
+                            this.loadKioskCashOrders();
+                        },
+                    },
                     { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
+                    // [POS-9.1.10] React live to admin 86 (item availability change)
+                    // so freshly out-of-stock tiles grey out without an F5.
+                    // Audit POS-GA-F-45 — kiosk already subscribes; POS did not.
+                    { broadcastAs: 'ItemAvailabilityChanged', handler: (event) => this._onItemAvailabilityChanged(event) },
                 ]);
             } catch (e) {
                 // Echo auth failed or Soketi not running — polling fallback handles it
             }
         },
+        /**
+         * [POS-9.1.10] Apply an ItemAvailabilityChanged broadcast to the POS
+         * item list in-place (no full refetch unless type === 'full'). The
+         * payload shape is the contract emitted by AvailabilityService /
+         * Stock86 listener: { item_id, is_available, type, reason, price }.
+         */
+        _onItemAvailabilityChanged(event) {
+            const payload = (event && event.payload) ? event.payload : event || {};
+            const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
+            if (!itemId) return;
+
+            // Locate item in the cached POS list (this.itemsRaw / this.items).
+            const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
+                       : (Array.isArray(this.items) ? this.items : null);
+            if (list) {
+                const idx = list.findIndex(i => parseInt(i.id, 10) === itemId);
+                if (idx !== -1) {
+                    const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                    list[idx] = Object.assign({}, list[idx], {
+                        is_available: isAvailable,
+                        availability_reason: payload.reason || null,
+                    });
+                }
+            }
+
+            // If the broadcast signals a structural change (price / variation /
+            // category move), reload the catalogue in the background.
+            if (payload.type === 'full') {
+                try { this.itemList(); } catch (e) { /* defensive */ }
+            }
+        },
         _unsubscribeEcho() {
             this._eventSub?.unsubscribe();
             this._eventSub = null;
+        },
+        /**
+         * [POS-9.1.11] Audible + visual cue when a new order is broadcast on
+         * the POS branch channel. Audit POS-GA-F-55.
+         *  - Toast (alertService.info) so the cashier sees the order ID;
+         *  - Short beep via Web Audio API (no asset to ship); silently
+         *    skipped if AudioContext is unavailable or denied by autoplay.
+         *  - Honors the `pos_new_order_sound_enabled` frontend setting (defaults true).
+         */
+        _notifyNewOrder(event) {
+            const payload = (event && event.payload) ? event.payload : event || {};
+            const orderId = payload.order_id || payload.id || null;
+            try {
+                const label = orderId
+                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
+                    : (this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande';
+                alertService.info(label);
+            } catch (e) { /* defensive */ }
+
+            // Sound — opt-out via setting; default ON.
+            try {
+                const s = this.setting || {};
+                const soundFlag = s.pos_new_order_sound_enabled;
+                const soundOn = soundFlag === undefined || soundFlag === null
+                    ? true
+                    : (String(soundFlag) === '1' || soundFlag === true);
+                if (!soundOn) return;
+                this._playNewOrderBeep();
+            } catch (e) { /* defensive */ }
+        },
+        _playNewOrderBeep() {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!this._audioCtx) {
+                try { this._audioCtx = new Ctx(); } catch (e) { return; }
+            }
+            const ctx = this._audioCtx;
+            try {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880; // A5 — short ding
+                gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                osc.connect(gain).connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) { /* autoplay or context blocked */ }
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────
@@ -1137,6 +1256,18 @@ export default {
             this.$store.dispatch('posCart/deleteCartItem', { id: id, status: "decrement" }).then().catch();
         },
         applyDiscount: function () {
+            // [POS-9.1.1] Require motif for any non-zero discount; surface server permission gate.
+            const hasDiscount = this.discount && parseFloat(this.discount) > 0;
+            if (hasDiscount) {
+                const reason = (this.discountReason || '').trim();
+                if (reason.length < 3) {
+                    return alertService.error(this.$t('message.discount_reason_required') || 'A reason is required for any POS discount (min 3 characters).');
+                }
+                this.checkoutProps.form.discount_reason = reason;
+            } else {
+                this.checkoutProps.form.discount_reason = null;
+            }
+
             if (this.discountType == discountTypeEnum.FIXED) {
                 if (this.subtotal < this.discount) {
                     return alertService.error(this.$t('message.discount_fixed_error_message'));
@@ -1708,6 +1839,8 @@ export default {
                 if (!newCarts || newCarts.length === 0) {
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
+                    this.discountReason = '';
+                    this.checkoutProps.form.discount_reason = null;
                     this.$nextTick(() => {
                         if (this.$refs.takeAway) {
                             this.$refs.takeAway.click();
