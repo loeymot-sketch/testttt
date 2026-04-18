@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Order;
-use App\Models\LoyaltyTransaction;
 use App\Enums\OrderStatus;
+use App\Models\LoyaltyTransaction;
+use App\Models\Order;
 use App\Services\LoyaltyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class OrderCancellationLoyaltyTest extends TestCase
 {
@@ -28,7 +27,8 @@ class OrderCancellationLoyaltyTest extends TestCase
         $customer = \Database\Factories\UserFactory::new()->create([
             'branch_id' => $branch->id,
             'status' => \App\Enums\Status::ACTIVE,
-            'loyalty_code' => 'LOYALTY_TEST_' . uniqid(),
+            // users.loyalty_code is VARCHAR(15) on MySQL — keep within limit for phpunit-mysql CI.
+            'loyalty_code' => strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 15)),
             'loyalty_points' => 50,
         ]);
 
@@ -42,7 +42,7 @@ class OrderCancellationLoyaltyTest extends TestCase
             'user_id' => $staff->id,
             'branch_id' => $branch->id,
             'order_type' => 5,
-            'order_serial_no' => 'TEST-' . uniqid(),
+            'order_serial_no' => 'TEST-'.uniqid(),
             'subtotal' => 20.00,
             'total' => 20.00 - $discount,
             'discount' => $discount,
@@ -78,7 +78,7 @@ class OrderCancellationLoyaltyTest extends TestCase
         $redeemCheck = LoyaltyTransaction::where('order_id', $order->id)->where('type', 'redeem')->count();
         $this->assertSame(1, $redeemCheck, 'Redeem transaction must exist before refund');
 
-        $service = new LoyaltyService();
+        $service = new LoyaltyService;
         $service->refundPoints($order, 'pos');
 
         $customer->refresh();
@@ -105,7 +105,7 @@ class OrderCancellationLoyaltyTest extends TestCase
             'user_id' => $staff->id,
             'branch_id' => $branch->id,
             'order_type' => 5,
-            'order_serial_no' => 'TEST-NOLOYALTY-' . uniqid(),
+            'order_serial_no' => 'TEST-NOLOYALTY-'.uniqid(),
             'subtotal' => 20.00,
             'total' => 20.00,
             'discount' => 0,
@@ -117,7 +117,7 @@ class OrderCancellationLoyaltyTest extends TestCase
             'loyalty_customer_code' => null,
         ]);
 
-        $service = new LoyaltyService();
+        $service = new LoyaltyService;
         $service->refundPoints($order, 'pos');
 
         $this->assertSame(0, LoyaltyTransaction::where('order_id', $order->id)->count());
