@@ -67,6 +67,10 @@ class RouteServiceProvider extends ServiceProvider
             });
         });
 
+        RateLimiter::for('kiosk-menu', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('admin-mutation', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });

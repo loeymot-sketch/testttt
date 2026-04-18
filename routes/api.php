@@ -931,7 +931,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
     Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
-        ->middleware(['auth:sanctum'])
+        ->middleware(['auth:sanctum', 'throttle:kiosk-menu'])
         ->name('frontend.menu.kiosk');
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
