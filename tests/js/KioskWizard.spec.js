@@ -1471,6 +1471,62 @@ describe('KioskWizardComponent — item availability echo', () => {
   });
 });
 
+describe('KioskWizardComponent — add to cart submission guard', () => {
+  it('double_click_add_to_cart_calls_once', async () => {
+    const trackSpy = vi.spyOn(kioskAnalytics, 'track').mockReturnValue(true);
+    let resolveAdd;
+    const onAddToCart = vi.fn(() => new Promise((resolve) => { resolveAdd = resolve; }));
+    const onClose = vi.fn();
+    const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: {
+          id: 991,
+          name: 'Produit simple',
+          convert_price: 8,
+          wizard_template: 'simple',
+          category_name: 'Divers',
+          itemAttributes: [],
+          variations: {},
+          extras: [],
+          addons: [],
+        },
+        onAddToCart,
+        onClose,
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: {
+            getters: { 'kioskCart/branchId': 7 },
+            state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
+            dispatch: vi.fn(),
+          },
+          $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
+        },
+      },
+    });
+
+    const first = wrapper.vm.addToCart();
+    await wrapper.vm.addToCart();
+
+    expect(onAddToCart).toHaveBeenCalledTimes(1);
+    expect(trackSpy).toHaveBeenCalledWith('add_to_cart_guarded_against_double_click', {
+      item_id: 991,
+      step: 'recap',
+    });
+
+    resolveAdd();
+    await first;
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    trackSpy.mockRestore();
+  });
+});
+
 describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
   it('shows validation hint when localChoice is null', () => {
     const wrapper = mount(KioskStepMenuComponent, {

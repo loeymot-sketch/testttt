@@ -119,7 +119,7 @@
           <button
             @click="currentStepIndex < activeSteps.length - 1 ? nextStep() : addToCart()"
             class="kiosk-btn-next"
-            :disabled="!canAdvance"
+            :disabled="!canAdvance || isSubmitting"
           >
             <span>{{
               currentStepIndex < activeSteps.length - 1
@@ -235,6 +235,7 @@ export default {
     return {
       showAbandonConfirm: false,
       showRemovedOverlay: false,
+      isSubmitting: false,
       currentStepIndex: 0,
       fetchedItem: null,
       fetchLoading: false,
@@ -1156,15 +1157,32 @@ export default {
       if (!joined) return null;
       return sanitizeKioskCustomerFacingText(joined);
     },
-    addToCart() {
+    async addToCart() {
+      if (this.isSubmitting) {
+        try {
+          kioskAnalytics.track('add_to_cart_guarded_against_double_click', {
+            item_id: this.resolvedItem?.id || null,
+            step: this.currentStep?.type || null,
+          });
+        } catch (_) { /* silent */ }
+        return;
+      }
+
+      this.isSubmitting = true;
       this.selections._summaryConfirmed = true;
       const cartItem = this.buildCartItem();
-      if (this.onAddToCart) {
-        this.onAddToCart(cartItem);
-        if (this.onClose) this.onClose();
-      } else {
-        this.$store.dispatch('kioskCart/addItem', cartItem);
-        this.$router.go(-1);
+      try {
+        if (this.onAddToCart) {
+          await Promise.resolve(this.onAddToCart(cartItem));
+          if (this.onClose) this.onClose();
+        } else {
+          await Promise.resolve(this.$store.dispatch('kioskCart/addItem', cartItem));
+          this.$router.go(-1);
+        }
+      } catch (error) {
+        this.selections._summaryConfirmed = false;
+        this.isSubmitting = false;
+        throw error;
       }
     },
     _subscribeAvailabilityEcho() {

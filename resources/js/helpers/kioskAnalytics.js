@@ -46,6 +46,7 @@ const ALLOWED_EVENTS = new Set([
     'filter_toggled',
     'filter_reset',
     'add_to_cart',
+    'add_to_cart_guarded_against_double_click',
     'remove_from_cart',
     'quantity_changed',
     'upsell_shown',
