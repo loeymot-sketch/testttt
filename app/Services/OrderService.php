@@ -1713,6 +1713,28 @@ class OrderService
             abort(403, 'Paid orders cannot be destroyed without elevated permission.');
         }
 
+        // [POS-9.4.BL.3] NF525 immutability: once a Z report is closed, every
+        // order that was aggregated in it becomes fiscally sealed. We detect
+        // seal state by checking if there exists a closed ZReport whose
+        // (opened_at, closed_at] half-open window contains the order's
+        // created_at — the same half-open semantic used by Z aggregation
+        // itself (Phase H.2). Returning 409 (Conflict) makes the intent
+        // explicit: "the server state conflicts with what you're trying to do".
+        if ($order->fiscal_sequence_no !== null) {
+            $isSealed = \App\Models\ZReport::query()
+                ->where('branch_id', $orderBranchId)
+                ->where('status', \App\Models\ZReport::STATUS_CLOSED)
+                ->where('opened_at', '<', $order->created_at)
+                ->where('closed_at', '>=', $order->created_at)
+                ->exists();
+            if ($isSealed) {
+                abort(
+                    409,
+                    'Order is sealed by a closed Z report — cannot destroy (NF525 immutability).'
+                );
+            }
+        }
+
         try {
             $reason = trim((string) request('destroy_reason', ''));
 
