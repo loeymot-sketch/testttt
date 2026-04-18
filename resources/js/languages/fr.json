@@ -612,6 +612,7 @@
             "abandon_yes": "Oui, abandonner",
             "abandon_continue": "Continuer",
             "recap_strip": "RÉCAP",
+            "preview_provisional": "Provisoire",
             "supplements_empty": "Aucun supplément disponible pour cet article",
             "supplements_step_title": "Quel supplément ?",
             "supplements_badge_paid": "Options payantes",

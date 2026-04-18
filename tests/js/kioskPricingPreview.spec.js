@@ -146,11 +146,45 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
 
     it('retourne null sur erreur réseau (pas de throw, fallback client possible)', async () => {
         const axiosMock = makeAxiosMock(new Error('network'));
-        const preview = createKioskPricingPreview({ axios: axiosMock, onError: () => {} });
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError: () => {}, maxAttempts: 1 });
         const p = preview.request({ items: [{ item_id: 1 }] });
         vi.advanceTimersByTime(500);
         await expect(p).resolves.toBeNull();
     });
+
+    it('retry après timeout court puis finit par réussir', async () => {
+        vi.useRealTimers();
+        let attempts = 0;
+        const axiosMock = {
+            post: vi.fn((url, payload, config) => {
+                attempts += 1;
+                if (attempts < 3) {
+                    return new Promise((resolve, reject) => {
+                        config.signal.addEventListener('abort', () => {
+                            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+                        });
+                    });
+                }
+                return Promise.resolve({
+                    data: { status: true, data: { grand_total: 12.3, lines: [], discount: 0 } },
+                });
+            }),
+        };
+        const preview = createKioskPricingPreview({
+            axios: axiosMock,
+            debounceMs: 0,
+            timeoutMs: 250,
+            maxAttempts: 3,
+            backoffBaseMs: 50,
+        });
+
+        const p = preview.request({ items: [{ item_id: 1, quantity: 1 }] });
+        const res = await p;
+
+        expect(attempts).toBe(3);
+        expect(res.total).toBe(12.3);
+        vi.useFakeTimers();
+    }, 10000);
 
     it('destroy() annule les appels en attente', async () => {
         const axiosMock = makeAxiosMock({ data: { status: true, data: {} } });

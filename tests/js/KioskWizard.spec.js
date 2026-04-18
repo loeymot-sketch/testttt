@@ -1590,6 +1590,48 @@ describe('KioskWizardComponent — resume snapshot', () => {
   });
 });
 
+describe('KioskWizardComponent — pricing preview fallback', () => {
+  it('shows provisional pill when preview falls back to local total', async () => {
+    const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+    const wrapper = shallowMount(KioskWizardComponent, {
+      props: {
+        item: {
+          id: 778,
+          name: 'Burger Fallback',
+          convert_price: 8,
+          wizard_template: 'simple',
+          category_name: 'Divers',
+          itemAttributes: [],
+          variations: {},
+          extras: [],
+          addons: [],
+        },
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: {
+            getters: { 'kioskCart/branchId': 7 },
+            state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
+            dispatch: vi.fn(),
+          },
+          $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
+        },
+      },
+    });
+
+    wrapper.vm.serverPreviewProvisional = true;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain(frMessages.kiosk.wizard.preview_provisional);
+
+    wrapper.unmount();
+  });
+});
+
 describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
   it('shows validation hint when localChoice is null', () => {
     const wrapper = mount(KioskStepMenuComponent, {

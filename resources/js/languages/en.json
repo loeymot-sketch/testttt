@@ -1259,6 +1259,7 @@
             "abandon_yes": "Yes, cancel",
             "abandon_continue": "Continue",
             "recap_strip": "RECAP",
+            "preview_provisional": "Provisional",
             "supplements_empty": "No extras available for this item",
             "supplements_step_title": "Any extras?",
             "supplements_badge_paid": "Paid extras",

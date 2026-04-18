@@ -128,7 +128,12 @@
             }}</span>
           </button>
         </div>
-        <div class="kiosk-nav-total">{{ $t('kiosk.total') }} {{ formatPrice(runningTotal) }}</div>
+        <div class="kiosk-nav-total">
+          <span>{{ $t('kiosk.total') }} {{ formatPrice(runningTotal) }}</span>
+          <span v-if="serverPreviewProvisional" class="kiosk-nav-total-pill">
+            {{ $t('kiosk.wizard.preview_provisional') }}
+          </span>
+        </div>
       </div>
 
       <transition name="fade">
@@ -268,6 +273,7 @@ export default {
       // jour qu'en cas de succès, jamais en cas d'erreur (dégradé gracieux).
       serverPreviewTotal: null,
       serverPreviewLoading: false,
+      serverPreviewProvisional: false,
     };
   },
   computed: {
@@ -998,11 +1004,15 @@ export default {
           this.serverPreviewLoading = false;
           if (res && Number.isFinite(res.total)) {
             this.serverPreviewTotal = Math.round(res.total * 100) / 100;
+            this.serverPreviewProvisional = false;
+            return;
           }
+          this.serverPreviewProvisional = true;
           // res === null : on garde le total précédent (UX > affichage 0,00).
         })
         .catch(() => {
           this.serverPreviewLoading = false;
+          this.serverPreviewProvisional = true;
         });
     },
     buildCartItem() {
@@ -1705,6 +1715,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-width: 160px;
   min-height: 52px;
   padding: 0 14px;
@@ -1715,6 +1726,18 @@ export default {
   background: #f7e5e8;
   border-radius: 10px;
   border: 1px solid #efd2d7;
+}
+
+.kiosk-nav-total-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(232, 107, 0, 0.12);
+  color: #a24f00;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 :deep(.kiosk-step-title) {

@@ -129,6 +129,9 @@ export function createKioskPricingPreview(options = {}) {
         ? Math.max(0, options.debounceMs)
         : MINI_RECAP.PREVIEW_DEBOUNCE_MS;
     const endpoint = options.endpoint || 'frontend/pricing/preview';
+    const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(250, options.timeoutMs) : 3000;
+    const maxAttempts = Number.isFinite(options.maxAttempts) ? Math.max(1, options.maxAttempts) : 3;
+    const backoffBaseMs = Number.isFinite(options.backoffBaseMs) ? Math.max(50, options.backoffBaseMs) : 250;
 
     let timer = null;
     let currentCancel = null; // axios cancel fn (ou AbortController.abort)
@@ -147,6 +150,70 @@ export function createKioskPricingPreview(options = {}) {
             currentCancel = null;
         }
     };
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    async function postWithRetry(payload, attempt = 1) {
+        if (destroyed) return null;
+
+        let config = {};
+        let timeoutId = null;
+        let didTimeout = false;
+
+        if (typeof AbortController !== 'undefined') {
+            const controller = new AbortController();
+            currentCancel = () => controller.abort();
+            config.signal = controller.signal;
+            timeoutId = setTimeout(() => {
+                didTimeout = true;
+                controller.abort();
+            }, timeoutMs);
+        } else if (client.CancelToken) {
+            const source = client.CancelToken.source();
+            currentCancel = () => source.cancel('pricing-preview:newer-request');
+            config.cancelToken = source.token;
+            timeoutId = setTimeout(() => {
+                didTimeout = true;
+                source.cancel('pricing-preview:timeout');
+            }, timeoutMs);
+        }
+
+        try {
+            const res = await client.post(endpoint, payload, config);
+            currentCancel = null;
+            if (timeoutId) clearTimeout(timeoutId);
+
+            const data = res && res.data;
+            if (!data || data.status !== true || !data.data) {
+                return null;
+            }
+
+            const result = data.data;
+            return {
+                total: Number(result.grand_total ?? result.total ?? 0) || 0,
+                lines: Array.isArray(result.lines) ? result.lines : [],
+                discount: Number(result.discount ?? 0) || 0,
+                raw: result,
+            };
+        } catch (err) {
+            currentCancel = null;
+            if (timeoutId) clearTimeout(timeoutId);
+
+            const isCancel = err && (err.name === 'CanceledError'
+                || err.name === 'AbortError'
+                || (client.isCancel && client.isCancel(err)));
+
+            const shouldRetry = !destroyed && attempt < maxAttempts && (!isCancel || didTimeout);
+            if (shouldRetry) {
+                await wait(backoffBaseMs * (2 ** (attempt - 1)));
+                return postWithRetry(payload, attempt + 1);
+            }
+
+            if (!isCancel && options.onError) options.onError(err);
+            if (didTimeout && options.onError) options.onError(new Error(`pricing preview timeout after ${timeoutMs}ms`));
+            return null;
+        }
+    }
 
     function request(payloadArgs) {
         if (destroyed) return Promise.resolve(null);
@@ -171,45 +238,7 @@ export function createKioskPricingPreview(options = {}) {
                     return;
                 }
 
-                // AbortController si dispo (fetch / axios ≥ 0.22), sinon
-                // CancelToken legacy.
-                let config = {};
-                if (typeof AbortController !== 'undefined') {
-                    const controller = new AbortController();
-                    currentCancel = () => controller.abort();
-                    config.signal = controller.signal;
-                } else if (client.CancelToken) {
-                    const source = client.CancelToken.source();
-                    currentCancel = () => source.cancel('pricing-preview:newer-request');
-                    config.cancelToken = source.token;
-                }
-
-                try {
-                    const res = await client.post(endpoint, payload, config);
-                    currentCancel = null;
-
-                    const data = res && res.data;
-                    if (!data || data.status !== true || !data.data) {
-                        resolve(null);
-                        return;
-                    }
-
-                    const result = data.data;
-                    resolve({
-                        total: Number(result.grand_total ?? result.total ?? 0) || 0,
-                        lines: Array.isArray(result.lines) ? result.lines : [],
-                        discount: Number(result.discount ?? 0) || 0,
-                        raw: result,
-                    });
-                } catch (err) {
-                    currentCancel = null;
-                    // Cancellations silencieuses, pas de log bruyant.
-                    const isCancel = err && (err.name === 'CanceledError'
-                        || err.name === 'AbortError'
-                        || (client.isCancel && client.isCancel(err)));
-                    if (!isCancel && options.onError) options.onError(err);
-                    resolve(null);
-                }
+                resolve(await postWithRetry(payload));
             }, debounceMs);
         });
     }
