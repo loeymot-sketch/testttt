@@ -29,7 +29,7 @@
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="kioskMachines.length > 0">
-                    <tr class="db-table-body-tr" v-for="kioskMachine in kioskMachines" :key="kioskMachine">
+                    <tr class="db-table-body-tr" v-for="kioskMachine in kioskMachines" :key="kioskMachine.id">
                         <td class="db-table-body-td">
                             {{ kioskMachine.machine_id }}
                         </td>
@@ -46,12 +46,12 @@
                             <div class="relative inline-block w-11 h-5">
                                 <input 
                                     @change="changeStatus($event, kioskMachine.id)"
-                                    id="switcher" 
+                                    :id="`switcher-${kioskMachine.id}`" 
                                     type="checkbox" 
                                     class="peer appearance-none w-11 h-5 bg-slate-100 rounded-full checked:bg-primary cursor-pointer transition-colors duration-300" 
                                     :checked="kioskMachine.status === enums.statusEnum.ACTIVE ? true : false"
                                 />
-                                <label for="switcher" class="absolute top-0 left-0 w-5 h-5 bg-white rounded-full border border-slate-300 shadow-sm transition-transform duration-300 peer-checked:translate-x-6 cursor-pointer pointer-events-none">
+                                <label :for="`switcher-${kioskMachine.id}`" class="absolute top-0 left-0 w-5 h-5 bg-white rounded-full border border-slate-300 shadow-sm transition-transform duration-300 peer-checked:translate-x-6 cursor-pointer pointer-events-none">
                                 </label>
                             </div>
                         </td>

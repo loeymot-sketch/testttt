@@ -146,10 +146,24 @@ export const item = {
                 });
             });
         },
-        details: function (context,payload) {
+        // [AUDIT 2026-04-17 R2] Dual signature for surface-aware detail fetches.
+        //   Legacy:   dispatch('item/details', 123)                    → no ?surface
+        //   New:      dispatch('item/details', { id: 123, surface: 'pos' }) → ?surface=pos
+        // Invalid surface values are ignored to avoid forging query strings server-side.
+        details: function (context, payload) {
             return new Promise((resolve, reject) => {
-                let url = `admin/item/details/${payload}`;
-                axios.get(url,payload).then((res) => {
+                let id = payload;
+                let surface = null;
+                if (payload !== null && typeof payload === 'object') {
+                    id = payload.id;
+                    if (typeof payload.surface === 'string'
+                        && ['pos', 'kiosk', 'web'].indexOf(payload.surface) !== -1) {
+                        surface = payload.surface;
+                    }
+                }
+                let url = `admin/item/details/${id}`;
+                const config = surface ? { params: { surface } } : undefined;
+                axios.get(url, config).then((res) => {
                     resolve(res);
                 }).catch((err) => {
                     reject(err);

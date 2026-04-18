@@ -47,3 +47,13 @@ Une commande vit via un pipeline unidirectionnel (Enum `OrderStatus`).
 - États terminaux / exceptionnels : `CANCELED (16)`, `REJECTED (19)`, `RETURNED (22)` (voir enum et `ValidStatusTransition`).
 - **Interdit :** Passer de `PENDING` (Non payé par le Front/TPE) directement à `PREPARING` ou `DELIVERED`. Le Backend rejettera (422/400) ou restaurera le statut via ses Observers. Seul un Admin dashboard avec confirmation de paiement peut bypasser ce flow manuellement (Tracé dans `action_logs`).
 - **Isolation Branche :** La succursale B ne peut pas valider une commande passée sur la succursale A. Le Backend vérifie que l'user assigné au changement de statut appartient au même `branch_id` que l'`Order`.
+
+## Kiosk Idle Timeout
+Canonical value: **3 minutes (180 000 ms)**.
+"Still there?" modal appears at **2 min 30 s** (150 000 ms).
+If no interaction within 3 min, the kiosk resets to idle screen and clears the cart.
+Timer is NOT started on: idle screen, payment, waiting, confirmation routes.
+
+## Stock Management (not implemented)
+FoodKing v1 does not track item stock levels. There is no `stock` column, no `is_available` flag, and no stock validation at order time.
+Planned for v2: `items.stock_quantity` (nullable integer), `items.track_stock` (boolean), validation in OrderService/FrontendOrderService before order creation.

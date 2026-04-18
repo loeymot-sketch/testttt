@@ -86,12 +86,19 @@ class DiningTableService
             $filename = Str::random(10) . '.png';
             $slug     = Str::slug($branch_name.'-'.$request->name);
             $url      = URL::to('/') . "/menu/" . $slug;
+            $qrCodePath = null;
 
-            if (!File::exists(storage_path('app/public/qr_codes/'))) {
-                File::makeDirectory(storage_path('app/public/qr_codes/'));
+            try {
+                if (!File::exists(storage_path('app/public/qr_codes/'))) {
+                    File::makeDirectory(storage_path('app/public/qr_codes/'));
+                }
+                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
+                $qrCodePath = 'storage/qr_codes/' . $filename;
+            } catch (\Throwable $qrException) {
+                Log::warning('[DiningTableService] QR code generation failed on store: ' . $qrException->getMessage());
             }
-            QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
-            return DiningTable::create($request->validated() + ['qr_code' => 'storage/qr_codes/' . $filename, 'slug' => $slug]);
+
+            return DiningTable::create($request->validated() + ['qr_code' => $qrCodePath, 'slug' => $slug]);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -110,18 +117,24 @@ class DiningTableService
             $filename = Str::random(10) . '.png';
             $slug     = Str::slug($branch_name.'-'.$request->name);
             $url      = URL::to('/') . "/menu/" . $slug;
+            $qrCodePath = $diningTable->qr_code;
 
-            if (!File::exists(storage_path('app/public/qr_codes/'))) {
-                File::makeDirectory(storage_path('app/public/qr_codes/'));
+            try {
+                if (!File::exists(storage_path('app/public/qr_codes/'))) {
+                    File::makeDirectory(storage_path('app/public/qr_codes/'));
+                }
+
+                if(File::exists($diningTable->qr_code) && !$this->envService->getValue('DEMO')){
+                    File::delete($diningTable->qr_code);
+                }
+
+                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
+                $qrCodePath = 'storage/qr_codes/' . $filename;
+            } catch (\Throwable $qrException) {
+                Log::warning('[DiningTableService] QR code generation failed on update: ' . $qrException->getMessage());
             }
 
-            if(File::exists($diningTable->qr_code) && !$this->envService->getValue('DEMO')){
-                File::delete($diningTable->qr_code);
-            }
-
-            QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
-
-            return tap($diningTable)->update($request->validated() + ['qr_code' => 'storage/qr_codes/' . $filename, 'slug' => $slug]);
+            return tap($diningTable)->update($request->validated() + ['qr_code' => $qrCodePath, 'slug' => $slug]);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

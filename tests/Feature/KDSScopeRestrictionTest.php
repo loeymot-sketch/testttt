@@ -22,9 +22,11 @@ class KDSScopeRestrictionTest extends TestCase
         // Sans rôle Spatie explicitement chargé dans la base in-memory, le user n'est pas Admin System
 
         // Try to access global settings
-        $response = $this->actingAs($user)->getJson('/api/admin/setting');
+        $response = $this->actingAs($user)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/dashboard/realtime-report');
 
-        // Must be forbidden (User a pas le rôle "Admin" créé par les seeders)
+        // Must be forbidden (user has no admin/dashboard permission)
         $this->assertTrue(in_array($response->status(), [401, 403]));
     }
 }

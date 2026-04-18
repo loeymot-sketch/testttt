@@ -1,21 +1,37 @@
 <template>
   <div class="kiosk-step-sauce">
-    <h3 class="kiosk-step-title">Quelle sauce ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.sauce.title') }}</h3>
 
     <div class="kiosk-sauce-info">
-      <span class="kiosk-sauce-badge">1ere sauce gratuite</span>
+      <span class="kiosk-sauce-badge">{{ $t('kiosk.wizard.step.sauce.first_free') }}</span>
       <span v-if="selectedCount > 1" class="kiosk-sauce-extra">
-        +{{ selectedCount - 1 }} sauce{{ selectedCount > 2 ? 's' : '' }} supplémentaire ({{ extraSaucePriceLabel }})
+        {{ sauceExtraLine }}
       </span>
     </div>
 
-    <div class="kiosk-sauce-grid">
+    <div v-if="sauceList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.sauce.empty_hint') }}</p>
+      <button
+        type="button"
+        class="kiosk-btn-continue"
+        :aria-label="$t('kiosk.wizard.step.sauce.skip_btn')"
+        @click="$emit('update', 'sauceOrder', ['_skip'])"
+      >{{ $t('kiosk.wizard.step.sauce.skip_btn') }}</button>
+    </div>
+
+    <div v-else class="kiosk-sauce-grid">
       <div
-        v-for="sauce in sauceList"
-        :key="sauce.id ?? sauce.name"
+        v-for="(sauce, sIdx) in sauceList"
+        :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"
         class="kiosk-option-card"
         :class="{ selected: !!localSelections[selectionKey(sauce)] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[selectionKey(sauce)]"
+        :aria-label="sauce.name"
         @click="toggleSauce(sauce)"
+        @keydown.enter.prevent="toggleSauce(sauce)"
+        @keydown.space.prevent="toggleSauce(sauce)"
       >
         <div class="kiosk-sauce-media">
           <img
@@ -36,17 +52,20 @@
       </div>
     </div>
 
-    <div v-if="selectedCount === 0" class="kiosk-validation-hint">
-      Sélectionnez au moins une sauce
+    <div v-if="selectedCount === 0" class="kiosk-validation-hint" role="status" aria-live="polite">
+      {{ $t('kiosk.wizard.step.sauce.hint') }}
     </div>
   </div>
 </template>
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
+import { getKioskExtraSauceUnitPrice } from '../../../../helpers/kioskPricing';
 
 export default {
   name: 'KioskStepSauce',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -74,66 +93,90 @@ export default {
       return Object.values(this.localSelections).filter(Boolean).length;
     },
     extraSaucePrice() {
-      const sauceAttr = this.item?.itemAttributes?.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
-      );
-      const sauceVars = sauceAttr
-        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
-        : null;
-      if (sauceAttr && sauceVars) {
-        const sauceVar = sauceVars.find(v =>
-          parseFloat(v.convert_price || v.price || 0) > 0
-        );
-        if (sauceVar) return parseFloat(sauceVar.convert_price || sauceVar.price || 0.50);
-      }
-      return 0.50;
+      return getKioskExtraSauceUnitPrice(this.item);
     },
     extraSaucePriceLabel() {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(this.extraSaucePrice);
+      return this.formatPrice(this.extraSaucePrice);
+    },
+    sauceExtraLine() {
+      const n = this.selectedCount - 1;
+      const price = this.extraSaucePriceLabel;
+      return n === 1
+        ? this.$t('kiosk.wizard.step.sauce.extra_one', { n, price })
+        : this.$t('kiosk.wizard.step.sauce.extra_many', { n, price });
     },
     sauceList() {
-      // Lire les sauces depuis les variations DB (attribut "Sauce")
-      if (!this.item.itemAttributes) return this.getDefaultSauceList();
-      
-      const sauceAttr = this.item.itemAttributes.find(a =>
-        (a.name || '').toLowerCase().includes('sauce')
+      try {
+        return this.computeSauceList();
+      } catch (e) {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[KioskStepSauce] sauceList → catalog error', e);
+        }
+        // [AUDIT 2026-04-17 C1] Plus de fallback hardcodé : on retourne [] et
+        // l'état vide (template v-if="sauceList.length === 0") prend le relais
+        // avec un bouton "continuer sans sauce" (_skip défensif).
+        return [];
+      }
+    }
+  },
+  methods: {
+    /** API / JSON : itemAttributes parfois objet indexé ; .find sinon TypeError → grille vide */
+    normalizeAttributes(attrs) {
+      if (attrs == null) return [];
+      if (Array.isArray(attrs)) return attrs;
+      return Object.values(attrs);
+    },
+    /** variations[attrId] : tableau ou objet ; clés string/number */
+    variationsRowsForAttribute(variations, attrId) {
+      if (variations == null || attrId == null) return [];
+      const raw =
+        variations[String(attrId)] ??
+        variations[attrId];
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'object') return Object.values(raw);
+      return [];
+    },
+    isSauceLikeAttributeName(name) {
+      const n = (name || '').toLowerCase();
+      return (
+        n.includes('sauce') ||
+        n.includes('condiment') ||
+        n.includes('dressing') ||
+        n.includes('dip')
       );
-      
-      const sauceVariations =
-        sauceAttr &&
-        (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id]);
-      if (!sauceAttr || !sauceVariations) {
-        return this.getDefaultSauceList();
+    },
+    computeSauceList() {
+      const attrs = this.normalizeAttributes(this.item?.itemAttributes);
+      const sauceAttr = attrs.find((a) => this.isSauceLikeAttributeName(a.name));
+
+      const sauceVariations = sauceAttr
+        ? this.variationsRowsForAttribute(this.item?.variations, sauceAttr.id)
+        : [];
+
+      if (!sauceAttr || sauceVariations.length === 0) {
+        // [AUDIT 2026-04-17 C1] Plus de fallback : si le catalogue ne déclare
+        // pas de sauce, on retourne vide (l'étape est alors masquée par
+        // KioskWizard.shouldShowStep ou affiche le bouton "continuer sans").
+        return [];
       }
 
+      // Backend : Status::ACTIVE = 5, INACTIVE = 10 (pas 0/1)
       return sauceVariations
-        .filter(v => v.status == null || Number(v.status) === 1)
-        .map(v => ({
+        .filter((v) => v != null && Number(v.status) !== 10)
+        .map((v) => ({
+          rowKey: v.id != null && v.id !== '' ? `sauce-var-${v.id}` : null,
           id: v.id,
           name: v.name,
           emoji: this.getEmojiForSauce(v.name),
           thumb: kioskResolveImageSrc(v),
         }));
-    }
-  },
-  methods: {
+    },
     sauceUnitPriceLabel(sauce) {
-      return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : '0,00 €';
+      return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : this.formatPrice(0);
     },
     selectionKey(sauce) {
       return String(this.sauceKey(sauce));
-    },
-    getDefaultSauceList() {
-      // Fallback names only — IDs are null so wizard won't map them to item_variations.
-      // Kitchen will receive sauce names via instruction text instead.
-      return [
-        { id: null, name: 'Algérienne', emoji: '🌶️', thumb: null },
-        { id: null, name: 'Blanche', emoji: '🥛', thumb: null },
-        { id: null, name: 'Ketchup', emoji: '🍅', thumb: null },
-        { id: null, name: 'Mayonnaise', emoji: '🥚', thumb: null },
-        { id: null, name: 'Biggy', emoji: '🍔', thumb: null },
-        { id: null, name: 'Samouraï', emoji: '🌶️', thumb: null },
-      ];
     },
     getEmojiForSauce(name) {
       const lower = (name || '').toLowerCase();
@@ -254,6 +297,12 @@ export default {
 }
 
 .kiosk-option-card:active { transform: scale(0.95); }
+
+/* [AUDIT 2026-04-17 C6] Keyboard focus ring — tactile cards are now role=checkbox. */
+.kiosk-option-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-option-card.selected {
   border-color: rgba(232,0,28,0.14);

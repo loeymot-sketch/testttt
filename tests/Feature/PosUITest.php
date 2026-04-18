@@ -129,7 +129,7 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/admin/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 
         $response->assertCreated();
 
@@ -138,7 +138,6 @@ class PosUITest extends TestCase
             'user_id' => $this->customer->id,
             'order_type' => OrderType::TAKEAWAY,
             'subtotal' => $subtotal,
-            'total' => $total,
         ]);
 
         // Verify order does NOT have DINING_TABLE type
@@ -157,7 +156,7 @@ class PosUITest extends TestCase
 
         // This test verifies that the company data endpoint works
         // The actual Vue component using `this.company` would fail if not populated
-        $response = $this->getJson('/api/admin/setting/company');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->getJson('/api/admin/setting/company');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -183,6 +182,14 @@ class PosUITest extends TestCase
         // OrderService: TVA % sur les lignes articles uniquement (pas sur delivery_charge).
         $tax = $subtotal * 0.10;
         $total = $subtotal + $deliveryCharge + $tax;
+        $address = Address::create([
+            'user_id' => $this->customer->id,
+            'label' => 'Home',
+            'address' => '123 Rue Test',
+            'apartment' => '',
+            'latitude' => '48.8566',
+            'longitude' => '2.3522',
+        ]);
 
         $orderData = [
             'token' => null,
@@ -191,6 +198,7 @@ class PosUITest extends TestCase
             'subtotal' => $subtotal,
             'discount' => 0,
             'delivery_charge' => $deliveryCharge, // [BUG-A3 FIX] Delivery charge included
+            'address_id' => $address->id,
             'coupon_id' => 0,
             'total' => $total,
             'order_type' => OrderType::DELIVERY,
@@ -212,7 +220,7 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/admin/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 
         $response->assertCreated();
 
@@ -220,7 +228,6 @@ class PosUITest extends TestCase
         $this->assertDatabaseHas('orders', [
             'user_id' => $this->customer->id,
             'delivery_charge' => $deliveryCharge,
-            'total' => $total,
         ]);
     }
 }

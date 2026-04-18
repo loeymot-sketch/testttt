@@ -100,6 +100,10 @@ import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
 import { kioskCart } from './modules/kioskCart';
 import { kioskMenu } from './modules/kioskMenu';
+import { kioskSettings } from './modules/kioskSettings';
+// [PHASE-6.4] Plugin analytics : s'abonne aux mutations Vuex pertinentes
+//             et relaie vers kioskAnalytics.track() (consent-gated, anonyme).
+import kioskAnalyticsPlugin from './plugins/kioskAnalyticsPlugin';
 
 
 
@@ -207,6 +211,7 @@ export default new createStore({
         kioskMachine,
         kioskCart,
         kioskMenu,
+        kioskSettings,
     },
     plugins: [
         createPersistedState({
@@ -233,7 +238,21 @@ export default new createStore({
                 // Kiosk machine auth — persist token so machine stays logged in across refreshes
                 "kioskCart.kioskToken",
                 "kioskCart.kioskMachineId",
+                // Phase 4 — Accessibility & locale preferences (European Accessibility Act).
+                // Stockés sur l'appareil (localStorage) pour survivre aux reloads Electron.
+                // Aucune PII ici — uniquement les toggles a11y et la langue choisie.
+                "kioskSettings.locale",
+                "kioskSettings.contrast",
+                "kioskSettings.pmr",
+                "kioskSettings.audio",
+                "kioskSettings.keyboardEnabled",
+                "kioskSettings.idleMs",
+                "kioskSettings.confirmMs",
+                "kioskSettings.receiptMs",
+                "kioskSettings.consentAnalytics",
+                "kioskSettings.consentLoyalty",
             ],
         }),
+        kioskAnalyticsPlugin,
     ],
 });

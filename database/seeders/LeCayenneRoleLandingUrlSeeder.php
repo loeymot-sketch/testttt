@@ -24,10 +24,14 @@ class LeCayenneRoleLandingUrlSeeder extends Seeder
         // 'Administrator' was a ghost entry — RoleTableSeeder only creates 'Admin'.
         // Removed to avoid silent warning on every fresh install.
         $roleLandingUrls = [
-            'POS Operator'  => 'pos',
-            'Chef'          => 'kitchen-display-system',
-            'Admin'         => 'dashboard',
+            'POS Operator'   => 'pos',
+            'Chef'           => 'kitchen-display-system',
+            'Admin'          => 'dashboard',
             'Branch Manager' => 'dashboard',
+            'Delivery Boy'   => 'delivery-boys',
+            'Waiter'         => 'waiters',
+            'Stuff'          => 'dashboard',
+            'Customer'       => '#',
         ];
 
         foreach ($roleLandingUrls as $roleName => $landingUrl) {

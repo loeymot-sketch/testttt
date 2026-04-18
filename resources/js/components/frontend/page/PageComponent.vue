@@ -8,7 +8,8 @@
                 <div v-if="page.image" class="w-full mb-6">
                     <img :src="page.image" alt="image">
                 </div>
-                <div class="ql-editor" v-html="page.description"></div>
+                <!-- eslint-disable-next-line vue/no-v-html -- sanitized via DOMPurify -->
+                <div class="ql-editor" v-html="safeHtml(page.description)"></div>
             </div>
             <TemplateManagerComponent :templateId="page.template_id" />
 
@@ -19,6 +20,7 @@
 
 <script>
 import TemplateManagerComponent from "../components/TemplateManagerComponent";
+import { safeHtml as sanitizePageHtml } from '../../../utils/safeHtml';
 import 'vue3-quill/lib/vue3-quill.css';
 
 export default {
@@ -33,6 +35,9 @@ export default {
         this.pageSetup();
     },
     methods: {
+        safeHtml: function (raw) {
+            return sanitizePageHtml(raw);
+        },
         pageSetup: function () {
             if (Object.keys(this.$route.params).length > 0 && typeof this.$route.params.slug === 'string') {
                 this.$store.dispatch('frontendPage/show', this.$route.params.slug).then(res => {

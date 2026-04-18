@@ -2,7 +2,8 @@
  * kioskPrinter.js — FoodKing Kiosk Thermal Printer Helper
  *
  * Architecture:
- *   1. Electron (Windows kiosk): calls window.borne.printEscPos(lines[]) if available
+ *   1. Electron (Windows kiosk): passes par kioskHardware.printReceipt/printEscPos
+ *      (service unifié ajouté en Phase 5.1 — contrat `{ok, error?}`, stub auto en dev).
  *   2. Web fallback: uses window.print() with a pre-rendered receipt DOM element
  *
  * ESC/POS command set (subset used):
@@ -12,7 +13,10 @@
  *   ESC ! N = font size (bit 4 = double height, bit 5 = double width)
  *   GS V 0 = cut paper (full cut)
  *   LF = line feed
+ *
+ * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
  */
+import kioskHardware from '../services/kioskHardware';
 
 const ESC = '\x1B';
 const GS  = '\x1D';
@@ -69,6 +73,7 @@ function separator(char = '-', width = RECEIPT_WIDTH) {
  */
 export function buildEscPosReceipt(receipt) {
   const lines = [];
+  const labels = receipt.labels || {};
 
   lines.push(CMD.INIT);
 
@@ -88,7 +93,7 @@ export function buildEscPosReceipt(receipt) {
   // ── Queue number ─────────────────────────────────────────────────────────
   lines.push(CMD.ALIGN_CENTER);
   lines.push(CMD.BOLD_ON);
-  lines.push('VOTRE NUMÉRO');
+  lines.push(labels.queueNumberTitle || 'YOUR NUMBER');
   lines.push(LF);
   lines.push(CMD.DOUBLE_SIZE);
   lines.push(receipt.queueNumber || '---');
@@ -127,19 +132,19 @@ export function buildEscPosReceipt(receipt) {
   lines.push(CMD.ALIGN_LEFT);
 
   if (receipt.discount && receipt.discount > 0) {
-    lines.push(padLine('Sous-total', formatEur(receipt.subtotal)));
+    lines.push(padLine(labels.subtotal || 'Subtotal', formatEur(receipt.subtotal)));
     lines.push(LF);
-    lines.push(padLine('Réduction fidélité', '-' + formatEur(receipt.discount)));
+    lines.push(padLine(labels.discount || 'Loyalty discount', '-' + formatEur(receipt.discount)));
     lines.push(LF);
   }
 
   lines.push(CMD.BOLD_ON);
-  lines.push(padLine('TOTAL', formatEur(receipt.total)));
+  lines.push(padLine(labels.total || 'TOTAL', formatEur(receipt.total)));
   lines.push(LF);
   lines.push(CMD.BOLD_OFF);
 
   if (receipt.paymentMethod) {
-    lines.push(padLine('Paiement', receipt.paymentMethod));
+    lines.push(padLine(labels.payment || 'Payment', receipt.paymentMethod));
     lines.push(LF);
   }
 
@@ -148,7 +153,7 @@ export function buildEscPosReceipt(receipt) {
     lines.push(LF);
     lines.push(CMD.ALIGN_CENTER);
     lines.push(CMD.BOLD_ON);
-    lines.push('FIDELITE');
+    lines.push(labels.loyalty || 'LOYALTY');
     lines.push(LF);
     lines.push(CMD.BOLD_OFF);
     lines.push(CMD.NORMAL_SIZE);
@@ -162,9 +167,9 @@ export function buildEscPosReceipt(receipt) {
 
   // ── Footer ───────────────────────────────────────────────────────────────
   lines.push(CMD.ALIGN_CENTER);
-  lines.push(receipt.thankYou || 'Merci pour votre commande !');
+  lines.push(receipt.thankYou || 'Thank you for your order!');
   lines.push(LF);
-  lines.push('À bientôt !');
+  lines.push(labels.seeYouSoon || 'See you soon!');
   lines.push(LF + LF + LF);
 
   // ── Cut ──────────────────────────────────────────────────────────────────
@@ -186,48 +191,55 @@ export function buildEscPosReceipt(receipt) {
  * @returns {Promise<{method: 'electron'|'electron-escpos'|'browser'|'none', error?: string}>}
  */
 export async function printReceipt(receipt, printElementId = 'kiosk-print-receipt') {
-  // ── Electron bridge (primary — matches borne-windows preload.js API) ─────
-  if (window.borne?.printReceipt) {
-    try {
-      // Build the orderData format expected by Electron PrinterService
-      const orderData = {
-        queue_number:    receipt.queueNumber,
-        order_serial_no: receipt.queueNumber,
-        total:           receipt.total,
-        restaurant_name: receipt.restaurantName,
-        items: (receipt.items || []).map(i => ({
-          name:        i.name,
-          quantity:    i.quantity,
-          total_price: (i.unitPrice || 0) * (i.quantity || 1),
-          instruction: i.instruction || null,
-        })),
-        payment_method: receipt.paymentMethod || '',
-        loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
-        loyalty_customer_name: receipt.loyaltyCustomerName || '',
-      };
-      const result = await window.borne.printReceipt(orderData);
-      if (result?.success || result?.skipped) {
+  // [PHASE-6.2] Électron bridge — via kioskHardware (pas d'accès direct window.borne).
+  //
+  // `kioskHardware.printReceipt` et `printEscPos` retournent le contrat {ok, error?}
+  // (runSafe dans le service enrobe les throws en fail). Ils renvoient également
+  // `{ok: false, error: 'printer_unavailable'}` si la méthode bridge n'existe pas
+  // — on traite ce cas comme "fall-through" vers la méthode suivante.
+  const isBridge = kioskHardware.isKioskBridge();
+
+  if (isBridge) {
+    const orderData = {
+      queue_number:    receipt.queueNumber,
+      order_serial_no: receipt.queueNumber,
+      total:           receipt.total,
+      restaurant_name: receipt.restaurantName,
+      items: (receipt.items || []).map(i => ({
+        name:        i.name,
+        quantity:    i.quantity,
+        total_price: (i.unitPrice || 0) * (i.quantity || 1),
+        instruction: i.instruction || null,
+      })),
+      payment_method: receipt.paymentMethod || '',
+      loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
+      loyalty_customer_name: receipt.loyaltyCustomerName || '',
+    };
+    const r = await kioskHardware.printReceipt(orderData);
+    if (r?.ok) {
+      // Certains firmwares bridge renvoient `{ok: true, data: {success|skipped}}`.
+      const raw = r.data || r;
+      if (raw?.success || raw?.skipped || r.ok) {
         return { method: 'electron' };
       }
-      // If printer returned an error, log and fall through to next method
-      console.warn('[kioskPrinter] Electron printReceipt returned error:', result?.error);
-    } catch (err) {
-      console.warn('[kioskPrinter] Electron printReceipt threw:', err);
+      console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
+    } else {
+      // printer_unavailable → on tente le fallback ESC/POS direct.
+      if (r?.error && r.error !== 'printer_unavailable') {
+        console.warn('[kioskPrinter] printReceipt failed:', r.error);
+      }
+    }
+
+    // Fallback ESC/POS via kioskHardware (même service, méthode alternative).
+    const lines = buildEscPosReceipt(receipt);
+    const rEsc = await kioskHardware.printEscPos(lines);
+    if (rEsc?.ok) return { method: 'electron-escpos' };
+    if (rEsc?.error && rEsc.error !== 'printer_unavailable') {
+      console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
     }
   }
 
-  // ── Legacy ESC/POS bridge (if available) ─────────────────────────────────
-  if (window.borne?.printEscPos) {
-    try {
-      const lines = buildEscPosReceipt(receipt);
-      await window.borne.printEscPos(lines);
-      return { method: 'electron-escpos' };
-    } catch (err) {
-      console.warn('[kioskPrinter] Electron printEscPos failed:', err);
-    }
-  }
-
-  // ── Browser window.print() fallback ─────────────────────────────────────
+  // ── Browser window.print() fallback (dev / navigateur) ───────────────────
   const el = document.getElementById(printElementId);
   if (el && typeof window.print === 'function') {
     try {
@@ -239,6 +251,21 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
   }
 
   return { method: 'none', error: 'No print method available' };
+}
+
+/**
+ * Report a printer failure to the backend hardware log.
+ * Non-blocking — never throws.
+ */
+export function reportPrinterFailure(orderId, errorMessage) {
+    try {
+        const axios = window.axios;
+        if (!axios) return;
+        axios.post('frontend/kiosk-event', {
+            type: 'printer_failure',
+            details: `order_id=${orderId} | error=${errorMessage || 'unknown'}`,
+        }).catch(() => {});
+    } catch (_) {}
 }
 
 /**
@@ -273,6 +300,7 @@ export function buildReceiptData({
   paymentMethod,
   loyaltyPointsEarned = 0,
   loyaltyCustomerName = '',
+  labels = {},
 }) {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -298,5 +326,6 @@ export function buildReceiptData({
     paymentMethod:  paymentMethod || '',
     loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
     loyaltyCustomerName: loyaltyCustomerName || '',
+    labels,
   };
 }

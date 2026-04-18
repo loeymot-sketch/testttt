@@ -11,6 +11,13 @@ class OrderFlowTest extends TestCase
 {
     use \Illuminate\Foundation\Testing\RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+    }
+
     public function test_order_without_auth_returns_401()
     {
         $response = $this->postJson('/api/frontend/order', []);
@@ -61,7 +68,9 @@ class OrderFlowTest extends TestCase
             ]),
         ];
 
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', $payload);
+        $response = $this->actingAs($user, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/frontend/order', $payload);
 
         // 201 création OK (prix recalculé serveur) ou 400/422 si la couche refuse le payload
         $this->assertTrue(
@@ -92,6 +101,7 @@ class OrderFlowTest extends TestCase
             'password' => bcrypt('password123'),
             'branch_id' => $branch->id
         ]);
+        $admin->assignRole('Admin');
 
         // Créer une commande PENDING sans factory
         $order = new \App\Models\Order();
@@ -109,9 +119,11 @@ class OrderFlowTest extends TestCase
         $order->save();
 
         // Essayer de la passer directement en PREPARED (14) sans passer par ACCEPT (10)
-        $response = $this->actingAs($admin)->postJson('/api/admin/pos-order/change-status/' . $order->id, [
-            'status' => 14
-        ]);
+        $response = $this->actingAs($admin, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
+                'status' => 14
+            ]);
 
         // Doit être rejeté formellement (business constraint violation : 400 Bad Request)
         $this->assertTrue(in_array($response->status(), [400, 403, 422]), "La transition d'état illégale n'a pas été bloquée (Statut: " . $response->status() . ")");

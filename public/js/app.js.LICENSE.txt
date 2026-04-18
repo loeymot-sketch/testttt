@@ -1,4 +1,10 @@
 /*!
+  * Bootstrap v5.3.8 (https://getbootstrap.com/)
+  * Copyright 2011-2025 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
+  */
+
+/*!
   * shared v9.14.5
   * (c) 2025 kazuya kawaguchi
   * Released under the MIT License.
@@ -7,6 +13,14 @@
 /*!
  * ApexCharts v5.3.6
  * (c) 2018-2025 ApexCharts
+ */
+
+/*!
+ * Pusher JavaScript Library v8.4.0
+ * https://pusher.com/
+ *
+ * Copyright 2020, Pusher
+ * Released under the MIT licence.
  */
 
 /*!
@@ -50,6 +64,8 @@
 *
 * BUILT: Mon Jul 01 2024 15:04:42 GMT+0200 (Central European Summer Time)
 */
+
+/*! @license DOMPurify 3.4.0 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.0/LICENSE */
 
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 

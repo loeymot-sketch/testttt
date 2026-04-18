@@ -29,5 +29,12 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="MIX_API_KEY" value="test-api-key"/>
+        <env name="STAFF_ONLY_MODE" value="false"/>
+        <env name="KIOSK_USE_POS_WIZARD" value="false"/>
+        <env name="KIOSK_MACHINE_USERNAME" value="kiosk-lecayenne"/>
+        <env name="KIOSK_MACHINE_PASSWORD" value="kiosk123"/>
+        <env name="MIX_PUSHER_APP_KEY" value="local-test-key"/>
+        <env name="MIX_PUSHER_HOST" value="127.0.0.1"/>
+        <env name="MIX_PUSHER_PORT" value="6001"/>
     </php>
 </phpunit>

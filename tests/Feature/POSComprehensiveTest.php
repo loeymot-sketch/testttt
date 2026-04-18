@@ -100,6 +100,7 @@ class POSComprehensiveTest extends TestCase
             'branch_id' => $branch->id,
             'status' => \App\Enums\OrderStatus::ACCEPT,
             'order_type' => \App\Enums\OrderType::POS,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -119,6 +120,7 @@ class POSComprehensiveTest extends TestCase
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
             'status' => \App\Enums\OrderStatus::ACCEPT,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -141,6 +143,7 @@ class POSComprehensiveTest extends TestCase
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
             'status' => \App\Enums\OrderStatus::ACCEPT,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -162,6 +165,7 @@ class POSComprehensiveTest extends TestCase
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
             'payment_status' => \App\Enums\PaymentStatus::UNPAID,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -183,6 +187,7 @@ class POSComprehensiveTest extends TestCase
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
             'status' => \App\Enums\OrderStatus::PENDING,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -201,6 +206,7 @@ class POSComprehensiveTest extends TestCase
         [$branch, $admin] = $this->setupAdmin();
         \Database\Factories\OrderFactory::new()->count(3)->create([
             'branch_id' => $branch->id,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)
@@ -220,6 +226,7 @@ class POSComprehensiveTest extends TestCase
         [$branch, $admin] = $this->setupAdmin();
         $order = \Database\Factories\OrderFactory::new()->create([
             'branch_id' => $branch->id,
+            'order_datetime' => now(),
         ]);
         
         $response = $this->actingAs($admin)

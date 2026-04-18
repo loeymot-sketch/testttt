@@ -1,12 +1,12 @@
 import axios from "axios";
 import { saveOrder, getPendingCount, startAutoSync } from "../../helpers/kioskOfflineQueue";
+import { isSnapshotStale, loadSnapshot } from "../../helpers/kioskMenuCache";
 
 // Source identique à sourceEnum.WEB (pas de valeur KIOSK côté frontend)
 const SOURCE_KIOSK = 5;
 
-// Map kiosk UI payment strings → PaymentGateway numeric IDs stored in DB
-// cash=1 (CASH_ON_DELIVERY), card=4 (CARD), tr=5 (TICKET_RESTAURANT)
 const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
+const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
 
 export const kioskCart = {
     namespaced: true,
@@ -17,6 +17,15 @@ export const kioskCart = {
         upsellShown: false,
         loyaltyCustomer: null,
         loyaltyDiscount: 0,
+        // Kiosk Phase 9.1.6 — Code promo branch-scoped (kiosk_promos) ou
+        // coupon global. Validé lecture-seule via POST /promo/validate, la
+        // consommation réelle (increment uses_count) n'intervient qu'à la
+        // création de commande côté serveur (SSOT).
+        promoCode: null,
+        promoDiscount: 0,
+        promoMeta: null,      // { type: 'percent'|'amount', value, message, kind: 'kiosk'|'coupon' }
+        promoError: null,     // string i18n key OU message serveur (affiché sous l'input)
+        promoLoading: false,
         branchId: null,
         idempotencyKey: null,
         kioskToken: null,
@@ -43,19 +52,31 @@ export const kioskCart = {
         upsellShown: (state) => state.upsellShown,
         loyaltyCustomer: (state) => state.loyaltyCustomer,
         loyaltyDiscount: (state) => state.loyaltyDiscount,
+        promoCode: (state) => state.promoCode,
+        promoDiscount: (state) => state.promoDiscount,
+        promoMeta: (state) => state.promoMeta,
+        promoError: (state) => state.promoError,
+        promoLoading: (state) => state.promoLoading,
         branchId: (state) => state.branchId,
         isEmpty: (state) => state.items.length === 0,
-        total: (state, getters) => Math.max(0, getters.subtotal - state.loyaltyDiscount),
+        // Kiosk Phase 9.1.6 — Total cumule loyalty + promo, jamais négatif.
+        // SSOT : ce total reste purement local (affichage). La vérité finale
+        // est recalculée serveur par PricingService à POST /frontend/order.
+        total: (state, getters) => Math.max(
+            0,
+            getters.subtotal - state.loyaltyDiscount - state.promoDiscount,
+        ),
     },
     mutations: {
         ADD_ITEM(state, item) {
             const existing = state.items.findIndex(i =>
                 i.item_id === item.item_id &&
                 JSON.stringify(i.item_variations) === JSON.stringify(item.item_variations) &&
-                JSON.stringify(i.item_extras) === JSON.stringify(item.item_extras)
+                JSON.stringify(i.item_extras) === JSON.stringify(item.item_extras) &&
+                (i.instruction || '') === (item.instruction || '')
             );
             if (existing >= 0) {
-                const qty = state.items[existing].quantity + (item.quantity || 1);
+                const qty = Math.min(state.items[existing].quantity + (item.quantity || 1), MAX_ITEM_QTY);
                 state.items[existing].quantity = qty;
                 // [KIOSK-17] Keep line total in sync when merging identical items
                 const base = parseFloat(state.items[existing].convert_price) || 0;
@@ -63,7 +84,14 @@ export const kioskCart = {
                 const ext  = parseFloat(state.items[existing].item_extra_total) || 0;
                 state.items[existing].total = parseFloat(((base + varE + ext) * qty).toFixed(2));
             } else {
-                const newItem = { ...item, quantity: item.quantity || 1 };
+                // [PHASE9 W-P1-5 FIX] Clamp quantity even for new lines (previously
+                // only merged lines were clamped, creating an asymmetric contract
+                // where a fresh-line quantity=99 was shipped as-is to server).
+                const rawQty = Number(item.quantity || 1);
+                const newItem = {
+                    ...item,
+                    quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY)),
+                };
                 // Ensure total is always present
                 if (!newItem.total) {
                     const base = parseFloat(newItem.convert_price) || 0;
@@ -81,7 +109,7 @@ export const kioskCart = {
             if (quantity <= 0) {
                 state.items.splice(index, 1);
             } else {
-                state.items[index].quantity = quantity;
+                state.items[index].quantity = Math.min(quantity, MAX_ITEM_QTY);
                 // [KIOSK-17] Keep line total in sync when quantity changes
                 const base = parseFloat(state.items[index].convert_price) || 0;
                 const varE = parseFloat(state.items[index].item_variation_total) || 0;
@@ -99,6 +127,28 @@ export const kioskCart = {
         SET_LOYALTY(state, { customer, discount }) {
             state.loyaltyCustomer = customer;
             state.loyaltyDiscount = discount || 0;
+        },
+        // Kiosk Phase 9.1.6 — Promo state mutations.
+        SET_PROMO_LOADING(state, value) {
+            state.promoLoading = !!value;
+        },
+        SET_PROMO(state, { code, discount, meta }) {
+            state.promoCode = code || null;
+            state.promoDiscount = Math.max(0, parseFloat(discount) || 0);
+            state.promoMeta = meta || null;
+            state.promoError = null;
+        },
+        SET_PROMO_ERROR(state, message) {
+            state.promoError = message || null;
+            state.promoDiscount = 0;
+            state.promoMeta = null;
+        },
+        CLEAR_PROMO(state) {
+            state.promoCode = null;
+            state.promoDiscount = 0;
+            state.promoMeta = null;
+            state.promoError = null;
+            state.promoLoading = false;
         },
         SET_BRANCH(state, branchId) {
             state.branchId = branchId;
@@ -135,6 +185,12 @@ export const kioskCart = {
             state.idempotencyKey = null;
             state.paymentMethod = null;
             state.orderType = 25;
+            // Kiosk Phase 9.1.6 — promo reset au retour idle (comme loyalty).
+            state.promoCode = null;
+            state.promoDiscount = 0;
+            state.promoMeta = null;
+            state.promoError = null;
+            state.promoLoading = false;
         },
     },
     actions: {
@@ -190,6 +246,57 @@ export const kioskCart = {
         setLoyalty({ commit }, payload) {
             commit('SET_LOYALTY', payload);
         },
+        // Kiosk Phase 9.1.6 — Valide un code promo en lecture-seule via
+        // POST /api/frontend/promo/validate. Renvoie la meta côté appelant
+        // pour affichage ; stocke dans state si valide, nettoie sinon.
+        //
+        // Invariants :
+        //  - `branch_id` n'est JAMAIS envoyé (lu serveur via KioskMachine).
+        //  - `cart_total` est envoyé pour permettre au serveur d'appliquer
+        //    `min_cart` mais le montant de discount reste calculé serveur.
+        //  - Aucune écriture DB ici (pas d'increment uses_count) : la
+        //    consommation réelle intervient uniquement à /frontend/order.
+        async validatePromo({ commit, getters }, rawCode) {
+            const code = String(rawCode || '').trim();
+            if (!code) {
+                commit('SET_PROMO_ERROR', 'kiosk.promo.error.empty');
+                return { valid: false, reason: 'empty' };
+            }
+            commit('SET_PROMO_LOADING', true);
+            try {
+                const cartTotal = getters.subtotal || 0;
+                const res = await axios.post('frontend/promo/validate', {
+                    code,
+                    cart_total: cartTotal,
+                });
+                const data = res?.data?.data || {};
+                const valid = !!(res?.data?.status);
+                if (valid) {
+                    commit('SET_PROMO', {
+                        code,
+                        discount: parseFloat(data.discount || 0) || 0,
+                        meta: {
+                            type: data.type || null,
+                            value: data.value ?? null,
+                            kind: data.kind || null,
+                            message: res.data.message || null,
+                        },
+                    });
+                    return { valid: true, data };
+                }
+                commit('SET_PROMO_ERROR', res?.data?.message || 'kiosk.promo.error.invalid');
+                return { valid: false, message: res?.data?.message || null };
+            } catch (err) {
+                const message = err?.response?.data?.message || 'kiosk.promo.error.network';
+                commit('SET_PROMO_ERROR', message);
+                return { valid: false, message };
+            } finally {
+                commit('SET_PROMO_LOADING', false);
+            }
+        },
+        clearPromo({ commit }) {
+            commit('CLEAR_PROMO');
+        },
         // [GAP-22-1] Store the order type chosen by the customer (sur place / à emporter)
         setOrderType({ commit }, orderType) {
             commit('SET_ORDER_TYPE', orderType);
@@ -199,6 +306,12 @@ export const kioskCart = {
         },
         submitOrder({ commit, state, getters }, { branchId, orderType, paymentMethod } = {}) {
             return new Promise((resolve, reject) => {
+                loadSnapshot().then(snap => {
+                    if (snap && isSnapshotStale(snap.savedAt)) {
+                        console.warn('[Kiosk] Menu snapshot is stale (>4h). Server will recalculate prices at order time (SSOT).');
+                    }
+                }).catch(() => {});
+
                 const resolvedBranchId = branchId || state.branchId;
                 const subtotal = getters.subtotal;
                 const total = getters.total;
@@ -252,6 +365,11 @@ export const kioskCart = {
                     discount: state.loyaltyDiscount || 0,
                     // [SPLASH LOYALTY] Send loyalty_code so backend can validate and deduct points server-side
                     loyalty_code: state.loyaltyCustomer?.loyalty_code || null,
+                    // Kiosk Phase 9.1.6 — Code promo transmis au serveur pour
+                    // validation finale (SSOT) + increment uses_count. Le
+                    // `promoDiscount` client n'est JAMAIS lu serveur : celui-ci
+                    // recalcule via KioskPromoService + PricingService.
+                    kiosk_promo_code: state.promoCode || null,
                     delivery_charge: 0,
                     total: total,
                     is_advance_order: 0,

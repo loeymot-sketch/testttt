@@ -32,6 +32,30 @@ class NormalItemResource extends JsonResource
             ? $this->variations->filter(fn($v) => $v->isVisibleOn($surface))->values()
             : $this->variations;
 
+        // Kiosk Phase 9.1.1 — allergens[] projection pour safety UI (header wizard).
+        // Sécurité FIC (Règlement UE 1169/2011) + EAA 2025 : exposer la liste normalisée
+        // afin que le frontend puisse afficher les badges allergènes et alerter le client
+        // avant ajout au panier. Snapshot léger (code/name_key/icon/is_trace uniquement).
+        $allergens = $this->relationLoaded('allergens')
+            ? $this->allergens
+            : $this->allergens()->get();
+
+        $allergensPayload = $allergens->map(function ($allergen) {
+            return [
+                'id'       => (int) $allergen->id,
+                'code'     => (string) $allergen->code,
+                'name_key' => (string) $allergen->name_key,
+                'icon'     => $allergen->icon,
+                'is_trace' => (bool) ($allergen->pivot->is_trace ?? false),
+            ];
+        })->values();
+
+        // Kiosk Phase 9.1.1 — is_available exposé pour détection mid-wizard.
+        // Source de vérité : flag global `Item.is_available` (scope POS/kiosk/web).
+        // La disponibilité par branche (`ItemBranchAvailability`) est gérée séparément
+        // par `KioskMenuService::projectItems` pour les projections kiosk par branche.
+        $isAvailable = $this->is_available === null ? true : (bool) $this->is_available;
+
         return [
             "id" => $this->id,
             "name" => $this->name,
@@ -48,6 +72,8 @@ class NormalItemResource extends JsonResource
             "price" => $this->price,
             "item_type" => $this->item_type,
             "status" => $this->status,
+            "is_available" => $isAvailable,
+            "allergens" => $allergensPayload,
             "description" => $this->description === null ? '' : $this->description,
             "caution" => $this->caution === null ? '' : $this->caution,
             "thumb" => $this->thumb,

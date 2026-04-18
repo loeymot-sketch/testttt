@@ -1,0 +1,53 @@
+# LiteLLM Proxy Config — FoodKing Phase 2
+# Route: Graphiti → LiteLLM (localhost:4000) → Kimi / Moonshot (chat) + embeddings (OpenAI-compatible)
+# Doc: https://docs.litellm.ai/docs/proxy/configs
+# Moonshot: LiteLLM lit `MOONSHOT_API_BASE` (global https://api.moonshot.ai/v1 vs Chine https://api.moonshot.cn/v1).
+# fastembed/* n'est plus enregistré par LiteLLM 1.83+ (router → erreur) — ne pas l'utiliser ici.
+
+model_list:
+
+  # --- Chat completions → Moonshot (préfixe moonshot/ ; pas d'api_base ici : MOONSHOT_API_BASE suffit) ---
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: moonshot/moonshot-v1-8k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+
+  - model_name: gpt-4o
+    litellm_params:
+      model: moonshot/moonshot-v1-32k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+
+  - model_name: gpt-4
+    litellm_params:
+      model: moonshot/moonshot-v1-32k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: moonshot/moonshot-v1-8k
+      api_key: "os.environ/MOONSHOT_API_KEY"
+
+  # --- Embeddings → OpenAI officiel (clé dédiée ; Kimi/Moonshot ne les expose souvent pas) ---
+  # Définir OPENAI_EMBEDDING_API_KEY dans ~/.cursor/mcp.json (mcpServers.graphiti.env).
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
+      api_base: "https://api.openai.com/v1"
+
+  - model_name: text-embedding-3-small
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
+      api_base: "https://api.openai.com/v1"
+
+  - model_name: text-embedding-3-large
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
+      api_base: "https://api.openai.com/v1"
+
+litellm_settings:
+  drop_params: true          # ignore params non supportés (ex: seed, logprobs)
+  request_timeout: 60        # timeout par requête en secondes
+  num_retries: 2             # retries auto sur timeout Moonshot

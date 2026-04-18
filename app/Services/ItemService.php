@@ -83,7 +83,7 @@ class ItemService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            return Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
+            $query = Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
                         if ($key == "except") {
@@ -102,13 +102,44 @@ class ItemService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+            });
+
+            // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
+            // Gate visibility only when the caller declares a surface; legacy
+            // callers with no `?surface=` keep the previous "catalog-wide"
+            // behaviour. NULL `channels` = visible on every surface (V1 default).
+            $this->applyChannelsFilter($query, $request->get('surface'));
+
+            return $query->orderBy($orderColumn, $orderType)->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * [AUDIT 2026-04-17 R1] Restrict an `items` query to a client-declared surface.
+     *
+     * Contract:
+     *   - Valid surfaces: 'pos', 'kiosk', 'web'. Anything else is ignored (no-op)
+     *     so forged query strings cannot widen or break the query.
+     *   - Back-compat: items with `channels IS NULL` stay visible on every surface.
+     *   - Portable: uses `whereJsonContains` (MySQL) + `whereNull` fallback; Laravel
+     *     emits SQLite-compatible JSON predicates for the test suite.
+     */
+    private function applyChannelsFilter($query, ?string $surface): void
+    {
+        if ($surface === null) {
+            return;
+        }
+        $surface = strtolower(trim($surface));
+        if (!in_array($surface, ['pos', 'kiosk', 'web'], true)) {
+            return;
+        }
+        $query->where(function ($q) use ($surface) {
+            $q->whereNull('channels')
+                ->orWhereJsonContains('channels', $surface);
+        });
     }
 
     /**
@@ -238,7 +269,7 @@ class ItemService
                 $type = 'full';
             }
             try {
-                event(new ItemAvailabilityChanged($refreshed, $type));
+                event(ItemAvailabilityChanged::fromItem($refreshed, $type));
             } catch (\Throwable $e) {
                 // Non-blocking: broadcast failure must not break the admin save
                 Log::warning('[C3] ItemAvailabilityChanged broadcast failed: ' . $e->getMessage());

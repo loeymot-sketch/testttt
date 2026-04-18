@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Borne FoodKing — Prototype</title>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  body {
+    background: #0a0a0c;
+    color: #fff;
+    min-height: 100vh;
+    /* Scale so 1080×1920 kiosk fits in any viewport */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  button { font-family: inherit; }
+
+  /* Animations partagées */
+  @keyframes fkPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+  @keyframes fkFadeZoom {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes fkBounceIn {
+    0%   { opacity: 0; transform: scale(0.3); }
+    60%  { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes fkDot {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); }
+  }
+  @keyframes fkSlideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fkFloat {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-12px); }
+  }
+  @keyframes fkRing {
+    0%   { transform: scale(0.4); opacity: 0.9; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  /* Hide scrollbars dans la borne (comme un vrai kiosk) */
+  .fk-kiosk ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  .fk-kiosk * { scrollbar-width: none; }
+
+  /* Scale auto pour que 1080×1920 rentre à l'écran */
+  #root { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  /* Responsive scale */
+  @media (max-width: 1400px) { body { zoom: 0.75; } }
+  @media (max-width: 1100px) { body { zoom: 0.55; } }
+  @media (max-width: 800px)  { body { zoom: 0.40; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  // Tweaks persistants — éditables via panneau Tweaks
+  window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "accent": "#E8001C",
+    "showFrame": true
+  }/*EDITMODE-END*/;
+</script>
+
+<!-- Ordre important: data → atoms → steps → screens → app -->
+<script src="foodking/data.js"></script>
+<script type="text/babel" src="foodking/atoms.jsx" data-presets="react"></script>
+<script type="text/babel" src="foodking/wizard-steps.jsx" data-presets="react"></script>
+<script type="text/babel" src="foodking/screens-main.jsx" data-presets="react"></script>
+<script type="text/babel" src="foodking/screens-pay.jsx" data-presets="react"></script>
+<script type="text/babel" src="foodking/app.jsx" data-presets="react"></script>
+
+</body>
+</html>

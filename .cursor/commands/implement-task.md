@@ -1,3 +1,7 @@
+> **[SUPERSEDED — pre-phase-1]** This command predates the run-cycle.md protocol.
+> Use `.cursor/commands/run-cycle.md` + ACTIVE_CYCLE.md for all implementation cycles as of Phase 1.
+> Kept for historical reference only. Do not use in autonomous cycles.
+
 Read `reports/planning/latest.md` (always the most recent Claude plan).
 
 Implement only one clearly scoped task.

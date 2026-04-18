@@ -69,15 +69,28 @@
         @endforeach
     @endif
 
-    {{-- Config runtime SPA : toujours alignée sur Laravel (config:cache OK). Le bundle Mix peut avoir des MIX_* obsolètes. --}}
+    {{--
+        Config runtime SPA — DOIT être AVANT app.js pour que i18n.js lise
+        window.foodkingConfig.kioskDefaultLocale au moment de l'initialisation du bundle.
+        (config:cache OK : on utilise config() et non env() directement)
+    --}}
     <script>
         window.foodkingConfig = {
             baseUrl: @json(rtrim((string) config('app.url'), '/')),
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
-            // Borne : voir config/kiosk.php (local = démarrage direct par défaut)
-            kioskAutoLogin: @json(config('kiosk.spa_payload')),
+            // Borne : n'injecter les credentials machine que sur les routes kiosk.
+            kioskAutoLogin: @json(request()->is('kiosk*') ? config('kiosk.spa_payload') : null),
+            // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
+            kioskDefaultLocale: @json((string) config('kiosk.default_locale', 'fr')),
+            kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
+            // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
+            kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
+            maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
+            // [STAFF-ONLY-V1] Feature flags for surface restructuring
+            staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
+            kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

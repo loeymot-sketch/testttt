@@ -8,6 +8,7 @@
 .env
 .env.backup
 .env.testing
+.cursor/mcp/graphiti.json
 .phpunit.result.cache
 npm-debug.log
 yarn-error.log

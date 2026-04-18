@@ -1,7 +1,7 @@
 <template>
-  <div class="kiosk-confirmation">
-    <!-- Animated success checkmark -->
-    <div class="kiosk-confirmation-anim">
+  <div class="kiosk-confirmation" role="status" aria-live="polite" data-testid="kiosk-confirmation-root">
+    <!-- Animated success checkmark (décoratif) -->
+    <div class="kiosk-confirmation-anim" aria-hidden="true">
       <svg class="kiosk-check-svg" viewBox="0 0 120 120" fill="none">
         <circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
         <circle
@@ -24,23 +24,31 @@
       </svg>
     </div>
 
-    <h1 class="kiosk-confirmation-title">Commande confirmée !</h1>
+    <h1 class="kiosk-confirmation-title" data-testid="kiosk-confirmation-title">
+      {{ $t('kiosk.confirmation.title') }}
+    </h1>
 
-    <div class="kiosk-confirmation-card">
+    <div class="kiosk-confirmation-card" data-testid="kiosk-confirmation-card">
       <div class="kiosk-confirmation-row">
-        <span class="kiosk-confirmation-label">Numéro de commande</span>
-        <span class="kiosk-confirmation-number">#{{ displayNumber }}</span>
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.order_number') }}</span>
+        <span class="kiosk-confirmation-number" data-testid="kiosk-confirmation-number">#{{ displayNumber }}</span>
       </div>
       <!-- [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly -->
       <div v-if="displayTotal !== null && displayTotal !== undefined" class="kiosk-confirmation-row">
-        <span class="kiosk-confirmation-label">Total payé</span>
-        <span class="kiosk-confirmation-price">{{ formatPrice(displayTotal) }}</span>
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.total_paid') }}</span>
+        <span class="kiosk-confirmation-price" data-testid="kiosk-confirmation-total">{{ formatPrice(displayTotal) }}</span>
       </div>
     </div>
 
+    <div v-if="printFailed" class="kiosk-printer-fallback">
+      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') || 'Impression indisponible — notez votre numéro :' }}</p>
+      <div class="kiosk-printer-fallback-number">#{{ displayNumber }}</div>
+      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') || 'Présentez ce numéro au comptoir.' }}</p>
+    </div>
+
     <div class="kiosk-confirmation-message">
-      <p>Votre commande a été envoyée en cuisine.</p>
-      <p>Présentez-vous au comptoir avec votre numéro.</p>
+      <p>{{ $t('kiosk.confirmation.message_kitchen') }}</p>
+      <p>{{ $t('kiosk.confirmation.message_counter') }}</p>
     </div>
 
     <!-- [GAP-35-7] Points fidélité gagnés — style Splash -->
@@ -49,14 +57,14 @@
         <div class="kiosk-points-icon">⭐</div>
         <div class="kiosk-points-text">
           <span class="kiosk-points-name">{{ loyaltyCustomerName }},</span>
-          <span class="kiosk-points-value">vous gagnez <strong>+{{ pointsEarned }} points</strong> fidélité !</span>
+          <span class="kiosk-points-value">{{ $t('kiosk.confirmation.loyalty_points', { n: pointsEarned }) }}</span>
         </div>
       </div>
     </transition>
 
     <!-- Progress timer -->
     <div class="kiosk-confirmation-timer">
-      <span class="kiosk-timer-label">Retour automatique dans {{ countdown }}s</span>
+      <span class="kiosk-timer-label">{{ $t('kiosk.confirmation.auto_return', { n: countdown }) }}</span>
       <div class="kiosk-timer-bar">
         <div class="kiosk-timer-fill" :style="{ width: progressWidth + '%' }"></div>
       </div>
@@ -67,15 +75,17 @@
       :class="{ 'is-printing': printStatus === 'printing', 'is-done': printStatus === 'done', 'is-error': printStatus === 'error' }"
       @click="printReceipt"
       :disabled="printStatus === 'printing'"
+      :aria-busy="printStatus === 'printing'"
+      data-testid="kiosk-confirmation-cta-print"
     >
-      <span v-if="printStatus === 'printing'">⏳ Impression…</span>
-      <span v-else-if="printStatus === 'done'">✅ Ticket imprimé</span>
-      <span v-else-if="printStatus === 'error'">❌ Erreur impression</span>
-      <span v-else>🖨️ Imprimer le ticket</span>
+      <span v-if="printStatus === 'printing'">⏳ {{ $t('kiosk.confirmation.printing') }}</span>
+      <span v-else-if="printStatus === 'done'">✅ {{ $t('kiosk.confirmation.printed') }}</span>
+      <span v-else-if="printStatus === 'error'">❌ {{ $t('kiosk.confirmation.print_error') }}</span>
+      <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome">
-      Nouvelle commande →
+    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
+      {{ $t('kiosk.confirmation.new_order') }} →
     </button>
   </div>
 
@@ -87,38 +97,54 @@
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <div class="receipt-queue">
-      <span>NUMÉRO</span>
+      <span>{{ $t('kiosk.confirmation.receipt_number') }}</span>
       <span class="receipt-queue-number">#{{ displayNumber }}</span>
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <!-- [AUDIT-P2-C] Use index in key to prevent duplicate keys when same item_id appears multiple times -->
     <div v-for="(item, index) in receiptItems" :key="item.item_id + '_' + index" class="receipt-line">
-      <span>{{ item.quantity }}x {{ item.name }}</span>
+      <span>{{ item.quantity }}x {{ sanitizeItemName(item.name) }}</span>
       <span>{{ formatPrice(item.total) }}</span>
     </div>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
     <div v-if="receiptDiscount > 0" class="receipt-line receipt-discount">
-      <span>Réduction fidélité</span>
+      <span>{{ $t('kiosk.confirmation.receipt_discount') }}</span>
       <span>-{{ formatPrice(receiptDiscount) }}</span>
     </div>
     <div class="receipt-line receipt-total">
-      <span>TOTAL</span>
+      <span>{{ $t('kiosk.confirmation.receipt_total') }}</span>
       <span>{{ formatPrice(displayTotal || 0) }}</span>
     </div>
     <template v-if="pointsEarned > 0 && loyaltyCustomerName">
       <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
-      <p class="receipt-footer receipt-loyalty">FIDÉLITÉ : +{{ pointsEarned }} pts</p>
+      <p class="receipt-footer receipt-loyalty">{{ $t('kiosk.confirmation.receipt_loyalty', { n: pointsEarned }) }}</p>
       <p class="receipt-footer">{{ loyaltyCustomerName }}</p>
     </template>
     <div class="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
-    <p class="receipt-footer">Merci de votre visite !</p>
-    <p class="receipt-footer">Présentez ce ticket au comptoir.</p>
+    <p class="receipt-footer">{{ $t('kiosk.confirmation.receipt_thanks') }}</p>
+    <p class="receipt-footer">{{ $t('kiosk.confirmation.receipt_present') }}</p>
   </div>
 </template>
 
 <script>
-import { printReceipt as escPosPrint, buildReceiptData } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+// Kiosk Phase 9.1.12 — snapshot localStorage pour survie F5 du ticket.
+import {
+  saveKioskReceiptSnapshot,
+  readKioskReceiptSnapshot,
+  clearKioskReceiptSnapshot,
+} from '../../../helpers/kioskReceiptPersistence';
+
+// Wrapper tolérant (ne lève jamais dans les tests jsdom sans localStorage).
+function clearKioskReceiptSnapshotSafe() {
+  try { clearKioskReceiptSnapshot(); } catch (_) {}
+}
+// Kiosk Phase 9.1.8 — TTS sur l'écran de confirmation.
+// Énoncé du numéro de commande + total pour les malvoyants (EAA 2025).
+// Le composable no-op si `kioskSettings.audio` est off — aucun effet de bord.
+import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 
 export default {
   name: 'KioskConfirmationComponent',
@@ -128,13 +154,13 @@ export default {
     orderNumber: { type: String, default: '' },
     orderTotal:  { type: Number, default: null },
   },
-  emits: ['close'],
   data() {
     return {
       countdown:      30,
       progressWidth:  100,
       timer:          null,
       printStatus:    null,  // null | 'printing' | 'done' | 'error'
+      printFailed:    false,
       // Snapshot cart data at mount time — captured before cart reset
       _snapshotItems:        null,
       _snapshotDiscount:     null,
@@ -182,7 +208,7 @@ export default {
       const map = {
         card: this.$t('kiosk.card'),
         cash: this.$t('kiosk.cash'),
-        tr: 'Ticket Restaurant',
+        tr: this.$t('kiosk.pay_screen.tr_title'),
       };
       const method = this.$store.state.kioskCart?.paymentMethod;
       return map[method] || method || '';
@@ -193,34 +219,84 @@ export default {
       return lists?.company_name || lists?.site_name || 'FoodKing';
     },
     receiptDate() {
-      return new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+      const locale = this.$i18n?.locale || 'fr';
+      const browserLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'fr-FR';
+      return new Date().toLocaleString(browserLocale, { dateStyle: 'short', timeStyle: 'short' });
     },
   },
   mounted() {
     // Snapshot cart data BEFORE resetting, so receipt can still be printed
     const state = this.$store.state.kioskCart;
     const items = state?.items || [];
-    this._snapshotItems   = JSON.parse(JSON.stringify(items));
-    this._snapshotDiscount = state?.loyaltyDiscount || 0;
+
+    // Kiosk Phase 9.1.12 — si le panier est déjà vide (reload F5 sur
+    // /confirmation après un premier mount), on tente de réhydrater depuis
+    // le snapshot localStorage. Cela couvre le cas "le client appuie sur F5
+    // juste après la confirmation et perd son ticket" — la persistance
+    // localStorage recharge items/total/queueNumber pour afficher le ticket.
+    // SSOT : ces données ne sont JAMAIS utilisées pour refaire un paiement.
+    const cartIsEmpty = !Array.isArray(items) || items.length === 0;
+    const snapshot = cartIsEmpty ? readKioskReceiptSnapshot() : null;
+
+    this._snapshotItems   = cartIsEmpty && snapshot
+      ? JSON.parse(JSON.stringify(snapshot.items || []))
+      : JSON.parse(JSON.stringify(items));
+    this._snapshotDiscount = cartIsEmpty && snapshot
+      ? (snapshot.discount || 0)
+      : (state?.loyaltyDiscount || 0);
     // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
-    this._snapshotSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    this._snapshotSubtotal = cartIsEmpty && snapshot
+      ? (snapshot.subtotal ?? (snapshot.items || []).reduce((s, it) => s + (parseFloat(it.total) || 0), 0))
+      : items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     const methodMap = {
       card: this.$t('kiosk.card'),
       cash: this.$t('kiosk.cash'),
-      tr: 'Ticket Restaurant',
+      tr: this.$t('kiosk.pay_screen.tr_title'),
     };
-    const rawMethod = state?.paymentMethod;
-    this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+    if (cartIsEmpty && snapshot) {
+      // Le snapshot stocke déjà le libellé traduit à l'instant où il a
+      // été posé (locale au paiement) → on ne re-traduit pas pour rester
+      // cohérent avec le ticket imprimé.
+      this._snapshotPayment = snapshot.paymentMethod || '';
+    } else {
+      const rawMethod = state?.paymentMethod;
+      this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+    }
     // [GAP-35-7] Snapshot loyalty customer name and order total for points display
-    const loyaltyCustomer = state?.loyaltyCustomer;
-    this._snapshotLoyaltyName = loyaltyCustomer?.name || loyaltyCustomer?.first_name || null;
-    // Use orderTotal prop first, then compute from items
-    this._snapshotOrderTotal = this.orderTotal != null
-      ? this.orderTotal
-      : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+    if (cartIsEmpty && snapshot) {
+      this._snapshotLoyaltyName = snapshot.loyaltyCustomerName || null;
+      this._snapshotOrderTotal = Number.isFinite(snapshot.total) ? snapshot.total : 0;
+    } else {
+      const loyaltyCustomer = state?.loyaltyCustomer;
+      this._snapshotLoyaltyName = loyaltyCustomer?.name || loyaltyCustomer?.first_name || null;
+      // Use orderTotal prop first, then compute from items
+      this._snapshotOrderTotal = this.orderTotal != null
+        ? this.orderTotal
+        : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+    }
 
     // Reset cart immediately — confirmation screen owns the data via snapshot
     this.$store.dispatch('kioskCart/reset');
+
+    // Kiosk Phase 9.1.12 — persiste le reçu APRES avoir capturé le snapshot
+    // in-memory (et avant reset, idéalement — mais le dispatch synchrone
+    // ne recharge pas les items, donc ok ici). Aucun PII n'est persisté
+    // (email/phone exclus), seul le prénom loyalty déjà imprimé sur le
+    // ticket papier est stocké.
+    try {
+      saveKioskReceiptSnapshot({
+        orderId: this.orderNumber || state?.lastOrderId || null,
+        queueNumber: this.displayNumber || state?.queueNumber || null,
+        total: this._snapshotOrderTotal,
+        discount: this._snapshotDiscount,
+        subtotal: this._snapshotSubtotal,
+        items: this._snapshotItems,
+        paymentMethod: this._snapshotPayment,
+        loyaltyCustomerName: this._snapshotLoyaltyName,
+        pointsEarned: this.pointsEarned || 0,
+        restaurantName: this.restaurantName,
+      });
+    } catch (_) { /* localStorage peut être indisponible → no-op */ }
 
     this.startTimer();
 
@@ -229,9 +305,27 @@ export default {
     this.$nextTick(() => {
       this.printReceipt();
     });
+
+    // Kiosk Phase 9.1.8 — annonce vocale de la confirmation (audio only if
+    // user opted in via a11y toggles). No-op si audio=off, et l'appel est
+    // placé après `$nextTick` pour respecter la règle autoplay Chrome
+    // (lancé en réponse à la navigation utilisateur sur /confirmation).
+    try {
+      this._kioskSpeech = useKioskSpeech({ store: this.$store });
+      const text = this.$t('kiosk.confirmation.speech_summary', {
+        number: String(this.displayNumber || '').replace(/[^0-9A-Za-z]/g, ''),
+        total: this.formatPrice(this.displayTotal || 0),
+      });
+      if (text) {
+        this._kioskSpeech.speak(text, { key: 'kiosk.confirmation.speech_summary' }).catch(() => {});
+      }
+    } catch (_) { /* tolérant à l'absence d'API Web Speech */ }
   },
   beforeUnmount() {
     this.clearTimer();
+    // Kiosk Phase 9.1.8 — stoppe proprement le TTS si l'utilisateur quitte
+    // l'écran avant la fin de la lecture (sinon fuite d'utterance sur idle).
+    try { this._kioskSpeech?.stop(); } catch (_) {}
   },
   methods: {
     startTimer() {
@@ -248,6 +342,7 @@ export default {
 
     async printReceipt() {
       if (this.printStatus === 'printing') return;
+      this.clearTimer();
       this.printStatus = 'printing';
 
       const receiptData = buildReceiptData({
@@ -260,24 +355,57 @@ export default {
         paymentMethod:  this.receiptPaymentMethod,
         loyaltyPointsEarned: this.pointsEarned,
         loyaltyCustomerName: this.loyaltyCustomerName || '',
+        thankYou: this.$t('kiosk.confirmation.receipt_thanks'),
+        labels: {
+          queueNumberTitle: this.$t('kiosk.confirmation.receipt_number'),
+          subtotal: this.$t('kiosk.subtotal'),
+          discount: this.$t('kiosk.confirmation.receipt_discount'),
+          total: this.$t('kiosk.confirmation.receipt_total'),
+          payment: this.$t('label.payment_method'),
+          loyalty: this.$t('kiosk.loyalty_card'),
+          seeYouSoon: this.$t('message.please_come_again'),
+        },
       });
 
-      const result = await escPosPrint(receiptData, 'kiosk-print-receipt');
+      try {
+        const result = await escPosPrint(receiptData, 'kiosk-print-receipt');
 
-      if (result.method === 'none') {
+        if (result.method === 'none') {
+          this.printStatus = 'error';
+          this.printFailed = true;
+          reportPrinterFailure(this.displayNumber, result.error || 'no print method');
+        } else {
+          this.printStatus = 'done';
+          this.printFailed = false;
+          setTimeout(() => { this.printStatus = null; }, 2000);
+        }
+      } catch (err) {
         this.printStatus = 'error';
-        setTimeout(() => { this.printStatus = null; }, 3000);
-      } else {
-        this.printStatus = 'done';
-        setTimeout(() => { this.printStatus = null; }, 2000);
+        this.printFailed = true;
+        reportPrinterFailure(this.displayNumber, err?.message || 'exception');
+      } finally {
+        if (this.countdown > 0 && !this.timer) {
+          this.startTimer();
+        }
       }
     },
 
     goHome() {
       this.clearTimer();
-      this.$emit('close');
-      // Cart already reset at mount — just navigate
-      this.$router.push({ name: 'kiosk.idle' });
+      // Kiosk Phase 9.1.12 — retour idle = fin de session visible. On purge
+      // le snapshot localStorage (le client n'a plus besoin de son ticket
+      // à la borne) pour ne pas polluer la prochaine commande.
+      try {
+        // require-style pour garder le chunk kiosk léger — import déjà fait
+        // en haut du fichier; utiliser la fonction importée directement.
+        clearKioskReceiptSnapshotSafe();
+      } catch (_) { /* noop */ }
+      // Router child — parent does not handle @close; must navigate here.
+      this.$router.push({ name: 'kiosk.idle' }).catch(() => {});
+    },
+
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
     },
 
     // formatPrice() provided by kioskPriceMixin
@@ -509,5 +637,29 @@ export default {
     font-size: 14px;
     color: #000;
   }
+}
+.kiosk-printer-fallback {
+  background: #fef3cd;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  text-align: center;
+}
+.kiosk-printer-fallback-label {
+  font-size: 1.1rem;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+.kiosk-printer-fallback-number {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  line-height: 1.2;
+  margin: 8px 0;
+}
+.kiosk-printer-fallback-hint {
+  font-size: 1rem;
+  color: #78350f;
 }
 </style>

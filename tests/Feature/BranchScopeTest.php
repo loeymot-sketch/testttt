@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\Branch;
+use App\Models\DefaultAccess;
 use App\Models\Order;
 use App\Models\User;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -117,6 +119,11 @@ class BranchScopeTest extends TestCase
      */
     public function test_admin_sees_all_branches_orders(): void
     {
+        DefaultAccess::create([
+            'name' => 'branch_id',
+            'user_id' => $this->admin->id,
+            'default_id' => 0,
+        ]);
         $this->actingAs($this->admin);
         
         $orders = Order::all();
@@ -234,8 +241,10 @@ class BranchScopeTest extends TestCase
     public function test_api_admin_orders_respects_branch_scope(): void
     {
         $this->actingAs($this->userBranchA, 'sanctum');
+        Permission::firstOrCreate(['name' => 'online-orders', 'guard_name' => 'sanctum']);
+        $this->userBranchA->givePermissionTo('online-orders');
         
-        $response = $this->getJson('/api/admin/online-order');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))->getJson('/api/admin/online-order');
         
         $response->assertStatus(200);
         

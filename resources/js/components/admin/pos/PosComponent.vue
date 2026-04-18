@@ -1,4 +1,5 @@
 <template>
+    <ConnectionStatusBanner />
     <LoadingComponent :props="loading" />
 
     <div class="md:w-[calc(100%-340px)] lg:w-[calc(100%-320px)] xl:w-[calc(100%-377px)]">
@@ -651,12 +652,15 @@ import {
     bundledOrderQuantityAndTotal,
     parsePositiveInt,
 } from "../../../helpers/posCartLineMath";
+import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
+import { onEvents } from "../../../services/eventContract";
 
 export default {
     name: "PosComponent",
     components: {
         CreateCustomerAddressComponent,
         CustomerAddressCreateComponent,
+        ConnectionStatusBanner,
         LoadingComponent,
         ItemComponent,
         Swiper,
@@ -676,7 +680,7 @@ export default {
             kioskCashLoading: false,
             showKioskCashPanel: false,
             _kioskPollTimer: null,
-            _echoChannel: null,
+            _eventSub: null,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -852,17 +856,17 @@ export default {
     beforeUnmount() {
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
         this._unsubscribeEcho();
+        this._unbindWsService();
     },
     mounted() {
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
         this.itemList();
-        // Load kiosk cash orders immediately, then subscribe to Echo push for sub-second updates.
-        // Polling is kept as a 60s fallback in case Echo is unavailable (no Soketi running).
         this.loadKioskCashOrders();
         this._subscribeEcho();
-        this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), 60000);
+        this._startKioskPolling();
+        this._bindWsService();
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
@@ -961,25 +965,53 @@ export default {
 
     },
     methods: {
+        // ── WebSocket state awareness ────────────────────────────────────
+        _bindWsService() {
+            const ws = window._wsService;
+            if (!ws) return;
+            this._onWsConnected = () => {
+                this.loadKioskCashOrders();
+                this._restartKioskPolling();
+            };
+            this._onWsDisconnected = () => {
+                this._restartKioskPolling();
+            };
+            ws.on('connected', this._onWsConnected);
+            ws.on('disconnected', this._onWsDisconnected);
+        },
+        _unbindWsService() {
+            const ws = window._wsService;
+            if (!ws) return;
+            if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+            if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+        },
+        _kioskPollingInterval() {
+            return window._wsService?.isConnected() ? 60000 : 10000;
+        },
+        _startKioskPolling() {
+            this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), this._kioskPollingInterval());
+        },
+        _restartKioskPolling() {
+            if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+            this._startKioskPolling();
+        },
         // ── Echo real-time subscription for kiosk cash orders ─────────────
         _subscribeEcho() {
             if (!window.Echo) return;
             const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
             if (branchId <= 0) return;
             try {
-                this._echoChannel = window.Echo.private(`branch.${branchId}`)
-                    .listen('.OrderCreated', () => { this.loadKioskCashOrders(); })
-                    .listen('.OrderStatusChanged', () => { this.loadKioskCashOrders(); });
+                this._eventSub = onEvents(branchId, [
+                    { broadcastAs: 'OrderCreated', handler: () => this.loadKioskCashOrders() },
+                    { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
+                ]);
             } catch (e) {
                 // Echo auth failed or Soketi not running — polling fallback handles it
             }
         },
         _unsubscribeEcho() {
-            if (!window.Echo || !this._echoChannel) return;
-            const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
-            if (branchId <= 0) return;
-            try { window.Echo.leave(`branch.${branchId}`); } catch (e) {}
-            this._echoChannel = null;
+            this._eventSub?.unsubscribe();
+            this._eventSub = null;
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────

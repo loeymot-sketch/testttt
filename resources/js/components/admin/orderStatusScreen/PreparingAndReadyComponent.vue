@@ -1,5 +1,8 @@
 <template>
   <LoadingContentComponent :props="loading" />
+  <div v-if="!wsConnected" class="ws-reconnect-banner">
+    Connexion temps réel perdue — actualisation automatique toutes les 10s...
+  </div>
 
   <!-- Colonne EN PRÉPARATION -->
   <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden">
@@ -41,6 +44,8 @@
 <script>
 import LoadingContentComponent from "../components/LoadingContentComponent";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
+import alertService from "../../../services/alertService";
+import { onEvents } from "../../../services/eventContract";
 
 export default {
   name: "PreparingAndReadyComponent",
@@ -52,33 +57,61 @@ export default {
       preparingItems: [],
       enums: { orderStatusEnum },
       autoRefreshInterval: null,
-      _echoChannel: null,
+      wsConnected: !!(window._wsService?.isConnected()),
+      _eventSub: null,
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
       newReadyIds: new Set(),
       newReadyFlash: false,
       _flashTimer: null,
     };
   },
-  computed: {
-    orders() { return this.$store.getters["orderStatusScreenOrder/lists"]; },
-    items()  { return this.$store.getters["orderStatusScreenOrder/mostPopularItems"]; },
-  },
+  computed: {},
   mounted() {
     this.list();
     this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.list);
     this.subscribeEcho();
+    this._bindWsService();
   },
   beforeUnmount() {
     this.stopAutoRefresh();
     window.removeEventListener('realtime-order-update', this.list);
     this.unsubscribeEcho();
+    this._unbindWsService();
     if (this._flashTimer) clearTimeout(this._flashTimer);
   },
   methods: {
+    _bindWsService() {
+      const ws = window._wsService;
+      if (!ws) return;
+      this._onWsConnected = () => {
+        this.wsConnected = true;
+        this.list();
+        this._restartPolling();
+      };
+      this._onWsDisconnected = () => {
+        this.wsConnected = false;
+        this._restartPolling();
+      };
+      ws.on('connected', this._onWsConnected);
+      ws.on('disconnected', this._onWsDisconnected);
+    },
+    _unbindWsService() {
+      const ws = window._wsService;
+      if (!ws) return;
+      if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+      if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+    },
+    _pollingInterval() {
+      return this.wsConnected ? 60000 : 10000;
+    },
+    _restartPolling() {
+      this.stopAutoRefresh();
+      this.startAutoRefresh();
+    },
     startAutoRefresh() {
       if (this.$route.path.includes('order-status-screen')) {
-        this.autoRefreshInterval = setInterval(() => this.list(), 30000);
+        this.autoRefreshInterval = setInterval(() => this.list(), this._pollingInterval());
       }
     },
     stopAutoRefresh() {
@@ -94,49 +127,43 @@ export default {
       // [AUDIT-52-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
       try {
-        const channelName = `branch.${branchId}`;
-        this._echoChannel = window.Echo.private(channelName);
-        // Store listener references for proper cleanup (same pattern as KDS Phase 51 fix)
-        this._echoListenerStatus = (data) => {
-          // [AUDIT-P1] De-duplicate _markNewReady: Echo fires it here, then list() would fire it
-          // again because the order is absent from prevPreparedIds (list hasn't refreshed yet).
-          // Solution: pre-register the ID in _echoMarkedReady so list() skips it.
-          if (parseInt(data.new_status) === orderStatusEnum.PREPARED) {
-            const oid = parseInt(data.order_id);
-            this._echoMarkedReady = this._echoMarkedReady || new Set();
-            this._echoMarkedReady.add(oid);
-            this._markNewReady(oid);
-          }
-          this.list();
-        };
-        this._echoListenerCreated = () => { this.list(); };
-        this._echoChannel
-          .listen('.OrderStatusChanged', this._echoListenerStatus)
-          .listen('.OrderCreated', this._echoListenerCreated);
-        console.log(`[OSS] Echo subscribed to ${channelName}`);
+        this._eventSub = onEvents(branchId, [
+          {
+            broadcastAs: 'OrderStatusChanged',
+            handler: (event) => {
+              const data = event.payload || {};
+              // [AUDIT-P1] De-duplicate _markNewReady: Echo fires it here, then list() would fire it
+              // again because the order is absent from prevPreparedIds (list hasn't refreshed yet).
+              // Solution: pre-register the ID in _echoMarkedReady so list() skips it.
+              if (parseInt(data.new_status, 10) === orderStatusEnum.PREPARED) {
+                const oid = parseInt(data.order_id, 10);
+                this._echoMarkedReady = this._echoMarkedReady || new Set();
+                this._echoMarkedReady.add(oid);
+                this._markNewReady(oid);
+              }
+              this.list();
+            },
+          },
+          {
+            broadcastAs: 'OrderCreated',
+            handler: () => { this.list(); },
+          },
+        ]);
+        console.log(`[OSS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         console.warn('[OSS] Echo subscription failed:', e.message);
       }
     },
     unsubscribeEcho() {
-      if (!window.Echo) return;
       const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
       if (branchId <= 0) return;
-      const channelName = `branch.${branchId}`;
       try {
-        // [AUDIT-52-BUG2] Properly stop listening before leaving channel to prevent memory leak
-        if (this._echoChannel) {
-          if (this._echoListenerStatus)  this._echoChannel.stopListening('.OrderStatusChanged');
-          if (this._echoListenerCreated) this._echoChannel.stopListening('.OrderCreated');
-        }
-        window.Echo.leave(channelName);
-        console.log(`[OSS] Echo unsubscribed from ${channelName}`);
+        this._eventSub?.unsubscribe();
+        console.log(`[OSS] Echo unsubscribed from branch.${branchId}`);
       } catch (e) {
         console.warn('[OSS] Echo unsubscribe error:', e.message);
       }
-      this._echoChannel = null;
-      this._echoListenerStatus = null;
-      this._echoListenerCreated = null;
+      this._eventSub = null;
     },
     // Mark an order as newly ready: plays sound + triggers flash animation for 4s
     _markNewReady(orderId) {
@@ -196,13 +223,24 @@ export default {
           this.preparedItems = newPrepared;
           this.loading.isActive = false;
         })
-        .catch(() => { this.loading.isActive = false; });
+        .catch((err) => {
+          this.loading.isActive = false;
+          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+        });
     },
   },
 };
 </script>
 
 <style scoped>
+.ws-reconnect-banner {
+  background: #f59e0b;
+  color: #fff;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 /* Slide-in for preparing column */
 .oss-slide-enter-active { transition: all 0.4s ease; }
 .oss-slide-leave-active { transition: all 0.3s ease; }

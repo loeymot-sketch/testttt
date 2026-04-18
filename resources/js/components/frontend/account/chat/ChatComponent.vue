@@ -223,11 +223,16 @@ export default {
 
             let fileItem = document.createElement('li');
             fileItem.classList.add('chat-footer-data-item');
-            fileItem.innerHTML = `
-                <i class="fa-solid fa-file-lines"></i>
-                <span>${fileName}</span>
-                <button class="fa-solid fa-circle-xmark close-the-image-file" type="button"></button>
-            `;
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-file-lines';
+            const span = document.createElement('span');
+            span.textContent = fileName;
+            const btn = document.createElement('button');
+            btn.className = 'fa-solid fa-circle-xmark close-the-image-file';
+            btn.type = 'button';
+            fileItem.appendChild(icon);
+            fileItem.appendChild(span);
+            fileItem.appendChild(btn);
             fileList.appendChild(fileItem);
         },
         messageList: function (customer) {

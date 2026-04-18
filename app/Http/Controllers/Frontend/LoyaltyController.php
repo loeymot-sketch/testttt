@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Frontend;
 
 use Exception;
+use App\Http\Requests\Kiosk\LoyaltyOptInRequest;
+use App\Models\LoyaltyConsent;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Smartisan\Settings\Facades\Settings;
@@ -182,7 +186,7 @@ class LoyaltyController extends Controller
     {
         // Only staff roles can add points manually (not kiosk machines or customers)
         $caller = $request->user();
-        if (!$caller || !$caller->hasAnyRole(['admin', 'manager', 'staff'])) {
+        if (!$caller || !$caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff'])) {
             return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -252,7 +256,7 @@ class LoyaltyController extends Controller
     {
         $caller = $request->user();
         $isKiosk = $caller && $caller->tokenCan('kiosk:order');
-        $isStaff = $caller && $caller->hasAnyRole(['admin', 'manager', 'staff', 'cashier']);
+        $isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
 
         try {
             $validator = $this->validatePoints($request);
@@ -340,6 +344,66 @@ class LoyaltyController extends Controller
     }
 
     /**
+     * Kiosk Design V1 — Phase 1.8
+     *
+     * `POST /api/frontend/loyalty/opt-in` — adhésion avec consentement RGPD
+     * explicite obligatoire (`consent_accepted: required|accepted`).
+     *
+     * Différences vs `register()` :
+     *  - Exige `privacy_notice_version` (audit trail).
+     *  - Écrit un log `loyalty_consents` avec IP et UA hashés (sha256+salt).
+     *  - Délègue ensuite la création/mise à jour à `register()` (réutilise
+     *    la logique existante — pas de duplication de code loyalty_code
+     *    generation).
+     *
+     * Rate-limit à définir côté route (ex. `throttle:5,1`).
+     */
+    public function optIn(LoyaltyOptInRequest $request): JsonResponse
+    {
+        try {
+            $data = $request->validated();
+
+            $registerResponse = $this->register($request);
+
+            // Si la création a échoué (409 email conflict, 422 validation, 500), on
+            // ne logge PAS le consentement — évite de compter un opt-in avorté.
+            $status = $registerResponse->getStatusCode();
+            if ($status >= 400) {
+                return $registerResponse;
+            }
+
+            // Récupère l'utilisateur créé / mis à jour via le phone ou email
+            // pour lier le consentement.
+            $user = null;
+            if (!empty($data['phone'])) {
+                $user = User::where('phone', $data['phone'])->first();
+            }
+            if (!$user && !empty($data['email'])) {
+                $user = User::where('email', $data['email'])->first();
+            }
+
+            if ($user) {
+                LoyaltyConsent::create([
+                    'user_id'                => $user->id,
+                    'consent_accepted'       => true,
+                    'privacy_notice_version' => (string) $data['privacy_notice_version'],
+                    'ip_hash'                => LoyaltyConsent::hashIdentifier($request->ip()),
+                    'user_agent_hash'        => LoyaltyConsent::hashIdentifier((string) $request->userAgent()),
+                    'occurred_at'            => now(),
+                ]);
+            }
+
+            return $registerResponse;
+        } catch (Exception $e) {
+            Log::error('[LoyaltyOptIn] '.$e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Erreur serveur.',
+            ], 500);
+        }
+    }
+
+    /**
      * [SPLASH] Return loyalty program configuration for the kiosk UI.
      * Kiosk needs to know the conversion rate to display "Vous économisez X€".
      */
@@ -349,6 +413,27 @@ class LoyaltyController extends Controller
             $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
             $pointsFor1Euro = (int)   Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
             $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+            $rawTiers       = Settings::group('loyalty_setup')->get('loyalty_tiers', '100,250,500,1000,2000');
+
+            if (is_string($rawTiers)) {
+                $tiers = collect(explode(',', $rawTiers))
+                    ->map(fn ($tier) => (int) trim($tier))
+                    ->filter(fn ($tier) => $tier > 0)
+                    ->values()
+                    ->all();
+            } elseif (is_array($rawTiers)) {
+                $tiers = collect($rawTiers)
+                    ->map(fn ($tier) => (int) $tier)
+                    ->filter(fn ($tier) => $tier > 0)
+                    ->values()
+                    ->all();
+            } else {
+                $tiers = [];
+            }
+
+            if (empty($tiers)) {
+                $tiers = [100, 250, 500, 1000, 2000];
+            }
 
             return response()->json([
                 'status' => true,
@@ -356,6 +441,7 @@ class LoyaltyController extends Controller
                     'points_per_euro'             => $pointsPerEuro,
                     'points_for_1_euro_discount'  => $pointsFor1Euro,
                     'min_redeem_points'           => $minRedeem,
+                    'tiers'                       => $tiers,
                     'label'                       => "Dépensez {$pointsFor1Euro} points = 1€ de remise",
                 ],
             ]);
@@ -459,6 +545,172 @@ class LoyaltyController extends Controller
             Log::error('[Loyalty] history: ' . $e->getMessage());
             return response()->json(['status' => false, 'message' => 'Erreur serveur'], 500);
         }
+    }
+
+    /**
+     * Kiosk Design V1 — Phase 8.3
+     *
+     * `POST /api/frontend/loyalty/scan` — résout un scan QR/NFC en profil
+     * fidélité anonyme (conformément au DATA_CONTRACT §7).
+     *
+     * Invariants :
+     *  - Auth : Sanctum + ability `kiosk:order` (idem /menu, /pricing/preview).
+     *  - branch_id : lu via KioskMachine, jamais payload.
+     *  - Pas de PII en clair dans la réponse au-delà du prénom (`display_name`).
+     *  - Pas de `customer_id` ni d'email/téléphone en réponse.
+     *  - En cas d'échec (QR inconnu, NFC non provisionné), renvoie HTTP 200
+     *    avec `ok=false` + `error_code` pour ne PAS bloquer le parcours client
+     *    (le scan est optionnel).
+     *
+     * Payload accepté :
+     *   { "method": "qr"|"nfc", "raw_data": "<opaque string>" }
+     *
+     * Formats QR acceptés V1 :
+     *   - "FK:<loyalty_code>"      — préfixé (préconisé)
+     *   - "<loyalty_code>"         — brut (8 chars alphanum)
+     *   - "<E164_phone>"           — fallback téléphone si MSISDN détecté
+     *
+     * Format NFC V1 : non provisionné → renvoie `ok=false` immédiatement.
+     */
+    public function scan(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            if (!$user || !$user->tokenCan('kiosk:order')) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Accès kiosk requis.',
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'method'   => ['required', 'string', 'in:qr,nfc'],
+                'raw_data' => ['required', 'string', 'min:1', 'max:512'],
+            ]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Paramètres invalides',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
+
+            $method  = (string) $request->input('method');
+            $raw     = trim((string) $request->input('raw_data'));
+
+            // V1 : NFC non provisionné. Parcours continue en mode anonyme.
+            if ($method === 'nfc') {
+                return response()->json([
+                    'status' => true,
+                    'data'   => $this->emptyLoyaltyScanResponse('nfc_not_provisioned'),
+                ], 200);
+            }
+
+            // -- QR : parsing robuste (préfixe FK: tolérant) -------------
+            $code = $raw;
+            if (stripos($raw, 'FK:') === 0) {
+                $code = substr($raw, 3);
+            }
+            // Normalisation
+            $code = trim($code);
+
+            // Recherche loyalty_code d'abord, puis phone E.164 si non trouvé.
+            $target = null;
+            if ($code !== '') {
+                $target = User::where('loyalty_code', strtoupper($code))->first();
+                if (!$target) {
+                    $phone = preg_replace('/[\s\-]/', '', $code);
+                    if ($phone && preg_match('/^\+?\d{6,15}$/', $phone)) {
+                        $target = User::where('phone', $phone)->first();
+                    }
+                }
+            }
+
+            if (!$target || (int) ($target->status ?? 1) !== 1) {
+                // Ne jamais renvoyer 404 → parcours doit continuer (invariant §12).
+                return response()->json([
+                    'status' => true,
+                    'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
+                ], 200);
+            }
+
+            // -- Token opaque éphémère (pas d'id exposé) ------------------
+            // Préfixé 'lt_' + sha256(user_id + session_random). Server-only
+            // usage (loyalty/balance ou pricing/preview le ré-acceptent).
+            $customerToken = 'lt_'.substr(hash('sha256', $target->id.'|'.now()->timestamp.'|'.(string) config('app.key')), 0, 32);
+
+            $displayName = (string) ($target->name ?: '');
+            $firstName = trim(explode(' ', $displayName)[0] ?? '');
+            // Cap conservateur : max 40 chars (évite PII longue).
+            if (mb_strlen($firstName) > 40) {
+                $firstName = mb_substr($firstName, 0, 40);
+            }
+
+            $points = (int) ($target->loyalty_points ?? 0);
+            $declaredAllergens = $this->readDeclaredAllergens($target);
+
+            return response()->json([
+                'status' => true,
+                'data'   => [
+                    'ok'                     => true,
+                    'customer_token'         => $customerToken,
+                    'display_name'           => $firstName !== '' ? $firstName : null,
+                    'declared_allergens'     => $declaredAllergens,
+                    'loyalty_balance_points' => $points,
+                    'last_order'             => null,   // V1 — pas de Turbo côté serveur
+                    'error_code'             => null,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('[LoyaltyScan] '.$e->getMessage());
+            return response()->json([
+                'status' => true,
+                'data'   => $this->emptyLoyaltyScanResponse('scan_error'),
+            ], 200);
+        }
+    }
+
+    /**
+     * Renvoie une réponse scan négative (sans PII). On conserve HTTP 200
+     * pour ne pas bloquer le parcours kiosk (l'invariant 5 du DATA_CONTRACT
+     * §12 stipule qu'un scan raté ne doit jamais renvoyer 401/403).
+     */
+    private function emptyLoyaltyScanResponse(string $errorCode): array
+    {
+        return [
+            'ok'                     => false,
+            'customer_token'         => null,
+            'display_name'           => null,
+            'declared_allergens'     => [],
+            'loyalty_balance_points' => 0,
+            'last_order'             => null,
+            'error_code'             => $errorCode,
+        ];
+    }
+
+    /**
+     * Lit les allergènes déclarés par le client si la colonne
+     * `users.declared_allergens` existe (migration future). Fallback: [].
+     *
+     * @return array<int, string>
+     */
+    private function readDeclaredAllergens(User $user): array
+    {
+        try {
+            $val = $user->declared_allergens ?? null;
+            if (is_array($val)) {
+                return array_values(array_filter(array_map('strval', $val)));
+            }
+            if (is_string($val) && $val !== '') {
+                $decoded = json_decode($val, true);
+                if (is_array($decoded)) {
+                    return array_values(array_filter(array_map('strval', $decoded)));
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silencieux — parcours doit continuer.
+        }
+        return [];
     }
 
     /**

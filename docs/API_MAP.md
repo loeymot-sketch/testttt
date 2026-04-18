@@ -6,6 +6,7 @@ Le projet expose de nombreuses routes pour les différents modules et `devices`.
 **Namespace** : `Auth`
 **Risque** : CRITIQUE (Ne jamais modifier sans audit complet de sécurité)
 - `POST /api/auth/login` : Connexion Standard. **Auth** : Guest. **Rôle** : Tout Admin/Manager.
+- `POST /api/auth/login` : **Statut nominal** `201`, token Sanctum au top-level (`token`) + `defaultPermission` au top-level.
 - `POST /api/auth/kiosk-login` : Connexion Kiosk. **Auth** : Guest. **Rôle** : KioskMachine. (Génère un token limité).
 - `POST /api/auth/logout` : Révocation. **Auth** : Sanctum.
 
@@ -23,12 +24,19 @@ Le projet expose de nombreuses routes pour les différents modules et `devices`.
 - **Dashboard** : `/api/admin/dashboard/*`. **Auth** : Sanctum. **Rôle** : Admin, Branch Manager.
 - **Opérations** : `/api/admin/pos-order`, `/table-order`. **Auth** : Sanctum. **Rôle** : Caissier, Manager.
 - **Configuration** : `/api/admin/payment-gateway`. **Auth** : Sanctum. **Rôle** : Admin Exclusivement.
+- **Contrat utile** :
+  - les routes `DELETE` admin renvoient souvent `202`
+  - plusieurs routes `show` admin utilisent `/show/{id}` plutôt que `/{id}`
+  - `POST /api/admin/pos` renvoie nominalement `201`
 
 ## 4. Kitchen Display System (KDS)
 **Namespace** : `Admin/KitchenDisplaySystem`
 **Risque** : HAUT (Impact direct sur la production et la sortie des plats)
 - `GET /api/admin/kds-order` : Liste filtrée `PREPARING`. **Auth** : Sanctum. **Rôle** : Chef Cuisine / KDS.
 - `POST /api/admin/kds-order/change-status/{order}` : Met à jour la commande.
+- **Contrat utile** :
+  - permission attendue : `kitchen-display-system`
+  - changement de statut nominal via controller : HTTP `202`
 
 ## 5. Order Status Screen (OSS)
 **Namespace** : `Admin/OrderStatusScreen`

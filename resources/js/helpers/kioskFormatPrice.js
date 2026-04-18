@@ -80,7 +80,8 @@ export function getPriceOptionsFromStore(lists) {
 export const kioskPriceMixin = {
     methods: {
         formatPrice(value) {
-            const lists = this.$store?.state?.globalState?.lists;
+            const store = this?.$?.appContext?.config?.globalProperties?.$store || null;
+            const lists = store?.state?.globalState?.lists;
             const options = getPriceOptionsFromStore(lists);
             return formatKioskPrice(value, options);
         },

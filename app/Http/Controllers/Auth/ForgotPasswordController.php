@@ -11,12 +11,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 
 class ForgotPasswordController extends Controller
 {
 
     public int $pin;
+    public string $token = '';
 
     public function forgotPassword(Request $request) : JsonResponse
     {
@@ -82,7 +84,7 @@ class ForgotPasswordController extends Controller
 
         $checkRecord = $check->first();
         if ($checkRecord) {
-            $difference = Carbon::now()->diffInSeconds($checkRecord->created_at);
+            $difference = Carbon::now()->diffInSeconds(Carbon::parse($checkRecord->created_at));
 
             if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
                 return new JsonResponse([
@@ -90,10 +92,21 @@ class ForgotPasswordController extends Controller
                 ], 400);
             }
 
-            $check->delete();
+            DB::transaction(function () use ($check, $request) {
+                $check->delete();
+
+                $this->token = Str::random(64);
+
+                DB::table('password_resets')->insert([
+                    'email'      => $request->post('email'),
+                    'token'      => $this->token,
+                    'created_at' => Carbon::now(),
+                ]);
+            });
 
             return new JsonResponse([
-                'message' => trans('all.message.you_can_reset_your_password')
+                'message'     => trans('all.message.you_can_reset_your_password'),
+                'reset_token' => $this->token,
             ], 200);
         } else {
             return new JsonResponse([
@@ -106,6 +119,7 @@ class ForgotPasswordController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email'                 => ['required', 'string', 'email', 'max:255'],
+            'reset_token'           => ['required', 'string', 'size:64'],
             'password'              => ['required', 'string', 'min:6', 'confirmed'],
             'password_confirmation' => ['required', 'string', 'min:6'],
         ]);
@@ -117,15 +131,43 @@ class ForgotPasswordController extends Controller
         $user = User::where('email', $request->post('email'))->first();
         if (!$user) {
             return new JsonResponse([
-                'errors' => ['email' => [trans('all.message.user_not_found')]]
+                'errors' => ['email' => [trans('all.message.user_match')]]
             ], 404);
         }
 
-        $user->update([
-            'password' => Hash::make($request->post('password'))
-        ]);
+        $resetRecord = DB::table('password_resets')->where([
+            ['email', $request->post('email')],
+            ['token', $request->post('reset_token')],
+        ])->first();
 
-        $this->token = $user->createToken('auth_token')->plainTextToken;
+        if (!$resetRecord) {
+            return new JsonResponse([
+                'errors' => ['reset_token' => [trans('all.message.token_is_invalid')]]
+            ], 422);
+        }
+
+        $difference = Carbon::now()->diffInSeconds(Carbon::parse($resetRecord->created_at));
+        if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
+            DB::table('password_resets')->where('email', $request->post('email'))->delete();
+
+            return new JsonResponse([
+                'errors' => ['reset_token' => [trans('all.message.code_is_expired')]]
+            ], 400);
+        }
+
+        DB::transaction(function () use ($request, $user) {
+            DB::table('password_resets')->where('email', $request->post('email'))->delete();
+
+            $user->update([
+                'password' => Hash::make($request->post('password'))
+            ]);
+
+            $this->token = $user->createToken(
+                'auth_token',
+                ['*'],
+                now()->addMinutes((int) config('sanctum.expiration', 480))
+            )->plainTextToken;
+        });
 
         return new JsonResponse([
             'message' => "Your password has been reset",

@@ -2,8 +2,6 @@
 
 namespace Tests\Unit\Services;
 
-use App\Models\Item;
-use App\Services\FrontendOrderService;
 use Tests\TestCase;
 
 /**
@@ -74,6 +72,21 @@ class FrontendOrderServiceTest extends TestCase
 
         // Vérifier qu'il n'y a plus de fallback sur prix client
         $this->assertStringNotContainsString('$item->item_price', $content);
+    }
+
+    /**
+     * @test
+     * Les variations/extras invalides doivent rejeter la commande au lieu d'être ignorés.
+     */
+    public function source_code_rejects_invalid_variations_and_extras(): void
+    {
+        $sourceFile = base_path('app/Services/FrontendOrderService.php');
+        $content = file_get_contents($sourceFile);
+
+        $this->assertStringContainsString("Variation ID {\$varId} introuvable", $content);
+        $this->assertStringContainsString("Extra ID {\$extId} introuvable", $content);
+        $this->assertStringNotContainsString('if (!$dbVar) continue;', $content);
+        $this->assertStringNotContainsString('if (!$dbExt) continue;', $content);
     }
 
     /**

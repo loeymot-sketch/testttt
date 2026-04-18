@@ -6,6 +6,7 @@ export const kitchenDisplaySystemOrder = {
     namespaced: true,
     state: {
         lists: [],
+        orderItems: [],
     },
     getters: {
         lists: function (state) {

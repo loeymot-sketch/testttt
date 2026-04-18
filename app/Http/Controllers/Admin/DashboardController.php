@@ -37,7 +37,11 @@ class DashboardController extends AdminController
             'customerStates',
             'totalOrders',
             'totalCustomers',
-            'totalMenuItems'
+            'totalMenuItems',
+            'realtimeReport',
+            'slaAlerts',
+            'channelStatistics',
+            'auditTrail'
         );
     }
 

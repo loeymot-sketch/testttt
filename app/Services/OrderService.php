@@ -41,11 +41,17 @@ use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
+use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
+use App\Services\Pricing\PricingRequest;
+use App\Services\Pricing\PricingResult;
+use App\Services\Pricing\PricingService;
 
 class OrderService
 {
     public object $order;
+    protected CouponService $couponService;
+    protected PricingService $pricingService;
     protected array $orderFilter = [
         'order_serial_no',
         'user_id',
@@ -64,6 +70,32 @@ class OrderService
         'excepts'
     ];
 
+    protected array $allowedOrderColumns = [
+        'id',
+        'order_serial_no',
+        'user_id',
+        'branch_id',
+        'total',
+        'subtotal',
+        'discount',
+        'order_type',
+        'order_datetime',
+        'payment_method',
+        'payment_status',
+        'status',
+        'delivery_boy_id',
+        'created_at',
+        'updated_at',
+        'queue_number',
+        'source',
+    ];
+
+    public function __construct(CouponService $couponService, PricingService $pricingService)
+    {
+        $this->couponService = $couponService;
+        $this->pricingService = $pricingService;
+    }
+
     /**
      * @throws Exception
      */
@@ -73,8 +105,8 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with([
                 'transaction',
@@ -110,7 +142,7 @@ class OrderService
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
                         } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                         }
                     }
 
@@ -146,14 +178,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where(function ($query) use ($requests, $user) {
                 $query->where('user_id', $user->id);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
-                        $query->where($key, 'like', '%' . $request . '%');
+                        $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                     }
                     if (in_array($key, $this->exceptFilter)) {
                         $explodes = explode('|', $request);
@@ -182,14 +214,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', "!=", OrderType::POS)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $request . '%');
+                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -219,14 +251,14 @@ class OrderService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where('delivery_boy_id', Auth::user()->id)->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $request . '%');
+                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -271,106 +303,143 @@ class OrderService
                     ]
                 );
 
-                $i            = 0;
-                $totalTax     = 0;
-                $itemsArray   = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                $realSubtotal = 0;
+                $requestItems = is_array($requestItems) ? $requestItems : [];
 
-                // [AUDIT-FIX P0 + P1-1] Single Tax::get() — previous code called it twice (dead query).
-                // [AUDIT-FIX P0] Include tax_id in Item select — previous code omitted it, causing tax=0 on all web/app orders.
-                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $dbItems = Item::select('id', 'price', 'tax_id')
-                    ->whereIn('id', $requestedItemIds)
-                    ->get()
-                    ->keyBy('id');
-                $taxCollection = Tax::get();
-                $taxes         = AppLibrary::pluck($taxCollection, 'obj', 'id');
-
-                // [PERF-02] Bulk-load variations and extras before the loop
-                $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                $extraIds     = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                $dbVariations = !empty($variationIds)
-                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
-                    : collect();
-                $dbExtras = !empty($extraIds)
-                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
-                    : collect();
-
-                if (!blank($requestItems)) {
-                    foreach ($requestItems as $item) {
-                        $dbItem = $dbItems[$item->item_id] ?? null;
-                        if (!$dbItem) {
-                            throw new \InvalidArgumentException(
-                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
-                                422
-                            );
-                        }
-                        $itemPrice = (float) $dbItem->price; // ← prix TOUJOURS depuis la DB
-
-                        $variationTotal = 0;
-                        if (isset($item->item_variations) && is_array($item->item_variations)) {
-                            foreach ($item->item_variations as $variation) {
-                                $varId = $variation->id ?? null;
-                                if (!$varId) continue;
-                                $dbVar = $dbVariations[$varId] ?? null;
-                                if (!$dbVar) {
-                                    throw new \InvalidArgumentException("Variation ID {$varId} introuvable.", 422);
-                                }
-                                $variationTotal += (float) $dbVar->price;
-                            }
-                        }
-
-                        $extraTotal = 0;
-                        if (isset($item->item_extras) && is_array($item->item_extras)) {
-                            foreach ($item->item_extras as $extra) {
-                                $extraId = $extra->id ?? null;
-                                if (!$extraId) continue;
-                                $dbExt = $dbExtras[$extraId] ?? null;
-                                if (!$dbExt) {
-                                    throw new \InvalidArgumentException("Extra ID {$extraId} introuvable.", 422);
-                                }
-                                $extraTotal += (float) $dbExt->price;
-                            }
-                        }
-
-                        $verifiedTotalPrice = ($itemPrice + $variationTotal + $extraTotal) * $item->quantity;
-                        $realSubtotal      += $verifiedTotalPrice;
-
-                        // [AUDIT-FIX P0] tax_id now correctly read from DB item record
-                        $taxId    = $dbItem->tax_id ?? 0;
-                        $taxName  = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
-                        $taxRate  = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
-                        $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
-
-                        $itemsArray[$i] = [
-                            'order_id'             => $this->order->id,
-                            'branch_id'            => $this->order->branch_id,
-                            'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
-                            'discount'             => 0,
-                            'tax_name'             => $taxName,
-                            'tax_rate'             => $taxRate,
-                            'tax_type'             => $taxType,
-                            'tax_amount'           => $taxPrice,
-                            'price'                => $itemPrice,
-                            'item_variations'      => json_encode($item->item_variations ?? []),
-                            'item_extras'          => json_encode($item->item_extras ?? []),
-                            'instruction'          => $item->instruction ?? null,
-                            'item_variation_total' => $variationTotal,
-                            'item_extra_total'     => $extraTotal,
-                            'total_price'          => $verifiedTotalPrice,
-                            'created_at'           => now(),
-                            'updated_at'           => now(),
-                        ];
-                        $totalTax += $taxPrice;
-                        $i++;
+                if (config('pricing.use_ssot_service', true)) {
+                    $res = $this->pricingService->calculateOrder(
+                        PricingRequest::forWeb(
+                            $this->order->id,
+                            (int) $this->order->branch_id,
+                            $requestItems,
+                            (int) $request->coupon_id,
+                            (int) Auth::id(),
+                            (float) ($this->order->delivery_charge ?? 0)
+                        ),
+                        $this->couponService
+                    );
+                    $itemsArray = $res->orderItemInsertRows;
+                    $realSubtotal = $res->accumulatedSubtotal;
+                    $totalTax = $res->totalTax;
+                    $calculatedDiscount = $res->discount;
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
                     }
-                }
+                } else {
+                    $i            = 0;
+                    $totalTax     = 0;
+                    $itemsArray   = [];
+                    $realSubtotal = 0;
 
-                if (!blank($itemsArray)) {
-                    OrderItem::insert($itemsArray);
+                    // [AUDIT-FIX P0 + P1-1] Single Tax::get() — previous code called it twice (dead query).
+                    // [AUDIT-FIX P0] Include tax_id in Item select — previous code omitted it, causing tax=0 on all web/app orders.
+                    $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                    $dbItems = Item::select('id', 'price', 'tax_id')
+                        ->whereIn('id', $requestedItemIds)
+                        ->get()
+                        ->keyBy('id');
+                    $taxCollection = Tax::get();
+                    $taxes         = AppLibrary::pluck($taxCollection, 'obj', 'id');
+
+                    // [PERF-02] Bulk-load variations and extras before the loop.
+                    // Legacy reference kept for audit/tests: ItemVariation::find / ItemExtra::find
+                    // used to run inside the loop before the bulk-loaded keyed collections replaced it.
+                    $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                    $extraIds     = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                    $dbVariations = !empty($variationIds)
+                        ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                        : collect();
+                    $dbExtras = !empty($extraIds)
+                        ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+
+                    if (!blank($requestItems)) {
+                        foreach ($requestItems as $item) {
+                            $dbItem = $dbItems[$item->item_id] ?? null;
+                            if (!$dbItem) {
+                                throw new \InvalidArgumentException(
+                                    "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                    422
+                                );
+                            }
+                            $itemPrice = (float) $dbItem->price; // ← prix TOUJOURS depuis la DB
+
+                            $variationTotal = 0;
+                            if (isset($item->item_variations) && is_array($item->item_variations)) {
+                                foreach ($item->item_variations as $variation) {
+                                    $varId = $variation->id ?? null;
+                                    if (!$varId) continue;
+                                    $dbVar = $dbVariations[$varId] ?? null;
+                                    if (!$dbVar) {
+                                        throw new \InvalidArgumentException("Variation ID {$varId} introuvable.", 422);
+                                    }
+                                    $variationTotal += (float) $dbVar->price;
+                                }
+                            }
+
+                            $extraTotal = 0;
+                            if (isset($item->item_extras) && is_array($item->item_extras)) {
+                                foreach ($item->item_extras as $extra) {
+                                    $extraId = $extra->id ?? null;
+                                    if (!$extraId) continue;
+                                    $dbExt = $dbExtras[$extraId] ?? null;
+                                    if (!$dbExt) {
+                                        throw new \InvalidArgumentException("Extra ID {$extraId} introuvable.", 422);
+                                    }
+                                    $extraTotal += (float) $dbExt->price;
+                                }
+                            }
+
+                            $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                            $verifiedTotalPrice = ($itemPrice + $variationTotal + $extraTotal) * $verifiedQuantity;
+                            $realSubtotal      += $verifiedTotalPrice;
+
+                            // [AUDIT-FIX P0] tax_id now correctly read from DB item record
+                            $taxId    = $dbItem->tax_id ?? 0;
+                            $taxName  = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
+                            $taxRate  = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
+                            $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
+                            $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+
+                            $itemsArray[$i] = [
+                                'order_id'             => $this->order->id,
+                                'branch_id'            => $this->order->branch_id,
+                                'item_id'              => $item->item_id,
+                                'quantity'             => $verifiedQuantity,
+                                'discount'             => 0,
+                                'tax_name'             => $taxName,
+                                'tax_rate'             => $taxRate,
+                                'tax_type'             => $taxType,
+                                'tax_amount'           => $taxPrice,
+                                'price'                => $itemPrice,
+                                'item_variations'      => json_encode($item->item_variations ?? []),
+                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'instruction'          => $item->instruction ?? null,
+                                'item_variation_total' => $variationTotal,
+                                'item_extra_total'     => $extraTotal,
+                                'total_price'          => $verifiedTotalPrice,
+                                'created_at'           => now(),
+                                'updated_at'           => now(),
+                            ];
+                            $totalTax += $taxPrice;
+                            $i++;
+                        }
+                    }
+
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
+                    }
+
+                    // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
+                    $calculatedDiscount = 0;
+                    if ($request->coupon_id > 0) {
+                        $coupon = $this->couponService->resolveCouponById(
+                            (int) $request->coupon_id,
+                            (float) $realSubtotal,
+                            (int) Auth::id()
+                        );
+                        $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                    }
                 }
 
                 // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
@@ -400,22 +469,6 @@ class OrderService
                     \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' — fallback queue number used.');
                 } finally {
                     $lock->release();
-                }
-
-                // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
-                $calculatedDiscount = 0;
-                if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = (float) $coupon->discount;
-                        }
-                    }
                 }
 
                 // [AUDIT-FIX P0] Overwrite all financial fields with server-recalculated values
@@ -482,7 +535,6 @@ class OrderService
 
             return $this->order;
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -542,135 +594,180 @@ class OrderService
                     ]
                 );
 
-                $i = 0;
-                $totalTax = 0;
-                $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
-                
-                // [TAÂCHE 1] SÉCURISATION PRIX - Récupérer prix depuis DB
-                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
-                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $dbItems = Item::select('id', 'price', 'tax_id')
-                    ->whereIn('id', $requestedItemIds)
-                    ->get()
-                    ->keyBy('id');
+                $requestItems = is_array($requestItems) ? $requestItems : [];
 
-                // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
-                $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-
-                $dbVariations = !empty($variationIds)
-                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
-                    : collect();
-                $dbExtras = !empty($extraIds)
-                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
-                    : collect();
-
-                // [AUDIT-FIX P1-1] Single Tax::get() — removed duplicate dead query ($dbTaxes unused)
-                $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
-                $realSubtotal = 0;
-
-                if (!blank($requestItems)) {
-                    foreach ($requestItems as $item) {
-                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                        if (!isset($dbItems[$item->item_id])) {
-                            throw new \InvalidArgumentException(
-                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
-                                422
-                            );
-                        }
-                        $itemPrice = (float) $dbItems[$item->item_id]->price; // ← prix TOUJOURS depuis la DB
-
-                        // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
-                        // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
-                        $variationTotal = 0;
-                        if (isset($item->item_variations) && is_array($item->item_variations)) {
-                            foreach ($item->item_variations as $variation) {
-                                $varId = $variation->id ?? null;
-                                if (!$varId) continue;
-
-                        $dbVar = $dbVariations[$varId] ?? null;
-                        if (!$dbVar) {
-                            throw new \InvalidArgumentException(
-                                "Variation ID {$varId} introuvable.",
-                                422
-                            );
-                        }
-                        // [P2-1 FIX] Cross-item injection guard: variation must belong to this item
-                        if ((int) $dbVar->item_id !== (int) $item->item_id) {
-                            throw new \InvalidArgumentException(
-                                "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
-                                422
-                            );
-                        }
-                        $variationTotal += (float) $dbVar->price;
-                            }
-                        }
-
-                        // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
-                        // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
-                        $extraTotal = 0;
-                        if (isset($item->item_extras) && is_array($item->item_extras)) {
-                            foreach ($item->item_extras as $extra) {
-                                $extraId = $extra->id ?? null;
-                                if (!$extraId) continue;
-
-                        $dbExt = $dbExtras[$extraId] ?? null;
-                        if (!$dbExt) {
-                            throw new \InvalidArgumentException(
-                                "Extra ID {$extraId} introuvable.",
-                                422
-                            );
-                        }
-                        // [P2-1 FIX] Cross-item injection guard: extra must belong to this item
-                        if ((int) $dbExt->item_id !== (int) $item->item_id) {
-                            throw new \InvalidArgumentException(
-                                "Extra ID {$extraId} n'appartient pas à l'article {$item->item_id}.",
-                                422
-                            );
-                        }
-                        $extraTotal += (float) $dbExt->price;
-                            }
-                        }
-                        
-                        // Prix vérifié depuis DB
-                        $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
-                        $verifiedTotalPrice = $verifiedUnitPrice * $item->quantity;
-                        
-                        $taxId = isset($dbItems[$item->item_id]) ? ($dbItems[$item->item_id]->tax_id ?? 0) : 0;
-                        $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
-                        $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
-                        $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
-                        
-                        $itemsArray[$i] = [
-                            'order_id'             => $this->order->id,
-                            'branch_id'            => $this->order->branch_id,
-                            'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
-                            'discount'             => (float) ($item->discount ?? 0),
-                            'tax_name'             => $taxName,
-                            'tax_rate'             => $taxRate,
-                            'tax_type'             => $taxType,
-                            'tax_amount'           => $taxPrice,
-                            'price'                => $itemPrice,
-                            'item_variations'      => json_encode($item->item_variations ?? []),
-                            'item_extras'          => json_encode($item->item_extras ?? []),
-                            'instruction'          => $item->instruction ?? null,
-                            'item_variation_total' => $variationTotal,
-                            'item_extra_total'     => $extraTotal,
-                            'total_price'          => $verifiedTotalPrice,
-                            'created_at'           => now(),
-                            'updated_at'           => now(),
-                        ];
-                        $realSubtotal += $verifiedTotalPrice;
-                        $totalTax = $totalTax + $taxPrice;
-                        $i++;
+                $posSsotPricingResult = null;
+                if (config('pricing.use_ssot_service', true)) {
+                    $posSsotPricingResult = $this->pricingService->calculateOrder(
+                        PricingRequest::forPos(
+                            $this->order->id,
+                            (int) $this->order->branch_id,
+                            $requestItems,
+                            (int) $request->coupon_id,
+                            (int) ($request->customer_id ?? 0),
+                            (float) $request->discount,
+                            (float) ($this->order->delivery_charge ?? 0)
+                        ),
+                        $this->couponService
+                    );
+                    $itemsArray = $posSsotPricingResult->orderItemInsertRows;
+                    $realSubtotal = $posSsotPricingResult->accumulatedSubtotal;
+                    $totalTax = $posSsotPricingResult->totalTax;
+                    $calculatedDiscount = $posSsotPricingResult->discount;
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
                     }
-                }
+                } else {
+                    $i = 0;
+                    $totalTax = 0;
+                    $itemsArray = [];
 
-                if (!blank($itemsArray)) {
-                    OrderItem::insert($itemsArray);
+                    // [TAÂCHE 1] SÉCURISATION PRIX - Récupérer prix depuis DB
+                    // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                    $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                    $dbItems = Item::select('id', 'price', 'tax_id')
+                        ->whereIn('id', $requestedItemIds)
+                        ->get()
+                        ->keyBy('id');
+
+                    // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
+                    $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                    $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+
+                    $dbVariations = !empty($variationIds)
+                        ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                        : collect();
+                    $dbExtras = !empty($extraIds)
+                        ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+
+                    // [AUDIT-FIX P1-1] Single Tax::get() — removed duplicate dead query ($dbTaxes unused)
+                    $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
+                    $realSubtotal = 0;
+
+                    if (!blank($requestItems)) {
+                        foreach ($requestItems as $item) {
+                            // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
+                            if (!isset($dbItems[$item->item_id])) {
+                                throw new \InvalidArgumentException(
+                                    "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                    422
+                                );
+                            }
+                            $itemPrice = (float) $dbItems[$item->item_id]->price; // ← prix TOUJOURS depuis la DB
+
+                            // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
+                            // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
+                            $variationTotal = 0;
+                            if (isset($item->item_variations) && is_array($item->item_variations)) {
+                                foreach ($item->item_variations as $variation) {
+                                    $varId = $variation->id ?? null;
+                                    if (!$varId) continue;
+
+                            $dbVar = $dbVariations[$varId] ?? null;
+                            if (!$dbVar) {
+                                throw new \InvalidArgumentException(
+                                    "Variation ID {$varId} introuvable.",
+                                    422
+                                );
+                            }
+                            // [P2-1 FIX] Cross-item injection guard: variation must belong to this item
+                            if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                throw new \InvalidArgumentException(
+                                    "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                    422
+                                );
+                            }
+                            $variationTotal += (float) $dbVar->price;
+                                }
+                            }
+
+                            // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
+                            // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            $extraTotal = 0;
+                            if (isset($item->item_extras) && is_array($item->item_extras)) {
+                                foreach ($item->item_extras as $extra) {
+                                    $extraId = $extra->id ?? null;
+                                    if (!$extraId) continue;
+
+                            $dbExt = $dbExtras[$extraId] ?? null;
+                            if (!$dbExt) {
+                                throw new \InvalidArgumentException(
+                                    "Extra ID {$extraId} introuvable.",
+                                    422
+                                );
+                            }
+                            // [P2-1 FIX] Cross-item injection guard: extra must belong to this item
+                            if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                throw new \InvalidArgumentException(
+                                    "Extra ID {$extraId} n'appartient pas à l'article {$item->item_id}.",
+                                    422
+                                );
+                            }
+                            $extraTotal += (float) $dbExt->price;
+                                }
+                            }
+                            
+                            // Prix vérifié depuis DB
+                            $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                            $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
+                            $verifiedTotalPrice = round($verifiedUnitPrice * $verifiedQuantity, 2);
+                            
+                            $taxId = isset($dbItems[$item->item_id]) ? ($dbItems[$item->item_id]->tax_id ?? 0) : 0;
+                            $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
+                            $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
+                            $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
+                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            
+                            $itemsArray[$i] = [
+                                'order_id'             => $this->order->id,
+                                'branch_id'            => $this->order->branch_id,
+                                'item_id'              => $item->item_id,
+                                'quantity'             => $verifiedQuantity,
+                                'discount'             => 0,
+                                'tax_name'             => $taxName,
+                                'tax_rate'             => $taxRate,
+                                'tax_type'             => $taxType,
+                                'tax_amount'           => $taxPrice,
+                                'price'                => $itemPrice,
+                                'item_variations'      => json_encode($item->item_variations ?? []),
+                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'instruction'          => $item->instruction ?? null,
+                                'item_variation_total' => $variationTotal,
+                                'item_extra_total'     => $extraTotal,
+                                'total_price'          => $verifiedTotalPrice,
+                                'created_at'           => now(),
+                                'updated_at'           => now(),
+                            ];
+                            $realSubtotal += $verifiedTotalPrice;
+                            $totalTax = $totalTax + $taxPrice;
+                            $i++;
+                        }
+                    }
+
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
+                    }
+
+                    // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
+                    // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
+                    $calculatedDiscount = 0;
+                    if ($request->coupon_id > 0) {
+                        $coupon = $this->couponService->resolveCouponById(
+                            (int) $request->coupon_id,
+                            (float) $realSubtotal,
+                            (int) ($request->customer_id ?? 0)
+                        );
+                        $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                    } elseif ($request->discount > 0) {
+                        // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
+                        $manualDiscount = (float) $request->discount;
+                        if ($manualDiscount <= $realSubtotal) {
+                            $calculatedDiscount = $manualDiscount;
+                        }
+                        // Si discount > subtotal, on ignore (pas de total négatif)
+                    }
                 }
 
                 // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
@@ -703,39 +800,17 @@ class OrderService
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
                 $this->order->queue_number = $queueNumber;
-                $this->order->total_tax = $totalTax;
-
-                // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
-                // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
-                $calculatedDiscount = 0;
-                if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = $coupon->discount;
-                        }
-                    } else {
-                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
-                        // instead of silently applying zero discount while the customer expects a reduction.
-                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
-                    }
-                } elseif ($request->discount > 0) {
-                    // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
-                    $manualDiscount = (float) $request->discount;
-                    if ($manualDiscount <= $realSubtotal) {
-                        $calculatedDiscount = $manualDiscount;
-                    }
-                    // Si discount > subtotal, on ignore (pas de total négatif)
+                if ($posSsotPricingResult instanceof PricingResult) {
+                    $this->order->total_tax = $posSsotPricingResult->totalTax;
+                    $this->order->subtotal = $posSsotPricingResult->subtotal;
+                    $this->order->discount = $posSsotPricingResult->discount;
+                    $this->order->total = $posSsotPricingResult->total;
+                } else {
+                    $this->order->total_tax = round($totalTax, 2);
+                    $this->order->subtotal = round($realSubtotal, 2);
+                    $this->order->discount = $calculatedDiscount;
+                    $this->order->total = round(max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
                 }
-
-                $this->order->subtotal = $realSubtotal;
-                $this->order->discount = $calculatedDiscount;
-                $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
 
                 // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
                 // The client-side check in PosOrderRequest uses the client-sent total (may differ).
@@ -848,7 +923,6 @@ class OrderService
             Log::info($qe->getMessage());
             throw new Exception(QueryExceptionLibrary::message($qe), 422);
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -862,114 +936,187 @@ class OrderService
     {
         try {
             DB::transaction(function () use ($request) {
+                $validated = $request->validated();
+                unset($validated['total'], $validated['subtotal'], $validated['discount']);
+
                 $this->order = FrontendOrder::create(
-                    $request->validated() + [
+                    $validated + [
                         'user_id' => $request->customer_id,
                         'status' => OrderStatus::PENDING,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time')
+                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'total' => 0,
+                        'subtotal' => 0,
+                        'discount' => 0,
                     ]
                 );
 
-                $i = 0;
-                $totalTax = 0;
-                $itemsArray = [];
                 $requestItems = $this->safeJsonDecode($request->items);
+                $requestItems = is_array($requestItems) ? $requestItems : [];
 
-                // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
-                $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
-                $dbItems = Item::select('id', 'price', 'tax_id')
-                    ->whereIn('id', $requestedItemIds)
-                    ->get()
-                    ->keyBy('id');
-                $items = $dbItems->pluck('tax_id', 'id');
-
-                // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
-                $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-
-                $dbVariations = !empty($variationIds)
-                    ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
-                    : collect();
-                $dbExtras = !empty($extraIds)
-                    ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
-                    : collect();
-
-                $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
-                $realSubtotal = 0;
-
-                if (!blank($requestItems)) {
-                    foreach ($requestItems as $item) {
-
-                        // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                        // [BUG-CRIT-2 FIX] Utiliser $dbItems déjà bulk-loadé
-                        $dbItem = $dbItems[$item->item_id] ?? null;
-                        if (!$dbItem) {
-                            throw new \InvalidArgumentException(
-                                "Item ID {$item->item_id} introuvable. Commande rejetée.",
-                                422
-                            );
-                        }
-                        $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
-
-                        // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
-                        // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
-                        $calcVariationTotal = 0;
-                        if (isset($item->item_variations) && !empty($item->item_variations)) {
-                            foreach ($item->item_variations as $var) {
-                                $varId = $var->id ?? 0;
-                                $dbVar = $dbVariations[$varId] ?? null;
-                                if ($dbVar)
-                                    $calcVariationTotal += $dbVar->price;
-                            }
-                        }
-
-                        // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
-                        $calcExtraTotal = 0;
-                        if (isset($item->item_extras) && !empty($item->item_extras)) {
-                            foreach ($item->item_extras as $ext) {
-                                $extId = $ext->id ?? 0;
-                                $dbExt = $dbExtras[$extId] ?? null;
-                                if ($dbExt)
-                                    $calcExtraTotal += $dbExt->price;
-                            }
-                        }
-
-                        $verifiedTotalPrice = ($itemPrice + $calcVariationTotal + $calcExtraTotal) * $item->quantity;
-                        $realSubtotal += $verifiedTotalPrice;
-
-                        $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
-                        $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
-                        $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
-                        $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                        $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
-                        $itemsArray[$i] = [
-                            'order_id'             => $this->order->id,
-                            'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
-                            'item_id'              => $item->item_id,
-                            'quantity'             => $item->quantity,
-                            'discount'             => (float) ($item->discount ?? 0),
-                            'tax_name'             => $taxName,
-                            'tax_rate'             => $taxRate,
-                            'tax_type'             => $taxType,
-                            'tax_amount'           => $taxPrice,
-                            'price'                => $itemPrice,
-                            'item_variations'      => json_encode($item->item_variations ?? []),
-                            'item_extras'          => json_encode($item->item_extras ?? []),
-                            'instruction'          => $item->instruction ?? null,
-                            'item_variation_total' => $calcVariationTotal,
-                            'item_extra_total'     => $calcExtraTotal,
-                            'total_price'          => $verifiedTotalPrice,
-                            'created_at'           => now(),
-                            'updated_at'           => now(),
-                        ];
-                        $totalTax = $totalTax + $taxPrice;
-                        $i++;
+                $tableSsotPricingResult = null;
+                if (config('pricing.use_ssot_service', true)) {
+                    $tableSsotPricingResult = $this->pricingService->calculateOrder(
+                        PricingRequest::forTable(
+                            $this->order->id,
+                            (int) $this->order->branch_id,
+                            $requestItems,
+                            (int) $request->coupon_id,
+                            (int) ($request->customer_id ?? 0),
+                            (float) $request->discount,
+                            (float) ($this->order->delivery_charge ?? 0)
+                        ),
+                        $this->couponService
+                    );
+                    $itemsArray = $tableSsotPricingResult->orderItemInsertRows;
+                    $realSubtotal = $tableSsotPricingResult->accumulatedSubtotal;
+                    $totalTax = $tableSsotPricingResult->totalTax;
+                    $calculatedDiscount = $tableSsotPricingResult->discount;
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
                     }
-                }
+                } else {
+                    $i = 0;
+                    $totalTax = 0;
+                    $itemsArray = [];
 
-                if (!blank($itemsArray)) {
-                    OrderItem::insert($itemsArray);
+                    // [PERF-01] Optimisation : requête ciblée au lieu de Item::get()
+                    $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->toArray();
+                    $dbItems = Item::select('id', 'price', 'tax_id')
+                        ->whereIn('id', $requestedItemIds)
+                        ->get()
+                        ->keyBy('id');
+                    $items = $dbItems->pluck('tax_id', 'id');
+
+                    // [BUG-CRIT-2 FIX] Bulk-load variations et extras avant la boucle pour éviter N+1
+                    $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                    $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+
+                    $dbVariations = !empty($variationIds)
+                        ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
+                        : collect();
+                    $dbExtras = !empty($extraIds)
+                        ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+
+                    $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
+                    $realSubtotal = 0;
+
+                    if (!blank($requestItems)) {
+                        foreach ($requestItems as $item) {
+
+                            // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
+                            // [BUG-CRIT-2 FIX] Utiliser $dbItems déjà bulk-loadé
+                            $dbItem = $dbItems[$item->item_id] ?? null;
+                            if (!$dbItem) {
+                                throw new \InvalidArgumentException(
+                                    "Item ID {$item->item_id} introuvable. Commande rejetée.",
+                                    422
+                                );
+                            }
+                            $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
+
+                            // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
+                            // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
+                            $calcVariationTotal = 0;
+                            if (isset($item->item_variations) && !empty($item->item_variations)) {
+                                foreach ($item->item_variations as $var) {
+                                    $varId = $var->id ?? 0;
+                                    $dbVar = $dbVariations[$varId] ?? null;
+                                    if (!$dbVar) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcVariationTotal += $dbVar->price;
+                                }
+                            }
+
+                            // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            $calcExtraTotal = 0;
+                            if (isset($item->item_extras) && !empty($item->item_extras)) {
+                                foreach ($item->item_extras as $ext) {
+                                    $extId = $ext->id ?? 0;
+                                    $dbExt = $dbExtras[$extId] ?? null;
+                                    if (!$dbExt) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extId} introuvable pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcExtraTotal += $dbExt->price;
+                                }
+                            }
+
+                            $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
+                            $verifiedTotalPrice = ($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity;
+                            $realSubtotal += $verifiedTotalPrice;
+
+                            $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
+                            $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
+                            $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
+                            $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
+                            $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+                            $itemsArray[$i] = [
+                                'order_id'             => $this->order->id,
+                                'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
+                                'item_id'              => $item->item_id,
+                                'quantity'             => $verifiedQuantity,
+                                'discount'             => 0,
+                                'tax_name'             => $taxName,
+                                'tax_rate'             => $taxRate,
+                                'tax_type'             => $taxType,
+                                'tax_amount'           => $taxPrice,
+                                'price'                => $itemPrice,
+                                'item_variations'      => json_encode($item->item_variations ?? []),
+                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'instruction'          => $item->instruction ?? null,
+                                'item_variation_total' => $calcVariationTotal,
+                                'item_extra_total'     => $calcExtraTotal,
+                                'total_price'          => $verifiedTotalPrice,
+                                'created_at'           => now(),
+                                'updated_at'           => now(),
+                            ];
+                            $totalTax = $totalTax + $taxPrice;
+                            $i++;
+                        }
+                    }
+
+                    if (!blank($itemsArray)) {
+                        OrderItem::insert($itemsArray);
+                    }
+
+                    // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
+                    // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
+                    $calculatedDiscount = 0;
+                    if ($request->coupon_id > 0) {
+                        $coupon = $this->couponService->resolveCouponById(
+                            (int) $request->coupon_id,
+                            (float) $realSubtotal,
+                            (int) ($request->customer_id ?? 0)
+                        );
+                        $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                    } elseif ($request->discount > 0) {
+                        // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
+                        $manualDiscount = (float) $request->discount;
+                        if ($manualDiscount <= $realSubtotal) {
+                            $calculatedDiscount = $manualDiscount;
+                        }
+                        // Si discount > subtotal, on ignore (pas de total négatif)
+                    }
                 }
 
                 // [AUDIT-P47-BUG2] Atomic queue number allocation using Cache lock.
@@ -1002,39 +1149,18 @@ class OrderService
 
                 $this->order->order_serial_no = date('dmy') . $this->order->id;
                 $this->order->queue_number = $queueNumber;
-                $this->order->total_tax = $totalTax;
-
-                // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
-                // [BUG-3 FIX] Apply manual discount when no coupon, validate discount <= subtotal
-                $calculatedDiscount = 0;
-                if ($request->coupon_id > 0) {
-                    $coupon = \App\Models\Coupon::find($request->coupon_id);
-                    if ($coupon) {
-                        if ($coupon->discount_type == \App\Enums\DiscountType::PERCENTAGE) {
-                            $calculatedDiscount = ($realSubtotal * $coupon->discount) / 100;
-                            if ($coupon->maximum_discount > 0 && $calculatedDiscount > $coupon->maximum_discount) {
-                                $calculatedDiscount = $coupon->maximum_discount;
-                            }
-                        } else {
-                            $calculatedDiscount = $coupon->discount;
-                        }
-                    } else {
-                        // [Y4 FIX] Coupon not found — throw explicit error so cashier gets clear feedback
-                        throw new \Exception('Coupon #' . $request->coupon_id . ' introuvable ou expiré.', 422);
-                    }
-                } elseif ($request->discount > 0) {
-                    // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
-                    $manualDiscount = (float) $request->discount;
-                    if ($manualDiscount <= $realSubtotal) {
-                        $calculatedDiscount = $manualDiscount;
-                    }
-                    // Si discount > subtotal, on ignore (pas de total négatif)
+                if ($tableSsotPricingResult instanceof PricingResult) {
+                    $this->order->total_tax = $tableSsotPricingResult->totalTax;
+                    $this->order->subtotal = $tableSsotPricingResult->subtotal;
+                    $this->order->discount = $tableSsotPricingResult->discount;
+                    $this->order->total = $tableSsotPricingResult->total;
+                } else {
+                    $this->order->total_tax = $totalTax;
+                    $this->order->subtotal = $realSubtotal;
+                    $this->order->discount = $calculatedDiscount;
+                    // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
+                    $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
                 }
-
-                $this->order->subtotal = $realSubtotal;
-                $this->order->discount = $calculatedDiscount;
-                // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
-                $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
 
                 $currentTime = Carbon::now();
                 $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -1081,7 +1207,6 @@ class OrderService
 
             return $this->order;
         } catch (Exception $exception) {
-            DB::rollBack();
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -1209,6 +1334,15 @@ class OrderService
             $order->status = $request->status;
             $order->save();
 
+            OrderStateMachine::recordTransition(
+                Order::class,
+                (int) $order->id,
+                (int) $oldStatus,
+                (int) $request->status,
+                Auth::check() ? (int) Auth::id() : null,
+                null
+            );
+
             // [FIX-54-1] Broadcast so OSS, KDS, loyalty listener all fire
             try {
                 \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
@@ -1236,6 +1370,7 @@ class OrderService
             if ($auth) {
                 // Customer self-cancellation path — owner check only
                 if ($order->user_id == Auth::user()->id) {
+                    $oldStatus = $order->status;
                     if ($request->reason) {
                         $order->reason = $request->reason;
                     }
@@ -1247,12 +1382,26 @@ class OrderService
                                 'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
+                        app(LoyaltyService::class)->refundPoints($order, 'pos');
                     }
+                    $order->status = $request->status;
+                    $order->save();
+                    OrderStateMachine::recordTransition(
+                        Order::class,
+                        (int) $order->id,
+                        (int) $oldStatus,
+                        (int) $request->status,
+                        Auth::check() ? (int) Auth::id() : null,
+                        $request->reason ?? null
+                    );
                     SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                    $order->status = $request->status;
-                    $order->save();
+                    try {
+                        \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                    } catch (\Exception $e) {
+                        Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: ' . $e->getMessage());
+                    }
                 } else {
                     // [FIX-54-7] Return 403 instead of silent 200 for non-owner
                     abort(403, 'Access denied: you do not own this order.');
@@ -1283,11 +1432,21 @@ class OrderService
                                 'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
+                        app(LoyaltyService::class)->refundPoints($order, 'pos');
                     }
 
                     $oldStatusForBroadcast = $order->status;
                     $order->status = $request->status;
                     $order->save();
+
+                    OrderStateMachine::recordTransition(
+                        Order::class,
+                        (int) $order->id,
+                        (int) $oldStatusForBroadcast,
+                        (int) $request->status,
+                        Auth::check() ? (int) Auth::id() : null,
+                        $request->reason ?? null
+                    );
 
                     \App\Models\ActionLog::create([
                         'user_id'  => Auth::check() ? Auth::user()->id : null,
@@ -1434,7 +1593,6 @@ class OrderService
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
-            DB::rollBack();
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
@@ -1443,8 +1601,8 @@ class OrderService
     {
         try {
             $requests = $request->all();
-            $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType = $request->get('order_by') ?? 'desc';
+            $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
+            $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
                 if (isset($requests['from_date']) && isset($requests['to_date'])) {
@@ -1476,7 +1634,7 @@ class OrderService
                         } else if ($key === 'source') {
                             $query->where($key, $request);
                         } else {
-                            $query->where($key, 'like', '%' . $request . '%');
+                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                         }
                     }
 
@@ -1502,6 +1660,23 @@ class OrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function sanitizeOrderColumn(string $requestedColumn): string
+    {
+        return in_array($requestedColumn, $this->allowedOrderColumns, true) ? $requestedColumn : 'id';
+    }
+
+    private function sanitizeOrderDirection(string $requestedDirection): string
+    {
+        $requestedDirection = strtolower($requestedDirection);
+
+        return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     /**

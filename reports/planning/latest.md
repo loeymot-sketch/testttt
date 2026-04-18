@@ -1,3 +1,7 @@
+> **2026-03-31 — Audit profond global + plan massif + diagrammes** : document canonique [`AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md`](./AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md) (architecture, synchro, inventaire tests, backlog Phases A–E, Mermaid). Le reste de ce fichier conserve l’historique handoff Kimi du 2026-03-27.
+
+---
+
 # Plan de Handoff Claude — Bugs Complexes Restants
 
 **Date** : 2026-03-27  
@@ -198,3 +202,84 @@ Ces changements sont faibles en risque et déjà compilés.
 ## 6. Verdict
 
 Les irritants UI faciles ont été absorbés. Le reste n’est plus du cosmétique : ce sont des sujets de cohérence métier et d’architecture qui doivent être repris par Claude avant validation production.
+
+---
+
+## 7. Wizard borne — P0 menu explicite + objectif « 0 faute » (2026-03-28)
+
+**Type de test** : Kimi-test (Vitest `tests/js/KioskWizard.spec.js`).
+
+### 7.1 Implémenté (P0) — audit de pérennité
+
+- **`canAdvance`** : à l’étape `menu`, passage bloqué tant que `menuChoice` n’est pas défini (`null` / `undefined` / `''` interdits). Les valeurs `full`, `frites`, `boisson`, `none` sont valides.
+- **UI** : bandeau d’aide sur `KioskStepMenu` tant qu’aucune carte menu n’a été touchée (`role="status"`).
+- **Tests** : `KioskWizardComponent` réel (shallow + stubs) + `KioskStepMenuComponent` (hint).
+- **Re-audit 2026-03-28** : règle inchangée après P1 / P2 / P3 / P4 / **P5** ; pas de régression (Vitest P0–P5).
+
+### 7.1b Implémenté (P1)
+
+- **`kioskDrinkAddons.js`** : même heuristique boisson / anti-food que l’étape menu (une seule source de vérité).
+- **`canAdvance` (menu)** : si `menuChoice` ∈ `{ full, boisson }` **et** `kioskDrinkAddonRowsFromItem(item).length > 0`, alors `boissonChoice` obligatoire (non null / non vide). Si aucun addon boisson détecté, `full` reste valable sans boisson (comportement inchangé vs avant P1).
+- **UI** : bandeau « Sélectionnez une boisson pour continuer » sous le titre boisson.
+- **Nettoyage** : passage en `none` ou `frites` → `boissonChoice` + `localBoisson` remis à zéro ; `updateSelection` efface `_boissonMeta` quand la boisson est effacée.
+- **Tests** : `tests/js/kioskDrinkAddons.spec.js` + cas wizard P1 + hint boisson dans `KioskWizard.spec.js`.
+- **Re-audit P1 (post P2)** : helper + `canAdvance` boisson inchangés ; `kioskDrinkAddons.spec.js` + tests P1 verts.
+
+### 7.1c Implémenté (P2)
+
+- **Modale abandon** : boutons « × » et « ABANDONNER L'ARTICLE » ouvrent une confirmation (overlay + `role="dialog"` / `aria-labelledby`) ; « Continuer » ou clic fond → fermeture sans quitter ; « Oui, abandonner » → `performCloseWizard()` (`onClose` ou `router.go(-1)`).
+- **Fermeture effective** : `performCloseWizard()` ; transition `fade` sur l’overlay ; `z-index: 120` au-dessus du contenu wizard (overlay parent catalogue `z-index: 50`).
+- **Tests** : `KioskWizard.spec.js` — ouverture sans `onClose`, annulation, confirmation appelle `onClose`.
+- **Re-audit P2 (post P3)** : flux modale inchangé ; libellés passent par `$t('kiosk.wizard.*')` ; tests P2 + **P3** verts.
+
+### 7.1d Implémenté (P3) — i18n wizard
+
+- **Clés** : `kiosk.wizard.*` dans `resources/js/languages/fr.json`, `en.json`, `ar.json` (prompts d’étapes, navigation, modale abandon, chargement / erreurs fetch, sauces frites, bloc **menu** (cartes + badges + hints), **récap** `KioskOrderSummary`, **suppléments** `KioskStepSupplements`).
+- **Composants** : `KioskWizardComponent.vue`, `KioskStepMenuComponent.vue`, `KioskOrderSummaryComponent.vue`, `KioskStepSupplementsComponent.vue`.
+- **Tests** : `createI18n` + messages `fr` dans les mounts du wizard réel et des tests menu ; cas **P3** vérifie les libellés modale vs `fr.json`.
+- **Re-audit P3 (post P4)** : clés `kiosk.wizard` inchangées pour menu / récap / modale ; extension **`step.*`** sans casser P3 ; Vitest P3 + P4 verts.
+
+### 7.1e Implémenté (P4) — i18n étapes Pain, Taille, Viande, Sauce, Garnitures
+
+- **Clés** : `kiosk.wizard.step.{pain,taille,viande,sauce,garnitures}` (fr / en / ar) — titres, hints, libellés viandes/tailles, sauces fallback, garnitures (AVEC/SANS, résumé).
+- **Composants** : `KioskStepPainComponent`, `KioskStepTailleComponent`, `KioskStepViandeComponent`, `KioskStepSauceComponent`, `KioskStepGarnituresComponent`.
+- **Tests** : i18n sur les `mount(KioskStepSauceComponent)` existants ; **P4** smoke pain + sauce vs `fr.json`.
+- **Re-audit P4 (post P5)** : chaînes `kiosk.wizard.step.*` inchangées ; seule la résolution de template évolue ; Vitest P4 + P5 verts.
+
+### 7.1f Implémenté (P5) — heuristique `wizard_template`
+
+- **`detectTemplateFromName`** : extension **omelette**, **salade**, **snacking** (nuggets, tenders, goujon(s), crousti, strip, catégorie contenant `snack`) pour coller aux branches `activeSteps` quand `wizard_template` est absent en base.
+- **Priorité** : inchangée — `wizard_template` explicite **prime** toujours sur l’heuristique.
+- **Tests** : `KioskWizard.spec.js` — 9 cas représentatifs + override admin + smoke `activeSteps` burger.
+
+### 7.2 Check-list pré-prod wizard (réduire les fautes restantes)
+
+| # | Contrôle | Statut |
+|---|-----------|--------|
+| 1 | Boisson : si liste addons boisson non vide, exiger un choix avant Suivant (P1 métier) | **Fait** |
+| 2 | Recalcul prix **serveur** à la soumission commande (ne jamais faire confiance au total client seul) | **OK** — `OrderService` recalcule sous-total / total à partir des prix DB et variations/extras chargés en masse (champs financiers client non fiables) ; voir création commande `[AUDIT-FIX P0]` |
+| 3 | `wizard_template` catégorie vs heuristique nom produit : pas d’écart sur 5 produits représentatifs par template | **Partiellement automatisé (P5)** — Vitest 9 cas + snacking/omelette/salade ; **compléter en QA manuel** sur catalogue réel |
+| 4 | Abandon article : confirmation modale (évite erreur tactile) | **Fait** (P2) |
+| 5 | i18n clés wizard si borne multilingue | **Fait** (P3 shell + P4 **toutes** les étapes wizard) |
+| 6 | Après merge : `npm run production` + smoke sur flux burger menu + tacos + snacking | Obligatoire |
+
+### 7.3 Fichiers modifiés (trace revue)
+
+- `resources/js/helpers/kioskDrinkAddons.js` — filtre addons boisson (partagé)
+- `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` — `canAdvance` menu + P1 boisson ; `_boissonMeta` ; **P2** modale ; **P3** `$t` shell / prompts / erreurs fetch ; **P5** `detectTemplateFromName` (omelette / salade / snacking)
+- `resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue` — idem P0/P1 + **P3** `$t` cartes menu / hints / badges / sauces frites
+- `resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue` — **P3** `$t` sections récap
+- `resources/js/components/frontend/kiosk/steps/KioskStepSupplementsComponent.vue` — **P3** `$t` titre / badge / vide / desc défaut
+- `resources/js/components/frontend/kiosk/steps/KioskStepPainComponent.vue`, `KioskStepTailleComponent.vue`, `KioskStepViandeComponent.vue`, `KioskStepSauceComponent.vue`, `KioskStepGarnituresComponent.vue` — **P4** `$t` `kiosk.wizard.step.*`
+- `resources/js/languages/fr.json`, `en.json`, `ar.json` — **`kiosk.wizard`** + **`step`**
+- `tests/js/KioskWizard.spec.js` — P0–P5 + plugin i18n
+- `tests/js/kioskDrinkAddons.spec.js` — helper
+
+### 7.4 Suite « 0 faute » (priorisée)
+
+1. ~~Modale abandon~~ → §7.1c.
+2. ~~i18n wizard~~ → §7.1d + §7.1e (shell, menu, récap, suppléments, modale, **pain, taille, viande, sauce, garnitures**).
+2b. ~~Heuristique `wizard_template` (snacking / omelette / salade) + tests Vitest~~ → §7.1f (**compléter** en QA catalogue réel §7.2 #3).
+3. **QA manuel** : valider sur **données réelles** les articles hors couverture test (noms atypiques) + **changement de langue** (fr / en / ar) sur tout le wizard.
+4. **Gate release** : `npm run production` + smoke burger menu + tacos + snacking (§7.2 #6).
+5. **Option métier** : flag catalogue boisson si besoin hors heuristique nom.

@@ -1,3 +1,7 @@
+> **[SUPERSEDED — pre-phase-1]** This command predates the run-cycle.md protocol.
+> Use `.cursor/commands/run-cycle.md` + ACTIVE_CYCLE.md for all planning cycles as of Phase 1.
+> Kept for historical reference only. Do not use in autonomous cycles.
+
 Read `reports/antigravity/latest.md` (always the most recent Playwright / E2E verification report).
 
 Then:

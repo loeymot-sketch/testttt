@@ -24,9 +24,19 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Requires VITE_PUSHER_* env vars and a running Soketi/Pusher server
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { wsService, WS_STATE } from './services/WebSocketService';
 window.Pusher = Pusher;
 
-if (import.meta.env.VITE_PUSHER_APP_KEY) {
+// [V5-BUGFIX] Laravel Mix (webpack) expose env via process.env.MIX_* — PAS import.meta.env.VITE_*
+// L'ancien code utilisait VITE_PUSHER_APP_KEY qui est toujours undefined sous webpack,
+// donc Echo n'était jamais initialisé → temps réel silencieusement cassé depuis le début.
+const _MIX_PUSHER_APP_KEY     = process.env.MIX_PUSHER_APP_KEY;
+const _MIX_PUSHER_APP_CLUSTER = process.env.MIX_PUSHER_APP_CLUSTER;
+const _MIX_PUSHER_HOST        = process.env.MIX_PUSHER_HOST;
+const _MIX_PUSHER_PORT        = process.env.MIX_PUSHER_PORT;
+const _MIX_PUSHER_SCHEME      = process.env.MIX_PUSHER_SCHEME;
+
+if (_MIX_PUSHER_APP_KEY) {
     // [GAP-34-2] Echo must send the Sanctum Bearer token when authenticating private channels.
     // Default Echo auth uses cookies (session) — this SPA uses Bearer tokens.
     // We read the token from localStorage (same source as the axios interceptor in app.js).
@@ -44,14 +54,20 @@ if (import.meta.env.VITE_PUSHER_APP_KEY) {
 
     window.Echo = new Echo({
         broadcaster: 'pusher',
-        key: import.meta.env.VITE_PUSHER_APP_KEY,
-        wsHost: import.meta.env.VITE_PUSHER_HOST ?? `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
-        wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-        wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-        forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
+        key: _MIX_PUSHER_APP_KEY,
+        wsHost: _MIX_PUSHER_HOST || `ws-${_MIX_PUSHER_APP_CLUSTER || 'mt1'}.pusher.com`,
+        wsPort: Number(_MIX_PUSHER_PORT || 80),
+        wssPort: Number(_MIX_PUSHER_PORT || 443),
+        forceTLS: (_MIX_PUSHER_SCHEME || 'https') === 'https',
         enabledTransports: ['ws', 'wss'],
-        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
-        // Auth endpoint protected by auth:sanctum (see BroadcastServiceProvider)
+        cluster: _MIX_PUSHER_APP_CLUSTER || 'mt1',
+        // [V1 SYNC_BACKBONE] Aggressive liveness detection:
+        // - activityTimeout: if no activity for 30s, client sends ping.
+        // - pongTimeout: if pong doesn't come back in 5s, client reconnects.
+        // This guarantees a stale-connection is detected within ~35s max and
+        // triggers Pusher's internal exponential backoff (1s → 2s → 4s → … → 30s).
+        activityTimeout: 30000,
+        pongTimeout: 5000,
         authEndpoint: `${_baseUrl}/api/broadcasting/auth`,
         auth: {
             headers: {
@@ -70,4 +86,11 @@ if (import.meta.env.VITE_PUSHER_APP_KEY) {
             window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
         }
     };
+
+    wsService.start();
+    window._wsService = wsService;
+} else {
+    wsService._setState(WS_STATE.UNAVAILABLE);
+    window._wsService = wsService;
+    console.warn('[WS] MIX_PUSHER_APP_KEY not set in .env — WebSocket disabled, polling-only mode.');
 }

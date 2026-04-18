@@ -1,0 +1,84 @@
+/* =============================================================================
+   FoodKing Kiosk V1 — Mode contraste renforcé (WCAG 2.2 AAA)
+   -----------------------------------------------------------------------------
+   Activation : <html data-kiosk-contrast="aaa"> (toggle Phase 4/5).
+   Règles     : contrastes texte ≥ 7:1 (normal) / 4.5:1 (large),
+                focus ring 6px, suppression des ombres/gradients non essentiels,
+                font-size × 1.10 (imposé par le master prompt §0.2).
+   Combinable avec data-kiosk-pmr="true".
+   ============================================================================= */
+
+[data-kiosk-contrast="aaa"] {
+  /* -- Brand : rouge AAA sur fond blanc (ratio ≥ 7:1) ------------------------ */
+  --kiosk-primary:       #A00013;
+  --kiosk-primary-dark:  #800010;
+  --kiosk-primary-soft:  #FFE6E9;
+
+  /* -- Surfaces — on durcit le contraste fond / texte ------------------------ */
+  --kiosk-bg:            #FFFFFF;
+  --kiosk-surface:       #FFFFFF;
+  --kiosk-surface-alt:   #F4F4F4;
+  --kiosk-border:        #000000;
+  --kiosk-border-strong: #000000;
+
+  /* -- Texte ----------------------------------------------------------------- */
+  --kiosk-text:          #000000;
+  --kiosk-text-muted:    #000000;
+  --kiosk-text-mute:     #000000; /* interdit d'avoir du mute en AAA */
+  --kiosk-text-on-red:   #FFFFFF;
+
+  /* -- Sémantique AAA (ratios ≥ 7:1 sur blanc) ------------------------------- */
+  --kiosk-success: #0D7A33;
+  --kiosk-error:   #A81717;
+  --kiosk-warning: #8A5200;
+  --kiosk-info:    #0B2AB8;
+
+  --kiosk-badge-veg:       #0D7A33;
+  --kiosk-badge-halal:     #0D7A33;
+  --kiosk-badge-spicy:     #A81717;
+  --kiosk-badge-new:       #A00013;
+  --kiosk-badge-chef-pick: #8A5200;
+
+  /* -- Focus renforcé -------------------------------------------------------- */
+  --kiosk-focus-ring:   #0B2AB8;
+  --kiosk-focus-width:  6px;
+  --kiosk-focus-offset: 3px;
+
+  /* -- Kill shadows / gradients (distracteurs en AAA) ------------------------ */
+  --kiosk-shadow-card:   0 0 0 1px #000000;
+  --kiosk-shadow-lift:   0 0 0 2px #000000;
+  --kiosk-shadow-cta:    0 0 0 2px #000000;
+  --kiosk-shadow-modal:  0 0 0 2px #000000;
+  --kiosk-shadow-sticky: 0 -1px 0 0 #000000;
+
+  /* -- Typographie : +10% imposé par prompt ---------------------------------- */
+  --kiosk-text-scale: 1.10;
+}
+
+/* Suppression systématique des ombres et gradients non essentiels ------------ */
+[data-kiosk-contrast="aaa"] *,
+[data-kiosk-contrast="aaa"] *::before,
+[data-kiosk-contrast="aaa"] *::after {
+  text-shadow: none !important;
+  background-image: none !important; /* neutralise radial/linear-gradients */
+}
+
+/* Bordure visible sur toutes les surfaces interactives ----------------------- */
+[data-kiosk-contrast="aaa"] button,
+[data-kiosk-contrast="aaa"] [role="button"],
+[data-kiosk-contrast="aaa"] input,
+[data-kiosk-contrast="aaa"] select,
+[data-kiosk-contrast="aaa"] textarea {
+  outline-color: var(--kiosk-focus-ring);
+}
+
+/* Focus ring obligatoirement visible ---------------------------------------- */
+[data-kiosk-contrast="aaa"] button:focus-visible,
+[data-kiosk-contrast="aaa"] [role="button"]:focus-visible,
+[data-kiosk-contrast="aaa"] a:focus-visible,
+[data-kiosk-contrast="aaa"] input:focus-visible,
+[data-kiosk-contrast="aaa"] select:focus-visible,
+[data-kiosk-contrast="aaa"] textarea:focus-visible {
+  outline: var(--kiosk-focus-width) solid var(--kiosk-focus-ring);
+  outline-offset: var(--kiosk-focus-offset);
+}

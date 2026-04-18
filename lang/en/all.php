@@ -69,6 +69,7 @@ return [
         'offer_item_exist' => 'The item already added in another offer. When the offer is end then you can add this item again.',
         'minimum_order_amount' => 'The minimum order amount is ',
         'coupon_date_expired' => 'The coupon time is expired',
+        'coupon_not_yet_active' => 'The coupon is not yet active (valid from :date)',
         'coupon_not_exist' => 'The coupon does not exist',
         'code_is_invalid' => 'The code is invalid.',
         'code_is_expired' => 'The code is expired.',

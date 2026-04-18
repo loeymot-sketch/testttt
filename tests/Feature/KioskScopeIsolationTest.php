@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class KioskScopeIsolationTest extends TestCase
@@ -43,14 +44,13 @@ class KioskScopeIsolationTest extends TestCase
             'status' => 5
         ]);
 
-        // 4. Token
-        $kioskToken = $user->createToken('kioskToken', ['kiosk:order'])->plainTextToken;
+        Sanctum::actingAs($user, ['kiosk:order']);
 
         // 5. Appel Admin
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $kioskToken,
+            'x-api-key' => config('app.api_key'),
             'Accept' => 'application/json'
-        ])->getJson('/api/admin/dashboard/realtime-report');
+        ])->postJson('/api/admin/pos', []);
 
         // 6. Doit être rejeté (401, 403, 405 ou 400 Bad Request si la route échoue sans data)
         $this->assertContains($response->status(), [400, 401, 403, 405]);
@@ -82,10 +82,10 @@ class KioskScopeIsolationTest extends TestCase
             'password' => bcrypt('password123'),
             'status' => 5
         ]);
-        $kioskToken = $user->createToken('kioskToken', ['kiosk:order'])->plainTextToken;
+        Sanctum::actingAs($user, ['kiosk:order']);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $kioskToken,
+            'x-api-key' => config('app.api_key'),
             'Accept' => 'application/json'
         ])->deleteJson('/api/admin/branch/' . $branch->id);
 

@@ -3,6 +3,19 @@
  * includes Vue and other libraries. It is a great starting point when
  * building robust, powerful web applications using Vue and Laravel.
  */
+// [V5-BUGFIX] bootstrap.js contains the Laravel Echo/Pusher client initialization.
+// It was NEVER imported → real-time WebSocket was completely disabled since project creation.
+// This import activates window.Echo + the WS service used by POS/KDS/OSS/Kiosk.
+import './bootstrap';
+// [KIOSK-DS V1 Phase 2.0] Design System Kiosk — charge les 3 CSS tokens
+// (base / AAA / PMR) + re-exporte les 7 atoms (KsButton, KsCard, …).
+// Chargé globalement : les tokens `--kiosk-*` deviennent disponibles sur
+// toute l'app. Les atoms sont auto-enregistrés via `app.use(KioskDesignSystem)`
+// ci-dessous. Les composants kiosk existants consomment désormais les vraies
+// valeurs de brand (cf. tokens.css) et n'ont plus les collisions avec
+// `kiosk-wizard.css` (rationalisé en parallèle).
+import KioskDesignSystem from './bootstrap-kiosk';
+
 import {createApp} from 'vue';
 import DefaultComponent from "./components/DefaultComponent";
 import router from './router';
@@ -142,4 +155,10 @@ app.use(VueSimpleAlert)
 app.use(VueApexCharts)
 app.use(Toast, options)
 app.use(i18n)
+
+// [KIOSK-DS V1 Phase 2.0] Enregistrement global des atoms Kiosk DS.
+// Permet d'utiliser <KsButton>, <KsCard>, <KsBadge>, <KsChip>, <KsModal>,
+// <KsStepper>, <KsPriceLine> dans tous les composants Vue sans import local.
+app.use(KioskDesignSystem)
+
 app.mount('#app');

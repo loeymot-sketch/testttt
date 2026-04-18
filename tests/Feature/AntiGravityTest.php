@@ -11,6 +11,7 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\TaxType;
 
 class AntiGravityTest extends TestCase
 {
@@ -28,7 +29,10 @@ class AntiGravityTest extends TestCase
     private function setupKiosk()
     {
         $branch = \Database\Factories\BranchFactory::new()->create();
-        $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $user = \Database\Factories\UserFactory::new()->create([
+            'branch_id' => $branch->id,
+            'status' => \App\Enums\Status::ACTIVE,
+        ]);
         $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
             'branch_id' => $branch->id,
             'user_id' => $user->id,
@@ -93,10 +97,11 @@ class AntiGravityTest extends TestCase
         [$branch, $user, $kiosk] = $this->setupKiosk();
         $kiosk->update(['is_login' => \App\Enums\Ask::YES]);
 
-        $response = $this->postJson('/api/auth/kiosk-login', [
-            'username' => 'kiosk123',
-            'password' => 'password123'
-        ]);
+        $response = $this->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/auth/kiosk-login', [
+                'username' => 'kiosk123',
+                'password' => 'password123'
+            ]);
         // Le contrôleur peut refuser la reconnexion ou émettre un nouveau token (201) selon la politique courante.
         $this->assertTrue(in_array($response->status(), [200, 201, 400, 401, 403, 422], true));
     }
@@ -215,23 +220,18 @@ class AntiGravityTest extends TestCase
         $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
 
         // API uses coupon_id (integer), not coupon_code (string).
-        // Sending a non-existent coupon_id — coupon is ignored, order proceeds normally.
+        // Invalid coupon_id must now reject the order instead of being silently ignored.
         $response = $this->actingAs($user)->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 10,
             'total' => 10,
-            'is_advance_order' => 0,
+            'is_advance_order' => \App\Enums\Ask::NO,
             'source' => 1,
             'coupon_id' => 99999, // Non-existent coupon
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
         ]);
-        // Coupon not found → ignored → order accepted at full price, or validation error
-        $this->assertTrue(in_array($response->status(), [200, 201, 400, 422]));
-        if (in_array($response->status(), [200, 201])) {
-            $order = \App\Models\FrontendOrder::first();
-            $this->assertNotNull($order);
-            $this->assertEquals(0, $order->discount);
-        }
+        $response->assertStatus(422);
+        $this->assertSame(0, \App\Models\FrontendOrder::count());
     }
 
     // MODULE 4 — Flux de Commande E2E
@@ -333,10 +333,15 @@ class AntiGravityTest extends TestCase
     public function test_t08b_pos_order_forged_price_uses_db_price()
     {
         [$branch, $admin] = $this->setupAdmin();
+        $tax = Tax::factory()->create([
+            'tax_rate' => 0,
+            'type' => TaxType::FIXED,
+        ]);
         
         // Créer item avec prix connu en DB
         $item = \Database\Factories\ItemFactory::new()->create([
             'price' => 10.00,
+            'tax_id' => $tax->id,
         ]);
         
         // Créer un customer
@@ -378,9 +383,13 @@ class AntiGravityTest extends TestCase
     public function test_t08c_pos_kds_notification_dispatched()
     {
         [$branch, $admin] = $this->setupAdmin();
+        $tax = Tax::factory()->create([
+            'tax_rate' => 0,
+            'type' => TaxType::FIXED,
+        ]);
         
         // Créer item et customer
-        $item = \Database\Factories\ItemFactory::new()->create(['price' => 10.00]);
+        $item = \Database\Factories\ItemFactory::new()->create(['price' => 10.00, 'tax_id' => $tax->id]);
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         
         // Faker les événements pour capturer dispatch

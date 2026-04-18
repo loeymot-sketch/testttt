@@ -2,7 +2,7 @@
 
 namespace App\Rules;
 
-use App\Enums\OrderStatus;
+use App\Domain\Order\OrderStateMachine;
 use Illuminate\Contracts\Validation\Rule;
 
 class ValidStatusTransition implements Rule
@@ -30,60 +30,9 @@ class ValidStatusTransition implements Rule
     public function passes($attribute, $value)
     {
         $newStatus = (int) $value;
-        $current = $this->currentStatus;
+        $user = auth()->check() ? auth()->user() : null;
 
-        // Si le statut ne change pas, c'est valide
-        if ($current === $newStatus) {
-            return true;
-        }
-
-        // Règles de transition
-        switch ($current) {
-            case OrderStatus::PENDING:
-                // Depuis PENDING, on peut accepter, annuler ou rejeter
-                return in_array($newStatus, [OrderStatus::ACCEPT, OrderStatus::CANCELED, OrderStatus::REJECTED]);
-
-            case OrderStatus::ACCEPT:
-                // Depuis ACCEPT, on part en préparation ou on annule.
-                // [GAP-25-2] POS cashier can also mark kiosk cash orders as DELIVERED directly
-                // (collect cash + hand over in one action, bypassing KDS preparation steps).
-                if ($newStatus === OrderStatus::DELIVERED && auth()->check() && auth()->user()->hasPermissionTo('pos')) {
-                    return true;
-                }
-                return in_array($newStatus, [OrderStatus::PREPARING, OrderStatus::CANCELED]);
-
-            case OrderStatus::PREPARING:
-                // Depuis PREPARING, la commande est prête ou annulée.
-                // [GAP-25-2] POS cashier can also mark kiosk cash orders as DELIVERED directly.
-                if ($newStatus === OrderStatus::DELIVERED && auth()->check() && auth()->user()->hasPermissionTo('pos')) {
-                    return true;
-                }
-                return in_array($newStatus, [OrderStatus::PREPARED, OrderStatus::CANCELED]);
-
-            case OrderStatus::PREPARED:
-                // Depuis PREPARED, elle part en livraison ou est livrée (sur place)
-                return in_array($newStatus, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED]);
-
-            case OrderStatus::OUT_FOR_DELIVERY:
-                // En livraison -> livrée
-                return $newStatus === OrderStatus::DELIVERED;
-
-            case OrderStatus::DELIVERED:
-                // Livrée -> peut être retournée
-                return $newStatus === OrderStatus::RETURNED;
-
-            case OrderStatus::CANCELED:
-            case OrderStatus::REJECTED:
-            case OrderStatus::RETURNED:
-                // Si l'utilisateur est un Admin, on autorise la récupération depuis un état terminal
-                if (auth()->check() && auth()->user()->hasRole('Admin')) {
-                    return true;
-                }
-                return false;
-
-            default:
-                return false;
-        }
+        return OrderStateMachine::allows($this->currentStatus, $newStatus, $user);
     }
 
     /**

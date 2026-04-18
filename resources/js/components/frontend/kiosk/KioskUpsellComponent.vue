@@ -1,49 +1,69 @@
 <template>
-  <div class="kiosk-upsell">
+  <div class="kiosk-upsell" data-testid="kiosk-upsell-root">
     <!-- Skip si chargement trop long -->
-    <div v-if="loading" class="kiosk-upsell-loading">
-      <div class="kiosk-spinner" />
+    <div
+      v-if="loading"
+      class="kiosk-upsell-loading"
+      role="status"
+      aria-live="polite"
+      :aria-label="$t('kiosk.upsell_screen.title')"
+      data-testid="kiosk-upsell-loading"
+    >
+      <div class="kiosk-spinner" aria-hidden="true" />
     </div>
 
     <template v-else>
       <!-- Header -->
       <div class="kiosk-upsell-header">
-        <h1 class="kiosk-upsell-title">Et pour terminer ?</h1>
-        <p class="kiosk-upsell-subtitle">Ajoutez quelque chose à votre commande</p>
+        <h1 class="kiosk-upsell-title" data-testid="kiosk-upsell-title">{{ $t('kiosk.upsell_screen.title') }}</h1>
+        <p class="kiosk-upsell-subtitle">{{ $t('kiosk.upsell_screen.subtitle') }}</p>
       </div>
 
       <!-- Grille suggestions -->
-      <div v-if="suggestions.length > 0" class="kiosk-upsell-grid">
+      <div
+        v-if="suggestions.length > 0"
+        class="kiosk-upsell-grid"
+        role="list"
+        :aria-label="$t('kiosk.upsell_screen.title')"
+        data-testid="kiosk-upsell-grid"
+      >
         <div
           v-for="item in suggestions"
           :key="item.id"
           class="kiosk-upsell-card"
           :class="{ selected: selectedIds.includes(item.id) }"
+          role="listitem"
+          tabindex="0"
+          :aria-pressed="selectedIds.includes(item.id)"
+          :aria-label="sanitizeItemName(item.name) + ' — ' + formatPrice(item.convert_price)"
+          :data-testid="'kiosk-upsell-card-' + item.id"
           @click="toggleItem(item)"
+          @keydown.enter.prevent="toggleItem(item)"
+          @keydown.space.prevent="toggleItem(item)"
         >
           <!-- Image -->
-          <div class="kiosk-upsell-img-wrap">
+          <div class="kiosk-upsell-img-wrap" aria-hidden="true">
             <img v-if="item.thumb || item.image" :src="item.thumb || item.image" :alt="item.name" class="kiosk-upsell-img" />
             <div v-else class="kiosk-upsell-img-fallback">{{ getEmoji(item.name) }}</div>
           </div>
 
           <!-- Infos -->
           <div class="kiosk-upsell-info">
-            <h3 class="kiosk-upsell-item-name">{{ item.name }}</h3>
-            <span class="kiosk-upsell-item-price">{{ formatPrice(item.convert_price) }}</span>
+            <h3 class="kiosk-upsell-item-name" :data-testid="'kiosk-upsell-card-name-' + item.id">{{ sanitizeItemName(item.name) }}</h3>
+            <span class="kiosk-upsell-item-price" :data-testid="'kiosk-upsell-card-price-' + item.id">{{ formatPrice(item.convert_price) }}</span>
           </div>
 
           <!-- Checkmark -->
           <transition name="pop">
-            <div v-if="selectedIds.includes(item.id)" class="kiosk-upsell-check">
+            <div v-if="selectedIds.includes(item.id)" class="kiosk-upsell-check" aria-hidden="true">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M4 10l5 5 7-8" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 10l5 5 7-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
           </transition>
 
           <!-- Bouton +/- -->
-          <div class="kiosk-upsell-add">
+          <div class="kiosk-upsell-add" aria-hidden="true">
             <span v-if="!selectedIds.includes(item.id)" class="kiosk-upsell-plus">+</span>
             <span v-else class="kiosk-upsell-minus">−</span>
           </div>
@@ -55,20 +75,36 @@
         <button
           v-if="selectedIds.length > 0"
           class="kiosk-btn-primary"
+          :disabled="_adding"
           @click="addAndContinue"
+          data-testid="kiosk-upsell-add-continue"
         >
-          <span>Ajouter ({{ selectedIds.length }}) et continuer</span>
-          <span class="kiosk-btn-price">+{{ formatPrice(addedTotal) }}</span>
+          <span>{{ $t('kiosk.upsell_screen.add_continue', { n: selectedIds.length }) }}</span>
+          <span class="kiosk-btn-price" aria-hidden="true">+{{ formatPrice(addedTotal) }}</span>
         </button>
-        <button class="kiosk-upsell-skip" @click="skip">
-          Non merci, continuer sans
+        <button
+          class="kiosk-upsell-skip"
+          @click="skip"
+          data-testid="kiosk-upsell-skip"
+          :aria-label="$t('kiosk.upsell_screen.skip')"
+        >
+          {{ $t('kiosk.upsell_screen.skip') }}
           <span class="kiosk-upsell-skip-timer" v-if="autoSkipRemaining < AUTO_SKIP_SECONDS">
-            ({{ autoSkipRemaining }}s)
+            {{ $t('kiosk.upsell_screen.skip_timer', { n: autoSkipRemaining }) }}
           </span>
         </button>
 
         <!-- Auto-skip progress bar -->
-        <div v-if="!loading" class="kiosk-upsell-autoskip-bar">
+        <div
+          v-if="!loading"
+          class="kiosk-upsell-autoskip-bar"
+          role="progressbar"
+          :aria-valuenow="Math.round(autoSkipPct)"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-label="$t('kiosk.upsell_screen.skip_timer', { n: autoSkipRemaining })"
+          data-testid="kiosk-upsell-autoskip-bar"
+        >
           <div class="kiosk-upsell-autoskip-fill" :style="{ width: autoSkipPct + '%' }" />
         </div>
       </div>
@@ -79,6 +115,10 @@
 <script>
 import { mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+// [PHASE-6.4] Analytics upsell — shown (via store plugin sur markUpsellShown),
+// accepted (addAndContinue), rejected (skip explicite ou auto).
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
 const DESSERT_EMOJI = { dessert: '🍰', gâteau: '🎂', glace: '🍦', boisson: '🥤', café: '☕', jus: '🧃', eau: '💧', coca: '🥤', frite: '🍟' };
 
@@ -100,6 +140,7 @@ export default {
       autoSkipRemaining: AUTO_SKIP_SECONDS,
       autoSkipPct: 100,
       _autoSkipTimer: null,
+      _adding: false,
     };
   },
   computed: {
@@ -124,13 +165,19 @@ export default {
         // Prendre max 6 suggestions
         this.suggestions = items.slice(0, 6);
         if (this.suggestions.length === 0) {
-          this.skip();
+          this.skip('no_suggestions');
           return;
         }
+        // [PHASE-6.4] Analytics : l'écran upsell est affiché avec N suggestions.
+        try {
+          kioskAnalytics.track('upsell_shown', {
+            suggested_count: this.suggestions.length,
+          });
+        } catch (_) {}
         // Start auto-skip countdown once suggestions are loaded
         this.startAutoSkip();
       } catch (_) {
-        this.skip();
+        this.skip('load_error');
         return;
       } finally {
         this.loading = false;
@@ -146,7 +193,7 @@ export default {
         this.autoSkipRemaining = Math.ceil((this.autoSkipPct / 100) * AUTO_SKIP_SECONDS);
         if (this.autoSkipPct <= 0) {
           this.clearAutoSkip();
-          this.skip();
+          this.skip('auto_timer');
         }
       }, 100);
     },
@@ -171,6 +218,8 @@ export default {
     },
 
     addAndContinue() {
+      if (this._adding || this.selectedItems.length === 0) return;
+      this._adding = true;
       this.selectedItems.forEach(item => {
         this.addItem({
           item_id: item.id,
@@ -188,14 +237,33 @@ export default {
         });
       });
       const count = this.selectedItems.length;
+      const firstName = this.sanitizeItemName(this.selectedItems[0]?.name || '');
       this.showToast(
-        count === 1 ? `${this.selectedItems[0].name} ajouté !` : `${count} articles ajoutés !`,
+        count === 1
+          ? this.$t('kiosk.upsell_screen.toast_added_one', { name: firstName })
+          : this.$t('kiosk.upsell_screen.toast_added_many', { n: count }),
         'success'
       );
-      this.$router.push({ name: 'kiosk.payment' });
+      // [PHASE-6.4] Analytics : upsell accepté (nb items ajoutés, pas de nom en clair).
+      try {
+        kioskAnalytics.track('upsell_accepted', {
+          items_count: count,
+          suggested_count: Array.isArray(this.suggestions) ? this.suggestions.length : 0,
+        });
+      } catch (_) {}
+      this.$router.push({ name: 'kiosk.payment' }).catch(() => {
+        this._adding = false;
+      });
     },
 
-    skip() {
+    skip(reason = 'user') {
+      // [PHASE-6.4] Analytics : upsell refusé ou auto-skippé (timer).
+      try {
+        kioskAnalytics.track('upsell_rejected', {
+          reason: typeof reason === 'string' ? reason : 'user',
+          suggested_count: Array.isArray(this.suggestions) ? this.suggestions.length : 0,
+        });
+      } catch (_) {}
       this.$router.push({ name: 'kiosk.payment' });
     },
 
@@ -207,6 +275,10 @@ export default {
       return '🍽️';
     },
 
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
+    },
+
     // formatPrice() provided by kioskPriceMixin
   },
 };
@@ -216,7 +288,7 @@ export default {
 .kiosk-upsell {
   width: 100vw;
   height: 100vh;
-  background: #fff;
+  background: var(--kiosk-surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -232,7 +304,7 @@ export default {
 .kiosk-spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid #e8e8e8;
+  border: 3px solid var(--kiosk-border);
   border-top-color: var(--kiosk-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -244,20 +316,20 @@ export default {
   padding: 26px 28px 18px;
   text-align: center;
   flex-shrink: 0;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--kiosk-border);
 }
 
 .kiosk-upsell-title {
   font-size: 30px;
   font-weight: 800;
-  color: #1f1f1f;
+  color: var(--kiosk-text);
   margin: 0 0 6px;
   letter-spacing: -0.03em;
 }
 
 .kiosk-upsell-subtitle {
   font-size: 16px;
-  color: #777;
+  color: var(--kiosk-text-muted);
   margin: 0;
 }
 
@@ -275,27 +347,31 @@ export default {
 .kiosk-upsell-grid::-webkit-scrollbar { display: none; }
 
 .kiosk-upsell-card {
-  background: #fff;
+  background: var(--kiosk-surface);
   border-radius: 18px;
-  border: 1.5px solid #ececec;
+  border: 1.5px solid var(--kiosk-border);
   overflow: hidden;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-upsell-card.selected {
   border-color: var(--kiosk-primary);
-  box-shadow: 0 0 0 2px rgba(232,0,28,0.10);
+  box-shadow: 0 0 0 3px var(--kiosk-primary-soft);
 }
 
 .kiosk-upsell-card:active { transform: scale(0.98); }
+.kiosk-upsell-card:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));
+  outline-offset: 3px;
+}
 
 .kiosk-upsell-img-wrap {
   height: 150px;
   overflow: hidden;
-  background: #f7f7f8;
+  background: var(--kiosk-surface-alt);
 }
 
 .kiosk-upsell-img {
@@ -314,7 +390,7 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 56px;
-  background: #f7f7f8;
+  background: var(--kiosk-surface-alt);
 }
 
 .kiosk-upsell-info {
@@ -327,7 +403,7 @@ export default {
 .kiosk-upsell-item-name {
   font-size: 15px;
   font-weight: 700;
-  color: #1f1f1f;
+  color: var(--kiosk-text);
   margin: 0;
   line-height: 1.25;
   min-height: 38px;
@@ -340,7 +416,7 @@ export default {
 .kiosk-upsell-item-price {
   font-size: 16px;
   font-weight: 800;
-  color: #d7263d;
+  color: var(--kiosk-primary);
 }
 
 .kiosk-upsell-check {
@@ -354,8 +430,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(232,0,28,0.3);
-  outline: 2px solid rgba(255,255,255,0.92);
+  box-shadow: var(--kiosk-shadow-card);
+  outline: 2px solid var(--kiosk-surface);
 }
 
 .kiosk-upsell-add {
@@ -365,14 +441,14 @@ export default {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #d7263d;
+  background: var(--kiosk-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
   font-weight: 300;
-  color: #fff;
-  outline: 2px solid rgba(255,255,255,0.92);
+  color: var(--kiosk-text-on-red);
+  outline: 2px solid var(--kiosk-surface);
 }
 
 .kiosk-upsell-card.selected .kiosk-upsell-add { display: none; }
@@ -383,15 +459,15 @@ export default {
   flex-direction: column;
   gap: 12px;
   flex-shrink: 0;
-  background: #fff;
-  border-top: 1px solid #ececec;
+  background: var(--kiosk-surface);
+  border-top: 1px solid var(--kiosk-border);
 }
 
 .kiosk-btn-primary {
   width: 100%;
   height: 64px;
   background: var(--kiosk-primary);
-  color: white;
+  color: var(--kiosk-text-on-red);
   border: none;
   border-radius: 14px;
   font-size: 18px;
@@ -401,7 +477,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  box-shadow: 0 6px 20px rgba(232,0,28,0.2);
+  box-shadow: var(--kiosk-shadow-cta);
   transition: all 0.15s ease;
 }
 
@@ -418,9 +494,9 @@ export default {
 .kiosk-upsell-skip {
   width: 100%;
   height: 52px;
-  background: #fff;
-  color: #666;
-  border: 1.5px solid #e4e4e4;
+  background: var(--kiosk-surface);
+  color: var(--kiosk-text-muted);
+  border: 1.5px solid var(--kiosk-border);
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -428,18 +504,18 @@ export default {
   transition: all 0.15s ease;
 }
 
-.kiosk-upsell-skip:active { background: #f7f7f8; color: #444; }
+.kiosk-upsell-skip:active { background: var(--kiosk-surface-alt); color: var(--kiosk-text); }
 
 .kiosk-upsell-skip-timer {
   font-size: 0.8em;
-  color: #999;
+  color: var(--kiosk-text-muted);
   margin-left: 0.4rem;
 }
 
 .kiosk-upsell-autoskip-bar {
   width: 100%;
   height: 3px;
-  background: #ececec;
+  background: var(--kiosk-border);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 0.5rem;
@@ -447,7 +523,7 @@ export default {
 
 .kiosk-upsell-autoskip-fill {
   height: 100%;
-  background: rgba(232,0,28,0.4);
+  background: var(--kiosk-primary);
   border-radius: 2px;
   transition: width 0.1s linear;
 }

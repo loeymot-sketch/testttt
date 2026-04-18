@@ -1,0 +1,80 @@
+/* =============================================================================
+   FoodKing Kiosk V1 — Mode PMR (Personne à Mobilité Réduite)
+   -----------------------------------------------------------------------------
+   Activation : <html data-kiosk-pmr="true"> (toggle Phase 4/5).
+   Règles master prompt §0.2 :
+     - tailles +20% (texte, espacements, radius)
+     - zones tap 64×64 min (promu à 80 en "comfortable" pour sécurité)
+     - reach depuis fauteuil : CTA + nav dans la zone [160 ; 1760] px
+   European Accessibility Act — applicable depuis 28 juin 2025.
+   Combinable avec data-kiosk-contrast="aaa".
+   ============================================================================= */
+
+[data-kiosk-pmr="true"] {
+  /* -- Text scale +20% (override base) --------------------------------------- */
+  --kiosk-text-scale: 1.20;
+
+  /* -- Typographie : +20% sur toutes les tailles ----------------------------- */
+  --kiosk-font-size-hero:     77px; /* 64 × 1.20 */
+  --kiosk-font-size-display:  58px; /* 48 × 1.20 */
+  --kiosk-font-size-title-lg: 43px; /* 36 × 1.20 */
+  --kiosk-font-size-title:    34px; /* 28 × 1.20 */
+  --kiosk-font-size-subtitle: 26px; /* 22 × 1.20 */
+  --kiosk-font-size-body:     24px; /* 20 × 1.20 */
+  --kiosk-font-size-caption:  22px; /* 18 × 1.20 */
+  --kiosk-font-size-micro:    19px; /* 16 × 1.20 (badges) */
+
+  /* -- Spacing : +20% sur les pas utiles ------------------------------------- */
+  --kiosk-space-3:  14px; /* 12 */
+  --kiosk-space-4:  19px; /* 16 */
+  --kiosk-space-5:  24px; /* 20 */
+  --kiosk-space-6:  29px; /* 24 */
+  --kiosk-space-8:  38px; /* 32 */
+  --kiosk-space-10: 48px; /* 40 */
+  --kiosk-space-12: 58px; /* 48 — reste ≥ touch-min */
+  --kiosk-space-14: 67px; /* 56 */
+  --kiosk-space-16: 77px; /* 64 */
+  --kiosk-space-20: 96px; /* 80 */
+  --kiosk-space-24: 115px;/* 96 */
+  --kiosk-space-32: 154px;/* 128 */
+
+  /* -- Radius : +20% --------------------------------------------------------- */
+  --kiosk-radius-sm:   10px;
+  --kiosk-radius-md:   19px;
+  --kiosk-radius-lg:   29px;
+  --kiosk-radius-xl:   34px;
+  --kiosk-radius-2xl:  38px;
+
+  /* -- Tap targets : plancher 64, usage courant 80, CTA 110 ------------------ */
+  --kiosk-touch-min:         64px; /* plancher imposé par master prompt §0.2 */
+  --kiosk-touch-comfortable: 80px;
+  --kiosk-touch-large:       96px;
+  --kiosk-touch-hero:        132px; /* CTA primaire × 1.20 */
+
+  /* -- Safe area : headers abaissés pour reach depuis fauteuil --------------- */
+  --kiosk-safe-top:    40px;
+  --kiosk-safe-bottom: 40px;
+}
+
+/* -----------------------------------------------------------------------------
+   Zone PMR [160 ; 1760] px — les surfaces marquées .kiosk-pmr-top-zone
+   (ex. bandeaux purement décoratifs hors reach) sont rendues non-interactives.
+   Les CTA primaires doivent rester à l'intérieur via layout Vue.
+   --------------------------------------------------------------------------- */
+[data-kiosk-pmr="true"] .kiosk-pmr-top-zone {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* -----------------------------------------------------------------------------
+   Plancher tap target universel en PMR : aucun élément cliquable
+   sous 64×64 (même les atoms legacy non migrés).
+   --------------------------------------------------------------------------- */
+[data-kiosk-pmr="true"] button,
+[data-kiosk-pmr="true"] [role="button"],
+[data-kiosk-pmr="true"] a[href],
+[data-kiosk-pmr="true"] input[type="button"],
+[data-kiosk-pmr="true"] input[type="submit"] {
+  min-width:  var(--kiosk-touch-min);
+  min-height: var(--kiosk-touch-min);
+}

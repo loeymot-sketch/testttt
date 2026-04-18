@@ -10,7 +10,9 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\DiningTable;
+use App\Models\Tax;
 use App\Enums\Ask;
+use App\Enums\TaxType;
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -135,10 +137,15 @@ class SyncComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+        $tax = Tax::factory()->create([
+            'tax_rate' => 0,
+            'type' => TaxType::FIXED,
+        ]);
         
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $item = \Database\Factories\ItemFactory::new()->create([
             'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
             'price' => 15.00,
         ]);
         
@@ -154,7 +161,7 @@ class SyncComprehensiveTest extends TestCase
                 'branch_id' => $branch->id,
                 'is_advance_order' => Ask::NO,
                 'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 20.00,
+                'pos_received_amount' => 999.00,
                 'items' => json_encode([[
                     'item_id' => $item->id,
                     'price' => 15.00,

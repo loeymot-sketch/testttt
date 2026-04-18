@@ -1,8 +1,13 @@
 ﻿---
-description: Playwright / E2E — politique de test FoodKing
+description: Playwright / E2E — politique de test FoodKing. Chargé automatiquement pour les fichiers UI critiques et les plans déclarant playwright-mcp / playwright-critical-flow / playwright-full-e2e.
 globs:
   - tests/**
   - resources/js/**
+  - resources/js/components/admin/pos/**
+  - resources/js/components/admin/kitchenDisplaySystem/**
+  - resources/js/components/kiosk/**
+  - resources/js/components/admin/orderStatusScreen/**
+  - resources/js/router/modules/**
 alwaysApply: false
 ---
 
@@ -36,6 +41,15 @@ Un test E2E est **obligatoire** si le changement touche :
 3. **Kiosk** : Idle → type commande → menu → item → wizard → panier → paiement → numéro ticket → OSS.
 4. **KDS** : Login chef → voir commandes → changer statut PREPARING → PREPARED → reflet OSS.
 5. **Auth refresh** : F5 sur POS → `authcheck` → retour sur la bonne surface (pas `frontend.home`).
+
+## Fichiers additionnels autorisés en phase VALIDATE (quand Playwright actif)
+| File | Purpose |
+|---|---|
+| `reports/post_execute_latest.log` | Confirmer `PLAYWRIGHT_REQUIRED:` présent |
+| `reports/antigravity/latest.md` | Résultat du run Playwright (à créer) |
+
+Écrire le rapport dans `reports/antigravity/latest.md` après chaque run.
+Ordre de priorité des flows : Auth refresh → POS Cash → KDS → POS Card → Kiosk.
 
 ## Rapports
 

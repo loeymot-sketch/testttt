@@ -50,11 +50,10 @@ FoodKing — restaurant SaaS platform
 - Bot/pipeline = state transport and synchronization layer
 
 ### Current Status
-- Cursor system is prepared and structured
-- project rules are in place
-- Playwright MCP is validated
-- Claude project is being configured
-- full runtime bot pipeline is not yet implemented
+- All audit global cycles CLOSED: REALTIME_001, PAYMENT_SAFETY_001, KIOSK_RELIABILITY_001, PRODUCTION_READY_001
+- 196 PHPUnit tests passing, npm run prod 0 errors
+- 18 findings (4 CRITICAL, 6 MAJOR, 8 MINOR) all addressed
+- Ready for final Playwright E2E validation + human gate production
 
 ---
 
@@ -85,23 +84,18 @@ FoodKing — restaurant SaaS platform
   method. Notification can fire for a status change that
   fails to persist. Severity: MAJOR. Target: CYCLE-002.
 
-- [RISK-NEW] OrderService::changeStatus — $auth===true
-  (customer) branch has NO OrderStatusChanged::dispatch.
-  OSS and KDS will not receive broadcast for customer-
-  triggered status changes. Reachability in production
-  unconfirmed. Must be classified before any changeStatus
-  change is approved.
+- [RISK-CLEARED] OrderService::changeStatus — $auth===true
+  Inspected: OrderStatusChanged::dispatch IS present (L.1292).
+  Dispatch after save() confirmed. No gap.
 
-- [RISK-NEW] BroadcastableOrder class uninspected.
-  Used in OrderStatusChanged constructor. If it
-  eager-loads relationships, a missing relationship
-  silently corrupts the broadcast payload. Required
-  inspection before any OrderStatusChanged change.
+- [RISK-CLEARED] BroadcastableOrder class.
+  Inspected: interface is empty (marker only), no eager loading,
+  no relationship risk. Safe.
 
-- [RISK-NEW] ShouldBroadcastNow exception propagation
-  unverified. OrderCreated and OrderStatusChanged use
-  synchronous broadcast. If Pusher/Soketi is unavailable,
-  the exception impact on the HTTP request is unknown.
+- [RISK-CLEARED] ShouldBroadcastNow exception propagation.
+  Inspected: all OrderStatusChanged::dispatch calls are wrapped
+  in try/catch in both OrderService and FrontendOrderService.
+  Exception is logged, never propagated to HTTP response.
 
 ---
 
@@ -159,6 +153,9 @@ FoodKing — restaurant SaaS platform
 - reports/review/latest.md
 
 ---
+
+### Permissions Audit (S3 / F-16)
+No wildcard `*` permission found in Spatie roles. Admin role uses `givePermissionTo(Permission::all())` — all named permissions, not a catch-all. No action required.
 
 ## 8. Recent Important Decisions
 

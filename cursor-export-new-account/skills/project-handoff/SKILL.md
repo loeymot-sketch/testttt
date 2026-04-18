@@ -1,0 +1,44 @@
+---
+name: project-handoff
+description: >-
+  Charge le contexte du dépôt (FoodKing SaaS — Laravel + Vue) pour une nouvelle session Cursor sans historique de chat.
+  Lit README, passation HANDOFF_NEW_CURSOR, cache mémoire, PROJECT_CONTINUITY, AGENTS.md et priorités backlog.
+  Use when the user opens this repository on a new Cursor account, says "nouvelle session", "handoff",
+  "sans mémoire", "autre compte Cursor", "reprendre le projet", or wants multi-agent orchestration aligned with AGENTS.md.
+---
+
+# Session handoff & orchestration
+
+## Quand appliquer ce skill
+
+- Première ouverture du dépôt sur un **nouveau compte** ou machine.
+- L’utilisateur veut **reprendre le développement** sans redonner tout le contexte à la main.
+- Travail **multi-agents** (planning / Kimi-test / Anti-Gravity) selon `AGENTS.md`.
+
+## Ordre de lecture obligatoire (avant code ou plan important)
+
+1. `README.md` (racine) — hub liens.
+2. `docs/HANDOFF_NEW_CURSOR/00_INDEX.md` — navigation passation.
+3. `docs/HANDOFF_NEW_CURSOR/CACHE_MEMOIRE_TRANSFERT.md` — état projet, synchro, backlog, invariants.
+4. `docs/PROJECT_CONTINUITY_AND_VISION.md` — vision Le Cayenne, surfaces, correctifs à préserver.
+5. `AGENTS.md` — workflow `reports/`, types de tests, rôles.
+6. Si commandes / auth : `docs/ARCHITECTURE.md`, `docs/ORDER_FLOW.md`, `docs/API_MAP.md`, `docs/AUTHZ_MATRIX.md`.
+
+## Règles déjà dans le repo (ne pas ignorer)
+
+- `.cursor/rules/project-continuity.mdc` (alwaysApply).
+- Petits diffs ; pas de contournement **recalcul prix serveur** ni **authz** cassée.
+
+## Réponse attendue de l’agent
+
+Après lecture, résumer en **≤15 lignes** : stack, surfaces (POS, KDS, OSS, kiosk), synchro (Echo + FCM + polling), 3 priorités backlog, et prochaine action demandée à l’utilisateur.
+
+## Fichiers complémentaires utiles
+
+- `docs/HANDOFF_NEW_CURSOR/PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md` — prompt copier-coller premier chat.
+- `docs/HANDOFF_NEW_CURSOR/ORCHESTRATION_FICHIERS_A_TRANSFERER.md` — checklist autre compte.
+- `reports/planning/AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md` — phases A–E et diagrammes.
+
+## Installation globale (optionnel, tous projets sur ce compte)
+
+Copier ce dossier `project-handoff` vers `~/.cursor/skills/project-handoff/` pour invoquer le même skill hors workspace.

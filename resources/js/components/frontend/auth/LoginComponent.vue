@@ -49,14 +49,14 @@
                     class="w-full h-12 text-center capitalize font-medium rounded-3xl mb-6 text-white bg-primary">
                     {{ $t('button.login') }}
                 </button>
-                <div class="flex items-center justify-center gap-2 mb-4">
+                <div v-if="!staffOnlyMode" class="flex items-center justify-center gap-2 mb-4">
                     <span class="text-xs text-[#6E7191]">{{ $t('message.have_account') }}</span>
                     <router-link :to="{ name: 'auth.signupPhone' }" class="text-xs font-medium text-primary">
                         {{ $t('button.signup') }}
                     </router-link>
                 </div>
 
-                <div v-if="enums.activityEnum.ENABLE == setting.site_guest_login">
+                <div v-if="!staffOnlyMode && enums.activityEnum.ENABLE == setting.site_guest_login">
                     <p class="text-sm uppercase text-center mb-3 text-[#6E7191]">{{ $t('label.or') }}</p>
                     <router-link :to="{ name: 'auth.guestLogin' }"
                         class="w-full h-12 leading-[46px] text-center capitalize font-medium rounded-3xl border text-primary border-primary bg-white">
@@ -140,6 +140,10 @@ export default {
         permission: function () {
             return this.$store.getters.authPermission;
         },
+        // [STAFF-ONLY-V1] Masque Signup + Guest Login sur la page login staff.
+        staffOnlyMode: function () {
+            return !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
+        },
     },
     methods: {
         login: function () {
@@ -150,19 +154,20 @@ export default {
                     alertService.success(res.data.message);
 
                     // [LOGIN-02] Redirection intelligente selon le profil
+                    // [STAFF-ONLY-V1] En staff-only mode : le fallback va au dashboard admin (plus de frontend.home).
                     const defaultPermission = res.data?.defaultPermission;
                     const defaultMenu = res.data?.defaultMenu;
+                    const staffOnly = !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
 
-                    if (this.carts.length > 0) {
+                    if (!staffOnly && this.carts.length > 0) {
                         router.push({ name: "frontend.checkout" });
                     } else if (defaultPermission?.url) {
-                        // Staff : redirection vers leur espace de travail
                         router.push('/admin/' + defaultPermission.url);
                     } else if (defaultMenu?.url) {
-                        // Fallback sur le menu par défaut
                         router.push('/admin/' + defaultMenu.url);
+                    } else if (staffOnly) {
+                        router.push({ name: "admin.dashboard" });
                     } else {
-                        // Client ou fallback : home
                         router.push({ name: "frontend.home" });
                     }
 

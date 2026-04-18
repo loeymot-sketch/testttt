@@ -8,6 +8,7 @@ const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk" */ 
 const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
 const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
 const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
+const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
 const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
 const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
 const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
@@ -15,6 +16,12 @@ const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk" */ 
 const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
 const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
+// [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
+const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
+const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
+const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
+const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
+const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
@@ -44,7 +51,7 @@ function requireKioskAuth(to, from, next) {
         store
             .dispatch('kioskCart/kioskLogin', auto)
             .then(() => next())
-            .catch(() => next({ name: 'kiosk.login', query: { auto_failed: '1' } }));
+            .catch(() => next({ name: 'kiosk.login' }));
         return;
     }
     next({ name: 'kiosk.login' });
@@ -76,8 +83,16 @@ function requireOrderRef(to, from, next) {
     //   - No valid orderId param (undefined, "undefined", "null", empty string)
     // This prevents a raw URL like /kiosk/waiting/undefined from loading the waiting screen
     // and polling GET frontend/order/undefined in an infinite loop.
-    const isValidParam = paramId && paramId !== 'undefined' && paramId !== 'null' && paramId !== '';
+    const isValidParam = /^(offline_)?\d+$/.test(String(paramId || '').trim());
     if (!orderRef && !isValidParam) return next({ name: 'kiosk.idle' });
+    next();
+}
+
+function requireConfirmationContext(to, from, next) {
+    const orderRef = store.state.kioskCart?.orderRef;
+    if (!orderRef) {
+        return next({ name: 'kiosk.idle' });
+    }
     next();
 }
 
@@ -110,11 +125,14 @@ export default [
                 path: "categories",
                 name: "kiosk.categories",
                 component: KioskCategoriesComponent,
-                meta: { isKiosk: true },
+                // Clé stable du router-view (KioskApp) : ne pas refaire slide-left à chaque ?cat=
+                meta: { isKiosk: true, kioskStableShell: true },
             },
             {
                 path: "products/:categoryId",
                 name: "kiosk.products",
+                // Legacy deep-link kept for backward compatibility; the active catalogue
+                // surface is `kiosk.categories` with query-driven category selection.
                 redirect: (to) => ({
                     name: 'kiosk.categories',
                     query: {
@@ -127,7 +145,11 @@ export default [
             {
                 path: "wizard/:itemId",
                 name: "kiosk.wizard",
-                component: KioskWizardComponent,
+                // [STAFF-ONLY-V1][V4] Feature flag : KIOSK_USE_POS_WIZARD=true => wrapper POS (V4.1 déploiera la vraie unification)
+                component: () => {
+                    const usePosWizard = !!(window.foodkingConfig && window.foodkingConfig.kioskUsePosWizard);
+                    return usePosWizard ? KioskPosWizardComponent() : KioskWizardComponent();
+                },
                 meta: { isKiosk: true },
                 props: true,
             },
@@ -171,6 +193,7 @@ export default [
                 name: "kiosk.confirmation",
                 component: KioskConfirmationComponent,
                 meta: { isKiosk: true },
+                beforeEnter: requireConfirmationContext,
                 props: (route) => ({
                     orderNumber: route.query.number || '',
                     orderTotal: route.query.total !== undefined && route.query.total !== '' ? parseFloat(route.query.total) : null, // [AUDIT-P47-BUG6] preserve zero (0 is valid total, not "null")
@@ -182,6 +205,61 @@ export default [
                 component: KioskAdminComponent,
                 meta: { isKiosk: true },
                 beforeEnter: requireKioskAuth,
+            },
+
+            /* ============================================================
+             * [KIOSK-DS V1 Phase 3] Écrans UX critiques
+             * ------------------------------------------------------------
+             * Navigables directement (deep-linkable) ET atteignables via
+             * les évènements émis par les écrans de commande lorsque les
+             * conditions le requièrent (TPE refusé, menu 503, etc.).
+             * ============================================================ */
+            {
+                path: "cash-instruction",
+                name: "kiosk.cash-instruction",
+                component: KioskCashInstructionComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    orderNumber: route.query.number || '',
+                    orderTotal: route.query.total !== undefined && route.query.total !== ''
+                        ? parseFloat(route.query.total)
+                        : null,
+                    autoRedirectSeconds: route.query.timeout !== undefined
+                        ? parseInt(route.query.timeout, 10) || 45
+                        : 45,
+                }),
+            },
+            {
+                path: "error/network",
+                name: "kiosk.error.network",
+                component: KioskErrorNetworkComponent,
+                meta: { isKiosk: true },
+            },
+            {
+                path: "error/menu-unavailable",
+                name: "kiosk.error.menu-unavailable",
+                component: KioskErrorMenuUnavailableComponent,
+                meta: { isKiosk: true },
+            },
+            {
+                path: "error/product-removed",
+                name: "kiosk.error.product-removed",
+                component: KioskErrorProductRemovedComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    productName: route.query.name || null,
+                    itemId: route.query.item_id || null,
+                }),
+            },
+            {
+                path: "error/payment-refused",
+                name: "kiosk.error.payment-refused",
+                component: KioskErrorPaymentRefusedComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    errorCode: route.query.code || null,
+                    orderId: route.query.order_id || null,
+                }),
             },
         ],
     },

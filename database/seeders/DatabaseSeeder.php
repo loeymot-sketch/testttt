@@ -101,6 +101,10 @@ class DatabaseSeeder extends Seeder
         $this->call(OfferItemTableSeeder::class);
         $this->call(CouponTableSeeder::class);
 
+        // Kiosk Design V1 — Phase 1.3 : référentiel des 14 allergènes EU 1169/2011.
+        // Idempotent (updateOrCreate sur `code`), safe à lancer à chaque migrate:fresh.
+        $this->call(AllergensSeeder::class);
+
         // Order data (optional - for demo purposes)
         // $this->call(OrderTableSeeder::class);
         // $this->call(OrderItemTableSeeder::class);

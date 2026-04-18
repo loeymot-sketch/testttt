@@ -344,13 +344,14 @@ class MenuSeeder extends Seeder
         foreach ($this->config['categories'] as $category) {
             // [BUG-4 FIX] Include wizard_template and has_menu from config
             $cat = ItemCategory::create([
-                'name'            => $category['name'],
-                'slug'            => Str::slug($category['name']),
-                'description'     => $category['description'] ?? null,
-                'status'          => $this->config['settings']['status_active'],
-                'sort'            => $category['sort'],
-                'wizard_template' => $category['wizard_template'] ?? 'simple',
-                'has_menu'        => $category['has_menu'] ?? false,
+                'name'                 => $category['name'],
+                'slug'                 => Str::slug($category['name']),
+                'description'          => $category['description'] ?? null,
+                'status'               => $this->config['settings']['status_active'],
+                'sort'                 => $category['sort'],
+                'wizard_template'      => $category['wizard_template'] ?? 'simple',
+                'has_menu'             => $category['has_menu'] ?? false,
+                'default_menu_kiosk'   => $category['default_menu_kiosk'] ?? false,
             ]);
 
             $this->categoryIds[Str::slug($category['name'])] = $cat->id;
@@ -638,7 +639,7 @@ class MenuSeeder extends Seeder
 
         // [BUG-WIZ-001 FIX] Categories that should have extra sauce options
         // Only Tacos, Sandwichs, Burgers need "Sauce supplémentaire" in extras
-        $hasSauceExtras = in_array($categorySlug, ['nos-tacos', 'nos-sandwichs', 'nos-burgers']);
+        $hasSauceExtras = in_array($categorySlug, ['nos-tacos', 'nos-sandwichs', 'nos-burgers'], true);
 
         // Add regular supplements only for appropriate categories
         if (!in_array($categorySlug, $noSupplementCategories)) {

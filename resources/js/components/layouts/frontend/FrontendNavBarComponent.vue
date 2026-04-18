@@ -3,11 +3,11 @@
     <header class="shadow-xs bg-white ff-header" ref="ffHeader">
         <div class="container flex flex-col lg:flex-row items-center justify-between">
             <div class="w-full lg:w-fit">
-                <router-link :to="{ name: 'frontend.home' }">
+                <router-link :to="staffOnlyMode ? { name: logged ? 'admin.dashboard' : 'auth.login' } : { name: 'frontend.home' }">
                     <img class="w-32" :src="setting.theme_logo" alt="logo">
                 </router-link>
             </div>
-            <nav class="items-center justify-center gap-6 hidden lg:flex">
+            <nav v-if="!staffOnlyMode" class="items-center justify-center gap-6 hidden lg:flex">
                 <router-link :to="{ name: 'frontend.home' }"
                     :class="checkIsPathAndRoutePathSame('/home') ? 'text-primary' : ''"
                     class="capitalize text-sm font-medium text-heading">
@@ -26,7 +26,7 @@
             </nav>
 
             <div class="flex flex-col items-center justify-end gap-3 w-full mt-4 lg:flex-row lg:w-fit lg:mt-0">
-                <form @submit.prevent="search"
+                <form v-if="!staffOnlyMode" @submit.prevent="search"
                     class="header-search-group group flex items-center justify-center border border-solid gap-2 px-2 w-full lg:w-52 h-8 rounded-3xl transition border-[#EFF0F6] bg-[#EFF0F6] focus-within:bg-white focus-within:border-primary">
                     <button type="submit" class="header-search-submit">
                         <i class="lab lab-search-normal"></i>
@@ -54,7 +54,7 @@
                         </li>
                     </ul>
                 </div>
-                <button @click.prevent="openCanvas('cart')" type="button"
+                <button v-if="!staffOnlyMode" @click.prevent="openCanvas('cart')" type="button"
                     class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-heading">
                     <i class="lab lab-bag-2 lab-font-size-17"></i>
                     <span class="whitespace-nowrap">{{
@@ -257,6 +257,10 @@ export default {
         }
     },
     computed: {
+        // [STAFF-ONLY-V1] Masque Home/Menu/Offers/Search/Cart quand le restaurant n'expose pas de vitrine client.
+        staffOnlyMode: function () {
+            return !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
+        },
         logged: function () {
             return this.$store.getters.authStatus;
         },
@@ -435,7 +439,8 @@ export default {
         },
         logout: function () {
             this.$store.dispatch("logout").then(res => {
-                this.$router.push({ name: "frontend.home" });
+                // [STAFF-ONLY-V1] Après déconnexion staff : retour à /login au lieu de la home vitrine.
+                this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
             }).catch();
         },
         currencyFormat(amount, decimal, currency, position) {

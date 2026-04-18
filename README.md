@@ -1,70 +1,141 @@
 # FoodKing SaaS
 
-Bienvenue sur le dépôt principal de **FoodKing SaaS**, une solution complète de gestion de restaurant, commande en ligne et borne interactive.
+Monolithe **Laravel 9** + **SPA Vue 3** (admin, caisse POS, KDS, écran client OSS, **kiosk web**). Base **MySQL**. Auth **Sanctum** + **Spatie Permission**. Temps réel : **Laravel Broadcasting** (Pusher / **Soketi**) sur canaux privés par branche ; **FCM** pour notifications push ; polling de secours sur certaines vues.
 
-## Stack Technique
-- **Backend / Core** : Laravel 9 (PHP 8.1+)
-- **Frontend Admin/Caisse** : Vue 3 + Vuex + Vue Router
-- **Base de données** : MySQL 8+ (Ou SQLite pour les tests auto)
-- **Build / Assets** : Laravel Mix (NPM/Node 18+)
-- **Temps Réel** : Firebase Cloud Messaging (FCM) + Event Bus
+---
 
-### ⛔ Ce dépôt ne contient pas...
-- **Le front-end du Kiosk (Flutter ou natif)**. Le code mobile/tablette du Kiosk n'est pas versionné ici. Ce dépôt ne fournit que l'**API Backend** (Sanctum/REST) servant le Kiosk. Le code Flutter se trouve dans le dossier racine `projet kiosk/`.
-- **Les Apps Client & Livreur**. Le code de ces applications se trouve dans le dossier racine `FoodKing/source-code/`.
-- Les builds compilés publics (le code est dans ressources/js, à vous de build).
+## Nouvelle conversation Cursor, nouvel abonnement ou nouvel développeur — lire d’abord
 
-### 🚧 État Actuel
-- **Validation locale avant SaaS** : Le projet a été restructuré pour la production. L'accent est mis sur l'isolation backend, la sécurité de l'API par capacités (`kiosk:order`), et les tests QA.
+Sans l’historique du chat précédent, le dépôt est conçu pour rester compréhensible via la doc et les rapports.
 
-## Installation Rapide
+### Passation express (5 min)
+
+1. **[`docs/HANDOFF_NEW_CURSOR/00_INDEX.md`](docs/HANDOFF_NEW_CURSOR/00_INDEX.md)** — table des matières de la passation.  
+2. **[`docs/HANDOFF_NEW_CURSOR/PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md`](docs/HANDOFF_NEW_CURSOR/PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md)** — **prompt prêt à coller** dans le premier chat (nouveau compte Cursor).  
+3. **[`docs/HANDOFF_NEW_CURSOR/CACHE_MEMOIRE_TRANSFERT.md`](docs/HANDOFF_NEW_CURSOR/CACHE_MEMOIRE_TRANSFERT.md)** — **cache mémoire** du projet (état, backlog, synchro, invariants).  
+4. **[`docs/HANDOFF_NEW_CURSOR/01_DEMARRAGE_5_MINUTES.md`](docs/HANDOFF_NEW_CURSOR/01_DEMARRAGE_5_MINUTES.md)** — checklist `.env`, comptes test, commandes.  
+5. **[`docs/PROJECT_CONTINUITY_AND_VISION.md`](docs/PROJECT_CONTINUITY_AND_VISION.md)** — vision produit (Le Cayenne), architecture, correctifs à ne pas régresser, backlog.  
+6. **[`AGENTS.md`](AGENTS.md)** — workflow multi-agents (planning → implémentation → tests → review).
+
+### Skill Cursor (optionnel — changement de compte)
+
+- Fichier : **[`.cursor/skills/foodking-handoff/SKILL.md`](.cursor/skills/foodking-handoff/SKILL.md)** (versionné avec le repo).  
+- **Export manuel prêt à l’emploi** : dossier **[`cursor-export-new-account/`](cursor-export-new-account/README.md)** (skill + fichier Rules à coller dans Cursor).  
+- Copie **globale** sur la machine : placer le dossier `foodking-handoff` dans `~/.cursor/skills/` pour l’avoir sur **tous** les projets de ce compte.  
+- Invocation : *« Applique le skill foodking-handoff »* ou *« Session FoodKing handoff »*.  
+- Orchestration fichiers / checklist : **[`docs/HANDOFF_NEW_CURSOR/ORCHESTRATION_FICHIERS_A_TRANSFERER.md`](docs/HANDOFF_NEW_CURSOR/ORCHESTRATION_FICHIERS_A_TRANSFERER.md)**.
+
+### Guides de passation détaillés (`docs/HANDOFF_NEW_CURSOR/`)
+
+| Fichier | Description |
+|---------|-------------|
+| [`00_INDEX.md`](docs/HANDOFF_NEW_CURSOR/00_INDEX.md) | Index et ordre de lecture |
+| [`01_DEMARRAGE_5_MINUTES.md`](docs/HANDOFF_NEW_CURSOR/01_DEMARRAGE_5_MINUTES.md) | Démarrage rapide |
+| [`02_ARCHITECTURE_MONOLITHE.md`](docs/HANDOFF_NEW_CURSOR/02_ARCHITECTURE_MONOLITHE.md) | Couches, surfaces, services cœur |
+| [`03_SYNCHRONISATION_TEMPS_REEL.md`](docs/HANDOFF_NEW_CURSOR/03_SYNCHRONISATION_TEMPS_REEL.md) | Echo, événements, FCM, polling, pièges config |
+| [`04_FICHIERS_PIVOTS_PAR_FLUX.md`](docs/HANDOFF_NEW_CURSOR/04_FICHIERS_PIVOTS_PAR_FLUX.md) | Où modifier le code (kiosk, POS, KDS, auth) |
+| [`05_TESTS_ET_SCRIPTS.md`](docs/HANDOFF_NEW_CURSOR/05_TESTS_ET_SCRIPTS.md) | PHPUnit par lots, Vitest, build |
+| [`06_MULTI_AGENT_AGENTS_MD.md`](docs/HANDOFF_NEW_CURSOR/06_MULTI_AGENT_AGENTS_MD.md) | Rappel rôles Claude / Kimi / Anti-Gravity |
+| [`07_RAPPORTS_PLANS_AUDITS.md`](docs/HANDOFF_NEW_CURSOR/07_RAPPORTS_PLANS_AUDITS.md) | Liens vers `reports/planning`, `reports/review`, etc. |
+| [`08_BACKLOG_SYNTHESE.md`](docs/HANDOFF_NEW_CURSOR/08_BACKLOG_SYNTHESE.md) | Backlog priorisé condensé |
+
+### Documentation métier & technique (`docs/`)
+
+| Document | Rôle |
+|----------|------|
+| [`PROJECT_CONTINUITY_AND_VISION.md`](docs/PROJECT_CONTINUITY_AND_VISION.md) | **Source de vérité** contexte produit + état projet |
+| [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architecture, zones gelées |
+| [`ORDER_FLOW.md`](docs/ORDER_FLOW.md) | Cycle de vie commande |
+| [`DEVICE_FLOW.md`](docs/DEVICE_FLOW.md) | Cartographie par appareil (vérifier cohérence avec Echo/FCM) |
+| [`API_MAP.md`](docs/API_MAP.md) | Cartographie API |
+| [`AUTHZ_MATRIX.md`](docs/AUTHZ_MATRIX.md) | Autorisations |
+| [`BUSINESS_RULES.md`](docs/BUSINESS_RULES.md) | Règles métier |
+| [`SECURITY_NOTES.md`](docs/SECURITY_NOTES.md) | Sécurité |
+| [`TEST_PLAN.md`](docs/TEST_PLAN.md) | Stratégie de tests + exécution par lots PHP |
+| [`REALTIME_SETUP.md`](docs/REALTIME_SETUP.md) | Soketi / Echo / variables `.env` |
+| [`LOCAL_TEST_ACCOUNTS.md`](docs/LOCAL_TEST_ACCOUNTS.md) | Comptes locaux Le Cayenne |
+| [`AUDIT_LOGIN_ACCOUNTS.md`](docs/AUDIT_LOGIN_ACCOUNTS.md) | Pièges login / identifiants |
+
+### Plans & audits récents (`reports/`)
+
+| Document | Rôle |
+|----------|------|
+| [`reports/planning/latest.md`](reports/planning/latest.md) | Entrée planning courante |
+| [`reports/planning/AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md`](reports/planning/AUDIT_PROFOND_PLAN_MASSIF_2026-03-31.md) | Audit large + phases A–E + diagrammes Mermaid |
+| [`reports/review/AUDIT_SYNC_BROADCAST_ARCHITECTURE_2026-03-31.md`](reports/review/AUDIT_SYNC_BROADCAST_ARCHITECTURE_2026-03-31.md) | Synchro broadcast / événements |
+| [`reports/execution/latest.md`](reports/execution/latest.md) | Dernière exécution de tests (si à jour) |
+| [`reports/review/latest.md`](reports/review/latest.md) | Dernière revue / verdict |
+
+### Règles Cursor
+
+- **`.cursor/rules/project-continuity.mdc`** — rappelle lecture continuité + `AGENTS.md`.  
+- **`.cursor/rules/global-operating-principles.md`** — principes généraux (import possible en User Rules Cursor).
+
+---
+
+## Stack technique (résumé)
+
+- **Backend** : Laravel 9 (PHP 8.1+)
+- **Frontend** : Vue 3 + Vuex + Vue Router ; build **Laravel Mix**
+- **Base de données** : MySQL 8+ (SQLite possible pour tests)
+- **Temps réel** : Broadcasting Laravel → Soketi/Pusher ; **Echo** côté SPA ; **FCM** en complément
+- **Node** : 18+ pour `npm`
+
+### Ce que ce dépôt contient
+
+- **API REST** + **SPA admin** (POS, KDS, OSS, réglages).
+- **Application kiosk borne en Vue** : `resources/js/components/frontend/kiosk/` (build chunk kiosk).
+
+### Ce que ce dépôt ne contient pas toujours
+
+- **Shell Electron** « borne Windows » : souvent dans un dossier séparé (ex. `borne-windows/`) hors racine Laravel — vérifier le workspace local.
+- **Apps mobile Flutter / livreur** : peuvent vivre dans d’autres dépôts ou dossiers frères du projet.
+
+---
+
+## Installation rapide
 
 1. **Prérequis** : PHP 8.1+, Composer 2, Node 18, MySQL.
-2. **Installation des dépendances** :
+2. **Dépendances** :
    ```bash
    composer install
    npm install
    ```
-3. **Configuration** :
-   Copiez `.env.example` en `.env`, configurez votre BDD et générez la clé avec `php artisan key:generate`.
+3. **Configuration** : copier `.env.example` → `.env`, configurer la BDD, `php artisan key:generate`. Voir aussi **`MIX_API_KEY`** / clé API dans `config/app.php`.
 4. **Base de données** :
    ```bash
    php artisan migrate --seed
    ```
-5. **Compilation Frontend** :
+5. **Assets** :
    ```bash
-   npm run dev      # Mode développement
+   npm run dev
    # ou
-   npm run prod     # Mode production
+   npm run production
    ```
 
-## Documentation Technique Complète
-Pour comprendre l'architecture, les flux de commande et la sécurité, consultez le dossier `docs/` :
-- **[Continuité, vision & passation IDE](docs/PROJECT_CONTINUITY_AND_VISION.md)** — contexte produit (POS, KDS, borne, OSS), état du projet, correctifs majeurs, backlog ; **à lire en priorité** pour une nouvelle session ou un nouvel outil d’IA.
-- **[Comptes locaux & parcours POS](docs/LOCAL_TEST_ACCOUNTS.md)** — logins de test (Le Cayenne), branche par défaut, `landing_url`, ordre du parcours jusqu’au menu caisse.
-- **[Audit login / identifiants invalides](docs/AUDIT_LOGIN_ACCOUNTS.md)** — pourquoi le message « credentials invalid », décalage `admin@example.com` vs `admin@lecayenne.fr`, commande `php artisan foodking:ensure-admin`.
-- [Architecture Générale](docs/ARCHITECTURE.md)
-- [Flux de Commande (Order Flow)](docs/ORDER_FLOW.md)
-- [Cartographie par Appareil (Device Flow)](docs/DEVICE_FLOW.md)
-- [Notes de Sécurité & Falsification](docs/SECURITY_NOTES.md)
-- [Cartographie API](docs/API_MAP.md)
-- [Plan de Tests](docs/TEST_PLAN.md)
+## Tests (mémoire PHP)
 
-## Développement assisté par IA (Cursor) — règles du projet
+La suite Feature complète peut saturer la mémoire ; utiliser les lots :
 
-### Règles automatiques (projet)
-En ouvrant ce dossier comme **racine du workspace** dans Cursor, les règles du dossier **`.cursor/rules/`** sont prises en compte automatiquement (fichiers `.mdc` / `.md`).  
-- **`project-continuity.mdc`** : rappel de lire `docs/PROJECT_CONTINUITY_AND_VISION.md` et `AGENTS.md` à chaque session.  
-- **`global-operating-principles.md`** : principes généraux (workflow multi-agents, petits changements, docs source de vérité).
+```bash
+php -d memory_limit=512M scripts/run_php_feature_batches.sh auth-security
+npm test
+```
 
-### Importer les règles « utilisateur » (tous vos projets Cursor)
-Le fichier **`.cursor/rules/global-operating-principles.md`** est pensé pour être aussi une **User Rule** globale :
+Détails : [`docs/HANDOFF_NEW_CURSOR/05_TESTS_ET_SCRIPTS.md`](docs/HANDOFF_NEW_CURSOR/05_TESTS_ET_SCRIPTS.md), [`scripts/README.md`](scripts/README.md).
 
-1. Ouvrir **Cursor** → **Settings** (ou `Cmd+,` / `Ctrl+,`).
-2. Aller à **Rules** (ou **Cursor Settings → Rules** selon la version).
-3. Dans **User Rules**, coller le contenu de **`.cursor/rules/global-operating-principles.md`** *ou* ajouter une règle qui renvoie explicitement à ce fichier (en le copiant depuis le dépôt après `git pull`).
+## Workflow développement assisté par IA
 
-Ainsi, les mêmes principes s’appliquent même si vous travaillez sur une autre branche ou un autre clone.
+1. Lire **[`AGENTS.md`](AGENTS.md)** et la passation **[`docs/HANDOFF_NEW_CURSOR/`](docs/HANDOFF_NEW_CURSOR/)**.  
+2. Pour un changement important : plan dans **`reports/planning/`** avec type de test (Kimi-test / Anti-Gravity / No-test).  
+3. Après implémentation : **`reports/execution/latest.md`** avec résultats des tests.  
+4. Review : **`reports/review/latest.md`**.
 
 ### Instructions projet pour les agents
 Le fichier **`AGENTS.md`** à la racine décrit la boucle QA / planning / exécution et les responsabilités par rôle (Claude, Kimi, Playwright / E2E verification). Les rapports vivent sous **`reports/`** et les workflows sous **`workflows/`**.
+
+Formats : **`workflows/report-format.md`**, **`workflows/task-routing.md`**.
+
+---
+
+*README mis à jour pour servir de hub unique : installation, passation nouvelle session, architecture, liens vers tous les guides et rapports.*

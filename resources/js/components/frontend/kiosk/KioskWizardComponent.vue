@@ -3,22 +3,37 @@
     <!-- Chargement item depuis route (mode edit) -->
     <div v-if="fetchLoading" class="kiosk-wizard-loading">
       <div class="kiosk-wizard-spinner"></div>
-      <p>Chargement du produit…</p>
+      <p>{{ $t('kiosk.wizard.loading_product') }}</p>
     </div>
 
     <!-- Erreur chargement -->
     <div v-else-if="fetchError && !resolvedItem" class="kiosk-wizard-error">
       <p>{{ fetchError }}</p>
-      <button @click="$router.go(-1)" class="kiosk-btn-back">Retour</button>
+      <button @click="$router.go(-1)" class="kiosk-btn-back">{{ $t('kiosk.back') }}</button>
     </div>
 
     <!-- Wizard complet -->
     <template v-else-if="resolvedItem">
       <div class="kiosk-wizard-header">
         <div class="kiosk-item-info">
-          <h2 class="kiosk-item-name">{{ resolvedItem.name }}</h2>
+          <h2 class="kiosk-item-name">{{ sanitizeItemName(resolvedItem.name) }}</h2>
+          <!-- Kiosk Phase 9.1.2 — Badge allergènes persistent en header.
+               Safety FIC UE 1169/2011 + EAA 2025 : le client doit voir en permanence
+               les allergènes avant d'ajouter au panier, sans avoir à cliquer. -->
+          <KsAllergenBadge
+            v-if="itemAllergenCodes.length > 0"
+            class="kiosk-wizard-header-allergens"
+            :allergens="itemAllergenCodes"
+            :customer-allergens="customerAllergenCodes"
+            data-testid="kiosk-wizard-header-allergens"
+          />
         </div>
-        <button class="kiosk-wizard-close" @click="closeWizard">
+        <button
+          type="button"
+          class="kiosk-wizard-close"
+          :aria-label="$t('kiosk.wizard.close_aria')"
+          @click="onAbandonClick"
+        >
           ×
         </button>
       </div>
@@ -72,7 +87,7 @@
       </div>
 
       <div class="kiosk-step-question">
-        {{ currentStep.type === 'recap' ? 'RÉCAPITULATIF DE VOTRE COMMANDE' : getQuestionLabel(currentStep.type) }}
+        {{ currentStep.type === 'recap' ? $t('kiosk.wizard.recap_order_title') : getQuestionLabel(currentStep.type) }}
       </div>
 
       <div class="kiosk-step-content">
@@ -83,6 +98,7 @@
             :step="currentStep"
             :item="resolvedItem"
             :selections="selections"
+            v-bind="kioskMenuStepExtraProps"
             @update="updateSelection"
           />
         </transition>
@@ -90,26 +106,62 @@
 
       <div class="kiosk-nav">
         <div class="kiosk-nav-actions">
-          <button class="kiosk-btn-abandon" @click="closeWizard">
-            ABANDONNER L'ARTICLE
+          <button type="button" class="kiosk-btn-abandon" @click="onAbandonClick">
+            {{ $t('kiosk.wizard.abandon_item') }}
           </button>
           <button
             class="kiosk-btn-back"
             @click="prevStep"
             :disabled="currentStepIndex === 0"
           >
-            PRÉCÉDENT
+            {{ $t('kiosk.wizard.nav_previous') }}
           </button>
           <button
             @click="currentStepIndex < activeSteps.length - 1 ? nextStep() : addToCart()"
             class="kiosk-btn-next"
             :disabled="!canAdvance"
           >
-            <span>{{ currentStepIndex < activeSteps.length - 1 ? 'SUIVANT' : 'AJOUTER AU PANIER' }}</span>
+            <span>{{
+              currentStepIndex < activeSteps.length - 1
+                ? $t('kiosk.wizard.nav_next')
+                : $t('kiosk.wizard.add_to_cart')
+            }}</span>
           </button>
         </div>
-        <div class="kiosk-nav-total">Total {{ formatPrice(runningTotal) }}</div>
+        <div class="kiosk-nav-total">{{ $t('kiosk.total') }} {{ formatPrice(runningTotal) }}</div>
       </div>
+
+      <!-- P2 : confirmation avant abandon (évite erreur tactile) -->
+      <transition name="fade">
+        <div
+          v-if="showAbandonConfirm"
+          class="kiosk-wizard-abandon-overlay"
+          role="presentation"
+          @click.self="onAbandonCancel"
+        >
+          <div
+            class="kiosk-wizard-abandon-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="kiosk-wizard-abandon-title"
+          >
+            <h2 id="kiosk-wizard-abandon-title" class="kiosk-wizard-abandon-title">
+              {{ $t('kiosk.wizard.abandon_title') }}
+            </h2>
+            <p class="kiosk-wizard-abandon-sub">
+              {{ $t('kiosk.wizard.abandon_sub') }}
+            </p>
+            <div class="kiosk-wizard-abandon-actions">
+              <button type="button" class="kiosk-wizard-abandon-yes" @click="onAbandonConfirm">
+                {{ $t('kiosk.wizard.abandon_yes') }}
+              </button>
+              <button type="button" class="kiosk-wizard-abandon-no" @click="onAbandonCancel">
+                {{ $t('kiosk.wizard.abandon_continue') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
     </template>
   </div>
 </template>
@@ -123,8 +175,22 @@ import KioskStepGarnitures from './steps/KioskStepGarnituresComponent.vue';
 import KioskStepSupplements from './steps/KioskStepSupplementsComponent.vue';
 import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
+// Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard (safety FIC).
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
+// Kiosk Phase 9.1.3 — SSOT pricing preview debounced (400 ms) côté wizard.
+// Le helper pur `calculateKioskRunningTotal` est conservé en fallback pour
+// éviter tout scénario d'affichage "0,00 €" si la requête échoue.
+import { createKioskPricingPreview } from '../../../helpers/kioskPricingPreview';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../helpers/kioskMedia';
+import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
+import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
+import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
+import { partitionKioskExtras } from '../../../helpers/kioskExtrasPartition';
+import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
+// Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
 export default {
   name: 'KioskWizardComponent',
@@ -137,7 +203,8 @@ export default {
     KioskStepGarnitures,
     KioskStepSupplements,
     KioskStepMenu,
-    KioskOrderSummary
+    KioskOrderSummary,
+    KsAllergenBadge,
   },
   props: {
     item: { type: Object, default: null },
@@ -147,6 +214,7 @@ export default {
   },
   data() {
     return {
+      showAbandonConfirm: false,
       currentStepIndex: 0,
       fetchedItem: null,
       fetchLoading: false,
@@ -171,16 +239,45 @@ export default {
         fritesSauceOrder: [],
         quantity: 1,
         instruction: ''
-      }
+      },
+      // Kiosk Phase 9.1.3 — total SSOT renvoyé par `POST /pricing/preview`.
+      // `null` tant qu'aucune réponse valide n'a été reçue → `runningTotal`
+      // retombe sur le calcul local (fallback). Pas de flicker : on ne met à
+      // jour qu'en cas de succès, jamais en cas d'erreur (dégradé gracieux).
+      serverPreviewTotal: null,
+      serverPreviewLoading: false,
     };
   },
   computed: {
     resolvedItem() {
       return this.item || this.fetchedItem;
     },
+    // Kiosk Phase 9.1.2 — Codes allergènes de l'item courant.
+    // NormalItemResource (backend) expose `allergens` sous forme d'objets
+    // `{id, code, name_key, icon, is_trace}`. KsAllergenBadge attend uniquement
+    // les codes string. On tolère aussi les items legacy qui pourraient
+    // exposer un tableau plat de codes (rétrocompat, aucun casse).
+    itemAllergenCodes() {
+      const raw = this.resolvedItem && this.resolvedItem.allergens;
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .map((a) => (typeof a === 'string' ? a : (a && a.code) || null))
+        .filter(Boolean);
+    },
+    // Kiosk Phase 9.1.2 — Codes allergènes déclarés par le client (scan loyalty).
+    // Source : `kioskSettings/customerProfile.declared_allergens` (opt-in RGPD,
+    // jamais de PII dans le payload analytics). Si non scanné → []. Le badge
+    // passe en `role=alert` dès intersection non vide avec `itemAllergenCodes`.
+    customerAllergenCodes() {
+      const profile = this.$store &&
+        this.$store.getters &&
+        this.$store.getters['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
+    },
     activeSteps() {
       if (!this.resolvedItem) return [];
-      const template = this.resolvedItem.wizard_template || this.detectTemplateFromName();
+      const template = this.effectiveWizardTemplate();
       const hasViandes = this.detectViandeCount() > 0;
       
       switch (template) {
@@ -257,49 +354,34 @@ export default {
     currentStepComponent() {
       return this.currentStep?.component;
     },
+    // Kiosk Phase 9.1.3 — Total local (pur, synchrone) conservé comme fallback
+    // SSOT côté client. Jamais utilisé pour envoyer un prix au serveur — seul
+    // le backend fait autorité via `PricingService` (`/order` + `/preview`).
+    runningTotalLocal() {
+      return calculateKioskRunningTotal(this.resolvedItem, this.selections);
+    },
+    // Total affiché dans le footer du wizard : priorité au total serveur dès
+    // qu'il est arrivé, sinon fallback synchrone local. Aucun flicker "0,00 €"
+    // possible car `runningTotalLocal` renvoie toujours au moins le prix de
+    // base de l'item.
     runningTotal() {
+      return this.serverPreviewTotal != null
+        ? this.serverPreviewTotal
+        : this.runningTotalLocal;
+    },
+    /** « + Boisson » (formule boisson seule) : pertinent catégorie boissons, pas à côté de Menu complet / Frites sur sandwich-burger-tacos. */
+    kioskShowBoissonOnlyMenuCard() {
       const item = this.resolvedItem;
-      if (!item) return 0;
-      let total = parseFloat(item.convert_price) || 0;
-
-      // Prix sauces supplémentaires — lire depuis variations DB si disponible, sinon 0.50€
-      if (this.selections.sauceOrder.length > 1) {
-        const extraSauceCount = this.selections.sauceOrder.length - 1;
-        const sauceExtraPrice = this.kioskExtraSauceUnitPrice(item);
-        total += extraSauceCount * sauceExtraPrice;
-      }
-
-      // Sauces frites (1 gratuite, les suivantes payantes) — même tarif unitaire que sauces article
-      const menuForFrites = this.selections.menuChoice;
-      const fryKeys = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
-      if ((menuForFrites === 'full' || menuForFrites === 'frites') && fryKeys.length > 1) {
-        total += (fryKeys.length - 1) * this.kioskExtraSauceUnitPrice(item);
-      }
-
-      // Prix suppléments (extras payants)
-      if (item.extras) {
-        item.extras.forEach(extra => {
-          if (this.selections.supplements[extra.id]) {
-            total += parseFloat(extra.convert_price || extra.price || 0);
-          }
-        });
-      }
-
-      // Prix menu — aligner avec KioskStepMenuComponent
-      const menuChoice = this.selections.menuChoice;
-      if (menuChoice && menuChoice !== 'none' && item.addons) {
-        const menuAddon = item.addons.find(a =>
-          (a.addon_item_name || '').toLowerCase().includes('menu')
-        );
-        if (menuAddon) {
-          const fullPrice = parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
-          if (menuChoice === 'full')    total += fullPrice;
-          else if (menuChoice === 'frites')  total += fullPrice * 0.6;
-          else if (menuChoice === 'boisson') total += fullPrice * 0.4;
-        }
-      }
-
-      return total * (this.selections.quantity || 1);
+      if (!item) return true;
+      const t = this.effectiveWizardTemplate();
+      if (['sandwich', 'burger', 'tacos'].includes(t)) return false;
+      if (t === 'assiette' && item.has_menu) return false;
+      return true;
+    },
+    /** Évite de passer des props inconnues aux autres étapes du wizard. */
+    kioskMenuStepExtraProps() {
+      if (this.currentStep?.type !== 'menu') return {};
+      return { showBoissonOnlyMenuCard: this.kioskShowBoissonOnlyMenuCard };
     },
     canAdvance() {
       const step = this.currentStep;
@@ -310,11 +392,50 @@ export default {
       if (step.type === 'pain') return this.selections.pain !== null;
       // [AUDIT-P2] Taille step requires an explicit choice before proceeding
       if (step.type === 'taille') return this.selections.taille !== null;
-      
+      // [P0] Menu : choix explicite obligatoire (full / frites / boisson / none) — pas de passage « vide »
+      if (step.type === 'menu') {
+        const mc = this.selections.menuChoice;
+        if (mc === null || mc === undefined || mc === '') return false;
+        // [P1] Si des addons boisson existent et que la formule inclut une boisson → choix obligatoire
+        const wantsDrink = mc === 'full' || mc === 'boisson';
+        const drinkRows = kioskDrinkAddonRowsFromItem(this.resolvedItem);
+        if (wantsDrink && drinkRows.length > 0) {
+          const bc = this.selections.boissonChoice;
+          if (bc === null || bc === undefined || bc === '') return false;
+        }
+        // Frites (menu complet ou frites seules) : au moins une sauce frites (dont « Sans sauce »)
+        // Uniquement si le catalogue expose des sauces (attribut sauce + variations) — sinon on ne bloque pas.
+        if (mc === 'full' || mc === 'frites') {
+          const hasSauceCatalog = kioskSauceVariationRowsForItem(this.resolvedItem).length > 0;
+          if (hasSauceCatalog) {
+            const order = this.selections.fritesSauceOrder || [];
+            if (order.length === 0) return false;
+          }
+        }
+        return true;
+      }
+
       return true;
     }
   },
   methods: {
+    /**
+     * Catégories en base ont souvent wizard_template = 'simple' (défaut migration).
+     * Comme le POS : ne pas traiter « simple » comme un verrou — appliquer l’heuristique nom/catégorie.
+     * Les valeurs explicites (tacos, burger, …) restent prioritaires.
+     */
+    effectiveWizardTemplate() {
+      const item = this.resolvedItem;
+      if (!item) return 'simple';
+      // Priority 1: item-level wizard_template (from API, derived from category)
+      const raw = item.wizard_template;
+      if (raw && raw !== 'simple') return raw;
+      // Priority 2: nested category object (present on ItemResource, absent on NormalItemResource)
+      const catTemplate = item.category?.wizard_template;
+      if (catTemplate && catTemplate !== 'simple') return catTemplate;
+      // Priority 3: name/category heuristic fallback
+      return this.detectTemplateFromName();
+    },
     detectTemplateFromName() {
       const item = this.resolvedItem;
       if (!item) return 'simple';
@@ -325,7 +446,22 @@ export default {
       if (name.includes('sandwich') || category.includes('sandwich')) return 'sandwich';
       if (name.includes('burger') || category.includes('burger')) return 'burger';
       if (name.includes('assiette') || category.includes('assiette')) return 'assiette';
-      
+      // [P5] Alignement heuristique ↔ wizard_template catalogue (snacking / omelette / salade)
+      if (name.includes('omelette') || name.includes('omelet') || category.includes('omelette')) return 'omelette';
+      if (name.includes('salade') || category.includes('salade')) return 'salade';
+      if (
+        name.includes('nugget') ||
+        name.includes('tenders') ||
+        name.includes('tender') ||
+        name.includes('goujon') ||
+        name.includes('goujons') ||
+        name.includes('crousti') ||
+        name.includes('strip') ||
+        category.includes('snack')
+      ) {
+        return 'snacking';
+      }
+
       return 'simple';
     },
     detectViandeCount() {
@@ -338,44 +474,57 @@ export default {
       const item = this.resolvedItem;
       if (!item) return 1;
       const name = (item.name || '').toLowerCase();
-      // [KIOSK-18] Check '4 viande' and 'xxl' BEFORE 'xl' to avoid false match
-      // ('xxl' contains 'xl' — checking xl first would return 3 for XXL items)
-      if (name.includes('1 viande')) return 1;
-      if (name.includes('4 viande') || name.includes('xxl')) return 4;
-      if (name.includes('3 viande') || name.includes('xl')) return 3;
-      if (name.includes('2 viande') || name.includes(' l ')) return 2;
+      if (/\b4\s*viandes?\b/i.test(name) || /\bxxl\b/i.test(name)) return 4;
+      if (/\b3\s*viandes?\b/i.test(name) || /\bxl\b/i.test(name)) return 3;
+      if (/\b2\s*viandes?\b/i.test(name) || /\bl\b/i.test(name)) return 2;
+      if (/\b1\s*viandes?\b/i.test(name)) return 1;
       return 1;
     },
+    // [AUDIT 2026-04-17 C2] shouldShowStep s'aligne désormais sur les helpers
+    // partitionKioskExtras / kioskSauceVariationRowsForItem / kioskViandeCatalog
+    // pour garantir une cohérence stricte avec ce que chaque étape va réellement
+    // afficher. Une étape n'apparaît dans le bandeau que si elle aura du contenu.
     shouldShowStep(type) {
       const item = this.resolvedItem;
       if (!item) return false;
+
       if (type === 'supplements') {
-        return item.extras && item.extras.some(e => {
-          const price = parseFloat(e.convert_price || e.price || 0);
-          const groupLabel = (e.group_label || '').toLowerCase();
-          const name = (e.name || '').toLowerCase();
-          const isSauce = groupLabel.includes('sauce') || (groupLabel === '' && name.includes('sauce'));
-          return price > 0 && !isSauce;
-        });
+        return partitionKioskExtras(item).supplements.length > 0;
       }
       if (type === 'garnitures') {
-        return item.extras && item.extras.some(e => parseFloat(e.convert_price || e.price || 0) === 0);
+        return partitionKioskExtras(item).garnitures.length > 0;
+      }
+      if (type === 'sauce') {
+        return kioskSauceVariationRowsForItem(item).length > 0;
       }
       if (type === 'menu') {
-        return item.has_menu && item.addons && item.addons.length > 0;
+        // [AUDIT 2026-04-17] L'étape « menu » expose la question Menu vs Seul ;
+        // elle doit apparaître dès que le produit est éligible (has_menu),
+        // même si la carte boissons ou les upgrades frites sont vides.
+        return item.has_menu === true;
       }
       if (type === 'viande') {
-        return this.detectViandeCount() > 0 && this.hasViandeVariations();
+        return this.detectViandeCount() > 0 && kioskViandeCatalogForItem(item).length > 0;
       }
-      // Only show tacos size step when the selected product is generic and
-      // does not already encode M/L/XL/XXL or number of meats in its own name.
+      if (type === 'pain') {
+        const attrs = Array.isArray(item.itemAttributes)
+          ? item.itemAttributes
+          : Object.values(item.itemAttributes || {});
+        const painAttr = attrs.find(a =>
+          (a?.name || '').toLowerCase().includes('pain') ||
+          (a?.name || '').toLowerCase().includes('galette')
+        );
+        if (!painAttr?.id) return false;
+        const list = kioskVariationsForAttribute(item, painAttr.id);
+        return Array.isArray(list) && list.some(v => v && Number(v.status) !== 10);
+      }
       if (type === 'taille') return this.shouldAskTacosTaille();
       return true;
     },
     shouldAskTacosTaille() {
       const item = this.resolvedItem;
       if (!item) return false;
-      const template = item.wizard_template || this.detectTemplateFromName();
+      const template = this.effectiveWizardTemplate();
       if (template !== 'tacos') return false;
       const lower = `${item.name || ''} ${item.description || ''}`.toLowerCase();
       const hasPresetSize =
@@ -406,50 +555,83 @@ export default {
         realId: null,
       };
     },
+    // [AUDIT 2026-04-17 C2] Remplacé par kioskViandeCatalogForItem dans
+    // shouldShowStep. Conservé en alias d'entrée publique pour rétro-compat.
     hasViandeVariations() {
-      const item = this.resolvedItem;
-      if (!item?.itemAttributes) return false;
-      return item.itemAttributes.some(a => 
-        (a.name || '').toLowerCase().includes('viande')
-      );
+      return kioskViandeCatalogForItem(this.resolvedItem).length > 0;
     },
     updateSelection(key, value, meta) {
       this.selections[key] = value;
-      // Steps send meta for accurate catalog ID mapping when DB data is available
       if (key === 'pain' && meta) {
         this.selections._painMeta = meta;
       }
-      // [AUDIT-P2] Store taille meta so detectViandeCount() can use the explicit choice
       if (key === 'taille' && meta) {
         this.selections._tailleMeta = meta;
-        // Reset viande selections when taille changes — the new count may differ
         this.selections.viandes = {};
         this.selections.totalViandes = 0;
         this.selections._viandeMeta = [];
       }
-      if (key === 'boissonChoice' && meta) {
-        this.selections._boissonMeta = meta;
+      // [AUDIT 2026-04-17 C12] Purge _boissonMeta quand menuChoice retire la
+      // boisson (none/frites). Empêche un fantôme de boisson dans le récap
+      // après que le client ait changé d'avis.
+      if (key === 'menuChoice') {
+        if (value === 'none' || value === 'frites') {
+          this.selections.boissonChoice = null;
+          this.selections._boissonMeta = null;
+        }
+        if (value === 'none' || value === 'boisson') {
+          this.selections.fritesSauceOrder = [];
+          this.selections.fritesSauce = null;
+          this.selections._fritesSauceMeta = null;
+        }
+      }
+      if (key === 'boissonChoice') {
+        if (meta) {
+          this.selections._boissonMeta = meta;
+        } else if (value === null || value === undefined || value === '') {
+          this.selections._boissonMeta = null;
+        }
       }
       if (key === 'fritesSauceOrder') {
         this.selections.fritesSauceOrder = Array.isArray(value) ? [...value] : [];
         this.selections.fritesSauce = this.selections.fritesSauceOrder[0] ?? null;
+        if (this.selections.fritesSauceOrder.length === 0) {
+          this.selections._fritesSauceMeta = null;
+        }
       }
       if (key === 'fritesSauce' && meta) {
         this.selections._fritesSauceMeta = meta;
       }
       if (key === '_viandeMeta') {
-        this.selections._viandeMeta = value; // value is the meta array here
+        this.selections._viandeMeta = value;
       }
     },
+    kioskNormalizeItemAttributes(attrs) {
+      if (attrs == null) return [];
+      if (Array.isArray(attrs)) return attrs;
+      return Object.values(attrs);
+    },
+    kioskIsSauceLikeAttributeName(name) {
+      const n = (name || '').toLowerCase();
+      return (
+        n.includes('sauce') ||
+        n.includes('condiment') ||
+        n.includes('dressing') ||
+        n.includes('dip')
+      );
+    },
     kioskSauceAttribute(item) {
-      if (!item?.itemAttributes) return null;
-      return item.itemAttributes.find(a => (a.name || '').toLowerCase().includes('sauce')) || null;
+      const attrs = this.kioskNormalizeItemAttributes(item?.itemAttributes);
+      return attrs.find(a => this.kioskIsSauceLikeAttributeName(a.name)) || null;
     },
     kioskSauceVariationsList(item) {
       const sauceAttr = this.kioskSauceAttribute(item);
       if (!sauceAttr) return null;
       const raw = item.variations?.[String(sauceAttr.id)] ?? item.variations?.[sauceAttr.id];
-      return Array.isArray(raw) ? raw : null;
+      if (raw == null) return null;
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'object') return Object.values(raw);
+      return null;
     },
     kioskExtraSauceUnitPrice(item) {
       const vars = this.kioskSauceVariationsList(item);
@@ -468,17 +650,36 @@ export default {
       return vars.find(v => v.name === key) || null;
     },
     kioskFritesSauceDisplayName(key) {
-      const map = {
-        ketchup: 'Ketchup',
-        mayo: 'Mayonnaise',
-        algerienne: 'Algérienne',
-        bbq: 'BBQ',
-        samourai: 'Samouraï',
-        sans: 'Sans sauce',
-      };
-      return map[key] || key;
+      if (key == null || key === '') return '';
+      const item = this.resolvedItem;
+      const strKey = String(key);
+      if (strKey.startsWith('sauce-var-')) {
+        const id = strKey.replace('sauce-var-', '');
+        const v = item ? this.kioskFindSauceVariation(item, id) : null;
+        if (v?.name) return v.name;
+      }
+      if (item) {
+        const v = this.kioskFindSauceVariation(item, key);
+        if (v?.name) return v.name;
+      }
+      const k = `kiosk.wizard.frites_sauce.${key}`;
+      const t = this.$t(k);
+      return t !== k ? t : strKey;
+    },
+    sanitizeItemName(name) {
+      return sanitizeKioskCustomerFacingText(name || '');
     },
     // formatPrice() provided by kioskPriceMixin
+    emitWizardStepEntered(stepType, idx = null) {
+      if (!stepType) return;
+      try {
+        kioskAnalytics.track('wizard_step_entered', {
+          item_id: this.resolvedItem?.id || null,
+          step: stepType,
+          step_index: idx !== null ? idx : this.currentStepIndex,
+        });
+      } catch (_) { /* silent */ }
+    },
     nextStep() {
       if (this.currentStepIndex < this.activeSteps.length - 1) {
         this.currentStepIndex++;
@@ -564,32 +765,51 @@ export default {
       return null;
     },
     getStepLabel(type) {
-      const map = {
-        pain: 'QUEL PAIN ?',
-        taille: 'QUELLE TAILLE ?',
-        viande: 'QUELLE VIANDE ?',
-        sauce: 'QUELLE SAUCE ?',
-        garnitures: 'QUELLE CRUDITÉ ?',
-        supplements: 'QUEL SUPPLÉMENT ?',
-        menu: 'QUEL MENU ?',
-        recap: 'RÉCAP',
+      if (type === 'recap') return this.$t('kiosk.wizard.recap_strip') || 'RÉCAP';
+      const k = `kiosk.wizard.prompt.${type}`;
+      const t = this.$t(k);
+      // Locale-agnostic fallback if a translation key is missing
+      if (t !== k) return t;
+      const fallbacks = {
+        pain: 'BREAD',
+        taille: 'SIZE',
+        viande: 'MEAT',
+        sauce: 'SAUCE',
+        garnitures: 'TOPPINGS',
+        supplements: 'EXTRAS',
+        menu: 'MENU',
+        recap: 'RECAP'
       };
-      return map[type] || type;
+      return fallbacks[type] || type;
     },
     getQuestionLabel(type) {
-      const map = {
-        pain: 'QUEL PAIN ?',
-        taille: 'QUELLE TAILLE ?',
-        viande: 'QUELLE VIANDE ?',
-        sauce: 'QUELLE SAUCE ?',
-        garnitures: 'QUELLE CRUDITÉ ?',
-        supplements: 'QUEL SUPPLÉMENT ?',
-        menu: 'QUEL MENU ?',
-        recap: 'RÉCAPITULATIF',
+      const k = `kiosk.wizard.prompt.${type}`;
+      const t = this.$t(k);
+      // Locale-agnostic fallback if a translation key is missing
+      if (t !== k) return t;
+      const fallbacks = {
+        pain: 'CHOOSE BREAD?',
+        taille: 'CHOOSE SIZE?',
+        viande: 'CHOOSE MEAT?',
+        sauce: 'CHOOSE SAUCE?',
+        garnitures: 'CHOOSE TOPPINGS?',
+        supplements: 'CHOOSE EXTRA?',
+        menu: 'CHOOSE MENU?',
+        recap: 'SUMMARY'
       };
-      return map[type] || type;
+      return fallbacks[type] || type;
     },
-    closeWizard() {
+    onAbandonClick() {
+      this.showAbandonConfirm = true;
+    },
+    onAbandonCancel() {
+      this.showAbandonConfirm = false;
+    },
+    onAbandonConfirm() {
+      this.showAbandonConfirm = false;
+      this.performCloseWizard();
+    },
+    performCloseWizard() {
       if (this.onClose) {
         this.onClose();
         return;
@@ -608,8 +828,33 @@ export default {
         this.selections.garnitures = garnitures;
       }
     },
+    resetSelections() {
+      this.currentStepIndex = 0;
+      this.selections = {
+        pain: null,
+        taille: null,
+        _painMeta: null,
+        _tailleMeta: null,
+        _boissonMeta: null,
+        _viandeMeta: [],
+        _fritesSauceMeta: null,
+        viandes: {},
+        totalViandes: 0,
+        sauces: {},
+        sauceOrder: [],
+        garnitures: {},
+        supplements: {},
+        menuChoice: null,
+        boissonChoice: null,
+        fritesSauce: null,
+        fritesSauceOrder: [],
+        quantity: 1,
+        instruction: ''
+      };
+    },
     async fetchItemById(id) {
       if (!id) return;
+      this.resetSelections();
       this.fetchLoading = true;
       this.fetchError = null;
       try {
@@ -622,15 +867,53 @@ export default {
           if (inferredTaille) {
             this.selections._tailleMeta = inferredTaille;
             this.selections.taille = inferredTaille.label;
+          } else if (!this.selections._tailleMeta?.viandeCount) {
+            // Non-tacos or generic tacos needing taille step: pre-seed viandeCount
+            // so the viande step component has a single source of truth.
+            const count = this.detectViandeCount();
+            this.selections._tailleMeta = {
+              ...(this.selections._tailleMeta || {}),
+              viandeCount: count,
+            };
           }
         } else {
-          this.fetchError = 'Produit introuvable.';
+          this.fetchError = this.$t('kiosk.wizard.product_not_found');
         }
       } catch (_) {
-        this.fetchError = 'Impossible de charger le produit.';
+        this.fetchError = this.$t('kiosk.wizard.product_load_error');
       } finally {
         this.fetchLoading = false;
       }
+    },
+    // Kiosk Phase 9.1.3 — Déclenche un preview SSOT debounced. Silencieux en
+    // cas d'erreur : `serverPreviewTotal` reste à sa dernière valeur connue
+    // (ou `null`) et `runningTotal` retombe sur `runningTotalLocal`.
+    refreshServerPreviewTotal() {
+      if (!this._kioskPricingPreview) return;
+      const cartItem = this.buildCartItem();
+      if (!cartItem || !cartItem.item_id) return;
+
+      this.serverPreviewLoading = true;
+      this._kioskPricingPreview
+        .request({
+          items: [{
+            item_id: cartItem.item_id,
+            quantity: cartItem.quantity,
+            instruction: cartItem.instruction || '',
+            item_variations: (cartItem.item_variations || []).map((v) => ({ id: v.id })),
+            item_extras: (cartItem.item_extras || []).map((e) => ({ id: e.id })),
+          }],
+        })
+        .then((res) => {
+          this.serverPreviewLoading = false;
+          if (res && Number.isFinite(res.total)) {
+            this.serverPreviewTotal = Math.round(res.total * 100) / 100;
+          }
+          // res === null : on garde le total précédent (UX > affichage 0,00).
+        })
+        .catch(() => {
+          this.serverPreviewLoading = false;
+        });
     },
     buildCartItem() {
       const item = this.resolvedItem;
@@ -645,18 +928,18 @@ export default {
         allVariationNames['Pain'] = painMeta.name;
       }
 
-      // Viande variation — first selected viande maps to item_variations when DB ID exists
+      // [AUDIT 2026-04-17 C3] Viande : la première variation choisie alimente
+      // item_variations (mappage attribut). Les viandes-extras payantes sont
+      // gérées plus bas via normalizedExtras (un extra par unité).
       const viandeMeta = this.selections._viandeMeta || [];
-      if (viandeMeta.length > 0 && item.itemAttributes) {
+      const firstVariationViande = viandeMeta.find(v => v.source === 'variation' && typeof v.id === 'number');
+      if (firstVariationViande && item.itemAttributes) {
         const viandeAttr = item.itemAttributes.find(a =>
           (a.name || '').toLowerCase().includes('viande')
         );
         if (viandeAttr && item.variations?.[viandeAttr.id]) {
-          const firstViande = viandeMeta[0];
-          if (typeof firstViande.id === 'number') {
-            allVariations[viandeAttr.id] = firstViande.id;
-            allVariationNames[viandeAttr.name] = firstViande.name;
-          }
+          allVariations[viandeAttr.id] = firstVariationViande.id;
+          allVariationNames[viandeAttr.name] = firstVariationViande.name;
         }
       }
 
@@ -711,6 +994,21 @@ export default {
         }
       });
 
+      // [AUDIT 2026-04-17 C3] Viandes payantes (source='extra') : ajoutées
+      // à item_extras avec quantité (1 entrée par unité) pour rester
+      // compatible avec le serveur qui calcule le total à partir d'un tableau
+      // d'IDs d'extras, et incluses dans item_extra_total côté client pour
+      // cohérence avec calculateKioskRunningTotal.
+      viandeMeta.forEach(v => {
+        if (v.source !== 'extra' || typeof v.id !== 'number') return;
+        const count = parseInt(v.count || 0, 10) || 0;
+        const price = parseFloat(v.price || 0) || 0;
+        for (let i = 0; i < count; i++) {
+          normalizedExtras.push({ id: v.id, name: v.name || '' });
+          itemExtraTotal += price;
+        }
+      });
+
       // Sauce extra price — read from DB variations, fallback 0.50€
       const extraSauceCount = Math.max(0, this.selections.sauceOrder.length - 1);
       const sauceExtraPrice = this.kioskExtraSauceUnitPrice(item);
@@ -721,19 +1019,7 @@ export default {
       const fritesSauceSurcharge = extraFritesSauceCount * sauceExtraPrice;
 
       // Menu addon price — handle all choices (full / frites / boisson)
-      let menuAddonPrice = 0;
-      const menuChoice = this.selections.menuChoice;
-      if (menuChoice && menuChoice !== 'none' && item.addons) {
-        const menuAddon = item.addons.find(a =>
-          (a.addon_item_name || '').toLowerCase().includes('menu')
-        );
-        if (menuAddon) {
-          const fullPrice = parseFloat(menuAddon.addon_item_convert_price || menuAddon.price || 0);
-          if (menuChoice === 'full')         menuAddonPrice = fullPrice;
-          else if (menuChoice === 'frites')  menuAddonPrice = fullPrice * 0.6;
-          else if (menuChoice === 'boisson') menuAddonPrice = fullPrice * 0.4;
-        }
-      }
+      const menuAddonPrice = getKioskMenuAddonPrice(item, this.selections.menuChoice);
 
       const itemVariationTotal = sauceVariationSurcharge + fritesSauceSurcharge + menuAddonPrice;
 
@@ -765,61 +1051,71 @@ export default {
     buildInstruction() {
       const item = this.resolvedItem;
       const parts = [];
+      const ti = (key, values) => this.$t(`kiosk.wizard.instruction.${key}`, values);
 
-      // [AUDIT-P2] Include taille label in instruction for kitchen display
       if (this.selections._tailleMeta?.label) {
-        parts.push('TAILLE: ' + this.selections._tailleMeta.label);
+        parts.push(ti('taille', { label: this.selections._tailleMeta.label }));
       }
-      
+
       if (this.selections.pain && item) {
-        const painAttr = item.itemAttributes?.find(a => 
+        const painAttr = item.itemAttributes?.find(a =>
           (a.name || '').toLowerCase().includes('pain')
         );
         if (painAttr && item.variations?.[painAttr.id]) {
           const painVar = item.variations[painAttr.id].find(v => v.id === this.selections.pain);
-          if (painVar) parts.push('PAIN: ' + painVar.name);
+          if (painVar) parts.push(ti('pain', { name: painVar.name }));
         }
       }
-      
+
       if (this.selections.totalViandes > 0) {
-        const viandes = Object.entries(this.selections.viandes)
-          .filter(([_, count]) => count > 0)
-          .map(([key, count]) => `${key} x${count}`);
-        if (viandes.length > 0) parts.push('VIANDES: ' + viandes.join(', '));
+        const meta = this.selections._viandeMeta || [];
+        if (meta.length > 0) {
+          const viandes = meta
+            .filter((m) => (m.count || 0) > 0)
+            .map((m) => `${m.name} ×${m.count}`);
+          if (viandes.length > 0) parts.push(ti('viandes', { list: viandes.join(', ') }));
+        } else {
+          const viandes = Object.entries(this.selections.viandes)
+            .filter(([_, count]) => count > 0)
+            .map(([key, count]) => `${key} ×${count}`);
+          if (viandes.length > 0) parts.push(ti('viandes', { list: viandes.join(', ') }));
+        }
       }
-      
+
       if (this.selections.sauceOrder.length > 1 && item) {
         const extraSauces = this.selections.sauceOrder.slice(1).map(id => {
           const v = this.kioskFindSauceVariation(item, id);
           return v ? v.name : null;
         }).filter(Boolean);
-        if (extraSauces.length > 0) parts.push('SAUCES SUPPL: ' + extraSauces.join(', '));
-      }
-      
-      if (this.selections.menuChoice && this.selections.menuChoice !== 'none') {
-        const choices = {
-          full: 'Menu complet (frites + boisson)',
-          frites: '+ Frites',
-          boisson: '+ Boisson',
-        };
-        let menuLabel = choices[this.selections.menuChoice] || ('+ ' + this.selections.menuChoice);
-        const boissonMeta = this.selections._boissonMeta;
-        if (boissonMeta?.boissonName &&
-            (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'boisson')) {
-          menuLabel += ` (${boissonMeta.boissonName})`;
-        }
-        parts.push('MENU: ' + menuLabel);
+        if (extraSauces.length > 0) parts.push(ti('sauces_extra', { list: extraSauces.join(', ') }));
       }
 
-      // Sauce frites — only when frites are part of the order (multi-sélection)
-      const hasFrites = this.selections.menuChoice === 'full' || this.selections.menuChoice === 'frites';
+      const mc = this.selections.menuChoice;
+      if (mc && mc !== 'none') {
+        const s = 'kiosk.wizard.summary';
+        const menuBase = {
+          full: this.$t(`${s}.menu_label_full`),
+          frites: this.$t(`${s}.menu_label_frites`),
+          boisson: this.$t(`${s}.menu_label_boisson`),
+        }[mc] || mc;
+        let menuDetail = menuBase;
+        const boissonMeta = this.selections._boissonMeta;
+        if (boissonMeta?.boissonName && (mc === 'full' || mc === 'boisson')) {
+          menuDetail += ` (${boissonMeta.boissonName})`;
+        }
+        parts.push(ti('menu', { detail: menuDetail }));
+      }
+
+      const hasFrites = mc === 'full' || mc === 'frites';
       const fryOrder = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
       if (hasFrites && fryOrder.length > 0) {
         const labels = fryOrder.map(k => this.kioskFritesSauceDisplayName(k));
-        parts.push('SAUCE FRITES: ' + labels.join(', '));
+        parts.push(ti('frites_sauce', { list: labels.join(', ') }));
       }
 
-      return parts.join('. ') || null;
+      const joined = parts.join('. ');
+      if (!joined) return null;
+      return sanitizeKioskCustomerFacingText(joined);
     },
     addToCart() {
       const cartItem = this.buildCartItem();
@@ -834,6 +1130,7 @@ export default {
   },
   mounted() {
     if (this.item) {
+      this.resetSelections();
       this.initGarnitures();
       const inferredTaille = this.inferTacosPresetMeta();
       if (inferredTaille) {
@@ -843,6 +1140,80 @@ export default {
     } else if (this.itemId) {
       this.fetchItemById(this.itemId);
     }
+    // Phase 8.8 — fire first wizard_step_entered event.
+    this.$nextTick(() => this.emitWizardStepEntered(this.currentStep?.type));
+
+    // Kiosk Phase 9.1.3 — Initialise le debouncer SSOT (non-reactif pour éviter
+    // overhead Vue). `onError` silent en prod (fallback local prend le relais).
+    this._kioskPricingPreview = createKioskPricingPreview({
+      onError: (err) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[kiosk] pricing preview failed:', err && err.message ? err.message : err);
+        }
+      },
+    });
+    // Premier appel pour initialiser le total serveur dès que l'item est connu.
+    this.$nextTick(() => this.refreshServerPreviewTotal());
+  },
+  beforeDestroy() {
+    // Phase 8.8 — wizard closed without completion (global abandon).
+    if (this.currentStep && this.currentStepIndex < (this.activeSteps?.length || 0) - 1) {
+      try {
+        kioskAnalytics.track('wizard_abandoned', {
+          item_id: this.resolvedItem?.id || null,
+          step: this.currentStep?.type || null,
+          step_index: this.currentStepIndex,
+        });
+      } catch (_) { /* silent */ }
+    }
+    // Kiosk Phase 9.1.3 — libère le debouncer (cancel timer + axios).
+    if (this._kioskPricingPreview && typeof this._kioskPricingPreview.destroy === 'function') {
+      this._kioskPricingPreview.destroy();
+      this._kioskPricingPreview = null;
+    }
+  },
+  watch: {
+    // Kiosk Phase 9.1.3 — tout changement de sélection retrigger le preview
+    // SSOT (debounced 400 ms côté helper, donc pas de storm réseau). `deep`
+    // nécessaire car selections.viandes/sauces/supplements sont des objets.
+    selections: {
+      deep: true,
+      handler() { this.refreshServerPreviewTotal(); },
+    },
+    // Changement d'item (edit mode, fetch par id) → reset du total serveur
+    // pour éviter d'afficher un ancien total pendant que la nouvelle requête
+    // est en vol.
+    resolvedItem(newItem, oldItem) {
+      if ((newItem && newItem.id) !== (oldItem && oldItem.id)) {
+        this.serverPreviewTotal = null;
+        this.refreshServerPreviewTotal();
+      }
+    },
+    currentStepIndex(newIdx, oldIdx) {
+      if (newIdx === oldIdx) return;
+      const steps = this.activeSteps || [];
+      const prev = steps[oldIdx];
+      const next = steps[newIdx];
+      if (prev && newIdx > oldIdx) {
+        try {
+          kioskAnalytics.track('wizard_step_completed', {
+            item_id: this.resolvedItem?.id || null,
+            step: prev.type,
+            step_index: oldIdx,
+          });
+        } catch (_) { /* silent */ }
+      } else if (prev && newIdx < oldIdx) {
+        try {
+          kioskAnalytics.track('wizard_step_abandoned', {
+            item_id: this.resolvedItem?.id || null,
+            step: prev.type,
+            step_index: oldIdx,
+            direction: 'back',
+          });
+        } catch (_) { /* silent */ }
+      }
+      if (next) this.emitWizardStepEntered(next.type, newIdx);
+    },
   },
 };
 </script>
@@ -894,6 +1265,15 @@ export default {
 
 .kiosk-item-info {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */
+.kiosk-wizard-header-allergens {
+  margin-top: 2px;
 }
 
 .kiosk-item-name {
@@ -1200,5 +1580,80 @@ export default {
 .step-slide-leave-to {
   opacity: 0;
   transform: translateX(-30px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.kiosk-wizard-abandon-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.kiosk-wizard-abandon-modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  border: 1px solid #ececec;
+}
+
+.kiosk-wizard-abandon-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.kiosk-wizard-abandon-sub {
+  margin: 0 0 1.35rem;
+  font-size: 0.95rem;
+  color: #777;
+  line-height: 1.4;
+}
+
+.kiosk-wizard-abandon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kiosk-wizard-abandon-yes {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 12px;
+  background: #e8001c;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.kiosk-wizard-abandon-no {
+  width: 100%;
+  min-height: 50px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  background: #f7f7f8;
+  color: #444;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 </style>

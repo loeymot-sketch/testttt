@@ -1,19 +1,29 @@
 <template>
   <div class="kiosk-step-garnitures">
-    <h3 class="kiosk-step-title">Quelle crudité ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.garnitures.title') }}</h3>
 
     <div class="kiosk-garnitures-info">
-      <span class="kiosk-info-badge">Toutes les garnitures sont incluses</span>
-      <span class="kiosk-info-text">Désélectionnez celles que vous ne voulez pas</span>
+      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.step.garnitures.all_included') }}</span>
+      <span class="kiosk-info-text">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
     </div>
 
-    <div class="kiosk-garnitures-list">
+    <div v-if="garnitureList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.garnitures.empty_hint') }}</p>
+    </div>
+
+    <div v-else class="kiosk-garnitures-list">
       <div
         v-for="garniture in garnitureList"
         :key="garniture.id"
         class="kiosk-garniture-row"
         :class="{ selected: localSelections[garniture.id], removed: !localSelections[garniture.id] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[garniture.id]"
+        :aria-label="garniture.name"
         @click="toggleGarniture(garniture.id)"
+        @keydown.enter.prevent="toggleGarniture(garniture.id)"
+        @keydown.space.prevent="toggleGarniture(garniture.id)"
       >
         <div class="kiosk-garniture-visual">
           <img
@@ -28,20 +38,21 @@
           <span v-if="!localSelections[garniture.id]" class="kiosk-garniture-strike"></span>
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
-        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? 'AVEC' : 'SANS' }}</span>
+        <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
         <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
         <span v-else class="kiosk-garniture-action">+</span>
       </div>
     </div>
 
     <div class="kiosk-garnitures-summary">
-      {{ selectedCount }} garniture{{ selectedCount > 1 ? 's' : '' }} sélectionnée{{ selectedCount > 1 ? 's' : '' }}
+      {{ garnituresSummaryText }}
     </div>
   </div>
 </template>
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
 
 export default {
   name: 'KioskStepGarnitures',
@@ -55,18 +66,26 @@ export default {
     return {
       localSelections: { ...this.selections.garnitures },
       brokenGarnitureThumbs: {},
+      userInteracted: false,
     };
   },
+  mounted() {
+    // Adopt parent garnitures immediately if already populated at mount time
+    const parentGarnitures = this.selections.garnitures;
+    if (parentGarnitures && Object.keys(parentGarnitures).length > 0 && Object.keys(this.localSelections).length === 0) {
+      this.localSelections = { ...parentGarnitures };
+    }
+  },
   watch: {
-    // Sync when parent initialises garniture defaults after this child mounts
-    // (Vue lifecycle: child mounted() runs before parent mounted())
     'selections.garnitures': {
       deep: true,
       handler(newVal) {
-        // Only sync when localSelections is still empty (not yet interacted with)
-        if (Object.keys(this.localSelections).length === 0) {
-          this.localSelections = { ...newVal };
-        }
+        if (this.userInteracted) return;
+        this.$nextTick(() => {
+          if (!this.userInteracted && Object.keys(this.localSelections).length === 0) {
+            this.localSelections = { ...newVal };
+          }
+        });
       },
     },
   },
@@ -74,20 +93,21 @@ export default {
     selectedCount() {
       return Object.values(this.localSelections).filter(Boolean).length;
     },
+    garnituresSummaryText() {
+      const n = this.selectedCount;
+      if (n === 0) return this.$t('kiosk.wizard.step.garnitures.summary_zero');
+      if (n === 1) return this.$t('kiosk.wizard.step.garnitures.summary_one', { n });
+      return this.$t('kiosk.wizard.step.garnitures.summary_many', { n });
+    },
+    // [AUDIT 2026-04-17 C4] Source unique : helper partitionKioskExtras qui
+    // exclut sauces (group_label='sauce'), upgrades frites (KioskStepMenu) et
+    // viandes payantes (KioskStepViande). Plus de filtre regex local
+    // divergent.
     garnitureList() {
-      // Les garnitures sont des extras avec prix = 0 (gratuites), excluant les sauces
-      if (!this.item.extras) return [];
-      
-      const garnitures = this.item.extras.filter(e => {
-        const price = parseFloat(e.convert_price || e.price || 0);
-        const name = (e.name || '').toLowerCase();
-        return price === 0 && !name.includes('sauce suppl');
-      });
-      
-      return garnitures.map(g => ({
+      return partitionKioskExtras(this.item).garnitures.map(g => ({
         id: g.id,
         name: g.name,
-        displayThumb: kioskResolveImageSrc(g),
+        displayThumb: kioskResolveImageSrc(g.raw),
         emoji: this.getEmojiForGarniture(g.name)
       }));
     }
@@ -113,6 +133,7 @@ export default {
       return '🥗';
     },
     toggleGarniture(id) {
+      this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
       this.localSelections = newSelections;
@@ -186,6 +207,18 @@ export default {
 }
 
 .kiosk-garniture-row:active { transform: scale(0.99); }
+
+.kiosk-garniture-row:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
+
+.kiosk-step-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
 
 .kiosk-garniture-row.selected {
   border-color: rgba(232,0,28,0.14);

@@ -334,7 +334,9 @@ export default {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
 
-            this.$store.dispatch('item/details', selectedItem.id)
+            // [AUDIT 2026-04-17 R2] Surface=pos so the backend only returns
+            // extras/variations visible on the cashier channel (NormalItemResource).
+            this.$store.dispatch('item/details', { id: selectedItem.id, surface: 'pos' })
                 .then((res) => {
 
                     const item = res.data.data;
@@ -382,7 +384,8 @@ export default {
         openEditFromCart: function (cartLine, index) {
             if (!cartLine || cartLine.item_id == null) return;
             this.editingCartIndex = typeof index === 'number' ? index : null;
-            this.$store.dispatch('item/details', cartLine.item_id)
+            // [AUDIT 2026-04-17 R2] Keep the POS channel projection on edit too.
+            this.$store.dispatch('item/details', { id: cartLine.item_id, surface: 'pos' })
                 .then((res) => {
                     const item = res.data.data;
                     this.item = item;
@@ -682,7 +685,7 @@ export default {
                     total_price: addon.total_convert_price,
                     instruction: "",
                 };
-                if (addon.variations !== "undefined" && Object.keys(addon.variations).length !== 0) {
+                if (typeof addon.variations !== 'undefined' && addon.variations && Object.keys(addon.variations).length !== 0) {
                     _.forEach(addon.variations, (variationId, attributeId) => {
                         this.addons[addon.id].item_variations.variations[attributeId] = variationId;
                     });

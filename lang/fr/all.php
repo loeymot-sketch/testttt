@@ -69,6 +69,7 @@ return [
         'offer_item_exist' => "L'article est déjà ajouté dans une autre offre. Quand l'offre sera terminée, vous pourrez ajouter cet article à nouveau.",
         'minimum_order_amount' => 'Le montant minimum de commande est ',
         'coupon_date_expired' => 'Le coupon a expiré',
+        'coupon_not_yet_active' => "Le coupon n'est pas encore actif (valide à partir du :date)",
         'coupon_not_exist' => "Le coupon n'existe pas",
         'code_is_invalid' => 'Le code est invalide.',
         'code_is_expired' => 'Le code a expiré.',

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Borne — Grill House</title>
+<style>
+  @font-face { font-family:"Avenir"; src:url("fonts/AvenirLTPro-Book.otf") format("opentype"); font-weight:400; font-display:swap; }
+  @font-face { font-family:"Avenir"; src:url("fonts/AvenirLTPro-Medium.otf") format("opentype"); font-weight:500; font-display:swap; }
+  @font-face { font-family:"Avenir"; src:url("fonts/AvenirLTPro-Heavy.otf") format("opentype"); font-weight:700; font-display:swap; }
+  @font-face { font-family:"Avenir"; src:url("fonts/AvenirLTPro-Black.otf") format("opentype"); font-weight:900; font-display:swap; }
+
+  :root {
+    --accent: #E6001D;
+    --accent-ink: #ffffff;
+    --ink: #0f1011;
+    --ink-soft: #55585c;
+    --ink-mute: #9aa0a6;
+    --bg: #fbf8f3;
+    --surface: #ffffff;
+    --line: #ececec;
+    --ok: #1fae5a;
+    --warn: #f3a400;
+    --shadow-sm: 0 4px 14px rgba(22, 22, 22, .06);
+    --shadow-md: 0 16px 40px rgba(22, 22, 22, .08);
+    --shadow-lg: 0 30px 80px rgba(22, 22, 22, .14);
+    --r-sm: 16px;
+    --r-md: 24px;
+    --r-lg: 36px;
+    --r-xl: 56px;
+  }
+
+  /* Direction B — Sombre Premium */
+  .theme-dark {
+    --accent: #ff6a1a;
+    --accent-ink: #0a0a0a;
+    --ink: #f6f3ee;
+    --ink-soft: #b8b2a8;
+    --ink-mute: #6f6a60;
+    --bg: #0d0c0b;
+    --surface: #18161410;
+    --surface-solid: #191715;
+    --line: #2a2724;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; background:#111; font-family:"Avenir", -apple-system, "Helvetica Neue", Arial, sans-serif; color:var(--ink); }
+  button { font-family: inherit; border:0; background:none; cursor:pointer; color:inherit; }
+
+  /* Stage : centre et scale la borne 1080x1920 dans le viewport */
+  .stage {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: radial-gradient(1200px 800px at 50% 40%, #1c1c1d, #0a0a0b);
+    overflow: hidden;
+  }
+  .kiosk {
+    width: 1080px; height: 1920px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    transform-origin: center center;
+    box-shadow: 0 60px 140px rgba(0,0,0,.5), 0 0 0 18px #111, 0 0 0 22px #333;
+    border-radius: 40px;
+  }
+  .kiosk.theme-dark { background: var(--bg); color: var(--ink); }
+
+  /* Screens stack */
+  .screens { position:absolute; inset:0; }
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 420ms cubic-bezier(.2,.7,.2,1), transform 520ms cubic-bezier(.2,.7,.2,1);
+    transform: translateX(40px);
+  }
+  .screen.active { opacity:1; pointer-events:auto; transform: none; z-index:2; }
+  .screen.leaving { opacity:0; transform: translateX(-40px); z-index:1; }
+
+  /* Utils */
+  .row { display:flex; align-items:center; gap: 16px; }
+  .fill { flex: 1 1 auto; }
+  .stack { display:flex; flex-direction:column; }
+  .chip {
+    display:inline-flex; align-items:center; gap:10px;
+    padding: 10px 18px; border-radius: 999px;
+    background: color-mix(in oklch, var(--accent) 10%, transparent);
+    color: var(--accent); font-weight: 700; font-size: 22px; letter-spacing: .02em;
+  }
+  .theme-dark .chip { background: color-mix(in oklch, var(--accent) 16%, transparent); }
+
+  .btn-primary {
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 999px; font-weight: 900; font-size: 34px;
+    padding: 26px 48px; display:inline-flex; align-items:center; justify-content:center; gap:16px;
+    box-shadow: 0 14px 30px color-mix(in oklch, var(--accent) 40%, transparent);
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .btn-primary:active { transform: translateY(2px) scale(.99); filter: brightness(.95); }
+  .btn-ghost {
+    background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 22px 36px;
+    font-weight: 700; font-size: 28px;
+    border: 2px solid color-mix(in oklch, var(--ink) 15%, transparent);
+  }
+  .theme-dark .btn-ghost { border-color: color-mix(in oklch, var(--ink) 25%, transparent); }
+
+  .divider { height: 1px; background: var(--line); margin: 24px 0; }
+
+  /* Generic food placeholder */
+  .food {
+    display:grid; place-items:center;
+    background: radial-gradient(120% 90% at 30% 25%, #ffe3b0, #f2a65a 55%, #c6540d 100%);
+    color: #5a2a0e;
+    font-weight: 900;
+    border-radius: var(--r-md);
+    position: relative; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+  }
+  .food::after{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(70% 40% at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(50% 30% at 70% 80%, rgba(0,0,0,.15), transparent 60%);
+  }
+
+  /* icon sprite */
+  .i { width: 1em; height: 1em; display:inline-block; vertical-align: -.15em; }
+
+  /* Tweaks panel */
+  .tweaks {
+    position: fixed; right: 20px; bottom: 20px;
+    background: rgba(24,24,26,.94); backdrop-filter: blur(18px);
+    color: #f4f1ec; border-radius: 20px;
+    padding: 18px 18px 16px; width: 320px;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px; z-index: 9999;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    display: none;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .tweaks.active { display:block; }
+  .tweaks h4 { margin: 0 0 14px; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #d4c9b6; }
+  .tweaks label { display:block; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin: 12px 0 6px; color: #9a9284; }
+  .tweaks .opts { display:flex; gap:6px; flex-wrap: wrap; }
+  .tweaks .opt {
+    flex:1 1 auto; padding: 9px 10px; border-radius: 10px;
+    background: rgba(255,255,255,.06); color: #eee; font-size: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    text-align:center; cursor: pointer;
+  }
+  .tweaks .opt.sel { background: #fff; color: #111; border-color: #fff; font-weight: 700; }
+  .tweaks .swatches { display:grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .tweaks .sw { aspect-ratio: 1/1; border-radius: 10px; cursor:pointer; border: 2px solid rgba(255,255,255,.15); }
+  .tweaks .sw.sel { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+
+  /* Slide-progress (top chrome for deep screens) */
+  .progress-dots { display:flex; gap:10px; }
+  .progress-dots span { width: 14px; height: 6px; border-radius: 99px; background: var(--ink-mute); opacity:.35; }
+  .progress-dots span.on { background: var(--accent); opacity: 1; width: 28px; }
+
+  /* Scrollable regions inside kiosk (hide scrollbars but keep scroll) */
+  .scroller { overflow: auto; -webkit-overflow-scrolling: touch; }
+  .scroller::-webkit-scrollbar { display:none; }
+  .scroller { scrollbar-width: none; }
+
+  /* Body background ambient patterns */
+  .ambient-cream {
+    position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(600px 400px at 10% -10%, color-mix(in oklch, var(--accent) 18%, transparent), transparent 70%),
+      radial-gradient(900px 600px at 110% 110%, color-mix(in oklch, var(--accent) 10%, transparent), transparent 70%);
+  }
+  .theme-dark .ambient-cream {
+    background:
+      radial-gradient(700px 500px at 100% 0%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 60%),
+      radial-gradient(900px 700px at -10% 110%, color-mix(in oklch, #7a2dff 18%, transparent), transparent 65%);
+  }
+
+  /* Animations shared */
+  @keyframes pop { 0% { transform: scale(.6); opacity:0 } 60% { transform: scale(1.08); opacity:1 } 100% { transform: scale(1); opacity:1 } }
+  @keyframes slideUp { from { transform: translateY(20px); opacity:0 } to { transform:none; opacity:1 } }
+  @keyframes shine { from { transform: translateX(-120%) } to { transform: translateX(120%) } }
+  @keyframes breath { 0%,100% { transform: scale(1) } 50% { transform: scale(1.04) } }
+  @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+
+  /* ring for selected */
+  .ring-accent { box-shadow: 0 0 0 4px var(--accent), var(--shadow-md); }
+
+  /* Spinner */
+  .spinner { width: 56px; height: 56px; border-radius: 50%; border: 5px solid color-mix(in oklch, var(--accent) 25%, transparent); border-top-color: var(--accent); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="kiosk" id="kiosk">
+    <div class="ambient-cream"></div>
+    <div class="screens" id="screens"></div>
+  </div>
+</div>
+
+<!-- Tweaks panel -->
+<div class="tweaks" id="tweaks">
+  <h4>Tweaks</h4>
+  <label>Direction</label>
+  <div class="opts" id="tw-theme">
+    <div class="opt sel" data-theme="light">Classic</div>
+    <div class="opt" data-theme="dark">Premium sombre</div>
+  </div>
+  <label>Couleur d'accent</label>
+  <div class="swatches" id="tw-accent"></div>
+  <label>Navigation rapide</label>
+  <div class="opts" id="tw-screens" style="flex-wrap:wrap;"></div>
+</div>
+
+<script>
+  // --- TWEAKABLE DEFAULTS ---
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "light",
+    "accent": "#E6001D"
+  }/*EDITMODE-END*/;
+
+  const LIGHT_SWATCHES = ["#E6001D","#F04E23","#E8821C","#1f8b5f","#1e3a8a","#7b1e3a"];
+  const DARK_SWATCHES  = ["#ff6a1a","#ffb800","#ff3366","#22d3a6","#7a5cff","#e6001d"];
+</script>
+
+<script src="components/data.js"></script>
+<script src="components/screens.js"></script>
+<script src="components/app.js"></script>
+
+</body>
+</html>

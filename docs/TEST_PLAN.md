@@ -26,3 +26,26 @@ Ce document liste la stratégie de QA et les surfaces de tests du projet FoodKin
 # Lancer tous les tests locaux unitaires et fonctionnels
 php artisan test
 ```
+
+## 3. Validation par lots (post-stabilisation)
+
+Quand le run monolithique `php artisan test` heurte la limite mémoire du runner, utiliser la validation par lots :
+
+```bash
+bash scripts/run_php_feature_batches.sh auth-security
+bash scripts/run_php_feature_batches.sh kiosk-pos-sync
+bash scripts/run_php_feature_batches.sh admin-seeders-reports
+```
+
+Lots définis :
+- `auth-security` : auth, scopes, isolation, pricing/security de base
+- `kiosk-pos-sync` : tunnel kiosk, POS, KDS, OSS, synchronisation inter-écrans
+- `admin-seeders-reports` : CRUD admin lourd et seeders
+
+Le profilage des lots peut être documenté avec :
+
+```bash
+bash scripts/profile_php_memory.sh
+```
+
+Rapport généré : `reports/execution/php_memory_profile_latest.md`

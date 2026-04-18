@@ -6,7 +6,7 @@
         <h3 class="text-[22px] font-semibold text-[#0084FF]">{{ $t("label.popular_menu_items") }}</h3>
       </div>
       <div class="p-3 grid grid-cols-2 lg:grid-cols-3 gap-11 overflow-auto thin-scrolling h-full">
-        <div class="flex flex-col items-center" v-for="item in items">
+        <div class="flex flex-col items-center" v-for="(item, index) in items" :key="item.id || index">
           <div class="max-w-[148px] w-full h-[102px] rounded-full mb-4">
             <img class="w-full h-full rounded-full" :src="item.thumb" alt="">
           </div>

@@ -1,0 +1,180 @@
+/* =============================================================================
+   FoodKing Kiosk V1 — Design Tokens (base AA)
+   -----------------------------------------------------------------------------
+   Source de vérité  : borne (Remix)/foodking/atoms.jsx (objet `fk`)
+                     + borne (Remix)/docs/design/tokens.json (W3C DTCG)
+   Cible             : borne 1080×1920 portrait (Electron Windows, 27")
+   Mode              : WCAG 2.2 AA par défaut. Activer tokens-aaa.css /
+                     tokens-pmr.css en surcouche via data-attributes racine.
+   Namespace         : --kiosk-*  (imposé par le master prompt Phase 0).
+   Aucun composant Vue existant modifié — ces variables sont consommées
+   exclusivement par les atoms ds/ et les futurs restyles Phase 2.
+   ============================================================================= */
+
+:root {
+  /* -- Brand ----------------------------------------------------------------- */
+  --kiosk-primary:       #E8001C; /* fk.red           */
+  --kiosk-primary-dark:  #B8000F; /* fk.redDark       */
+  --kiosk-primary-soft:  #FFF0F2; /* fk.redSoft (états actifs tintés) */
+
+  /* -- Surfaces -------------------------------------------------------------- */
+  --kiosk-bg:            #FFFBF5; /* fk.bg — warm appétissant */
+  --kiosk-surface:       #FFFFFF; /* fk.surface       */
+  --kiosk-surface-alt:   #F7F3EC; /* fk.surfaceAlt    */
+  --kiosk-border:        #EEE6D9; /* fk.border        */
+  --kiosk-border-strong: #D9C9B8;
+
+  /* -- Texte ----------------------------------------------------------------- */
+  --kiosk-text:          #1A1A1A; /* fk.text   — ratio 15.8:1 sur bg  AAA */
+  --kiosk-text-muted:    #5A5A5A; /* fk.textSoft — ratio 7.4:1        AAA */
+  --kiosk-text-mute:     #9A9A9A; /* fk.textMute — AA large uniquement   */
+  --kiosk-text-on-red:   #FFFFFF;
+
+  /* -- Sémantique (variantes AA renforcées imposées par le prompt) ---------- */
+  --kiosk-success:       #1B8A3A; /* fk.success ajusté AA sur fond clair */
+  --kiosk-error:         #C21E2F; /* fk.error   ajusté AA                 */
+  --kiosk-warning:       #B8730B; /* fk.warning ajusté AA                 */
+  --kiosk-info:          #2563EB;
+
+  /* -- Badges produit -------------------------------------------------------- */
+  --kiosk-badge-veg:       #1B8A3A;
+  --kiosk-badge-halal:     #0D7A33;
+  --kiosk-badge-spicy:     #C21E2F;
+  --kiosk-badge-new:       #E8001C;
+  --kiosk-badge-chef-pick: #B8730B; /* is_chef_pick (admin static — §1.5 invariants) */
+
+  /* -- Focus (WCAG 2.4.7) ---------------------------------------------------- */
+  --kiosk-focus-ring:   #2563EB;
+  --kiosk-focus-width:  4px;
+  --kiosk-focus-offset: 2px;
+
+  /* -- Overlays -------------------------------------------------------------- */
+  --kiosk-overlay-modal:   rgba(26, 26, 26, 0.55);
+  --kiosk-overlay-rupture: rgba(255, 255, 255, 0.92);
+
+  /* -- Ombres ---------------------------------------------------------------- */
+  --kiosk-shadow-card:     0 4px 18px rgba(20, 20, 20, 0.06);
+  --kiosk-shadow-lift:     0 12px 32px rgba(20, 20, 20, 0.12);
+  --kiosk-shadow-cta:      0 10px 24px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-modal:    0 24px 48px rgba(26, 26, 26, 0.24);
+  --kiosk-shadow-sticky:   0 -8px 24px rgba(0, 0, 0, 0.06);
+
+  /* -- Typographie ----------------------------------------------------------- */
+  --kiosk-font-latin:   'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --kiosk-font-arabic:  'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+  --kiosk-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* Échelle tailles — jamais < 18px en body (lisible à 1 m) */
+  --kiosk-font-size-hero:     64px;
+  --kiosk-font-size-display:  48px;
+  --kiosk-font-size-title-lg: 36px;
+  --kiosk-font-size-title:    28px;
+  --kiosk-font-size-subtitle: 22px;
+  --kiosk-font-size-body:     20px;
+  --kiosk-font-size-caption:  18px;
+  --kiosk-font-size-micro:    16px; /* badges uniquement */
+
+  /* Graisses */
+  --kiosk-font-weight-regular:  400;
+  --kiosk-font-weight-medium:   500;
+  --kiosk-font-weight-semibold: 600;
+  --kiosk-font-weight-bold:     700;
+  --kiosk-font-weight-black:    900;
+
+  /* Interlignes */
+  --kiosk-line-height-tight:  1.15;
+  --kiosk-line-height-snug:   1.30;
+  --kiosk-line-height-normal: 1.50;
+
+  /* Interlettrage */
+  --kiosk-letter-spacing-tight:  -0.01em;
+  --kiosk-letter-spacing-normal: 0;
+  --kiosk-letter-spacing-wide:   0.05em;
+  --kiosk-letter-spacing-caps:   0.12em; /* ALL CAPS labels */
+
+  /* Multiplicateur texte (ex. AAA/PMR) — appliqué via font-size: calc() dans atoms */
+  --kiosk-text-scale: 1;
+
+  /* -- Spacing (échelle 4) --------------------------------------------------- */
+  --kiosk-space-0:  0;
+  --kiosk-space-1:  4px;
+  --kiosk-space-2:  8px;
+  --kiosk-space-3:  12px;
+  --kiosk-space-4:  16px;
+  --kiosk-space-5:  20px;
+  --kiosk-space-6:  24px;
+  --kiosk-space-8:  32px;
+  --kiosk-space-10: 40px;
+  --kiosk-space-12: 48px;
+  --kiosk-space-14: 56px;
+  --kiosk-space-16: 64px;
+  --kiosk-space-20: 80px;
+  --kiosk-space-24: 96px;
+  --kiosk-space-32: 128px;
+
+  /* -- Radius ---------------------------------------------------------------- */
+  --kiosk-radius-none: 0;
+  --kiosk-radius-sm:   8px;
+  --kiosk-radius-md:   16px;
+  --kiosk-radius-lg:   24px;
+  --kiosk-radius-xl:   28px;   /* ProductCard, CTA */
+  --kiosk-radius-2xl:  32px;
+  --kiosk-radius-pill: 999px;
+
+  /* -- Motion ---------------------------------------------------------------- */
+  --kiosk-duration-instant: 0ms;
+  --kiosk-duration-fast:    140ms;
+  --kiosk-duration-base:    240ms;
+  --kiosk-duration-slow:    360ms;
+  --kiosk-duration-idle:    800ms;
+
+  --kiosk-ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+  --kiosk-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --kiosk-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --kiosk-ease-bounce:     cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* -- Layout / Tap targets -------------------------------------------------- */
+  --kiosk-screen-width:  1080px;
+  --kiosk-screen-height: 1920px;
+
+  --kiosk-touch-min:         48px; /* WCAG 2.2 AA */
+  --kiosk-touch-comfortable: 64px; /* par défaut pour CTA kiosk */
+  --kiosk-touch-large:       80px;
+  --kiosk-touch-hero:        110px; /* CTA primaire plein écran */
+
+  --kiosk-safe-top:    32px;
+  --kiosk-safe-bottom: 32px;
+  --kiosk-safe-left:   32px;
+  --kiosk-safe-right:  32px;
+
+  /* Zone PMR (reach depuis fauteuil) — décorative en AA, active en mode PMR */
+  --kiosk-pmr-top:    160px;
+  --kiosk-pmr-bottom: 1760px;
+
+  /* -- Z-index --------------------------------------------------------------- */
+  --kiosk-z-base:     0;
+  --kiosk-z-sticky:   10;
+  --kiosk-z-overlay:  100;
+  --kiosk-z-modal:    200;
+  --kiosk-z-toast:    300;
+  --kiosk-z-keyboard: 400;
+}
+
+/* =============================================================================
+   RTL : bascule police arabe. Inversion visuelle gérée par `dir="rtl"` natif.
+   ============================================================================= */
+[dir="rtl"] {
+  font-family: var(--kiosk-font-arabic);
+}
+
+/* =============================================================================
+   Reduced motion : override global, prioritaire sur toutes les transitions.
+   ============================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --kiosk-duration-fast: 0ms;
+    --kiosk-duration-base: 0ms;
+    --kiosk-duration-slow: 0ms;
+    --kiosk-duration-idle: 0ms;
+  }
+}

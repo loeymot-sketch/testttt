@@ -643,6 +643,9 @@
                        a.name.toLowerCase().includes('sprite');
             });
 
+            // [KIOSK-UX-2026-04-17] « Boisson seule » n'a pas de sens comme formule sur sandwich/burger/tacos
+            var _allowBoissonSeule = ['sandwich', 'burger', 'tacos'].indexOf(category) === -1;
+
             s.push({
                 type: 'supplements_menu',
                 label: 'Suppléments & Menu',
@@ -654,7 +657,7 @@
                 // [BUG-W4b FIX] Use ?? instead of || to allow price = 0 without fallback override
                 menuComplet: menuAddon ? { label: 'Menu Complet', price: menuAddon.price ?? 3.00 } : { label: 'Menu Complet', price: 3.00 },
                 fritesSeules: fritesAddon ? { label: 'Frites Seules', price: fritesAddon.price ?? 2.00 } : { label: 'Frites Seules', price: 2.00 },
-                boissonSeule: boissonAddon ? { label: 'Boisson Seule', price: boissonAddon.price ?? 2.00 } : { label: 'Boisson Seule', price: 2.00 }
+                boissonSeule: _allowBoissonSeule ? (boissonAddon ? { label: 'Boisson Seule', price: boissonAddon.price ?? 2.00 } : { label: 'Boisson Seule', price: 2.00 }) : null
             });
             selections.supplements = {};
             selections.menuChoice = null;
@@ -739,6 +742,9 @@
                 return (name.includes('boisson') || name.includes('coca') || name.includes('jus')) && !name.includes('frite');
             });
 
+            // [KIOSK-UX-2026-04-17] Masquer « Boisson Seule » sur repas type sandwich/burger/tacos
+            var _posAllowBoissonSeule = ['sandwich', 'burger', 'tacos'].indexOf(category) === -1;
+
             // [P1] Step: menu_choice — 3 options (Menu Complet / Frites / Rien)
             s.push({
                 type: 'menu_choice',
@@ -746,7 +752,7 @@
                 subtitle: 'Voulez-vous accompagner votre repas ?',
                 menuComplet: menuComplet || { name: 'Menu Complet (Frites+Boisson)', price: 3.00, thumb: '' },
                 fritesSeules: fritesSeules || { name: 'Frites Seules', price: 2.00, thumb: '' },
-                boissonSeule: boissonSeule || { name: 'Boisson Seule', price: 2.00, thumb: '' },
+                boissonSeule: _posAllowBoissonSeule ? (boissonSeule || { name: 'Boisson Seule', price: 2.00, thumb: '' }) : null,
                 sauceItems: sauceList.filter(function (item) { return item.name.toLowerCase() !== 'sans sauce'; })
             });
 

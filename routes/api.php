@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\CountryCodeController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\ItemsReportController;
+use App\Http\Controllers\Admin\MenuProjectionController;
 use App\Http\Controllers\Admin\MenuSectionController;
 use App\Http\Controllers\Admin\OnlineOrderController;
 use App\Http\Controllers\Admin\PosCategoryController;
@@ -104,6 +105,7 @@ use App\Http\Controllers\Frontend\SubscriberController as FrontendSubscriberCont
 use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeController;
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
+use App\Http\Controllers\HealthController;
 
 
 /*
@@ -117,6 +119,10 @@ use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDelivery
 |
 */
 
+// Health check endpoints (no auth required)
+Route::get('/health', [HealthController::class, 'full']);
+Route::get('/health/live', [HealthController::class, 'live']);
+Route::get('/health/ready', [HealthController::class, 'ready']);
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
@@ -126,12 +132,12 @@ Route::match(['get', 'post'], '/login', function () {
 Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed', 'apiKey']);
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
-    // [SEC-02] Rate limiting — 5 tentatives par minute
+    // [SEC-02] Rate limiting — login lockout (named limiter)
     Route::post('/login', [LoginController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:login-lockout');
 
     Route::post('/kiosk-login', [KioskMachineLoginController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:login-lockout');
 
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
@@ -219,11 +225,15 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
     });
+
+    // [V1 SECTION 5] Dual-channel menu SSOT projection (read-only, admin-only).
+    Route::get('/menu-projection', [MenuProjectionController::class, 'show'])
+        ->name('menu-projection.show');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -609,7 +619,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
 
     Route::prefix('pos')->name('pos.')->group(function () {
-        Route::post('/', [PosController::class, 'store']);
+        Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
@@ -617,9 +627,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);
-        Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus']);
-        Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy']);
+        Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
+            ->middleware('throttle:pos-order-update');
+        Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
+            ->middleware('throttle:pos-order-update');
+        Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
+            ->middleware('throttle:pos-order-update');
         // [SPRINT-5] Quick re-order — returns structured cart payload for rapid re-import
         Route::get('/reorder-items/{order}', [PosOrderController::class, 'reorderItems'])->name('reorderItems');
     });
@@ -787,6 +800,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     Route::prefix('address')->name('address.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendAddressController::class, 'index']);
+        Route::get('/{address}', [FrontendAddressController::class, 'show']);
         Route::get('/show/{address}', [FrontendAddressController::class, 'show']);
         Route::post('/', [FrontendAddressController::class, 'store']);
         Route::match(['put', 'patch'], '/{address}', [FrontendAddressController::class, 'update']);
@@ -807,8 +821,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
-        // [SPLASH SECURITY] Rate limit: 10 orders/min max per user/kiosk — prevents runaway kiosk spam
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:kiosk-orders');
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
@@ -887,7 +900,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         // [AUDIT-P0-D] Add throttle to loyalty endpoints to prevent enumeration and mass registration.
-        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware('throttle:10,1');
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1']);
         Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1');
         // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
@@ -904,6 +917,51 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
         ->middleware(['auth:sanctum', 'throttle:30,1'])
         ->name('kiosk.event');
+
+    /* ================================================================
+     * Kiosk Design V1 — Phase 1 (master prompt)
+     * ================================================================
+     * Nouvelles routes kiosk scoped par `KioskMachine::branch_id`.
+     * Les routes historiques (/coupon-checking, /kiosk-upsell,
+     * /loyalty/register, /kiosk-event) RESTENT actives et intactes.
+     */
+
+    // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
+    Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
+        ->middleware(['auth:sanctum'])
+        ->name('frontend.menu.kiosk');
+
+    // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
+    Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->name('frontend.pricing.preview');
+
+    // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
+    Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.promo.validate');
+
+    // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
+    Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->name('frontend.upsell.suggest');
+
+    // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
+    Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
+        ->middleware(['throttle:5,1'])
+        ->name('frontend.loyalty.opt-in');
+
+    // Phase 8.3 — POST /api/frontend/loyalty/scan : résolution QR/NFC kiosk.
+    // Auth Sanctum + kiosk:order ability — Scan invoqué depuis le parcours
+    // client. Toujours HTTP 200 pour ne pas bloquer le parcours (invariant §12).
+    Route::post('/loyalty/scan', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'scan'])
+        ->middleware(['auth:sanctum', 'throttle:20,1'])
+        ->name('frontend.loyalty.scan');
+
+    // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
+    Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.kiosk.event');
 });
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {

@@ -1,9 +1,9 @@
 <template>
   <div class="kiosk-step-supplements">
-    <h3 class="kiosk-step-title">Quel supplément ?</h3>
+    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.supplements_step_title') }}</h3>
 
     <div class="kiosk-supplements-info">
-      <span class="kiosk-info-badge">Options payantes</span>
+      <span class="kiosk-info-badge">{{ $t('kiosk.wizard.supplements_badge_paid') }}</span>
       <span v-if="totalPrice > 0" class="kiosk-supplements-price">
         +{{ formatPrice(totalPrice) }}
       </span>
@@ -11,7 +11,7 @@
 
     <div v-if="supplementList.length === 0" class="kiosk-empty-state">
       <span class="kiosk-empty-emoji">🍽️</span>
-      <p>Aucun supplément disponible pour cet article</p>
+      <p>{{ $t('kiosk.wizard.supplements_empty') }}</p>
     </div>
 
     <div v-else class="kiosk-supplements-list">
@@ -20,7 +20,13 @@
         :key="supplement.id"
         class="kiosk-supplement-row"
         :class="{ selected: localSelections[supplement.id] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[supplement.id]"
+        :aria-label="`${supplement.name} ${formatPrice(supplement.price)}`"
         @click="toggleSupplement(supplement.id)"
+        @keydown.enter.prevent="toggleSupplement(supplement.id)"
+        @keydown.space.prevent="toggleSupplement(supplement.id)"
       >
         <div class="kiosk-supplement-visual">
           <img
@@ -35,7 +41,7 @@
         </div>
         <div class="kiosk-supplement-details">
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
-          <span class="kiosk-supplement-desc">{{ supplement.description || 'Supplément' }}</span>
+          <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
         </div>
         <span class="kiosk-supplement-price">{{ formatPrice(supplement.price) }}</span>
         <span v-if="localSelections[supplement.id]" class="kiosk-supplement-action active">✓</span>
@@ -47,9 +53,12 @@
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
+import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
 
 export default {
   name: 'KioskStepSupplements',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -66,35 +75,23 @@ export default {
     'selections.supplements': {
       deep: true,
       handler(newVal) {
-        if (Object.keys(this.localSelections).length === 0) {
-          this.localSelections = { ...newVal };
-        }
+        this.localSelections = { ...(newVal || {}) };
       },
     },
   },
   computed: {
+    // [AUDIT 2026-04-17 C4] Source unique : helper partitionKioskExtras —
+    // les extras "supplements" excluent automatiquement sauces, upgrades
+    // frites (étape Formule) et viandes payantes (étape Viande).
     supplementList() {
-      // Les suppléments sont des extras avec prix > 0 (payants)
-      // EXCLUS : les sauces (group_label ou nom contenant 'sauce')
-      if (!this.item.extras) return [];
-
-      return this.item.extras
-        .filter(e => {
-          const price = parseFloat(e.convert_price || e.price || 0);
-          const groupLabel = (e.group_label || '').toLowerCase();
-          const name = (e.name || '').toLowerCase();
-          // Exclure si c'est une sauce (par group_label ou par nom en fallback)
-          const isSauce = groupLabel.includes('sauce') || (groupLabel === '' && name.includes('sauce'));
-          return price > 0 && !isSauce;
-        })
-        .map(s => ({
-          id: s.id,
-          name: s.name,
-          price: parseFloat(s.convert_price || s.price || 0),
-          description: s.description || '',
-          thumb: kioskResolveImageSrc(s),
-          emoji: this.getEmojiForSupplement(s.name)
-        }));
+      return partitionKioskExtras(this.item).supplements.map(s => ({
+        id: s.id,
+        name: s.name,
+        price: s.price,
+        description: s.raw?.description || '',
+        thumb: kioskResolveImageSrc(s.raw),
+        emoji: this.getEmojiForSupplement(s.name)
+      }));
     },
     totalPrice() {
       return this.supplementList.reduce((sum, s) => {
@@ -124,12 +121,6 @@ export default {
       if (lower.includes('boisson') || lower.includes('soda') || lower.includes('drink')) return '🥤';
       if (lower.includes('glace') || lower.includes('ice cream')) return '🍦';
       return '➕';
-    },
-    formatPrice(price) {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(price || 0);
     },
     toggleSupplement(id) {
       const newSelections = { ...this.localSelections };
@@ -223,6 +214,11 @@ export default {
 }
 
 .kiosk-supplement-row:active { transform: scale(0.99); }
+
+.kiosk-supplement-row:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-supplement-row.selected {
   border: 2px solid rgba(232, 0, 28, 0.42);

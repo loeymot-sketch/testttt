@@ -1,14 +1,21 @@
 ---
-description: Passation projet — vision, POS/KDS/borne, état et backlog
-alwaysApply: true
+description: FoodKing — continuité produit (lecture ciblée à la planification)
+alwaysApply: false
+globs:
+  - "plans/**"
+  - "tasks/**"
 ---
 
-# FoodKing — contexte obligatoire
+# FoodKing — continuité (lecture ciblée)
 
-Avant toute décision ou changement important :
+**`docs/PROJECT_CONTINUITY_AND_VISION.md`** — à lire surtout lors d’une **planification** dans un **domaine nouveau ou peu familier** (vision, surfaces, correctifs, reste à faire).
 
-1. Lire **`docs/PROJECT_CONTINUITY_AND_VISION.md`** (vision, surfaces, correctifs, reste à faire).
-2. Respecter **`AGENTS.md`** et le workflow `reports/` + `workflows/`.
-3. Croiser avec **`docs/ARCHITECTURE.md`**, **`docs/ORDER_FLOW.md`**, **`docs/DEVICE_FLOW.md`**.
+**Charger à la demande** uniquement si le **périmètre de la tâche** y touche réellement :
 
-Ne pas modifier hors périmètre ; préserver authz, cycle de commande et recalcul prix côté serveur.
+| Document | Quand |
+|----------|--------|
+| `docs/ARCHITECTURE.md` | Découpage modules, limites techniques, dépendances |
+| `docs/ORDER_FLOW.md` | Cycle de vie et états de commande |
+| `docs/DEVICE_FLOW.md` | Parcours par surface (POS, kiosk, KDS, OSS, etc.) |
+
+Le cycle agents local, le routage modèle et les rapports sont décrits dans **`AGENTS.md`** et **`.cursor/routing.md`**. Le scope et les invariants métier sont dans **`.cursor/rules/scope.mdc`** et **`.cursor/rules/foodking-invariants.mdc`**.

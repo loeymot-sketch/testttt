@@ -1,0 +1,17 @@
+{
+  "git.enabled": true,
+  "git.path": "/usr/bin/git",
+  "git.autoRepositoryDetection": true,
+  "git.openRepositoryInParentFolders": "always",
+  "git.repositoryScanMaxDepth": 8,
+  "git.autorefresh": true,
+  "git.decorations.enabled": true,
+  "scm.diffDecorations": "all",
+  "scm.alwaysShowRepositories": true,
+  "scm.showIncomingChanges": true,
+  "scm.showOutgoingChanges": true,
+  "git.showPushSuccessNotification": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 800,
+  "git.refreshOnFocus": true
+}

@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=1440"/>
+  <title>Kiosk V1 — Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Arabic:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="kiosk-ds/tokens.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: #1A1A1A;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #E5E2DF;
+      min-height: 100vh;
+    }
+    .shell-header {
+      padding: 24px 40px;
+      border-bottom: 1px solid #333;
+      background: #111;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .shell-title { font-size: 26px; font-weight: 900; letter-spacing: 1px; }
+    .shell-sub { font-size: 14px; color: #8A8680; margin-top: 4px; }
+    .tabs {
+      display: flex; gap: 4px; margin-top: 18px;
+      padding: 4px; background: #222; border-radius: 14px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 10px 22px; border-radius: 10px;
+      font-size: 15px; font-weight: 700;
+      color: #999; cursor: pointer;
+      border: none; background: transparent;
+      transition: background 180ms, color 180ms;
+    }
+    .tab:hover { color: #fff; }
+    .tab.active {
+      background: #E8001C; color: #fff;
+      box-shadow: 0 4px 12px rgba(232,0,28,0.35);
+    }
+    .tab-panel { padding: 40px; }
+    .section-title {
+      font-size: 32px; font-weight: 900; letter-spacing: 0.5px;
+      margin: 0 0 8px;
+    }
+    .section-sub {
+      font-size: 16px; color: #9A9590;
+      margin: 0 0 28px; max-width: 900px; line-height: 1.5;
+    }
+    .row-label {
+      font-size: 13px; font-weight: 900; letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #FBBF24; margin: 36px 0 16px;
+      padding-bottom: 8px; border-bottom: 2px solid #333;
+    }
+    .variant-grid {
+      display: grid; gap: 40px;
+      margin-bottom: 40px;
+    }
+    .variant-grid.cols-3 { grid-template-columns: repeat(3, max-content); }
+    .variant-grid.cols-2 { grid-template-columns: repeat(2, max-content); }
+    .variant-grid.cols-1 { grid-template-columns: max-content; }
+    .legend {
+      background: #222; border-left: 4px solid #FBBF24;
+      padding: 16px 22px; margin-bottom: 28px;
+      font-size: 14px; color: #CBC9C6; line-height: 1.6;
+      border-radius: 0 10px 10px 0;
+    }
+    .legend strong { color: #FBBF24; }
+    .kbd {
+      background: #111; color: #FBBF24;
+      padding: 2px 8px; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 700;
+    }
+    .deliverables {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 18px; margin-top: 24px;
+    }
+    .deliverable {
+      background: #222; border-radius: 14px;
+      padding: 22px 26px; border: 1px solid #333;
+    }
+    .deliverable-title {
+      font-size: 17px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .deliverable-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: #60A5FA; margin-top: 6px;
+      word-break: break-all;
+    }
+    .deliverable-desc {
+      font-size: 14px; color: #9A9590;
+      margin-top: 8px; line-height: 1.5;
+    }
+    .status-chip {
+      display: inline-block; padding: 3px 10px;
+      font-size: 11px; font-weight: 900;
+      border-radius: 999px; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .status-chip.done { background: #065F46; color: #6EE7B7; }
+    .status-chip.v2  { background: #78350F; color: #FBBF24; }
+    .status-chip.v15 { background: #1E3A8A; color: #93C5FD; }
+    .priorisation-table {
+      width: 100%; border-collapse: collapse;
+      margin-top: 20px; background: #222; border-radius: 12px; overflow: hidden;
+    }
+    .priorisation-table th {
+      background: #333; color: #FBBF24;
+      padding: 14px 18px; text-align: left;
+      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    }
+    .priorisation-table td {
+      padding: 16px 18px; border-top: 1px solid #2A2A2A;
+      font-size: 14px; color: #CBC9C6; line-height: 1.5;
+    }
+    .priorisation-table td:first-child {
+      font-weight: 800; color: #fff; width: 130px; white-space: nowrap;
+    }
+    #root { min-height: calc(100vh - 140px); }
+  </style>
+</head>
+<body>
+  <div class="shell-header">
+    <div class="shell-title">🍔 FoodKing Kiosk V1 — Design System</div>
+    <div class="shell-sub">Livrable design · Vague 1 (a11y + fondations) · 10 artefacts · 1080×1920 portrait, 82 DPI</div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="kiosk-ds/atoms.jsx"></script>
+  <script type="text/babel" src="kiosk-ds/screens-part1.jsx"></script>
+  <script type="text/babel" src="kiosk-ds/screens-part2.jsx"></script>
+  <script type="text/babel" src="kiosk-ds/consent.jsx"></script>
+  <script type="text/babel" src="kiosk-ds/v2-components.jsx"></script>
+
+  <script type="text/babel">
+    const TABS = [
+      { id: "overview", label: "① Vue d'ensemble" },
+      { id: "a11y",     label: "② A11y variants" },
+      { id: "rtl",      label: "③ RTL — FR ↔ AR" },
+      { id: "consent",  label: "④ Consent RGPD" },
+      { id: "v2",       label: "⑤ V2 / V1.5 différés" },
+    ];
+
+    function App() {
+      const initial = localStorage.getItem("kiosk_ds_tab") || "overview";
+      const [tab, setTab] = React.useState(initial);
+      React.useEffect(() => localStorage.setItem("kiosk_ds_tab", tab), [tab]);
+
+      // Render tabs into header
+      React.useEffect(() => {
+        const container = document.getElementById("tabs");
+        container.innerHTML = "";
+        TABS.forEach(t => {
+          const btn = document.createElement("button");
+          btn.className = "tab" + (t.id === tab ? " active" : "");
+          btn.textContent = t.label;
+          btn.onclick = () => setTab(t.id);
+          container.appendChild(btn);
+        });
+      }, [tab]);
+
+      return (
+        <div className="tab-panel">
+          {tab === "overview" && <Overview />}
+          {tab === "a11y"     && <A11yGrid />}
+          {tab === "rtl"      && <RtlGrid />}
+          {tab === "consent"  && <ConsentGrid />}
+          {tab === "v2"       && <V2Grid />}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // TAB 1 — Overview
+    // ============================================================
+    function Overview() {
+      return (
+        <div>
+          <div className="section-title">Vague 1 — Livraison</div>
+          <div className="section-sub">
+            Suite au brief d'intégration du 18/04, voici les 10 artefacts livrés pour passer en intégration Cursor (Laravel + Vue).
+            L'accessibilité est en priorité absolue (EAA 28 juin 2025, loi 2005-102, WCAG 2.2 AAA sur mode renforcé).
+          </div>
+
+          <div className="row-label">📄 Spécifications techniques (docs/design/)</div>
+          <div className="deliverables">
+            <Del title="Hardware spec" path="docs/design/KIOSK_HARDWARE_SPEC.md"
+              desc="Résolution 1080×1920, 82 DPI, mount 85 cm, zone PMR 160-1760 px. Cibles perf Intel N5030."
+              status="done" />
+            <Del title="Bridge hardware" path="docs/design/KIOSK_HARDWARE_CALLS.md"
+              desc="API window.borne.* complète (sons, print, TPE, QR/NFC, TTS, haptique). Appels par écran. Stub dev."
+              status="done" />
+            <Del title="Analytics events" path="docs/design/KIOSK_ANALYTICS_EVENTS.md"
+              desc="29 événements V1, payload structuré, opt-in gate. Granularité décisions (pas tap-level)."
+              status="done" />
+            <Del title="Contrat data" path="docs/design/DATA_CONTRACT.md"
+              desc="Endpoints + TypeScript types pour chaque composant. Migrations SQL fournies. 7 invariants testables."
+              status="done" />
+            <Del title="Design tokens" path="docs/design/tokens.json"
+              desc="Format W3C DTCG (Style Dictionary compatible). Couleurs, typo, spacing, motion, a11y, hardware."
+              status="done" />
+          </div>
+
+          <div className="row-label">🎨 Mockups visuels (ce design system)</div>
+          <div className="deliverables">
+            <Del title="② A11y variants" path="6 écrans × 3 modes"
+              desc="Normal AA · PMR (repli bas) · Contraste AAA ×1.3. Idle, Menu, Wizard, Cart, Payment, Waiting."
+              status="done" />
+            <Del title="③ RTL FR ↔ AR" path="6 écrans × 2 locales"
+              desc="Inversion complète des grilles pour Noto Sans Arabic. Pas juste le texte — layout entier."
+              status="done" />
+            <Del title="④ RGPD Consent" path="3 écrans + overlay idle"
+              desc="Heatmap opt-in, fidélité QR, transfert mobile. Boutons Accepter/Refuser équivalents (CNIL)."
+              status="done" />
+            <Del title="⑤ V2 / V1.5 différés" path="3 composants conservés"
+              desc="Preview image dynamique wizard (V2), upsell avec stats (V2), QR panier mobile (V1.5)."
+              status="v2" />
+          </div>
+
+          <div className="row-label">🗂 Priorisation</div>
+          <table className="priorisation-table">
+            <thead><tr><th>Vague</th><th>Contenu</th><th>Statut</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>V1 — Vague 1</td>
+                <td>Accessibilité complète (PMR + AAA + audio + RTL AR) + fondations UX + filtres statiques + sous-catégories + recherche tactile + clavier custom + consent RGPD</td>
+                <td><span className="status-chip done">Priorité absolue · Design livré</span></td>
+              </tr>
+              <tr>
+                <td>V1 — Vague 2</td>
+                <td>Upsell/cross-sell règles admin · Mode Turbo fidélité · analytics opt-in · mode rush/nuit · sound design · micro-animations idle</td>
+                <td><span className="status-chip done">Après Vague 1 · Design livré</span></td>
+              </tr>
+              <tr>
+                <td>V1.5</td>
+                <td>QR « finir sur mobile » (PWA à construire)</td>
+                <td><span className="status-chip v15">Design livré · intégration ultérieure</span></td>
+              </tr>
+              <tr>
+                <td>V2</td>
+                <td>Preview image dynamique wizard · upsell avec statistiques chiffrées</td>
+                <td><span className="status-chip v2">Design livré · intégration ultérieure</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="legend" style={{ marginTop: 30 }}>
+            <strong>📌 Règles d'or consommation front :</strong><br/>
+            • <span className="kbd">window.borne.*</span> UNIQUEMENT — jamais <span className="kbd">new Audio()</span> ni <span className="kbd">navigator.vibrate</span><br/>
+            • Tous les prix via <span className="kbd">/api/frontend/pricing/preview</span> — jamais hardcodés côté Vue<br/>
+            • Scoping <span className="kbd">branch_id</span> serveur systématique — pas de filtre Vue<br/>
+            • i18n : clés structurées <span className="kbd">resources/js/i18n/&#123;fr,en,ar&#125;.json</span>, jamais de texte en dur<br/>
+            • Analytics : opt-in gate obligatoire (CNIL) AVANT tout <span className="kbd">POST /api/frontend/kiosk-event</span>
+          </div>
+        </div>
+      );
+    }
+
+    function Del({ title, path, desc, status }) {
+      return (
+        <div className="deliverable">
+          <div className="deliverable-title">
+            {title}
+            <span className={"status-chip " + status}>{statusLabel(status)}</span>
+          </div>
+          <div className="deliverable-path">{path}</div>
+          <div className="deliverable-desc">{desc}</div>
+        </div>
+      );
+    }
+    function statusLabel(s) {
+      return { done: "✓ V1", v2: "V2", v15: "V1.5" }[s];
+    }
+
+    // ============================================================
+    // TAB 2 — A11y variants (6 écrans × 3 modes)
+    // ============================================================
+    function A11yGrid() {
+      const screens = [
+        { id: "idle",    label: "01 · Idle (veille)",     comp: ScreenIdle },
+        { id: "menu",    label: "02 · Menu + filtres",    comp: ScreenMenu },
+        { id: "wizard",  label: "03 · Wizard étape viande", comp: ScreenWizard },
+        { id: "cart",    label: "04 · Panier",             comp: ScreenCart },
+        { id: "payment", label: "05 · Paiement TPE",       comp: ScreenPayment },
+        { id: "waiting", label: "06 · Numéro de commande", comp: ScreenWaiting },
+      ];
+      return (
+        <div>
+          <div className="section-title">Variantes d'accessibilité</div>
+          <div className="section-sub">
+            Chaque écran livré en 3 variantes. La zone PMR pointillée bleue = bande inférieure 160-1760 px (90-140 cm du sol physique).
+            Mode contraste AAA : ratio ≥ 7:1, texte ×1.3, focus ring <span className="kbd">#0B2AB8</span> 6 px, disparition des gradients et ombres décoratives.
+          </div>
+          <div className="legend">
+            <strong>Paramètres a11y dynamiques (idle timeout × a11y mode)</strong> — cf. <span className="kbd">tokens.json → a11y.idle-timeout-s</span><br/>
+            Normal : 180 s + 10 s countdown · Malvoyant : 240 + 15 · PMR : 300 + 20 · PMR+Malvoyant : 360 + 25
+          </div>
+
+          {screens.map(s => (
+            <React.Fragment key={s.id}>
+              <div className="row-label">{s.label}</div>
+              <div className="variant-grid cols-3">
+                <MockupFrame scale={0.3} label={s.label} variant="normal">
+                  <s.comp dir="ltr" />
+                </MockupFrame>
+                <MockupFrame scale={0.3} label={s.label} variant="pmr" pmr={true}>
+                  <s.comp dir="ltr" pmr={true} />
+                </MockupFrame>
+                <MockupFrame scale={0.3} label={s.label} variant="aaa" contrast="high">
+                  <s.comp dir="ltr" />
+                </MockupFrame>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // TAB 3 — RTL FR ↔ AR
+    // ============================================================
+    function RtlGrid() {
+      const screens = [
+        { id: "idle",    label: "01 · Idle",    comp: ScreenIdle },
+        { id: "menu",    label: "02 · Menu",    comp: ScreenMenu },
+        { id: "wizard",  label: "03 · Wizard",  comp: ScreenWizard },
+        { id: "cart",    label: "04 · Panier",  comp: ScreenCart },
+        { id: "payment", label: "05 · Paiement",comp: ScreenPayment },
+        { id: "waiting", label: "06 · Numéro",  comp: ScreenWaiting },
+      ];
+      return (
+        <div>
+          <div className="section-title">FR (LTR) ↔ AR (RTL)</div>
+          <div className="section-sub">
+            Inversion RTL COMPLÈTE : grilles, sidebars, ordre des boutons, alignements texte. Font family Noto Sans Arabic chargée via Google Fonts.
+            Les langues par branche sont admin-activables (<span className="kbd">branches.available_locales: json</span>) — si &lt; 2 actives, le sélecteur disparaît.
+          </div>
+
+          {screens.map(s => (
+            <React.Fragment key={s.id}>
+              <div className="row-label">{s.label}</div>
+              <div className="variant-grid cols-2">
+                <MockupFrame scale={0.35} label={s.label} variant="fr">
+                  <s.comp dir="ltr" />
+                </MockupFrame>
+                <MockupFrame scale={0.35} label={s.label} variant="ar">
+                  <s.comp dir="rtl" />
+                </MockupFrame>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // TAB 4 — Consent RGPD
+    // ============================================================
+    function ConsentGrid() {
+      return (
+        <div>
+          <div className="section-title">Écrans RGPD</div>
+          <div className="section-sub">
+            Opt-in EXPLICITE, pré-décoché (obligation CNIL), boutons Accepter/Refuser équivalents visuellement.
+            Le refus ne bloque jamais le parcours. Données session uniquement, jamais persistées au-delà.
+          </div>
+
+          <div className="row-label">① Analytics / heatmap (opt-in)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Heatmap FR" variant="fr">
+              <ConsentHeatmap dir="ltr" />
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Heatmap AR" variant="ar">
+              <ConsentHeatmap dir="rtl" />
+            </MockupFrame>
+          </div>
+
+          <div className="row-label">② Scan fidélité QR</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Loyalty FR" variant="fr">
+              <ConsentLoyalty dir="ltr" />
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Loyalty AR" variant="ar">
+              <ConsentLoyalty dir="rtl" />
+            </MockupFrame>
+          </div>
+
+          <div className="row-label">③ Transfert mobile (V1.5)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Mobile FR" variant="fr">
+              <ConsentMobile dir="ltr" />
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Mobile AR" variant="ar">
+              <ConsentMobile dir="rtl" />
+            </MockupFrame>
+          </div>
+
+          <div className="row-label">④ Overlay idle countdown (sur écran wizard)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Idle countdown FR" variant="normal">
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <ScreenWizard dir="ltr" />
+                <IdleCountdownOverlay dir="ltr" seconds={8} />
+              </div>
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Idle countdown (PMR = 20s)" variant="pmr" pmr={true}>
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <ScreenWizard dir="ltr" pmr={true} />
+                <IdleCountdownOverlay dir="ltr" seconds={18} />
+              </div>
+            </MockupFrame>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // TAB 5 — V2 / V1.5 différés
+    // ============================================================
+    function V2Grid() {
+      return (
+        <div>
+          <div className="section-title">Composants différés</div>
+          <div className="section-sub">
+            Livrés au design system comme composants documentés, <strong>mais NON inclus dans le parcours V1</strong>.
+            Ils apparaissent avec un ruban explicite pour éviter toute confusion d'intégration.
+          </div>
+
+          <div className="legend">
+            <strong>🚫 Règle de non-intégration V1 (brief §3)</strong> — aucune donnée statistique en temps réel ne doit apparaître côté client en V1.
+            Pas de « X% des clients », pas de « best-seller », pas de « populaire ». L'upsell V1 reste simple :
+            <span className="kbd">« Avec ce Kebab, des frites pour +1 € ? »</span>. Sans justification chiffrée.
+          </div>
+
+          <div className="row-label">① Preview image dynamique wizard (V2)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Preview dyn FR" variant="fr">
+              <WizardPreviewDynamic dir="ltr" />
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Preview dyn AR" variant="ar">
+              <WizardPreviewDynamic dir="rtl" />
+            </MockupFrame>
+          </div>
+
+          <div className="row-label">② Upsell avec social-proof chiffré (V2)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="Upsell stats FR" variant="fr">
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <ScreenCart dir="ltr" />
+                <UpsellWithStats dir="ltr" />
+              </div>
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="Upsell stats AR" variant="ar">
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <ScreenCart dir="rtl" />
+                <UpsellWithStats dir="rtl" />
+              </div>
+            </MockupFrame>
+          </div>
+
+          <div className="row-label">③ QR finir sur mobile (V1.5)</div>
+          <div className="variant-grid cols-2">
+            <MockupFrame scale={0.35} label="QR mobile FR" variant="fr">
+              <MobileTransferQR dir="ltr" />
+            </MockupFrame>
+            <MockupFrame scale={0.35} label="QR mobile AR" variant="ar">
+              <MobileTransferQR dir="rtl" />
+            </MockupFrame>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<?php
+
+namespace Tests\Unit\Security;
+
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Tests\TestCase;
+
+/**
+ * Regression guard for TASK_V1_SEC_CORS_RATELIMIT_001.
+ *
+ * Any named RateLimiter declared in RouteServiceProvider::configureRateLimiting()
+ * MUST remain registered and MUST yield a Limit with the documented per-minute
+ * ceiling. Dropping a limiter or loosening a cap silently breaks an acceptance
+ * criterion and is rejected here.
+ *
+ * @see app/Providers/RouteServiceProvider.php
+ * @see docs/RATE_LIMITS_MATRIX.md
+ */
+class RateLimiterConfigTest extends TestCase
+{
+    /**
+     * name => [expectedPerMinute, bindsUserId]
+     *
+     * `bindsUserId=true` → limiter is expected to key by authenticated user id
+     * when available (admin/pos buckets). Guest fallback (ip) is acceptable.
+     *
+     * @var array<string, array{0:int,1:bool}>
+     */
+    private const EXPECTED_LIMITERS = [
+        'api' => [120, true],
+        'admin-mutation' => [30, true],
+        'pos-order-create' => [60, true],
+        'pos-order-update' => [120, true],
+    ];
+
+    /** @dataProvider namedLimiterProvider */
+    public function test_named_limiter_is_registered_with_expected_cap(string $name, int $expectedPerMinute): void
+    {
+        $resolver = RateLimiter::limiter($name);
+
+        $this->assertIsCallable(
+            $resolver,
+            sprintf('Named RateLimiter `%s` is not registered in RouteServiceProvider', $name)
+        );
+
+        $request = Request::create('/api/probe', 'POST');
+        $limit = $resolver($request);
+
+        $this->assertInstanceOf(
+            Limit::class,
+            $limit,
+            sprintf('RateLimiter `%s` must return an Illuminate Limit instance', $name)
+        );
+
+        $this->assertSame(
+            $expectedPerMinute,
+            $limit->maxAttempts,
+            sprintf(
+                'RateLimiter `%s` cap drifted: expected %d/min, got %d/min',
+                $name,
+                $expectedPerMinute,
+                $limit->maxAttempts
+            )
+        );
+    }
+
+    public function test_login_lockout_limiter_is_registered(): void
+    {
+        $resolver = RateLimiter::limiter('login-lockout');
+
+        $this->assertIsCallable(
+            $resolver,
+            'Named RateLimiter `login-lockout` is not registered in RouteServiceProvider'
+        );
+
+        $request = Request::create('/api/auth/login', 'POST', ['email' => 'abuse@example.com']);
+        $limit = $resolver($request);
+
+        $this->assertInstanceOf(Limit::class, $limit);
+        $this->assertSame(
+            10,
+            $limit->maxAttempts,
+            'login-lockout: V1 spec requires 10 attempts ceiling'
+        );
+    }
+
+    public function test_kiosk_orders_limiter_is_registered(): void
+    {
+        $resolver = RateLimiter::limiter('kiosk-orders');
+
+        $this->assertIsCallable(
+            $resolver,
+            'Named RateLimiter `kiosk-orders` is not registered in RouteServiceProvider'
+        );
+
+        $request = Request::create('/api/frontend/order', 'POST');
+        $limit = $resolver($request);
+
+        $this->assertInstanceOf(Limit::class, $limit);
+        $this->assertSame(
+            (int) config('kiosk.order_rate_limit', 5),
+            $limit->maxAttempts,
+            'kiosk-orders cap must come from config(kiosk.order_rate_limit)'
+        );
+    }
+
+    /**
+     * @return array<string, array{0:string,1:int}>
+     */
+    public static function namedLimiterProvider(): array
+    {
+        $cases = [];
+        foreach (self::EXPECTED_LIMITERS as $name => [$cap]) {
+            $cases[$name] = [$name, $cap];
+        }
+        return $cases;
+    }
+}

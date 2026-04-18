@@ -82,12 +82,25 @@ abstract class TestCase extends BaseTestCase
     protected function seedSpatieRoles(): void
     {
         // Create roles with production-aligned names and guard
-        Role::firstOrCreate(['name' => 'Admin',          'guard_name' => 'sanctum']);
-        Role::firstOrCreate(['name' => 'Chef',           'guard_name' => 'sanctum']);
-        Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'sanctum']);
-        Role::firstOrCreate(['name' => 'POS Operator',   'guard_name' => 'sanctum']);
-        Role::firstOrCreate(['name' => 'Customer',       'guard_name' => 'sanctum']);
-        Role::firstOrCreate(['name' => 'Stuff',          'guard_name' => 'sanctum']);
+        $adminRoleModel = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'sanctum']);
+        $chefRoleModel = Role::firstOrCreate(['name' => 'Chef', 'guard_name' => 'sanctum']);
+        $branchManagerRoleModel = Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'sanctum']);
+        $posRoleModel = Role::firstOrCreate(['name' => 'POS Operator', 'guard_name' => 'sanctum']);
+        $customerRoleModel = Role::firstOrCreate(['name' => 'Customer', 'guard_name' => 'sanctum']);
+        $stuffRoleModel = Role::firstOrCreate(['name' => 'Stuff', 'guard_name' => 'sanctum']);
+
+        $adminRoleModel->landing_url = 'dashboard';
+        $adminRoleModel->save();
+        $chefRoleModel->landing_url = 'kitchen-display-system';
+        $chefRoleModel->save();
+        $branchManagerRoleModel->landing_url = 'dashboard';
+        $branchManagerRoleModel->save();
+        $posRoleModel->landing_url = 'pos';
+        $posRoleModel->save();
+        $customerRoleModel->landing_url = '#';
+        $customerRoleModel->save();
+        $stuffRoleModel->landing_url = 'dashboard';
+        $stuffRoleModel->save();
 
         $permissionNames = [
             'online-orders',
@@ -96,6 +109,27 @@ abstract class TestCase extends BaseTestCase
             'pos',
             'dashboard',
             'order-status-screen',
+            'settings',
+            'items',
+            'items_create',
+            'items_edit',
+            'items_delete',
+            'items_show',
+            'coupons',
+            'coupons_create',
+            'coupons_edit',
+            'coupons_delete',
+            'coupons_show',
+            'dining-tables',
+            'dining_tables_create',
+            'dining_tables_edit',
+            'dining_tables_delete',
+            'dining_tables_show',
+            'offers',
+            'offers_create',
+            'offers_edit',
+            'offers_delete',
+            'offers_show',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
