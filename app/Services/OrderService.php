@@ -43,6 +43,8 @@ use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
+use App\Services\Fiscal\FiscalSequenceService;
+use App\Services\Orders\OrderItemAllergenSnapshot;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingResult;
 use App\Services\Pricing\PricingService;
@@ -615,6 +617,10 @@ class OrderService
                     $realSubtotal = $posSsotPricingResult->accumulatedSubtotal;
                     $totalTax = $posSsotPricingResult->totalTax;
                     $calculatedDiscount = $posSsotPricingResult->discount;
+                    // [POS-9.4.BL.1] Persist immutable allergen snapshot on each
+                    // order_item row for NF525 fiscal traceability (must be frozen
+                    // at order time, not read through a live FK join later).
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -746,6 +752,9 @@ class OrderService
                         }
                     }
 
+                    // [POS-9.4.BL.1] Same NF525 allergen snapshot hydration for the
+                    // non-SSOT legacy path (feature flag `pricing.use_ssot_service=false`).
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -841,6 +850,17 @@ class OrderService
                 $start = $currentTime->format('H:i');
                 $end = $endTime->format('H:i');
                 $this->order->delivery_time = "$start - $end";
+
+                // [POS-9.4.BL.1] Reserve fiscal sequence number atomically right
+                // before persisting. FiscalSequenceService::next() runs its own
+                // Cache::lock + lockForUpdate + transaction so nesting inside our
+                // DB::transaction only creates a SAVEPOINT — if our outer
+                // transaction rolls back, no sequence number is effectively
+                // "consumed" (next call sees the same MAX again). NF525 requires
+                // strictly monotonic gap-free numbering per branch.
+                $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
+                    ->next((int) $this->order->branch_id);
+
                 $this->order->save();
 
                 // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order
