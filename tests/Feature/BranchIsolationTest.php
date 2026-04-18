@@ -123,8 +123,10 @@ class BranchIsolationTest extends TestCase
                 'status' => OrderStatus::ACCEPT,
             ]);
 
-        $this->assertContains($response->status(), [403, 404, 422],
-            'change-status must not succeed cross-branch, got: ' . $response->status());
+        // [POS-9-H.1.4] Strict 403: after F-A1 fix, cross-branch denial must bubble as HttpException(403),
+        // not be re-wrapped as 422 by the generic catch. 404 still acceptable if route model binding is scoped.
+        $this->assertContains($response->status(), [403, 404],
+            'change-status must return 403 (explicit deny) or 404 (scope-hidden), got: ' . $response->status());
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
@@ -142,7 +144,9 @@ class BranchIsolationTest extends TestCase
                 'payment_status' => PaymentStatus::PAID,
             ]);
 
-        $this->assertContains($response->status(), [403, 404, 422]);
+        // [POS-9-H.1.4] Strict 403: same rationale as change-status.
+        $this->assertContains($response->status(), [403, 404],
+            'change-payment-status must return 403 (explicit deny) or 404 (scope-hidden), got: ' . $response->status());
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
@@ -176,20 +180,17 @@ class BranchIsolationTest extends TestCase
         $response = $this->withHeader('x-api-key', config('app.api_key'))
             ->getJson('/api/admin/kds-order');
 
-        // Route may be access-controlled (403/404) or return a payload.
-        // Both outcomes are acceptable as long as no branch-B order leaks.
-        if ($response->status() !== 200) {
-            $this->assertContains($response->status(), [401, 403, 404, 422],
-                'KDS returned unexpected status ' . $response->status());
-            return;
-        }
+        // [POS-9-H.1.4] Strict positive-control: the route must be accessible to chef-A (200) and return a list.
+        // This test fails LOUD if KDS becomes 403/404 for its own branch — previously the early-return hid that regression.
+        $this->assertSame(200, $response->status(),
+            'KDS endpoint must be accessible to chef of branch A, got: ' . $response->status());
 
         $payload = $response->json('data');
-        if (!is_array($payload)) {
-            return; // non-collection response (e.g., meta-only) — nothing to leak.
-        }
+        $this->assertIsArray($payload, 'KDS must return a data array.');
 
         $ids = collect($payload)->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->assertContains((int) $orderA->id, $ids,
+            'KDS did not return chef-A\'s own-branch order.');
         $this->assertNotContains((int) $orderB->id, $ids,
             'KDS leaked an order from a foreign branch.');
     }

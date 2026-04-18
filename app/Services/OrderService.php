@@ -1363,6 +1363,8 @@ class OrderService
             }
 
             return $order;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1422,11 +1424,12 @@ class OrderService
                 // [CYCLE-002b] Atomic branch check, cashback, status save + ActionLog; notifications after commit.
                 $oldStatusForBroadcast = null;
                 DB::transaction(function () use ($order, $request, &$oldStatusForBroadcast) {
-                    // [AUDIT-FIX P0-2] Branch isolation: non-Admin staff can only modify orders of their branch
+                    // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
+                    // Use abort() so the 403 is a real HttpException and bubbles untouched through the generic catch below.
                     if (Auth::check() && !Auth::user()->hasRole('Admin')) {
                         $userBranch = Auth::user()->branch_id ?? null;
                         if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
-                            throw new Exception('Accès refusé : cette commande appartient à une autre succursale.', 403);
+                            abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
                         }
                     }
 
@@ -1485,6 +1488,8 @@ class OrderService
                 }
             }
             return $order;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1506,11 +1511,12 @@ class OrderService
                     abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
             } else {
-                // [AUDIT-FIX P0-2 / P1-5] Branch isolation: non-Admin staff can only modify their branch's orders
+                // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify their branch's orders.
+                // Use abort() so the 403 bubbles through the generic catch as a real HttpException.
                 if (Auth::check() && !Auth::user()->hasRole('Admin')) {
                     $userBranch = Auth::user()->branch_id ?? null;
                     if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
-                        throw new Exception('Accès refusé : cette commande appartient à une autre succursale.', 403);
+                        abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
                     }
                 }
 
@@ -1531,6 +1537,8 @@ class OrderService
 
                 return $order;
             }
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1554,6 +1562,8 @@ class OrderService
                 $order->save();
                 return $order;
             }
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
