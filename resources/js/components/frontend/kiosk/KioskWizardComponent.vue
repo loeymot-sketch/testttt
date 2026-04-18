@@ -220,6 +220,8 @@ import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
 import { onEvent } from '../../../services/eventContract';
 // Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
+// Phase 9.3.12 — Double-submit guard factory (cooldown window after submit).
+import { createSubmitGuard } from '../../../helpers/kioskWizardSubmitGuard';
 
 export default {
   name: 'KioskWizardComponent',
@@ -1226,7 +1228,7 @@ export default {
       return sanitizeKioskCustomerFacingText(joined);
     },
     async addToCart() {
-      if (this.isSubmitting) {
+      if (!this._submitGuard || !this._submitGuard.canProceed()) {
         try {
           kioskAnalytics.track('add_to_cart_guarded_against_double_click', {
             item_id: this.resolvedItem?.id || null,
@@ -1251,6 +1253,7 @@ export default {
       } catch (error) {
         this.selections._summaryConfirmed = false;
         this.isSubmitting = false;
+        this._submitGuard.release();
         throw error;
       }
     },
@@ -1318,6 +1321,7 @@ export default {
     }
   },
   mounted() {
+    this._submitGuard = createSubmitGuard();
     if (this.item) {
       this.resetSelections();
       this.initGarnitures();
