@@ -57,7 +57,7 @@
 | POS-GA-F-40 | P1 | Couverture tests POS backend faible (pas double-submit POS, pas `changePaymentStatus`, pas symétrie) | `tests/Feature/` | POS-9.10 | sync | open |
 | POS-GA-F-41 | P1 | Panier localStorage `pos_cart_v2` non scopé par `branch_id`/`user_id` — fuite entre caissiers | `resources/js/store/pos/posCart.js:6-44` | POS-9.9 | — | open |
 | POS-GA-F-42 | P1 | Token séquentiel journalier fabriqué client localStorage — collisions entre caisses | `resources/js/components/admin/pos/PosComponent.vue:1253-1266` | POS-9.8 | — | open |
-| POS-GA-F-43 | P2 | `KitchenDisplaySystemOrderService::list` filtre `branch_id` via `LIKE '%X%'` → faux positifs | `app/Services/KitchenDisplaySystemOrderService.php:75-85` | POS-9.1 | — | open |
+| POS-GA-F-43 | P2 | `KitchenDisplaySystemOrderService::list` filtre `branch_id` via `LIKE '%X%'` → faux positifs | `app/Services/KitchenDisplaySystemOrderService.php:75-85` | POS-9.1 | — | resolved (POS-9.1.5) |
 | POS-GA-F-44 | P2 | `OrderService::list` dépend exclusivement de `BranchScope` (pas de defense-in-depth) | `app/Services/OrderService.php:102-170` | POS-9.10 | — | open |
 | POS-GA-F-45 | P2 | POS ne s'abonne pas à `ItemAvailabilityChanged` (86 admin non reflété live) | `resources/js/components/admin/pos/PosComponent.vue:1004-1007` | POS-9.6 | — | open |
 | POS-GA-F-46 | P2 | `buildWizardRestorePayload` basé sur heuristiques FR (`includes('pain'\|'viande'\|...')`) | `resources/js/components/admin/pos/ItemComponent.vue:721-915` | POS-9.9 | — | open |
