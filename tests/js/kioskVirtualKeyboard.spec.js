@@ -100,4 +100,27 @@ describe('KsVirtualKeyboard', () => {
         await w.find('[data-testid="kiosk-vkeyb-clear"]').trigger('click');
         expect(w.emitted('update:modelValue')[0][0]).toBe('');
     });
+
+    /**
+     * Kiosk Phase 9.1.7 — digits row partagée par tous les layouts :
+     * fondamentale pour les saisies téléphone / email chiffrés sur les
+     * bornes Windows sans TabTip.
+     */
+    it('9.1.7 — rangée numérique 0-9 dispo sur tous les layouts', async () => {
+        for (const layout of ['fr', 'en', 'ar']) {
+            const w = mountKb({ layout });
+            for (const digit of ['0', '1', '5', '9']) {
+                expect(
+                    w.find(`[data-testid="kiosk-vkeyb-key-${digit}"]`).exists(),
+                    `layout ${layout} manque le chiffre ${digit}`,
+                ).toBe(true);
+            }
+        }
+    });
+
+    it('9.1.7 — clic sur une touche numérique émet le chiffre correspondant', async () => {
+        const w = mountKb({ modelValue: '06' });
+        await w.find('[data-testid="kiosk-vkeyb-key-1"]').trigger('click');
+        expect(w.emitted('update:modelValue')[0][0]).toBe('061');
+    });
 });

@@ -108,15 +108,24 @@
  *    contrôlée par le parent via v-model pour éviter les divergences.
  */
 
+// Kiosk Phase 9.1.7 — rangée numérique (0-9) partagée par tous les layouts.
+// Les champs loyalty (phone + email) ont besoin de chiffres ; sans cette
+// rangée, le KsVirtualKeyboard n'était utilisable que pour des saisies
+// alphabétiques strictes et les bornes Windows sans TabTip n'offraient
+// aucun moyen de saisir un numéro de téléphone.
+const DIGITS_ROW = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
 const ROW_DEFS = {
     // Layout AZERTY simplifié (FR borne)
     fr: {
         normal: [
+            DIGITS_ROW,
             ['a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
             ['q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'],
             ['w', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@'],
         ],
         shift: [
+            DIGITS_ROW,
             ['A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
             ['Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'],
             ['W', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@'],
@@ -125,11 +134,13 @@ const ROW_DEFS = {
     // QWERTY (EN)
     en: {
         normal: [
+            DIGITS_ROW,
             ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
             ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'],
             ['z', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@'],
         ],
         shift: [
+            DIGITS_ROW,
             ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
             ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'],
             ['Z', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@'],
@@ -139,11 +150,13 @@ const ROW_DEFS = {
     // Les lettres n'ont pas de casse — "shift" affiche harakat (tashkeel).
     ar: {
         normal: [
+            DIGITS_ROW,
             ['ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح'],
             ['ش', 'س', 'ي', 'ب', 'ل', 'ا', 'ت', 'ن', 'م', 'ك'],
             ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'ى', 'ة', 'و', 'ز', 'ظ'],
         ],
         shift: [
+            DIGITS_ROW,
             ['ّ', 'َ', 'ً', 'ُ', 'ٌ', 'ِ', 'ٍ', 'ْ', 'ٰ', 'ٓ'],
             ['ش', 'س', 'ي', 'ب', 'ل', 'أ', 'ت', 'ن', 'م', 'ك'],
             ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'آ', 'إ', 'و', 'ز', 'ظ'],

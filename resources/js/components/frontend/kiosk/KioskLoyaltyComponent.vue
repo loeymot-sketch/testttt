@@ -90,8 +90,13 @@
               v-model="registerName"
               type="text"
               class="kiosk-loyalty-input"
+              :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'registerName' }"
               :placeholder="$t('kiosk.loyalty_screen.placeholder_name')"
               maxlength="60"
+              readonly
+              data-testid="kiosk-loyalty-register-name"
+              @focus="onFocusRegisterField('registerName')"
+              @click="onFocusRegisterField('registerName')"
             />
           </div>
           <div class="kiosk-field-group">
@@ -100,8 +105,13 @@
               v-model="registerPhone"
               type="tel"
               class="kiosk-loyalty-input"
+              :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'registerPhone' }"
               :placeholder="$t('kiosk.loyalty_screen.placeholder_phone')"
               maxlength="20"
+              readonly
+              data-testid="kiosk-loyalty-register-phone"
+              @focus="onFocusRegisterField('registerPhone')"
+              @click="onFocusRegisterField('registerPhone')"
             />
           </div>
           <div class="kiosk-field-group">
@@ -110,8 +120,13 @@
               v-model="registerEmail"
               type="email"
               class="kiosk-loyalty-input"
+              :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'registerEmail' }"
               :placeholder="$t('kiosk.loyalty_screen.placeholder_email')"
               maxlength="80"
+              readonly
+              data-testid="kiosk-loyalty-register-email"
+              @focus="onFocusRegisterField('registerEmail')"
+              @click="onFocusRegisterField('registerEmail')"
             />
           </div>
         </div>
@@ -230,6 +245,21 @@
       @update:model-value="(v) => { if (!v) showConsentModal = false; }"
     />
 
+    <!-- Kiosk Phase 9.1.7 — clavier virtuel monté hors du flex,
+         fixed bottom. Uniquement visible quand un champ register est actif.
+         Le numpad du code fidélité n'est pas impacté (UX dédié). -->
+    <KsVirtualKeyboard
+      :model-value="vkeybValue"
+      :visible="vkeybActiveField !== null"
+      :layout="vkeybLayout"
+      :allow-space="vkeybAllowSpace"
+      :max-length="vkeybMaxLength"
+      :show-preview="true"
+      @update:model-value="onVkeybInput"
+      @submit="onVkeybSubmit"
+      @close="onVkeybClose"
+    />
+
     <!-- Étape 3: Confirmation appliquée -->
     <div v-if="step === 'confirmed'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card kiosk-loyalty-confirm-card">
@@ -268,6 +298,11 @@ import axios from 'axios';
 // [PHASE-6.3] RGPD — modale de consentement loyalty + analytics injectée
 //             juste avant l'appel API `frontend/loyalty/register` qui persiste les PII.
 import KsConsentModal from './ds/KsConsentModal.vue';
+// Kiosk Phase 9.1.7 — clavier virtuel maison pour les inputs loyalty register.
+// Les bornes Windows kiosk désactivent TabTip → sans ce composant, les champs
+// name/phone/email sont inutilisables. Le numpad pour le code reste inchangé
+// (UX dédié aux codes fidélité numériques courts).
+import KsVirtualKeyboard from './ds/KsVirtualKeyboard.vue';
 // [PHASE-6.4] Instrumentation analytics (gated par consent).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
@@ -275,7 +310,7 @@ import kioskAnalytics from '../../../helpers/kioskAnalytics';
 export default {
   name: 'KioskLoyaltyComponent',
   mixins: [kioskPriceMixin],
-  components: { KsConsentModal },
+  components: { KsConsentModal, KsVirtualKeyboard },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -303,6 +338,10 @@ export default {
       // [PHASE-6.3] RGPD consent state
       showConsentModal: false,
       _pendingRegister: null,
+      // Kiosk Phase 9.1.7 — état clavier virtuel.
+      // `vkeybActiveField` = clé du champ actuellement édité ('registerName'
+      // | 'registerPhone' | 'registerEmail'). null → clavier masqué.
+      vkeybActiveField: null,
     };
   },
 
@@ -336,6 +375,38 @@ export default {
       const range = this.nextTierPoints - start;
       return Math.min(100, Math.round(((this.customer.loyalty_point - start) / range) * 100));
     },
+
+    // Kiosk Phase 9.1.7 — layout clavier virtuel basé sur la locale borne
+    // (kioskSettings.locale). Toujours fallback 'fr'.
+    vkeybLayout() {
+      const loc = this.$store.state.kioskSettings?.locale;
+      if (loc === 'en' || loc === 'ar' || loc === 'fr') return loc;
+      return 'fr';
+    },
+    // Kiosk Phase 9.1.7 — valeur pilotée par le champ actif. Renvoie '' si
+    // aucun champ n'est édité (le clavier est alors masqué via `visible`).
+    vkeybValue() {
+      const f = this.vkeybActiveField;
+      if (f === 'registerName') return this.registerName;
+      if (f === 'registerPhone') return this.registerPhone;
+      if (f === 'registerEmail') return this.registerEmail;
+      return '';
+    },
+    // Kiosk Phase 9.1.7 — interdit l'espace pour email (format RFC) et pour
+    // phone (format E.164 strict, l'utilisateur peut taper +, chiffres,
+    // tirets via clavier mais JAMAIS d'espace).
+    vkeybAllowSpace() {
+      return this.vkeybActiveField === 'registerName';
+    },
+    // Kiosk Phase 9.1.7 — maxLength alignée sur les attributs `maxlength`
+    // posés sur les <input> pour rester cohérent si un utilisateur mixe
+    // clavier virtuel + numpad matériel (hyp: admin).
+    vkeybMaxLength() {
+      if (this.vkeybActiveField === 'registerName') return 60;
+      if (this.vkeybActiveField === 'registerEmail') return 80;
+      if (this.vkeybActiveField === 'registerPhone') return 20;
+      return 200;
+    },
   },
 
   mounted() {
@@ -366,6 +437,41 @@ export default {
       } else if (this.code.length < 20) {
         this.code += key;
       }
+    },
+
+    // Kiosk Phase 9.1.7 — handlers du clavier virtuel.
+    // onFocusRegisterField(field) : appelé sur focus/click d'un <input>
+    // pour ouvrir le clavier sur le bon champ.
+    onFocusRegisterField(field) {
+      if (['registerName', 'registerPhone', 'registerEmail'].includes(field)) {
+        this.vkeybActiveField = field;
+      }
+    },
+    onVkeybInput(next) {
+      const f = this.vkeybActiveField;
+      if (!f) return;
+      this[f] = next;
+    },
+    onVkeybSubmit() {
+      // La touche ✓ valide le formulaire si tout est rempli ; sinon elle
+      // passe juste au champ suivant. Cela reproduit le comportement
+      // attendu d'un clavier matériel avec "Enter".
+      if (this.vkeybActiveField === 'registerName' && this.registerPhone === '') {
+        this.vkeybActiveField = 'registerPhone';
+        return;
+      }
+      if (this.vkeybActiveField === 'registerPhone' && this.registerEmail === '') {
+        this.vkeybActiveField = 'registerEmail';
+        return;
+      }
+      // Sur le dernier champ → tenter la soumission.
+      this.vkeybActiveField = null;
+      if (this.registerName.trim() && this.registerPhone.trim() && !this.registerLoading) {
+        this.submitRegister();
+      }
+    },
+    onVkeybClose() {
+      this.vkeybActiveField = null;
     },
 
     async checkLoyalty() {
@@ -603,7 +709,8 @@ export default {
   transition: border-color 0.2s;
   box-sizing: border-box;
 }
-.kiosk-loyalty-input:focus {
+.kiosk-loyalty-input:focus,
+.kiosk-loyalty-input--active {
   border-color: #FFD700;
 }
 .kiosk-loyalty-input::placeholder { color: rgba(255,255,255,0.3); }
