@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -124,7 +125,7 @@ class AuditLogService
         $currentHash = $this->computeHash($branchId, $prevHash, $data['action'], $payload);
 
         try {
-            return AuditLog::create([
+            $row = AuditLog::create([
                 'branch_id'    => $branchId,
                 'user_id'      => $userId,
                 'action'       => (string) $data['action'],
@@ -137,6 +138,24 @@ class AuditLogService
                 'user_agent'   => $userAgent,
                 'session_id'   => $sessionId,
             ]);
+
+            // [POS-9-H.3.2 / F-C7]
+            // Emit a structured breadcrumb on every successful write.
+            // We log ONLY the shape of the event (never the payload)
+            // because payloads may carry PII; SIEM correlation uses the
+            // audit_log id + current_hash prefix to join back if needed.
+            Log::channel('fiscal')->info('audit_log.write', [
+                'audit_log_id' => $row->id,
+                'branch_id'    => $branchId,
+                'user_id'      => $userId,
+                'action'       => (string) $data['action'],
+                'resource'     => $data['resource']    ?? null,
+                'resource_id'  => $data['resource_id'] ?? null,
+                'hash_prefix'  => substr($currentHash, 0, 12),
+                'retry_attempt'=> $attempt,
+            ]);
+
+            return $row;
         } catch (QueryException $e) {
             // A parallel writer slipped past the cache lock (driver outage
             // or multi-host cache split-brain) and grabbed our prev_hash

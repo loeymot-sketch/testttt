@@ -72,13 +72,23 @@ class ZReportService
                     ->where('branch_id', $branchId)
                     ->max('sequence_no')) + 1;
 
-                return ZReport::create([
+                $report = ZReport::create([
                     'branch_id'   => $branchId,
                     'sequence_no' => $nextSeq,
                     'opened_at'   => Carbon::now(),
                     'opened_by'   => $openedById,
                     'status'      => ZReport::STATUS_OPEN,
                 ]);
+
+                // [POS-9-H.3.2 / F-C7]
+                \Illuminate\Support\Facades\Log::channel('fiscal')->info('z_report.open', [
+                    'z_report_id' => $report->id,
+                    'branch_id'   => $branchId,
+                    'sequence_no' => $nextSeq,
+                    'opened_by'   => $openedById,
+                ]);
+
+                return $report;
             });
         } finally {
             try { $lock->release(); } catch (\Throwable $e) {}
@@ -133,6 +143,24 @@ class ZReportService
                     'signature' => $signature,
                     'status'    => ZReport::STATUS_CLOSED,
                 ]))->save();
+
+                // [POS-9-H.3.2 / F-C7]
+                // Full numeric snapshot — the signature prefix is enough
+                // to cross-reference the HMAC without leaking the full
+                // secret-derived hash in logs.
+                \Illuminate\Support\Facades\Log::channel('fiscal')->info('z_report.close', [
+                    'z_report_id'     => $open->id,
+                    'branch_id'       => $branchId,
+                    'sequence_no'     => $open->sequence_no,
+                    'closed_by'       => $closedById,
+                    'total_ttc'       => (float) $aggregates['total_ttc'],
+                    'total_ht'        => (float) $aggregates['total_ht'],
+                    'total_tva'       => (float) $aggregates['total_tva'],
+                    'order_count'     => (int)  $aggregates['order_count'],
+                    'cancel_count'    => (int)  $aggregates['cancel_count'],
+                    'refund_count'    => (int)  $aggregates['refund_count'],
+                    'signature_prefix'=> substr($signature, 0, 12),
+                ]);
 
                 return $open->refresh();
             });
