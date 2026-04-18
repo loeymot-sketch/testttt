@@ -35,9 +35,9 @@ class AllergensSeederTest extends TestCase
         $this->seed(AllergensSeeder::class);
 
         $expected = [
-            'gluten', 'crustaceans', 'eggs', 'fish', 'peanuts', 'soy',
-            'milk', 'tree_nuts', 'celery', 'mustard', 'sesame',
-            'sulphites', 'lupin', 'molluscs',
+            'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja',
+            'lait', 'fruits_a_coque', 'celeri', 'moutarde', 'sesame',
+            'sulfites', 'lupin', 'mollusques',
         ];
 
         foreach ($expected as $code) {
