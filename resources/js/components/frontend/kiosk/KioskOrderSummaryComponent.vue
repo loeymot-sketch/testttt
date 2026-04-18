@@ -136,6 +136,7 @@
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { calculateKioskRunningTotal, getKioskExtraSauceUnitPrice, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
 export default {
   name: 'KioskOrderSummary',
@@ -146,6 +147,12 @@ export default {
     selections: Object
   },
   emits: ['update'],
+  beforeUnmount() {
+    this.trackRecapAbandoned();
+  },
+  beforeDestroy() {
+    this.trackRecapAbandoned();
+  },
   computed: {
     selectedGarnituresCount() {
       return Object.values(this.selections.garnitures || {}).filter(Boolean).length;
@@ -318,6 +325,18 @@ export default {
       if (this.selections.quantity > 1) {
         this.$emit('update', 'quantity', this.selections.quantity - 1);
       }
+    },
+    trackRecapAbandoned() {
+      if (this.step?.type !== 'recap' || this.selections?._summaryConfirmed) {
+        return;
+      }
+
+      try {
+        kioskAnalytics.track('wizard_abandoned', {
+          item_id: this.item?.id || null,
+          step: 'recap',
+        });
+      } catch (_) { /* silent */ }
     }
   }
 };

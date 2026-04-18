@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createI18n } from 'vue-i18n';
 import { mount, shallowMount } from '@vue/test-utils';
 import KioskWizardComponent from '../../resources/js/components/frontend/kiosk/KioskWizardComponent.vue';
+import KioskOrderSummaryComponent from '../../resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue';
 import KioskStepMenuComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue';
 import KioskStepSauceComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue';
 import KioskStepPainComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepPainComponent.vue';
 import KioskStepViandeComponent from '../../resources/js/components/frontend/kiosk/steps/KioskStepViandeComponent.vue';
+import kioskAnalytics from '../../resources/js/helpers/kioskAnalytics';
 import frMessages from '../../resources/js/languages/fr.json';
 
 /** i18n pour composants wizard réels (clés kiosk.wizard.*) */
@@ -1299,6 +1301,52 @@ describe('KioskWizardComponent — tacos size preset detection', () => {
   it('matches_tacos_XL', () => {
     const wrapper = mountWizard(buildTacosItem('Tacos XL'));
     expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+});
+
+describe('KioskOrderSummaryComponent — recap abandonment analytics', () => {
+  it('tracks_abandon_on_recap', () => {
+    const trackSpy = vi.spyOn(kioskAnalytics, 'track').mockReturnValue(true);
+
+    const wrapper = mount(KioskOrderSummaryComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: { type: 'recap' },
+        item: {
+          id: 42,
+          name: 'Tacos Signature',
+          convert_price: 9,
+          itemAttributes: [],
+          variations: {},
+          extras: [],
+          addons: [],
+        },
+        selections: {
+          pain: null,
+          garnitures: {},
+          supplements: {},
+          sauces: {},
+          sauceOrder: [],
+          viandes: {},
+          _viandeMeta: [],
+          totalViandes: 0,
+          menuChoice: null,
+          boissonChoice: null,
+          fritesSauceOrder: [],
+          quantity: 1,
+          _summaryConfirmed: false,
+        },
+      },
+    });
+
+    wrapper.unmount();
+
+    expect(trackSpy).toHaveBeenCalledWith('wizard_abandoned', {
+      item_id: 42,
+      step: 'recap',
+    });
+
+    trackSpy.mockRestore();
   });
 });
 

@@ -227,6 +227,7 @@ export default {
         _boissonMeta: null,    // { boissonId, boissonName } — set by KioskStepMenu
         _viandeMeta: [],       // [{ id, key, name, count }] — set by KioskStepViande
         _fritesSauceMeta: null,// { fritesSauceName } — set by KioskStepMenu
+        _summaryConfirmed: false,
         viandes: {},
         totalViandes: 0,
         sauces: {},
@@ -850,6 +851,7 @@ export default {
         _boissonMeta: null,
         _viandeMeta: [],
         _fritesSauceMeta: null,
+        _summaryConfirmed: false,
         viandes: {},
         totalViandes: 0,
         sauces: {},
@@ -1130,6 +1132,7 @@ export default {
       return sanitizeKioskCustomerFacingText(joined);
     },
     addToCart() {
+      this.selections._summaryConfirmed = true;
       const cartItem = this.buildCartItem();
       if (this.onAddToCart) {
         this.onAddToCart(cartItem);
