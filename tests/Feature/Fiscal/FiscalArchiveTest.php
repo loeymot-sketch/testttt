@@ -75,27 +75,32 @@ class FiscalArchiveTest extends TestCase
 
         $this->assertFileExists($path);
 
+        // [POS-9-H.3.3] Layout bumped to schema_version 2: each
+        // collection is now its own JSON file inside the zip, so memory
+        // stays bounded when building a 6-year archive.
         $zip = new ZipArchive();
         $this->assertTrue($zip->open($path) === true);
 
-        $manifest = $zip->getFromName('manifest.json');
+        $manifest = json_decode($zip->getFromName('manifest.json'), true);
+        $zReports = json_decode($zip->getFromName('z_reports.json'),  true);
+        $orders   = json_decode($zip->getFromName('orders.json'),     true);
+        $auditLog = json_decode($zip->getFromName('audit_logs.json'), true);
         $zip->close();
-        $this->assertNotFalse($manifest);
 
-        $data = json_decode($manifest, true);
-        $this->assertSame($this->branch->id, $data['meta']['branch_id']);
-        $this->assertSame(1, $data['meta']['schema_version']);
-        $this->assertSame(6, $data['meta']['retention_years']);
+        $this->assertSame($this->branch->id, $manifest['branch_id']);
+        $this->assertSame(2,                  $manifest['schema_version']);
+        $this->assertSame(6,                  $manifest['retention_years']);
+        $this->assertArrayHasKey('layout', $manifest);
 
-        $this->assertCount(1, $data['z_reports'],
+        $this->assertCount(1, $zReports,
             'Archive must contain the Z closed during the window.');
-        $this->assertSame($z->id, $data['z_reports'][0]['id']);
+        $this->assertSame($z->id, $zReports[0]['id']);
 
-        $this->assertCount(1, $data['orders']);
-        $this->assertSame($order->id, $data['orders'][0]['id']);
+        $this->assertCount(1, $orders);
+        $this->assertSame($order->id, $orders[0]['id']);
 
-        $this->assertCount(1, $data['audit_logs']);
-        $this->assertSame('order.create', $data['audit_logs'][0]['action']);
+        $this->assertCount(1, $auditLog);
+        $this->assertSame('order.create', $auditLog[0]['action']);
     }
 
     public function test_round_trip_deterministic(): void
@@ -157,10 +162,10 @@ class FiscalArchiveTest extends TestCase
 
         $zip = new ZipArchive();
         $zip->open($path);
-        $data = json_decode($zip->getFromName('manifest.json'), true);
+        $zReports = json_decode($zip->getFromName('z_reports.json'), true);
         $zip->close();
 
-        $ids = array_map(static fn ($z) => $z['id'], $data['z_reports']);
+        $ids = array_map(static fn ($z) => $z['id'], $zReports);
         $this->assertSame([$zInside->id], $ids);
     }
 }
