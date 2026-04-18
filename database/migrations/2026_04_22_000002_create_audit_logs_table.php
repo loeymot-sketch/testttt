@@ -61,6 +61,20 @@ return new class extends Migration {
 
     public function down(): void
     {
+        // [POS-9-H.2.9 / F-B7]
+        // NF525 / Loi Finance 2018 require fiscal evidence to be retained
+        // 6 years. Rolling this migration back in production would drop
+        // the whole audit chain — a hard compliance violation. Block it
+        // explicitly so an accidental `migrate:rollback` on production
+        // fails loud instead of silently erasing evidence.
+        if (app()->environment('production')) {
+            throw new \RuntimeException(
+                'Refusing to drop audit_logs in APP_ENV=production. '
+                . 'NF525 mandates 6-year retention. '
+                . 'If rollback is truly required, set APP_ENV=maintenance and coordinate with legal.'
+            );
+        }
+
         $this->dropImmutabilityTriggers();
 
         if (Schema::hasTable('audit_logs')) {

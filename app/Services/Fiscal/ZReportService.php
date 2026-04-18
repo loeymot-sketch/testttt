@@ -253,12 +253,18 @@ class ZReportService
         }
         $secret = $this->assertProductionSafe($secret, 'fiscal.z_report_secret');
 
+        // [POS-9-H.2.7 / F-B4]
+        // Timezone stability: signatures must be reproducible regardless
+        // of the server's local timezone at verification time. We
+        // canonicalise `closed_at` in UTC ISO-8601 so a deployment in
+        // Europe/Paris that later migrates to UTC (or vice-versa) can
+        // still verify old Z reports.
         ksort($aggregates);
         $canonical = json_encode(
             [
                 'branch_id'   => $branchId,
                 'sequence_no' => $sequenceNo,
-                'closed_at'   => $closedAt->toIso8601String(),
+                'closed_at'   => $closedAt->copy()->utc()->toIso8601String(),
                 'aggregates'  => $aggregates,
             ],
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE

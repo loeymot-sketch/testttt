@@ -74,8 +74,20 @@ class FiscalSequenceService
             }
 
             return $this->connection->transaction(function () use ($branchId) {
+                // [POS-9-H.2.10 / F-B10]
+                // Defense in depth: even inside the cache lock, a second
+                // writer that slipped past (cache outage, split-brain,
+                // expired lock) would otherwise race us on the SELECT
+                // MAX. `->lockForUpdate()` takes a row-level DB lock on
+                // the matching rows so concurrent transactions serialise
+                // at the storage engine — keeping sequences strictly
+                // monotonic even when the cache is unavailable.
+                //
+                // SQLite ignores FOR UPDATE (it uses BEGIN IMMEDIATE
+                // semantics instead) so this stays a no-op in tests.
                 $max = (int) Order::withoutGlobalScopes()
                     ->where('branch_id', $branchId)
+                    ->lockForUpdate()
                     ->max('fiscal_sequence_no');
 
                 return $max + 1;
