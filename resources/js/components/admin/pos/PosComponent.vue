@@ -596,7 +596,18 @@
             >
               <div class="kiosk-cash-order-head">
                 <span class="kiosk-cash-order-num">N° {{ order.queue_number || order.order_serial_no }}</span>
-                <span class="kiosk-cash-order-total">{{ formatKioskPrice(order.order_amount) }}</span>
+                <div class="kiosk-cash-order-head-actions">
+                  <button
+                    type="button"
+                    class="kiosk-cash-expand-btn"
+                    :aria-expanded="isKioskCashOrderExpanded(order.id) ? 'true' : 'false'"
+                    :data-testid="`kiosk-cash-expand-${order.id}`"
+                    @click="toggleKioskCashOrderDetails(order.id)"
+                  >
+                    <i class="fa-solid fa-chevron-down" :class="{ 'kiosk-cash-expand-btn-rotated': isKioskCashOrderExpanded(order.id) }"></i>
+                  </button>
+                  <span class="kiosk-cash-order-total">{{ formatKioskPrice(order.order_amount) }}</span>
+                </div>
               </div>
               <div class="kiosk-cash-order-items">
                 <span v-for="(item, i) in (order.order_items || []).slice(0,3)" :key="i" class="kiosk-cash-item-pill">
@@ -605,6 +616,35 @@
                 <span v-if="(order.order_items || []).length > 3" class="kiosk-cash-item-pill more">
                   +{{ order.order_items.length - 3 }} autres
                 </span>
+              </div>
+              <div
+                v-if="isKioskCashOrderExpanded(order.id)"
+                class="kiosk-cash-order-details"
+                :data-testid="`kiosk-cash-details-${order.id}`"
+              >
+                <div
+                  v-for="(item, itemIdx) in (order.order_items || [])"
+                  :key="item.id || `${order.id}-${itemIdx}`"
+                  class="kiosk-cash-order-detail-item"
+                >
+                  <div class="kiosk-cash-order-detail-title">{{ item.quantity }}× {{ item.item_name || item.name }}</div>
+                  <div v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0" class="kiosk-cash-order-detail-line">
+                    <strong>Variations:</strong>
+                    <span>{{ item.item_variations.map(variation => `${variation.variation_name || 'Option'}: ${variation.name}`).join(', ') }}</span>
+                  </div>
+                  <div v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0" class="kiosk-cash-order-detail-line">
+                    <strong>Extras:</strong>
+                    <span>{{ item.item_extras.map(extra => extra.name).join(', ') }}</span>
+                  </div>
+                  <div v-if="item.instruction" class="kiosk-cash-order-detail-line">
+                    <strong>Instructions:</strong>
+                    <span>{{ item.instruction }}</span>
+                  </div>
+                  <div v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0" class="kiosk-cash-order-detail-line">
+                    <strong>Allergenes:</strong>
+                    <span>{{ item.allergens_snapshot.join(', ') }}</span>
+                  </div>
+                </div>
               </div>
               <div class="kiosk-cash-order-foot">
                 <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
@@ -628,9 +668,9 @@
 </template>
 <script>
 import axios from 'axios';
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
-import ItemComponent from "./ItemComponent";
+import ItemComponent from "./ItemComponent.vue";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
@@ -640,7 +680,7 @@ import appService from "../../../services/appService";
 import discountTypeEnum from "../../../enums/modules/discountTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
-import PaymentComponent from "./PaymentComponent";
+import PaymentComponent from "./PaymentComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
@@ -683,6 +723,7 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            expandedKioskCashOrders: {},
             _kioskPollTimer: null,
             _eventSub: null,
             checkoutProps: {
@@ -1189,6 +1230,15 @@ export default {
             } finally {
                 this.kioskCashLoading = false;
             }
+        },
+        toggleKioskCashOrderDetails(orderId) {
+            this.expandedKioskCashOrders = {
+                ...this.expandedKioskCashOrders,
+                [orderId]: !this.expandedKioskCashOrders[orderId],
+            };
+        },
+        isKioskCashOrderExpanded(orderId) {
+            return !!this.expandedKioskCashOrders[orderId];
         },
 
         // [GAP-25-2] Mark a kiosk cash order as DELIVERED (collected + paid by cashier)

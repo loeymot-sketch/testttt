@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Jobs\CleanupStalePendingKioskOrders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -29,6 +30,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('foodking:outbox:rescue')
             ->everyMinute()
+            ->withoutOverlapping();
+
+        $schedule->job(new CleanupStalePendingKioskOrders())
+            ->everyFiveMinutes()
             ->withoutOverlapping();
     }
 

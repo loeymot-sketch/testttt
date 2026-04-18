@@ -38,7 +38,7 @@ final class PricingRequest
             $customerId,
             0.0,
             $deliveryCharge,
-            enforceCrossItemGuards: false,
+            enforceCrossItemGuards: true,
             roundLineTotals: false,
             roundLineTax: false,
             roundOrderTotalTax: false,

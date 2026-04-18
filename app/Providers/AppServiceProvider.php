@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Models\Branch;
 use App\Models\FrontendOrder;
+use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -37,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
         FrontendOrder::observe($audit);
         OrderItem::observe($audit);
         Branch::observe($audit);
+        Item::observe(ItemObserver::class);
         ItemCategory::observe($audit);
 
         // SQLite (tests CI / phpunit.xml :memory:) n'implémente pas REGEXP par défaut.

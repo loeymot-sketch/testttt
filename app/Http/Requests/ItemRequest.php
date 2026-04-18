@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Allergen;
 use App\Rules\IniAmount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,6 +26,8 @@ class ItemRequest extends FormRequest
      */
     public function rules(): array
     {
+        $allergenCodes = Allergen::query()->pluck('code')->all();
+
         return [
             'name'            => [
                 'required',
@@ -39,6 +42,23 @@ class ItemRequest extends FormRequest
             'is_featured'      => ['required', 'numeric', 'not_in:0'],
             // [GAP-27-1] is_upsell — optional flag for Splash-style upsell suggestions on kiosk
             'is_upsell'        => ['nullable', 'numeric'],
+            'is_chef_pick'     => ['nullable', 'boolean'],
+            'is_new'           => ['nullable', 'boolean'],
+            'is_available'     => ['nullable', 'boolean'],
+            'is_spicy'         => ['nullable', 'boolean'],
+            'is_vegetarian'    => ['nullable', 'boolean'],
+            'is_pork_free'     => ['nullable', 'boolean'],
+            'is_halal'         => ['nullable', 'boolean'],
+            'is_gluten_free'   => ['nullable', 'boolean'],
+            'chef_pick_order'  => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'channels'         => ['nullable', 'array'],
+            'channels.*'       => ['string', 'in:kiosk,pos,web'],
+            'allergen_flags'   => ['nullable', 'array'],
+            'allergen_flags.*' => array_values(array_filter([
+                'string',
+                $allergenCodes !== [] ? Rule::in($allergenCodes) : null,
+            ])),
+            'kiosk_emoji'      => ['nullable', 'string', 'max:10'],
             'description'      => ['nullable', 'string', 'max:5000'],
             'caution'          => ['nullable', 'string', 'max:5000'],
             'status'           => ['required', 'numeric', 'max:24'],

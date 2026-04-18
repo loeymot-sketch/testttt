@@ -260,7 +260,7 @@ class PricingServiceTest extends TestCase
         $this->service->calculateOrder($req, $this->couponService);
     }
 
-    public function test_cross_item_variation_allowed_when_guards_off(): void
+    public function test_cross_item_variation_rejected_for_web_when_guards_on(): void
     {
         $foreign = $this->makeItem(10.00, $this->tax10);
         $target = $this->makeItem(8.00, $this->tax10);
@@ -274,9 +274,9 @@ class PricingServiceTest extends TestCase
             0,
             0.0
         );
-        $out = $this->service->calculateOrder($req, $this->couponService);
-
-        $this->assertEqualsWithDelta(13.00, $out->lines[0]->lineSubtotalExTax, 0.0001);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches("/n'appartient pas/");
+        $this->service->calculateOrder($req, $this->couponService);
     }
 
     public function test_unknown_item_id_is_rejected(): void

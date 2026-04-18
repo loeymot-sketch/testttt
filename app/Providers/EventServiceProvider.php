@@ -5,7 +5,12 @@ namespace App\Providers;
 use App\Events\SendOrderDeliveryBoyMail;
 use App\Events\SendOrderDeliveryBoyPush;
 use App\Events\SendOrderDeliveryBoySms;
+use App\Events\CategoryCreated;
+use App\Events\CategoryDeleted;
+use App\Events\CategoryUpdated;
 use App\Events\ItemAvailabilityChanged;
+use App\Events\ItemCreated;
+use App\Events\ItemDeleted;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Events\SendOrderGotMail;
@@ -21,6 +26,7 @@ use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
+use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
@@ -106,6 +112,21 @@ class EventServiceProvider extends ServiceProvider
             // pour que les bornes voient un 86 temps réel en < 1 s au lieu
             // d'attendre l'expiration naturelle du TTL (≤ 60 s).
             InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
+        ],
+        ItemCreated::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+        ],
+        ItemDeleted::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+        ],
+        CategoryCreated::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+        ],
+        CategoryUpdated::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+        ],
+        CategoryDeleted::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
         ],
     ];
 

@@ -24,6 +24,8 @@ class ItemCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
+        $currentCategoryId = $this->route('itemCategory')?->id ?? $this->input('id');
+
         return [
             'name'               => [
                 'required',
@@ -31,6 +33,12 @@ class ItemCategoryRequest extends FormRequest
                 'max:190',
                 Rule::unique("item_categories", "name")->ignore($this->route('itemCategory.id'))
             ],
+            'parent_id'          => array_values(array_filter([
+                'nullable',
+                'integer',
+                'exists:item_categories,id',
+                $currentCategoryId ? Rule::notIn([(int) $currentCategoryId]) : null,
+            ])),
             'description'        => ['nullable', 'string', 'max:900'],
             'status'             => ['required', 'numeric', 'max:24'],
             'image'              => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
@@ -40,6 +48,11 @@ class ItemCategoryRequest extends FormRequest
             'sauce_included_menu'=> ['nullable', 'boolean'],
             'kiosk_upsell_include'         => ['nullable', 'boolean'],
             'kiosk_upsell_skip_after_cart' => ['nullable', 'boolean'],
+            'channels'           => ['nullable', 'array'],
+            'channels.*'         => ['string', 'in:kiosk,pos,web'],
+            'kiosk_sort'         => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'pos_sort'           => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'kiosk_label'        => ['nullable', 'string', 'max:60'],
         ];
     }
 }

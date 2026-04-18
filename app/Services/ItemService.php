@@ -8,6 +8,8 @@ use App\Enums\Ask;
 use App\Models\Item;
 use App\Enums\Status;
 use Illuminate\Support\Str;
+use App\Events\ItemCreated;
+use App\Events\ItemDeleted;
 use App\Models\ItemVariation;
 use App\Http\Requests\ItemRequest;
 use Illuminate\Support\Facades\DB;
@@ -174,6 +176,11 @@ class ItemService
                         }
                     }
                 }
+
+                $createdItemId = (int) $this->item->id;
+                DB::afterCommit(function () use ($createdItemId): void {
+                    event(new ItemCreated($createdItemId));
+                });
             });
             return $this->item;
         } catch (Exception $exception) {
@@ -289,11 +296,15 @@ class ItemService
     public function destroy(Item $item)
     {
         try {
-            DB::transaction(function () use ($item) {
+            $itemId = (int) $item->id;
+            DB::transaction(function () use ($item, $itemId) {
                 $item->variations()->delete();
                 $item->extras()->delete();
                 $item->addons()->delete();
                 $item->delete();
+                DB::afterCommit(function () use ($itemId): void {
+                    event(new ItemDeleted($itemId));
+                });
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

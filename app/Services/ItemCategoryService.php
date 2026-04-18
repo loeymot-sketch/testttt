@@ -5,6 +5,9 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Str;
+use App\Events\CategoryCreated;
+use App\Events\CategoryDeleted;
+use App\Events\CategoryUpdated;
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,11 @@ use App\Http\Requests\ItemCategoryRequest;
 
 class ItemCategoryService
 {
+    public function __construct(
+        private readonly ItemCategoryHierarchyService $hierarchyService
+    ) {
+    }
+
     protected $itemCateFilter = [
         'name',
         'slug',
@@ -94,10 +102,24 @@ class ItemCategoryService
     public function store(ItemCategoryRequest $request)
     {
         try {
-            $itemCategory = ItemCategory::create($request->validated() + ['slug' => Str::slug($request->name)]);
-            if ($request->image) {
-                $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
-            }
+            $validated = $request->validated();
+            $this->hierarchyService->validateParent(
+                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null
+            );
+
+            $itemCategory = null;
+            DB::transaction(function () use (&$itemCategory, $request, $validated): void {
+                $itemCategory = ItemCategory::create($validated + ['slug' => Str::slug($request->name)]);
+                if ($request->image) {
+                    $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
+                }
+
+                $categoryId = (int) $itemCategory->id;
+                DB::afterCommit(function () use ($categoryId): void {
+                    event(new CategoryCreated($categoryId));
+                });
+            });
+
             return $itemCategory;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -111,11 +133,25 @@ class ItemCategoryService
     public function update(ItemCategoryRequest $request, ItemCategory $itemCategory): ItemCategory
     {
         try {
-            $itemCategory->update($request->validated() + ['slug' => Str::slug($request->name)]);
-            if ($request->image) {
-                $itemCategory->clearMediaCollection('item-category');
-                $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
-            }
+            $validated = $request->validated();
+            $this->hierarchyService->validateParent(
+                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
+                (int) $itemCategory->id
+            );
+
+            DB::transaction(function () use ($itemCategory, $request, $validated): void {
+                $itemCategory->update($validated + ['slug' => Str::slug($request->name)]);
+                if ($request->image) {
+                    $itemCategory->clearMediaCollection('item-category');
+                    $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
+                }
+
+                $categoryId = (int) $itemCategory->id;
+                DB::afterCommit(function () use ($categoryId): void {
+                    event(new CategoryUpdated($categoryId));
+                });
+            });
+
             return $itemCategory;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -129,20 +165,27 @@ class ItemCategoryService
     public function destroy(ItemCategory $itemCategory)
     {
         try {
-            $checkItem = $itemCategory->items->whereNull('deleted_at');
-            if (!blank($checkItem)) {
-                $itemCategory->delete();
-            } else {
-                if (DB::getDriverName() === 'sqlite') {
-                    DB::statement('PRAGMA foreign_keys=0');
+            $categoryId = (int) $itemCategory->id;
+            DB::transaction(function () use ($itemCategory, $categoryId): void {
+                $checkItem = $itemCategory->items->whereNull('deleted_at');
+                if (!blank($checkItem)) {
                     $itemCategory->delete();
-                    DB::statement('PRAGMA foreign_keys=1');
                 } else {
-                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                    $itemCategory->delete();
-                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+                    if (DB::getDriverName() === 'sqlite') {
+                        DB::statement('PRAGMA foreign_keys=0');
+                        $itemCategory->delete();
+                        DB::statement('PRAGMA foreign_keys=1');
+                    } else {
+                        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                        $itemCategory->delete();
+                        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+                    }
                 }
-            }
+
+                DB::afterCommit(function () use ($categoryId): void {
+                    event(new CategoryDeleted($categoryId));
+                });
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

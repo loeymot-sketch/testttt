@@ -51,6 +51,7 @@ use App\Http\Controllers\Admin\ChefAddressController;
 use App\Http\Controllers\Admin\CountryCodeController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
+use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\ItemsReportController;
 use App\Http\Controllers\Admin\MenuProjectionController;
 use App\Http\Controllers\Admin\MenuSectionController;
@@ -234,6 +235,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [V1 SECTION 5] Dual-channel menu SSOT projection (read-only, admin-only).
     Route::get('/menu-projection', [MenuProjectionController::class, 'show'])
         ->name('menu-projection.show');
+    Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
+        ->name('menu.availability.toggle');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -950,7 +953,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
     Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
-        ->middleware(['auth:sanctum'])
+        ->middleware(['auth:sanctum', 'throttle:kiosk-menu'])
         ->name('frontend.menu.kiosk');
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
