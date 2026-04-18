@@ -74,7 +74,36 @@ Périmètre autorisé pour les implémentations P9.1 → P9.10. Tout fichier hor
 - `tests/Unit/Services/AllergenServiceTest.php`
 - `tasks/phase9/FINDINGS_TRACKER.md`
 
+### P9.5 (order pipeline hardening — actif)
+
+**Gate clearance humaine explicite (message utilisateur 2026-04-18).** Les fichiers `FrontendOrderService.php`, `OrderService.php`, `PricingService.php`, `OrderItem.php` + migrations associées sont temporairement dégelés pour P9.5 sous LOCK_A maximal (voir `tasks/phase9-sync/LOCK_A_*_P9_5_*_2026-04-18.md`). Les locks sont libérés à la fin de chaque commit qui touche la zone concernée, et le fichier retourne en frozen dès la fermeture du lock.
+
+- `database/migrations/<TS>_add_allergens_snapshot_to_order_items.php` (nouveau — 9.5.1)
+- `database/migrations/<TS>_scope_idempotency_key_to_branch.php` (nouveau — 9.5.4)
+- `app/Services/FrontendOrderService.php` **(LOCK_A — persistance `allergens_snapshot` depuis pivot)**
+- `app/Services/PricingService.php` **(LOCK_A — cross-item guard 9.5.6, pas de modif cœur SSOT)**
+- `app/Services/OrderService.php` **(LOCK_A — uniquement si nécessaire, sinon noop)**
+- `app/Models/OrderItem.php` **(LOCK_A — cast `allergens_snapshot` JSON)**
+- `app/Http/Resources/KDSOrderDetailsResource.php`
+- `app/Http/Resources/OrderItemResource.php`
+- `app/Http/Requests/{PricingRequest,PosPricingRequest,TablePricingRequest,WebPricingRequest}.php` (9.5.6 — cross-item guard systématique)
+- `resources/js/components/backend/frontend/KitchenDisplaySystemComponent.vue:404-427` (affichage allergens snapshotés — 9.5.2)
+- `resources/js/components/backend/frontend/PosComponent.vue:599-605` (drawer expandable — 9.5.7)
+- `resources/js/store/modules/kioskCart.js:235-258` (retirer prix payload client — 9.5.8)
+- `app/Jobs/CleanupStalePendingKioskOrders.php` (nouveau — 9.5.3)
+- `app/Console/Kernel.php` (schedule 5 min — 9.5.3)
+- `tests/Feature/Orders/{OrderAllergenSnapshotTest,CleanupStalePendingOrdersTest,IdempotencyBranchScopedTest,KDSAllergenVisibilityTest,CrossItemGuardTest}.php` (nouveaux)
+- `tests/Feature/OrderPipeline/KioskFullFlowE2ETest.php` (nouveau — 9.5.5)
+- `tests/js/PosComponent.spec.js` (extension — 9.5.7)
+- `tasks/phase9/FINDINGS_TRACKER.md`
+- `tasks/phase9-sync/CROSS_TRACK_STATUS.md` (mise à jour statut P9.5 in_progress / merged)
+- `tasks/phase9-sync/LOCK_A_*_P9_5_*.md` (nouveaux — posés avant édition frozen zones, retirés à la fin)
+- `tasks/phase9-sync/BROADCAST_P9_5_MERGED_2026-04-18.md` (nouveau — après merge)
+
 ### Frozen zones (HALT — gate clearance requise via `.cursor/hooks/safety-check.sh`)
+
+**Note P9.5.** Pendant P9.5, `FrontendOrderService`, `OrderService`, `PricingService` et `OrderItem.php` sont sous LOCK_A (gate cleared par message utilisateur 2026-04-18). Hors P9.5, ils restent frozen par défaut.
+
 - `app/Services/OrderService.php`
 - `app/Services/FrontendOrderService.php`
 - `app/Services/PricingService.php` (cœur SSOT — sauf gate explicite)

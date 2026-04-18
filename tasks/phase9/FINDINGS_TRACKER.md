@@ -77,7 +77,28 @@ _(Lignes initialisées open, enrichies au démarrage de chaque vague. Voir `PLAN
 | id | title | criticity | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|
 | 9.4.1 → 9.4.12 | UX completeness (recherche, filtres persistants, QR, haptic…) | P1/P2 | open | — | — |
-| 9.5.1 → 9.5.8 | Order pipeline hardening (allergens snapshot, stale cleanup…) | P0/P1 | open | — | — |
+
+---
+
+### Vague P9.5 — Order pipeline hardening (8 items P0/P1)
+
+| id | title | criticity | file:line | status | commit_sha | verifier_agent_run |
+|---|---|---|---|---|---|---|
+| 9.5.1 | Migration `order_items.allergens_snapshot` + persistance `FrontendOrderService` | P0 | `app/Services/FrontendOrderService.php` + nouvelle migration | open | — | — |
+| 9.5.2 | `KDSOrderDetailsResource` + `OrderItemResource` exposent `allergens_snapshot` + KDS UI | P1 | `KDSOrderDetailsResource.php` + `KitchenDisplaySystemComponent.vue:404-427` | open | — | — |
+| 9.5.3 | Job `CleanupStalePendingKioskOrders` (cron 5 min, PENDING>15 min → REJECTED) | P1 | `app/Jobs/CleanupStalePendingKioskOrders.php` + `Kernel.php` | open | — | — |
+| 9.5.4 | Migration `idempotency_key` UNIQUE scopé `(branch_id, idempotency_key)` | P0 | nouvelle migration ALTER INDEX | open | — | — |
+| 9.5.5 | Feature test E2E `kiosk_order_full_flow_to_kds_with_allergens` | P1 | `tests/Feature/OrderPipeline/KioskFullFlowE2ETest.php` | open | — | — |
+| 9.5.6 | Cross-item guard systématique POS/Table/Web | P1 | `PricingRequest::forPos/forTable/forWeb` | open | — | — |
+| 9.5.7 | Payload POS drawer enrichi expandable (variations/extras/instructions) | P1 | `PosComponent.vue:599-605` | open | — | — |
+| 9.5.8 | Retirer prix du payload client `kioskCart.js` | P1 | `resources/js/store/modules/kioskCart.js:235-258` | open | — | — |
+
+**Gate P9.5.** Tous `verified`. Migrations rollback-safe. Cron schedulé. KDS affiche allergens snapshotés. Idempotency cross-branch OK. Cross-item guard actif sur POS/Table/Web. Zéro prix client. LOCK_A_* libérés avant merge.
+
+---
+
+| id | title | criticity | status | commit_sha | verifier_agent_run |
+|---|---|---|---|---|---|
 | 9.6.1 → 9.6.7 | Analytics + observability + admin | P1/P2 | open | — | — |
 | 9.7.1 → 9.7.6 | i18n / a11y / PMR completeness | P1 | open | — | — |
 | 9.8.1 → 9.8.7 | Tests E2E + CI green | P0 | open | — | — |
