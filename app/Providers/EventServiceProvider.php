@@ -21,6 +21,7 @@ use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
+use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\PersistOrderCreatedToOutbox;
@@ -101,6 +102,10 @@ class EventServiceProvider extends ServiceProvider
         ItemAvailabilityChanged::class => [
             PersistItemAvailabilityChangedToOutbox::class,
             BumpMenuSnapshotOnItemAvailabilityChanged::class,
+            // Kiosk Phase 9.1.4 — invalidation du cache `kiosk.menu.branch.{id}`
+            // pour que les bornes voient un 86 temps réel en < 1 s au lieu
+            // d'attendre l'expiration naturelle du TTL (≤ 60 s).
+            InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
         ],
     ];
 
