@@ -17,6 +17,16 @@
       <div class="kiosk-wizard-header">
         <div class="kiosk-item-info">
           <h2 class="kiosk-item-name">{{ sanitizeItemName(resolvedItem.name) }}</h2>
+          <!-- Kiosk Phase 9.1.2 — Badge allergènes persistent en header.
+               Safety FIC UE 1169/2011 + EAA 2025 : le client doit voir en permanence
+               les allergènes avant d'ajouter au panier, sans avoir à cliquer. -->
+          <KsAllergenBadge
+            v-if="itemAllergenCodes.length > 0"
+            class="kiosk-wizard-header-allergens"
+            :allergens="itemAllergenCodes"
+            :customer-allergens="customerAllergenCodes"
+            data-testid="kiosk-wizard-header-allergens"
+          />
         </div>
         <button
           type="button"
@@ -165,6 +175,8 @@ import KioskStepGarnitures from './steps/KioskStepGarnituresComponent.vue';
 import KioskStepSupplements from './steps/KioskStepSupplementsComponent.vue';
 import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
+// Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard (safety FIC).
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../helpers/kioskMedia';
 import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
@@ -187,7 +199,8 @@ export default {
     KioskStepGarnitures,
     KioskStepSupplements,
     KioskStepMenu,
-    KioskOrderSummary
+    KioskOrderSummary,
+    KsAllergenBadge,
   },
   props: {
     item: { type: Object, default: null },
@@ -228,6 +241,29 @@ export default {
   computed: {
     resolvedItem() {
       return this.item || this.fetchedItem;
+    },
+    // Kiosk Phase 9.1.2 — Codes allergènes de l'item courant.
+    // NormalItemResource (backend) expose `allergens` sous forme d'objets
+    // `{id, code, name_key, icon, is_trace}`. KsAllergenBadge attend uniquement
+    // les codes string. On tolère aussi les items legacy qui pourraient
+    // exposer un tableau plat de codes (rétrocompat, aucun casse).
+    itemAllergenCodes() {
+      const raw = this.resolvedItem && this.resolvedItem.allergens;
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .map((a) => (typeof a === 'string' ? a : (a && a.code) || null))
+        .filter(Boolean);
+    },
+    // Kiosk Phase 9.1.2 — Codes allergènes déclarés par le client (scan loyalty).
+    // Source : `kioskSettings/customerProfile.declared_allergens` (opt-in RGPD,
+    // jamais de PII dans le payload analytics). Si non scanné → []. Le badge
+    // passe en `role=alert` dès intersection non vide avec `itemAllergenCodes`.
+    customerAllergenCodes() {
+      const profile = this.$store &&
+        this.$store.getters &&
+        this.$store.getters['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
     },
     activeSteps() {
       if (!this.resolvedItem) return [];
@@ -1144,6 +1180,15 @@ export default {
 
 .kiosk-item-info {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */
+.kiosk-wizard-header-allergens {
+  margin-top: 2px;
 }
 
 .kiosk-item-name {
