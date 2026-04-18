@@ -337,4 +337,4 @@ Validation humaine demandée avant démarrage effectif.
 
 ## ESCALATION
 
-- 2026-04-18 — EXECUTE P9.2 bloqué côté gouvernance: le plan ne contient aucun bloc `SUBSYSTEMS_TOUCHED`. `execute-context.md` exige que chaque fichier potentiellement édité soit explicitement couvert par ce périmètre avant toute écriture. Impossible de vérifier la conformité de la liste P9.2 (`requests`, `services`, `events`, `listeners`, `routes`, `migrations`, `tests`, `tracker`) sans cette déclaration. Action requise: compléter le plan avec `SUBSYSTEMS_TOUCHED`, puis relancer l'implémentation.
+- 2026-04-18 — EXECUTE P9.2 bloqué côté gouvernance: le plan ne contenait aucun bloc `SUBSYSTEMS_TOUCHED`. **Résolu** par le commit `af4139b01` qui ajoute la section `SUBSYSTEMS_TOUCHED` couvrant les périmètres P9.1 (clos) et P9.2 (actif), ainsi qu'un rappel des frozen zones et le pattern d'escalade BLOCKER. Voir aussi `tasks/phase9/P9_2_BLOCKER_SCOPE_GOVERNANCE_2026-04-18.md` qui consigne le blocker initial avant résolution.
