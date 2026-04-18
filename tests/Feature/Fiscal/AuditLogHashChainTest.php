@@ -27,11 +27,19 @@ class AuditLogHashChainTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Dedicated branch for this suite — avoids collisions with other fiscal
-     * tests that also use branch_id=1 (MySQL keeps audit row ids across
-     * tests when DDL from this file drops triggers and breaks isolation).
+     * Isolated branch ids per test. MySQL: reinstallImmutabilityTriggers() after
+     * tampering issues an implicit COMMIT — rows from that test can survive into
+     * the next test if they share the same branch_id, poisoning verifyChain().
      */
-    private const BR = 910_501;
+    private const BR_CHAIN = 910_501;
+
+    private const BR_TAMPER = 910_502;
+
+    private const BR_FORGED = 910_503;
+
+    private const BR_HASH_ONLY = 910_504;
+
+    private const BR_SECRET = 910_505;
 
     private AuditLogService $service;
 
@@ -45,27 +53,27 @@ class AuditLogHashChainTest extends TestCase
     public function test_chain_verified_after_sequence_of_writes(): void
     {
         $a = $this->service->write([
-            'branch_id' => self::BR, 'action' => 'order.create',  'payload' => ['id' => 1, 'total' => 100],
+            'branch_id' => self::BR_CHAIN, 'action' => 'order.create',  'payload' => ['id' => 1, 'total' => 100],
         ]);
         $b = $this->service->write([
-            'branch_id' => self::BR, 'action' => 'order.pay',     'payload' => ['id' => 1, 'method' => 'cash'],
+            'branch_id' => self::BR_CHAIN, 'action' => 'order.pay',     'payload' => ['id' => 1, 'method' => 'cash'],
         ]);
         $c = $this->service->write([
-            'branch_id' => self::BR, 'action' => 'order.cancel',  'payload' => ['id' => 1, 'reason' => 'client leaves'],
+            'branch_id' => self::BR_CHAIN, 'action' => 'order.cancel',  'payload' => ['id' => 1, 'reason' => 'client leaves'],
         ]);
 
         $this->assertNull($b->prev_hash !== $a->current_hash ? 'prev_hash mismatch' : null);
         $this->assertSame($a->current_hash, $b->prev_hash);
         $this->assertSame($b->current_hash, $c->prev_hash);
 
-        $this->assertNull($this->service->verifyChain(self::BR), 'Pristine chain must verify.');
+        $this->assertNull($this->service->verifyChain(self::BR_CHAIN), 'Pristine chain must verify.');
     }
 
     public function test_tampering_detected_on_payload(): void
     {
-        $this->service->write(['branch_id' => self::BR, 'action' => 'order.create', 'payload' => ['id' => 1, 'total' => 100]]);
-        $mid = $this->service->write(['branch_id' => self::BR, 'action' => 'order.pay',    'payload' => ['id' => 1, 'method' => 'cash']]);
-        $this->service->write(['branch_id' => self::BR, 'action' => 'order.cancel', 'payload' => ['id' => 1]]);
+        $this->service->write(['branch_id' => self::BR_TAMPER, 'action' => 'order.create', 'payload' => ['id' => 1, 'total' => 100]]);
+        $mid = $this->service->write(['branch_id' => self::BR_TAMPER, 'action' => 'order.pay',    'payload' => ['id' => 1, 'method' => 'cash']]);
+        $this->service->write(['branch_id' => self::BR_TAMPER, 'action' => 'order.cancel', 'payload' => ['id' => 1]]);
 
         // Bypass the immutability trigger for the duration of the tampering
         // simulation (this is the exact attack the chain is designed to
@@ -81,19 +89,19 @@ class AuditLogHashChainTest extends TestCase
             $this->reinstallImmutabilityTriggers();
         }
 
-        $firstBroken = $this->service->verifyChain(self::BR);
+        $firstBroken = $this->service->verifyChain(self::BR_TAMPER);
         $this->assertSame($mid->id, $firstBroken,
             'verifyChain() must point at the tampered row.');
     }
 
     public function test_forged_row_with_wrong_prev_hash_is_detected(): void
     {
-        $this->service->write(['branch_id' => self::BR, 'action' => 'order.create', 'payload' => ['id' => 1]]);
+        $this->service->write(['branch_id' => self::BR_FORGED, 'action' => 'order.create', 'payload' => ['id' => 1]]);
 
         AuditLog::unguard();
         try {
             $forged = AuditLog::create([
-                'branch_id' => self::BR,
+                'branch_id' => self::BR_FORGED,
                 'action' => 'order.secret_admin_override',
                 'payload' => ['id' => 1, 'new_total' => 0.01],
                 'prev_hash' => str_repeat('0', 64), // wrong parent
@@ -103,14 +111,14 @@ class AuditLogHashChainTest extends TestCase
             AuditLog::reguard();
         }
 
-        $firstBroken = $this->service->verifyChain(self::BR);
+        $firstBroken = $this->service->verifyChain(self::BR_FORGED);
         $this->assertSame($forged->id, $firstBroken);
     }
 
     public function test_payload_key_order_does_not_affect_hash(): void
     {
-        $h1 = $this->service->computeHash(self::BR, null, 'order.create', ['a' => 1, 'b' => ['x' => 2, 'y' => 3]]);
-        $h2 = $this->service->computeHash(self::BR, null, 'order.create', ['b' => ['y' => 3, 'x' => 2], 'a' => 1]);
+        $h1 = $this->service->computeHash(self::BR_HASH_ONLY, null, 'order.create', ['a' => 1, 'b' => ['x' => 2, 'y' => 3]]);
+        $h2 = $this->service->computeHash(self::BR_HASH_ONLY, null, 'order.create', ['b' => ['y' => 3, 'x' => 2], 'a' => 1]);
 
         $this->assertSame($h1, $h2, 'Canonicalisation must be order-independent.');
     }
@@ -119,6 +127,6 @@ class AuditLogHashChainTest extends TestCase
     {
         Config::set('fiscal.audit_secret', '');
         $this->expectException(\RuntimeException::class);
-        $this->service->write(['branch_id' => self::BR, 'action' => 'order.create', 'payload' => ['id' => 1]]);
+        $this->service->write(['branch_id' => self::BR_SECRET, 'action' => 'order.create', 'payload' => ['id' => 1]]);
     }
 }
