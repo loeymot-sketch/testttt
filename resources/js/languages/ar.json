@@ -919,6 +919,20 @@
         "article_singular": "صنف",
         "article_plural": "أصناف",
         "discount_loyalty": "خصم الولاء",
+        "discount_promo": "رمز ترويجي {code}",
+        "promo": {
+            "label": "رمز ترويجي",
+            "placeholder": "مثال: WELCOME10",
+            "apply": "تطبيق",
+            "loading": "جاري التحقق…",
+            "remove": "إزالة",
+            "applied": "تم تطبيق الرمز {code} (-{amount})",
+            "error": {
+                "empty": "يرجى إدخال رمز.",
+                "invalid": "رمز ترويجي غير صالح أو منتهي.",
+                "network": "تعذر التحقق من هذا الرمز. حاول مرة أخرى."
+            }
+        },
         "validate_order": "تأكيد الطلب",
         "add_more_items": "إضافة المزيد",
         "loyalty_prompt": "هل لديك بطاقة ولاء؟",

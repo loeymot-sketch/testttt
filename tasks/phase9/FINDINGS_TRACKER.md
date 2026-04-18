@@ -21,8 +21,8 @@
 | 9.1.2 | Intégrer `KsAllergenBadge` persistent dans header wizard | P0 | `resources/js/components/frontend/kiosk/KioskWizardComponent.vue:17-36` | fixed | `964500c52` | — |
 | 9.1.3 | Câbler `/api/frontend/pricing/preview` (debounce 400 ms) | P0 | `resources/js/helpers/kioskPricingPreview.js` + `KioskWizardComponent.vue` | fixed | `b8903f378` | — |
 | 9.1.4 | Listener `InvalidateKioskMenuCacheOnItemAvailabilityChanged` | P0 | `app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php` + `EventServiceProvider.php` | fixed | `42ed5f3e0` | — |
-| 9.1.5 | Mutation `kioskMenu/UPDATE_ITEM` patch `is_available` + `unavailable_reason` | P0 | `resources/js/store/modules/kioskMenu.js:159-230` | fixed | (pending) | — |
-| 9.1.6 | Champ code promo panier + `POST /api/frontend/promo/validate` | P0 | `KioskCartComponent.vue` + `store/modules/kioskCart.js` | open | — | — |
+| 9.1.5 | Mutation `kioskMenu/UPDATE_ITEM` patch `is_available` + `unavailable_reason` | P0 | `resources/js/store/modules/kioskMenu.js:159-230` | fixed | `56adb6e67` | — |
+| 9.1.6 | Champ code promo panier + `POST /api/frontend/promo/validate` | P0 | `KioskCartComponent.vue` + `store/modules/kioskCart.js` | fixed | (pending) | — |
 | 9.1.7 | Wire `KsVirtualKeyboard` sur inputs loyalty | P0 | `KioskLoyaltyComponent.vue:27-117` | open | — | — |
 | 9.1.8 | Wire `useKioskSpeech` sur events critiques (order / payment) | P0 | `KioskConfirmationComponent.vue` + `KioskPaymentComponent.vue` | open | — | — |
 | 9.1.9 | Fix whitelist analytics `idle_warning` → `idle_warning_shown` | P0 | `KioskInactivityOverlayComponent.vue:130` | open | — | — |

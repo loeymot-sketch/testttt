@@ -852,6 +852,20 @@
         "subtotal": "Subtotal",
         "discount": "Loyalty discount",
         "discount_loyalty": "Loyalty discount",
+        "discount_promo": "Promo code {code}",
+        "promo": {
+            "label": "Promo code",
+            "placeholder": "e.g. WELCOME10",
+            "apply": "Apply",
+            "loading": "Checking…",
+            "remove": "Remove",
+            "applied": "Code {code} applied (-{amount})",
+            "error": {
+                "empty": "Please enter a code.",
+                "invalid": "Invalid or expired promo code.",
+                "network": "Could not verify this code. Please try again."
+            }
+        },
         "checkout": "Checkout",
         "cancel": "Cancel",
         "back": "Back",

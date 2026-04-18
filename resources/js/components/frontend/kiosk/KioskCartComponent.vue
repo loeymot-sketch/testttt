@@ -225,12 +225,75 @@
           <span><span aria-hidden="true">🎁</span> {{ $t('kiosk.discount_loyalty') }}</span>
           <span class="green" data-testid="kiosk-cart-loyalty-discount">-{{ formatPrice(loyaltyDiscount) }}</span>
         </div>
+        <!-- Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée. -->
+        <div class="kiosk-cart-summary-row promo" v-if="promoDiscount > 0">
+          <span><span aria-hidden="true">🏷️</span> {{ $t('kiosk.discount_promo', { code: promoCode }) }}</span>
+          <span class="green" data-testid="kiosk-cart-promo-discount">-{{ formatPrice(promoDiscount) }}</span>
+        </div>
         <div class="kiosk-cart-summary-row total">
           <span>{{ $t('kiosk.total') }}</span>
           <span
             class="kiosk-cart-grand-total"
             data-testid="kiosk-cart-total"
           >{{ formatPrice(cartTotal) }}</span>
+        </div>
+      </div>
+
+      <!-- Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé
+           serveur à /order). Affiche success / error inline. -->
+      <div class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
+        <div v-if="!promoCode" class="kiosk-cart-promo-form">
+          <label for="kiosk-cart-promo-input" class="kiosk-cart-promo-label">
+            {{ $t('kiosk.promo.label') }}
+          </label>
+          <div class="kiosk-cart-promo-row">
+            <input
+              id="kiosk-cart-promo-input"
+              v-model="promoInput"
+              type="text"
+              autocomplete="off"
+              maxlength="64"
+              class="kiosk-cart-promo-input"
+              :placeholder="$t('kiosk.promo.placeholder')"
+              :aria-invalid="!!promoError"
+              :aria-describedby="promoError ? 'kiosk-cart-promo-error' : null"
+              :disabled="promoLoading"
+              data-testid="kiosk-cart-promo-input"
+              @keydown.enter.prevent="applyPromo"
+            />
+            <button
+              type="button"
+              class="kiosk-cart-promo-apply"
+              :disabled="promoLoading || !promoInput.trim()"
+              data-testid="kiosk-cart-promo-apply"
+              @click="applyPromo"
+            >
+              {{ promoLoading ? $t('kiosk.promo.loading') : $t('kiosk.promo.apply') }}
+            </button>
+          </div>
+          <p
+            v-if="promoError"
+            id="kiosk-cart-promo-error"
+            class="kiosk-cart-promo-error"
+            role="alert"
+            data-testid="kiosk-cart-promo-error"
+          >
+            {{ $te(promoError) ? $t(promoError) : promoError }}
+          </p>
+        </div>
+        <div v-else class="kiosk-cart-promo-applied" data-testid="kiosk-cart-promo-applied">
+          <span class="kiosk-cart-promo-applied-icon" aria-hidden="true">✓</span>
+          <span class="kiosk-cart-promo-applied-text">
+            {{ $t('kiosk.promo.applied', { code: promoCode, amount: formatPrice(promoDiscount) }) }}
+          </span>
+          <button
+            type="button"
+            class="kiosk-cart-promo-remove"
+            data-testid="kiosk-cart-promo-remove"
+            @click="removePromo"
+          >
+            {{ $t('kiosk.promo.remove') }}
+          </button>
         </div>
       </div>
 
@@ -292,6 +355,10 @@ export default {
       ORDER_TYPE_KIOSK,
       ORDER_TYPE_TAKEAWAY,
       maxItemQty: window.foodkingConfig?.maxItemQty ?? 20,
+      // Kiosk Phase 9.1.6 — Champ local (pas directement dans le store) pour
+      // laisser l'utilisateur taper/effacer sans triggerer de validate sur
+      // chaque frappe. L'appel réseau n'est déclenché qu'au clic Appliquer.
+      promoInput: '',
     };
   },
 
@@ -304,6 +371,10 @@ export default {
       loyaltyDiscount: 'loyaltyDiscount',
       upsellShown: 'upsellShown',
       orderType: 'orderType',
+      promoCode: 'promoCode',
+      promoDiscount: 'promoDiscount',
+      promoError: 'promoError',
+      promoLoading: 'promoLoading',
     }),
     ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId']),
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
@@ -312,7 +383,27 @@ export default {
     },
   },
   methods: {
-    ...mapActions('kioskCart', ['updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType']),
+    ...mapActions('kioskCart', [
+      'updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType',
+      // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
+      'validatePromo', 'clearPromo',
+    ]),
+
+    // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
+    // UX: on ne bloque pas l'utilisateur, on affiche un message d'erreur inline
+    // et on conserve ce qu'il a tapé si la saisie est invalide (pas de reset input).
+    async applyPromo() {
+      const code = (this.promoInput || '').trim();
+      if (!code) return;
+      const res = await this.validatePromo(code);
+      if (res && res.valid) {
+        this.promoInput = '';
+      }
+    },
+    removePromo() {
+      this.clearPromo();
+      this.promoInput = '';
+    },
 
     // [GAP-22-1] Select order type and give haptic-like visual feedback
     selectOrderType(type) {
@@ -752,6 +843,93 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Kiosk Phase 9.1.6 — Section code promo panier. */
+.kiosk-cart-promo {
+  padding: 12px 24px 0;
+}
+.kiosk-cart-promo-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  margin-bottom: 6px;
+}
+.kiosk-cart-promo-row {
+  display: flex;
+  gap: 8px;
+}
+.kiosk-cart-promo-input {
+  flex: 1;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.5px solid #E5E5E5;
+  background: #fff;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  min-height: 44px;
+}
+.kiosk-cart-promo-input:focus {
+  border-color: var(--kiosk-primary, #E8001C);
+  outline: none;
+}
+.kiosk-cart-promo-input[aria-invalid="true"] {
+  border-color: var(--kiosk-error, #C21E2F);
+}
+.kiosk-cart-promo-apply {
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--kiosk-primary, #E8001C);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.kiosk-cart-promo-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.kiosk-cart-promo-error {
+  color: var(--kiosk-error, #C21E2F);
+  font-size: 13px;
+  margin: 6px 0 0;
+  font-weight: 500;
+}
+.kiosk-cart-promo-applied {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #E8F5EC;
+  border: 1.5px solid var(--kiosk-success, #1B8A3A);
+  border-radius: 10px;
+  color: var(--kiosk-success, #1B8A3A);
+  font-weight: 600;
+}
+.kiosk-cart-promo-applied-icon {
+  font-size: 18px;
+}
+.kiosk-cart-promo-applied-text {
+  flex: 1;
+}
+.kiosk-cart-promo-remove {
+  background: transparent;
+  border: none;
+  color: var(--kiosk-error, #C21E2F);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.kiosk-cart-summary-row.promo .green {
+  color: var(--kiosk-success, #1B8A3A);
 }
 
 .kiosk-btn-loyalty {
