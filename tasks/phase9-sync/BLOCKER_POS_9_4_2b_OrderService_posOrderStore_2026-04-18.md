@@ -46,3 +46,14 @@ La méthode `posOrderStore` est définie dans `app/Services/OrderService.php:546
 ## Escalation
 
 Non bloquant pour POS-9.4 (les 10 autres items livrables passent). À traiter après POS-9.5 kiosk ou en hotfix ciblé si orchestrateur revalide la zone OrderService.
+
+
+---
+## CLOSED (2026-04-18)
+
+Closed by commits:
+- BL.1 `2d4d2c846` (fiscal sequence wire-in + allergen snapshot, posOrderStore)
+- BL.2 `a7036f6ec` (audit log call-sites: discount/cancel/payment_status/destroy/cashBack)
+- BL.3 `c3c0593e6` (409 destroy-after-Z guard)
+
+Branche : `feat/pos-phase-9-2-3`. Tests Fiscal+PosOrder+Orders : 93/93 OK. CI invariants : 6/6. Voir `reports/execution/RUN_POS_9_4_BL_2026-04-18.md`.

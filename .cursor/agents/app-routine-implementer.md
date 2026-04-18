@@ -1,6 +1,6 @@
 ---
 name: foodking-routine-implementer
-model: claude-opus-4-7
+model: composer-2
 description: FoodKing routine executor for bounded low-risk edits—config, UI copy, docs/reports, minor safe refactors. Use proactively when the active plan marks work as routine EXECUTE and does not touch auth, pricing, schema, dispatch, branch isolation, frozen zones, or complex lifecycle logic.
 ---
 

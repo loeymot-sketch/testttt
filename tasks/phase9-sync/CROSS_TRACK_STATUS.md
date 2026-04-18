@@ -34,7 +34,7 @@
 | B | POS Phase 9 | POS-9.4 | 9.4.11 FiscalArchiveCommand | feat/pos-phase-9-4 | resolved (commit `3a9d29f98`) | 9.4.3/6/7 | — |
 | B | POS Phase 9 | POS-9.4 | 9.4.12 pos-manage-fiscal / pos-reopen-z | feat/pos-phase-9-4 | resolved (commit `dc4e57978`) | — | — |
 | B | POS Phase 9 | Phase H Hardening | 26 items (H.1 + H.2 + H.3) | feat/pos-phase-9-hardening | **merged** (merge commit `3914ae059` sur main, Gate H PASS, 81 Fiscal + 17 Vitest green, CI invariants 6/6) | POS-9.4 | POS-9.2 |
-| B | POS Phase 9 | POS-9.4.BL (pré-vague) | BL.1 fiscal seq wire-in + allergen snapshot, BL.2 audit log call-sites, BL.3 destroy after Z guard (3 items, 3 commits atomiques) | feat/pos-phase-9-2-3 (to create) | in_progress | P9.5 merged ✅, Phase H merged ✅ | POS-9.2 |
+| B | POS Phase 9 | POS-9.4.BL (pré-vague) | BL.1 fiscal seq wire-in + allergen snapshot, BL.2 audit log call-sites, BL.3 destroy after Z guard (3 items, 3 commits atomiques) | feat/pos-phase-9-2-3 | **verified** (93/93 Feature Fiscal+PosOrder+Orders, 306 assertions, CI 6/6, 3 BLOCKERs closed) | P9.5 merged ✅, Phase H merged ✅ | POS-9.2 |
 | B | POS Phase 9 | POS-9.2 | State machine canonicalisation (10 items) | feat/pos-phase-9-2-3 | pending | POS-9.4.BL | POS-9.3 |
 | B | POS Phase 9 | POS-9.3 | Multi-tender + events canoniques (10 items) | feat/pos-phase-9-2-3 | pending | POS-9.2 | POS-9.INT |
 | B | POS Phase 9 | POS-9.INT | E2E cross-surface + BROADCAST Track A (2 items) | feat/pos-phase-9-2-3 | pending | POS-9.3 | #P-1 stock sync |
@@ -71,3 +71,4 @@
 - 2026-04-18 — Track B : POS-9.4 livrée (branche `feat/pos-phase-9-4`, 9 items livrables / 3 BLOCKERs OrderService).
 - 2026-04-18 — Track B : **Phase H Hardening mergée sur `main`** (merge commit `3914ae059`, 26 atomic commits + 2 docs, Gate H PASS, VISION + PLAN POS-9.2/9.3 landed).
 - 2026-04-18 — Track B : POS-9.4.BL démarre sur `feat/pos-phase-9-2-3` dès P9.5 merge finalisé (plan §0 armé).
+- 2026-04-18 — Track B : **POS-9.4.BL livrée** (3 commits atomiques : BL.1 `2d4d2c846`, BL.2 `a7036f6ec`, BL.3 `c3c0593e6`). 93/93 tests green, 6/6 invariants, 3 BLOCKERs closed. Voir `reports/execution/RUN_POS_9_4_BL_2026-04-18.md`.
