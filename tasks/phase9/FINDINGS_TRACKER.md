@@ -24,8 +24,8 @@
 | 9.1.5 | Mutation `kioskMenu/UPDATE_ITEM` patch `is_available` + `unavailable_reason` | P0 | `resources/js/store/modules/kioskMenu.js:159-230` | fixed | `56adb6e67` | — |
 | 9.1.6 | Champ code promo panier + `POST /api/frontend/promo/validate` | P0 | `KioskCartComponent.vue` + `store/modules/kioskCart.js` | fixed | 624ba3770 | — |
 | 9.1.7 | Wire `KsVirtualKeyboard` sur inputs loyalty | P0 | `KioskLoyaltyComponent.vue:27-117` | fixed | 2f8c66696 | — |
-| 9.1.8 | Wire `useKioskSpeech` sur events critiques (order / payment) | P0 | `KioskConfirmationComponent.vue` + `KioskPaymentComponent.vue` | fixed | 3c35788b7 | — |
-| 9.1.9 | Fix whitelist analytics `idle_warning` → `idle_warning_shown` | P0 | `KioskInactivityOverlayComponent.vue:130` | open | — | — |
+| 9.1.8 | Wire `useKioskSpeech` sur events critiques (order / payment) | P0 | `KioskConfirmationComponent.vue` + `KioskPaymentComponent.vue` | fixed | 0bb45393d | — |
+| 9.1.9 | Fix whitelist analytics `idle_warning` → `idle_warning_shown` | P0 | `KioskInactivityOverlayComponent.vue:130` | fixed | (pending) | — |
 | 9.1.10 | Fix event name mismatch `@accept` / `@accepted` loyalty consent | P0 | `KioskLoyaltyComponent.vue:228` ou `KsConsentModal.vue:297` | open | — | — |
 | 9.1.11 | Redirection `kiosk.error.payment-refused` après 2 échecs | P0 | `KioskPaymentComponent.vue:348-354` | open | — | — |
 | 9.1.12 | Persister last-order localStorage (F5-proof receipt) | P0 | nouveau `kioskReceiptPersistence.js` + `KioskConfirmationComponent.vue:236` | open | — | — |

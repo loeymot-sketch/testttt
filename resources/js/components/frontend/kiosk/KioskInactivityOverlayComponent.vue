@@ -127,7 +127,11 @@ export default {
             this.stop();
             this.secondsLeft = Math.max(1, Math.ceil(this.countdownMs / 1000));
             try {
-                kioskAnalytics.track('idle_warning', {
+                // Kiosk Phase 9.1.9 — l'event canonique whitelisté dans
+                // kioskAnalytics.ALLOWED_EVENTS est `idle_warning_shown` (pas
+                // `idle_warning`). L'ancien nom était silently droppé par le
+                // filtre, donc l'analytique était aveugle sur les overlays.
+                kioskAnalytics.track('idle_warning_shown', {
                     countdown_ms: this.countdownMs,
                 });
             } catch (_) {}
