@@ -44,6 +44,17 @@ describe('kioskSauceVariationRowsForItem', () => {
       itemAttributes: { a: { id: 2, name: 'Condiment' } },
       variations: { 2: [{ id: 9, name: 'Harissa' }] },
     };
+    expect(kioskSauceVariationRowsForItem(item)).toEqual([]);
+  });
+
+  it('still matches renamed english or arabic labels when role is set', () => {
+    const item = {
+      itemAttributes: [
+        { id: 2, name: 'Sos', role: 'sauce' },
+        { id: 9, name: 'Dip', role: 'condiment' },
+      ],
+      variations: { 2: [{ id: 9, name: 'Harissa' }] },
+    };
     const rows = kioskSauceVariationRowsForItem(item);
     expect(rows).toHaveLength(1);
     expect(rows[0].emoji).toBeTruthy();

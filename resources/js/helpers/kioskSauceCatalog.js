@@ -3,21 +3,12 @@
  * Sert pour les sauces **frites** sur l’étape menu (alignement catalogue complet, pas 5 lignes figées).
  */
 import { kioskResolveImageSrc } from './kioskMedia';
+import { matchAttributeByRole } from './kioskPainCatalog';
 
 function normalizeAttributes(attrs) {
   if (attrs == null) return [];
   if (Array.isArray(attrs)) return attrs;
   return Object.values(attrs);
-}
-
-function isSauceLikeAttributeName(name) {
-  const n = (name || '').toLowerCase();
-  return (
-    n.includes('sauce') ||
-    n.includes('condiment') ||
-    n.includes('dressing') ||
-    n.includes('dip')
-  );
 }
 
 function variationsRowsForAttribute(variations, attrId) {
@@ -45,7 +36,7 @@ function pickEmojiForSauceName(name) {
  */
 export function kioskSauceVariationRowsForItem(item) {
   const attrs = normalizeAttributes(item?.itemAttributes);
-  const sauceAttr = attrs.find((a) => isSauceLikeAttributeName(a.name));
+  const sauceAttr = attrs.find((attr) => matchAttributeByRole(attr, 'sauce'));
   if (!sauceAttr) return [];
 
   const sauceVariations = variationsRowsForAttribute(item?.variations, sauceAttr.id);

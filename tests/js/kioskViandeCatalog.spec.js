@@ -6,7 +6,7 @@ import {
 
 function buildItem({ variations = [], extras = [], attrId = 7 } = {}) {
   return {
-    itemAttributes: [{ id: attrId, name: 'Viande' }],
+    itemAttributes: [{ id: attrId, name: 'Viande', role: 'meat' }],
     variations: { [String(attrId)]: variations },
     extras,
   };
@@ -72,6 +72,17 @@ describe('kioskViandeCatalogForItem', () => {
   it('returns empty when item has no viande attribute and no viande extras', () => {
     const item = { itemAttributes: [{ id: 1, name: 'Sauce' }], variations: {}, extras: [] };
     expect(kioskViandeCatalogForItem(item)).toEqual([]);
+  });
+
+  it('still matches renamed english or arabic labels when role is set', () => {
+    const item = {
+      itemAttributes: [{ id: 7, name: 'Lahma', role: 'meat' }],
+      variations: { 7: [{ id: 1, name: 'Poulet' }] },
+      extras: [],
+    };
+    const rows = kioskViandeCatalogForItem(item);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 1, source: 'variation', attrId: 7 });
   });
 
   it('still surfaces paid viande extras even if no viande attribute exists', () => {

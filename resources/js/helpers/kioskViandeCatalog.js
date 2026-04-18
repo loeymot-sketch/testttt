@@ -26,6 +26,7 @@
  */
 import { kioskResolveImageSrc, kioskVariationsForAttribute } from './kioskMedia';
 import { kioskIsViandePaidExtra } from './kioskExtrasPartition';
+import { matchAttributeByRole } from './kioskPainCatalog';
 
 function normalizeAttributes(attrs) {
   if (attrs == null) return [];
@@ -71,7 +72,7 @@ export function kioskViandeCatalogForItem(item) {
   const seenKeys = new Set();
 
   const attrs = normalizeAttributes(item.itemAttributes);
-  const viandeAttr = attrs.find((a) => String(a?.name || '').toLowerCase().includes('viande'));
+  const viandeAttr = attrs.find((attr) => matchAttributeByRole(attr, 'meat'));
   const variations = viandeAttr ? kioskVariationsForAttribute(item, viandeAttr.id) : null;
 
   if (Array.isArray(variations) && variations.length > 0) {
