@@ -531,6 +531,11 @@ export default {
       const tailleVars = kioskVariationsForAttribute(item, tailleAttr?.id);
       return Array.isArray(tailleVars) && tailleVars.some((variation) => variation && Number(variation.status) !== 10);
     },
+    getTacosNamedSizePreset(item) {
+      const text = `${item?.name || ''} ${item?.description || ''}`;
+      const match = text.match(/\btacos\s+(m|l|xl)\b/i);
+      return match ? match[1].toUpperCase() : null;
+    },
     shouldAskTacosTaille() {
       const item = this.resolvedItem;
       if (!item) return false;
@@ -542,10 +547,8 @@ export default {
         lower.includes('2 viande') ||
         lower.includes('3 viande') ||
         lower.includes('4 viande') ||
-        lower.includes('xxl') ||
-        lower.includes('xl') ||
-        lower.includes('tacos l') ||
-        lower.includes('tacos m');
+        /\bxxl\b/i.test(lower) ||
+        this.getTacosNamedSizePreset(item) !== null;
       return !hasPresetSize;
     },
     inferTacosPresetMeta() {
@@ -553,11 +556,10 @@ export default {
       if (!item || this.shouldAskTacosTaille()) return null;
       const viandeCount = this.detectViandeCount();
       const lower = (item.name || '').toLowerCase();
+      const namedPreset = this.getTacosNamedSizePreset(item);
       let label = `${viandeCount} viande${viandeCount > 1 ? 's' : ''}`;
       if (lower.includes('xxl')) label = 'XXL';
-      else if (lower.includes('xl')) label = 'XL';
-      else if (lower.includes('tacos l')) label = 'L';
-      else if (lower.includes('tacos m')) label = 'M';
+      else if (namedPreset) label = namedPreset;
       return {
         viandeCount,
         label,

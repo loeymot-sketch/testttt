@@ -1251,6 +1251,57 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
   });
 });
 
+describe('KioskWizardComponent — tacos size preset detection', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+
+  function mountWizard(item) {
+    return shallowMount(KioskWizardComponent, {
+      props: {
+        item,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+  }
+
+  function buildTacosItem(name) {
+    return {
+      id: 990,
+      name,
+      convert_price: 9,
+      wizard_template: 'tacos',
+      category_name: 'Tacos',
+      itemAttributes: [{ id: 33, name: 'Taille', role: 'size' }],
+      variations: { 33: [{ id: 1, name: 'L', status: 5 }] },
+      extras: [],
+      addons: [],
+    };
+  }
+
+  it('no_false_positive_tacos_lroyal', () => {
+    const wrapper = mountWizard(buildTacosItem('Tacos Lroyal'));
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(true);
+  });
+
+  it('matches_tacos_L_correctly', () => {
+    const wrapper = mountWizard(buildTacosItem('Tacos L'));
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+
+  it('matches_tacos_XL', () => {
+    const wrapper = mountWizard(buildTacosItem('Tacos XL'));
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+});
+
 describe('KioskStepMenuComponent — P0 hint when no choice yet', () => {
   it('shows validation hint when localChoice is null', () => {
     const wrapper = mount(KioskStepMenuComponent, {
