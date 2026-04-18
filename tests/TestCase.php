@@ -136,6 +136,9 @@ abstract class TestCase extends BaseTestCase
             'pos-discount-unlimited',
             // [POS-9.1.2] destroy paid orders
             'pos-destroy-paid',
+            // [POS-9.4.12] fiscal management (NF525 Z/X reports, drawer audit)
+            'pos-manage-fiscal',
+            'pos-reopen-z',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -169,6 +172,9 @@ abstract class TestCase extends BaseTestCase
                 'pos-orders',
                 'pos-discount-up-to-10',
                 'pos-discount-over-10-requires-manager',
+                // [POS-9.4.12] fiscal management is a manager-level responsibility.
+                'pos-manage-fiscal',
+                'pos-reopen-z',
             ]);
         }
 

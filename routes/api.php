@@ -779,6 +779,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [OrderStatusScreenController::class, 'index']);
         Route::get('/popular-items', [OrderStatusScreenController::class, 'mostPopularItems']);
     });
+
+    // [POS-9.4.9 / POS-GA-F-01/02] Fiscal Z/X report endpoints — NF525 compliance.
+    Route::prefix('fiscal')->name('fiscal.')->group(function () {
+        Route::prefix('z-report')->name('zReport.')->group(function () {
+            Route::get('/',          [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
+            Route::post('/open',     [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open']);
+            Route::post('/close',    [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close']);
+            Route::get('/{zReport}', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'show']);
+            Route::get('/{zReport}/pdf', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'pdf']);
+        });
+        Route::get('/x-report', [\App\Http\Controllers\Admin\Fiscal\XReportController::class, 'show'])
+            ->name('xReport.show');
+    });
 });
 
 Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
