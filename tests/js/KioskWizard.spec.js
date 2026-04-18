@@ -1043,6 +1043,7 @@ const wizardStubNames = [
   'KioskStepSupplements',
   'KioskStepMenu',
   'KioskOrderSummary',
+  'KioskErrorProductRemovedComponent',
 ];
 
 describe('KioskWizardComponent — P0 menu obligatoire (réel)', () => {
@@ -1381,6 +1382,92 @@ describe('KioskStepMenuComponent — recommended full meal badge', () => {
     expect(wrapper.find('.kiosk-menu-card.selected').exists()).toBe(false);
     expect(wrapper.text()).toContain(frMessages.kiosk.wizard.menu.recommended_badge);
     expect(wrapper.emitted('update')).toBeFalsy();
+  });
+});
+
+describe('KioskWizardComponent — item availability echo', () => {
+  const wizardItem = {
+    id: 551,
+    name: 'Tacos Echo',
+    convert_price: 9,
+    wizard_template: 'tacos',
+    category_name: 'Tacos',
+    itemAttributes: [],
+    variations: {},
+    extras: [],
+    addons: [],
+  };
+
+  function mountWizardWithStore() {
+    const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
+    return shallowMount(KioskWizardComponent, {
+      props: {
+        item: wizardItem,
+        onAddToCart: vi.fn(),
+        onClose: vi.fn(),
+      },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: {
+            getters: { 'kioskCart/branchId': 7 },
+            state: { globalState: { lists: {} }, kioskCart: { branchId: 7 } },
+            dispatch: vi.fn(),
+          },
+          $router: { go: vi.fn(), push: vi.fn(() => Promise.resolve()) },
+        },
+      },
+    });
+  }
+
+  it('shows_removed_overlay_on_echo', async () => {
+    const previousEcho = window.Echo;
+    let itemAvailabilityHandler = null;
+
+    window.Echo = {
+      private: vi.fn(() => ({
+        listen: vi.fn((eventName, handler) => {
+          if (eventName === '.ItemAvailabilityChanged') {
+            itemAvailabilityHandler = handler;
+          }
+        }),
+        stopListening: vi.fn(),
+      })),
+      leave: vi.fn(),
+    };
+
+    const wrapper = mountWizardWithStore();
+    await wrapper.vm.$nextTick();
+
+    itemAvailabilityHandler({
+      version: 1,
+      type: 'menu.item_availability_changed',
+      payload: {
+        item_id: 551,
+        is_available: false,
+      },
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.showRemovedOverlay).toBe(true);
+
+    wrapper.unmount();
+    window.Echo = previousEcho;
+  });
+
+  it('tolerates_missing_echo', () => {
+    const previousEcho = window.Echo;
+    delete window.Echo;
+
+    const wrapper = mountWizardWithStore();
+
+    expect(wrapper.vm.showRemovedOverlay).toBe(false);
+    expect(wrapper.vm._availabilityEventSub).toBeUndefined();
+
+    wrapper.unmount();
+    window.Echo = previousEcho;
   });
 });
 

@@ -309,7 +309,7 @@
                 "title": "Cet article n'est plus disponible",
                 "subtitle": "Il a été retiré de la carte pendant votre commande.",
                 "hint": "Vous pouvez retourner au menu pour choisir un autre article.",
-                "cta_back_menu": "Retour au menu"
+                "cta_back_menu": "Choisir un autre produit"
             },
             "payment_refused": {
                 "title": "Paiement refusé",

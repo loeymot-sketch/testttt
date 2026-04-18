@@ -131,6 +131,22 @@
         <div class="kiosk-nav-total">{{ $t('kiosk.total') }} {{ formatPrice(runningTotal) }}</div>
       </div>
 
+      <transition name="fade">
+        <div
+          v-if="showRemovedOverlay"
+          class="kiosk-wizard-abandon-overlay"
+          role="presentation"
+        >
+          <div class="kiosk-wizard-abandon-modal">
+            <KioskErrorProductRemovedComponent
+              :product-name="sanitizeItemName(resolvedItem?.name)"
+              :item-id="resolvedItem?.id"
+              @back-to-menu="goToCategoriesAfterRemoval"
+            />
+          </div>
+        </div>
+      </transition>
+
       <!-- P2 : confirmation avant abandon (évite erreur tactile) -->
       <transition name="fade">
         <div
@@ -175,6 +191,7 @@ import KioskStepGarnitures from './steps/KioskStepGarnituresComponent.vue';
 import KioskStepSupplements from './steps/KioskStepSupplementsComponent.vue';
 import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
+import KioskErrorProductRemovedComponent from './KioskErrorProductRemovedComponent.vue';
 // Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard (safety FIC).
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 // Kiosk Phase 9.1.3 — SSOT pricing preview debounced (400 ms) côté wizard.
@@ -189,6 +206,7 @@ import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../hel
 import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
 import { partitionKioskExtras } from '../../../helpers/kioskExtrasPartition';
 import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
+import { onEvent } from '../../../services/eventContract';
 // Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
@@ -204,6 +222,7 @@ export default {
     KioskStepSupplements,
     KioskStepMenu,
     KioskOrderSummary,
+    KioskErrorProductRemovedComponent,
     KsAllergenBadge,
   },
   props: {
@@ -215,6 +234,7 @@ export default {
   data() {
     return {
       showAbandonConfirm: false,
+      showRemovedOverlay: false,
       currentStepIndex: 0,
       fetchedItem: null,
       fetchLoading: false,
@@ -369,6 +389,11 @@ export default {
       return this.serverPreviewTotal != null
         ? this.serverPreviewTotal
         : this.runningTotalLocal;
+    },
+    branchId() {
+      const fromGetter = this.$store?.getters?.['kioskCart/branchId'];
+      const parsed = parseInt(fromGetter || this.$store?.state?.kioskCart?.branchId || 0, 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
     },
     /** « + Boisson » (formule boisson seule) : pertinent catégorie boissons, pas à côté de Menu complet / Frites sur sandwich-burger-tacos. */
     kioskShowBoissonOnlyMenuCard() {
@@ -1141,6 +1166,40 @@ export default {
         this.$store.dispatch('kioskCart/addItem', cartItem);
         this.$router.go(-1);
       }
+    },
+    _subscribeAvailabilityEcho() {
+      if (!window.Echo || !this.branchId) return;
+
+      this._unsubscribeAvailabilityEcho();
+
+      try {
+        this._availabilityEventSub = onEvent(this.branchId, 'ItemAvailabilityChanged', (event) => {
+          this._handleItemAvailabilityChanged(event);
+        });
+      } catch (_) {
+        this._availabilityEventSub = null;
+      }
+    },
+    _unsubscribeAvailabilityEcho() {
+      this._availabilityEventSub?.unsubscribe?.();
+      this._availabilityEventSub = null;
+    },
+    _handleItemAvailabilityChanged(event) {
+      const payload = event?.payload || {};
+      const currentItemId = parseInt(this.resolvedItem?.id || 0, 10);
+      const eventItemId = parseInt(payload.item_id || payload.id || 0, 10);
+
+      if (!currentItemId || currentItemId !== eventItemId) {
+        return;
+      }
+
+      if (payload.is_available === false) {
+        this.showRemovedOverlay = true;
+      }
+    },
+    goToCategoriesAfterRemoval() {
+      this.showRemovedOverlay = false;
+      this.$router?.push({ name: 'kiosk.categories' }).catch(() => {});
     }
   },
   mounted() {
@@ -1169,6 +1228,10 @@ export default {
     });
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(() => this.refreshServerPreviewTotal());
+    this.$nextTick(() => this._subscribeAvailabilityEcho());
+  },
+  beforeUnmount() {
+    this._unsubscribeAvailabilityEcho();
   },
   beforeDestroy() {
     // Phase 8.8 — wizard closed without completion (global abandon).
@@ -1186,6 +1249,7 @@ export default {
       this._kioskPricingPreview.destroy();
       this._kioskPricingPreview = null;
     }
+    this._unsubscribeAvailabilityEcho();
   },
   watch: {
     // Kiosk Phase 9.1.3 — tout changement de sélection retrigger le preview
