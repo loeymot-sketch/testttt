@@ -40,15 +40,15 @@
 
 | id | title | criticity | file:line | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|---|
-| 9.2.1 | `ItemRequest::rules()` + 12 flags | P1 | `app/Http/Requests/ItemRequest.php` | open | — | — |
-| 9.2.2 | `ItemCategoryRequest::rules()` + hierarchy/channels | P1 | `app/Http/Requests/ItemCategoryRequest.php` | open | — | — |
-| 9.2.3 | `ItemCategoryHierarchyService::validateParent` | P1 | `app/Services/ItemCategoryHierarchyService.php` | open | — | — |
-| 9.2.4 | `AllergensSeeder` codes FR | P1 | `database/seeders/AllergensSeeder.php` | open | — | — |
-| 9.2.5 | FK `item_branch_availability` | P1 | migration ALTER | open | — | — |
-| 9.2.6 | `AllergenService::projectFlags` | P1 | `app/Services/AllergenService.php` | open | — | — |
-| 9.2.7 | Endpoint admin availability toggle | P1 | `AvailabilityController::toggle` | open | — | — |
-| 9.2.8 | Rate limit `throttle:kiosk-menu` | P2 | `routes/api.php` | open | — | — |
-| 9.2.9 | Events cache invalidation CRUD admin | P1 | nouvelles classes Event | open | — | — |
+| 9.2.1 | `ItemRequest::rules()` + 12 flags | P1 | `app/Http/Requests/ItemRequest.php` | fixed | `770a34d48` | — |
+| 9.2.2 | `ItemCategoryRequest::rules()` + hierarchy/channels | P1 | `app/Http/Requests/ItemCategoryRequest.php` | fixed | `7ebfd9c8f` | — |
+| 9.2.3 | `ItemCategoryHierarchyService::validateParent` | P1 | `app/Services/ItemCategoryHierarchyService.php` | fixed | `8369689a1` | — |
+| 9.2.4 | `AllergensSeeder` codes FR | P1 | `database/seeders/AllergensSeeder.php` | fixed | `7bf735301` | — |
+| 9.2.5 | FK `item_branch_availability` | P1 | migration ALTER | fixed | `97554d07f` | — |
+| 9.2.6 | `AllergenService::projectFlags` | P1 | `app/Services/AllergenService.php` | fixed | `cbad6e05d` | — |
+| 9.2.7 | Endpoint admin availability toggle | P1 | `AvailabilityController::toggle` | fixed | `8719f0f81` | — |
+| 9.2.8 | Rate limit `throttle:kiosk-menu` | P2 | `routes/api.php` | fixed | `eb83bc118` | — |
+| 9.2.9 | Events cache invalidation CRUD admin | P1 | nouvelles classes Event | fixed | `d8855325a` | — |
 
 ---
 
