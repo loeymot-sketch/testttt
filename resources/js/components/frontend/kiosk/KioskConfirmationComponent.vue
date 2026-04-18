@@ -130,6 +130,17 @@
 import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+// Kiosk Phase 9.1.12 — snapshot localStorage pour survie F5 du ticket.
+import {
+  saveKioskReceiptSnapshot,
+  readKioskReceiptSnapshot,
+  clearKioskReceiptSnapshot,
+} from '../../../helpers/kioskReceiptPersistence';
+
+// Wrapper tolérant (ne lève jamais dans les tests jsdom sans localStorage).
+function clearKioskReceiptSnapshotSafe() {
+  try { clearKioskReceiptSnapshot(); } catch (_) {}
+}
 // Kiosk Phase 9.1.8 — TTS sur l'écran de confirmation.
 // Énoncé du numéro de commande + total pour les malvoyants (EAA 2025).
 // Le composable no-op si `kioskSettings.audio` est off — aucun effet de bord.
@@ -217,27 +228,75 @@ export default {
     // Snapshot cart data BEFORE resetting, so receipt can still be printed
     const state = this.$store.state.kioskCart;
     const items = state?.items || [];
-    this._snapshotItems   = JSON.parse(JSON.stringify(items));
-    this._snapshotDiscount = state?.loyaltyDiscount || 0;
+
+    // Kiosk Phase 9.1.12 — si le panier est déjà vide (reload F5 sur
+    // /confirmation après un premier mount), on tente de réhydrater depuis
+    // le snapshot localStorage. Cela couvre le cas "le client appuie sur F5
+    // juste après la confirmation et perd son ticket" — la persistance
+    // localStorage recharge items/total/queueNumber pour afficher le ticket.
+    // SSOT : ces données ne sont JAMAIS utilisées pour refaire un paiement.
+    const cartIsEmpty = !Array.isArray(items) || items.length === 0;
+    const snapshot = cartIsEmpty ? readKioskReceiptSnapshot() : null;
+
+    this._snapshotItems   = cartIsEmpty && snapshot
+      ? JSON.parse(JSON.stringify(snapshot.items || []))
+      : JSON.parse(JSON.stringify(items));
+    this._snapshotDiscount = cartIsEmpty && snapshot
+      ? (snapshot.discount || 0)
+      : (state?.loyaltyDiscount || 0);
     // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
-    this._snapshotSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    this._snapshotSubtotal = cartIsEmpty && snapshot
+      ? (snapshot.subtotal ?? (snapshot.items || []).reduce((s, it) => s + (parseFloat(it.total) || 0), 0))
+      : items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     const methodMap = {
       card: this.$t('kiosk.card'),
       cash: this.$t('kiosk.cash'),
       tr: this.$t('kiosk.pay_screen.tr_title'),
     };
-    const rawMethod = state?.paymentMethod;
-    this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+    if (cartIsEmpty && snapshot) {
+      // Le snapshot stocke déjà le libellé traduit à l'instant où il a
+      // été posé (locale au paiement) → on ne re-traduit pas pour rester
+      // cohérent avec le ticket imprimé.
+      this._snapshotPayment = snapshot.paymentMethod || '';
+    } else {
+      const rawMethod = state?.paymentMethod;
+      this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+    }
     // [GAP-35-7] Snapshot loyalty customer name and order total for points display
-    const loyaltyCustomer = state?.loyaltyCustomer;
-    this._snapshotLoyaltyName = loyaltyCustomer?.name || loyaltyCustomer?.first_name || null;
-    // Use orderTotal prop first, then compute from items
-    this._snapshotOrderTotal = this.orderTotal != null
-      ? this.orderTotal
-      : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+    if (cartIsEmpty && snapshot) {
+      this._snapshotLoyaltyName = snapshot.loyaltyCustomerName || null;
+      this._snapshotOrderTotal = Number.isFinite(snapshot.total) ? snapshot.total : 0;
+    } else {
+      const loyaltyCustomer = state?.loyaltyCustomer;
+      this._snapshotLoyaltyName = loyaltyCustomer?.name || loyaltyCustomer?.first_name || null;
+      // Use orderTotal prop first, then compute from items
+      this._snapshotOrderTotal = this.orderTotal != null
+        ? this.orderTotal
+        : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+    }
 
     // Reset cart immediately — confirmation screen owns the data via snapshot
     this.$store.dispatch('kioskCart/reset');
+
+    // Kiosk Phase 9.1.12 — persiste le reçu APRES avoir capturé le snapshot
+    // in-memory (et avant reset, idéalement — mais le dispatch synchrone
+    // ne recharge pas les items, donc ok ici). Aucun PII n'est persisté
+    // (email/phone exclus), seul le prénom loyalty déjà imprimé sur le
+    // ticket papier est stocké.
+    try {
+      saveKioskReceiptSnapshot({
+        orderId: this.orderNumber || state?.lastOrderId || null,
+        queueNumber: this.displayNumber || state?.queueNumber || null,
+        total: this._snapshotOrderTotal,
+        discount: this._snapshotDiscount,
+        subtotal: this._snapshotSubtotal,
+        items: this._snapshotItems,
+        paymentMethod: this._snapshotPayment,
+        loyaltyCustomerName: this._snapshotLoyaltyName,
+        pointsEarned: this.pointsEarned || 0,
+        restaurantName: this.restaurantName,
+      });
+    } catch (_) { /* localStorage peut être indisponible → no-op */ }
 
     this.startTimer();
 
@@ -333,6 +392,14 @@ export default {
 
     goHome() {
       this.clearTimer();
+      // Kiosk Phase 9.1.12 — retour idle = fin de session visible. On purge
+      // le snapshot localStorage (le client n'a plus besoin de son ticket
+      // à la borne) pour ne pas polluer la prochaine commande.
+      try {
+        // require-style pour garder le chunk kiosk léger — import déjà fait
+        // en haut du fichier; utiliser la fonction importée directement.
+        clearKioskReceiptSnapshotSafe();
+      } catch (_) { /* noop */ }
       // Router child — parent does not handle @close; must navigate here.
       this.$router.push({ name: 'kiosk.idle' }).catch(() => {});
     },
