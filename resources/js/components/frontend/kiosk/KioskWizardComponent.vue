@@ -518,8 +518,18 @@ export default {
         const list = kioskVariationsForAttribute(item, painAttr.id);
         return Array.isArray(list) && list.some(v => v && Number(v.status) !== 10);
       }
-      if (type === 'taille') return this.shouldAskTacosTaille();
+      if (type === 'taille') {
+        return this.shouldAskTacosTaille() && this.hasCatalogTailleOptions(item);
+      }
       return true;
+    },
+    hasCatalogTailleOptions(item) {
+      const attrs = Array.isArray(item?.itemAttributes)
+        ? item.itemAttributes
+        : Object.values(item?.itemAttributes || {});
+      const tailleAttr = attrs.find((attr) => String(attr?.role || '').toLowerCase() === 'size');
+      const tailleVars = kioskVariationsForAttribute(item, tailleAttr?.id);
+      return Array.isArray(tailleVars) && tailleVars.some((variation) => variation && Number(variation.status) !== 10);
     },
     shouldAskTacosTaille() {
       const item = this.resolvedItem;

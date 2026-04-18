@@ -702,6 +702,7 @@
                 "taille": {
                     "title": "Choisissez votre taille",
                     "hint": "Sélectionnez une taille pour continuer",
+                    "empty_hint": "Aucune taille disponible pour ce produit.",
                     "meats_1": "{n} viande",
                     "meats_n": "{n} viandes",
                     "label_s": "Petit",

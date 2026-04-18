@@ -1349,6 +1349,7 @@
                 "taille": {
                     "title": "Choose your size",
                     "hint": "Select a size to continue",
+                    "empty_hint": "No size is available for this product.",
                     "meats_1": "{n} meat",
                     "meats_n": "{n} meats",
                     "label_s": "Small",

@@ -1,7 +1,12 @@
 <template>
   <div class="kiosk-step-taille">
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.taille.title') }}</h3>
-    <div class="kiosk-taille-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.step.taille.title')">
+    <div
+      v-if="tailleOptions.length > 0"
+      class="kiosk-taille-grid"
+      role="radiogroup"
+      :aria-label="$t('kiosk.wizard.step.taille.title')"
+    >
       <div
         v-for="option in tailleOptions"
         :key="option.key"
@@ -31,7 +36,10 @@
         <span v-else class="kiosk-taille-action">+</span>
       </div>
     </div>
-    <div v-if="!localSelection" class="kiosk-validation-hint" role="status" aria-live="polite">
+    <div v-else class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.taille.empty_hint') }}</p>
+    </div>
+    <div v-if="tailleOptions.length > 0 && !localSelection" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ $t('kiosk.wizard.step.taille.hint') }}
     </div>
   </div>
@@ -60,41 +68,33 @@ export default {
   },
   computed: {
     tailleOptions() {
-      // If the catalog exposes a "Taille" attribute with DB variations, use them.
-      // Otherwise fall back to the 4 standard tacos sizes.
-      if (this.item?.itemAttributes) {
-        const tailleAttr = this.item.itemAttributes.find(a =>
-          (a.name || '').toLowerCase().includes('taille') ||
-          (a.name || '').toLowerCase().includes('size')
-        );
-        const tailleVars = kioskVariationsForAttribute(this.item, tailleAttr?.id);
-        if (tailleAttr && tailleVars?.length) {
-          return tailleVars.map(v => {
-            const lower = (v.name || '').toLowerCase();
-            const viandeCount = lower.includes('xxl') || lower.includes('4') ? 4
-              : lower.includes('xl') || lower.includes('3') ? 3
-              : lower.includes(' l') || lower.includes('2') ? 2
-              : 1;
-            return {
-              key: v.id,
-              badge: v.name,
-              label: v.name,
-              viandesLabel: this.formatViandesCountLabel(viandeCount),
-              viandeCount,
-              attrId: tailleAttr.id,
-              realId: v.id,
-              displayThumb: kioskResolveImageSrc(v),
-            };
-          });
-        }
+      const attrs = Array.isArray(this.item?.itemAttributes)
+        ? this.item.itemAttributes
+        : Object.values(this.item?.itemAttributes || {});
+      const tailleAttr = attrs.find((attr) => String(attr?.role || '').toLowerCase() === 'size');
+      const tailleVars = kioskVariationsForAttribute(this.item, tailleAttr?.id);
+
+      if (!tailleAttr || !Array.isArray(tailleVars) || tailleVars.length === 0) {
+        return [];
       }
-      // Fallback: static S/M/L/XL options (no catalog variation mapping)
-      return [
-        { key: 's', badge: 'S', label: this.$t('kiosk.wizard.step.taille.label_s'), viandesLabel: this.formatViandesCountLabel(1), viandeCount: 1, attrId: null, realId: null, displayThumb: null },
-        { key: 'm', badge: 'M', label: this.$t('kiosk.wizard.step.taille.label_m'), viandesLabel: this.formatViandesCountLabel(2), viandeCount: 2, attrId: null, realId: null, displayThumb: null },
-        { key: 'l', badge: 'L', label: this.$t('kiosk.wizard.step.taille.label_l'), viandesLabel: this.formatViandesCountLabel(3), viandeCount: 3, attrId: null, realId: null, displayThumb: null },
-        { key: 'xl', badge: 'XL', label: this.$t('kiosk.wizard.step.taille.label_xl'), viandesLabel: this.formatViandesCountLabel(4), viandeCount: 4, attrId: null, realId: null, displayThumb: null },
-      ];
+
+      return tailleVars.map(v => {
+        const lower = (v.name || '').toLowerCase();
+        const viandeCount = lower.includes('xxl') || lower.includes('4') ? 4
+          : lower.includes('xl') || lower.includes('3') ? 3
+          : lower.includes(' l') || lower.includes('2') ? 2
+          : 1;
+        return {
+          key: v.id,
+          badge: v.name,
+          label: v.name,
+          viandesLabel: this.formatViandesCountLabel(viandeCount),
+          viandeCount,
+          attrId: tailleAttr.id,
+          realId: v.id,
+          displayThumb: kioskResolveImageSrc(v),
+        };
+      });
     },
   },
   watch: {
