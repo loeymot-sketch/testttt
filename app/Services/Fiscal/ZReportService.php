@@ -164,13 +164,25 @@ class ZReportService
         // — undesirable for soft-deletes, which must stay excluded so
         // a cancelled-then-restored order is never double-counted.
         // Scope reset to `BranchScope` only.
+        // [POS-9-H.2.6 / F-B3]
+        // Half-open interval (from, to]:
+        //   - lower bound STRICT (>): an order created at exactly $from
+        //     was already counted in the previous window (whose upper
+        //     bound is <= $from). Counting it again here would produce
+        //     a double-count on the boundary instant — a direct violation
+        //     of "every receipt in exactly one Z".
+        //   - upper bound INCLUSIVE (<=): the close timestamp itself
+        //     must be absorbed (it cannot float to the next Z whose lower
+        //     bound will be >$to).
+        // When $from is null (first Z ever for this branch), the lower
+        // bound is open (we accept the entire history up to $to).
         $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('branch_id', $branchId)
             ->whereNotNull('fiscal_sequence_no')
             ->where('created_at', '<=', $to);
 
         if ($from) {
-            $query->where('created_at', '>=', $from);
+            $query->where('created_at', '>', $from);
         }
 
         $orders = (clone $query)
