@@ -110,6 +110,23 @@
                                     {{ order.total_tax_currency_price }}
                                 </td>
                             </tr>
+                            <!--
+                              [POS-9.1.13] Per-rate VAT breakdown (CGI art. 242 nonies A).
+                              Renders nothing when there is a single rate AND no rate at all
+                              (back-compat with old orders without `tax_lines`).
+                            -->
+                            <template v-if="Array.isArray(order.tax_lines) && order.tax_lines.length > 0">
+                                <tr v-for="line in order.tax_lines" :key="(line.tax_name || '') + '@' + line.tax_rate">
+                                    <td class="text-[10px] text-left py-0.5 pl-2 text-heading">
+                                        {{ line.tax_name || $t('label.total_tax') }}
+                                        <span v-if="line.tax_rate"> ({{ line.tax_rate }}%)</span>
+                                        <span class="text-[10px]"> · {{ $t('label.base_ht') || 'HT' }} {{ line.base_ht_currency }}</span>
+                                    </td>
+                                    <td class="text-[10px] text-right py-0.5 text-heading">
+                                        {{ line.tax_currency }}
+                                    </td>
+                                </tr>
+                            </template>
                             <tr>
                                 <td class="text-xs text-left py-0.5 uppercase text-heading">{{ $t('label.discount') }}:
                                 </td>
