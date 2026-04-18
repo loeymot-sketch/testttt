@@ -156,20 +156,75 @@ export const kioskMenu = {
             };
         },
 
-        UPDATE_ITEM(state, { item_id, status, price, type }) {
+        /**
+         * Kiosk Phase 9.1.5 — Mutation partielle depuis le broadcast
+         * `ItemAvailabilityChanged` (Echo channel `branch.{branchId}`) ou depuis
+         * un 409 Conflict rencontré mid-wizard (wiring côté composant à venir
+         * P9.3.11). Patch l'item en place sans refetch réseau pour une
+         * réactivité < 1 s.
+         *
+         * Payload attendu :
+         *   { item_id, status?, price?, type?, is_available?, unavailable_reason? }
+         *
+         * `type='full'` → flags uniquement un refetch global (prix/variation
+         * changés côté admin), l'item en mémoire reste tel quel en attendant
+         * la nouvelle requête /menu.
+         *
+         * `is_available=false` → le wizard et la catalog doivent griser l'item
+         * ; `unavailable_reason` (ex. `stock_rupture`, `admin_86`) est affiché
+         * en message clair. Quand `is_available` n'est pas fourni (event
+         * historique), on déduit : status===0 ou 2 → false, sinon true.
+         *
+         * Invariants :
+         *   - Merge non-destructif : les champs absents du payload ne sont
+         *     JAMAIS écrasés (pas de "hidden reset" des allergens / catégorie).
+         *   - Aucune écriture de prix client : si le serveur pousse un price,
+         *     on l'accepte uniquement comme hint d'affichage — la SSOT reste
+         *     l'API /pricing/preview avant commande.
+         */
+        UPDATE_ITEM(state, payload) {
+            if (!payload || typeof payload !== 'object') return;
+
+            const { item_id, type } = payload;
             if (type === 'full') {
-                // Price or variations changed — force full refetch on next access
                 state.lastFetchedAt = null;
                 return;
             }
+
             const idx = state.items.findIndex(i => parseInt(i.id) === parseInt(item_id));
-            if (idx !== -1) {
-                state.items[idx] = {
-                    ...state.items[idx],
-                    status,
-                    price,
-                };
+            if (idx === -1) return;
+
+            const current = state.items[idx];
+            const patch = {};
+
+            if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
+                patch.status = payload.status;
             }
+            if (Object.prototype.hasOwnProperty.call(payload, 'price')) {
+                patch.price = payload.price;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(payload, 'is_available')) {
+                patch.is_available = !!payload.is_available;
+            } else if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
+                // Rétrocompat broadcasts anciens (status sans is_available).
+                patch.is_available = payload.status !== 0 && payload.status !== 2;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(payload, 'unavailable_reason')) {
+                patch.unavailable_reason = payload.unavailable_reason;
+            } else if (Object.prototype.hasOwnProperty.call(payload, 'reason')) {
+                // Broadcast `ItemAvailabilityChanged::forBranch` utilise `reason`.
+                patch.unavailable_reason = payload.reason;
+            }
+
+            // Si l'item redevient disponible, on nettoie la raison précédente
+            // pour éviter qu'un ancien "stock_rupture" s'affiche encore.
+            if (patch.is_available === true) {
+                patch.unavailable_reason = null;
+            }
+
+            state.items[idx] = { ...current, ...patch };
         },
     },
 
