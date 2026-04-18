@@ -21,6 +21,69 @@
 
 ---
 
+## SUBSYSTEMS_TOUCHED (gouvernance EXECUTE)
+
+Périmètre autorisé pour les implémentations P9.1 → P9.10. Tout fichier hors de ces zones nécessite une mise à jour explicite de cette section avant édition.
+
+### P9.1 (clos / mergé)
+- `app/Http/Resources/NormalItemResource.php`
+- `app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php`
+- `app/Providers/EventServiceProvider.php`
+- `app/Http/Controllers/Frontend/{PricingPreview,Promo,KioskEvent}Controller.php`
+- `app/Http/Requests/{PricingPreview,Promo}Request.php`
+- `routes/api.php`
+- `resources/js/components/frontend/kiosk/**`
+- `resources/js/store/modules/kiosk{Cart,Menu}.js`
+- `resources/js/helpers/{kioskPricingPreview,kioskReceiptPersistence,kioskAnalytics}.js`
+- `resources/js/composables/useKioskSpeech.js`
+- `resources/js/languages/{fr,en,ar}.json`
+- `tests/js/**`
+- `tests/Feature/Menu/FrontendSurfaceFilteringTest.php`
+- `.github/workflows/phpunit.yml`
+- `docs/TESTING.md`
+
+### P9.2 (catalog SSOT + real-time hardening — actif)
+- `app/Http/Requests/ItemRequest.php`
+- `app/Http/Requests/ItemCategoryRequest.php`
+- `app/Http/Requests/Admin/AvailabilityToggleRequest.php` (nouveau)
+- `app/Services/ItemService.php`
+- `app/Services/ItemCategoryService.php`
+- `app/Services/ItemCategoryHierarchyService.php` (nouveau)
+- `app/Services/AllergenService.php` (nouveau)
+- `app/Observers/ItemObserver.php` (nouveau ou existant)
+- `app/Events/{ItemCreated,ItemDeleted,CategoryCreated,CategoryUpdated,CategoryDeleted}.php` (nouveaux)
+- `app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php` (nouveau, frère du listener P9.1.4)
+- `app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php` (extension OK, pas de remplacement — cf. HANDOFF_P9_2 §1.2)
+- `app/Http/Controllers/Admin/AvailabilityController.php` (nouveau)
+- `app/Models/Item.php` (relation `allergens()` à ajouter si manquante, observer binding)
+- `app/Models/Allergen.php` (relation `items()` réciproque si manquante)
+- `app/Models/ItemCategory.php` (relation `parent()`/`children()` si nécessaire pour hierarchy)
+- `app/Providers/{App,Event,Route}ServiceProvider.php`
+- `routes/api.php` (et `routes/admin.php` si présent)
+- `database/migrations/<TS>_add_fks_to_item_branch_availability.php` (nouveau)
+- `database/migrations/<TS>_rename_allergen_codes_to_fr.php` (nouveau)
+- `database/migrations/<TS>_add_hierarchy_channels_to_item_categories.php` (nouveau, si colonnes manquantes)
+- `database/migrations/<TS>_add_kiosk_flags_to_items.php` (nouveau, si colonnes manquantes)
+- `database/seeders/AllergensSeeder.php`
+- `tests/Feature/Database/{ItemBranchAvailabilityFk,AllergensSeeder}Test.php`
+- `tests/Feature/Requests/{ItemRequest,ItemCategoryRequest}Test.php`
+- `tests/Feature/Services/ItemCategoryHierarchyTest.php`
+- `tests/Feature/Admin/AvailabilityControllerTest.php`
+- `tests/Feature/Cache/CacheInvalidationTest.php`
+- `tests/Feature/Routes/MenuControllerRateLimitTest.php`
+- `tests/Unit/Services/AllergenServiceTest.php`
+- `tasks/phase9/FINDINGS_TRACKER.md`
+
+### Frozen zones (HALT — gate clearance requise via `.cursor/hooks/safety-check.sh`)
+- `app/Services/OrderService.php`
+- `app/Services/FrontendOrderService.php`
+- `app/Services/PricingService.php` (cœur SSOT — sauf gate explicite)
+- `app/Services/OrderStateMachine.php` (transitions — sauf gate explicite)
+
+Toute modification hors `SUBSYSTEMS_TOUCHED` ou dans une frozen zone DOIT être escaladée à l'humain via `tasks/phase9/P9_X_BLOCKER_<id>.md`.
+
+---
+
 ## Vague P9.1 — Stop-the-bleed (P0 safety / tracking / RGPD)
 
 **Objectif.** Corriger les 14 trouvailles P0 avec un effort minimal par item et un impact UX/safety maximal. Aucun changement de schéma ici — uniquement wirings, mutations Vuex, resources, props. **Bloque toutes les autres vagues.**
@@ -271,3 +334,7 @@ Je propose de démarrer **P9.1 (stop-the-bleed)** immédiatement car :
 4. Build prod < 27 s.
 
 Validation humaine demandée avant démarrage effectif.
+
+## ESCALATION
+
+- 2026-04-18 — EXECUTE P9.2 bloqué côté gouvernance: le plan ne contient aucun bloc `SUBSYSTEMS_TOUCHED`. `execute-context.md` exige que chaque fichier potentiellement édité soit explicitement couvert par ce périmètre avant toute écriture. Impossible de vérifier la conformité de la liste P9.2 (`requests`, `services`, `events`, `listeners`, `routes`, `migrations`, `tests`, `tracker`) sans cette déclaration. Action requise: compléter le plan avec `SUBSYSTEMS_TOUCHED`, puis relancer l'implémentation.
