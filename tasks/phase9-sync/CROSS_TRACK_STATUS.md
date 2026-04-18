@@ -15,7 +15,7 @@
 | A | Kiosk Phase 9 | P9.2 | 9.2.1→9.2.9 (9 items) | feat/kiosk-phase-9-2 | **verified 9/9** — pending human merge | P9.1 | P9.3 (role enum baseline) |
 | A | Kiosk Phase 9 | P9.4 | 9.4.1→9.4.12 (12 items) | feat/kiosk-phase-9-4 | **verified 12/12** — pending human merge | P9.1 | — |
 | A | Kiosk Phase 9 | P9.5 | 9.5.1→9.5.8 (8 items) | feat/kiosk-phase-9-5 | **verified 8/8** — pending human merge | P9.1+P9.2 | POS-9.4 wire-ins (OrderService, once merged) |
-| A | Kiosk Phase 9 | P9.3 | 9.3.1→9.3.15 (15 items, 11 baseline + 4 robustness ext) | feat/kiosk-phase-9-3 | **in_progress** — baseline `b890209f8` | P9.2 (role enum, allergens FR, AllergenService) | P9.4 next-wave-handoff |
+| A | Kiosk Phase 9 | P9.3 | 9.3.1→9.3.15 (15 items, 11 baseline + 4 robustness ext) | feat/kiosk-phase-9-3 | **verified 15/15** — pending human merge (HEAD `d8cc15857`) | P9.2 (role enum, allergens FR, AllergenService) | P9.4 next-wave-handoff |
 | B | POS Phase 9 | POS-A (audit) | 64 findings livrées | — | closed | — | POS-B |
 | B | POS Phase 9 | POS-B (plan) | 10 vagues POS-9.1→POS-9.10 | — | closed | — | POS-9.1 |
 | B | POS Phase 9 | POS-9.1 | 9.1.1 discount permission | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.2 |
@@ -37,7 +37,7 @@
 
 | Lock | Scope | Owner | Opened | Status | File |
 |---|---|---|---|---|---|
-| LOCK_A_P9_3_ItemAttribute | `app/Models/ItemAttribute.php` + migration `role` enum | Kiosk P9.3 (item 9.3.1) | 2026-04-18 | **ACTIVE** | `tasks/phase9-sync/LOCK_A_P9_3_ItemAttribute_2026-04-18.md` |
+| LOCK_A_P9_3_ItemAttribute | `app/Models/ItemAttribute.php` + migration `role` enum | Kiosk P9.3 (item 9.3.1) | 2026-04-18 | **RELEASED** (SHA `3f0d86f9b`) | `tasks/phase9-sync/LOCK_A_P9_3_ItemAttribute_2026-04-18.md` |
 
 ## Broadcasts récents
 

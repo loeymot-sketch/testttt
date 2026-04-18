@@ -66,11 +66,11 @@
 | 9.3.8 | Ne pas pré-sélectionner `menuChoice='full'` (badge Recommandé) | P1 | fixed | `59f875fdf` | — |
 | 9.3.9 | Bouton "Tout désélectionner" garnitures | P2 | fixed | `3b743198b` | — |
 | 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` | P3 | fixed | `fe9f03e6f` | — |
-| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | fixed | `3988c796b` | — |
-| 9.3.12 | **Double-submit guard wizard CTAs** (Next/Back/Confirm) — prévient double-tap → 2 transitions | P1 (robustness) | fixed | `561166f6f` | — |
-| 9.3.13 | **Wizard resume snapshot** — F5/crash mid-wizard → overlay "Reprendre ou Recommencer" (TTL 10 min, no-PII) | P1 (robustness) | fixed | `cb0dea467` | — |
-| 9.3.14 | **Pricing preview resilience** — timeout 3 s, exp backoff, fallback local + pill "provisoire" | P1 (robustness) | fixed | `998e2598f` | — |
-| 9.3.15 | **Focus + scroll memory + a11y transitions** — focus 1er control, scrollTop restore, aria-live step title, focus ring gloves-compatible | P2 (robustness) | fixed | `005738b51` | — |
+| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | fixed | `3988c796b` + heal `7276ff434` (restaure back-home CTA) | `VERIFY_P9_3_2026-04-18.md` |
+| 9.3.12 | **Double-submit guard wizard CTAs** (Next/Back/Confirm) — prévient double-tap → 2 transitions | P1 (robustness) | fixed | `561166f6f` + refactor `a9982e0a8` (extraction helper `kioskWizardSubmitGuard.js` + cooldown 1200 ms) | `VERIFY_P9_3_2026-04-18.md` |
+| 9.3.13 | **Wizard resume snapshot** — F5/crash mid-wizard → overlay "Reprendre ou Recommencer" (TTL 10 min, no-PII) | P1 (robustness) | fixed | `cb0dea467` + refactor `3cc633059` (extraction helper `kioskWizardResumeSnapshot.js` + localStorage + TTL 10 min + version) | `VERIFY_P9_3_2026-04-18.md` |
+| 9.3.14 | **Pricing preview resilience** — timeout 3 s, exp backoff, fallback local + pill "provisoire" | P1 (robustness) | fixed | `998e2598f` | `VERIFY_P9_3_2026-04-18.md` |
+| 9.3.15 | **Focus + scroll memory + a11y transitions** — focus 1er control, scrollTop restore, aria-live step title, focus ring gloves-compatible | P2 (robustness) | fixed | `005738b51` + refactor `d8cc15857` (extraction helper `kioskWizardFocusA11y.js` + focusFirstInteractive/captureScrollPosition/restoreScrollPosition/announceStep) | `VERIFY_P9_3_2026-04-18.md` |
 
 ---
 
