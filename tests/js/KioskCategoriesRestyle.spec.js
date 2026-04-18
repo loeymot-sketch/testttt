@@ -97,8 +97,10 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         const account = wrapper.find('[data-testid="kiosk-categories-top-account"]');
         expect(account.exists()).toBe(true);
         expect(account.attributes('aria-label')).toBeTruthy();
-        const allergens = wrapper.find('[data-testid="kiosk-categories-top-allergens"]');
-        expect(allergens.attributes('aria-label')).toBeTruthy();
+        // Kiosk Phase 9.1.13 — chip "Allergènes" retiré (UX morte, pas de
+        // destination valide avant P9.5). Le header wizard affiche déjà les
+        // badges allergènes (P9.1.2).
+        expect(wrapper.find('[data-testid="kiosk-categories-top-allergens"]').exists()).toBe(false);
     });
 
     it('shows loading state with aria-live', () => {

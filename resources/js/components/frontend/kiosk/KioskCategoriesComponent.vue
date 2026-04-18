@@ -20,26 +20,28 @@
         </div>
       </div>
 
+      <!-- Kiosk Phase 9.1.13 — les chips "Mon compte" / "Allergènes" étaient
+           en `disabled`, affichées en permanence mais sans aucune action
+           attachée : UX mort + placebo pour l'œil du client. On :
+             - rend "Mon compte" cliquable → route `kiosk.loyalty` (déjà
+               exposée, utilisée depuis le panier aussi) ;
+             - retire "Allergènes" : aucune destination correcte n'existe
+               à date (le header wizard affiche déjà les badges allergènes
+               du plat via KsAllergenBadge — P9.1.2). La surface "écran
+               des 14 allergènes EU" sera ré-introduite en P9.5 (préférences
+               alimentaires) une fois le backend `user_dietary_prefs` posé.
+           Aucune régression i18n : les 2 clefs FR/EN/AR restent utilisées
+           par le wizard header. -->
       <div class="kiosk-catalogue-top-actions">
         <button
-          class="kiosk-top-chip"
+          class="kiosk-top-chip kiosk-top-chip--active"
           type="button"
-          disabled
           :aria-label="$t('kiosk.catalog.my_account')"
           data-testid="kiosk-categories-top-account"
+          @click="openMyAccount"
         >
           <span class="kiosk-top-chip-icon" aria-hidden="true">👤</span>
           {{ $t('kiosk.catalog.my_account') }}
-        </button>
-        <button
-          class="kiosk-top-chip"
-          type="button"
-          disabled
-          :aria-label="$t('kiosk.catalog.allergens')"
-          data-testid="kiosk-categories-top-allergens"
-        >
-          <span class="kiosk-top-chip-icon" aria-hidden="true">i</span>
-          {{ $t('kiosk.catalog.allergens') }}
         </button>
       </div>
     </div>
@@ -446,6 +448,16 @@ export default {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
     ...mapActions('kioskCart', ['addItem', 'reset']),
 
+    // Kiosk Phase 9.1.13 — wire du chip "Mon compte" vers l'écran loyalty.
+    // Trace analytics optionnelle : si l'event `loyalty_scanned` n'est pas
+    // approprié ici (on n'a rien scanné), on reste silencieux et on laisse
+    // `KioskLoyaltyComponent` émettre ses events propres.
+    openMyAccount() {
+      try {
+        this.$router.push({ name: 'kiosk.loyalty' });
+      } catch (_) { /* navigation garde indisponible (tests) → no-op */ }
+    },
+
     async loadCatalogue() {
       this.loadError = false;
       try {
@@ -811,6 +823,17 @@ export default {
   align-items: center;
   gap: 8px;
   opacity: 0.92;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+/* Kiosk Phase 9.1.13 — état interactif du chip "Mon compte". */
+.kiosk-top-chip--active:hover,
+.kiosk-top-chip--active:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+.kiosk-top-chip--active:active {
+  transform: scale(0.97);
 }
 
 .kiosk-top-chip-icon {
