@@ -112,6 +112,8 @@ import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+// [POS-9.1.12] Hardware bridge for the cash drawer (POS-GA-F-19).
+import { openDrawer } from "../../../services/kioskHardware";
 
 export default {
     name: "PaymentComponent",
@@ -213,6 +215,15 @@ export default {
                 this.$store.dispatch("defaultAccess/show").then((res) => {
                     this.$props.props.form.branch_id = res.data.data.branch_id;
                     this.$store.dispatch('posOrder/save', this.$props.props.form).then(orderResponse => {
+                        // [POS-9.1.12] Open the physical cash drawer the moment a CASH
+                        // payment is accepted. The hardware bridge is a no-op when no
+                        // bridge is exposed (web-only POS), so this is safe in dev.
+                        // Audit POS-GA-F-19.
+                        if (this.$props.props.form.pos_payment_method === this.posPaymentMethodEnum.CASH) {
+                            try {
+                                Promise.resolve(openDrawer()).catch(() => {});
+                            } catch (e) { /* defensive: never block the receipt path */ }
+                        }
                         this.$props.props.form.token = "";
                         this.$props.props.form.subtotal = null;
                         this.$props.props.form.discount = 0;

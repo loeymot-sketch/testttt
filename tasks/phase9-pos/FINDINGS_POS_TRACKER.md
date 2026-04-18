@@ -33,7 +33,7 @@
 | POS-GA-F-16 | P0 | `BranchIsolationTest` est un placeholder (`assertTrue(true)`) | `tests/Feature/BranchIsolationTest.php:9-13` | POS-9.1 | sync | resolved (POS-9.1.3) |
 | POS-GA-F-17 | P0 | Dine-in et table selector hardcodés `v-if="false"` | `resources/js/components/admin/pos/PosComponent.vue:121, 235` | POS-9.1 | — | resolved (POS-9.1.6 — flag pos_dine_in_enabled) |
 | POS-GA-F-18 | P0 | Aucune intégration TPE — PAID marqué sans preuve d'encaissement | `resources/js/components/admin/pos/PaymentComponent.vue:64-67, 207-211`, `app/Http/Requests/PosOrderRequest.php:60` | POS-9.7 | — | open |
-| POS-GA-F-19 | P0 | Aucune ouverture tiroir depuis POS | `resources/js/components/admin/pos/PaymentComponent.vue:191-277`, `resources/js/services/kioskHardware.js:259-262` | POS-9.5 | — | open |
+| POS-GA-F-19 | P0 | Aucune ouverture tiroir depuis POS | `resources/js/components/admin/pos/PaymentComponent.vue:191-277`, `resources/js/services/kioskHardware.js:259-262` | POS-9.1 | — | resolved (POS-9.1.12 — openDrawer() on CASH success) |
 | POS-GA-F-20 | P0 | Ticket TVA non ventilée par taux (art. 242 nonies A CGI) | `resources/js/components/admin/pos/ReceiptComponent.vue:105-112` | POS-9.8 | — | open |
 | POS-GA-F-21 | P1 | MISSING amend order (add/remove/update item post-création) | `routes/api.php:625-638`, `app/Domain/Events/EventContract.php:37` | POS-9.7 | — | open |
 | POS-GA-F-22 | P1 | Aucune action POS → cancel/refund/discount/reassign depuis drawer | `resources/js/components/admin/pos/PosComponent.vue:608-617` | POS-9.6 | — | open |
