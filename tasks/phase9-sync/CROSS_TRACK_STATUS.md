@@ -23,7 +23,7 @@
 | B | POS Phase 9 | POS-9.1 | 9.1.7 deliveryBoy save→dispatch | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.2 |
 | B | POS Phase 9 | POS-9.1 | 9.1.8 PosOrderRequest nullable | feat/pos-phase-9-1 | resolved (commit) | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.9 posCart scoped | feat/pos-phase-9-1 | resolved (commit) | — | — |
-| B | POS Phase 9 | POS-9.1 | 9.1.10 POS subscribe Item86 | feat/pos-phase-9-1 | open | — | — |
+| B | POS Phase 9 | POS-9.1 | 9.1.10 POS subscribe Item86 | feat/pos-phase-9-1 | resolved (commit) | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.11 Son+toast new order | feat/pos-phase-9-1 | open | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.12 cash drawer on cash | feat/pos-phase-9-1 | open | — | POS-9.5 |
 | B | POS Phase 9 | POS-9.1 | 9.1.13 TVA ventilée ticket | feat/pos-phase-9-1 | open | — | POS-9.8 |

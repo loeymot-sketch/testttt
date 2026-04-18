@@ -1030,9 +1030,44 @@ export default {
                 this._eventSub = onEvents(branchId, [
                     { broadcastAs: 'OrderCreated', handler: () => this.loadKioskCashOrders() },
                     { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
+                    // [POS-9.1.10] React live to admin 86 (item availability change)
+                    // so freshly out-of-stock tiles grey out without an F5.
+                    // Audit POS-GA-F-45 — kiosk already subscribes; POS did not.
+                    { broadcastAs: 'ItemAvailabilityChanged', handler: (event) => this._onItemAvailabilityChanged(event) },
                 ]);
             } catch (e) {
                 // Echo auth failed or Soketi not running — polling fallback handles it
+            }
+        },
+        /**
+         * [POS-9.1.10] Apply an ItemAvailabilityChanged broadcast to the POS
+         * item list in-place (no full refetch unless type === 'full'). The
+         * payload shape is the contract emitted by AvailabilityService /
+         * Stock86 listener: { item_id, is_available, type, reason, price }.
+         */
+        _onItemAvailabilityChanged(event) {
+            const payload = (event && event.payload) ? event.payload : event || {};
+            const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
+            if (!itemId) return;
+
+            // Locate item in the cached POS list (this.itemsRaw / this.items).
+            const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
+                       : (Array.isArray(this.items) ? this.items : null);
+            if (list) {
+                const idx = list.findIndex(i => parseInt(i.id, 10) === itemId);
+                if (idx !== -1) {
+                    const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                    list[idx] = Object.assign({}, list[idx], {
+                        is_available: isAvailable,
+                        availability_reason: payload.reason || null,
+                    });
+                }
+            }
+
+            // If the broadcast signals a structural change (price / variation /
+            // category move), reload the catalogue in the background.
+            if (payload.type === 'full') {
+                try { this.itemList(); } catch (e) { /* defensive */ }
             }
         },
         _unsubscribeEcho() {
