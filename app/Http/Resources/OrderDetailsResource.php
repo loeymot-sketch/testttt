@@ -11,8 +11,7 @@ class OrderDetailsResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return array
+     * @param  \Illuminate\Http\Request  $request
      */
     public function toArray($request): array
     {
@@ -21,12 +20,12 @@ class OrderDetailsResource extends JsonResource
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
             'token' => $this->token,
-            "subtotal_currency_price" => AppLibrary::currencyAmountFormat($this->subtotal),
-            "subtotal_without_tax_currency_price" => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
-            "discount_currency_price" => AppLibrary::currencyAmountFormat($this->discount),
-            "delivery_charge_currency_price" => AppLibrary::currencyAmountFormat($this->delivery_charge),
-            "total_currency_price" => AppLibrary::currencyAmountFormat($this->total),
-            "total_tax_currency_price" => AppLibrary::currencyAmountFormat($this->total_tax),
+            'subtotal_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal),
+            'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
+            'discount_currency_price' => AppLibrary::currencyAmountFormat($this->discount),
+            'delivery_charge_currency_price' => AppLibrary::currencyAmountFormat($this->delivery_charge),
+            'total_currency_price' => AppLibrary::currencyAmountFormat($this->total),
+            'total_tax_currency_price' => AppLibrary::currencyAmountFormat($this->total_tax),
             'order_type' => $this->order_type,
             'order_datetime' => AppLibrary::datetime($this->order_datetime),
             'order_date' => AppLibrary::date($this->order_datetime),
@@ -38,7 +37,7 @@ class OrderDetailsResource extends JsonResource
             'is_advance_order' => $this->is_advance_order,
             'preparation_time' => $this->preparation_time,
             'status' => $this->status,
-            'status_name' => trans('orderStatus.' . $this->status),
+            'status_name' => trans('orderStatus.'.$this->status),
             'reason' => $this->reason,
             'user' => new OrderUserResource($this->user?->load('roles', 'media')),
             'order_address' => new AddressResource($this->address),
@@ -76,23 +75,25 @@ class OrderDetailsResource extends JsonResource
         $items = $this->orderItems ?? collect();
         $groups = [];
         foreach ($items as $oi) {
-            $rate = (string) ($oi->tax_rate ?? '0');
+            // DECIMAL columns may surface as "10.000000" on MySQL — normalise so
+            // receipt JSON keys match SQLite / test expectations (e.g. "10").
+            $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
             $name = (string) ($oi->tax_name ?? '');
             $type = (int) ($oi->tax_type ?? 0);
-            $key  = $type . '|' . $rate . '|' . $name;
-            if (!isset($groups[$key])) {
+            $key = $type.'|'.$rate.'|'.$name;
+            if (! isset($groups[$key])) {
                 $groups[$key] = [
                     'tax_name' => $name,
                     'tax_rate' => $rate,
                     'tax_type' => $type,
                     'tax_amount_raw' => 0.0,
-                    'base_ht_raw'    => 0.0,
+                    'base_ht_raw' => 0.0,
                 ];
             }
             $taxAmount = (float) ($oi->tax_amount ?? 0);
-            $totalTtc  = (float) ($oi->total_price ?? 0);
+            $totalTtc = (float) ($oi->total_price ?? 0);
             $groups[$key]['tax_amount_raw'] += $taxAmount;
-            $groups[$key]['base_ht_raw']    += max(0.0, $totalTtc - $taxAmount);
+            $groups[$key]['base_ht_raw'] += max(0.0, $totalTtc - $taxAmount);
         }
         $out = [];
         foreach ($groups as $g) {
@@ -100,12 +101,13 @@ class OrderDetailsResource extends JsonResource
                 'tax_name' => $g['tax_name'],
                 'tax_rate' => $g['tax_rate'],
                 'tax_type' => $g['tax_type'],
-                'base_ht'  => round($g['base_ht_raw'], 2),
-                'base_ht_currency'  => AppLibrary::currencyAmountFormat($g['base_ht_raw']),
-                'tax'      => round($g['tax_amount_raw'], 2),
-                'tax_currency'      => AppLibrary::currencyAmountFormat($g['tax_amount_raw']),
+                'base_ht' => round($g['base_ht_raw'], 2),
+                'base_ht_currency' => AppLibrary::currencyAmountFormat($g['base_ht_raw']),
+                'tax' => round($g['tax_amount_raw'], 2),
+                'tax_currency' => AppLibrary::currencyAmountFormat($g['tax_amount_raw']),
             ];
         }
+
         return $out;
     }
 }

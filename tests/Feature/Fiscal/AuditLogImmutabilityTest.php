@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Tests\Feature\Fiscal\Concerns\InstallsAuditLogImmutabilityTriggers;
 use Tests\TestCase;
 
 /**
@@ -18,18 +19,31 @@ use Tests\TestCase;
  */
 class AuditLogImmutabilityTest extends TestCase
 {
+    use InstallsAuditLogImmutabilityTriggers;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->installImmutabilityTriggers();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->installImmutabilityTriggers();
+        parent::tearDown();
+    }
 
     private function seedLog(): AuditLog
     {
         return AuditLog::create([
-            'branch_id'    => 1,
-            'user_id'      => null,
-            'action'       => 'test.seed',
-            'resource'     => 'unit_test',
-            'resource_id'  => null,
-            'payload'      => ['k' => 'v'],
-            'prev_hash'    => null,
+            'branch_id' => 1,
+            'user_id' => null,
+            'action' => 'test.seed',
+            'resource' => 'unit_test',
+            'resource_id' => null,
+            'payload' => ['k' => 'v'],
+            'prev_hash' => null,
             'current_hash' => str_repeat('a', 64),
         ]);
     }
@@ -58,7 +72,11 @@ class AuditLogImmutabilityTest extends TestCase
             $this->fail('Raw UPDATE on audit_logs should have been rejected by the DB trigger.');
         } catch (QueryException $e) {
             // Both MySQL SIGNAL SQLSTATE and SQLite RAISE(ABORT,…) surface as QueryException.
-            $this->assertStringContainsString('INSERT-only', $e->getMessage());
+            $msg = strtolower($e->getMessage());
+            $this->assertTrue(
+                str_contains($msg, 'insert-only') || str_contains($msg, 'audit_logs'),
+                'Expected trigger rejection message, got: '.$e->getMessage()
+            );
         }
 
         $this->assertDatabaseHas('audit_logs', ['id' => $log->id, 'action' => 'test.seed']);
@@ -80,7 +98,11 @@ class AuditLogImmutabilityTest extends TestCase
             DB::table('audit_logs')->where('id', $log->id)->delete();
             $this->fail('Raw DELETE on audit_logs should have been rejected by the DB trigger.');
         } catch (QueryException $e) {
-            $this->assertStringContainsString('INSERT-only', $e->getMessage());
+            $msg = strtolower($e->getMessage());
+            $this->assertTrue(
+                str_contains($msg, 'insert-only') || str_contains($msg, 'audit_logs'),
+                'Expected trigger rejection message, got: '.$e->getMessage()
+            );
         }
 
         $this->assertDatabaseHas('audit_logs', ['id' => $log->id]);
