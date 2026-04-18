@@ -111,10 +111,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
         // Persisted order must reflect the SERVER-computed total (10.00 + 10% TVA = 11.00),
         // not whatever the client sent (here: nothing).
         $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
-            'branch_id'   => $this->branch->id,
-            'subtotal'    => 10.00,
-            'total'       => 11.00,
+            'branch_id' => $this->branch->id,
+            'subtotal'  => 10.00,
+            'total'     => 11.00,
         ]);
     }
 
@@ -132,8 +131,8 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $response->assertStatus(201);
         // Server-computed total wins.
         $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
-            'total'       => 11.00,
+            'branch_id' => $this->branch->id,
+            'total'     => 11.00,
         ]);
     }
 

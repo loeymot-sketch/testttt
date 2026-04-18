@@ -72,11 +72,15 @@ class PosDiscountPermissionTest extends TestCase
 
     private function makeOperatorWith(array $permissions = []): User
     {
+        // [Gate POS-9.1] Do NOT assign the "POS Operator" role here: per
+        // seedSpatieRoles it now carries `pos-discount-up-to-10` by default,
+        // which would defeat the "no permission" scenario. The test grants
+        // only the explicit permissions it cares about (plus the baseline
+        // `pos` / `pos-orders` needed to hit the route).
         $user = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
         ]);
-        $user->assignRole('POS Operator');
         $user->syncPermissions(array_merge(['pos', 'pos-orders'], $permissions));
         return $user;
     }

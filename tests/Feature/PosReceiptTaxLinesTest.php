@@ -53,28 +53,35 @@ class PosReceiptTaxLinesTest extends TestCase
             'status' => OrderStatus::ACCEPT,
             'payment_status' => PaymentStatus::PAID,
             'subtotal' => 33.00,
-            'total_tax' => 3.00, // 10€ * 10% = 1.00 ; 10€ * 20% = 2.00 → 3.00 total
+            // 2 lines @ 10% → 1€ + 1€ = 2€ ; 1 line @ 20% → 2€ ; total 4€.
+            'total_tax' => 4.00,
             'total' => 33.00,
             'pos_received_amount' => 33.00,
         ]);
 
-        // Two lines @ 10% (each 11€ TTC, 1€ VAT) → group "10" base 20, tax 2
-        OrderItem::factory()->create([
-            'order_id' => $order->id, 'branch_id' => $branch->id, 'item_id' => $i10->id,
-            'tax_name' => 'TVA 10', 'tax_rate' => '10', 'tax_type' => TaxType::PERCENTAGE,
-            'tax_amount' => 1.00, 'price' => 10.00, 'quantity' => 1, 'total_price' => 11.00,
-        ]);
-        OrderItem::factory()->create([
-            'order_id' => $order->id, 'branch_id' => $branch->id, 'item_id' => $i10->id,
-            'tax_name' => 'TVA 10', 'tax_rate' => '10', 'tax_type' => TaxType::PERCENTAGE,
-            'tax_amount' => 1.00, 'price' => 10.00, 'quantity' => 1, 'total_price' => 11.00,
-        ]);
+        // Two lines @ 10% (each 11€ TTC, 1€ VAT) → group "10" base 20, tax 2.
+        // No OrderItemFactory exists in this codebase; create Eloquent rows directly.
+        $base = [
+            'order_id' => $order->id, 'branch_id' => $branch->id,
+            'discount' => 0, 'item_variations' => '[]', 'item_extras' => '[]',
+            'item_variation_total' => 0, 'item_extra_total' => 0,
+        ];
+        OrderItem::create(array_merge($base, [
+            'item_id' => $i10->id, 'tax_name' => 'TVA 10', 'tax_rate' => '10',
+            'tax_type' => TaxType::PERCENTAGE, 'tax_amount' => 1.00,
+            'price' => 10.00, 'quantity' => 1, 'total_price' => 11.00,
+        ]));
+        OrderItem::create(array_merge($base, [
+            'item_id' => $i10->id, 'tax_name' => 'TVA 10', 'tax_rate' => '10',
+            'tax_type' => TaxType::PERCENTAGE, 'tax_amount' => 1.00,
+            'price' => 10.00, 'quantity' => 1, 'total_price' => 11.00,
+        ]));
         // One line @ 20% → group "20" base 10, tax 2
-        OrderItem::factory()->create([
-            'order_id' => $order->id, 'branch_id' => $branch->id, 'item_id' => $i20->id,
-            'tax_name' => 'TVA 20', 'tax_rate' => '20', 'tax_type' => TaxType::PERCENTAGE,
-            'tax_amount' => 2.00, 'price' => 10.00, 'quantity' => 1, 'total_price' => 12.00,
-        ]);
+        OrderItem::create(array_merge($base, [
+            'item_id' => $i20->id, 'tax_name' => 'TVA 20', 'tax_rate' => '20',
+            'tax_type' => TaxType::PERCENTAGE, 'tax_amount' => 2.00,
+            'price' => 10.00, 'quantity' => 1, 'total_price' => 12.00,
+        ]));
 
         $admin = User::factory()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
@@ -104,6 +111,6 @@ class PosReceiptTaxLinesTest extends TestCase
 
         // Sum of tax_lines.tax must match total_tax (invariant)
         $sum = collect($payload['tax_lines'])->sum(fn ($l) => (float) $l['tax']);
-        $this->assertEqualsWithDelta(3.00, $sum, 0.01);
+        $this->assertEqualsWithDelta(4.00, $sum, 0.01);
     }
 }

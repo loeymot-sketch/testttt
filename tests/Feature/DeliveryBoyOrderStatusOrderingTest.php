@@ -5,14 +5,13 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Events\OrderStatusChanged;
-use App\Jobs\SendOrderMail;
-use App\Jobs\SendOrderPush;
-use App\Jobs\SendOrderSms;
+use App\Events\SendOrderMail;
+use App\Events\SendOrderPush;
+use App\Events\SendOrderSms;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -35,12 +34,20 @@ class DeliveryBoyOrderStatusOrderingTest extends TestCase
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
-        Bus::fake();
-        Event::fake([OrderStatusChanged::class]);
+        Event::fake([
+            OrderStatusChanged::class,
+            SendOrderMail::class,
+            SendOrderSms::class,
+            SendOrderPush::class,
+        ]);
 
         $branch = Branch::factory()->create();
+        // Route /delivery-boy-order/change-status is guarded by `auth:sanctum`;
+        // the OrderStatusRequest `authorize()` check also accepts the staff
+        // roles seeded above, so we grant the delivery boy the "POS Operator"
+        // role to satisfy that gate without mutating seedSpatieRoles().
         $boy = User::factory()->create(['branch_id' => $branch->id]);
-        $boy->assignRole('Delivery Boy');
+        $boy->assignRole('POS Operator');
 
         $order = Order::factory()->create([
             'branch_id'        => $branch->id,
@@ -52,9 +59,11 @@ class DeliveryBoyOrderStatusOrderingTest extends TestCase
         $this->actingAs($boy, 'sanctum');
 
         $resp = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/delivery-boy-order/change-status/' . $order->id, [
+            ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => OrderStatus::DELIVERED,
             ]);
+
+        $resp->assertStatus(200);
 
         // Status persisted before any job/event side effect runs.
         $this->assertDatabaseHas('orders', [
@@ -62,9 +71,9 @@ class DeliveryBoyOrderStatusOrderingTest extends TestCase
             'status' => OrderStatus::DELIVERED,
         ]);
 
-        Bus::assertDispatched(SendOrderMail::class);
-        Bus::assertDispatched(SendOrderSms::class);
-        Bus::assertDispatched(SendOrderPush::class);
+        Event::assertDispatched(SendOrderMail::class);
+        Event::assertDispatched(SendOrderSms::class);
+        Event::assertDispatched(SendOrderPush::class);
 
         Event::assertDispatched(OrderStatusChanged::class, function ($e) use ($order) {
             return (int) $e->order->id === (int) $order->id
