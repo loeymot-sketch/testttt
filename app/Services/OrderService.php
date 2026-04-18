@@ -1322,30 +1322,42 @@ class OrderService
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
 
-            $transaction = Transaction::where('order_id', $order->id)->first();
-            if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
-                $order->payment_status = PaymentStatus::PAID;
-            }
+            $oldStatus  = (int) $order->status;
+            $newStatus  = (int) $request->status;
 
-            $oldStatus = $order->status;
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            $order->status = $request->status;
-            $order->save();
+            // [POS-9.1.7] Wrap mutations in DB::transaction so a partial failure
+            // (save / state-machine / payment_status flip) rolls back atomically.
+            // Notifications + OrderStatusChanged broadcast are deferred to
+            // afterCommit so listeners (OSS, KDS, loyalty) never observe a
+            // half-written state nor fire if the transaction rolls back.
+            DB::transaction(function () use ($order, $oldStatus, $newStatus) {
+                $transaction = Transaction::where('order_id', $order->id)->first();
+                if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
+                    $order->payment_status = PaymentStatus::PAID;
+                }
 
-            OrderStateMachine::recordTransition(
-                Order::class,
-                (int) $order->id,
-                (int) $oldStatus,
-                (int) $request->status,
-                Auth::check() ? (int) Auth::id() : null,
-                null
-            );
+                $order->status = $newStatus;
+                $order->save();
+
+                OrderStateMachine::recordTransition(
+                    Order::class,
+                    (int) $order->id,
+                    $oldStatus,
+                    $newStatus,
+                    Auth::check() ? (int) Auth::id() : null,
+                    null
+                );
+            });
+
+            // Dispatch notifications + broadcast AFTER the transaction has
+            // committed so jobs and listeners always read the persisted state.
+            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
+            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
+            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
 
             // [FIX-54-1] Broadcast so OSS, KDS, loyalty listener all fire
             try {
-                \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, $newStatus);
             } catch (\Exception $e) {
                 Log::warning('[DeliveryBoy] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }

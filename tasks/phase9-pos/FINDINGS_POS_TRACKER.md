@@ -47,7 +47,7 @@
 | POS-GA-F-30 | P1 | Divergence structure items POS vs Kiosk — pas de contrat commun versionné | `resources/js/components/admin/pos/ItemComponent.vue:1176-1224` vs kiosk wizard | POS-9.9 | sync | open |
 | POS-GA-F-31 | P1 | Fallback `queue_number` timestamp-based sur LockTimeoutException → séquentialité cassée | `app/Services/OrderService.php:467, 794, 1143`, `app/Services/FrontendOrderService.php:389-392` | POS-9.4 | — | open |
 | POS-GA-F-32 | P1 | Loyalty burn absent de `posOrderStore` (kiosk OK L434-499) | `app/Services/OrderService.php:829-836` vs `app/Services/FrontendOrderService.php:434-499` | POS-9.7 | — | open |
-| POS-GA-F-33 | P1 | `deliveryBoyOrderChangeStatus` dispatche mails/SMS/push AVANT `$order->save()` sans tx | `app/Services/OrderService.php:1330-1335` | POS-9.2 | — | open |
+| POS-GA-F-33 | P1 | `deliveryBoyOrderChangeStatus` dispatche mails/SMS/push AVANT `$order->save()` sans tx | `app/Services/OrderService.php:1330-1335` | POS-9.1 | — | resolved (POS-9.1.7 — DB::transaction + save→dispatch) |
 | POS-GA-F-34 | P1 | Aucune réimpression ni journal d'impression | `resources/js/components/admin/pos/ReceiptComponent.vue:10-14` | POS-9.8 | — | open |
 | POS-GA-F-35 | P1 | Ticket n'imprime pas `queue_number` (seul `token` client) | `resources/js/components/admin/pos/ReceiptComponent.vue:152-156`, `app/Services/OrderService.php:801-802` | POS-9.8 | — | open |
 | POS-GA-F-36 | P1 | Allergens absents d'`ItemResource` admin (POS) → caissier aveugle | `app/Http/Resources/ItemResource.php:19-65` | POS-9.9 | sync | open |
