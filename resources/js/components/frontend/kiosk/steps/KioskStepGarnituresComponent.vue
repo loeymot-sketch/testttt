@@ -5,6 +5,14 @@
     <div class="kiosk-garnitures-info" data-testid="kiosk-step-garnitures-info">
       <span class="kiosk-info-badge" data-testid="kiosk-step-garnitures-badge">{{ $t('kiosk.wizard.step.garnitures.all_included') }}</span>
       <span class="kiosk-info-text" data-testid="kiosk-step-garnitures-hint">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
+      <button
+        type="button"
+        class="kiosk-clear-all-btn"
+        @click="deselectAll"
+        data-testid="kiosk-step-garnitures-clear-all"
+      >
+        {{ $t('kiosk.wizard.step.garnitures.clear_all') }}
+      </button>
     </div>
 
     <div v-if="garnitureList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
@@ -141,6 +149,15 @@ export default {
       newSelections[id] = !newSelections[id];
       this.localSelections = newSelections;
       this.$emit('update', 'garnitures', newSelections);
+    },
+    deselectAll() {
+      this.userInteracted = true;
+      const cleared = {};
+      this.garnitureList.forEach((garniture) => {
+        cleared[garniture.id] = false;
+      });
+      this.localSelections = cleared;
+      this.$emit('update', 'garnitures', cleared);
     }
   }
 };
@@ -182,6 +199,23 @@ export default {
 .kiosk-info-text {
   font-size: 11px;
   color: #999;
+}
+
+.kiosk-clear-all-btn {
+  border: none;
+  background: rgba(232, 0, 28, 0.08);
+  color: #d7263d;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.kiosk-clear-all-btn:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
 }
 
 .kiosk-garnitures-list {

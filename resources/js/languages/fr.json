@@ -744,6 +744,7 @@
                     "title": "Quelle crudité ?",
                     "all_included": "Toutes les garnitures sont incluses",
                     "deselect_hint": "Désélectionnez celles que vous ne voulez pas",
+                    "clear_all": "Tout désélectionner",
                     "empty_hint": "Aucune garniture disponible pour ce produit.",
                     "with": "AVEC",
                     "without": "SANS",

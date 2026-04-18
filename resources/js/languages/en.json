@@ -1391,6 +1391,7 @@
                     "title": "Choose toppings",
                     "all_included": "All toppings are included",
                     "deselect_hint": "Tap to remove those you don’t want",
+                    "clear_all": "Clear all",
                     "with": "WITH",
                     "without": "WITHOUT",
                     "summary_zero": "No toppings selected",
