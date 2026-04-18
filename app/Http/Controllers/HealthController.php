@@ -56,7 +56,7 @@ class HealthController extends Controller
      */
     private function assertFullHealthIpAllowed(): void
     {
-        $csv = env('HEALTH_IPS_ALLOWED', '');
+        $csv = config('app.health_ips_allowed', '');
         if ($csv === '' || $csv === null) {
             return;
         }

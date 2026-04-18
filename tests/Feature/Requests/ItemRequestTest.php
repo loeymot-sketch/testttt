@@ -3,6 +3,8 @@
 namespace Tests\Feature\Requests;
 
 use App\Http\Requests\ItemRequest;
+use App\Models\ItemCategory;
+use App\Models\Tax;
 use Database\Seeders\AllergensSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
@@ -16,10 +18,13 @@ class ItemRequestTest extends TestCase
     {
         $this->seed(AllergensSeeder::class);
 
+        $category = ItemCategory::factory()->create();
+        $tax = Tax::factory()->create();
+
         $payload = [
             'name' => 'Tacos signature',
-            'item_category_id' => 1,
-            'tax_id' => 1,
+            'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
             'item_type' => 1,
             'price' => '12.50',
             'is_featured' => 1,
@@ -39,7 +44,7 @@ class ItemRequestTest extends TestCase
             'order' => 1,
         ];
 
-        $validator = Validator::make($payload, (new ItemRequest())->rules());
+        $validator = Validator::make($payload, (new ItemRequest)->rules());
 
         $this->assertFalse(
             $validator->fails(),

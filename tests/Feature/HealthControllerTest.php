@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -95,7 +96,7 @@ class HealthControllerTest extends TestCase
     public function test_health_full_rejects_non_whitelisted_ip_when_whitelist_set(): void
     {
         config()->set('app.env', 'production');
-        putenv('HEALTH_IPS_ALLOWED=10.0.0.1,10.0.0.2');
+        Config::set('app.health_ips_allowed', '10.0.0.1,10.0.0.2');
         try {
             $response = $this->call(
                 'GET',
@@ -115,7 +116,7 @@ class HealthControllerTest extends TestCase
                 'Full /health must 403 non-whitelisted IPs when HEALTH_IPS_ALLOWED is set'
             );
         } finally {
-            putenv('HEALTH_IPS_ALLOWED');
+            Config::set('app.health_ips_allowed', env('HEALTH_IPS_ALLOWED', ''));
         }
     }
 }

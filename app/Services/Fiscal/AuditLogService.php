@@ -64,6 +64,7 @@ class AuditLogService
      *      has advanced under us, recompute prev_hash and INSERT again.
      */
     private const CHAIN_LOCK_TTL = 10;
+
     private const CHAIN_LOCK_WAIT = 5;
 
     public function write(array $data): AuditLog
@@ -72,7 +73,7 @@ class AuditLogService
             throw new \InvalidArgumentException('AuditLogService::write() requires a non-empty action.');
         }
 
-        if (!array_key_exists('action', $data)) {
+        if (! array_key_exists('action', $data)) {
             throw new \InvalidArgumentException('AuditLogService::write() requires an action.');
         }
 
@@ -87,18 +88,18 @@ class AuditLogService
         if ($branchId === null) {
             throw new \InvalidArgumentException(
                 'AuditLogService::write() requires an explicit branch_id. '
-                . 'Pass branch_id=0 for system/CLI events, or a positive int for a tenant chain.'
+                .'Pass branch_id=0 for system/CLI events, or a positive int for a tenant chain.'
             );
         }
 
-        $lockKey = 'audit_chain_b' . $branchId;
-        $lock    = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
+        $lockKey = 'audit_chain_b'.$branchId;
+        $lock = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
 
-        if (!$lock->block(self::CHAIN_LOCK_WAIT)) {
+        if (! $lock->block(self::CHAIN_LOCK_WAIT)) {
             throw new RuntimeException(
                 "AuditLogService: could not acquire chain lock '{$lockKey}' within "
-                . self::CHAIN_LOCK_WAIT . 's. Another writer is stuck or the cache '
-                . 'driver is unavailable.'
+                .self::CHAIN_LOCK_WAIT.'s. Another writer is stuck or the cache '
+                .'driver is unavailable.'
             );
         }
 
@@ -116,27 +117,27 @@ class AuditLogService
         $userId = $data['user_id'] ?? (Auth::check() ? (int) Auth::id() : null);
         $payload = $data['payload'] ?? [];
 
-        $request   = request();
-        $ip        = $data['ip']         ?? ($request instanceof Request ? $request->ip() : null);
+        $request = request();
+        $ip = $data['ip'] ?? ($request instanceof Request ? $request->ip() : null);
         $userAgent = $data['user_agent'] ?? ($request instanceof Request ? substr((string) $request->userAgent(), 0, 512) : null);
         $sessionId = $data['session_id'] ?? ($request instanceof Request && $request->hasSession() ? $request->session()->getId() : null);
 
-        $prevHash    = $this->lastHashFor($branchId);
+        $prevHash = $this->lastHashFor($branchId);
         $currentHash = $this->computeHash($branchId, $prevHash, $data['action'], $payload);
 
         try {
             $row = AuditLog::create([
-                'branch_id'    => $branchId,
-                'user_id'      => $userId,
-                'action'       => (string) $data['action'],
-                'resource'     => $data['resource']    ?? null,
-                'resource_id'  => $data['resource_id'] ?? null,
-                'payload'      => $payload,
-                'prev_hash'    => $prevHash,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'action' => (string) $data['action'],
+                'resource' => $data['resource'] ?? null,
+                'resource_id' => $data['resource_id'] ?? null,
+                'payload' => $payload,
+                'prev_hash' => $prevHash,
                 'current_hash' => $currentHash,
-                'ip'           => $ip,
-                'user_agent'   => $userAgent,
-                'session_id'   => $sessionId,
+                'ip' => $ip,
+                'user_agent' => $userAgent,
+                'session_id' => $sessionId,
             ]);
 
             // [POS-9-H.3.2 / F-C7]
@@ -146,13 +147,13 @@ class AuditLogService
             // audit_log id + current_hash prefix to join back if needed.
             Log::channel('fiscal')->info('audit_log.write', [
                 'audit_log_id' => $row->id,
-                'branch_id'    => $branchId,
-                'user_id'      => $userId,
-                'action'       => (string) $data['action'],
-                'resource'     => $data['resource']    ?? null,
-                'resource_id'  => $data['resource_id'] ?? null,
-                'hash_prefix'  => substr($currentHash, 0, 12),
-                'retry_attempt'=> $attempt,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'action' => (string) $data['action'],
+                'resource' => $data['resource'] ?? null,
+                'resource_id' => $data['resource_id'] ?? null,
+                'hash_prefix' => substr($currentHash, 0, 12),
+                'retry_attempt' => $attempt,
             ]);
 
             return $row;
@@ -186,22 +187,25 @@ class AuditLogService
         $expectedPrev = null;
         foreach ($query->cursor() as $row) {
             /** @var AuditLog $row */
-            if ($row->prev_hash !== $expectedPrev) {
+            $rowPrev = $row->prev_hash === null ? null : trim((string) $row->prev_hash);
+            $expectedPrevNorm = $expectedPrev === null ? null : trim((string) $expectedPrev);
+            if ($rowPrev !== $expectedPrevNorm) {
                 return (int) $row->id;
             }
 
             $recomputed = $this->computeHash(
                 (int) ($row->branch_id ?? 0),
-                $row->prev_hash,
+                $rowPrev,
                 (string) $row->action,
                 (array) ($row->payload ?? [])
             );
 
-            if (!hash_equals((string) $row->current_hash, $recomputed)) {
+            $storedCurrent = trim((string) $row->current_hash);
+            if (! hash_equals($storedCurrent, $recomputed)) {
                 return (int) $row->id;
             }
 
-            $expectedPrev = $row->current_hash;
+            $expectedPrev = $storedCurrent;
         }
 
         return null;
@@ -214,7 +218,8 @@ class AuditLogService
     public function computeHash(int $branchId, ?string $prevHash, string $action, array $payload): string
     {
         $canonical = $this->canonicalise($action, $payload);
-        $input     = ($prevHash ?? '') . '|' . $canonical;
+        $input = ($prevHash ?? '').'|'.$canonical;
+
         return hash_hmac('sha256', $input, $this->secretFor($branchId));
     }
 
@@ -225,7 +230,8 @@ class AuditLogService
             $query->where('branch_id', $branchId);
         }
         $last = $query->value('current_hash');
-        return $last ? (string) $last : null;
+
+        return $last ? trim((string) $last) : null;
     }
 
     private function resolveBranchId(array $data): ?int
@@ -237,6 +243,7 @@ class AuditLogService
         if ($user && isset($user->branch_id)) {
             return (int) $user->branch_id;
         }
+
         return null;
     }
 
@@ -244,16 +251,16 @@ class AuditLogService
     {
         // Support per-branch override via env: FISCAL_AUDIT_SECRET_BRANCH_{id}
         if ($branchId !== null) {
-            $override = env('FISCAL_AUDIT_SECRET_BRANCH_' . $branchId);
+            $override = env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId);
             if (is_string($override) && $override !== '') {
-                return $this->assertProductionSafe($override, 'fiscal.audit_secret[branch=' . $branchId . ']');
+                return $this->assertProductionSafe($override, 'fiscal.audit_secret[branch='.$branchId.']');
             }
         }
 
         $configured = Config::get('fiscal.audit_secret');
 
         if (is_array($configured) && $branchId !== null && isset($configured[$branchId])) {
-            return $this->assertProductionSafe((string) $configured[$branchId], 'fiscal.audit_secret[branch=' . $branchId . ']');
+            return $this->assertProductionSafe((string) $configured[$branchId], 'fiscal.audit_secret[branch='.$branchId.']');
         }
         if (is_string($configured) && $configured !== '') {
             return $this->assertProductionSafe($configured, 'fiscal.audit_secret');
@@ -261,7 +268,7 @@ class AuditLogService
 
         throw new RuntimeException(
             'AuditLogService: fiscal.audit_secret is not configured — '
-            . 'refusing to write an unsigned audit row.'
+            .'refusing to write an unsigned audit row.'
         );
     }
 
@@ -285,7 +292,7 @@ class AuditLogService
         if (in_array($secret, $sentinels, true)) {
             throw new RuntimeException(
                 "AuditLogService: {$key} is set to a known dev sentinel in APP_ENV=production. "
-                . 'Rotate the secret (see docs/FISCAL_SECRETS.md).'
+                .'Rotate the secret (see docs/FISCAL_SECRETS.md).'
             );
         }
 
@@ -293,7 +300,7 @@ class AuditLogService
         if (strlen($secret) < $min) {
             throw new RuntimeException(
                 "AuditLogService: {$key} is shorter than {$min} characters in APP_ENV=production. "
-                . 'Generate a strong secret (e.g. openssl rand -hex 32).'
+                .'Generate a strong secret (e.g. openssl rand -hex 32).'
             );
         }
 
@@ -318,7 +325,7 @@ class AuditLogService
         if ($json === false) {
             throw new RuntimeException(
                 'AuditLogService: payload not encodable to JSON — '
-                . json_last_error_msg()
+                .json_last_error_msg()
             );
         }
 
@@ -326,12 +333,12 @@ class AuditLogService
     }
 
     /**
-     * @param mixed $value
+     * @param  mixed  $value
      * @return mixed
      */
     private function sortRecursive($value)
     {
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return $value;
         }
 
@@ -340,9 +347,10 @@ class AuditLogService
         foreach ($value as $k => $v) {
             $out[$k] = $this->sortRecursive($v);
         }
-        if (!$isList) {
+        if (! $isList) {
             ksort($out);
         }
+
         return $out;
     }
 }

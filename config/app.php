@@ -62,6 +62,9 @@ return [
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
 
+    // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
+    'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
+
     // Exposé au Blade pour le SPA (évite env() dans les vues + aligne clé API sans rebuild npm)
     'demo_mode' => filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN),
 
@@ -70,16 +73,16 @@ return [
     // Defaults align with database/seeders/UserTableSeeder.php (non-production).
     // Branch manager + chef rows exist only when DEMO=true at seed time; use env overrides if needed.
     'demo_credentials' => [
-        'admin_email'             => env('DEMO_ADMIN_EMAIL',            'admin@lecayenne.fr'),
-        'admin_password'          => env('DEMO_ADMIN_PASSWORD',         '123456'),
-        'customer_email'          => env('DEMO_CUSTOMER_EMAIL',         'walkingcustomer@example.com'),
-        'customer_password'       => env('DEMO_CUSTOMER_PASSWORD',      '123456'),
-        'branch_manager_email'    => env('DEMO_BRANCH_MANAGER_EMAIL',   'branchmanager@example.com'),
-        'branch_manager_password' => env('DEMO_BRANCH_MANAGER_PASSWORD','123456'),
-        'pos_operator_email'      => env('DEMO_POS_OPERATOR_EMAIL',     'pos@lecayenne.fr'),
-        'pos_operator_password'   => env('DEMO_POS_OPERATOR_PASSWORD',  '123456'),
-        'chef_email'              => env('DEMO_CHEF_EMAIL',             'chef@example.com'),
-        'chef_password'           => env('DEMO_CHEF_PASSWORD',          '123456'),
+        'admin_email' => env('DEMO_ADMIN_EMAIL', 'admin@lecayenne.fr'),
+        'admin_password' => env('DEMO_ADMIN_PASSWORD', '123456'),
+        'customer_email' => env('DEMO_CUSTOMER_EMAIL', 'walkingcustomer@example.com'),
+        'customer_password' => env('DEMO_CUSTOMER_PASSWORD', '123456'),
+        'branch_manager_email' => env('DEMO_BRANCH_MANAGER_EMAIL', 'branchmanager@example.com'),
+        'branch_manager_password' => env('DEMO_BRANCH_MANAGER_PASSWORD', '123456'),
+        'pos_operator_email' => env('DEMO_POS_OPERATOR_EMAIL', 'pos@lecayenne.fr'),
+        'pos_operator_password' => env('DEMO_POS_OPERATOR_PASSWORD', '123456'),
+        'chef_email' => env('DEMO_CHEF_EMAIL', 'chef@example.com'),
+        'chef_password' => env('DEMO_CHEF_PASSWORD', '123456'),
     ],
 
     'google_map_key' => env('MIX_GOOGLE_MAP_KEY', ''),

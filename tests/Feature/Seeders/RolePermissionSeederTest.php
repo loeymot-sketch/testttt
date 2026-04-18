@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Seeders;
 
-use App\Enums\Role as EnumRole;
 use Database\Seeders\PermissionTableSeeder;
 use Database\Seeders\RolePermissionTableSeeder;
 use Database\Seeders\RoleTableSeeder;
@@ -39,7 +38,7 @@ class RolePermissionSeederTest extends TestCase
 
     public function test_branch_manager_receives_expected_permissions(): void
     {
-        $role = Role::find(EnumRole::BRANCH_MANAGER);
+        $role = Role::query()->where('name', 'Branch Manager')->where('guard_name', 'sanctum')->first();
         $this->assertNotNull($role, 'Branch Manager role must be seeded.');
 
         $names = $role->permissions->pluck('name')->all();
@@ -56,12 +55,12 @@ class RolePermissionSeederTest extends TestCase
 
         // Sanity: at least 30 entries — the old buggy version produced 0.
         $this->assertGreaterThanOrEqual(30, count($names),
-            'Branch Manager must receive its full permission list, got ' . count($names));
+            'Branch Manager must receive its full permission list, got '.count($names));
     }
 
     public function test_pos_operator_receives_expected_permissions(): void
     {
-        $role = Role::find(EnumRole::POS_OPERATOR);
+        $role = Role::query()->where('name', 'POS Operator')->where('guard_name', 'sanctum')->first();
         $this->assertNotNull($role);
 
         $names = $role->permissions->pluck('name')->all();
@@ -85,7 +84,7 @@ class RolePermissionSeederTest extends TestCase
 
     public function test_chef_receives_expected_permissions(): void
     {
-        $role = Role::find(EnumRole::CHEF);
+        $role = Role::query()->where('name', 'Chef')->where('guard_name', 'sanctum')->first();
         $this->assertNotNull($role);
 
         $names = $role->permissions->pluck('name')->all();

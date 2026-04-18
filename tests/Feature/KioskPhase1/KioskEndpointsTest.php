@@ -39,11 +39,17 @@ class KioskEndpointsTest extends TestCase
     use RefreshDatabase;
 
     private Branch $branch;
+
     private User $user;
+
     private string $token;
+
     private Item $cayenne;
+
     private Item $fries;
+
     private ItemExtra $cheddar;
+
     private ItemVariation $sizeXL;
 
     protected function setUp(): void
@@ -125,6 +131,7 @@ class KioskEndpointsTest extends TestCase
     private function authed(): self
     {
         $this->withHeaders(['Authorization' => "Bearer {$this->token}"]);
+
         return $this;
     }
 
@@ -141,17 +148,17 @@ class KioskEndpointsTest extends TestCase
     {
         $r = $this->authed()->getJson('/api/frontend/menu');
         $r->assertStatus(200)
-          ->assertJsonStructure([
-              'status',
-              'data' => [
-                  'branch' => ['id', 'name', 'available_locales', 'currency'],
-                  'categories' => [['id', 'parent_id', 'slug', 'name', 'child_ids']],
-                  'items' => [['id', 'category_id', 'slug', 'name', 'price', 'is_chef_pick', 'allergens', 'variations', 'extras']],
-                  'upsell_rules',
-              ],
-          ]);
+            ->assertJsonStructure([
+                'status',
+                'data' => [
+                    'branch' => ['id', 'name', 'available_locales', 'currency'],
+                    'categories' => [['id', 'parent_id', 'slug', 'name', 'child_ids']],
+                    'items' => [['id', 'category_id', 'slug', 'name', 'price', 'is_chef_pick', 'allergens', 'variations', 'extras']],
+                    'upsell_rules',
+                ],
+            ]);
         $this->assertSame($this->branch->id, $r->json('data.branch.id'));
-        $this->assertSame(['fr','en','ar'], $r->json('data.branch.available_locales'));
+        $this->assertSame(['fr', 'en', 'ar'], $r->json('data.branch.available_locales'));
     }
 
     public function test_menu_returns_503_when_no_kiosk_machine(): void
@@ -193,7 +200,7 @@ class KioskEndpointsTest extends TestCase
                     'price' => 0.01,     // <-- tentative injection : ignoré
                     'total' => 0.01,     // <-- idem, FormRequest strip
                     'item_variations' => [['id' => $this->sizeXL->id]],
-                    'item_extras'     => [['id' => $this->cheddar->id]],
+                    'item_extras' => [['id' => $this->cheddar->id]],
                 ],
             ],
         ]);
@@ -212,7 +219,7 @@ class KioskEndpointsTest extends TestCase
         // Crée un item distinct ; on essaye d'attacher sa variation à cayenne.
         $otherItem = Item::forceCreate([
             'name' => 'Other', 'slug' => 'other-'.uniqid(),
-            'item_category_id' => $this->cayenne->item_category_id, 'tax_id' => 1,
+            'item_category_id' => $this->cayenne->item_category_id, 'tax_id' => $this->cayenne->tax_id,
             'item_type' => 1, 'price' => 5, 'status' => Status::ACTIVE, 'order' => 1,
             'is_featured' => 0, 'is_upsell' => 0, 'is_chef_pick' => false,
             'channels' => ['kiosk'],
@@ -249,7 +256,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.discount_source', 'kiosk_promo');
+            ->assertJsonPath('data.discount_source', 'kiosk_promo');
         $this->assertGreaterThan(0, $r->json('data.discount'));
     }
 
@@ -275,7 +282,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.source', 'kiosk_promo');
+            ->assertJsonPath('data.source', 'kiosk_promo');
     }
 
     public function test_promo_validate_falls_back_to_coupon(): void
@@ -291,7 +298,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.source', 'coupon');
+            ->assertJsonPath('data.source', 'coupon');
     }
 
     public function test_promo_validate_rejects_unknown_code(): void

@@ -8,9 +8,9 @@ use App\Models\Branch;
 use App\Models\DefaultAccess;
 use App\Models\Order;
 use App\Models\User;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
@@ -22,42 +22,48 @@ class BranchScopeTest extends TestCase
     use RefreshDatabase;
 
     protected Branch $branchA;
+
     protected Branch $branchB;
+
     protected User $userBranchA;
+
     protected User $userBranchB;
+
     protected User $admin;
+
     protected Order $orderBranchA;
+
     protected Order $orderBranchB;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->seedSpatieRoles();
-        
+
         $this->branchA = Branch::factory()->create();
         $this->branchB = Branch::factory()->create();
-        
+
         // User branch A
         $this->userBranchA = User::factory()->create([
             'branch_id' => $this->branchA->id,
         ]);
         $this->userBranchA->assignRole('POS Operator');
         $this->userBranchA->givePermissionTo('online-orders');
-        
+
         // User branch B
         $this->userBranchB = User::factory()->create([
             'branch_id' => $this->branchB->id,
         ]);
         $this->userBranchB->assignRole('POS Operator');
         $this->userBranchB->givePermissionTo('online-orders');
-        
+
         // Admin (branch_id = 0)
         $this->admin = User::factory()->create([
             'branch_id' => 0,
         ]);
         $this->admin->assignRole('Admin');
-        
+
         // Commande branch A
         $this->orderBranchA = Order::create([
             'user_id' => $this->userBranchA->id,
@@ -69,7 +75,7 @@ class BranchScopeTest extends TestCase
             'subtotal' => 50.00,
             'total' => 50.00,
         ]);
-        
+
         // Commande branch B
         $this->orderBranchB = Order::create([
             'user_id' => $this->userBranchB->id,
@@ -89,13 +95,13 @@ class BranchScopeTest extends TestCase
     public function test_user_branch_a_only_sees_branch_a_orders(): void
     {
         $orders = Order::all();
-        
+
         // Sans authentification, BranchScope ne s'applique pas
         // Mais avec actingAs, il s'applique
         $this->actingAs($this->userBranchA);
-        
+
         $orders = Order::all();
-        
+
         $this->assertEquals(1, $orders->count());
         $this->assertEquals($this->orderBranchA->id, $orders->first()->id);
     }
@@ -106,9 +112,9 @@ class BranchScopeTest extends TestCase
     public function test_user_branch_b_cannot_see_branch_a_orders(): void
     {
         $this->actingAs($this->userBranchB);
-        
+
         $orders = Order::all();
-        
+
         $this->assertEquals(1, $orders->count());
         $this->assertEquals($this->orderBranchB->id, $orders->first()->id);
         $this->assertNotEquals($this->orderBranchA->id, $orders->first()->id);
@@ -125,9 +131,9 @@ class BranchScopeTest extends TestCase
             'default_id' => 0,
         ]);
         $this->actingAs($this->admin);
-        
+
         $orders = Order::all();
-        
+
         $this->assertEquals(2, $orders->count());
         $this->assertTrue($orders->contains('id', $this->orderBranchA->id));
         $this->assertTrue($orders->contains('id', $this->orderBranchB->id));
@@ -139,10 +145,10 @@ class BranchScopeTest extends TestCase
     public function test_complex_query_with_where_respects_branch_scope(): void
     {
         $this->actingAs($this->userBranchA);
-        
+
         // Requête complexe: WHERE status = ACCEPT AND branch_id = A
         $orders = Order::where('status', OrderStatus::ACCEPT)->get();
-        
+
         $this->assertEquals(1, $orders->count());
         $this->assertEquals($this->orderBranchA->id, $orders->first()->id);
         $this->assertEquals(OrderStatus::ACCEPT, $orders->first()->status);
@@ -165,14 +171,14 @@ class BranchScopeTest extends TestCase
             'subtotal' => 25.00,
             'total' => 25.00,
         ]);
-        
+
         $this->actingAs($this->userBranchA);
-        
+
         // Requête avec orWhere — BranchScope doit encapsuler dans closure
         $orders = Order::where('status', OrderStatus::ACCEPT)
             ->orWhere('status', OrderStatus::PENDING)
             ->get();
-        
+
         // Doit retourner 2 commandes (ACCEPT + PENDING) de branch A
         // Mais PAS la commande de branch B
         $this->assertEquals(2, $orders->count());
@@ -184,7 +190,12 @@ class BranchScopeTest extends TestCase
      */
     public function test_global_records_with_branch_id_zero_are_visible(): void
     {
-        if (!Branch::query()->whereKey(0)->exists()) {
+        if (! Branch::query()->whereKey(0)->exists()) {
+            // MySQL: without NO_AUTO_VALUE_ON_ZERO, INSERT id=0 on an AUTO_INCREMENT PK
+            // is rewritten to the next sequence value — FK from orders.branch_id=0 then fails.
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement("SET SESSION sql_mode = CONCAT(TRIM(BOTH ',' FROM IFNULL(@@SESSION.sql_mode,'')), ',NO_AUTO_VALUE_ON_ZERO')");
+            }
             DB::table('branches')->insert([
                 'id' => 0,
                 'name' => 'Virtual',
@@ -227,10 +238,10 @@ class BranchScopeTest extends TestCase
     public function test_frontend_order_has_same_branch_scope(): void
     {
         $this->actingAs($this->userBranchA);
-        
+
         // FrontendOrder est un alias de Order avec BranchScope
         $frontendOrders = \App\Models\FrontendOrder::all();
-        
+
         $this->assertEquals(1, $frontendOrders->count());
         $this->assertEquals($this->orderBranchA->id, $frontendOrders->first()->id);
     }
@@ -243,11 +254,11 @@ class BranchScopeTest extends TestCase
         $this->actingAs($this->userBranchA, 'sanctum');
         Permission::firstOrCreate(['name' => 'online-orders', 'guard_name' => 'sanctum']);
         $this->userBranchA->givePermissionTo('online-orders');
-        
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))->getJson('/api/admin/online-order');
-        
+
         $response->assertStatus(200);
-        
+
         // Vérifier que seulement la commande branch A est retournée
         $data = $response->json('data');
         $this->assertEquals(1, count($data));
