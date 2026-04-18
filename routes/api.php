@@ -781,11 +781,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
 
     // [POS-9.4.9 / POS-GA-F-01/02] Fiscal Z/X report endpoints — NF525 compliance.
+    // [POS-9-H.3.1 / F-C7] Mutating fiscal endpoints (open/close) carry
+    // a dedicated throttle: 10 req/min per authenticated user. A legitimate
+    // operator opens and closes at most 1 Z per day per branch — so 10/min
+    // is still generous, yet blocks any accidental retry-storm or a
+    // hostile actor from spamming `open` to inflate `z_reports.sequence_no`
+    // (which is monotonic, gap-free, and signed — each wasted sequence is
+    // a permanent accounting artefact).
     Route::prefix('fiscal')->name('fiscal.')->group(function () {
         Route::prefix('z-report')->name('zReport.')->group(function () {
             Route::get('/',          [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
-            Route::post('/open',     [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open']);
-            Route::post('/close',    [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close']);
+            Route::post('/open',     [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open'])
+                ->middleware('throttle:10,1');
+            Route::post('/close',    [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close'])
+                ->middleware('throttle:10,1');
             Route::get('/{zReport}', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'show']);
             Route::get('/{zReport}/pdf', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'pdf']);
         });
