@@ -19,6 +19,28 @@ class ItemResource extends JsonResource
     public function toArray($request): array
     {
         $price = $this->price;
+
+        // [POS-9.1.14] Expose normalized allergens to the admin / POS surface.
+        // Without this, the cashier and the back-office had no allergen
+        // signal — a customer asking "is there gluten?" got no answer.
+        // FIC compliance (UE 1169/2011) + EAA 2025. POS-GA-F-36.
+        // Shape mirrors NormalItemResource (kiosk) for cross-surface
+        // consistency. Falls back gracefully if the relation is missing
+        // (legacy items without entries in `item_allergen`).
+        $allergens = $this->relationLoaded('allergens')
+            ? $this->allergens
+            : (method_exists($this->resource, 'allergens') ? $this->allergens()->get() : collect());
+
+        $allergensPayload = $allergens->map(function ($allergen) {
+            return [
+                'id'       => (int) $allergen->id,
+                'code'     => (string) $allergen->code,
+                'name_key' => (string) $allergen->name_key,
+                'icon'     => $allergen->icon,
+                'is_trace' => (bool) ($allergen->pivot->is_trace ?? false),
+            ];
+        })->values();
+
         return [
             "id"               => $this->id,
             "name"             => $this->name,
@@ -36,6 +58,9 @@ class ItemResource extends JsonResource
             "status"           => $this->status,
             "description"      => $this->description === null ? '' : $this->description,
             "caution"          => $this->caution === null ? '' : $this->caution,
+            // [POS-9.1.14] Allergens projection (see comment above the toArray body).
+            "allergens"        => $allergensPayload,
+            "allergen_flags"   => $this->allergen_flags ?? [],
             "sort_order"       => $this->order,
             "order_count"      => $this->orders->count(),
             "thumb"            => $this->thumb,

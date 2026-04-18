@@ -27,7 +27,7 @@
 | B | POS Phase 9 | POS-9.1 | 9.1.11 Son+toast new order | feat/pos-phase-9-1 | resolved (commit) | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.12 cash drawer on cash | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.5 |
 | B | POS Phase 9 | POS-9.1 | 9.1.13 TVA ventilée ticket | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.8 |
-| B | POS Phase 9 | POS-9.1 | 9.1.14 allergens admin | feat/pos-phase-9-1 | open | sync kiosk | POS-9.9 |
+| B | POS Phase 9 | POS-9.1 | 9.1.14 allergens admin | feat/pos-phase-9-1 | resolved (commit) | sync kiosk | POS-9.9 |
 
 ## Locks shared actifs
 

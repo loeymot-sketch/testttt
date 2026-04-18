@@ -50,7 +50,7 @@
 | POS-GA-F-33 | P1 | `deliveryBoyOrderChangeStatus` dispatche mails/SMS/push AVANT `$order->save()` sans tx | `app/Services/OrderService.php:1330-1335` | POS-9.1 | — | resolved (POS-9.1.7 — DB::transaction + save→dispatch) |
 | POS-GA-F-34 | P1 | Aucune réimpression ni journal d'impression | `resources/js/components/admin/pos/ReceiptComponent.vue:10-14` | POS-9.8 | — | open |
 | POS-GA-F-35 | P1 | Ticket n'imprime pas `queue_number` (seul `token` client) | `resources/js/components/admin/pos/ReceiptComponent.vue:152-156`, `app/Services/OrderService.php:801-802` | POS-9.8 | — | open |
-| POS-GA-F-36 | P1 | Allergens absents d'`ItemResource` admin (POS) → caissier aveugle | `app/Http/Resources/ItemResource.php:19-65` | POS-9.9 | sync | open |
+| POS-GA-F-36 | P1 | Allergens absents d'`ItemResource` admin (POS) → caissier aveugle | `app/Http/Resources/ItemResource.php:19-65` | POS-9.1 | sync | resolved (POS-9.1.14 — allergens + allergen_flags) |
 | POS-GA-F-37 | P1 | TVA sans cascade `order_type` (dine-in 10 % / takeaway 5.5 % / alcool 20 %) | `app/Services/Pricing/PricingService.php:141-152`, `app/Services/Pricing/TaxCalculator.php:9-17` | POS-9.8 | — | open |
 | POS-GA-F-38 | P1 | `order_serial_no` non séquentiel par branche (`date('dmy').id`) | `app/Services/OrderService.php:475, 801` | POS-9.4 | — | open |
 | POS-GA-F-39 | P1 | `action_logs.branch_id` absent → fuite cross-tenant dashboard | migration `2026_03_06_182733:15-22`, `app/Services/DashboardService.php:305-326` | POS-9.1 | sync | resolved (POS-9.1.4) |
