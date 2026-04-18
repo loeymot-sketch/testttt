@@ -305,14 +305,28 @@ class DashboardService
     public function auditTrail()
     {
         try {
-            return \App\Models\ActionLog::with('user')
-                ->orderBy('created_at', 'desc')
+            // [POS-9.1.4] Scope audit trail to the authenticated user's branch.
+            //   - Admin (branch_id = 0) sees every branch.
+            //   - Branch staff sees only their own branch + rows with no branch (legacy/system).
+            $actor = auth()->user();
+            $actorBranchId = (int) ($actor?->branch_id ?? 0);
+
+            $query = \App\Models\ActionLog::with('user');
+            if ($actorBranchId > 0) {
+                $query->where(function ($q) use ($actorBranchId) {
+                    $q->where('branch_id', $actorBranchId)
+                      ->orWhereNull('branch_id');
+                });
+            }
+
+            return $query->orderBy('created_at', 'desc')
                 ->limit(50)
                 ->get()
                 ->map(function ($log) {
                     return [
                         'id' => $log->id,
                         'user_name' => $log->user ? $log->user->name : 'Système',
+                        'branch_id' => $log->branch_id,
                         'action' => $log->action,
                         'resource' => $log->resource,
                         'details' => $log->details,

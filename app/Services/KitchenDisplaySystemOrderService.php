@@ -79,6 +79,13 @@ class KitchenDisplaySystemOrderService
                             $query->where($key, (int) $request);
                         } else if ($key === "payment_method" && $request !== null && $request !== '') {
                             $query->where($key, (int) $request);
+                        } else if (in_array($key, ['branch_id', 'order_type', 'source'], true)) {
+                            // [POS-9.1.5] LIKE → = on integer-ID columns to prevent
+                            // cross-branch substring leakage. Using LIKE '%1%' on branch_id
+                            // matched rows 1, 10, 11, 12, 21, 100… a real data leak.
+                            if ($request !== null && $request !== '') {
+                                $query->where($key, (int) $request);
+                            }
                         } else {
                             $query->where($key, 'like', '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $request) . '%');
                         }

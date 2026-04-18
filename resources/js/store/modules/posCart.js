@@ -2,17 +2,38 @@ import _ from "lodash";
 import { computePosCartLineDisplayTotal } from "../../helpers/posCartLineMath";
 
 // Clé localStorage pour le panier POS
-/** v2 : lignes menu regroupées (`pos_line_addons`) — invalide l’ancien panier « 2 lignes » en localStorage */
-const POS_CART_KEY = 'pos_cart_v2';
+/**
+ * v2 : lignes menu regroupées (`pos_line_addons`) — invalide l’ancien panier « 2 lignes » en localStorage
+ * v3 [POS-9.1.9] : clé scopée par branch_id + user_id pour empêcher la fuite
+ *                  d'un panier d'un caissier vers un autre sur la même machine
+ *                  (POS-GA-F-41). Le panier non scopé n'est plus jamais lu ni écrit.
+ */
+const POS_CART_LEGACY_KEY = 'pos_cart_v2';
+const POS_CART_KEY_PREFIX = 'pos_cart_v3';
 const POS_CART_TTL_MS = 2 * 60 * 60 * 1000; // 2 heures
 
+/**
+ * Module-level scope for the current cashier session. Mutated via the
+ * `setScope` action once the auth user is known (PosComponent mounted).
+ */
+let _scope = { branchId: null, userId: null };
+
+function getScopedKey() {
+    if (_scope.branchId == null || _scope.userId == null) return null;
+    return `${POS_CART_KEY_PREFIX}:b${_scope.branchId}:u${_scope.userId}`;
+}
+
 function saveCartToStorage(state) {
+    const key = getScopedKey();
+    if (!key) return; // no scope yet → never persist (avoids cross-cashier leak)
     try {
-        localStorage.setItem(POS_CART_KEY, JSON.stringify({
+        localStorage.setItem(key, JSON.stringify({
             lists: state.lists,
             subtotal: state.subtotal,
             discount: state.discount,
-            savedAt: Date.now()
+            savedAt: Date.now(),
+            branchId: _scope.branchId,
+            userId: _scope.userId,
         }));
     } catch (e) {
         // localStorage peut être indisponible (mode privé, quota dépassé)
@@ -21,14 +42,24 @@ function saveCartToStorage(state) {
 }
 
 function loadCartFromStorage() {
+    const key = getScopedKey();
+    if (!key) return null;
     try {
-        const raw = localStorage.getItem(POS_CART_KEY);
+        const raw = localStorage.getItem(key);
         if (!raw) return null;
         const data = JSON.parse(raw);
         if (!data || !data.savedAt) return null;
+        // Cross-check scope: never restore a cart that does not match the
+        // active branch/user (defence-in-depth against key collisions).
+        if (
+            (data.branchId != null && data.branchId !== _scope.branchId) ||
+            (data.userId   != null && data.userId   !== _scope.userId)
+        ) {
+            return null;
+        }
         // Expirer après 2h
         if (Date.now() - data.savedAt > POS_CART_TTL_MS) {
-            localStorage.removeItem(POS_CART_KEY);
+            localStorage.removeItem(key);
             return null;
         }
         return data;
@@ -38,9 +69,24 @@ function loadCartFromStorage() {
 }
 
 function clearCartFromStorage() {
+    const key = getScopedKey();
     try {
-        localStorage.removeItem(POS_CART_KEY);
+        if (key) localStorage.removeItem(key);
+        // Also wipe any leftover unscoped legacy key — it must never be read again.
+        localStorage.removeItem(POS_CART_LEGACY_KEY);
     } catch (e) {}
+}
+
+/**
+ * Internal helper exported for tests — applies a fresh scope and reloads.
+ * Returns the loaded cart (or null) so the action can re-hydrate state.
+ */
+export function _applyPosCartScope(branchId, userId) {
+    _scope.branchId = branchId == null ? null : Number(branchId);
+    _scope.userId   = userId   == null ? null : Number(userId);
+    // Always purge the legacy unscoped key on scope change.
+    try { localStorage.removeItem(POS_CART_LEGACY_KEY); } catch (e) {}
+    return loadCartFromStorage();
 }
 
 /** Addons regroupés sur la ligne principale (menu, frites, etc.) — signature pour fusion panier */
@@ -106,12 +152,14 @@ function shapePosListItem(pay) {
 export const posCart = {
     namespaced: true,
     state: (function() {
-        const saved = loadCartFromStorage();
+        // [POS-9.1.9] Initial state is ALWAYS empty — we have no scope yet
+        // (auth is not known at module init). The cart is rehydrated from
+        // localStorage only after PosComponent dispatches `setScope`.
         return {
-            lists: saved ? saved.lists : [],
-            subtotal: saved ? saved.subtotal : 0,
-            discount: saved ? saved.discount : 0,
-            restoredFromStorage: saved && saved.lists.length > 0
+            lists: [],
+            subtotal: 0,
+            discount: 0,
+            restoredFromStorage: false,
         };
     })(),
     getters: {
@@ -158,6 +206,20 @@ export const posCart = {
         replaceCartLine: function (context, payload) {
             context.commit('replaceCartLine', payload);
             context.commit('subtotal');
+        },
+        /**
+         * [POS-9.1.9] Bind the cart to the active cashier (branch + user).
+         * Must be called by PosComponent as soon as the auth user is known
+         * — before any add-to-cart action — to (a) load the previously saved
+         * cart of THIS cashier on THIS branch and (b) start scoping all
+         * future writes. Switching scope wipes the in-memory state to avoid
+         * leaking lines from cashier A into cashier B's session.
+         */
+        setScope: function (context, payload) {
+            const branchId = payload && payload.branchId != null ? payload.branchId : null;
+            const userId   = payload && payload.userId   != null ? payload.userId   : null;
+            const saved = _applyPosCartScope(branchId, userId);
+            context.commit('hydrateFromScope', saved);
         },
     },
     mutations: {
@@ -299,6 +361,23 @@ export const posCart = {
         },
         acknowledgeRestore: function (state) {
             state.restoredFromStorage = false;
-        }
+        },
+        /**
+         * [POS-9.1.9] Replace state with the scoped saved cart (or reset to
+         * empty if nothing saved for this scope).
+         */
+        hydrateFromScope: function (state, saved) {
+            if (saved && Array.isArray(saved.lists)) {
+                state.lists = saved.lists;
+                state.subtotal = saved.subtotal || 0;
+                state.discount = saved.discount || 0;
+                state.restoredFromStorage = saved.lists.length > 0;
+            } else {
+                state.lists = [];
+                state.subtotal = 0;
+                state.discount = 0;
+                state.restoredFromStorage = false;
+            }
+        },
     },
 };

@@ -1322,30 +1322,42 @@ class OrderService
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
 
-            $transaction = Transaction::where('order_id', $order->id)->first();
-            if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
-                $order->payment_status = PaymentStatus::PAID;
-            }
+            $oldStatus  = (int) $order->status;
+            $newStatus  = (int) $request->status;
 
-            $oldStatus = $order->status;
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            $order->status = $request->status;
-            $order->save();
+            // [POS-9.1.7] Wrap mutations in DB::transaction so a partial failure
+            // (save / state-machine / payment_status flip) rolls back atomically.
+            // Notifications + OrderStatusChanged broadcast are deferred to
+            // afterCommit so listeners (OSS, KDS, loyalty) never observe a
+            // half-written state nor fire if the transaction rolls back.
+            DB::transaction(function () use ($order, $oldStatus, $newStatus) {
+                $transaction = Transaction::where('order_id', $order->id)->first();
+                if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
+                    $order->payment_status = PaymentStatus::PAID;
+                }
 
-            OrderStateMachine::recordTransition(
-                Order::class,
-                (int) $order->id,
-                (int) $oldStatus,
-                (int) $request->status,
-                Auth::check() ? (int) Auth::id() : null,
-                null
-            );
+                $order->status = $newStatus;
+                $order->save();
+
+                OrderStateMachine::recordTransition(
+                    Order::class,
+                    (int) $order->id,
+                    $oldStatus,
+                    $newStatus,
+                    Auth::check() ? (int) Auth::id() : null,
+                    null
+                );
+            });
+
+            // Dispatch notifications + broadcast AFTER the transaction has
+            // committed so jobs and listeners always read the persisted state.
+            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
+            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
+            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $newStatus]);
 
             // [FIX-54-1] Broadcast so OSS, KDS, loyalty listener all fire
             try {
-                \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, $newStatus);
             } catch (\Exception $e) {
                 Log::warning('[DeliveryBoy] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }
@@ -1584,13 +1596,55 @@ class OrderService
      */
     public function destroy(Order $order)
     {
+        // [POS-9.1.2] Branch isolation + payment guard + audit log.
+        // [Gate POS-9.1] HTTP guard checks must run OUTSIDE the try/catch
+        // so abort(403,…) (HttpException) propagates as a 403 instead of
+        // being swallowed and re-thrown as a generic 422.
+        $actor = Auth::user();
+        $actorBranchId = (int) ($actor->branch_id ?? 0);
+        $orderBranchId = (int) $order->branch_id;
+
+        // Admin (branch_id=0) can destroy any; branch staff only own branch.
+        if ($actorBranchId > 0 && $actorBranchId !== $orderBranchId) {
+            abort(403, 'Access denied: order does not belong to your branch.');
+        }
+
+        // Block PAID orders unless the actor carries the dedicated permission.
+        if ((int) $order->payment_status === PaymentStatus::PAID
+            && $actor && !$actor->can('pos-destroy-paid')) {
+            abort(403, 'Paid orders cannot be destroyed without elevated permission.');
+        }
+
         try {
-            DB::transaction(function () use ($order) {
+            $reason = trim((string) request('destroy_reason', ''));
+
+            DB::transaction(function () use ($order, $actor, $reason) {
                 $order->address()?->delete();
                 $order->coupon()?->delete();
                 $order->orderItems()?->delete();
+                // Soft-delete only (Order model uses SoftDeletes)
                 $order->delete();
+
+                \App\Models\ActionLog::create([
+                    'user_id'  => $actor?->id,
+                    'action'   => 'order.destroyed',
+                    'resource' => 'Order #' . $order->id,
+                    'details'  => json_encode([
+                        'order_id'       => $order->id,
+                        'branch_id'      => $order->branch_id,
+                        'order_type'     => $order->order_type,
+                        'status'         => $order->status,
+                        'payment_status' => $order->payment_status,
+                        'total'          => $order->total,
+                        'reason'         => $reason ?: null,
+                        'actor_id'       => $actor?->id,
+                        'actor_branch'   => $actor?->branch_id,
+                    ]),
+                ]);
             });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            // Bubble HTTP exceptions (403/404) untouched.
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

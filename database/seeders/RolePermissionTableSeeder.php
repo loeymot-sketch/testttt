@@ -27,6 +27,9 @@ class RolePermissionTableSeeder extends Seeder
                 ['name' => 'dining-tables'],
                 ['name' => 'pos'],
                 ['name' => 'pos-orders'],
+                // [POS-9.1.1] branch manager = 10%-50% discount
+                ['name' => 'pos-discount-up-to-10'],
+                ['name' => 'pos-discount-over-10-requires-manager'],
                 ['name' => 'online-orders'],
                 ['name' => 'table-orders'],
                 ['name' => 'kitchen-display-system'],
@@ -74,7 +77,9 @@ class RolePermissionTableSeeder extends Seeder
             $posOperatorManagerPermissions = [
                 ['name' => 'dashboard'],
                 ['name' => 'pos'],
-                ['name' => 'pos-orders']
+                ['name' => 'pos-orders'],
+                // [POS-9.1.1] cashier = up-to-10% discount
+                ['name' => 'pos-discount-up-to-10'],
             ];
             $posOperatorManagerPermissions = Permission::whereIn('name', $posOperatorManagerPermissions)->get();
             $posOperatorManager->givePermissionTo($posOperatorManagerPermissions);
