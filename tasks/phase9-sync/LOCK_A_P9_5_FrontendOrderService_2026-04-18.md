@@ -37,3 +37,4 @@
 
 - **RELEASED (9.5.1 allergens_snapshot)** au commit `e5be3763f` le 2026-04-18 — modif additive confirmée sur `FrontendOrderService::myOrderStore`, tests verts sur `OrderAllergenSnapshotTest`.
 - **RE-OPENED 2026-04-18** pour 9.5.5 : le verrou runtime `Cache::lock('frontend_order_idempotency_' . sha1($idempotencyKey), …)` doit être scopé à `(branch_id, idempotency_key)` afin d'aligner le comportement runtime avec l'index DB composite posé en 9.5.4. Voir `tasks/phase9/P9_5_BLOCKER_9.5.5_frontend_order_idempotency_lock_scope.md`. Modif additive uniquement (pas de pricing, pas de state machine, pas d'autres flows). Sera `RELEASED (idempotency lock scope)` au commit `test(kiosk/phase-9.5.5)` qui porte à la fois le fix runtime et la preuve E2E.
+- **RELEASED (idempotency lock scope, this commit)** le 2026-04-18 — lock d'idempotence kiosk désormais scopé à `(branch_id, idempotency_key)` avec preuve `KioskFullFlowE2ETest`.

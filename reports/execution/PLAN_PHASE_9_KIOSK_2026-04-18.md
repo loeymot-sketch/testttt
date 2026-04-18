@@ -372,3 +372,4 @@ Validation humaine demandée avant démarrage effectif.
 ## SYMMETRY_NOTE
 
 - 2026-04-18 — P9.5.1 a touché `FrontendOrderService.php` de façon strictement additive pour enrichir les lignes `order_items` avec `allergens_snapshot` au moment du `insert()`. Vérifié: aucun changement sur pricing SSOT, idempotency, state machine, `branch_id` server-resolved, ni besoin de symétrie immédiate dans `OrderService.php` (hors scope P9.5 et toujours frozen).
+- 2026-04-18 — P9.5.5 ajoute uniquement un scoping serveur du lock d'idempotence kiosk dans `FrontendOrderService.php` (`branch_id|idempotency_key`) pour aligner le runtime sur l'index DB composite de 9.5.4. Vérifié: aucun changement de pricing, state machine, transitions, payload métier, ni nécessité de miroir dans `OrderService.php`.

@@ -122,11 +122,16 @@ class FrontendOrderService
     {
         $this->loyaltyApplied = false;
         $idempotencyLock = null;
+        $lockBranchId = (int) (\App\Models\KioskMachine::where('user_id', Auth::id())->value('branch_id')
+            ?? (Auth::user()?->branch_id ?? 0));
         // [SPLASH SECURITY] Idempotency: if the kiosk sends the same key twice (network retry,
         // double-tap), return the existing order instead of creating a duplicate.
         $idempotencyKey = $request->header('X-Idempotency-Key');
         if ($idempotencyKey) {
-            $idempotencyLock = Cache::lock('frontend_order_idempotency_' . sha1($idempotencyKey), 10);
+            $idempotencyLock = Cache::lock(
+                'frontend_order_idempotency_' . sha1($lockBranchId . '|' . $idempotencyKey),
+                10
+            );
             $idempotencyLock->block(5);
             $existing = FrontendOrder::where('idempotency_key', $idempotencyKey)->first();
             if ($existing) {
