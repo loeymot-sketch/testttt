@@ -43,6 +43,7 @@ use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
+use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
 use App\Services\Orders\OrderItemAllergenSnapshot;
 use App\Services\Pricing\PricingRequest;
@@ -911,6 +912,29 @@ class OrderService
                     'details'  => sprintf('Créée via Point de Vente | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
 
+                // [POS-9.4.BL.2] NF525 audit trail: any manual or coupon discount
+                // must be recorded on the HMAC chain so a fraudulent cashier
+                // discount becomes detectable post-hoc. Skipped when no discount
+                // was applied to keep the chain focused on financially sensitive
+                // events.
+                if ($calculatedDiscount > 0) {
+                    app(AuditLogService::class)->write([
+                        'branch_id'   => (int) $this->order->branch_id,
+                        'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                        'action'      => 'order.discount_applied',
+                        'resource'    => 'order',
+                        'resource_id' => (int) $this->order->id,
+                        'payload'     => [
+                            'order_serial_no'    => $this->order->order_serial_no,
+                            'coupon_id'          => $request->coupon_id > 0 ? (int) $request->coupon_id : null,
+                            'discount_amount'    => round((float) $calculatedDiscount, 2),
+                            'discount_type'      => $request->coupon_id > 0 ? 'coupon' : 'manual_cashier',
+                            'subtotal_before'    => round((float) $realSubtotal, 2),
+                            'total_after'        => round((float) $this->order->total, 2),
+                        ],
+                    ]);
+                }
+
                 $order = $this->order;
             });
             
@@ -1494,6 +1518,33 @@ class OrderService
                             Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
                         ),
                     ]);
+
+                    // [POS-9.4.BL.2] NF525 audit trail on cancel/reject. Only these
+                    // two status transitions are fiscally sensitive (everything
+                    // else is internal workflow); the full state-machine event
+                    // trail is already persisted in order_status_transitions via
+                    // OrderStateMachine::recordTransition above.
+                    if ((int) $request->status === OrderStatus::CANCELED
+                        || (int) $request->status === OrderStatus::REJECTED) {
+                        app(AuditLogService::class)->write([
+                            'branch_id'   => (int) $order->branch_id,
+                            'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                            'action'      => (int) $request->status === OrderStatus::CANCELED
+                                ? 'order.cancelled'
+                                : 'order.rejected',
+                            'resource'    => 'order',
+                            'resource_id' => (int) $order->id,
+                            'payload'     => [
+                                'order_serial_no' => $order->order_serial_no,
+                                'from_status'     => (int) $oldStatusForBroadcast,
+                                'to_status'       => (int) $request->status,
+                                'reason'          => $request->reason,
+                                'total'           => round((float) $order->total, 2),
+                                'payment_status'  => (int) $order->payment_status,
+                                'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                            ],
+                        ]);
+                    }
                 });
 
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
@@ -1553,6 +1604,23 @@ class OrderService
                         Auth::check() ? Auth::user()->name : 'Système',
                         Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
                     ),
+                ]);
+
+                // [POS-9.4.BL.2] NF525 audit trail on payment_status change.
+                // Change of payment status is financially sensitive (especially
+                // PAID→UNPAID or PAID→REFUNDED, which impacts Z report totals).
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $order->branch_id,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                    'action'      => 'order.payment_status_changed',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $order->id,
+                    'payload'     => [
+                        'order_serial_no'    => $order->order_serial_no,
+                        'to_payment_status'  => (int) $request->payment_status,
+                        'total'              => round((float) $order->total, 2),
+                        'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                    ],
                 ]);
 
                 return $order;
@@ -1670,6 +1738,27 @@ class OrderService
                         'actor_id'       => $actor?->id,
                         'actor_branch'   => $actor?->branch_id,
                     ]),
+                ]);
+
+                // [POS-9.4.BL.2] NF525 audit trail on soft-delete of an order.
+                // Critical because order items and address are hard-deleted
+                // above (one-way), so the audit chain is the ONLY surviving
+                // canonical record of what was on this order at destroy time.
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $order->branch_id,
+                    'user_id'     => $actor?->id,
+                    'action'      => 'order.destroyed',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $order->id,
+                    'payload'     => [
+                        'order_serial_no'    => $order->order_serial_no,
+                        'order_type'         => (int) $order->order_type,
+                        'status_at_destroy'  => (int) $order->status,
+                        'payment_status_at_destroy' => (int) $order->payment_status,
+                        'total'              => round((float) $order->total, 2),
+                        'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                        'reason'             => $reason ?: null,
+                    ],
                 ]);
             });
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
