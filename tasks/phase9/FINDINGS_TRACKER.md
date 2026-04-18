@@ -26,8 +26,8 @@
 | 9.1.7 | Wire `KsVirtualKeyboard` sur inputs loyalty | P0 | `KioskLoyaltyComponent.vue:27-117` | fixed | 2f8c66696 | — |
 | 9.1.8 | Wire `useKioskSpeech` sur events critiques (order / payment) | P0 | `KioskConfirmationComponent.vue` + `KioskPaymentComponent.vue` | fixed | 0bb45393d | — |
 | 9.1.9 | Fix whitelist analytics `idle_warning` → `idle_warning_shown` | P0 | `KioskInactivityOverlayComponent.vue:130` | fixed | d9c2e6d6d | — |
-| 9.1.10 | Fix event name mismatch `@accept` / `@accepted` loyalty consent | P0 | `KioskLoyaltyComponent.vue:228` ou `KsConsentModal.vue:297` | fixed | (pending) | — |
-| 9.1.11 | Redirection `kiosk.error.payment-refused` après 2 échecs | P0 | `KioskPaymentComponent.vue:348-354` | open | — | — |
+| 9.1.10 | Fix event name mismatch `@accept` / `@accepted` loyalty consent | P0 | `KioskLoyaltyComponent.vue:228` ou `KsConsentModal.vue:297` | fixed | 485b47df1 | — |
+| 9.1.11 | Redirection `kiosk.error.payment-refused` après 2 échecs | P0 | `KioskPaymentComponent.vue:348-354` | fixed | (pending) | — |
 | 9.1.12 | Persister last-order localStorage (F5-proof receipt) | P0 | nouveau `kioskReceiptPersistence.js` + `KioskConfirmationComponent.vue:236` | open | — | — |
 | 9.1.13 | Retirer/wire chips dead UI "My Account" / "Allergens" | P0 | `KioskCategoriesComponent.vue:24-43` | open | — | — |
 | 9.1.14 | Fix 3 tests `FrontendSurfaceFilteringTest` (MySQL CI) | P0 | `.github/workflows/ci.yml` + `phpunit.xml` | open | — | — |

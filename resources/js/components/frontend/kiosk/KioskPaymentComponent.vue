@@ -231,8 +231,20 @@ export default {
       tpeMessage:    '',
       tpeCanCancel:  false,
       _lastOrder:    null,
+      // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
+      // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
+      // on laisse l'utilisateur retenter UNE fois après un premier refus.
+      // Au deuxième refus, on route vers l'écran d'erreur dédié qui propose
+      // les 3 CTAs : retenter / payer au comptoir / annuler. Évite la boucle
+      // "essaye, refusé, toast, essaye encore" frustrante et indéfinie.
+      paymentFailureCount: 0,
     };
   },
+
+  // Kiosk Phase 9.1.11 — seuil d'échecs au-delà duquel on redirige vers
+  // l'écran d'erreur dédié. Exposé en constante d'instance pour faciliter
+  // l'override en test (`wrapper.vm.$options.MAX_PAYMENT_FAILURES = ...`).
+  MAX_PAYMENT_FAILURES: 2,
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
@@ -256,6 +268,10 @@ export default {
     selectMethod(m) {
       this.method = m;
       this.error = null;
+      // Kiosk Phase 9.1.11 — changer de mode réinitialise le compteur d'échec.
+      // Motif : si un client re-sélectionne "Espèces" après un CB refusé,
+      // on ne veut pas l'envoyer direct sur /error au premier problème cash.
+      this.paymentFailureCount = 0;
       // [PHASE-6.4] Analytics : sélection d'un moyen de paiement (avant confirm).
       try { kioskAnalytics.track('payment_method_selected', { method: m }); } catch (_) {}
     },
@@ -337,6 +353,31 @@ export default {
             { key: 'kiosk.pay_screen.speech_error' },
           ).catch(() => {});
         } catch (_) {}
+
+        // Kiosk Phase 9.1.11 — au-delà de MAX_PAYMENT_FAILURES refus TPE
+        // consécutifs, on route vers l'écran d'erreur dédié qui offre des
+        // CTA clairs (retry / cash / cancel). On passe en query :
+        //  - `code`     : code d'erreur TPE (pour le diag staff).
+        //  - `order_id` : référence de la commande pending pour void.
+        // Le compteur est remis à 0 quand l'utilisateur change de method ou
+        // re-sélectionne : resetPaymentFailureCount() ci-dessous.
+        this.paymentFailureCount += 1;
+        if (this.paymentFailureCount >= this.$options.MAX_PAYMENT_FAILURES) {
+          const code = err?.code || err?.response?.data?.code || 'declined';
+          const orderId = this._lastOrder?.id ? String(this._lastOrder.id) : null;
+          // Reset avant navigation pour ne pas empiler les seuils si l'utilisateur
+          // revient (back) sur /payment après l'écran d'erreur.
+          this.paymentFailureCount = 0;
+          try {
+            this.$router.push({
+              name: 'kiosk.error.payment-refused',
+              query: {
+                code,
+                ...(orderId ? { order_id: orderId } : {}),
+              },
+            });
+          } catch (_) { /* navigation garde hors dispo (tests) → no-op */ }
+        }
       }
     },
 
