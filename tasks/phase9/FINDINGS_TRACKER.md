@@ -52,21 +52,25 @@
 
 ---
 
-## Vague P9.3 — Wizard robustness (11 items)
+## Vague P9.3 — Wizard robustness (15 items : 11 baseline + 4 robustness ext)
 
 | id | title | criticity | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|
-| 9.3.1 | Migration `item_attributes.role` enum | P1 | open | — | — |
-| 9.3.2 | Refacto helpers sauces/viandes/pains → role | P1 | open | — | — |
-| 9.3.3 | Pricer chaque sauce extra individuellement | P1 | open | — | — |
-| 9.3.4 | Supprimer fallback S/M/L/XL fabriqué | P1 | open | — | — |
-| 9.3.5 | Regex robuste `shouldAskTacosTaille` | P2 | open | — | — |
-| 9.3.6 | `data-testid` systématiques sur 7 steps | P2 | open | — | — |
-| 9.3.7 | Tracker `wizard_abandoned` sur recap | P2 | open | — | — |
-| 9.3.8 | Ne pas pré-sélectionner `menuChoice='full'` | P1 | open | — | — |
-| 9.3.9 | Bouton "Tout désélectionner" garnitures | P2 | open | — | — |
-| 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` | P3 | open | — | — |
-| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | open | — | — |
+| 9.3.1 | Migration `item_attributes.role` enum + seeder rétrocompat (LOCK_A) | P1 | in-progress | — | — |
+| 9.3.2 | Refacto helpers sauces/viandes/pains → role | P1 | in-progress | — | — |
+| 9.3.3 | Pricer chaque sauce extra individuellement (client-only) | P1 | in-progress | — | — |
+| 9.3.4 | Supprimer fallback S/M/L/XL fabriqué | P1 | in-progress | — | — |
+| 9.3.5 | Regex robuste `shouldAskTacosTaille` | P2 | in-progress | — | — |
+| 9.3.6 | `data-testid` systématiques sur 7 steps | P2 | in-progress | — | — |
+| 9.3.7 | Tracker `wizard_abandoned` sur recap | P2 | in-progress | — | — |
+| 9.3.8 | Ne pas pré-sélectionner `menuChoice='full'` (badge Recommandé) | P1 | in-progress | — | — |
+| 9.3.9 | Bouton "Tout désélectionner" garnitures | P2 | in-progress | — | — |
+| 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` | P3 | in-progress | — | — |
+| 9.3.11 | Listener Echo `ItemAvailabilityChanged` wizard | P1 | in-progress | — | — |
+| 9.3.12 | **Double-submit guard wizard CTAs** (Next/Back/Confirm) — prévient double-tap → 2 transitions | P1 (robustness) | in-progress | — | — |
+| 9.3.13 | **Wizard resume snapshot** — F5/crash mid-wizard → overlay "Reprendre ou Recommencer" (TTL 10 min, no-PII) | P1 (robustness) | in-progress | — | — |
+| 9.3.14 | **Pricing preview resilience** — timeout 3 s, exp backoff, fallback local + pill "provisoire" | P1 (robustness) | in-progress | — | — |
+| 9.3.15 | **Focus + scroll memory + a11y transitions** — focus 1er control, scrollTop restore, aria-live step title, focus ring gloves-compatible | P2 (robustness) | in-progress | — | — |
 
 ---
 
@@ -90,3 +94,4 @@ _(Lignes initialisées open, enrichies au démarrage de chaque vague. Voir `PLAN
 
 - **2026-04-18 — initialisation.** 14 lignes P9.1 créées `open`. Lignes placeholder P9.2 → P9.10 ajoutées pour visibilité. Tracker activé.
 - **2026-04-18 — P9.1 STOP-THE-BLEED clos.** 14 commits atomiques posés (`eb980ab31` → `bd1143a18`) + commit tracker `2fd1f9bcc`. Sous-agent verifier indépendant exécuté (lecture code HEAD, sans contexte implémentation) → rapport `reports/review/VERIFY_P9_1_2026-04-18.md` : **14/14 RESOLVED, 0 PARTIAL, 0 STILL_BROKEN**. Status des 14 lignes P9.1 passé à `verified`. Gate merge P9.1 levé (Vitest 46 files / 377 tests verts sur HEAD 2fd1f9bcc ; PHPUnit MySQL programmé en CI via `phpunit.yml`). Observations incidentes (non bloquantes, à traiter en P9.2/9.5) listées dans le rapport verifier §"Incidental observations".
+- **2026-04-18 — P9.3 WIZARD ROBUSTNESS démarrage.** Branche `feat/kiosk-phase-9-3` baseline `b890209f8` (merge main + P9.2). Scope **15 items** (11 plan baseline + 4 robustness extensions 9.3.12→9.3.15 documentées dans `PLAN_PHASE_9_KIOSK` §"Vague P9.3" et §"SUBSYSTEMS_TOUCHED P9.3"). LOCK_A posé sur `app/Models/ItemAttribute.php` + migration role (voir `tasks/phase9-sync/LOCK_A_P9_3_ItemAttribute_2026-04-18.md`). Frozen zones reconduites : `OrderService`, `FrontendOrderService`, `PricingService`, `OrderStateMachine` — aucune touche en P9.3.

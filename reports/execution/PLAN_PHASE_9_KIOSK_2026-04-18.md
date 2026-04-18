@@ -74,10 +74,47 @@ Périmètre autorisé pour les implémentations P9.1 → P9.10. Tout fichier hor
 - `tests/Unit/Services/AllergenServiceTest.php`
 - `tasks/phase9/FINDINGS_TRACKER.md`
 
+### P9.3 (wizard robustness — actif)
+
+**Périmètre baseline plan (11 items 9.3.1 → 9.3.11).** Cf. `HANDOFF_P9_3_2026-04-18.md §2`.
+
+- `app/Models/ItemAttribute.php` **(shared POS/kiosk — LOCK_A obligatoire, voir `tasks/phase9-sync/LOCK_A_P9_3_ItemAttribute_2026-04-18.md`. Additif rétrocompatible uniquement : ajout colonne `role` nullable, aucune modification de `name`/`sort`/`price`.)**
+- `database/migrations/<TS>_add_role_to_item_attributes.php` (nouveau)
+- `database/seeders/ItemAttributeRoleSeeder.php` (nouveau ou extension)
+- `resources/js/helpers/kioskSauceCatalog.js`
+- `resources/js/helpers/kioskViandeCatalog.js`
+- `resources/js/helpers/kioskPainCatalog.js`
+- `resources/js/helpers/kioskPricing.js` (kiosk exclusif)
+- `resources/js/components/frontend/kiosk/KioskWizardComponent.vue`
+- `resources/js/components/frontend/kiosk/steps/KioskStep{Pain,Viande,Sauce,Taille,Garnitures,Menu,Supplements}Component.vue`
+- `resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue` (wizard_abandoned on recap — 9.3.7)
+- `resources/js/components/frontend/kiosk/KioskErrorProductRemovedComponent.vue` (9.3.11 overlay — nouveau si absent)
+- `resources/js/languages/{fr,en,ar}.json`
+- `tests/js/kiosk{Sauce,Viande,Pain}Catalog.spec.js`
+- `tests/js/KioskWizard.spec.js`
+- `tests/js/kioskStep{Taille,Menu,Garnitures,Supplements}.spec.js` (nouveaux ou étendus)
+
+**Périmètre extensions robustness (items 9.3.12 → 9.3.15, documentés dans le §"Vague P9.3").**
+
+- `resources/js/helpers/kioskWizardSubmitGuard.js` (nouveau — 9.3.12 double-submit guard)
+- `resources/js/helpers/kioskWizardResumeSnapshot.js` (nouveau — 9.3.13 crash-resume persistence)
+- `resources/js/helpers/kioskPricingPreview.js` (extension 9.3.14 — timeout + backoff, kiosk exclusif OK)
+- `resources/js/helpers/kioskWizardFocusA11y.js` (nouveau — 9.3.15 focus + scroll memory helper)
+- `tests/js/kioskWizardDoubleSubmit.spec.js` (nouveau — 9.3.12)
+- `tests/js/kioskWizardResumeSnapshot.spec.js` (nouveau — 9.3.13)
+- `tests/js/kioskPricingPreviewResilience.spec.js` (nouveau — 9.3.14)
+- `tests/js/kioskWizardFocusA11y.spec.js` (nouveau — 9.3.15)
+
+**Non scope P9.3 (frozen zones reconduites).** Voir ci-dessous.
+
+- `tasks/phase9/FINDINGS_TRACKER.md`
+- `tasks/phase9-sync/LOCK_A_P9_3_ItemAttribute_2026-04-18.md` (nouveau)
+- `tasks/phase9-sync/CROSS_TRACK_STATUS.md` (mise à jour status Kiosk row + LOCK_A P9.3)
+
 ### Frozen zones (HALT — gate clearance requise via `.cursor/hooks/safety-check.sh`)
 - `app/Services/OrderService.php`
 - `app/Services/FrontendOrderService.php`
-- `app/Services/PricingService.php` (cœur SSOT — sauf gate explicite)
+- `app/Services/PricingService.php` (cœur SSOT — sauf gate explicite ; en P9.3 aucun touche)
 - `app/Services/OrderStateMachine.php` (transitions — sauf gate explicite)
 
 Toute modification hors `SUBSYSTEMS_TOUCHED` ou dans une frozen zone DOIT être escaladée à l'humain via `tasks/phase9/P9_X_BLOCKER_<id>.md`.
@@ -152,8 +189,12 @@ Toute modification hors `SUBSYSTEMS_TOUCHED` ou dans une frozen zone DOIT être 
 | 9.3.9 | Bouton "Tout désélectionner" sur garnitures + hint clair | `KioskStepGarnituresComponent.vue` | 30 min | Vitest nouveau cas |
 | 9.3.10 | Uniformiser i18n `wizard.step.supplements.*` avec pattern autres steps | `fr.json, en.json, ar.json, KioskStepSupplementsComponent.vue` | 20 min | — |
 | 9.3.11 | Listener Echo `ItemAvailabilityChanged` dans wizard → overlay `KioskErrorProductRemoved` si item en cours devient unavailable | `KioskWizardComponent.vue` mounted + beforeDestroy | 45 min | Vitest `KioskWizard.spec.js::shows_removed_overlay_on_echo` |
+| 9.3.12 | Double-submit guard sur CTAs wizard (Next/Back/Confirm/recap.confirmAddToCart) — flag `isTransitioning` + 400 ms debounce + `[disabled]` pendant transition. Prévient 2× `goNext()` / 2× `confirmAddToCart` sur double-tap. | `resources/js/helpers/kioskWizardSubmitGuard.js` (nouveau) + `KioskWizardComponent.vue` + `KioskOrderSummaryComponent.vue` | 1 h | Vitest `kioskWizardDoubleSubmit.spec.js::double_tap_triggers_single_transition` + `analytics_fires_once` |
+| 9.3.13 | Wizard resume snapshot — persistance `{itemId, step, selections, startedAt, v:1}` en localStorage (TTL 10 min, no-PII). Au remount (F5, crash reload), si snapshot < 10 min et `itemId` match → overlay "Reprendre votre personnalisation ? [Reprendre] [Recommencer]". Clear sur `confirmAddToCart` ou idle timeout. | `resources/js/helpers/kioskWizardResumeSnapshot.js` (nouveau) + `KioskWizardComponent.vue` (mount/beforeUnmount/step change) | 1 h 30 | Vitest `kioskWizardResumeSnapshot.spec.js::persists_on_step_change`, `rehydrates_within_ttl`, `expires_after_ttl`, `cleared_on_confirm` |
+| 9.3.14 | Pricing preview resilience — timeout 3 s par requête, exponential backoff (500/1000/2000 ms, max 3 tentatives) sur 5xx/network error, fallback `runningTotalLocal` avec UI pill `Total provisoire ~ X.XX €` + retry CTA discret, `AbortController` sur unmount. | `resources/js/helpers/kioskPricingPreview.js` (extension) + `KioskWizardComponent.vue` (UI pill) | 1 h 30 | Vitest `kioskPricingPreviewResilience.spec.js::times_out_at_3s`, `retries_on_5xx_with_backoff`, `falls_back_to_local_total`, `aborts_on_unmount` |
+| 9.3.15 | Focus + scroll memory + a11y transitions — `focus` sur 1er control interactif au step change, scroll memory bidirectionnel (mémorise/restaure `scrollTop` quand on revient en arrière), `aria-live="polite"` announce step title, focus ring ≥ 3 px compatible gants. | `resources/js/helpers/kioskWizardFocusA11y.js` (nouveau) + `KioskWizardComponent.vue` (hooks step change) + styles focus ring | 1 h | Vitest `kioskWizardFocusA11y.spec.js::focuses_first_interactive_on_step_change`, `restores_scroll_on_back`, `aria_live_region_announces_step` |
 
-**Gate P9.3.** Admin renomme un attribut en EN/AR → wizard continue à fonctionner. Prix identiques client/serveur à ±0,01 €. E2E Playwright happy-path passe.
+**Gate P9.3.** Admin renomme un attribut en EN/AR → wizard continue à fonctionner. Prix identiques client/serveur à ±0,01 €. Double-tap → 1 transition. F5 mid-wizard < 10 min → reprise des sélections. Preview timeout 3 s → fallback local visible. E2E Playwright happy-path passe.
 
 ---
 
