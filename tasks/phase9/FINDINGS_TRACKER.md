@@ -17,7 +17,7 @@
 
 | id | title | criticity | file:line | status | commit_sha | verifier_agent_run |
 |---|---|---|---|---|---|---|
-| 9.1.1 | Exposer `is_available` + `allergens[]` dans `NormalItemResource` | P0 | `app/Http/Resources/NormalItemResource.php` | open | — | — |
+| 9.1.1 | Exposer `is_available` + `allergens[]` dans `NormalItemResource` | P0 | `app/Http/Resources/NormalItemResource.php:35-71` | fixed | (pending) | — |
 | 9.1.2 | Intégrer `KsAllergenBadge` persistent dans header wizard | P0 | `resources/js/components/frontend/kiosk/KioskWizardComponent.vue:17-29` | open | — | — |
 | 9.1.3 | Câbler `/api/frontend/pricing/preview` (debounce 400 ms) | P0 | `resources/js/helpers/kioskPricing.js` + `KioskWizardComponent.vue` | open | — | — |
 | 9.1.4 | Listener `InvalidateKioskMenuCacheOnItemAvailabilityChanged` | P0 | `app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php` + `EventServiceProvider.php` | open | — | — |
