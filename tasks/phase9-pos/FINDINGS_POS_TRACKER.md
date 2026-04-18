@@ -31,7 +31,7 @@
 | POS-GA-F-14 | P0 | `OrderService::destroy` physique sans branch check, sans event, sans ActionLog | `app/Services/OrderService.php:1585-1598`, `app/Http/Controllers/Admin/PosOrderController.php:59-68`, `routes/api.php:628` | POS-9.1 | — | resolved (POS-9.1.2) |
 | POS-GA-F-15 | P0 | Drawer POS ne centralise que kiosk cash (1 source sur 5+) | `resources/js/components/admin/pos/PosComponent.vue:1018-1040` | POS-9.6 | — | open |
 | POS-GA-F-16 | P0 | `BranchIsolationTest` est un placeholder (`assertTrue(true)`) | `tests/Feature/BranchIsolationTest.php:9-13` | POS-9.1 | sync | resolved (POS-9.1.3) |
-| POS-GA-F-17 | P0 | Dine-in et table selector hardcodés `v-if="false"` | `resources/js/components/admin/pos/PosComponent.vue:121, 235` | POS-9.1 | — | open |
+| POS-GA-F-17 | P0 | Dine-in et table selector hardcodés `v-if="false"` | `resources/js/components/admin/pos/PosComponent.vue:121, 235` | POS-9.1 | — | resolved (POS-9.1.6 — flag pos_dine_in_enabled) |
 | POS-GA-F-18 | P0 | Aucune intégration TPE — PAID marqué sans preuve d'encaissement | `resources/js/components/admin/pos/PaymentComponent.vue:64-67, 207-211`, `app/Http/Requests/PosOrderRequest.php:60` | POS-9.7 | — | open |
 | POS-GA-F-19 | P0 | Aucune ouverture tiroir depuis POS | `resources/js/components/admin/pos/PaymentComponent.vue:191-277`, `resources/js/services/kioskHardware.js:259-262` | POS-9.5 | — | open |
 | POS-GA-F-20 | P0 | Ticket TVA non ventilée par taux (art. 242 nonies A CGI) | `resources/js/components/admin/pos/ReceiptComponent.vue:105-112` | POS-9.8 | — | open |

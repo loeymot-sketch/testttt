@@ -117,8 +117,10 @@
 
                 <div class="db-field-radio-group gap-1 active-group">
 
-                    <!-- Dine-In masqué : uniquement Emporter et Livraison -->
-                    <label v-if="false" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
+                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false).
+                         Enable via /api/admin/settings.pos.dine_in_enabled = 1 once floor-plan + table
+                         selector UX is validated. Logic kept live so flipping the flag is zero-code. -->
+                    <label v-if="dineInEnabled" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
                         class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
                         <div class="custom-radio sm">
                             <input ref="dineInInput" type="radio" id="dinein" name="orderType"
@@ -231,8 +233,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Table selector masqué -->
-                <div v-if="false" ref="dineInDiv" id="dine" class="h-auto hidden transition">
+                <!-- [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag -->
+                <div v-if="dineInEnabled" ref="dineInDiv" id="dine" class="h-auto hidden transition">
                     <div class="mt-3">
                         <div class="db-field flex-grow">
                             <vue-select
@@ -806,6 +808,16 @@ export default {
         },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        /**
+         * [POS-9.1.6] POS dine-in feature flag.
+         * Reads `pos_dine_in_enabled` from the frontend settings store;
+         * defaults to FALSE so a regressed/empty backend stays safe.
+         */
+        dineInEnabled: function () {
+            const s = this.setting || {};
+            const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+            return String(raw) === '1' || raw === true;
         },
         categories: function () {
             return this.$store.getters["posCategory/lists"];
