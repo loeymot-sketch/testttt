@@ -1,4 +1,20 @@
 {
+    "allergens": {
+        "gluten": "Gluten",
+        "crustaceans": "Crustaceans",
+        "eggs": "Eggs",
+        "fish": "Fish",
+        "peanuts": "Peanuts",
+        "soy": "Soy",
+        "milk": "Milk",
+        "tree_nuts": "Tree nuts",
+        "celery": "Celery",
+        "mustard": "Mustard",
+        "sesame": "Sesame",
+        "sulphites": "Sulphites",
+        "lupin": "Lupin",
+        "molluscs": "Molluscs"
+    },
     "menu": {
         "dashboard": "Dashboard",
         "settings": "Settings",
@@ -896,15 +912,44 @@
         "order_sent": "Your order has been sent to the kitchen.",
         "present_counter": "Please go to the counter with your number.",
         "loyalty_points_earned": "{name}, you earn +{points} loyalty points!",
-        "item_added": "{name} was added to your cart",
-        "article_singular": "item",
-        "article_plural": "items",
-        "discount_loyalty": "Loyalty discount",
-        "validate_order": "Place order",
-        "add_more_items": "Add more items",
-        "loyalty_prompt": "Do you have a loyalty card?",
-        "loyalty_applied": "Loyalty applied (-{amount})",
-        "edit_item_aria": "Edit this item",
+        "cash_instruction": {
+            "title": "Go to the counter",
+            "subtitle": "Show your order number to a staff member",
+            "order_label": "Order number",
+            "amount_label": "Amount due",
+            "help": "Cash payment at the counter only.",
+            "cta_understood": "I understand",
+            "auto_redirect": "Returning to home in {n} s"
+        },
+        "error": {
+            "back_home": "Back to home",
+            "retry": "Try again",
+            "call_staff": "Call a staff member",
+            "network": {
+                "title": "Connection lost",
+                "subtitle": "We can't reach the ordering service right now.",
+                "hint": "Please wait a moment or ask a staff member for help."
+            },
+            "menu_unavailable": {
+                "title": "Menu temporarily unavailable",
+                "subtitle": "We couldn't load the menu right now.",
+                "hint": "Please wait or go to the counter."
+            },
+            "product_removed": {
+                "title": "This item is no longer available",
+                "subtitle": "It was removed from the menu during your order.",
+                "hint": "You can go back to the menu and pick another item.",
+                "cta_back_menu": "Back to menu"
+            },
+            "payment_refused": {
+                "title": "Payment declined",
+                "subtitle": "Your transaction could not be completed.",
+                "hint": "You can try again, pay at the counter, or cancel the order.",
+                "cta_retry": "Try payment again",
+                "cta_pay_counter": "Pay at the counter",
+                "cta_cancel": "Cancel order"
+            }
+        },
         "select_option": "Choose an option",
         "points_value": "Points value",
         "enter_amount": "Enter amount",
@@ -923,7 +968,50 @@
             "abandon_order": "Cancel my order",
             "pay": "Pay",
             "badge_new": "New",
-            "badge_customize": "Customize"
+            "badge_customize": "Customize",
+            "add": "Add {name}",
+            "categories_nav_label": "Category navigation",
+            "cart_summary_label": "Cart and checkout",
+            "open_cart_label": "Open cart — {n} items",
+            "badge_chef_pick": "Chef's pick",
+            "filters_label": "Dietary filters",
+            "filters_reset": "Clear all"
+        },
+        "filters": {
+            "halal": "Halal",
+            "vegetarian": "Vegetarian",
+            "pork_free": "Pork-free",
+            "gluten_free": "Gluten-free",
+            "spicy": "Spicy",
+            "under_10": "Under €10"
+        },
+        "badges": {
+            "chef_pick": "Chef's pick",
+            "new": "New",
+            "halal": "Halal",
+            "vegetarian": "Vegetarian",
+            "spicy": "Spicy",
+            "pork_free": "Pork-free",
+            "gluten_free": "Gluten-free"
+        },
+        "allergens": {
+            "warning_aria": "Warning: this product contains an allergen you declared.",
+            "list_aria": "Allergens"
+        },
+        "promo": {
+            "aria_label": "Active offers",
+            "badge_label": "Offer",
+            "code_label": "Code",
+            "code_aria": "Promo code {code}",
+            "min_cart": "Minimum {value}"
+        },
+        "inactivity": {
+            "title": "Still there?",
+            "desc": "Your order will be cleared in",
+            "second": "second",
+            "seconds": "seconds",
+            "stay": "I'm here",
+            "leave": "Abandon order"
         },
         "offline_queue": {
             "title": "Order saved",
@@ -1055,7 +1143,34 @@
             "fb_menu_ok": "Menu reloaded — {count} items",
             "fb_menu_err": "Reload error: {detail}",
             "test_ticket_name": "Test receipt",
-            "unknown_detail": "unknown"
+            "unknown_detail": "unknown",
+            "section_health": "Hardware health",
+            "health_state_label": "Overall status:",
+            "health_ok": "Operational",
+            "health_degraded": "Degraded",
+            "health_critical": "Critical",
+            "health_unknown": "Unknown",
+            "health_badge_hint": "Last hardware healthcheck",
+            "health_refresh": "Refresh status",
+            "health_refresh_busy": "Checking…",
+            "fb_health_refreshed": "Hardware status refreshed",
+            "section_idle": "Idle timeouts",
+            "idle_hint": "Adjust the delays before returning to idle. Values are applied immediately.",
+            "idle_field": "Return to idle (ms)",
+            "idle_confirm_field": "Warning before reset (ms)",
+            "idle_receipt_field": "Receipt screen auto-close (ms)",
+            "idle_range": "Between {min}s and {max}s",
+            "idle_save": "Save",
+            "idle_saving": "Saving…",
+            "idle_reset_defaults": "Reset to defaults",
+            "fb_idle_saved": "Idle timeouts saved",
+            "section_consent": "GDPR consent",
+            "consent_hint": "Manually toggle consents (debug/maintenance). The visitor is still prompted via the consent dialog.",
+            "consent_analytics": "Anonymous analytics enabled",
+            "consent_loyalty": "Loyalty signup allowed",
+            "consent_save": "Save",
+            "consent_saving": "Saving…",
+            "fb_consent_saved": "Consent updated"
         },
         "loyalty_screen": {
             "title": "Loyalty programme",
@@ -1094,7 +1209,8 @@
             "toast_discount": "Discount of {amount} applied!",
             "toast_saved": "Loyalty saved — points credited after the order",
             "toast_welcome": "Welcome {name}! Loyalty account created.",
-            "register_error_generic": "Could not sign up. Try again."
+            "register_error_generic": "Could not sign up. Try again.",
+            "consent_required": "Sign-up cancelled. Your consent is required to create a loyalty account."
         },
         "app": {
             "init_loading": "Starting…",
@@ -1211,6 +1327,7 @@
                 "pain": {
                     "title": "Choose your bread type",
                     "hint": "Select a bread type to continue",
+                    "empty_hint": "No bread available for this product.",
                     "default_bread": "Bread",
                     "default_galette": "Flatbread"
                 },
@@ -1230,6 +1347,9 @@
                     "complete": "Complete",
                     "hint_need_one": "Select {n} more meat to continue",
                     "hint_need_many": "Select {n} more meats to continue",
+                    "empty_hint": "No meat available for this product.",
+                    "add_one": "Add a portion of {name}",
+                    "remove_one": "Remove a portion of {name}",
                     "fallback_poulet": "Chicken",
                     "fallback_boeuf": "Beef",
                     "fallback_merguez": "Merguez",
@@ -1258,7 +1378,8 @@
                     "without": "WITHOUT",
                     "summary_zero": "No toppings selected",
                     "summary_one": "{n} topping selected",
-                    "summary_many": "{n} toppings selected"
+                    "summary_many": "{n} toppings selected",
+                    "empty_hint": "No topping available for this product."
                 }
             },
             "confirmation": {
@@ -1281,6 +1402,61 @@
                 "receipt_thanks": "Thank you for visiting!",
                 "receipt_present": "Present this ticket at the counter."
             }
+        },
+        "order_type_label": "Order type",
+        "decrease_qty": "Decrease quantity",
+        "increase_qty": "Increase quantity",
+        "quantity_of": "Quantity of {name}",
+        "a11y": {
+            "title": "Accessibility & language",
+            "open": "Accessibility settings",
+            "close": "Close",
+            "done": "Done",
+            "reset": "Reset",
+            "language": "Language",
+            "contrast": "Contrast",
+            "contrast_aa": "Standard",
+            "contrast_aa_hint": "WCAG 2.2 AA contrast",
+            "contrast_aaa": "Enhanced",
+            "contrast_aaa_hint": "AAA contrast • 7:1",
+            "pmr": "Reduced mobility",
+            "pmr_hint": "Larger text, wider tap targets",
+            "audio": "Audio assistance",
+            "audio_hint": "Voice read-out (EN/FR)",
+            "audio_description": "Detailed audio description",
+            "audio_description_hint": "Speaks buttons, prices and choices aloud (EAA 2025)",
+            "reduced_motion": "Reduced motion",
+            "reduced_motion_hint": "Disables animations and scrolling (WCAG 2.3.3)",
+            "virtual_keyboard_label": "Virtual keyboard",
+            "vkeyb_clear": "Clear all",
+            "vkeyb_clear_short": "Clear",
+            "vkeyb_space": "Space",
+            "vkeyb_space_short": "Space",
+            "vkeyb_backspace": "Delete last character",
+            "vkeyb_submit": "Confirm",
+            "vkeyb_submit_short": "OK"
+        },
+        "consent": {
+            "title": "Loyalty programme",
+            "subtitle": "Your preferences & benefits",
+            "description": "We can remember your food preferences and allergens to speed up your next orders. Your consent is optional and can be revoked at any time.",
+            "checkbox_loyalty": "I agree to save my food preferences",
+            "checkbox_analytics": "I agree to anonymous usage analytics to improve the service",
+            "checkbox_mobile_transfer": "I agree to transfer my order to my mobile (final QR)",
+            "privacy_link": "Read the privacy policy",
+            "cta_accept": "Continue",
+            "cta_decline": "Continue without saving",
+            "required_loyalty": "Tick this box to enable loyalty.",
+            "success_loyalty": "Preferences saved. Thank you!",
+            "error_generic": "Unable to save. Please try again.",
+            "privacy_close": "Close privacy policy"
+        },
+        "hardware": {
+            "unavailable_title": "Service temporarily unavailable",
+            "printer_error": "Receipt printer issue",
+            "tpe_error": "Payment terminal issue",
+            "call_staff": "Please call a staff member",
+            "degraded_service": "Degraded service — some features are limited"
         }
     }
 }

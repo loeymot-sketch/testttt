@@ -292,7 +292,11 @@ export default {
       return this.localChoice === 'full' || this.localChoice === 'boisson';
     },
     showFritesSauce() {
-      return this.localChoice === 'full' || this.localChoice === 'frites';
+      if (this.localChoice !== 'full' && this.localChoice !== 'frites') return false;
+      // [AUDIT 2026-04-17 C5] Politique catégorie : sauce déjà incluse via
+      // l'étape principale Sauce — on ne redemande pas pour les frites.
+      if (this.sauceIncludedFromCategory) return false;
+      return true;
     },
     menuFritesUpgradeRows() {
       if (!this.item?.extras || !this.item.has_menu) return [];
@@ -323,16 +327,14 @@ export default {
     fritesSauceList() {
       return this.fritesSauceRows;
     },
+    // [AUDIT 2026-04-17 C1] Plus de fallback hardcodé. La liste des sauces
+    // frites provient EXCLUSIVEMENT du catalogue (mêmes variations que
+    // l'étape Sauce). Si vide, l'option « Sans sauce » reste exposée
+    // pour permettre au client d'avancer.
     fritesSauceRows() {
       const fromCatalog = kioskSauceVariationRowsForItem(this.item);
-      if (fromCatalog.length > 0) {
+      if (fromCatalog.length === 0) {
         return [
-          ...fromCatalog.map((r) => ({
-            key: r.rowKey,
-            name: r.name,
-            emoji: r.emoji,
-            thumb: r.thumb || null,
-          })),
           {
             key: 'sans',
             name: this.$t('kiosk.wizard.frites_sauce.sans'),
@@ -341,21 +343,26 @@ export default {
           },
         ];
       }
-      const legacy = ['ketchup', 'mayo', 'algerienne', 'bbq', 'samourai', 'sans'];
-      return legacy.map((key) => ({
-        key,
-        name: this.$t(`kiosk.wizard.frites_sauce.${key}`),
-        emoji:
-          {
-            ketchup: '🍅',
-            mayo: '🥚',
-            algerienne: '🌶️',
-            bbq: '🔥',
-            samourai: '⚔️',
-            sans: '🚫',
-          }[key] || '🥄',
-        thumb: null,
-      }));
+      return [
+        ...fromCatalog.map((r) => ({
+          key: r.rowKey,
+          name: r.name,
+          emoji: r.emoji,
+          thumb: r.thumb || null,
+        })),
+        {
+          key: 'sans',
+          name: this.$t('kiosk.wizard.frites_sauce.sans'),
+          emoji: '🚫',
+          thumb: null,
+        },
+      ];
+    },
+    // [AUDIT 2026-04-17 C5] Si la catégorie applique sauce_included_menu,
+    // la sauce principale couvre aussi les frites — on masque la section
+    // « sauce frites » pour éviter le doublon visuel.
+    sauceIncludedFromCategory() {
+      return Boolean(this.item?.sauce_included_menu);
     },
     boissonList() {
       const boissonAddons = kioskDrinkAddonRowsFromItem(this.item);
@@ -391,6 +398,20 @@ export default {
         }
       },
     },
+  },
+  mounted() {
+    // [AUDIT 2026-04-17 C5] Politique catégorie default_menu_kiosk :
+    // si la catégorie impose la formule par défaut ET que le client n'a
+    // encore rien choisi ET que l'item a réellement un menu disponible,
+    // pré-sélectionner « full » pour réduire la friction.
+    if (
+      this.localChoice === null &&
+      this.item?.has_menu &&
+      this.item?.default_menu_kiosk &&
+      this.boissonList.length > 0
+    ) {
+      this.selectChoice('full');
+    }
   },
   methods: {
     bundledUpgradeExtraIds() {

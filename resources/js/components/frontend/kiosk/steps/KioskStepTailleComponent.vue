@@ -1,13 +1,19 @@
 <template>
   <div class="kiosk-step-taille">
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.taille.title') }}</h3>
-    <div class="kiosk-taille-grid">
+    <div class="kiosk-taille-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.step.taille.title')">
       <div
         v-for="option in tailleOptions"
         :key="option.key"
         class="kiosk-taille-card"
         :class="{ selected: localSelection === option.key }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localSelection === option.key"
+        :aria-label="`${option.label} (${option.viandesLabel})`"
         @click="selectTaille(option)"
+        @keydown.enter.prevent="selectTaille(option)"
+        @keydown.space.prevent="selectTaille(option)"
       >
         <div v-if="option.displayThumb && !brokenTailleThumbs[tailleThumbKey(option)]" class="kiosk-taille-media">
           <img
@@ -164,6 +170,11 @@ export default {
 
 .kiosk-taille-card::after { display: none; }
 .kiosk-taille-card:active { transform: scale(0.96); }
+
+.kiosk-taille-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-taille-card.selected {
   border-color: rgba(232,0,28,0.18);

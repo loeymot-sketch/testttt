@@ -1,13 +1,24 @@
 <template>
   <div class="kiosk-step-pain">
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.pain.title') }}</h3>
-    <div class="kiosk-pain-grid">
+
+    <div v-if="painList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.pain.empty_hint') }}</p>
+    </div>
+
+    <div v-else class="kiosk-pain-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.step.pain.title')">
       <div
         v-for="pain in painList"
         :key="pain.id ?? pain.name"
         class="kiosk-option-card"
         :class="{ selected: localSelection === (pain.id ?? pain.name) }"
+        role="radio"
+        tabindex="0"
+        :aria-checked="localSelection === (pain.id ?? pain.name)"
+        :aria-label="pain.name"
         @click="selectPain(pain)"
+        @keydown.enter.prevent="selectPain(pain)"
+        @keydown.space.prevent="selectPain(pain)"
       >
         <div class="kiosk-pain-media">
           <img
@@ -25,7 +36,7 @@
         <span v-else class="kiosk-pain-action">+</span>
       </div>
     </div>
-    <div v-if="!localSelection" class="kiosk-validation-hint" role="status" aria-live="polite">
+    <div v-if="painList.length > 0 && !localSelection" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ $t('kiosk.wizard.step.pain.hint') }}
     </div>
   </div>
@@ -54,29 +65,32 @@ export default {
       return this.painList.length > 0 && typeof this.painList[0].id === 'number';
     },
 
+    // [AUDIT 2026-04-17 C1] Liste 100% catalogue — plus de fallback hardcodé.
+    // Si le produit ne déclare pas d'attribut Pain/Galette, l'étape affiche
+    // un état vide (et n'aurait même pas dû être ouverte par le wizard :
+    // shouldShowStep('pain') couvre déjà ce cas en amont).
     painList() {
-      if (!this.item?.itemAttributes) return this.getDefaultPainList();
-
-      const painAttr = this.item.itemAttributes.find(a =>
-        (a.name || '').toLowerCase().includes('pain') ||
-        (a.name || '').toLowerCase().includes('galette')
+      const attrs = Array.isArray(this.item?.itemAttributes)
+        ? this.item.itemAttributes
+        : Object.values(this.item?.itemAttributes || {});
+      const painAttr = attrs.find(a =>
+        (a?.name || '').toLowerCase().includes('pain') ||
+        (a?.name || '').toLowerCase().includes('galette')
       );
-      if (!painAttr?.id) {
-        return this.getDefaultPainList();
-      }
+      if (!painAttr?.id) return [];
 
       const list = kioskVariationsForAttribute(this.item, painAttr.id);
-      if (!list?.length) {
-        return this.getDefaultPainList();
-      }
+      if (!Array.isArray(list) || list.length === 0) return [];
 
-      return list.map(v => ({
-        id: v.id,
-        name: v.name,
-        emoji: this.getEmojiForPain(v.name),
-        attrId: painAttr.id,
-        displayThumb: kioskResolveImageSrc(v),
-      }));
+      return list
+        .filter(v => v != null && Number(v.status) !== 10)
+        .map(v => ({
+          id: v.id,
+          name: v.name,
+          emoji: this.getEmojiForPain(v.name),
+          attrId: painAttr.id,
+          displayThumb: kioskResolveImageSrc(v),
+        }));
     },
   },
   watch: {
@@ -91,14 +105,6 @@ export default {
     onPainThumbError(pain) {
       const k = this.painThumbKey(pain);
       this.brokenPainThumbs = { ...this.brokenPainThumbs, [k]: true };
-    },
-    getDefaultPainList() {
-      // IDs are null when we have no catalog data — wizard buildCartItem will
-      // only add pain to item_variations when id is a real integer.
-      return [
-        { id: null, name: this.$t('kiosk.wizard.step.pain.default_bread'), emoji: '🥖', attrId: null, displayThumb: null },
-        { id: null, name: this.$t('kiosk.wizard.step.pain.default_galette'), emoji: '🥙', attrId: null, displayThumb: null },
-      ];
     },
     getEmojiForPain(name) {
       const lower = (name || '').toLowerCase();
@@ -161,6 +167,18 @@ export default {
 .kiosk-option-card::after { display: none; }
 
 .kiosk-option-card:active { transform: scale(0.96); }
+
+.kiosk-option-card:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
+
+.kiosk-step-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
 
 .kiosk-option-card.selected {
   border-color: rgba(232,0,28,0.18);

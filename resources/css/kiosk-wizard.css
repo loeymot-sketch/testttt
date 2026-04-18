@@ -14,20 +14,23 @@
 
 /* ============================================
    VARIABLES CSS
+   --------------------------------------------
+   [KIOSK-DS V1 Phase 2.0 — 2026-04-18]
+   Les tokens `--kiosk-*` (primary, bg, surface, border, text, success, etc.)
+   sont désormais DÉCLARÉS DANS `./kiosk/tokens.css` (W3C DTCG) chargé via
+   `resources/js/bootstrap-kiosk.js` importé par `app.js`.
+   Historiquement, ce fichier re-déclarait `--kiosk-primary: #E93C3C`
+   (mauvais rouge), `--kiosk-success: #43C6AC` (teal), `--kiosk-bg: #F8F9FA`
+   (cool gray)… qui masquaient la vraie palette FoodKing `#E8001C` / warm.
+   Ces redéclarations sont supprimées pour laisser les tokens officiels
+   devenir source de vérité et permettre aux atoms DS de fonctionner.
+   Seules les variables PROPRES à ce fichier (non-colliding) restent ici.
    ============================================ */
 :root {
-  --kiosk-primary: #E93C3C;
-  --kiosk-primary-dark: #d43535;
-  --kiosk-success: #43C6AC;
-  --kiosk-bg: #F8F9FA;
+  /* Variables PROPRES à kiosk-wizard.css (non présentes dans tokens.css) */
   --kiosk-card-bg: #FFFFFF;
-  --kiosk-border: #EFF0F6;
-  --kiosk-text: #1a1a2e;
-  --kiosk-text-muted: #666666;
-  --kiosk-touch-min: 64px;
   --kiosk-spacing: 16px;
   --kiosk-radius: 16px;
-  --kiosk-radius-lg: 20px;
   --kiosk-font-normal: 18px;
   --kiosk-font-large: 24px;
   --kiosk-font-xl: 32px;

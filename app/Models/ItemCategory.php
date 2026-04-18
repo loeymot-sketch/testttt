@@ -19,6 +19,7 @@ class ItemCategory extends Model implements HasMedia
 
     protected $table = "item_categories";
     protected $fillable = [
+        'parent_id',
         'name', 'slug', 'description', 'status', 'sort',
         // [PLAN_11 ARCH-01] Config wizard
         'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
@@ -28,6 +29,7 @@ class ItemCategory extends Model implements HasMedia
     ];
     protected $casts = [
         'id'                  => 'integer',
+        'parent_id'           => 'integer',
         'name'                => 'string',
         'slug'                => 'string',
         'description'         => 'string',
@@ -117,5 +119,47 @@ class ItemCategory extends Model implements HasMedia
     public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Item::class)->where(['status' => Status::ACTIVE]);
+    }
+
+    /**
+     * Kiosk Design V1 — Phase 1.2 : hiérarchie à 2 niveaux max.
+     * La profondeur est enforced côté service (`ItemCategoryHierarchyService`),
+     * pas via trigger SQL.
+     */
+    public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /**
+     * Retourne 0 (racine), 1 (enfant) ou 2 (petit-enfant).
+     * Utilisé par les services pour prévenir les hiérarchies profondes.
+     */
+    public function depth(): int
+    {
+        if ($this->parent_id === null) {
+            return 0;
+        }
+        if ($this->parent && $this->parent->parent_id === null) {
+            return 1;
+        }
+        return 2;
+    }
+
+    /**
+     * True si l'ajout/déplacement sous `$potentialParent` maintient la
+     * profondeur ≤ 2 (cf. master prompt §1.1 phase 1.1).
+     */
+    public static function canAttachUnder(?self $potentialParent): bool
+    {
+        if ($potentialParent === null) {
+            return true;
+        }
+        return $potentialParent->parent_id === null;
     }
 }

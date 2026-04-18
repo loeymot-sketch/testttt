@@ -1,7 +1,7 @@
 <template>
-  <div class="kiosk-confirmation">
-    <!-- Animated success checkmark -->
-    <div class="kiosk-confirmation-anim">
+  <div class="kiosk-confirmation" role="status" aria-live="polite" data-testid="kiosk-confirmation-root">
+    <!-- Animated success checkmark (décoratif) -->
+    <div class="kiosk-confirmation-anim" aria-hidden="true">
       <svg class="kiosk-check-svg" viewBox="0 0 120 120" fill="none">
         <circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
         <circle
@@ -24,17 +24,19 @@
       </svg>
     </div>
 
-    <h1 class="kiosk-confirmation-title">{{ $t('kiosk.confirmation.title') }}</h1>
+    <h1 class="kiosk-confirmation-title" data-testid="kiosk-confirmation-title">
+      {{ $t('kiosk.confirmation.title') }}
+    </h1>
 
-    <div class="kiosk-confirmation-card">
+    <div class="kiosk-confirmation-card" data-testid="kiosk-confirmation-card">
       <div class="kiosk-confirmation-row">
         <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.order_number') }}</span>
-        <span class="kiosk-confirmation-number">#{{ displayNumber }}</span>
+        <span class="kiosk-confirmation-number" data-testid="kiosk-confirmation-number">#{{ displayNumber }}</span>
       </div>
       <!-- [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly -->
       <div v-if="displayTotal !== null && displayTotal !== undefined" class="kiosk-confirmation-row">
         <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.total_paid') }}</span>
-        <span class="kiosk-confirmation-price">{{ formatPrice(displayTotal) }}</span>
+        <span class="kiosk-confirmation-price" data-testid="kiosk-confirmation-total">{{ formatPrice(displayTotal) }}</span>
       </div>
     </div>
 
@@ -73,6 +75,8 @@
       :class="{ 'is-printing': printStatus === 'printing', 'is-done': printStatus === 'done', 'is-error': printStatus === 'error' }"
       @click="printReceipt"
       :disabled="printStatus === 'printing'"
+      :aria-busy="printStatus === 'printing'"
+      data-testid="kiosk-confirmation-cta-print"
     >
       <span v-if="printStatus === 'printing'">⏳ {{ $t('kiosk.confirmation.printing') }}</span>
       <span v-else-if="printStatus === 'done'">✅ {{ $t('kiosk.confirmation.printed') }}</span>
@@ -80,7 +84,7 @@
       <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome">
+    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
       {{ $t('kiosk.confirmation.new_order') }} →
     </button>
   </div>

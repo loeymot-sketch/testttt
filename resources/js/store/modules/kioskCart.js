@@ -64,7 +64,14 @@ export const kioskCart = {
                 const ext  = parseFloat(state.items[existing].item_extra_total) || 0;
                 state.items[existing].total = parseFloat(((base + varE + ext) * qty).toFixed(2));
             } else {
-                const newItem = { ...item, quantity: item.quantity || 1 };
+                // [PHASE9 W-P1-5 FIX] Clamp quantity even for new lines (previously
+                // only merged lines were clamped, creating an asymmetric contract
+                // where a fresh-line quantity=99 was shipped as-is to server).
+                const rawQty = Number(item.quantity || 1);
+                const newItem = {
+                    ...item,
+                    quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY)),
+                };
                 // Ensure total is always present
                 if (!newItem.total) {
                     const base = parseFloat(newItem.convert_price) || 0;

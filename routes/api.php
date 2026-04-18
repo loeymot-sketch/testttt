@@ -917,6 +917,51 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
         ->middleware(['auth:sanctum', 'throttle:30,1'])
         ->name('kiosk.event');
+
+    /* ================================================================
+     * Kiosk Design V1 — Phase 1 (master prompt)
+     * ================================================================
+     * Nouvelles routes kiosk scoped par `KioskMachine::branch_id`.
+     * Les routes historiques (/coupon-checking, /kiosk-upsell,
+     * /loyalty/register, /kiosk-event) RESTENT actives et intactes.
+     */
+
+    // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
+    Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
+        ->middleware(['auth:sanctum'])
+        ->name('frontend.menu.kiosk');
+
+    // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
+    Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->name('frontend.pricing.preview');
+
+    // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
+    Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.promo.validate');
+
+    // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
+    Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
+        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->name('frontend.upsell.suggest');
+
+    // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
+    Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
+        ->middleware(['throttle:5,1'])
+        ->name('frontend.loyalty.opt-in');
+
+    // Phase 8.3 — POST /api/frontend/loyalty/scan : résolution QR/NFC kiosk.
+    // Auth Sanctum + kiosk:order ability — Scan invoqué depuis le parcours
+    // client. Toujours HTTP 200 pour ne pas bloquer le parcours (invariant §12).
+    Route::post('/loyalty/scan', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'scan'])
+        ->middleware(['auth:sanctum', 'throttle:20,1'])
+        ->name('frontend.loyalty.scan');
+
+    // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
+    Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.kiosk.event');
 });
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {

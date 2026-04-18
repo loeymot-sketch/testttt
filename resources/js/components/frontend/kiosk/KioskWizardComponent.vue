@@ -170,8 +170,11 @@ import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../help
 import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
-import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../helpers/kioskMenuBundledExtras';
 import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
+import { partitionKioskExtras } from '../../../helpers/kioskExtrasPartition';
+import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
+// Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
 export default {
   name: 'KioskWizardComponent',
@@ -419,46 +422,44 @@ export default {
       if (/\b1\s*viandes?\b/i.test(name)) return 1;
       return 1;
     },
+    // [AUDIT 2026-04-17 C2] shouldShowStep s'aligne désormais sur les helpers
+    // partitionKioskExtras / kioskSauceVariationRowsForItem / kioskViandeCatalog
+    // pour garantir une cohérence stricte avec ce que chaque étape va réellement
+    // afficher. Une étape n'apparaît dans le bandeau que si elle aura du contenu.
     shouldShowStep(type) {
       const item = this.resolvedItem;
       if (!item) return false;
+
       if (type === 'supplements') {
-        return item.extras && item.extras.some(e => {
-          const price = parseFloat(e.convert_price || e.price || 0);
-          const groupLabel = (e.group_label || '').toLowerCase();
-          const name = (e.name || '').toLowerCase();
-          const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
-          if (price <= 0 || isSauce) return false;
-          if (kioskIsBundledFritesMenuUpgradeExtra(e, item)) return false;
-          return true;
-        });
+        return partitionKioskExtras(item).supplements.length > 0;
       }
       if (type === 'garnitures') {
-        return item.extras && item.extras.some(e => parseFloat(e.convert_price || e.price || 0) === 0);
+        return partitionKioskExtras(item).garnitures.length > 0;
       }
       if (type === 'sauce') {
-        // [AUDIT 2026-04-17 D6] Accept common synonyms so a category named
-        // "Condiment", "Assaisonnement", "Dressing" or "Dip" still triggers
-        // the sauce step. Stays aligned with
-        // KioskStepSauceComponent.isSauceLikeAttributeName.
-        if (!item?.itemAttributes) return false;
-        return item.itemAttributes.some(a => {
-          const name = (a.name || '').toLowerCase();
-          return name.includes('sauce')
-            || name.includes('condiment')
-            || name.includes('assaisonn')
-            || name.includes('dressing')
-            || name.includes('dip');
-        });
+        return kioskSauceVariationRowsForItem(item).length > 0;
       }
       if (type === 'menu') {
-        return item.has_menu && item.addons && item.addons.length > 0;
+        // [AUDIT 2026-04-17] L'étape « menu » expose la question Menu vs Seul ;
+        // elle doit apparaître dès que le produit est éligible (has_menu),
+        // même si la carte boissons ou les upgrades frites sont vides.
+        return item.has_menu === true;
       }
       if (type === 'viande') {
-        return this.detectViandeCount() > 0 && this.hasViandeVariations();
+        return this.detectViandeCount() > 0 && kioskViandeCatalogForItem(item).length > 0;
       }
-      // Only show tacos size step when the selected product is generic and
-      // does not already encode M/L/XL/XXL or number of meats in its own name.
+      if (type === 'pain') {
+        const attrs = Array.isArray(item.itemAttributes)
+          ? item.itemAttributes
+          : Object.values(item.itemAttributes || {});
+        const painAttr = attrs.find(a =>
+          (a?.name || '').toLowerCase().includes('pain') ||
+          (a?.name || '').toLowerCase().includes('galette')
+        );
+        if (!painAttr?.id) return false;
+        const list = kioskVariationsForAttribute(item, painAttr.id);
+        return Array.isArray(list) && list.some(v => v && Number(v.status) !== 10);
+      }
       if (type === 'taille') return this.shouldAskTacosTaille();
       return true;
     },
@@ -496,33 +497,35 @@ export default {
         realId: null,
       };
     },
+    // [AUDIT 2026-04-17 C2] Remplacé par kioskViandeCatalogForItem dans
+    // shouldShowStep. Conservé en alias d'entrée publique pour rétro-compat.
     hasViandeVariations() {
-      const item = this.resolvedItem;
-      if (!item) return false;
-      const hasViandeAttr = item.itemAttributes?.some(a =>
-        (a.name || '').toLowerCase().includes('viande')
-      );
-      if (hasViandeAttr) return true;
-      const hasViandeExtra = item.extras?.some(e =>
-        ((e.group_label || '').toLowerCase().includes('viande') ||
-         (e.name || '').toLowerCase().includes('viande')) &&
-        parseFloat(e.convert_price || e.price || 0) > 0
-      );
-      return !!hasViandeExtra;
+      return kioskViandeCatalogForItem(this.resolvedItem).length > 0;
     },
     updateSelection(key, value, meta) {
       this.selections[key] = value;
-      // Steps send meta for accurate catalog ID mapping when DB data is available
       if (key === 'pain' && meta) {
         this.selections._painMeta = meta;
       }
-      // [AUDIT-P2] Store taille meta so detectViandeCount() can use the explicit choice
       if (key === 'taille' && meta) {
         this.selections._tailleMeta = meta;
-        // Reset viande selections when taille changes — the new count may differ
         this.selections.viandes = {};
         this.selections.totalViandes = 0;
         this.selections._viandeMeta = [];
+      }
+      // [AUDIT 2026-04-17 C12] Purge _boissonMeta quand menuChoice retire la
+      // boisson (none/frites). Empêche un fantôme de boisson dans le récap
+      // après que le client ait changé d'avis.
+      if (key === 'menuChoice') {
+        if (value === 'none' || value === 'frites') {
+          this.selections.boissonChoice = null;
+          this.selections._boissonMeta = null;
+        }
+        if (value === 'none' || value === 'boisson') {
+          this.selections.fritesSauceOrder = [];
+          this.selections.fritesSauce = null;
+          this.selections._fritesSauceMeta = null;
+        }
       }
       if (key === 'boissonChoice') {
         if (meta) {
@@ -534,12 +537,15 @@ export default {
       if (key === 'fritesSauceOrder') {
         this.selections.fritesSauceOrder = Array.isArray(value) ? [...value] : [];
         this.selections.fritesSauce = this.selections.fritesSauceOrder[0] ?? null;
+        if (this.selections.fritesSauceOrder.length === 0) {
+          this.selections._fritesSauceMeta = null;
+        }
       }
       if (key === 'fritesSauce' && meta) {
         this.selections._fritesSauceMeta = meta;
       }
       if (key === '_viandeMeta') {
-        this.selections._viandeMeta = value; // value is the meta array here
+        this.selections._viandeMeta = value;
       }
     },
     kioskNormalizeItemAttributes(attrs) {
@@ -606,6 +612,16 @@ export default {
       return sanitizeKioskCustomerFacingText(name || '');
     },
     // formatPrice() provided by kioskPriceMixin
+    emitWizardStepEntered(stepType, idx = null) {
+      if (!stepType) return;
+      try {
+        kioskAnalytics.track('wizard_step_entered', {
+          item_id: this.resolvedItem?.id || null,
+          step: stepType,
+          step_index: idx !== null ? idx : this.currentStepIndex,
+        });
+      } catch (_) { /* silent */ }
+    },
     nextStep() {
       if (this.currentStepIndex < this.activeSteps.length - 1) {
         this.currentStepIndex++;
@@ -824,18 +840,18 @@ export default {
         allVariationNames['Pain'] = painMeta.name;
       }
 
-      // Viande variation — first selected viande maps to item_variations when DB ID exists
+      // [AUDIT 2026-04-17 C3] Viande : la première variation choisie alimente
+      // item_variations (mappage attribut). Les viandes-extras payantes sont
+      // gérées plus bas via normalizedExtras (un extra par unité).
       const viandeMeta = this.selections._viandeMeta || [];
-      if (viandeMeta.length > 0 && item.itemAttributes) {
+      const firstVariationViande = viandeMeta.find(v => v.source === 'variation' && typeof v.id === 'number');
+      if (firstVariationViande && item.itemAttributes) {
         const viandeAttr = item.itemAttributes.find(a =>
           (a.name || '').toLowerCase().includes('viande')
         );
         if (viandeAttr && item.variations?.[viandeAttr.id]) {
-          const firstViande = viandeMeta[0];
-          if (typeof firstViande.id === 'number') {
-            allVariations[viandeAttr.id] = firstViande.id;
-            allVariationNames[viandeAttr.name] = firstViande.name;
-          }
+          allVariations[viandeAttr.id] = firstVariationViande.id;
+          allVariationNames[viandeAttr.name] = firstVariationViande.name;
         }
       }
 
@@ -887,6 +903,21 @@ export default {
           if (extra) {
             itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
           }
+        }
+      });
+
+      // [AUDIT 2026-04-17 C3] Viandes payantes (source='extra') : ajoutées
+      // à item_extras avec quantité (1 entrée par unité) pour rester
+      // compatible avec le serveur qui calcule le total à partir d'un tableau
+      // d'IDs d'extras, et incluses dans item_extra_total côté client pour
+      // cohérence avec calculateKioskRunningTotal.
+      viandeMeta.forEach(v => {
+        if (v.source !== 'extra' || typeof v.id !== 'number') return;
+        const count = parseInt(v.count || 0, 10) || 0;
+        const price = parseFloat(v.price || 0) || 0;
+        for (let i = 0; i < count; i++) {
+          normalizedExtras.push({ id: v.id, name: v.name || '' });
+          itemExtraTotal += price;
         }
       });
 
@@ -1021,6 +1052,47 @@ export default {
     } else if (this.itemId) {
       this.fetchItemById(this.itemId);
     }
+    // Phase 8.8 — fire first wizard_step_entered event.
+    this.$nextTick(() => this.emitWizardStepEntered(this.currentStep?.type));
+  },
+  beforeDestroy() {
+    // Phase 8.8 — wizard closed without completion (global abandon).
+    if (this.currentStep && this.currentStepIndex < (this.activeSteps?.length || 0) - 1) {
+      try {
+        kioskAnalytics.track('wizard_abandoned', {
+          item_id: this.resolvedItem?.id || null,
+          step: this.currentStep?.type || null,
+          step_index: this.currentStepIndex,
+        });
+      } catch (_) { /* silent */ }
+    }
+  },
+  watch: {
+    currentStepIndex(newIdx, oldIdx) {
+      if (newIdx === oldIdx) return;
+      const steps = this.activeSteps || [];
+      const prev = steps[oldIdx];
+      const next = steps[newIdx];
+      if (prev && newIdx > oldIdx) {
+        try {
+          kioskAnalytics.track('wizard_step_completed', {
+            item_id: this.resolvedItem?.id || null,
+            step: prev.type,
+            step_index: oldIdx,
+          });
+        } catch (_) { /* silent */ }
+      } else if (prev && newIdx < oldIdx) {
+        try {
+          kioskAnalytics.track('wizard_step_abandoned', {
+            item_id: this.resolvedItem?.id || null,
+            step: prev.type,
+            step_index: oldIdx,
+            direction: 'back',
+          });
+        } catch (_) { /* silent */ }
+      }
+      if (next) this.emitWizardStepEntered(next.type, newIdx);
+    },
   },
 };
 </script>

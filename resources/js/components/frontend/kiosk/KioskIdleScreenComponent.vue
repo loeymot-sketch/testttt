@@ -1,17 +1,54 @@
 <template>
-  <div class="kiosk-idle" @touchstart.prevent="handleIdleTouch" @click="handleIdleClick">
+  <div
+    class="kiosk-idle"
+    role="button"
+    tabindex="0"
+    :aria-label="$t('kiosk.idle_screen.default_tap_hint', tapHint)"
+    data-testid="kiosk-idle-root"
+    @touchstart.prevent="handleIdleTouch"
+    @click="handleIdleClick"
+    @keydown.enter.prevent="startOrder"
+    @keydown.space.prevent="startOrder"
+  >
     <!-- [PHASE-37] Language selector — only if multiple languages enabled -->
-    <div v-if="enabledLanguages.length > 1" class="kiosk-lang-selector" @click.stop>
+    <div
+      v-if="enabledLanguages.length > 1"
+      class="kiosk-lang-selector"
+      role="group"
+      :aria-label="$t('kiosk.choose_language')"
+      data-testid="kiosk-idle-lang-selector"
+      @click.stop
+    >
       <button
         v-for="lang in enabledLanguages"
         :key="lang"
         class="kiosk-lang-btn"
         :class="{ active: currentLocale === lang }"
+        :aria-pressed="String(currentLocale === lang)"
+        :data-testid="`kiosk-idle-lang-${lang}`"
         @click="changeLanguage(lang)"
       >
         {{ languageLabels[lang] }}
       </button>
     </div>
+
+    <!-- [PHASE-4.4] A11y settings button — opens drawer with lang/AAA/PMR/audio -->
+    <button
+      type="button"
+      class="kiosk-idle-a11y-btn"
+      :aria-label="$t('kiosk.a11y.open')"
+      data-testid="kiosk-idle-a11y-btn"
+      @click.stop="openSettings"
+      @keydown.enter.stop.prevent="openSettings"
+      @keydown.space.stop.prevent="openSettings"
+    >
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+        <path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        <path d="M12 4v1M12 19v1M4 12h1M19 12h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </button>
+    <KsA11ySettings v-model="settingsOpen" @click.stop />
 
     <!-- Vidéo de fond -->
     <video
@@ -34,21 +71,21 @@
     <div class="kiosk-idle-content">
       <!-- Logo restaurant -->
       <div class="kiosk-idle-logo-wrap" v-if="restaurantLogo">
-        <img :src="restaurantLogo" class="kiosk-idle-logo" alt="Logo" />
+        <img :src="restaurantLogo" class="kiosk-idle-logo" alt="" data-testid="kiosk-idle-logo" />
       </div>
-      <h1 v-else class="kiosk-idle-brand">{{ restaurantName }}</h1>
+      <h1 v-else class="kiosk-idle-brand" data-testid="kiosk-idle-brand">{{ restaurantName }}</h1>
 
       <!-- Message principal -->
       <div class="kiosk-idle-headline">
-        <h2 class="kiosk-idle-title">{{ welcomeTitle }}</h2>
+        <h2 class="kiosk-idle-title" data-testid="kiosk-idle-title">{{ welcomeTitle }}</h2>
         <p class="kiosk-idle-subtitle">{{ welcomeSubtitle }}</p>
       </div>
 
-      <!-- CTA animé Splash-style -->
-      <div class="kiosk-idle-cta">
+      <!-- CTA animé Splash-style — décoratif, a11y géré au niveau du .kiosk-idle root -->
+      <div class="kiosk-idle-cta" aria-hidden="true">
         <div class="kiosk-idle-pulse-ring" />
         <div class="kiosk-idle-pulse-ring delay-1" />
-        <div class="kiosk-idle-touch-btn">
+        <div class="kiosk-idle-touch-btn" data-testid="kiosk-idle-touch-btn">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
             <path d="M24 8C15.2 8 8 15.2 8 24s7.2 16 16 16 16-7.2 16-16S32.8 8 24 8zm0 28c-6.6 0-12-5.4-12-12S17.4 12 24 12s12 5.4 12 12-5.4 12-12 12zm-2-8l8-4-8-4v8z" fill="white"/>
           </svg>
@@ -59,7 +96,7 @@
     </div>
 
     <!-- Bas de page -->
-    <div class="kiosk-idle-footer">
+    <div class="kiosk-idle-footer" aria-hidden="true">
       <div class="kiosk-idle-footer-dot" v-for="n in 3" :key="n" :class="{ active: activeDot === n }" />
     </div>
   </div>
@@ -68,10 +105,13 @@
 <script>
 // [PHASE-37] Multi-language support
 import { setLocale, getCurrentLocale } from '../../../i18n';
+// [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
+import KsA11ySettings from './ds/KsA11ySettings.vue';
 
 export default {
   name: 'KioskIdleScreenComponent',
   emits: ['start-order'],
+  components: { KsA11ySettings },
   data() {
     return {
       activeDot: 1,
@@ -82,6 +122,7 @@ export default {
       welcomeTitle: '',
       welcomeSubtitle: '',
       tapHint: '',
+      settingsOpen: false,
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
         fr: 'FR',
@@ -142,9 +183,15 @@ export default {
       // [PHASE-37] Change locale and reload page to apply RTL if needed
       if (this.currentLocale !== lang) {
         setLocale(lang);
+        // [PHASE-4.4] Mettre à jour le store kioskSettings — useKioskA11y
+        //             applique data-kiosk-* / lang / dir sans reload.
+        try { this.$store.dispatch('kioskSettings/setLocale', lang); } catch (_) {}
         // Force reload to apply RTL and re-render all translations
         window.location.reload();
       }
+    },
+    openSettings() {
+      this.settingsOpen = true;
     },
     startDotAnimation() {
       this.dotTimer = setInterval(() => {
@@ -255,32 +302,32 @@ export default {
 }
 
 .kiosk-idle-brand {
-  font-size: 52px;
-  font-weight: 900;
+  font-size: calc(var(--kiosk-font-size-hero, 64px) * var(--kiosk-text-scale, 1));
+  font-weight: var(--kiosk-font-weight-black, 900);
   color: white;
   margin: 0;
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  letter-spacing: -1px;
+  letter-spacing: var(--kiosk-letter-spacing-tight, -1px);
 }
 
 .kiosk-idle-headline {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--kiosk-space-2, 8px);
 }
 
 .kiosk-idle-title {
-  font-size: 48px;
-  font-weight: 900;
+  font-size: calc(var(--kiosk-font-size-display, 48px) * var(--kiosk-text-scale, 1));
+  font-weight: var(--kiosk-font-weight-black, 900);
   color: white;
   margin: 0;
   text-shadow: 0 2px 16px rgba(0,0,0,0.4);
-  letter-spacing: -0.5px;
+  letter-spacing: var(--kiosk-letter-spacing-tight, -0.5px);
   animation: fadeInUp 0.8s ease;
 }
 
 .kiosk-idle-subtitle {
-  font-size: 22px;
+  font-size: calc(var(--kiosk-font-size-subtitle, 22px) * var(--kiosk-text-scale, 1));
   color: rgba(255,255,255,0.75);
   margin: 0;
   animation: fadeInUp 0.8s ease 0.2s both;
@@ -336,11 +383,17 @@ export default {
 }
 
 .kiosk-idle-tap-hint {
-  font-size: 20px;
+  font-size: calc(var(--kiosk-font-size-body, 20px) * var(--kiosk-text-scale, 1));
   color: rgba(255,255,255,0.85);
   margin: 0;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--kiosk-letter-spacing-wide, 0.5px);
   animation: fadeInUp 0.8s ease 0.4s both;
+}
+
+/* A11y focus ring on the root interactive zone */
+.kiosk-idle:focus-visible {
+  outline: var(--kiosk-focus-width, 4px) solid var(--kiosk-focus-ring, #2563EB);
+  outline-offset: -8px;
 }
 
 /* Footer dots */
@@ -420,5 +473,44 @@ export default {
 [dir="rtl"] .kiosk-lang-selector {
   right: auto;
   left: 24px;
+}
+
+/* [PHASE-4.4] A11y settings button — bas gauche, discret mais accessible.
+   Taille conforme PMR (56x56 minimum), focus visible.                   */
+.kiosk-idle-a11y-btn {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  min-width: var(--kiosk-tap-min, 56px);
+  min-height: var(--kiosk-tap-min, 56px);
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.45);
+  color: rgba(255,255,255,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.kiosk-idle-a11y-btn:hover {
+  background: rgba(0,0,0,0.7);
+  border-color: rgba(255,255,255,0.55);
+}
+
+.kiosk-idle-a11y-btn:active { transform: scale(0.96); }
+
+.kiosk-idle-a11y-btn:focus-visible {
+  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, #fff);
+  outline-offset: 3px;
+}
+
+[dir="rtl"] .kiosk-idle-a11y-btn {
+  left: auto;
+  right: 24px;
 }
 </style>

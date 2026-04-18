@@ -1,8 +1,8 @@
 <template>
-  <div class="kiosk-catalogue">
+  <div class="kiosk-catalogue" data-testid="kiosk-categories-root">
     <div class="kiosk-catalogue-header">
       <div class="kiosk-catalogue-brand">
-        <div class="kiosk-brand-thumb-wrap">
+        <div class="kiosk-brand-thumb-wrap" aria-hidden="true">
           <img
             v-if="selectedCategory && (selectedCategory.image_full_path || selectedCategory.image)"
             :src="selectedCategory.image_full_path || selectedCategory.image"
@@ -13,60 +13,106 @@
         </div>
         <div class="kiosk-catalogue-breadcrumb">
           <span class="kiosk-breadcrumb-muted">{{ $t('kiosk.catalog.nos') }}</span>
-          <span class="kiosk-breadcrumb-current">{{ selectedCategoryDisplayName || $t('kiosk.catalog.products_fallback') }}</span>
+          <span
+            class="kiosk-breadcrumb-current"
+            data-testid="kiosk-categories-breadcrumb"
+          >{{ selectedCategoryDisplayName || $t('kiosk.catalog.products_fallback') }}</span>
         </div>
       </div>
 
       <div class="kiosk-catalogue-top-actions">
-        <button class="kiosk-top-chip" type="button" disabled>
-          <span class="kiosk-top-chip-icon">👤</span>
+        <button
+          class="kiosk-top-chip"
+          type="button"
+          disabled
+          :aria-label="$t('kiosk.catalog.my_account')"
+          data-testid="kiosk-categories-top-account"
+        >
+          <span class="kiosk-top-chip-icon" aria-hidden="true">👤</span>
           {{ $t('kiosk.catalog.my_account') }}
         </button>
-        <button class="kiosk-top-chip" type="button" disabled>
-          <span class="kiosk-top-chip-icon">i</span>
+        <button
+          class="kiosk-top-chip"
+          type="button"
+          disabled
+          :aria-label="$t('kiosk.catalog.allergens')"
+          data-testid="kiosk-categories-top-allergens"
+        >
+          <span class="kiosk-top-chip-icon" aria-hidden="true">i</span>
           {{ $t('kiosk.catalog.allergens') }}
         </button>
       </div>
     </div>
 
+    <!-- Phase 8.5 — Bandeau promos (server-driven, jamais calculé côté client) -->
+    <KioskPromoCarouselComponent />
+
     <!-- [C2] Offline snapshot banner — shown when menu is served from IndexedDB cache -->
     <transition name="slide-down">
-      <div v-if="fromCache && !loading" class="kiosk-cache-banner">
-        <span class="kiosk-cache-banner-icon">📡</span>
+      <div
+        v-if="fromCache && !loading"
+        class="kiosk-cache-banner"
+        role="status"
+        aria-live="polite"
+        data-testid="kiosk-categories-cache-banner"
+      >
+        <span class="kiosk-cache-banner-icon" aria-hidden="true">📡</span>
         <span>{{ $t('kiosk.catalog.cache_banner') }}</span>
       </div>
     </transition>
 
-    <div v-if="loading" class="kiosk-catalogue-loading">
-      <div class="kiosk-spinner" />
+    <div
+      v-if="loading"
+      class="kiosk-catalogue-loading"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-categories-loading"
+    >
+      <div class="kiosk-spinner" aria-hidden="true" />
       <p>{{ $t('kiosk.catalog.loading_menu') }}</p>
     </div>
 
-    <div v-else-if="!loading && categories.length === 0" class="kiosk-catalogue-empty">
-      <div v-if="loadError" class="kiosk-catalogue-error">
-        <span class="kiosk-catalogue-error-icon">📡</span>
+    <div
+      v-else-if="!loading && categories.length === 0"
+      class="kiosk-catalogue-empty"
+      data-testid="kiosk-categories-empty"
+    >
+      <div v-if="loadError" class="kiosk-catalogue-error" role="alert">
+        <span class="kiosk-catalogue-error-icon" aria-hidden="true">📡</span>
         <p>{{ $t('kiosk.catalog.load_error_title') }}</p>
-        <button class="kiosk-catalogue-retry-btn" @click="loadCatalogue">{{ $t('kiosk.retry') }}</button>
+        <button
+          class="kiosk-catalogue-retry-btn"
+          @click="loadCatalogue"
+          data-testid="kiosk-categories-retry"
+        >{{ $t('kiosk.retry') }}</button>
       </div>
       <p v-else>{{ $t('kiosk.catalog.no_categories') }}</p>
     </div>
 
     <template v-else>
       <div class="kiosk-catalogue-body">
-        <aside class="kiosk-sidebar">
+        <aside
+          class="kiosk-sidebar"
+          :aria-label="$t('kiosk.catalog.categories_nav_label')"
+          role="navigation"
+          data-testid="kiosk-categories-sidebar"
+        >
           <button
             v-for="cat in sidebarCategories"
             :key="cat.kioskRowKey"
             class="kiosk-sidebar-item"
             :class="{ active: isCategoryActive(cat) }"
+            :aria-current="isCategoryActive(cat) ? 'page' : undefined"
+            :aria-label="displayCategoryName(cat)"
+            :data-testid="`kiosk-categories-sidebar-item-${cat.id}`"
             @click="selectCategory(cat)"
           >
             <span class="kiosk-sidebar-name">{{ displayCategoryName(cat) }}</span>
-            <div class="kiosk-sidebar-thumb-wrap">
+            <div class="kiosk-sidebar-thumb-wrap" aria-hidden="true">
               <img
                 v-if="cat.image_full_path || cat.image"
                 :src="cat.image_full_path || cat.image"
-                :alt="displayCategoryName(cat)"
+                :alt="''"
                 class="kiosk-sidebar-thumb"
                 loading="lazy"
               />
@@ -77,7 +123,11 @@
           </button>
         </aside>
 
-        <main ref="productZone" class="kiosk-product-zone">
+        <main
+          ref="productZone"
+          class="kiosk-product-zone"
+          data-testid="kiosk-categories-products"
+        >
           <!-- Transition locale (le shell ne refait plus slide-left à chaque ?cat= — voir KioskAppComponent) -->
           <transition name="kiosk-cat-pane" mode="out-in">
             <div
@@ -85,14 +135,42 @@
               class="kiosk-product-zone-transition"
             >
               <div class="kiosk-product-zone-header">
-                <h1 class="kiosk-zone-title">{{ selectedCategoryDisplayName }}</h1>
-                <p class="kiosk-zone-subtitle">
+                <h1 class="kiosk-zone-title" data-testid="kiosk-categories-zone-title">{{ selectedCategoryDisplayName }}</h1>
+                <p class="kiosk-zone-subtitle" data-testid="kiosk-categories-zone-count">
                   {{ filteredProducts.length }}
                   {{ filteredProducts.length > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
                 </p>
               </div>
 
-              <div class="kiosk-product-grid">
+              <!-- Phase 8.4 — Filter chips row (DATA_CONTRACT §9.3) -->
+              <div
+                class="kiosk-filter-bar"
+                role="group"
+                :aria-label="$t('kiosk.catalog.filters_label') || 'Filtres'"
+                data-testid="kiosk-filter-bar"
+              >
+                <KsFilterChip
+                  v-for="f in kioskFilterDefs"
+                  :key="f.key"
+                  :filter="f.key"
+                  :icon="f.icon"
+                  :label="$t(f.i18n) || f.key"
+                  :active="activeFilters.includes(f.key)"
+                  :data-testid="`kiosk-filter-${f.key}`"
+                  @toggle="toggleFilter"
+                />
+                <button
+                  v-if="activeFilters.length > 0"
+                  type="button"
+                  class="kiosk-filter-reset"
+                  @click="resetFilters"
+                  data-testid="kiosk-filter-reset"
+                >
+                  {{ $t('kiosk.catalog.filters_reset') || 'Tout effacer' }}
+                </button>
+              </div>
+
+              <div class="kiosk-product-grid" role="list">
                 <div
                   v-for="product in filteredProducts"
                   :key="product.id"
@@ -102,6 +180,7 @@
                   tabindex="0"
                   :aria-label="sanitizeItemName(product.name)"
                   :aria-busy="loadingItemId === product.id ? 'true' : 'false'"
+                  :data-testid="`kiosk-product-card-${product.id}`"
                   @click="openProduct(product)"
                   @keydown.enter.prevent="openProduct(product)"
                   @keydown.space.prevent="openProduct(product)"
@@ -110,15 +189,20 @@
                     <img
                       v-if="product.thumb || product.image"
                       :src="product.thumb || product.image"
-                      :alt="sanitizeItemName(product.name)"
+                      :alt="''"
                       class="kiosk-product-image"
                       loading="lazy"
+                      aria-hidden="true"
                     />
-                    <div v-else class="kiosk-product-image-fallback">
+                    <div v-else class="kiosk-product-image-fallback" aria-hidden="true">
                       <span class="kiosk-product-emoji">{{ getCategoryEmoji(product.name) }}</span>
                     </div>
 
-                    <span v-if="getProductBadge(product)" class="kiosk-product-badge">
+                    <span
+                      v-if="getProductBadge(product)"
+                      class="kiosk-product-badge"
+                      :data-testid="`kiosk-product-badge-${product.id}`"
+                    >
                       {{ getProductBadge(product) }}
                     </span>
 
@@ -127,18 +211,39 @@
                       type="button"
                       @click.stop="openProduct(product)"
                       :disabled="!!loadingItemId"
+                      :aria-label="$t('kiosk.catalog.add', { name: sanitizeItemName(product.name) })"
+                      :data-testid="`kiosk-product-add-${product.id}`"
                     >
-                      <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner"></span>
-                      <span v-else>+</span>
+                      <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner" aria-hidden="true"></span>
+                      <span v-else aria-hidden="true">+</span>
                     </button>
                   </div>
 
                   <div class="kiosk-product-copy">
                     <h3 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h3>
+                    <div v-if="productBadges(product).length" class="kiosk-product-flag-row" aria-hidden="false">
+                      <KsBadge
+                        v-for="b in productBadges(product)"
+                        :key="b.color + b.label"
+                        :color="b.color"
+                        soft
+                        size="sm"
+                      >{{ b.label }}</KsBadge>
+                    </div>
+                    <KsAllergenBadge
+                      v-if="productAllergens(product).length"
+                      compact
+                      :allergens="productAllergens(product)"
+                      :customer-allergens="customerAllergenCodes"
+                      :data-testid="`kiosk-product-allergens-${product.id}`"
+                    />
                     <p v-if="product.description" class="kiosk-product-desc">
                       {{ truncate(product.description, 68) }}
                     </p>
-                    <span class="kiosk-product-price">{{ formatPrice(product.convert_price) }}</span>
+                    <span
+                      class="kiosk-product-price"
+                      :data-testid="`kiosk-product-price-${product.id}`"
+                    >{{ formatPrice(product.convert_price) }}</span>
                   </div>
                 </div>
               </div>
@@ -147,10 +252,21 @@
         </main>
       </div>
 
-      <div class="kiosk-bottom-bar">
+      <div
+        class="kiosk-bottom-bar"
+        role="region"
+        :aria-label="$t('kiosk.catalog.cart_summary_label')"
+        data-testid="kiosk-categories-bottom-bar"
+      >
         <div class="kiosk-bottom-summary">
-          <button class="kiosk-bottom-cart" @click="goToCart" :disabled="cartCount === 0">
-            <span class="kiosk-bottom-cart-icon">
+          <button
+            class="kiosk-bottom-cart"
+            @click="goToCart"
+            :disabled="cartCount === 0"
+            :aria-label="$t('kiosk.catalog.open_cart_label', { n: cartCount })"
+            data-testid="kiosk-categories-cart-indicator"
+          >
+            <span class="kiosk-bottom-cart-icon" aria-hidden="true">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                 <circle cx="10" cy="19" r="1.6" fill="currentColor"/>
@@ -163,15 +279,24 @@
             </span>
           </button>
 
-          <div class="kiosk-bottom-total">{{ formatPrice(cartTotal) }}</div>
+          <div class="kiosk-bottom-total" data-testid="kiosk-categories-cart-total">{{ formatPrice(cartTotal) }}</div>
         </div>
 
         <div class="kiosk-bottom-actions">
-          <button class="kiosk-bottom-abandon" @click="abandonOrder">
+          <button
+            class="kiosk-bottom-abandon"
+            @click="abandonOrder"
+            data-testid="kiosk-categories-abandon"
+          >
             {{ $t('kiosk.catalog.abandon_order') }}
           </button>
 
-          <button class="kiosk-bottom-pay" @click="goToCart" :disabled="cartCount === 0">
+          <button
+            class="kiosk-bottom-pay"
+            @click="goToCart"
+            :disabled="cartCount === 0"
+            data-testid="kiosk-categories-pay"
+          >
             {{ $t('kiosk.catalog.pay') }}
           </button>
         </div>
@@ -195,6 +320,14 @@ import { mapActions, mapGetters, mapState } from 'vuex';
 import KioskWizardComponent from './KioskWizardComponent.vue';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+// [PHASE-6.4] Analytics — event `menu_viewed` au mount, `category_selected` sur clic.
+// [PHASE-8.4/8.8] Ajouts filtres produits + events item_opened.
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
+import { KIOSK_FILTERS, applyKioskFilters, extractAllergenCodes } from '../../../helpers/kioskFilters';
+import KsFilterChip from './ds/KsFilterChip.vue';
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
+import KsBadge from './ds/KsBadge.vue';
+import KioskPromoCarouselComponent from './KioskPromoCarouselComponent.vue';
 
 const EMOJI_MAP = {
   tacos: '🌮', burger: '🍔', sandwich: '🥪', pizza: '🍕',
@@ -205,7 +338,13 @@ const EMOJI_MAP = {
 
 export default {
   name: 'KioskCategoriesComponent',
-  components: { KioskWizardComponent },
+  components: {
+    KioskWizardComponent,
+    KsFilterChip,
+    KsAllergenBadge,
+    KsBadge,
+    KioskPromoCarouselComponent,
+  },
   mixins: [kioskPriceMixin],
   inject: {
     showToast: { default: () => () => {} },
@@ -215,6 +354,17 @@ export default {
       loadError: false,
       activeItem: null,
       loadingItemId: null,
+      // Phase 8.4 — filtres diététiques (stockés en session, pas persistés
+      // hors session — invariant RGPD : pas de profilage sans consent).
+      activeFilters: [],
+      kioskFilterDefs: [
+        { key: 'halal',       icon: '🕌', i18n: 'kiosk.filters.halal' },
+        { key: 'vegetarian',  icon: '🥗', i18n: 'kiosk.filters.vegetarian' },
+        { key: 'pork_free',   icon: '🚫🥓', i18n: 'kiosk.filters.pork_free' },
+        { key: 'gluten_free', icon: '🌾', i18n: 'kiosk.filters.gluten_free' },
+        { key: 'spicy',       icon: '🌶️', i18n: 'kiosk.filters.spicy' },
+        { key: 'under_10',    icon: '💶', i18n: 'kiosk.filters.under_10' },
+      ],
     };
   },
   computed: {
@@ -256,8 +406,16 @@ export default {
       return this.stripLeadingNos(this.selectedCategoryName);
     },
     filteredProducts() {
-      if (!this.selectedCategoryId) return this.allItems || [];
-      return this.kioskCatalogItems;
+      const base = this.selectedCategoryId
+        ? this.kioskCatalogItems
+        : (this.allItems || []);
+      if (!this.activeFilters || this.activeFilters.length === 0) return base;
+      return applyKioskFilters(base, this.activeFilters);
+    },
+    customerAllergenCodes() {
+      // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
+      const cust = this.$store.state.kioskSettings?.customerProfile;
+      return Array.isArray(cust?.declared_allergens) ? cust.declared_allergens : [];
     },
   },
   watch: {
@@ -276,6 +434,13 @@ export default {
     if (!this.$route.query.cat && this.selectedCategoryId) {
       this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
     }
+    // [PHASE-6.4] Analytics : menu chargé / vu par l'utilisateur. Ne pas émettre
+    // l'ID catégorie courante (ça arrive via category_selected quand il clique).
+    try {
+      kioskAnalytics.track('menu_viewed', {
+        categories_count: Array.isArray(this.categories) ? this.categories.length : 0,
+      });
+    } catch (_) {}
   },
   methods: {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
@@ -332,6 +497,15 @@ export default {
       });
       this.replaceCategoryQuery(cat.id, cold);
       this.scrollProductZoneTop();
+      // [PHASE-6.4] Analytics : sélection catégorie. On passe l'ID et le sous-filtre
+      // (cold/hot) pour permettre l'analyse des préférences.
+      try {
+        kioskAnalytics.track('category_selected', {
+          category_id: cat.id,
+          parent_category_id: cat.parent_id ?? cat.parentId ?? null,
+          sandwich_sub: cold ? 'cold' : null,
+        });
+      } catch (_) {}
     },
 
     isCategoryActive(cat) {
@@ -344,6 +518,15 @@ export default {
     async openProduct(product) {
       if (this.loadingItemId) return;
       this.loadingItemId = product.id;
+      // Phase 8.8 — Analytics : item_opened (sans PII ; juste ID + contexte
+      // filtre actif pour analyse de discovery).
+      try {
+        kioskAnalytics.track('item_opened', {
+          item_id: product.id,
+          category_id: product.item_category_id ?? null,
+          active_filters: Array.isArray(this.activeFilters) ? this.activeFilters.slice() : [],
+        });
+      } catch (_) {}
       try {
         // Même contrat que KioskWizard (surface=kiosk) : variations/extras filtrés borne
         const res = await this.$store.dispatch('frontendItem/details', {
@@ -374,18 +557,27 @@ export default {
     },
 
     buildSimpleCartItem(item) {
+      // [AUDIT 2026-04-17 C14] Format normalisé identique à
+      // KioskWizardComponent.buildCartItem :
+      //   - item_variations : Array<{ id, variation_name, name }>
+      //   - item_extras     : Array<{ id, name }>
+      // Évite la divergence de format qui forçait kioskCart.submitOrder à
+      // gérer deux shapes (le legacy { variations, names } et le tableau).
+      const basePrice = parseFloat(item.convert_price) || 0;
       return {
         item_id: item.id,
+        item_category_id: item.item_category_id ?? null,
         name: item.name,
         image: item.thumb || item.cover || item.image || null,
         quantity: 1,
-        convert_price: parseFloat(item.convert_price) || 0,
+        convert_price: basePrice,
         currency_price: item.currency_price,
         discount: 0,
         item_variation_total: 0,
         item_extra_total: 0,
-        item_variations: { variations: {}, names: {} },
-        item_extras: { extras: [], names: [] },
+        item_variations: [],
+        item_extras: [],
+        total: basePrice,
         instruction: null,
       };
     },
@@ -444,17 +636,92 @@ export default {
       if (this.hasOptions(product)) return this.$t('kiosk.catalog.badge_customize');
       return '';
     },
+
+    // Phase 8.4 — badges diététiques (soft, discrets) projetés depuis flags DB.
+    productBadges(product) {
+      const out = [];
+      if (product.is_chef_pick) {
+        out.push({ color: 'chef-pick', label: this.$t('kiosk.badges.chef_pick') || 'Coup de cœur' });
+      }
+      if (product.is_new) {
+        out.push({ color: 'new', label: this.$t('kiosk.badges.new') || 'Nouveau' });
+      }
+      if (product.is_halal) {
+        out.push({ color: 'halal', label: this.$t('kiosk.badges.halal') || 'Halal' });
+      }
+      if (product.is_vegetarian) {
+        out.push({ color: 'veg', label: this.$t('kiosk.badges.vegetarian') || 'Végétarien' });
+      }
+      if (product.is_spicy) {
+        out.push({ color: 'spicy', label: this.$t('kiosk.badges.spicy') || 'Piquant' });
+      }
+      return out;
+    },
+    productAllergens(product) {
+      return extractAllergenCodes(product);
+    },
+    // Phase 8.4 — gestion filtres (en session, pas persistée hors conversation).
+    toggleFilter(key) {
+      if (!KIOSK_FILTERS.includes(key)) return;
+      const idx = this.activeFilters.indexOf(key);
+      if (idx >= 0) {
+        this.activeFilters.splice(idx, 1);
+      } else {
+        this.activeFilters.push(key);
+      }
+      try {
+        kioskAnalytics.track('filter_toggled', {
+          filter: key,
+          active: idx < 0,
+          active_filters: this.activeFilters.slice(),
+          result_count: this.filteredProducts.length,
+        });
+      } catch (_) {}
+    },
+    resetFilters() {
+      if (this.activeFilters.length === 0) return;
+      this.activeFilters = [];
+      try {
+        kioskAnalytics.track('filter_reset', { result_count: this.filteredProducts.length });
+      } catch (_) {}
+    },
   },
 };
 </script>
 
 <style scoped>
+/* Phase 8.4 — Filter bar */
+.kiosk-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kiosk-space-2, 8px);
+  padding: var(--kiosk-space-3, 12px) 0 var(--kiosk-space-4, 16px);
+  align-items: center;
+}
+.kiosk-filter-reset {
+  background: transparent;
+  border: none;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: calc(13px * var(--kiosk-text-scale, 1));
+}
+.kiosk-filter-reset:hover { color: var(--kiosk-primary, #E8001C); }
+
+.kiosk-product-flag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
 .kiosk-catalogue {
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: var(--kiosk-surface);
   overflow: hidden;
   position: relative;
 }
@@ -465,8 +732,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
-  border-bottom: 1px solid #e8e8e8;
+  background: var(--kiosk-surface);
+  border-bottom: 1px solid var(--kiosk-border);
   flex-shrink: 0;
 }
 
@@ -482,11 +749,11 @@ export default {
   height: 56px;
   border-radius: 14px;
   overflow: hidden;
-  background: #f7f7f8;
+  background: var(--kiosk-surface-alt);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--kiosk-shadow-card);
   flex-shrink: 0;
 }
 
@@ -511,14 +778,14 @@ export default {
 .kiosk-breadcrumb-muted {
   font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: var(--kiosk-text-mute);
   letter-spacing: 0.08em;
 }
 
 .kiosk-breadcrumb-current {
   font-size: 26px;
   font-weight: 800;
-  color: #222;
+  color: var(--kiosk-text);
   text-transform: uppercase;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -535,8 +802,8 @@ export default {
   padding: 0 14px;
   border-radius: 999px;
   border: none;
-  background: #e8001c;
-  color: #fff;
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -567,7 +834,7 @@ export default {
   border-bottom: 1px solid rgba(243, 156, 18, 0.35);
   font-size: 13px;
   font-weight: 600;
-  color: #c87f00;
+  color: var(--kiosk-warning);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -581,7 +848,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #777;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-catalogue-loading {
@@ -592,8 +859,8 @@ export default {
 .kiosk-spinner {
   width: 42px;
   height: 42px;
-  border: 3px solid #e3e3e3;
-  border-top-color: #e8001c;
+  border: 3px solid var(--kiosk-border);
+  border-top-color: var(--kiosk-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -610,8 +877,8 @@ export default {
 .kiosk-catalogue-error-icon { font-size: 42px; }
 
 .kiosk-catalogue-retry-btn {
-  background: #e8001c;
-  color: #fff;
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
   border: none;
   border-radius: 999px;
   padding: 12px 24px;
@@ -627,8 +894,8 @@ export default {
 }
 
 .kiosk-sidebar {
-  background: #fff;
-  border-right: 1px solid #ececec;
+  background: var(--kiosk-surface);
+  border-right: 1px solid var(--kiosk-border);
   padding: 12px 10px 90px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -651,12 +918,12 @@ export default {
 }
 
 .kiosk-sidebar-item:active {
-  background: #fafafa;
+  background: var(--kiosk-surface-alt);
 }
 
 .kiosk-sidebar-item.active {
-  border-bottom-color: #e8001c;
-  background: linear-gradient(180deg, rgba(232,0,28,0.06), rgba(232,0,28,0));
+  border-bottom-color: var(--kiosk-primary);
+  background: linear-gradient(180deg, var(--kiosk-primary-soft), transparent);
 }
 
 .kiosk-sidebar-thumb-wrap {
@@ -664,11 +931,11 @@ export default {
   height: 72px;
   border-radius: 14px;
   overflow: hidden;
-  background: #f7f7f8;
+  background: var(--kiosk-surface-alt);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-sidebar-thumb {
@@ -685,7 +952,7 @@ export default {
   font-size: 11px;
   line-height: 1.15;
   font-weight: 700;
-  color: #555;
+  color: var(--kiosk-text-muted);
   text-align: center;
   text-transform: uppercase;
   min-height: 26px;
@@ -694,11 +961,11 @@ export default {
 }
 
 .kiosk-sidebar-item.active .kiosk-sidebar-name {
-  color: #b5162c;
+  color: var(--kiosk-primary-dark);
 }
 
 .kiosk-product-zone {
-  background: #ffffff;
+  background: var(--kiosk-surface);
   overflow-y: auto;
   padding: 12px 18px 110px;
   scrollbar-width: none;
@@ -732,7 +999,7 @@ export default {
   margin: 0;
   font-size: 30px;
   font-weight: 800;
-  color: #2b2b2b;
+  color: var(--kiosk-text);
   text-transform: uppercase;
   letter-spacing: -0.03em;
 }
@@ -740,7 +1007,7 @@ export default {
 .kiosk-zone-subtitle {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #999;
+  color: var(--kiosk-text-mute);
 }
 
 .kiosk-product-grid {
@@ -763,7 +1030,7 @@ export default {
 
 /* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */
 .kiosk-product-card:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: var(--kiosk-focus-width) solid var(--kiosk-focus-ring);
   outline-offset: 3px;
 }
 
@@ -787,7 +1054,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
+  background: var(--kiosk-surface-alt);
   border-radius: 16px;
 }
 
@@ -799,14 +1066,14 @@ export default {
   position: absolute;
   top: 10px;
   left: 18px;
-  background: #d7263d;
+  background: var(--kiosk-primary-dark);
   color: white;
   font-size: 11px;
   font-weight: 800;
   padding: 5px 8px;
   border-radius: 6px;
   transform: rotate(-4deg);
-  box-shadow: 0 2px 8px rgba(215,38,61,0.15);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-product-add {
@@ -817,14 +1084,14 @@ export default {
   height: 38px;
   border: none;
   border-radius: 50%;
-  background: #d7263d;
-  color: #fff;
+  background: var(--kiosk-primary-dark);
+  color: var(--kiosk-text-on-red);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   font-weight: 600;
-  box-shadow: 0 3px 10px rgba(215,38,61,0.25);
+  box-shadow: var(--kiosk-shadow-cta);
   outline: 2px solid rgba(255,255,255,0.85);
 }
 
@@ -836,7 +1103,7 @@ export default {
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
+  border-top-color: var(--kiosk-text-on-red);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -851,7 +1118,7 @@ export default {
   font-size: 23px;
   font-weight: 800;
   line-height: 1.15;
-  color: #b5162c;
+  color: var(--kiosk-primary-dark);
   text-transform: uppercase;
 }
 
@@ -859,7 +1126,7 @@ export default {
   margin: 6px auto 0;
   max-width: 82%;
   font-size: 12px;
-  color: #777;
+  color: var(--kiosk-text-muted);
   line-height: 1.35;
 }
 
@@ -868,7 +1135,7 @@ export default {
   margin-top: 6px;
   font-size: 16px;
   font-weight: 700;
-  color: #222;
+  color: var(--kiosk-text);
 }
 
 .kiosk-bottom-bar {
@@ -879,15 +1146,15 @@ export default {
   height: 96px;
   display: grid;
   grid-template-rows: 40px 56px;
-  background: #fff;
-  border-top: 1px solid #e5e5e5;
+  background: var(--kiosk-surface);
+  border-top: 1px solid var(--kiosk-border);
   z-index: 20;
 }
 
 .kiosk-bottom-summary {
   display: grid;
   grid-template-columns: 1fr auto;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--kiosk-border);
 }
 
 .kiosk-bottom-actions {
@@ -906,19 +1173,19 @@ export default {
 .kiosk-bottom-cart,
 .kiosk-bottom-pay {
   border: none;
-  background: #fff;
+  background: var(--kiosk-surface);
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
 .kiosk-bottom-abandon {
-  color: #c33345;
-  border-right: 1px solid #ececec;
+  color: var(--kiosk-primary-dark);
+  border-right: 1px solid var(--kiosk-border);
 }
 
 .kiosk-bottom-cart {
-  color: #666;
+  color: var(--kiosk-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -942,30 +1209,30 @@ export default {
   padding: 0 18px;
   font-size: 18px;
   font-weight: 800;
-  color: #6a4047;
+  color: var(--kiosk-primary-dark);
   white-space: nowrap;
-  background: #f7e5e8;
+  background: var(--kiosk-primary-soft);
 }
 
 .kiosk-bottom-pay {
-  background: #e0b3ba;
-  color: #7a4a52;
+  background: var(--kiosk-primary-soft);
+  color: var(--kiosk-primary-dark);
 }
 
 .kiosk-bottom-pay:not(:disabled) {
-  background: #e8001c;
-  color: #fff;
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
 }
 
 .kiosk-bottom-pay:disabled {
-  background: #ead6d9;
-  color: #7a4a52;
+  background: var(--kiosk-primary-soft);
+  color: var(--kiosk-primary-dark);
 }
 
 .kiosk-wizard-overlay {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: var(--kiosk-surface);
   z-index: 50;
 }
 

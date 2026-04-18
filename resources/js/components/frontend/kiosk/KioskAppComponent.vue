@@ -86,19 +86,15 @@
       <div v-if="ripple.show" class="kiosk-touch-ripple" :style="rippleStyle" />
     </transition>
 
-    <!-- Modal "Toujours là ?" avant reset idle -->
-    <transition name="fade-scale">
-      <div v-if="showStillHere" class="kiosk-still-here-overlay" @click.stop="dismissStillHere">
-        <div class="kiosk-still-here-modal">
-          <div class="kiosk-still-here-icon">😴</div>
-          <h2 class="kiosk-still-here-title">{{ $t('kiosk.app.still_here_title') }}</h2>
-          <p class="kiosk-still-here-sub">{{ $t('kiosk.app.still_here_sub') }}</p>
-          <button class="kiosk-still-here-btn" @click.stop="dismissStillHere">
-            {{ $t('kiosk.app.still_here_continue') }}
-          </button>
-        </div>
-      </div>
-    </transition>
+    <!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
+         Remplace le modal "Still here" simplifié par un overlay avec countdown
+         + 2 CTA (Je suis là / Abandonner). Conforme WAI-ARIA 1.2 alertdialog. -->
+    <KioskInactivityOverlayComponent
+      :visible="showStillHere"
+      :countdown-ms="inactivityCountdownMs"
+      @stay="dismissStillHere"
+      @leave="onInactivityLeave"
+    />
 
     <!-- Admin panel (accessible via 5 taps rapides sur la zone secrète) -->
     <div
@@ -123,13 +119,21 @@ import { mapGetters, mapActions } from 'vuex';
 import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
 import KioskAdminComponent from './KioskAdminComponent.vue';
 import KioskToastComponent from './KioskToastComponent.vue';
+import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { onEvent } from '../../../services/eventContract';
+// [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
+import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
+// [PHASE-5] Hardware bridge + analytics helpers
+import kioskHardware from '../../../services/kioskHardware';
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
-const IDLE_TIMEOUT_MS  = 180000; // 3 min sans interaction
-const STILL_HERE_MS    = 150000; // Afficher "Toujours là ?" 30s avant reset
+// Fallback defaults si kioskSettings.* absents (pré-hydration).
+const IDLE_FALLBACK_MS = 180000;
+const STILL_HERE_FALLBACK_MS = 30000;
+const HEALTHCHECK_INTERVAL_MS = 90000; // brief §5.2 — 90s
 // Ordre canonique pour l'animation de transition directionnelle
 const ROUTE_ORDER = [
   'kiosk.idle',
@@ -147,7 +151,7 @@ const ROUTE_ORDER = [
 export default {
   name: 'KioskAppComponent',
   mixins: [kioskPriceMixin],
-  components: { ConnectionStatusBanner, KioskAdminComponent, KioskToastComponent },
+  components: { ConnectionStatusBanner, KioskAdminComponent, KioskToastComponent, KioskInactivityOverlayComponent },
 
   // Provide showToast to all kiosk child components via inject('showToast')
   provide() {
@@ -176,6 +180,9 @@ export default {
       _adminTapCount: 0,
       _adminTapTimer: null,
       _eventSub: null,
+      // Phase 5 — healthcheck + hardware listeners
+      _healthcheckTimer: null,
+      _hardwareUnsub: null,
     };
   },
   computed: {
@@ -203,6 +210,15 @@ export default {
       if (p.endsWith('/kiosk/categories')) return 'kiosk-shell-catalog';
       return r.fullPath;
     },
+    /**
+     * Phase 8.7 — Countdown de l'overlay d'inactivité, dérivé de
+     * kioskSettings.confirmMs. Borné [3s, 60s] pour a11y (EAA 2025).
+     */
+    inactivityCountdownMs() {
+      const s = this.$store?.state?.kioskSettings;
+      const raw = Number.isFinite(s?.confirmMs) ? s.confirmMs : 15000;
+      return Math.min(60000, Math.max(3000, raw));
+    },
   },
   watch: {
     $route(to, from) {
@@ -223,6 +239,15 @@ export default {
     this.startIdleTimer();
     this.loadBranch();
     this._loadSettingsIntoGlobalState();
+    // [PHASE-4.4] Applique immédiatement les préférences a11y persistées
+    //             sur le <html> root (AAA/PMR/dir/lang). Les watchers Vuex
+    //             dans _wireA11yWatchers maintiennent la synchro ensuite.
+    applyKioskA11yFromStore(this.$store);
+    this._wireA11yWatchers();
+    // [PHASE-5.2] Healthcheck initial puis périodique (90s) + boot info()
+    this._bootHardware();
+    // [PHASE-5.5] Restaure l'état analytics (consent + branch_id) depuis le store.
+    this._bootAnalyticsGate();
     document.addEventListener('touchstart', this.handleTouch, { passive: true });
     // Start offline sync and check pending count every 15s
     // [FIX-54-4] Pass config (headers) so syncQueue can send X-Idempotency-Key on replay
@@ -251,6 +276,13 @@ export default {
     stopAutoSync();
     document.removeEventListener('touchstart', this.handleTouch);
     this._leaveEchoChannel();
+    // [PHASE-5.2] Stop healthcheck + unsubscribe hardware events
+    if (this._healthcheckTimer) { clearInterval(this._healthcheckTimer); this._healthcheckTimer = null; }
+    if (typeof this._hardwareUnsub === 'function') { try { this._hardwareUnsub(); } catch (_) {} }
+    this._hardwareUnsub = null;
+    // [PHASE-4.4] Dispose les watchers a11y pour éviter les fuites inter-route.
+    this._unwatchA11y && this._unwatchA11y.forEach((fn) => { try { fn(); } catch (_) {} });
+    this._unwatchA11y = [];
     if (window._wsService && this._onWsReconnect) {
       window._wsService.off('connected', this._onWsReconnect);
     }
@@ -259,6 +291,38 @@ export default {
     ...mapActions('kioskCart', ['reset', 'setBranch']),
     ...mapActions('frontendBranch', { loadBranchList: 'lists' }),
     ...mapActions('globalState', { _setGlobalState: 'set' }),
+
+    /**
+     * [PHASE-4.4] Wire des watchers Vuex → attributs <html>.
+     *  Maintient data-kiosk-contrast / data-kiosk-pmr / data-kiosk-audio /
+     *  lang / dir synchronisés avec kioskSettings, sans nécessiter de reload.
+     *  Les disposers sont stockés pour cleanup au beforeUnmount.
+     */
+    _wireA11yWatchers() {
+      const applyLocale = (lang) => {
+        const v = lang || 'fr';
+        document.documentElement.setAttribute('lang', v);
+        document.documentElement.setAttribute('dir', v === 'ar' ? 'rtl' : 'ltr');
+      };
+      this._unwatchA11y = [
+        this.$store.watch(
+          (state) => state.kioskSettings?.contrast,
+          (v) => document.documentElement.setAttribute('data-kiosk-contrast', v || 'aa')
+        ),
+        this.$store.watch(
+          (state) => state.kioskSettings?.pmr,
+          (v) => document.documentElement.setAttribute('data-kiosk-pmr', v ? 'true' : 'false')
+        ),
+        this.$store.watch(
+          (state) => state.kioskSettings?.audio,
+          (v) => document.documentElement.setAttribute('data-kiosk-audio', v ? 'true' : 'false')
+        ),
+        this.$store.watch(
+          (state) => state.kioskSettings?.locale,
+          applyLocale
+        ),
+      ];
+    },
 
     // 5 taps rapides sur la zone secrète (coin bas-gauche) ouvre le panel admin
     handleAdminTap() {
@@ -345,15 +409,26 @@ export default {
       const noTimerRoutes = ['kiosk.idle', 'kiosk.waiting', 'kiosk.payment', 'kiosk.confirmation'];
       if (noTimerRoutes.includes(this.$route?.name)) return;
 
-      // Show "Still there?" warning at STILL_HERE_MS, then reset at IDLE_TIMEOUT_MS
+      // [PHASE-5.3] Lire timeouts depuis kioskSettings store (admin-configurable).
+      // Fallback sur les valeurs historiques si le store n'est pas hydraté.
+      const s = this.$store?.state?.kioskSettings;
+      const idleMs = Number.isFinite(s?.idleMs) ? s.idleMs : IDLE_FALLBACK_MS;
+      const confirmMs = Number.isFinite(s?.confirmMs) ? s.confirmMs : STILL_HERE_FALLBACK_MS;
+      // stillHere s'affiche `confirmMs` avant le reset final : warnAt = idle - confirm.
+      const warnAt = Math.max(1000, idleMs - confirmMs);
+
       this.stillHereTimer = setTimeout(() => {
         this.showStillHere = true;
-      }, STILL_HERE_MS);
+        // [PHASE-6.4] Analytics : warning "Toujours là ?" affiché.
+        try { kioskAnalytics.track('idle_warning_shown', { warn_at_ms: warnAt }); } catch (_) {}
+      }, warnAt);
 
       this.idleTimer = setTimeout(() => {
         this.showStillHere = false;
+        // [PHASE-6.4] Analytics : reset idle effectif (retour écran idle).
+        try { kioskAnalytics.track('idle_reset', { idle_ms: idleMs }); } catch (_) {}
         this.resetKiosk();
-      }, IDLE_TIMEOUT_MS);
+      }, idleMs);
     },
 
     clearIdleTimer() {
@@ -368,7 +443,21 @@ export default {
 
     dismissStillHere() {
       this.showStillHere = false;
+      // [PHASE-6.4 / 8.7] Analytics : l'utilisateur a confirmé sa présence.
+      try { kioskAnalytics.track('idle_reset', { trigger: 'user' }); } catch (_) {}
       this.startIdleTimer();
+    },
+
+    /**
+     * Phase 8.7 — Handler "Abandonner" (bouton OU timeout du countdown).
+     * Vide panier + reset kiosk → écran idle. Cohérent avec l'invariant §12
+     * DATA_CONTRACT (pas de PII persistée après un abandon).
+     */
+    onInactivityLeave() {
+      this.showStillHere = false;
+      try { kioskAnalytics.track('idle_dismissed', { trigger: 'overlay' }); } catch (_) {}
+      try { this.$store.dispatch('kioskSettings/clearCustomerProfile'); } catch (_) {}
+      this.resetKiosk();
     },
 
     handleTouch(e) {
@@ -400,7 +489,94 @@ export default {
     resetKiosk() {
       this.reset();
       this.clearIdleTimer();
+      // [PHASE-5.5] Session analytics éphémère — renouvelée à chaque idle reset.
+      try { kioskAnalytics.resetSession(); } catch (_) {}
       this.$router.push({ name: 'kiosk.idle' });
+    },
+
+    /**
+     * [PHASE-5.2] Boot hardware : healthcheck immédiat + info() + abonnement
+     * événements bridge, puis healthcheck périodique toutes les 90 s.
+     *
+     * Non-bloquant : si le bridge est stub/unavailable, ne fait rien de bruyant.
+     */
+    async _bootHardware() {
+      try {
+        const hc = await kioskHardware.healthcheck();
+        this._reportHealthcheck(hc);
+        if (hc?.state === 'critical') {
+          const inf = await kioskHardware.info();
+          this._reportInfo(inf);
+        }
+      } catch (_) {}
+      // Listener hardware events (printer_paper_out, tpe_disconnected, ...)
+      this._hardwareUnsub = kioskHardware.onHardwareEvent((evt) => {
+        try {
+          kioskHardware.reportHardwareEvent({
+            component: evt?.type?.split('_')[0] || 'unknown',
+            severity: evt?.severity || 'warning',
+            code: evt?.type || 'unknown',
+            extra: evt || {},
+          });
+        } catch (_) {}
+      });
+      // Healthcheck périodique (90s)
+      this._healthcheckTimer = setInterval(async () => {
+        try {
+          const hc = await kioskHardware.healthcheck();
+          this._reportHealthcheck(hc);
+        } catch (_) {}
+      }, HEALTHCHECK_INTERVAL_MS);
+    },
+
+    _reportHealthcheck(hc) {
+      if (!hc) return;
+      try {
+        axios.post('frontend/kiosk-event', {
+          type: 'hardware_health',
+          details: 'state=' + (hc.state || 'unknown') + ' | degradation=' + (hc.degradation || 'unknown'),
+          payload: {
+            state: hc.state || null,
+            degradation: hc.degradation || null,
+            components: hc.components || {},
+          },
+        }).catch(() => {});
+      } catch (_) {}
+    },
+
+    _reportInfo(info) {
+      if (!info?.ok) return;
+      try {
+        axios.post('frontend/kiosk-event', {
+          type: 'hardware_event',
+          details: 'info snapshot',
+          payload: info.data || info,
+        }).catch(() => {});
+      } catch (_) {}
+    },
+
+    /**
+     * [PHASE-5.5] Initialise le gate consent analytics. Consommé par
+     * kioskAnalytics.track() — sans consent, aucun event n'est envoyé.
+     */
+    _bootAnalyticsGate() {
+      try {
+        const s = this.$store?.state?.kioskSettings;
+        kioskAnalytics.setConsent(!!s?.consentAnalytics);
+        const branchId = this.$store?.state?.kioskCart?.branchId;
+        if (branchId) kioskAnalytics.setBranchId(branchId);
+        // Watcher pour refléter les changements live du store.
+        this._unwatchConsent = this.$store.watch(
+          (state) => state.kioskSettings?.consentAnalytics,
+          (v) => { try { kioskAnalytics.setConsent(!!v); } catch (_) {} }
+        );
+        this._unwatchBranchForAnalytics = this.$store.watch(
+          (state) => state.kioskCart?.branchId,
+          (v) => { try { kioskAnalytics.setBranchId(v); } catch (_) {} }
+        );
+        if (!this._unwatchA11y) this._unwatchA11y = [];
+        this._unwatchA11y.push(this._unwatchConsent, this._unwatchBranchForAnalytics);
+      } catch (_) {}
     },
 
     // formatPrice() provided by kioskPriceMixin

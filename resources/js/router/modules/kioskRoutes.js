@@ -16,6 +16,12 @@ const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk" */ 
 const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
 const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
+// [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
+const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
+const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
+const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
+const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
+const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
@@ -199,6 +205,61 @@ export default [
                 component: KioskAdminComponent,
                 meta: { isKiosk: true },
                 beforeEnter: requireKioskAuth,
+            },
+
+            /* ============================================================
+             * [KIOSK-DS V1 Phase 3] Écrans UX critiques
+             * ------------------------------------------------------------
+             * Navigables directement (deep-linkable) ET atteignables via
+             * les évènements émis par les écrans de commande lorsque les
+             * conditions le requièrent (TPE refusé, menu 503, etc.).
+             * ============================================================ */
+            {
+                path: "cash-instruction",
+                name: "kiosk.cash-instruction",
+                component: KioskCashInstructionComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    orderNumber: route.query.number || '',
+                    orderTotal: route.query.total !== undefined && route.query.total !== ''
+                        ? parseFloat(route.query.total)
+                        : null,
+                    autoRedirectSeconds: route.query.timeout !== undefined
+                        ? parseInt(route.query.timeout, 10) || 45
+                        : 45,
+                }),
+            },
+            {
+                path: "error/network",
+                name: "kiosk.error.network",
+                component: KioskErrorNetworkComponent,
+                meta: { isKiosk: true },
+            },
+            {
+                path: "error/menu-unavailable",
+                name: "kiosk.error.menu-unavailable",
+                component: KioskErrorMenuUnavailableComponent,
+                meta: { isKiosk: true },
+            },
+            {
+                path: "error/product-removed",
+                name: "kiosk.error.product-removed",
+                component: KioskErrorProductRemovedComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    productName: route.query.name || null,
+                    itemId: route.query.item_id || null,
+                }),
+            },
+            {
+                path: "error/payment-refused",
+                name: "kiosk.error.payment-refused",
+                component: KioskErrorPaymentRefusedComponent,
+                meta: { isKiosk: true },
+                props: (route) => ({
+                    errorCode: route.query.code || null,
+                    orderId: route.query.order_id || null,
+                }),
             },
         ],
     },

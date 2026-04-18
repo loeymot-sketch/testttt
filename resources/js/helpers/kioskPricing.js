@@ -1,3 +1,5 @@
+import { kioskSumPaidViandesSurcharge } from './kioskViandeCatalog';
+
 const DEFAULT_MENU_PRICING = {
   fullRatio: 1,
   friesRatio: 0.6,
@@ -99,6 +101,21 @@ export function calculateKioskRunningTotal(item, selections = {}) {
   }
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);
+
+  // [PHASE9 W-P0-1 FIX] Surplus viandes marquées `source='extra'` — produites
+  // par le helper kioskViandeCatalog et remontées par KioskStepViande dans
+  // selections._viandeMeta (underscore = contrat officiel wizard). Précédemment
+  // lu sans underscore => toujours falsy => running total sous-évalué pour les
+  // items à viande payante (ex. « Double Steak +2€ »), créant une divergence
+  // silencieuse avec le total du panier (perte revenu + rupture de confiance).
+  // Les viandes payantes sont volontairement exclues de la boucle extras
+  // ci-dessus (voir helper kioskExtrasPartition).
+  const viandeMetaList = Array.isArray(selections._viandeMeta)
+    ? selections._viandeMeta
+    : (Array.isArray(selections.viandeMeta) ? selections.viandeMeta : null);
+  if (viandeMetaList) {
+    total += kioskSumPaidViandesSurcharge(viandeMetaList);
+  }
 
   const rawTotal = total * Math.max(1, parseInt(selections.quantity, 10) || 1);
   return Math.round(rawTotal * 100) / 100;

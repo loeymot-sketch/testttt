@@ -222,6 +222,14 @@
       </div>
     </div>
 
+    <!-- [PHASE-6.3] RGPD consent modal — s'ouvre avant register (qui persiste des PII) -->
+    <KsConsentModal
+      :model-value="showConsentModal"
+      @accept="onConsentAccept"
+      @decline="onConsentDecline"
+      @update:model-value="(v) => { if (!v) showConsentModal = false; }"
+    />
+
     <!-- Étape 3: Confirmation appliquée -->
     <div v-if="step === 'confirmed'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card kiosk-loyalty-confirm-card">
@@ -257,11 +265,17 @@ import { mapActions, mapGetters } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import axios from 'axios';
+// [PHASE-6.3] RGPD — modale de consentement loyalty + analytics injectée
+//             juste avant l'appel API `frontend/loyalty/register` qui persiste les PII.
+import KsConsentModal from './ds/KsConsentModal.vue';
+// [PHASE-6.4] Instrumentation analytics (gated par consent).
+import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
 
 export default {
   name: 'KioskLoyaltyComponent',
   mixins: [kioskPriceMixin],
+  components: { KsConsentModal },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -286,6 +300,9 @@ export default {
       registerEmail:   '',
       registerLoading: false,
       registerError:   null,
+      // [PHASE-6.3] RGPD consent state
+      showConsentModal: false,
+      _pendingRegister: null,
     };
   },
 
@@ -390,33 +407,94 @@ export default {
       this.step = 'confirmed';
     },
 
+    /**
+     * [PHASE-6.3] submitRegister avec gate RGPD.
+     *
+     * Flow :
+     *   1. L'utilisateur remplit nom/téléphone/email puis clique "Je m'inscris".
+     *   2. Si le consent loyalty n'est pas déjà stocké (kioskSettings.consentLoyalty),
+     *      on ouvre la modale KsConsentModal — la requête `/loyalty/register` N'EST
+     *      PAS émise tant que l'utilisateur n'a pas explicitement accepté.
+     *   3. Sur `@accept` : on pose les consents dans le store ET on exécute le POST.
+     *   4. Sur `@decline` : on ferme la modale, on nettoie le payload en attente.
+     *      L'utilisateur peut corriger/retenter.
+     *
+     * Rationale : conforme RGPD opt-in strict (§1.6 master prompt). Les PII
+     * (name/phone/email) ne doivent JAMAIS quitter la borne sans consent explicite.
+     */
     async submitRegister() {
       if (!this.registerName.trim() || !this.registerPhone.trim()) return;
-      this.registerLoading = true;
-      this.registerError = null;
-      try {
-        const res = await axios.post('frontend/loyalty/register', {
+
+      const consentGiven = !!this.$store.state.kioskSettings?.consentLoyalty;
+      if (!consentGiven) {
+        // Prépare le payload et ouvre la modale — l'exécution effective est reprise
+        // dans `onConsentAccept` si l'utilisateur valide.
+        this._pendingRegister = {
           name:  this.registerName.trim(),
           phone: this.registerPhone.trim(),
           email: this.registerEmail.trim() || undefined,
-        });
+        };
+        this.showConsentModal = true;
+        return;
+      }
+
+      // Consent déjà donné : exécuter directement.
+      await this._doSubmitRegister({
+        name:  this.registerName.trim(),
+        phone: this.registerPhone.trim(),
+        email: this.registerEmail.trim() || undefined,
+      });
+    },
+
+    /**
+     * [PHASE-6.3] Exécute l'appel `/loyalty/register` avec les PII saisies,
+     * après que le consent RGPD a été validé. Peut être appelée directement
+     * (consent pré-existant) ou via `onConsentAccept`.
+     */
+    async _doSubmitRegister(payload) {
+      this.registerLoading = true;
+      this.registerError = null;
+      try {
+        const res = await axios.post('frontend/loyalty/register', payload);
         const data = res.data?.data || {};
-        // Registration succeeded — immediately show balance screen with new account
         this.customer = {
-          name:          data.name || this.registerName,
+          name:          data.name || payload.name,
           loyalty_point: parseInt(data.points ?? 0, 10),
           loyalty_code:  data.loyalty_code || '',
         };
-        this.discountValue = 0; // New member: 0 points, no discount yet
+        this.discountValue = 0;
         this.code = data.loyalty_code || '';
         this.showToast(this.$t('kiosk.loyalty_screen.toast_welcome', { name: this.customer.name }), 'success', 3500);
         this.step = 'balance';
+        // [PHASE-6.4] Analytics : registration réussie (anonyme — pas de phone/email ici).
+        try { kioskAnalytics.track('loyalty_scanned', { registration: true }); } catch (_) {}
       } catch (err) {
         const msg = err.response?.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic');
         this.registerError = msg;
       } finally {
         this.registerLoading = false;
       }
+    },
+
+    /**
+     * [PHASE-6.3] Callback du consent modal : si l'utilisateur accepte, on
+     * exécute le register en attente. Le modal gère déjà la persistance store
+     * des consents + le POST `/loyalty/opt-in` interne.
+     */
+    async onConsentAccept() {
+      this.showConsentModal = false;
+      const payload = this._pendingRegister;
+      this._pendingRegister = null;
+      if (!payload) return;
+      await this._doSubmitRegister(payload);
+    },
+
+    onConsentDecline() {
+      this.showConsentModal = false;
+      this._pendingRegister = null;
+      // Pas d'erreur utilisateur — le decline est un choix légitime (RGPD).
+      // L'utilisateur peut soit saisir un code existant, soit quitter l'écran.
+      this.registerError = this.$t('kiosk.loyalty_screen.consent_required');
     },
 
     proceedToPayment() {

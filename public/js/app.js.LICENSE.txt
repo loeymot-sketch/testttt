@@ -1,4 +1,10 @@
 /*!
+  * Bootstrap v5.3.8 (https://getbootstrap.com/)
+  * Copyright 2011-2025 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
+  */
+
+/*!
   * shared v9.14.5
   * (c) 2025 kazuya kawaguchi
   * Released under the MIT License.
@@ -7,6 +13,14 @@
 /*!
  * ApexCharts v5.3.6
  * (c) 2018-2025 ApexCharts
+ */
+
+/*!
+ * Pusher JavaScript Library v8.4.0
+ * https://pusher.com/
+ *
+ * Copyright 2020, Pusher
+ * Released under the MIT licence.
  */
 
 /*!

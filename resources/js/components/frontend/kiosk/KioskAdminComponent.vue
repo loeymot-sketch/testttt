@@ -54,6 +54,16 @@
             <h2>{{ $t('kiosk.admin_screen.panel_title') }}</h2>
             <p class="kiosk-admin-sub">{{ $t('kiosk.admin_screen.panel_sub') }}</p>
           </div>
+          <!-- [PHASE-6.5] Badge hardware health en haut du panel -->
+          <div
+            class="kiosk-admin-health-badge"
+            :class="['tone-' + healthBadge.tone]"
+            data-testid="kiosk-admin-health-badge"
+            :title="$t('kiosk.admin_screen.health_badge_hint')"
+          >
+            <span class="kiosk-admin-health-dot" aria-hidden="true" />
+            <span>{{ healthBadge.label }}</span>
+          </div>
           <button class="kiosk-admin-close" @click="$emit('close')">✕</button>
         </div>
 
@@ -108,6 +118,132 @@
           </button>
         </div>
 
+        <!-- [PHASE-6.5] Hardware health snapshot (détaillé) -->
+        <div class="kiosk-admin-section" data-testid="kiosk-admin-health-section">
+          <h3>{{ $t('kiosk.admin_screen.section_health') }}</h3>
+          <div class="kiosk-admin-status-row">
+            <span>{{ $t('kiosk.admin_screen.health_state_label') }}</span>
+            <span :class="'status-' + healthBadge.tone" data-testid="kiosk-admin-health-state">
+              {{ healthBadge.label }}
+            </span>
+          </div>
+          <div v-if="healthSnapshot?.components" class="kiosk-admin-health-list">
+            <div
+              v-for="(val, key) in healthSnapshot.components"
+              :key="key"
+              class="kiosk-admin-health-item"
+            >
+              <span class="kiosk-admin-health-key">{{ key }}</span>
+              <span class="kiosk-admin-health-val" :class="{ ko: val === false || val === 'error' || val === 'paper_out' }">
+                {{ String(val) }}
+              </span>
+            </div>
+          </div>
+          <button
+            class="kiosk-admin-btn"
+            @click="refreshHealth"
+            :disabled="busy === 'health'"
+            data-testid="kiosk-admin-health-refresh"
+          >
+            <span class="btn-icon">🩺</span>
+            <span>{{ busy === 'health' ? $t('kiosk.admin_screen.health_refresh_busy') : $t('kiosk.admin_screen.health_refresh') }}</span>
+          </button>
+        </div>
+
+        <!-- [PHASE-6.5] Idle timeouts — configurables par staff, persistés localStorage -->
+        <div class="kiosk-admin-section" data-testid="kiosk-admin-idle-section">
+          <h3>{{ $t('kiosk.admin_screen.section_idle') }}</h3>
+          <p class="kiosk-admin-idle-hint">{{ $t('kiosk.admin_screen.idle_hint') }}</p>
+          <div v-if="idleDraft" class="kiosk-admin-idle-grid">
+            <label class="kiosk-admin-field">
+              <span>{{ $t('kiosk.admin_screen.idle_field') }}</span>
+              <input
+                type="number"
+                :min="idleBounds.idleMs.min"
+                :max="idleBounds.idleMs.max"
+                step="1000"
+                v-model.number="idleDraft.idleMs"
+                data-testid="kiosk-admin-idle-idle"
+              />
+              <small>{{ $t('kiosk.admin_screen.idle_range', { min: idleBounds.idleMs.min / 1000, max: idleBounds.idleMs.max / 1000 }) }}</small>
+            </label>
+            <label class="kiosk-admin-field">
+              <span>{{ $t('kiosk.admin_screen.idle_confirm_field') }}</span>
+              <input
+                type="number"
+                :min="idleBounds.confirmMs.min"
+                :max="idleBounds.confirmMs.max"
+                step="500"
+                v-model.number="idleDraft.confirmMs"
+                data-testid="kiosk-admin-idle-confirm"
+              />
+              <small>{{ $t('kiosk.admin_screen.idle_range', { min: idleBounds.confirmMs.min / 1000, max: idleBounds.confirmMs.max / 1000 }) }}</small>
+            </label>
+            <label class="kiosk-admin-field">
+              <span>{{ $t('kiosk.admin_screen.idle_receipt_field') }}</span>
+              <input
+                type="number"
+                :min="idleBounds.receiptMs.min"
+                :max="idleBounds.receiptMs.max"
+                step="1000"
+                v-model.number="idleDraft.receiptMs"
+                data-testid="kiosk-admin-idle-receipt"
+              />
+              <small>{{ $t('kiosk.admin_screen.idle_range', { min: idleBounds.receiptMs.min / 1000, max: idleBounds.receiptMs.max / 1000 }) }}</small>
+            </label>
+          </div>
+          <div class="kiosk-admin-actions-row">
+            <button
+              class="kiosk-admin-btn"
+              @click="saveIdleTimeouts"
+              :disabled="busy === 'idle'"
+              data-testid="kiosk-admin-idle-save"
+            >
+              <span class="btn-icon">💾</span>
+              <span>{{ busy === 'idle' ? $t('kiosk.admin_screen.idle_saving') : $t('kiosk.admin_screen.idle_save') }}</span>
+            </button>
+            <button
+              class="kiosk-admin-btn"
+              @click="resetIdleTimeouts"
+              data-testid="kiosk-admin-idle-reset"
+            >
+              <span class="btn-icon">↺</span>
+              <span>{{ $t('kiosk.admin_screen.idle_reset_defaults') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- [PHASE-6.5] RGPD — consent admin override (debug / reset opt-out) -->
+        <div class="kiosk-admin-section" data-testid="kiosk-admin-consent-section">
+          <h3>{{ $t('kiosk.admin_screen.section_consent') }}</h3>
+          <p class="kiosk-admin-idle-hint">{{ $t('kiosk.admin_screen.consent_hint') }}</p>
+          <label class="kiosk-admin-consent-row">
+            <input
+              type="checkbox"
+              v-model="consentDraft.analytics"
+              data-testid="kiosk-admin-consent-analytics"
+            />
+            <span>{{ $t('kiosk.admin_screen.consent_analytics') }}</span>
+          </label>
+          <label class="kiosk-admin-consent-row">
+            <input
+              type="checkbox"
+              v-model="consentDraft.loyalty"
+              data-testid="kiosk-admin-consent-loyalty"
+            />
+            <span>{{ $t('kiosk.admin_screen.consent_loyalty') }}</span>
+          </label>
+          <button
+            class="kiosk-admin-btn"
+            @click="saveConsent"
+            :disabled="busy === 'consent'"
+            data-testid="kiosk-admin-consent-save"
+          >
+            <span class="btn-icon">💾</span>
+            <span>{{ busy === 'consent' ? $t('kiosk.admin_screen.consent_saving') : $t('kiosk.admin_screen.consent_save') }}</span>
+          </button>
+        </div>
+
         <!-- Application -->
         <div class="kiosk-admin-section">
           <h3>{{ $t('kiosk.admin_screen.section_app') }}</h3>
@@ -157,6 +293,10 @@
 
 <script>
 import { mapActions } from 'vuex';
+// [PHASE-6.5] Passage à l'API unifiée — plus d'accès direct à window.borne.*.
+import kioskHardware from '../../../services/kioskHardware';
+// [PHASE-6.5] Bornes/valeurs par défaut pour les sliders idle config.
+import { KIOSK_SETTINGS_CONSTANTS } from '../../../store/modules/kioskSettings';
 
 // No default PIN fallback: the admin code must come from server settings.
 const DEFAULT_PIN = '';
@@ -187,12 +327,19 @@ export default {
       _feedbackTimer:    null,
       // [C5] Maintenance mode state
       showMaintenanceConfirm: false,
+      // [PHASE-6.5] Hardware health snapshot (rafraîchi sur unlock + bouton refresh).
+      healthSnapshot: null,
+      _healthRefreshTimer: null,
+      // [PHASE-6.5] Edits locaux des sliders idle — appliqués au store sur save.
+      idleDraft: null, // { idleMs, confirmMs, receiptMs }
+      consentDraft: { analytics: false, loyalty: false },
     };
   },
 
   computed: {
     isElectron() {
-      return !!window.borne?.isElectron;
+      // [PHASE-6.5] Via le service unifié — évite un accès direct à window.borne.
+      return kioskHardware.isKioskBridge();
     },
 
     // Read PIN from settings (kiosk_admin_pin) — falls back to DEFAULT_PIN
@@ -206,6 +353,58 @@ export default {
       if (!lastFetch) return null;
       return Math.floor((Date.now() - lastFetch) / 60000);
     },
+
+    // [PHASE-6.5] Sliders idle config — bornes et défauts exposés par kioskSettings.
+    idleBounds() {
+      return KIOSK_SETTINGS_CONSTANTS.IDLE_BOUNDS;
+    },
+    idleDefaults() {
+      return KIOSK_SETTINGS_CONSTANTS.IDLE_DEFAULTS;
+    },
+    storedIdleTimeouts() {
+      const s = this.$store.state.kioskSettings || {};
+      return {
+        idleMs: Number(s.idleMs) || this.idleDefaults.idleMs,
+        confirmMs: Number(s.confirmMs) || this.idleDefaults.confirmMs,
+        receiptMs: Number(s.receiptMs) || this.idleDefaults.receiptMs,
+      };
+    },
+    storedConsent() {
+      const s = this.$store.state.kioskSettings || {};
+      return {
+        analytics: !!s.consentAnalytics,
+        loyalty: !!s.consentLoyalty,
+      };
+    },
+    // [PHASE-6.5] Label rapide pour le badge hardware en haut du panel.
+    healthBadge() {
+      const hc = this.healthSnapshot;
+      if (!hc) return { label: this.$t('kiosk.admin_screen.health_unknown'), tone: 'muted' };
+      const state = hc.state || 'unknown';
+      if (state === 'ok') return { label: this.$t('kiosk.admin_screen.health_ok'), tone: 'ok' };
+      if (state === 'degraded') return { label: this.$t('kiosk.admin_screen.health_degraded'), tone: 'warn' };
+      if (state === 'critical') return { label: this.$t('kiosk.admin_screen.health_critical'), tone: 'error' };
+      return { label: state, tone: 'muted' };
+    },
+  },
+
+  watch: {
+    pinUnlocked(unlocked) {
+      if (unlocked) {
+        this._initEditableState();
+        this._refreshHealth();
+      }
+    },
+  },
+
+  beforeUnmount() {
+    clearTimeout(this._feedbackTimer);
+    clearTimeout(this._pinErrTimer);
+    clearInterval(this._pinLockCountdown);
+    if (this._healthRefreshTimer) {
+      clearInterval(this._healthRefreshTimer);
+      this._healthRefreshTimer = null;
+    }
   },
 
   methods: {
@@ -306,18 +505,19 @@ export default {
           this.showFeedback(this.$t('kiosk.admin_screen.fb_print_browser'));
           return;
         }
-        const result = await window.borne.printReceipt({
+        // [PHASE-6.5] Passage par kioskHardware — contrat {ok, error?} uniforme.
+        const r = await kioskHardware.printReceipt({
           queue_number:    'TEST',
           total:           0,
           items:           [{ name: this.$t('kiosk.admin_screen.test_ticket_name'), quantity: 1, total_price: 0 }],
           restaurant_name: 'FoodKing',
         });
-        if (result?.success || result?.skipped) {
+        if (r?.ok) {
           this.showFeedback(this.$t('kiosk.admin_screen.fb_print_ok'));
         } else {
           this.showFeedback(
             this.$t('kiosk.admin_screen.fb_print_err', {
-              detail: result?.error || this.$t('kiosk.admin_screen.unknown_detail'),
+              detail: r?.error || this.$t('kiosk.admin_screen.unknown_detail'),
             }),
             'error'
           );
@@ -336,13 +536,13 @@ export default {
           this.showFeedback(this.$t('kiosk.admin_screen.fb_drawer_browser'));
           return;
         }
-        const result = await window.borne.openDrawer();
-        if (result?.success || result?.skipped) {
+        const r = await kioskHardware.openDrawer();
+        if (r?.ok) {
           this.showFeedback(this.$t('kiosk.admin_screen.fb_drawer_ok'));
         } else {
           this.showFeedback(
             this.$t('kiosk.admin_screen.fb_drawer_err', {
-              detail: result?.error || this.$t('kiosk.admin_screen.unknown_detail'),
+              detail: r?.error || this.$t('kiosk.admin_screen.unknown_detail'),
             }),
             'error'
           );
@@ -363,13 +563,18 @@ export default {
           this.showFeedback(this.$t('kiosk.admin_screen.fb_terminal_browser'));
           return;
         }
-        const status = await window.borne.getPaymentStatus();
-        this.terminalConnected = !!status?.connected;
-        this.terminalModel = status?.model || '';
-        if (status?.connected) {
+        // [PHASE-6.5] On interroge le healthcheck unifié (interprète tpe_status).
+        // Conserve l'ancienne clé globalState.lists + affiche un feedback détaillé.
+        const hc = await kioskHardware.healthcheck();
+        this.healthSnapshot = hc.ok ? hc : { state: 'critical', components: {} };
+        const tpeKey = hc?.components?.tpe_status ?? hc?.components?.tpe;
+        const connected = tpeKey === true || tpeKey === 'ready' || tpeKey === 'ok';
+        this.terminalConnected = connected;
+        this.terminalModel = hc?.raw?.tpe_model || hc?.components?.tpe_model || '';
+        if (connected) {
           this.showFeedback(
             this.$t('kiosk.admin_screen.fb_terminal_ok', {
-              model: status.model || this.$t('kiosk.admin_screen.unknown_detail'),
+              model: this.terminalModel || this.$t('kiosk.admin_screen.unknown_detail'),
             })
           );
         } else {
@@ -381,6 +586,110 @@ export default {
       } finally {
         this.busy = null;
       }
+    },
+
+    /**
+     * [PHASE-6.5] Rafraîchit le snapshot hardware (badge en tête du panel).
+     * Appelé à l'unlock + bouton refresh. Silencieux sur erreur — le badge
+     * affichera simplement `unknown` si le bridge ne répond pas.
+     */
+    async _refreshHealth() {
+      try {
+        const hc = await kioskHardware.healthcheck();
+        if (hc && typeof hc === 'object') {
+          this.healthSnapshot = hc.ok !== false ? hc : { state: 'critical', components: {} };
+        }
+      } catch (_) {
+        this.healthSnapshot = { state: 'critical', components: {} };
+      }
+    },
+    async refreshHealth() {
+      this.busy = 'health';
+      await this._refreshHealth();
+      this.busy = null;
+      this.showFeedback(this.$t('kiosk.admin_screen.fb_health_refreshed'));
+    },
+
+    /**
+     * [PHASE-6.5] Initialise les drafts éditables depuis le store quand
+     * l'admin rentre dans le panel (après validation du PIN).
+     */
+    _initEditableState() {
+      this.idleDraft = { ...this.storedIdleTimeouts };
+      this.consentDraft = { ...this.storedConsent };
+    },
+
+    /**
+     * [PHASE-6.5] Sauvegarde les idle timeouts via l'action kioskSettings/setIdleTimeouts.
+     * Les valeurs sont coercées (bornes min/max) côté store — le slider s'auto-corrige.
+     */
+    async saveIdleTimeouts() {
+      if (!this.idleDraft) return;
+      this.busy = 'idle';
+      try {
+        // [PHASE-7.1] Snapshot avant écriture pour traçabilité ActionLog (audit staff).
+        const before = { ...this.storedIdleTimeouts };
+        await this.$store.dispatch('kioskSettings/setIdleTimeouts', { ...this.idleDraft });
+        // Refresh le draft avec les valeurs post-coerce du store.
+        this.idleDraft = { ...this.storedIdleTimeouts };
+        // [PHASE-7.1] Log côté serveur (ActionLog + hardware log). Best-effort.
+        this._logAdminOverride('idle_timeouts', {
+          before,
+          after: { ...this.storedIdleTimeouts },
+        });
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_idle_saved'));
+      } catch (e) {
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_err_generic', { detail: e?.message || 'unknown' }), 'error');
+      } finally {
+        this.busy = null;
+      }
+    },
+
+    resetIdleTimeouts() {
+      this.idleDraft = { ...this.idleDefaults };
+    },
+
+    async saveConsent() {
+      this.busy = 'consent';
+      try {
+        // [PHASE-7.1] Snapshot avant écriture pour traçabilité ActionLog (audit staff RGPD).
+        const before = { ...this.storedConsent };
+        await this.$store.dispatch('kioskSettings/setConsentAnalytics', this.consentDraft.analytics);
+        await this.$store.dispatch('kioskSettings/setConsentLoyalty', this.consentDraft.loyalty);
+        // [PHASE-7.1] Log côté serveur — override RGPD par staff, traçable légalement.
+        this._logAdminOverride('consent_override', {
+          before,
+          after: { ...this.storedConsent },
+        });
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_consent_saved'));
+      } catch (e) {
+        this.showFeedback(this.$t('kiosk.admin_screen.fb_err_generic', { detail: e?.message || 'unknown' }), 'error');
+      } finally {
+        this.busy = null;
+      }
+    },
+
+    /**
+     * [PHASE-7.1] Émet un event `admin_action` vers le backend pour tracer
+     * les modifications staff sensibles (idle timeouts, consent override).
+     *
+     * Passe par `window.axios.post('frontend/kiosk-event', ...)` (kiosk token auth
+     * via Sanctum). Silent fail — si le backend est injoignable, l'override local
+     * persiste (localStorage) mais la trace serveur sera manquante. C'est documenté
+     * comme un risque acceptable (pas de blocage staff en cas de réseau coupé).
+     *
+     * Pas de PII dans le payload — seulement des clés/valeurs de config.
+     */
+    _logAdminOverride(subtype, context) {
+      try {
+        if (!window.axios) return;
+        window.axios.post('frontend/kiosk-event', {
+          type: 'admin_action',
+          subtype,
+          context,
+          details: `admin_override:${subtype}`,
+        }).catch(() => {});
+      } catch (_) { /* silent */ }
     },
 
     async refreshMenu() {
@@ -401,8 +710,10 @@ export default {
     },
 
     async reloadApp() {
-      if (this.isElectron && window.borne?.reload) {
-        await window.borne.reload();
+      // [PHASE-6.5] Via service unifié — fallback sur reload navigateur si bridge absent.
+      if (this.isElectron) {
+        const r = await kioskHardware.reload();
+        if (!r?.ok) window.location.reload();
       } else {
         window.location.reload();
       }
@@ -441,8 +752,8 @@ export default {
     },
 
     async quitApp() {
-      if (this.isElectron && window.borne?.quit) {
-        await window.borne.quit();
+      if (this.isElectron) {
+        await kioskHardware.quit();
       }
     },
   },
@@ -761,4 +1072,110 @@ export default {
 .fade-scale-enter-active, .fade-scale-leave-active { transition: all 0.2s ease; }
 .fade-scale-enter-from { opacity: 0; transform: scale(0.95); }
 .fade-scale-leave-to   { opacity: 0; transform: scale(1.02); }
+
+/* [PHASE-6.5] Health badge dans le header admin */
+.kiosk-admin-health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: auto;
+  margin-right: 12px;
+}
+.kiosk-admin-health-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor;
+}
+.kiosk-admin-health-badge.tone-ok       { color: #2ecc71; border-color: rgba(46,204,113,0.35); }
+.kiosk-admin-health-badge.tone-warn     { color: #f39c12; border-color: rgba(243,156,18,0.35); }
+.kiosk-admin-health-badge.tone-error    { color: #e74c3c; border-color: rgba(231,76,60,0.35); }
+.kiosk-admin-health-badge.tone-muted    { color: rgba(255,255,255,0.6); }
+
+/* Health list */
+.kiosk-admin-health-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 8px 0 10px;
+}
+.kiosk-admin-health-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+}
+.kiosk-admin-health-key { color: rgba(255,255,255,0.6); font-weight: 600; }
+.kiosk-admin-health-val { font-weight: 700; color: #2ecc71; }
+.kiosk-admin-health-val.ko { color: #e74c3c; }
+
+.status-ok     { color: #2ecc71; font-weight: 700; }
+.status-warn   { color: #f39c12; font-weight: 700; }
+.status-error  { color: #e74c3c; font-weight: 700; }
+.status-muted  { color: rgba(255,255,255,0.6); }
+
+/* Idle grid & consent rows */
+.kiosk-admin-idle-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+.kiosk-admin-idle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.kiosk-admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+}
+.kiosk-admin-field input[type="number"] {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.kiosk-admin-field small {
+  color: rgba(255,255,255,0.45);
+  font-size: 10px;
+}
+.kiosk-admin-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kiosk-admin-consent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+}
+.kiosk-admin-consent-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #E8001C;
+}
+
+@media (max-width: 640px) {
+  .kiosk-admin-idle-grid,
+  .kiosk-admin-health-list { grid-template-columns: 1fr; }
+}
 </style>

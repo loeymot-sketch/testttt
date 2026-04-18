@@ -38,6 +38,11 @@ export const kioskMenu = {
         lastFetchedAt:      null,
         branchId:           null,
         fromCache:          false, // true when menu was loaded from offline snapshot
+        // Phase 8.5 — Promos actives + flags branche. Alimenté par l'appel
+        // best-effort `/api/frontend/menu` (serveur fait le scoping par
+        // branch_id via token Sanctum). Tombe silencieusement en cas d'échec.
+        promos:             [],
+        branchFlags:        { is_rush: false, is_night: false, server_time: null },
     },
 
     getters: {
@@ -94,6 +99,11 @@ export const kioskMenu = {
         },
 
         selectedItems: (s, g) => g.kioskCatalogItems,
+
+        // Phase 8.5 — Promos kiosk actives (server-driven). Utilisé par
+        // KioskPromoCarouselComponent.
+        kioskPromos:  (s) => Array.isArray(s.promos) ? s.promos : [],
+        kioskBranchFlags: (s) => s.branchFlags || { is_rush: false, is_night: false },
     },
 
     mutations: {
@@ -134,6 +144,18 @@ export const kioskMenu = {
          * type='status' → update status in-place (fast, no refetch).
          * type='full'   → invalidate cache so next navigation triggers refetch.
          */
+        // Phase 8.5 — promos + flags branche (server-driven).
+        SET_PROMOS(state, promos) {
+            state.promos = Array.isArray(promos) ? promos : [];
+        },
+        SET_BRANCH_FLAGS(state, flags) {
+            state.branchFlags = {
+                is_rush: !!flags?.is_rush,
+                is_night: !!flags?.is_night,
+                server_time: flags?.server_time || null,
+            };
+        },
+
         UPDATE_ITEM(state, { item_id, status, price, type }) {
             if (type === 'full') {
                 // Price or variations changed — force full refetch on next access
@@ -190,6 +212,17 @@ export const kioskMenu = {
                     const first = categories.find(c => c.id && c.id !== 0) || categories[0];
                     if (first) commit('SET_SELECTED_CATEGORY', first.id);
                 }
+
+                // Phase 8.5 — fetch best-effort `/api/frontend/menu` pour
+                // récupérer promos + branch flags (server-driven). Sans ability
+                // kiosk:order (ex: un utilisateur staff POS), on récupère 403
+                // et on continue silencieusement.
+                try {
+                    const menuRes = await axios.get('frontend/menu');
+                    const data = menuRes?.data?.data || {};
+                    commit('SET_PROMOS', data.promos || []);
+                    commit('SET_BRANCH_FLAGS', data.branch || {});
+                } catch (_) { /* non-bloquant */ }
             } catch (err) {
                 // [C2] Network failure — try to load offline snapshot
                 const snapshot = await loadSnapshot().catch(() => null);

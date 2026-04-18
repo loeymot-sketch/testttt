@@ -20,7 +20,13 @@
         :key="supplement.id"
         class="kiosk-supplement-row"
         :class="{ selected: localSelections[supplement.id] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[supplement.id]"
+        :aria-label="`${supplement.name} ${formatPrice(supplement.price)}`"
         @click="toggleSupplement(supplement.id)"
+        @keydown.enter.prevent="toggleSupplement(supplement.id)"
+        @keydown.space.prevent="toggleSupplement(supplement.id)"
       >
         <div class="kiosk-supplement-visual">
           <img
@@ -48,7 +54,7 @@
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
-import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../../helpers/kioskMenuBundledExtras';
+import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
 
 export default {
   name: 'KioskStepSupplements',
@@ -74,31 +80,18 @@ export default {
     },
   },
   computed: {
+    // [AUDIT 2026-04-17 C4] Source unique : helper partitionKioskExtras —
+    // les extras "supplements" excluent automatiquement sauces, upgrades
+    // frites (étape Formule) et viandes payantes (étape Viande).
     supplementList() {
-      // Les suppléments sont des extras avec prix > 0 (payants)
-      // EXCLUS : les sauces (group_label ou nom contenant 'sauce')
-      if (!this.item.extras) return [];
-
-      return this.item.extras
-        .filter(e => {
-          const price = parseFloat(e.convert_price || e.price || 0);
-          const groupLabel = (e.group_label || '').toLowerCase();
-          const name = (e.name || '').toLowerCase();
-          // Exclure si c'est une sauce (par group_label ou par nom en fallback)
-          const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
-          if (price <= 0 || isSauce) return false;
-          // Upgrade frites/menu : choisi sur l'étape « Formule » (KioskStepMenu), pas ici
-          if (kioskIsBundledFritesMenuUpgradeExtra(e, this.item)) return false;
-          return true;
-        })
-        .map(s => ({
-          id: s.id,
-          name: s.name,
-          price: parseFloat(s.convert_price || s.price || 0),
-          description: s.description || '',
-          thumb: kioskResolveImageSrc(s),
-          emoji: this.getEmojiForSupplement(s.name)
-        }));
+      return partitionKioskExtras(this.item).supplements.map(s => ({
+        id: s.id,
+        name: s.name,
+        price: s.price,
+        description: s.raw?.description || '',
+        thumb: kioskResolveImageSrc(s.raw),
+        emoji: this.getEmojiForSupplement(s.name)
+      }));
     },
     totalPrice() {
       return this.supplementList.reduce((sum, s) => {
@@ -221,6 +214,11 @@ export default {
 }
 
 .kiosk-supplement-row:active { transform: scale(0.99); }
+
+.kiosk-supplement-row:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-supplement-row.selected {
   border: 2px solid rgba(232, 0, 28, 0.42);

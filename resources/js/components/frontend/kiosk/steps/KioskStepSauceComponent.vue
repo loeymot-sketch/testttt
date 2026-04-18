@@ -110,9 +110,12 @@ export default {
         return this.computeSauceList();
       } catch (e) {
         if (typeof console !== 'undefined' && console.warn) {
-          console.warn('[KioskStepSauce] sauceList → fallback', e);
+          console.warn('[KioskStepSauce] sauceList → catalog error', e);
         }
-        return this.getDefaultSauceList();
+        // [AUDIT 2026-04-17 C1] Plus de fallback hardcodé : on retourne [] et
+        // l'état vide (template v-if="sauceList.length === 0") prend le relais
+        // avec un bouton "continuer sans sauce" (_skip défensif).
+        return [];
       }
     }
   },
@@ -152,11 +155,14 @@ export default {
         : [];
 
       if (!sauceAttr || sauceVariations.length === 0) {
-        return this.getDefaultSauceList();
+        // [AUDIT 2026-04-17 C1] Plus de fallback : si le catalogue ne déclare
+        // pas de sauce, on retourne vide (l'étape est alors masquée par
+        // KioskWizard.shouldShowStep ou affiche le bouton "continuer sans").
+        return [];
       }
 
       // Backend : Status::ACTIVE = 5, INACTIVE = 10 (pas 0/1)
-      const list = sauceVariations
+      return sauceVariations
         .filter((v) => v != null && Number(v.status) !== 10)
         .map((v) => ({
           rowKey: v.id != null && v.id !== '' ? `sauce-var-${v.id}` : null,
@@ -165,37 +171,12 @@ export default {
           emoji: this.getEmojiForSauce(v.name),
           thumb: kioskResolveImageSrc(v),
         }));
-
-      if (list.length === 0) {
-        return this.getDefaultSauceList();
-      }
-
-      return list;
     },
     sauceUnitPriceLabel(sauce) {
       return this.getSauceOrder(this.sauceKey(sauce)) > 1 ? this.extraSaucePriceLabel : this.formatPrice(0);
     },
     selectionKey(sauce) {
       return String(this.sauceKey(sauce));
-    },
-    getDefaultSauceList() {
-      // Fallback names only — IDs are null so wizard won't map them to item_variations.
-      // rowKey : évite clés Vue dupliquées (id null + noms i18n identiques) → v-for qui n’affiche rien
-      const rows = [
-        { rowKey: 'fb-algerienne', t: 'fallback_algerienne', emoji: '🌶️' },
-        { rowKey: 'fb-blanche', t: 'fallback_blanche', emoji: '🥛' },
-        { rowKey: 'fb-ketchup', t: 'fallback_ketchup', emoji: '🍅' },
-        { rowKey: 'fb-mayo', t: 'fallback_mayo', emoji: '🥚' },
-        { rowKey: 'fb-biggy', t: 'fallback_biggy', emoji: '🍔' },
-        { rowKey: 'fb-samourai', t: 'fallback_samourai', emoji: '🌶️' },
-      ];
-      return rows.map((r) => ({
-        rowKey: r.rowKey,
-        id: null,
-        name: this.$t(`kiosk.wizard.step.sauce.${r.t}`),
-        emoji: r.emoji,
-        thumb: null,
-      }));
     },
     getEmojiForSauce(name) {
       const lower = (name || '').toLowerCase();

@@ -11,19 +11,25 @@
       <span v-if="totalSelected >= maxViandes" class="kiosk-complete-badge">✅ {{ $t('kiosk.wizard.step.viande.complete') }}</span>
     </div>
 
-    <!-- Grille 2 colonnes style Splash -->
-    <div class="kiosk-viande-grid">
+    <div v-if="viandeList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.viande.empty_hint') }}</p>
+    </div>
+
+    <div v-else class="kiosk-viande-grid">
       <div
         v-for="viande in viandeList"
-        :key="viande.id ?? viande.key"
+        :key="viande.key"
         class="kiosk-viande-card"
-        :class="{ active: (localSelections[viande.key] || 0) > 0 }"
+        :class="{ active: (localSelections[viande.key] || 0) > 0, 'is-paid': viande.price > 0 }"
       >
-        <!-- Image/Emoji en haut -->
+        <span v-if="viande.price > 0" class="kiosk-viande-badge-paid">
+          +{{ formatPrice(viande.price) }}
+        </span>
+
         <div class="kiosk-viande-visual">
           <img
-            v-if="viande.displayThumb && !brokenViandeThumbs[viandeThumbKey(viande)]"
-            :src="viande.displayThumb"
+            v-if="viande.thumb && !brokenViandeThumbs[viandeThumbKey(viande)]"
+            :src="viande.thumb"
             :alt="viande.name"
             class="kiosk-viande-img"
             loading="lazy"
@@ -32,37 +38,41 @@
           <span class="kiosk-viande-emoji" v-else>{{ viande.emoji }}</span>
         </div>
 
-        <!-- Nom viande -->
         <span class="kiosk-viande-name">{{ viande.name }}</span>
 
-        <!-- Contrôles +/- en bas de carte -->
-        <div class="kiosk-viande-controls">
+        <div class="kiosk-viande-controls" role="group" :aria-label="viande.name">
           <button
+            type="button"
             @click="decrement(viande.key)"
             class="kiosk-viande-qty-btn"
             :disabled="(localSelections[viande.key] || 0) === 0"
+            :aria-label="$t('kiosk.wizard.step.viande.remove_one', { name: viande.name })"
           >−</button>
-          <span class="kiosk-viande-qty-value">{{ localSelections[viande.key] || 0 }}</span>
+          <span class="kiosk-viande-qty-value" aria-live="polite">{{ localSelections[viande.key] || 0 }}</span>
           <button
+            type="button"
             @click="increment(viande.key)"
             class="kiosk-viande-qty-btn plus"
             :disabled="totalSelected >= maxViandes"
+            :aria-label="$t('kiosk.wizard.step.viande.add_one', { name: viande.name })"
           >+</button>
         </div>
       </div>
     </div>
 
-    <div v-if="totalSelected < maxViandes" class="kiosk-validation-hint" role="status" aria-live="polite">
+    <div v-if="viandeList.length > 0 && totalSelected < maxViandes" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ viandeHintRemaining }}
     </div>
   </div>
 </template>
 
 <script>
-import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+import { kioskViandeCatalogForItem } from '../../../../helpers/kioskViandeCatalog';
+import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 
 export default {
   name: 'KioskStepViande',
+  mixins: [kioskPriceMixin],
   props: {
     step: Object,
     item: Object,
@@ -97,29 +107,11 @@ export default {
         ? this.$t('kiosk.wizard.step.viande.hint_need_one', { n })
         : this.$t('kiosk.wizard.step.viande.hint_need_many', { n });
     },
+    // [AUDIT 2026-04-17 C3] Catalogue viandes dynamique = variations (prix 0)
+    // + extras marqués viande (prix > 0), fusionnés en une liste ordonnée
+    // (variations d'abord, puis extras payants). Plus de fallback hardcodé.
     viandeList() {
-      // Lire les viandes depuis les variations DB (attribut "Viande")
-      if (!this.item.itemAttributes) return this.getDefaultViandeList();
-
-      const viandeAttr = this.item.itemAttributes.find(a =>
-        (a.name || '').toLowerCase().includes('viande')
-      );
-      if (!viandeAttr?.id) {
-        return this.getDefaultViandeList();
-      }
-
-      const list = kioskVariationsForAttribute(this.item, viandeAttr.id);
-      if (!list?.length) {
-        return this.getDefaultViandeList();
-      }
-
-      return list.map(v => ({
-        id: v.id,
-        key: v.name.toLowerCase().replace(/\s+/g, '_'),
-        name: v.name,
-        displayThumb: kioskResolveImageSrc(v),
-        emoji: this.getEmojiForViande(v.name)
-      }));
+      return kioskViandeCatalogForItem(this.item);
     }
   },
   watch: {
@@ -138,31 +130,25 @@ export default {
       const k = this.viandeThumbKey(viande);
       this.brokenViandeThumbs = { ...this.brokenViandeThumbs, [k]: true };
     },
-    getDefaultViandeList() {
-      // Fallback: no real DB IDs — wizard uses instruction text only
-      return [
-        { id: null, key: 'poulet', name: this.$t('kiosk.wizard.step.viande.fallback_poulet'), displayThumb: null, emoji: '🍗' },
-        { id: null, key: 'boeuf', name: this.$t('kiosk.wizard.step.viande.fallback_boeuf'), displayThumb: null, emoji: '🥩' },
-        { id: null, key: 'merguez', name: this.$t('kiosk.wizard.step.viande.fallback_merguez'), displayThumb: null, emoji: '🌭' },
-        { id: null, key: 'nuggets', name: this.$t('kiosk.wizard.step.viande.fallback_nuggets'), displayThumb: null, emoji: '🍗' },
-      ];
-    },
-    getEmojiForViande(name) {
-      const lower = (name || '').toLowerCase();
-      if (lower.includes('poulet') || lower.includes('nugget')) return '🍗';
-      if (lower.includes('boeuf') || lower.includes('steak')) return '🥩';
-      if (lower.includes('merguez')) return '🌭';
-      if (lower.includes('poisson')) return '🐟';
-      if (lower.includes('crevette')) return '🦐';
-      return '🥩';
-    },
     emitUpdate() {
       this.$emit('update', 'viandes', { ...this.localSelections });
       this.$emit('update', 'totalViandes', this.totalSelected);
-      // Emit meta so wizard can map first selected viande to item_variations
+      // [AUDIT 2026-04-17 C3] Meta enrichie : inclut `source` (variation/extra)
+      // et `price` pour que le wizard/pricing puisse :
+      //   - mapper les variations vers item_variations,
+      //   - mapper les extras payants vers item_extras (avec quantité),
+      //   - inclure le surplus payant dans calculateKioskRunningTotal.
       const selectedMeta = this.viandeList
         .filter(v => (this.localSelections[v.key] || 0) > 0)
-        .map(v => ({ id: v.id, key: v.key, name: v.name, count: this.localSelections[v.key] }));
+        .map(v => ({
+          id: v.id,
+          key: v.key,
+          name: v.name,
+          price: v.price,
+          source: v.source,
+          attrId: v.attrId,
+          count: this.localSelections[v.key],
+        }));
       this.$emit('update', '_viandeMeta', selectedMeta);
     },
     increment(key) {
@@ -252,6 +238,37 @@ export default {
 }
 
 .kiosk-viande-card:active { transform: scale(0.97); }
+
+.kiosk-viande-card.is-paid {
+  border-color: rgba(232, 107, 0, 0.22);
+}
+
+.kiosk-viande-badge-paid {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: #E86B00;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(232, 107, 0, 0.25);
+  z-index: 1;
+}
+
+.kiosk-step-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.kiosk-viande-qty-btn:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
 
 .kiosk-viande-card.active {
   border-color: rgba(232,0,28,0.18);

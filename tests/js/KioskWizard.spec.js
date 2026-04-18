@@ -810,6 +810,15 @@ describe('KioskWizardComponent - Detection du nombre de viandes', () => {
 
 describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
   const menuItem = () => ({
+    // [AUDIT 2026-04-17 C5] Plus de fallback hardcodé : la liste des sauces
+    // frites doit venir EXCLUSIVEMENT du catalogue (variations sauce du produit).
+    itemAttributes: [{ id: 77, name: 'Sauce' }],
+    variations: {
+      77: [
+        { id: 'ketchup', name: 'Ketchup' },
+        { id: 'mayo', name: 'Mayo' },
+      ],
+    },
     addons: [
       { addon_item_name: 'Menu', addon_item_convert_price: 10 },
       { addon_item_name: 'Coca-Cola', addon_item_id: 1 },
@@ -896,13 +905,13 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
         selections: { ...baseSelections(), menuChoice: 'frites' },
       },
     });
-    const k = wrapper.vm.fritesSauceList.find((s) => s.key === 'ketchup');
-    const m = wrapper.vm.fritesSauceList.find((s) => s.key === 'mayo');
+    const k = wrapper.vm.fritesSauceList.find((s) => /ketchup/i.test(s.name));
+    const m = wrapper.vm.fritesSauceList.find((s) => /mayo/i.test(s.name));
     wrapper.vm.toggleFritesSauce(k);
     wrapper.vm.toggleFritesSauce(m);
     const orderEvents = wrapper.emitted('update').filter((e) => e[0] === 'fritesSauceOrder');
     const last = orderEvents[orderEvents.length - 1][1];
-    expect(last).toEqual(['ketchup', 'mayo']);
+    expect(last).toEqual([k.key, m.key]);
   });
 
   it('boissonList excludes addons whose name contains menu or frites', () => {
@@ -998,7 +1007,10 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
     expect(names).not.toContain('Hidden');
   });
 
-  it('sauceList uses fallback when toutes les variations sont inactives (étape non bloquée)', () => {
+  // [AUDIT 2026-04-17 C5] La liste de sauces ne dispose plus de fallback hardcodé :
+  // si toutes les variations sont inactives, la liste est vide et l'étape expose
+  // un état vide + un bouton « Continuer sans sauce » (cf. KioskStepSauce empty_hint).
+  it('sauceList renvoie [] quand toutes les variations sont inactives (sans fallback hardcodé)', () => {
     const item = {
       itemAttributes: [{ id: 99, name: 'Sauce' }],
       variations: {
@@ -1014,9 +1026,8 @@ describe('KioskStepSauceComponent — sauce key / order normalization', () => {
       },
     });
     const names = wrapper.vm.sauceList.map((s) => s.name);
-    expect(names.length).toBeGreaterThan(0);
-    expect(names).not.toContain('Hidden');
-    expect(names).toContain(frMessages.kiosk.wizard.step.sauce.fallback_ketchup);
+    expect(names).toEqual([]);
+    expect(wrapper.text()).toContain(frMessages.kiosk.wizard.step.sauce.empty_hint);
   });
 });
 
@@ -1502,9 +1513,14 @@ describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_
   });
 
   it('sans wizard_template, activeSteps suit la même branche que l’heuristique (burger)', async () => {
+    // [AUDIT 2026-04-17 C2] shouldShowStep('sauce') exige désormais des variations
+    // sauce dans le catalogue (plus de fallback hardcodé). On en provisionne pour
+    // valider la branche burger sans casser l'invariant SSOT.
     const item = minimalForTemplate({
       name: 'Classic Burger',
       category_name: 'Burgers',
+      itemAttributes: [{ id: 33, name: 'Sauce' }],
+      variations: { 33: [{ id: 1, name: 'Ketchup' }] },
     });
     const w = mountWizardTemplateProbe(item);
     await w.vm.$nextTick();
@@ -1519,6 +1535,8 @@ describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_
       name: 'Classic Burger',
       category_name: 'Burgers',
       wizard_template: 'simple',
+      itemAttributes: [{ id: 33, name: 'Sauce' }],
+      variations: { 33: [{ id: 1, name: 'Ketchup' }] },
     });
     const w = mountWizardTemplateProbe(item);
     await w.vm.$nextTick();
@@ -1529,7 +1547,9 @@ describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_
 });
 
 describe('KioskWizardComponent — P4 i18n étapes pain/sauce (réel)', () => {
-  it('KioskStepPain affiche titres et pain par défaut (fr)', () => {
+  // [AUDIT 2026-04-17 C6] KioskStepPain n'expose plus de fallback hardcodé.
+  // Quand le catalogue ne fournit aucun pain, on affiche le titre + l'empty_hint.
+  it('KioskStepPain affiche titre et empty_hint quand catalogue vide (fr)', () => {
     const st = frMessages.kiosk.wizard.step;
     const wrapper = mount(KioskStepPainComponent, {
       global: { plugins: [kioskWizardTestI18n] },
@@ -1540,7 +1560,31 @@ describe('KioskWizardComponent — P4 i18n étapes pain/sauce (réel)', () => {
       },
     });
     expect(wrapper.text()).toContain(st.pain.title);
-    expect(wrapper.text()).toContain(st.pain.default_bread);
+    expect(wrapper.text()).toContain(st.pain.empty_hint);
+  });
+
+  it('KioskStepPain liste dynamiquement les variations Pain du catalogue', () => {
+    const st = frMessages.kiosk.wizard.step;
+    const wrapper = mount(KioskStepPainComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          itemAttributes: [{ id: 4, name: 'Pain' }],
+          variations: {
+            4: [
+              { id: 100, name: 'Tortilla' },
+              { id: 101, name: 'Galette' },
+            ],
+          },
+        },
+        selections: { pain: null },
+      },
+    });
+    const text = wrapper.text();
+    expect(text).toContain(st.pain.title);
+    expect(text).toContain('Tortilla');
+    expect(text).toContain('Galette');
   });
 
   it('KioskStepSauce affiche le titre (fr, liste fallback)', () => {
@@ -1557,8 +1601,12 @@ describe('KioskWizardComponent — P4 i18n étapes pain/sauce (réel)', () => {
   });
 });
 
-describe('Kiosk step fallbacks — missing catalog attributes', () => {
-  it('KioskStepPain falls back to default list when itemAttributes exist but no pain attribute is present', () => {
+// [AUDIT 2026-04-17 C6/C7] Plus de fallback hardcodé : si le catalogue ne fournit
+// pas de variations pour pain/viande, la liste retournée est vide. C'est
+// `KioskWizard.shouldShowStep` qui se charge de masquer l'étape; les composants
+// affichent l'empty_hint sans tenter de combler avec des défauts inventés.
+describe('Kiosk step empty-state — missing catalog attributes', () => {
+  it('KioskStepPain returns empty list (no hardcoded fallback) when no pain attribute exists', () => {
     const wrapper = mount(KioskStepPainComponent, {
       global: { plugins: [kioskWizardTestI18n] },
       props: {
@@ -1571,12 +1619,11 @@ describe('Kiosk step fallbacks — missing catalog attributes', () => {
       },
     });
 
-    const names = wrapper.vm.painList.map((p) => p.name);
-    expect(names).toContain(frMessages.kiosk.wizard.step.pain.default_bread);
-    expect(names).toContain(frMessages.kiosk.wizard.step.pain.default_galette);
+    expect(wrapper.vm.painList.map((p) => p.name)).toEqual([]);
+    expect(wrapper.text()).toContain(frMessages.kiosk.wizard.step.pain.empty_hint);
   });
 
-  it('KioskStepViande falls back to default list when itemAttributes exist but no viande attribute is present', () => {
+  it('KioskStepViande returns empty list (no hardcoded fallback) when no viande attribute and no paid viande extra exist', () => {
     const wrapper = mount(KioskStepViandeComponent, {
       global: { plugins: [kioskWizardTestI18n] },
       props: {
@@ -1585,13 +1632,35 @@ describe('Kiosk step fallbacks — missing catalog attributes', () => {
           name: 'Produit test',
           itemAttributes: [{ id: 88, name: 'Sauce' }],
           variations: { 88: [{ id: 1, name: 'Algérienne' }] },
+          extras: [],
+        },
+        selections: { viandes: {}, _tailleMeta: null },
+      },
+    });
+
+    expect(wrapper.vm.viandeList.map((v) => v.name)).toEqual([]);
+    expect(wrapper.text()).toContain(frMessages.kiosk.wizard.step.viande.empty_hint);
+  });
+
+  it('KioskStepViande surfaces paid meat extras in the dynamic catalog', () => {
+    const wrapper = mount(KioskStepViandeComponent, {
+      global: { plugins: [kioskWizardTestI18n] },
+      props: {
+        step: {},
+        item: {
+          name: 'Burger XL',
+          itemAttributes: [{ id: 12, name: 'Viande' }],
+          variations: { 12: [{ id: 1, name: 'Steak' }] },
+          extras: [
+            { id: 99, name: 'Double Steak', group_label: 'viande', convert_price: 2.5 },
+          ],
         },
         selections: { viandes: {}, _tailleMeta: null },
       },
     });
 
     const names = wrapper.vm.viandeList.map((v) => v.name);
-    expect(names).toContain(frMessages.kiosk.wizard.step.viande.fallback_poulet);
-    expect(names).toContain(frMessages.kiosk.wizard.step.viande.fallback_boeuf);
+    expect(names).toContain('Steak');
+    expect(names).toContain('Double Steak');
   });
 });

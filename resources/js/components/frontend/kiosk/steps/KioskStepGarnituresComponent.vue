@@ -7,13 +7,23 @@
       <span class="kiosk-info-text">{{ $t('kiosk.wizard.step.garnitures.deselect_hint') }}</span>
     </div>
 
-    <div class="kiosk-garnitures-list">
+    <div v-if="garnitureList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
+      <p>{{ $t('kiosk.wizard.step.garnitures.empty_hint') }}</p>
+    </div>
+
+    <div v-else class="kiosk-garnitures-list">
       <div
         v-for="garniture in garnitureList"
         :key="garniture.id"
         class="kiosk-garniture-row"
         :class="{ selected: localSelections[garniture.id], removed: !localSelections[garniture.id] }"
+        role="checkbox"
+        tabindex="0"
+        :aria-checked="!!localSelections[garniture.id]"
+        :aria-label="garniture.name"
         @click="toggleGarniture(garniture.id)"
+        @keydown.enter.prevent="toggleGarniture(garniture.id)"
+        @keydown.space.prevent="toggleGarniture(garniture.id)"
       >
         <div class="kiosk-garniture-visual">
           <img
@@ -42,6 +52,7 @@
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
 
 export default {
   name: 'KioskStepGarnitures',
@@ -88,20 +99,15 @@ export default {
       if (n === 1) return this.$t('kiosk.wizard.step.garnitures.summary_one', { n });
       return this.$t('kiosk.wizard.step.garnitures.summary_many', { n });
     },
+    // [AUDIT 2026-04-17 C4] Source unique : helper partitionKioskExtras qui
+    // exclut sauces (group_label='sauce'), upgrades frites (KioskStepMenu) et
+    // viandes payantes (KioskStepViande). Plus de filtre regex local
+    // divergent.
     garnitureList() {
-      // Les garnitures sont des extras avec prix = 0 (gratuites), excluant les sauces
-      if (!this.item.extras) return [];
-      
-      const garnitures = this.item.extras.filter(e => {
-        const price = parseFloat(e.convert_price || e.price || 0);
-        const name = (e.name || '').toLowerCase();
-        return price === 0 && !name.includes('sauce suppl');
-      });
-      
-      return garnitures.map(g => ({
+      return partitionKioskExtras(this.item).garnitures.map(g => ({
         id: g.id,
         name: g.name,
-        displayThumb: kioskResolveImageSrc(g),
+        displayThumb: kioskResolveImageSrc(g.raw),
         emoji: this.getEmojiForGarniture(g.name)
       }));
     }
@@ -201,6 +207,18 @@ export default {
 }
 
 .kiosk-garniture-row:active { transform: scale(0.99); }
+
+.kiosk-garniture-row:focus-visible {
+  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline-offset: 2px;
+}
+
+.kiosk-step-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
 
 .kiosk-garniture-row.selected {
   border-color: rgba(232,0,28,0.14);

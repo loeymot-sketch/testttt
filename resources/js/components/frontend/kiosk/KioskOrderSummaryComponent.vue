@@ -1,19 +1,19 @@
 <template>
-  <div class="kiosk-order-summary">
+  <div class="kiosk-order-summary" data-testid="kiosk-order-summary-root">
     <!-- Item principal -->
-    <div class="kiosk-summary-item main">
-      <div class="kiosk-summary-img">
-        <img v-if="item.thumb" :src="item.thumb" />
+    <div class="kiosk-summary-item main" data-testid="kiosk-order-summary-main-item">
+      <div class="kiosk-summary-img" aria-hidden="true">
+        <img v-if="item.thumb" :src="item.thumb" :alt="sanitizeItemName(item.name)" />
         <span v-else class="kiosk-summary-emoji">🍽️</span>
       </div>
       <div class="kiosk-summary-details">
-        <span class="kiosk-summary-name">{{ sanitizeItemName(item.name) }}</span>
-        <span class="kiosk-summary-price">{{ formatPrice(item.convert_price) }}</span>
+        <span class="kiosk-summary-name" data-testid="kiosk-order-summary-main-name">{{ sanitizeItemName(item.name) }}</span>
+        <span class="kiosk-summary-price" data-testid="kiosk-order-summary-main-price">{{ formatPrice(item.convert_price) }}</span>
       </div>
     </div>
-    
+
     <!-- Sélections -->
-    <div class="kiosk-summary-sections">
+    <div class="kiosk-summary-sections" role="list">
       <!-- Pain -->
       <div v-if="selections.pain" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
@@ -23,18 +23,22 @@
         </div>
       </div>
       
-      <!-- Viandes -->
+      <!-- Viandes (variations gratuites + extras payants : prix affiché par ligne) -->
       <div v-if="selections.totalViandes > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
         <div v-for="row in viandeDisplayRows" :key="row.key" class="kiosk-summary-row">
           <span v-if="row.count > 0">{{ row.label }} ×{{ row.count }}</span>
+          <span v-if="row.count > 0 && row.unitPrice > 0" class="kiosk-price">
+            +{{ formatPrice(row.unitPrice * row.count) }}
+          </span>
+          <span v-else-if="row.count > 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.included') }}</span>
         </div>
       </div>
-      
-      <!-- Sauces -->
-      <div v-if="selections.sauceOrder.length > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ selections.sauceOrder.length }})</h4>
-        <div v-for="(sauceId, index) in selections.sauceOrder" :key="sauceId" class="kiosk-summary-row">
+
+      <!-- Sauces (filtre _skip défensif : ne jamais afficher comme sauce) -->
+      <div v-if="visibleSauceOrder.length > 0" class="kiosk-summary-section">
+        <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ visibleSauceOrder.length }})</h4>
+        <div v-for="(sauceId, index) in visibleSauceOrder" :key="sauceId" class="kiosk-summary-row">
           <span>{{ getSauceName(sauceId) }}</span>
           <span v-if="index === 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.free') }}</span>
           <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
@@ -85,18 +89,44 @@
     </div>
     
     <!-- Total -->
-    <div class="kiosk-summary-total">
+    <div
+      class="kiosk-summary-total"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-order-summary-total"
+    >
       <span>{{ $t('kiosk.total') }}</span>
-      <span class="kiosk-total-price">{{ formatPrice(runningTotal) }}</span>
+      <span
+        class="kiosk-total-price"
+        data-testid="kiosk-order-summary-total-price"
+        :aria-label="$t('kiosk.total') + ' ' + formatPrice(runningTotal)"
+      >{{ formatPrice(runningTotal) }}</span>
     </div>
-    
+
     <!-- Quantité -->
-    <div class="kiosk-quantity-section">
-      <span>{{ $t('kiosk.wizard.summary.quantity') }}</span>
-      <div class="kiosk-qty-controls">
-        <button @click="decrementQty" :disabled="selections.quantity <= 1">−</button>
-        <span>{{ selections.quantity }}</span>
-        <button @click="incrementQty">+</button>
+    <div class="kiosk-quantity-section" data-testid="kiosk-order-summary-qty">
+      <span id="kiosk-order-summary-qty-label">{{ $t('kiosk.wizard.summary.quantity') }}</span>
+      <div
+        class="kiosk-qty-controls"
+        role="group"
+        aria-labelledby="kiosk-order-summary-qty-label"
+      >
+        <button
+          @click="decrementQty"
+          :disabled="selections.quantity <= 1"
+          :aria-label="$t('kiosk.decrease_qty')"
+          data-testid="kiosk-order-summary-qty-minus"
+        >−</button>
+        <span
+          data-testid="kiosk-order-summary-qty-value"
+          :aria-label="$t('kiosk.quantity_of', { n: selections.quantity })"
+          aria-live="polite"
+        >{{ selections.quantity }}</span>
+        <button
+          @click="incrementQty"
+          :aria-label="$t('kiosk.increase_qty')"
+          data-testid="kiosk-order-summary-qty-plus"
+        >+</button>
       </div>
     </div>
   </div>
@@ -145,6 +175,7 @@ export default {
             key: `meta-${idx}-${m.name}`,
             label: sanitizeKioskCustomerFacingText(m.name || ''),
             count: m.count,
+            unitPrice: parseFloat(m.price || 0) || 0,
           }))
           .filter((r) => r.label);
       }
@@ -154,7 +185,15 @@ export default {
           key,
           label: this.formatViandeName(key),
           count,
+          unitPrice: 0,
         }));
+    },
+    // [AUDIT 2026-04-17 C13] Filtre défensif : la sentinelle '_skip' émise
+    // jadis par KioskStepSauce (état vide) ne doit jamais apparaître comme
+    // une sauce dans le récap.
+    visibleSauceOrder() {
+      const order = this.selections.sauceOrder || [];
+      return order.filter((k) => k != null && k !== '' && String(k) !== '_skip');
     },
     menuPrice() {
       return getKioskMenuAddonPrice(this.item, this.selections.menuChoice);
@@ -287,7 +326,7 @@ export default {
 <style scoped>
 .kiosk-order-summary {
   padding: 10px 18px 22px;
-  background: #fff;
+  background: var(--kiosk-surface);
   min-height: 100%;
 }
 
@@ -296,15 +335,15 @@ export default {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  background: white;
-  border: 1px solid #E9E9E9;
+  background: var(--kiosk-surface);
+  border: 1px solid var(--kiosk-border);
   border-radius: 18px;
   margin-bottom: 12px;
 }
 
 .kiosk-summary-item.main {
-  border: 2px solid #E8001C;
-  background: rgba(232,0,28,0.03);
+  border: 2px solid var(--kiosk-primary);
+  background: var(--kiosk-primary-soft);
 }
 
 .kiosk-summary-img {
@@ -315,7 +354,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F7F7F8;
+  background: var(--kiosk-surface-alt);
   flex-shrink: 0;
 }
 
@@ -337,12 +376,12 @@ export default {
 .kiosk-summary-name {
   font-size: 16px;
   font-weight: 700;
-  color: #1A1A1A;
+  color: var(--kiosk-text);
 }
 
 .kiosk-summary-price {
   font-size: 14px;
-  color: #E8001C;
+  color: var(--kiosk-primary);
   font-weight: 700;
 }
 
@@ -354,8 +393,8 @@ export default {
 }
 
 .kiosk-summary-section {
-  background: white;
-  border: 1px solid #E9E9E9;
+  background: var(--kiosk-surface);
+  border: 1px solid var(--kiosk-border);
   border-radius: 16px;
   padding: 12px 16px;
 }
@@ -363,7 +402,7 @@ export default {
 .kiosk-summary-section h4 {
   font-size: 10px;
   font-weight: 700;
-  color: #999;
+  color: var(--kiosk-text-muted);
   text-transform: uppercase;
   margin: 0 0 8px;
   letter-spacing: 1px;
@@ -374,27 +413,27 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 5px 0;
-  border-bottom: 1px solid #F0F0F0;
+  border-bottom: 1px solid var(--kiosk-border);
   font-size: 13px;
-  color: #555;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-summary-row:last-child { border-bottom: none; }
 
 .kiosk-summary-row.boisson {
   padding-left: 14px;
-  color: #999;
+  color: var(--kiosk-text-muted);
   font-size: 12px;
 }
 
 .kiosk-free {
-  color: #27ae60;
+  color: var(--kiosk-success);
   font-weight: 700;
   font-size: 11px;
 }
 
 .kiosk-price {
-  color: #E8001C;
+  color: var(--kiosk-primary);
   font-weight: 700;
   font-size: 12px;
 }
@@ -406,9 +445,9 @@ export default {
 }
 
 .kiosk-tag {
-  background: rgba(46,204,113,0.08);
-  border: 1px solid rgba(46,204,113,0.2);
-  color: #27ae60;
+  background: rgba(27,138,58,0.1);
+  border: 1px solid var(--kiosk-success);
+  color: var(--kiosk-success);
   padding: 4px 10px;
   border-radius: 50px;
   font-size: 11px;
@@ -420,20 +459,20 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  background: #f7e5e8;
-  border: 1px solid #efd2d7;
+  background: var(--kiosk-primary-soft);
+  border: 1px solid var(--kiosk-primary);
   border-radius: 16px;
   margin-bottom: 12px;
 }
 
 .kiosk-summary-total span:first-child {
-  color: #7b4a52;
+  color: var(--kiosk-text-muted);
   font-size: 15px;
   font-weight: 700;
 }
 
 .kiosk-total-price {
-  color: #d7263d;
+  color: var(--kiosk-primary);
   font-size: 24px;
   font-weight: 900;
 }
@@ -444,15 +483,15 @@ export default {
   justify-content: center;
   gap: 16px;
   padding: 12px 18px;
-  background: white;
-  border: 1px solid #E9E9E9;
+  background: var(--kiosk-surface);
+  border: 1px solid var(--kiosk-border);
   border-radius: 16px;
 }
 
 .kiosk-quantity-section > span {
   font-size: 14px;
   font-weight: 600;
-  color: #555;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-qty-controls {
@@ -465,8 +504,8 @@ export default {
   width: 44px;
   height: 44px;
   border: none;
-  background: #F7F7F8;
-  color: #1A1A1A;
+  background: var(--kiosk-surface-alt);
+  color: var(--kiosk-text);
   font-size: 22px;
   font-weight: 700;
   cursor: pointer;
@@ -476,17 +515,17 @@ export default {
   justify-content: center;
   transition: all 0.15s ease;
   border-radius: 50%;
-  border: 1.5px solid #E0E0E0;
+  border: 1.5px solid var(--kiosk-border);
 }
 
 .kiosk-qty-controls button:first-child {
-  color: #777;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-qty-controls button:last-child {
-  background: #E8001C;
-  border-color: #E8001C;
-  color: white;
+  background: var(--kiosk-primary);
+  border-color: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
 }
 
 .kiosk-qty-controls button:active:not(:disabled) {
@@ -498,10 +537,15 @@ export default {
   cursor: not-allowed;
 }
 
+.kiosk-qty-controls button:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));
+  outline-offset: 2px;
+}
+
 .kiosk-qty-controls span {
   font-size: 20px;
   font-weight: 800;
-  color: #1A1A1A;
+  color: var(--kiosk-text);
   min-width: 40px;
   text-align: center;
 }

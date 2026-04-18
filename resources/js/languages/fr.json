@@ -1,4 +1,20 @@
 {
+    "allergens": {
+        "gluten": "Gluten",
+        "crustaceans": "Crustacés",
+        "eggs": "Œufs",
+        "fish": "Poisson",
+        "peanuts": "Arachides",
+        "soy": "Soja",
+        "milk": "Lait",
+        "tree_nuts": "Fruits à coque",
+        "celery": "Céleri",
+        "mustard": "Moutarde",
+        "sesame": "Sésame",
+        "sulphites": "Sulfites",
+        "lupin": "Lupin",
+        "molluscs": "Mollusques"
+    },
     "menu": {
         "dashboard": "Tableau de bord",
         "settings": "Paramètres",
@@ -252,6 +268,44 @@
         "order_sent": "Votre commande a été envoyée en cuisine.",
         "present_counter": "Présentez-vous au comptoir avec votre numéro.",
         "loyalty_points_earned": "{name}, vous gagnez +{points} points fidélité !",
+        "cash_instruction": {
+            "title": "Rendez-vous en caisse",
+            "subtitle": "Présentez votre numéro à un membre de l'équipe",
+            "order_label": "Numéro de commande",
+            "amount_label": "Montant à régler",
+            "help": "Paiement en espèces uniquement à la caisse.",
+            "cta_understood": "J'ai compris",
+            "auto_redirect": "Retour à l'accueil dans {n} s"
+        },
+        "error": {
+            "back_home": "Retour à l'accueil",
+            "retry": "Réessayer",
+            "call_staff": "Prévenir un membre de l'équipe",
+            "network": {
+                "title": "Connexion perdue",
+                "subtitle": "Nous n'arrivons plus à joindre le service de commande.",
+                "hint": "Patientez quelques instants ou appelez un membre de l'équipe."
+            },
+            "menu_unavailable": {
+                "title": "Menu momentanément indisponible",
+                "subtitle": "Nous ne pouvons pas charger la carte pour l'instant.",
+                "hint": "Merci de patienter ou de vous diriger vers la caisse."
+            },
+            "product_removed": {
+                "title": "Cet article n'est plus disponible",
+                "subtitle": "Il a été retiré de la carte pendant votre commande.",
+                "hint": "Vous pouvez retourner au menu pour choisir un autre article.",
+                "cta_back_menu": "Retour au menu"
+            },
+            "payment_refused": {
+                "title": "Paiement refusé",
+                "subtitle": "Votre transaction n'a pas pu aboutir.",
+                "hint": "Vous pouvez réessayer, régler en caisse, ou annuler la commande.",
+                "cta_retry": "Réessayer le paiement",
+                "cta_pay_counter": "Payer en caisse",
+                "cta_cancel": "Annuler la commande"
+            }
+        },
         "catalog": {
             "nos": "Nos",
             "products_fallback": "Produits",
@@ -266,7 +320,50 @@
             "abandon_order": "Abandonner ma commande",
             "pay": "Payer",
             "badge_new": "Nouveau",
-            "badge_customize": "Personnaliser"
+            "badge_customize": "Personnaliser",
+            "add": "Ajouter {name}",
+            "categories_nav_label": "Navigation catégories",
+            "cart_summary_label": "Panier et paiement",
+            "open_cart_label": "Ouvrir le panier — {n} articles",
+            "badge_chef_pick": "Coup de cœur du chef",
+            "filters_label": "Filtres diététiques",
+            "filters_reset": "Tout effacer"
+        },
+        "filters": {
+            "halal": "Halal",
+            "vegetarian": "Végétarien",
+            "pork_free": "Sans porc",
+            "gluten_free": "Sans gluten",
+            "spicy": "Piquant",
+            "under_10": "Moins de 10€"
+        },
+        "badges": {
+            "chef_pick": "Coup de cœur",
+            "new": "Nouveau",
+            "halal": "Halal",
+            "vegetarian": "Végétarien",
+            "spicy": "Piquant",
+            "pork_free": "Sans porc",
+            "gluten_free": "Sans gluten"
+        },
+        "allergens": {
+            "warning_aria": "Attention : ce produit contient un allergène que vous avez déclaré.",
+            "list_aria": "Allergènes"
+        },
+        "promo": {
+            "aria_label": "Offres en cours",
+            "badge_label": "Offre",
+            "code_label": "Code",
+            "code_aria": "Code promo {code}",
+            "min_cart": "À partir de {value}"
+        },
+        "inactivity": {
+            "title": "Toujours là ?",
+            "desc": "Votre commande sera effacée dans",
+            "second": "seconde",
+            "seconds": "secondes",
+            "stay": "Je suis là",
+            "leave": "Abandonner la commande"
         },
         "menu_fallback": "Menu",
         "offline_queue": {
@@ -399,7 +496,34 @@
             "fb_menu_ok": "Carte rechargée — {count} articles",
             "fb_menu_err": "Erreur lors du rechargement : {detail}",
             "test_ticket_name": "Ticket d'essai",
-            "unknown_detail": "non précisé"
+            "unknown_detail": "non précisé",
+            "section_health": "État du matériel",
+            "health_state_label": "Statut global :",
+            "health_ok": "Opérationnel",
+            "health_degraded": "Dégradé",
+            "health_critical": "Critique",
+            "health_unknown": "Inconnu",
+            "health_badge_hint": "Dernier healthcheck matériel",
+            "health_refresh": "Rafraîchir le statut",
+            "health_refresh_busy": "Analyse…",
+            "fb_health_refreshed": "Statut matériel rafraîchi",
+            "section_idle": "Délais d'inactivité",
+            "idle_hint": "Ajustez les délais avant retour à l'accueil. Les valeurs sont appliquées immédiatement.",
+            "idle_field": "Retour accueil (ms)",
+            "idle_confirm_field": "Avertissement avant reset (ms)",
+            "idle_receipt_field": "Écran reçu auto-fermé (ms)",
+            "idle_range": "Entre {min}s et {max}s",
+            "idle_save": "Enregistrer",
+            "idle_saving": "Enregistrement…",
+            "idle_reset_defaults": "Réinitialiser par défaut",
+            "fb_idle_saved": "Délais d'inactivité enregistrés",
+            "section_consent": "Consentement RGPD",
+            "consent_hint": "Activer/désactiver manuellement les consentements (debug/maintenance). Le visiteur reste consulté via la fenêtre de consentement.",
+            "consent_analytics": "Analytics anonymes activés",
+            "consent_loyalty": "Inscription fidélité autorisée",
+            "consent_save": "Enregistrer",
+            "consent_saving": "Enregistrement…",
+            "fb_consent_saved": "Consentement mis à jour"
         },
         "loyalty_screen": {
             "title": "Programme fidélité",
@@ -438,7 +562,8 @@
             "toast_discount": "Réduction de {amount} appliquée !",
             "toast_saved": "Fidélité enregistrée — points crédités après la commande",
             "toast_welcome": "Bienvenue {name} ! Compte fidélité créé.",
-            "register_error_generic": "Inscription impossible. Réessayez."
+            "register_error_generic": "Inscription impossible. Réessayez.",
+            "consent_required": "Inscription annulée. Votre consentement est requis pour créer un compte fidélité."
         },
         "app": {
             "init_loading": "Démarrage en cours…",
@@ -555,6 +680,7 @@
                 "pain": {
                     "title": "Choisissez votre type de pain",
                     "hint": "Sélectionnez un type de pain pour continuer",
+                    "empty_hint": "Aucun pain disponible pour ce produit.",
                     "default_bread": "Pain",
                     "default_galette": "Galette"
                 },
@@ -574,6 +700,9 @@
                     "complete": "Complet",
                     "hint_need_one": "Sélectionnez {n} viande pour continuer",
                     "hint_need_many": "Sélectionnez {n} viandes pour continuer",
+                    "empty_hint": "Aucune viande disponible pour ce produit.",
+                    "add_one": "Ajouter une portion de {name}",
+                    "remove_one": "Retirer une portion de {name}",
                     "fallback_poulet": "Poulet",
                     "fallback_boeuf": "Bœuf",
                     "fallback_merguez": "Merguez",
@@ -598,6 +727,7 @@
                     "title": "Quelle crudité ?",
                     "all_included": "Toutes les garnitures sont incluses",
                     "deselect_hint": "Désélectionnez celles que vous ne voulez pas",
+                    "empty_hint": "Aucune garniture disponible pour ce produit.",
                     "with": "AVEC",
                     "without": "SANS",
                     "summary_zero": "Aucune garniture sélectionnée",
@@ -625,6 +755,61 @@
                 "receipt_thanks": "Merci de votre visite !",
                 "receipt_present": "Présentez ce ticket au comptoir."
             }
+        },
+        "order_type_label": "Type de commande",
+        "decrease_qty": "Diminuer la quantité",
+        "increase_qty": "Augmenter la quantité",
+        "quantity_of": "Quantité de {name}",
+        "a11y": {
+            "title": "Accessibilité & langue",
+            "open": "Paramètres d'accessibilité",
+            "close": "Fermer",
+            "done": "Terminé",
+            "reset": "Réinitialiser",
+            "language": "Langue",
+            "contrast": "Contraste",
+            "contrast_aa": "Standard",
+            "contrast_aa_hint": "Contraste AA (WCAG 2.2)",
+            "contrast_aaa": "Renforcé",
+            "contrast_aaa_hint": "Contraste AAA • 7:1",
+            "pmr": "Mode PMR",
+            "pmr_hint": "Textes plus grands, zones tactiles élargies",
+            "audio": "Assistance audio",
+            "audio_hint": "Lecture vocale des étapes (FR/EN)",
+            "audio_description": "Description audio détaillée",
+            "audio_description_hint": "Lit à voix haute boutons, prix et choix (EAA 2025)",
+            "reduced_motion": "Animations réduites",
+            "reduced_motion_hint": "Désactive animations et défilements (WCAG 2.3.3)",
+            "virtual_keyboard_label": "Clavier virtuel",
+            "vkeyb_clear": "Tout effacer",
+            "vkeyb_clear_short": "Effacer",
+            "vkeyb_space": "Espace",
+            "vkeyb_space_short": "Espace",
+            "vkeyb_backspace": "Supprimer le dernier caractère",
+            "vkeyb_submit": "Valider",
+            "vkeyb_submit_short": "OK"
+        },
+        "consent": {
+            "title": "Programme fidélité",
+            "subtitle": "Vos préférences & avantages",
+            "description": "Nous pouvons mémoriser vos préférences et allergènes pour accélérer vos prochaines commandes. Votre consentement est libre et révocable à tout moment.",
+            "checkbox_loyalty": "J'accepte l'enregistrement de mes préférences alimentaires",
+            "checkbox_analytics": "J'accepte les analyses d'utilisation anonymes pour améliorer le service",
+            "checkbox_mobile_transfer": "J'accepte le transfert de ma commande vers mon mobile (QR final)",
+            "privacy_link": "Lire la politique de confidentialité",
+            "cta_accept": "Continuer",
+            "cta_decline": "Continuer sans enregistrement",
+            "required_loyalty": "Cochez cette case pour activer la fidélité.",
+            "success_loyalty": "Préférences enregistrées. Merci !",
+            "error_generic": "Enregistrement impossible. Veuillez réessayer.",
+            "privacy_close": "Fermer la politique"
+        },
+        "hardware": {
+            "unavailable_title": "Service temporairement indisponible",
+            "printer_error": "Problème d'imprimante ticket",
+            "tpe_error": "Problème terminal de paiement",
+            "call_staff": "Veuillez appeler un membre de l'équipe",
+            "degraded_service": "Service dégradé — certaines fonctions sont réduites"
         }
     }
 }

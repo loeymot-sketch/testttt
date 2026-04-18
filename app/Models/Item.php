@@ -26,6 +26,15 @@ class Item extends Model implements HasMedia
         'price',
         'is_featured',
         'is_upsell',
+        'is_chef_pick',
+        'is_new',
+        'is_available',
+        'is_spicy',
+        'is_vegetarian',
+        'is_pork_free',
+        'is_halal',
+        'is_gluten_free',
+        'chef_pick_order',
         'description',
         'caution',
         'status',
@@ -45,6 +54,15 @@ class Item extends Model implements HasMedia
         'price'            => 'decimal:6',
         'is_featured'      => 'integer',
         'is_upsell'        => 'integer',
+        'is_chef_pick'     => 'boolean',
+        'is_new'           => 'boolean',
+        'is_available'     => 'boolean',
+        'is_spicy'         => 'boolean',
+        'is_vegetarian'    => 'boolean',
+        'is_pork_free'     => 'boolean',
+        'is_halal'         => 'boolean',
+        'is_gluten_free'   => 'boolean',
+        'chef_pick_order'  => 'integer',
         'description'      => 'string',
         'caution'          => 'string',
         'status'           => 'integer',
@@ -139,5 +157,18 @@ class Item extends Model implements HasMedia
     public function offer(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Offer::class, 'offer_items');
+    }
+
+    /**
+     * Kiosk Design V1 — Phase 1.2.
+     * Relation normalisée item ↔ allergen via pivot `item_allergen`.
+     * Source de vérité pour l'affichage kiosk ; `allergen_flags` JSON reste
+     * un cache projeté (synchronisation : `AllergenService::projectFlags`).
+     */
+    public function allergens(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Allergen::class, 'item_allergen')
+            ->withPivot('is_trace')
+            ->withTimestamps();
     }
 }
