@@ -16,6 +16,15 @@
       >
         {{ $t('kiosk.error.product_removed.cta_back_menu') }}
       </KsButton>
+      <KsButton
+        variant="secondary"
+        size="lg"
+        full-width
+        data-testid="kiosk-error-product-cta-home"
+        @click="backHome"
+      >
+        {{ $t('kiosk.error.back_home') }}
+      </KsButton>
     </template>
   </KioskErrorLayoutComponent>
 </template>
@@ -49,6 +58,11 @@ export default {
             this.logEvent('error_back_to_menu', { subtype: 'product_removed' });
             this.$emit('back-to-menu');
             this.$router?.push({ name: 'kiosk.categories' }).catch(() => {});
+        },
+        backHome() {
+            this.logEvent('error_back_home', { subtype: 'product_removed' });
+            this.$emit('back-home');
+            this.$router?.push({ name: 'kiosk.idle' }).catch(() => {});
         },
         logEvent(type, meta = {}) {
             axios.post('/frontend/kiosk/event', { type, ...meta }).catch(() => {});
