@@ -22,11 +22,20 @@ return new class extends Migration {
             });
 
             // Best-effort backfill: when user still exists and has a branch, copy it.
+            // [POS-9.1.4 / gate POS-9.1] Use a portable correlated UPDATE so the
+            // migration runs identically on MySQL (prod) and SQLite (test suite).
             DB::statement(<<<'SQL'
-                UPDATE action_logs al
-                INNER JOIN users u ON u.id = al.user_id
-                SET al.branch_id = u.branch_id
-                WHERE al.branch_id IS NULL AND u.branch_id IS NOT NULL
+                UPDATE action_logs
+                SET branch_id = (
+                    SELECT branch_id FROM users WHERE users.id = action_logs.user_id
+                )
+                WHERE branch_id IS NULL
+                  AND user_id IS NOT NULL
+                  AND EXISTS (
+                    SELECT 1 FROM users
+                    WHERE users.id = action_logs.user_id
+                      AND users.branch_id IS NOT NULL
+                  )
             SQL);
         }
     }
