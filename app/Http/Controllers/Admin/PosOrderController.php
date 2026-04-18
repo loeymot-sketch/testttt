@@ -62,6 +62,10 @@ class PosOrderController extends AdminController
         try {
             $this->orderService->destroy($order);
             return response('', 202);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            // [POS-9.1.2] Do NOT mask 403/404 as 422: security-critical
+            // HTTP status codes from abort() must reach the client intact.
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

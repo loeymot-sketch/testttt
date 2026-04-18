@@ -55,6 +55,57 @@ class OrderDetailsResource extends JsonResource
             'pos_received_currency_amount' => AppLibrary::currencyAmountFormat($this->pos_received_amount),
             'cash_back_amount' => $this->pos_received_amount - $this->total,
             'cash_back_currency_amount' => AppLibrary::currencyAmountFormat($this->pos_received_amount - $this->total),
+            // [POS-9.1.13] Per-rate VAT breakdown for the printed ticket
+            // (CGI art. 242 nonies A — every receipt must list HT base
+            // and tax per rate). POS-GA-F-20.
+            'tax_lines' => $this->buildTaxLines(),
         ];
+    }
+
+    /**
+     * [POS-9.1.13] Group order_items by (tax_name, tax_rate, tax_type),
+     * summing tax_amount and computing the HT base per group.
+     *
+     * Assumes total_price is TTC at the line level (which matches how
+     * OrderService::posOrderStore stores items; tax_amount is also
+     * persisted line by line). Returns an array of associative arrays
+     * suitable for receipt rendering AND fiscal exports.
+     */
+    private function buildTaxLines(): array
+    {
+        $items = $this->orderItems ?? collect();
+        $groups = [];
+        foreach ($items as $oi) {
+            $rate = (string) ($oi->tax_rate ?? '0');
+            $name = (string) ($oi->tax_name ?? '');
+            $type = (int) ($oi->tax_type ?? 0);
+            $key  = $type . '|' . $rate . '|' . $name;
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'tax_name' => $name,
+                    'tax_rate' => $rate,
+                    'tax_type' => $type,
+                    'tax_amount_raw' => 0.0,
+                    'base_ht_raw'    => 0.0,
+                ];
+            }
+            $taxAmount = (float) ($oi->tax_amount ?? 0);
+            $totalTtc  = (float) ($oi->total_price ?? 0);
+            $groups[$key]['tax_amount_raw'] += $taxAmount;
+            $groups[$key]['base_ht_raw']    += max(0.0, $totalTtc - $taxAmount);
+        }
+        $out = [];
+        foreach ($groups as $g) {
+            $out[] = [
+                'tax_name' => $g['tax_name'],
+                'tax_rate' => $g['tax_rate'],
+                'tax_type' => $g['tax_type'],
+                'base_ht'  => round($g['base_ht_raw'], 2),
+                'base_ht_currency'  => AppLibrary::currencyAmountFormat($g['base_ht_raw']),
+                'tax'      => round($g['tax_amount_raw'], 2),
+                'tax_currency'      => AppLibrary::currencyAmountFormat($g['tax_amount_raw']),
+            ];
+        }
+        return $out;
     }
 }

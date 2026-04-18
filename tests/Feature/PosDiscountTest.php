@@ -47,6 +47,10 @@ class PosDiscountTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
         $this->posOperator->assignRole('POS Operator');
+        // [POS-9.1.1] owner-level permission so legacy tests with large discounts pass the gate;
+        // the dedicated gate tests live in PosDiscountPermissionTest.
+        $this->posOperator->givePermissionTo('pos-discount-unlimited');
+        $this->posOperator->givePermissionTo('pos-discount-over-10-requires-manager');
 
         // Create Customer
         $this->customer = User::factory()->create([
@@ -99,6 +103,7 @@ class PosDiscountTest extends TestCase
             'branch_id' => $this->branch->id,
             'subtotal' => $subtotal,
             'discount' => $discount, // Manual discount from cashier
+            'discount_reason' => 'Geste commercial test',
             'coupon_id' => 0, // No coupon
             'total' => $expectedTotal,
             'order_type' => OrderType::TAKEAWAY,
@@ -148,6 +153,7 @@ class PosDiscountTest extends TestCase
             'branch_id' => $this->branch->id,
             'subtotal' => $subtotal,
             'discount' => $invalidDiscount, // Invalid discount
+            'discount_reason' => 'Geste commercial test',
             'coupon_id' => 0,
             'total' => $expectedTotal,
             'order_type' => OrderType::TAKEAWAY,
@@ -209,6 +215,7 @@ class PosDiscountTest extends TestCase
             'branch_id' => $this->branch->id,
             'subtotal' => $subtotal,
             'discount' => $manualDiscount, // Manual discount - should be ignored
+            'discount_reason' => 'Geste commercial test',
             'coupon_id' => $coupon->id, // Coupon takes priority
             'total' => $expectedTotal,
             'order_type' => OrderType::TAKEAWAY,
