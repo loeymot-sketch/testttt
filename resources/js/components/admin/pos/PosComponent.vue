@@ -675,6 +675,8 @@ export default {
             company: {},
             order: {},
             discount: null,
+            // [POS-9.1.1] mandatory motif for any POS discount
+            discountReason: '',
             // Kiosk cash orders notification
             kioskCashOrders: [],
             kioskCashLoading: false,
@@ -702,6 +704,8 @@ export default {
                     dining_table_id: null,
                     pos_received_amount: null,
                     loyalty_customer_code: null,
+                    // [POS-9.1.1] motif mandatory when discount > 0
+                    discount_reason: null,
                 }
             },
             selectedCustomerLoyalty: {
@@ -1137,6 +1141,18 @@ export default {
             this.$store.dispatch('posCart/deleteCartItem', { id: id, status: "decrement" }).then().catch();
         },
         applyDiscount: function () {
+            // [POS-9.1.1] Require motif for any non-zero discount; surface server permission gate.
+            const hasDiscount = this.discount && parseFloat(this.discount) > 0;
+            if (hasDiscount) {
+                const reason = (this.discountReason || '').trim();
+                if (reason.length < 3) {
+                    return alertService.error(this.$t('message.discount_reason_required') || 'A reason is required for any POS discount (min 3 characters).');
+                }
+                this.checkoutProps.form.discount_reason = reason;
+            } else {
+                this.checkoutProps.form.discount_reason = null;
+            }
+
             if (this.discountType == discountTypeEnum.FIXED) {
                 if (this.subtotal < this.discount) {
                     return alertService.error(this.$t('message.discount_fixed_error_message'));
@@ -1708,6 +1724,8 @@ export default {
                 if (!newCarts || newCarts.length === 0) {
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
+                    this.discountReason = '';
+                    this.checkoutProps.form.discount_reason = null;
                     this.$nextTick(() => {
                         if (this.$refs.takeAway) {
                             this.$refs.takeAway.click();

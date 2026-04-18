@@ -124,6 +124,31 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [POS-9.1.1] Discount permission gate: cap cashier at 10%, manager up to 50%, owner beyond
+            [
+                'title'      => 'POS Discount up to 10%',
+                'name'       => 'pos-discount-up-to-10',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/discount-up-to-10',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'title'      => 'POS Discount 10%-50% (manager)',
+                'name'       => 'pos-discount-over-10-requires-manager',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/discount-manager',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'title'      => 'POS Discount above 50% (owner)',
+                'name'       => 'pos-discount-unlimited',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/discount-unlimited',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',

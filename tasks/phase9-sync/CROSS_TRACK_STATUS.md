@@ -14,7 +14,7 @@
 | A | Kiosk Phase 9 | P9.1 | 9.1.1→9.1.14 (14 items) | feat/kiosk-phase-9-1 | in_progress (commits locaux, non mergé main) | — | P9.2+ kiosk |
 | B | POS Phase 9 | POS-A (audit) | 64 findings livrées | — | closed | — | POS-B |
 | B | POS Phase 9 | POS-B (plan) | 10 vagues POS-9.1→POS-9.10 | — | closed | — | POS-9.1 |
-| B | POS Phase 9 | POS-9.1 | 9.1.1 discount permission | feat/pos-phase-9-1 | in_progress | — | POS-9.2 |
+| B | POS Phase 9 | POS-9.1 | 9.1.1 discount permission | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.2 |
 | B | POS Phase 9 | POS-9.1 | 9.1.2 destroy() sécurisé | feat/pos-phase-9-1 | open | — | POS-9.4 |
 | B | POS Phase 9 | POS-9.1 | 9.1.3 BranchIsolationTest | feat/pos-phase-9-1 | open | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.4 action_logs.branch_id | feat/pos-phase-9-1 | open | — | POS-9.4 |

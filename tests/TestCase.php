@@ -130,6 +130,10 @@ abstract class TestCase extends BaseTestCase
             'offers_edit',
             'offers_delete',
             'offers_show',
+            // [POS-9.1.1] POS discount permission gate
+            'pos-discount-up-to-10',
+            'pos-discount-over-10-requires-manager',
+            'pos-discount-unlimited',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -149,6 +153,20 @@ abstract class TestCase extends BaseTestCase
                 'pos-orders',
                 'kitchen-display-system',
                 'order-status-screen',
+                // [POS-9.1.1] cashier = up to 10% discount
+                'pos-discount-up-to-10',
+            ]);
+        }
+
+        // [POS-9.1.1] Branch Manager = 10%-50% discount
+        $branchManagerRole = Role::where('name', 'Branch Manager')->where('guard_name', 'sanctum')->first();
+        if ($branchManagerRole) {
+            $branchManagerRole->syncPermissions([
+                'dashboard',
+                'pos',
+                'pos-orders',
+                'pos-discount-up-to-10',
+                'pos-discount-over-10-requires-manager',
             ]);
         }
 

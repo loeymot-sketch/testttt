@@ -22,6 +22,15 @@ class PosOrderRequest extends FormRequest
     }
 
     /**
+     * [POS-9.1.1] Discount permission thresholds (% of subtotal).
+     * - cashier (pos-discount-up-to-10) : 0-10%
+     * - manager (pos-discount-over-10-requires-manager) : 10-50%
+     * - owner   (pos-discount-unlimited) : 50-100%
+     */
+    private const DISCOUNT_CASHIER_MAX_PCT = 10.0;
+    private const DISCOUNT_MANAGER_MAX_PCT = 50.0;
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -36,6 +45,8 @@ class PosOrderRequest extends FormRequest
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
             'subtotal' => ['nullable', 'numeric'],
             'discount' => ['nullable', 'numeric', 'min:0'],
+            // [POS-9.1.1] Mandatory motif for any discount above 0
+            'discount_reason' => ['nullable', 'string', 'max:191'],
             'dining_table_id' => request('order_type') === OrderType::DINING_TABLE ? [
                 'required',
                 'numeric'
@@ -79,6 +90,43 @@ class PosOrderRequest extends FormRequest
             // This check only prevents obvious UI errors (cashier entered less cash than shown).
             if (request('pos_payment_method') == PosPaymentMethod::CASH && ((float) request('total') > (float) request('pos_received_amount'))) {
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
+            }
+
+            // [POS-9.1.1] Discount permission gate:
+            //  - every non-zero discount requires a written motif (≥ 3 chars)
+            //  - discount_pct = discount / subtotal * 100
+            //  - cashier  (pos-discount-up-to-10)                    ≤ 10%
+            //  - manager  (pos-discount-over-10-requires-manager)    ≤ 50%
+            //  - owner    (pos-discount-unlimited)                   > 50%
+            $discount = (float) request('discount', 0);
+            $subtotal = (float) request('subtotal', 0);
+            if ($discount > 0) {
+                $reason = trim((string) request('discount_reason', ''));
+                if (strlen($reason) < 3) {
+                    $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
+                    return;
+                }
+
+                if ($subtotal <= 0) {
+                    $validator->errors()->add('discount', 'Cannot apply discount without a valid subtotal.');
+                    return;
+                }
+
+                $pct = ($discount / $subtotal) * 100.0;
+                $user = auth()->user();
+
+                if (!$user) {
+                    $validator->errors()->add('discount', 'Authentication required to apply a discount.');
+                    return;
+                }
+
+                if ($pct > self::DISCOUNT_MANAGER_MAX_PCT && !$user->can('pos-discount-unlimited')) {
+                    $validator->errors()->add('discount', 'Only an owner can apply a discount above ' . self::DISCOUNT_MANAGER_MAX_PCT . '%.');
+                } elseif ($pct > self::DISCOUNT_CASHIER_MAX_PCT && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
+                    $validator->errors()->add('discount', 'Discount above ' . self::DISCOUNT_CASHIER_MAX_PCT . '% requires manager approval.');
+                } elseif (!$user->can('pos-discount-up-to-10') && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
+                    $validator->errors()->add('discount', 'You do not have permission to apply POS discounts.');
+                }
             }
         });
     }
