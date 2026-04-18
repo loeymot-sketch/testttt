@@ -305,18 +305,18 @@ class DashboardService
     public function auditTrail()
     {
         try {
-            // [POS-9.1.4] Scope audit trail to the authenticated user's branch.
+            // [POS-9.1.4 + POS-9-H.1.3] Scope audit trail to the authenticated user's branch.
             //   - Admin (branch_id = 0) sees every branch.
-            //   - Branch staff sees only their own branch + rows with no branch (legacy/system).
+            //   - Branch staff sees ONLY their own branch. Previously `orWhereNull('branch_id')`
+            //     leaked every cross-tenant "system/admin" row to every branch (F-A3).
+            //   - Any legacy row with branch_id = NULL is considered stale/system-only and
+            //     must be surfaced exclusively to Admin. Branch managers should never see it.
             $actor = auth()->user();
             $actorBranchId = (int) ($actor?->branch_id ?? 0);
 
             $query = \App\Models\ActionLog::with('user');
             if ($actorBranchId > 0) {
-                $query->where(function ($q) use ($actorBranchId) {
-                    $q->where('branch_id', $actorBranchId)
-                      ->orWhereNull('branch_id');
-                });
+                $query->where('branch_id', $actorBranchId);
             }
 
             return $query->orderBy('created_at', 'desc')
