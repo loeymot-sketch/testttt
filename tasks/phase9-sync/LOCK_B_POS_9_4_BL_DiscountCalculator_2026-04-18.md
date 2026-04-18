@@ -34,4 +34,4 @@
 
 ## Status
 
-**ACTIVE** depuis 2026-04-18 création branche `feat/pos-phase-9-2-3`.
+**RELEASED (unused)** le 2026-04-18 au commit BL.2 `a7036f6ec`. Arbitrage final : l'appel `AuditLogService::write(action=order.discount_applied)` est placé dans `OrderService::posOrderStore` (qui connaît la distinction coupon_id vs manual_cashier) plutôt que dans le calculateur pur. `DiscountCalculator.php` n'a donc PAS été modifié par cette vague.
