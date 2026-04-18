@@ -32,9 +32,38 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     private Tax $tax;
 
+    /**
+     * [Kiosk Phase 9.1.14] Gate this contract test on MySQL.
+     *
+     * The service layer uses `whereJsonContains('channels', $surface)`, which
+     * translates to `JSON_CONTAINS(channels, '"kiosk"')` under MySQL. SQLite's
+     * JSON driver does not implement this predicate against ad-hoc JSON
+     * columns stored as TEXT, and the query blows up with HTTP 422 — which
+     * used to mask a real regression by making the 3 filtered-surface tests
+     * fail silently in the SQLite test suite instead of failing the build.
+     *
+     * Fix (per stop-the-bleed plan):
+     *   - CI job `.github/workflows/phpunit.yml` runs the full PHPUnit suite
+     *     against MySQL 8.0 so this contract is honored end-to-end.
+     *   - Locally, we SKIP cleanly with an explicit message. We do NOT add a
+     *     SQLite fallback that pretends everything works — the audit insists
+     *     that a fallback would mask the very regression this test is meant
+     *     to catch.
+     */
     protected function setUp(): void
     {
         parent::setUp();
+
+        $driver = config('database.default');
+        $dbDriver = config("database.connections.$driver.driver");
+        if ($dbDriver !== 'mysql') {
+            $this->markTestSkipped(
+                "Surface filtering contract relies on MySQL JSON_CONTAINS. " .
+                "Current driver: {$dbDriver}. This test runs in the phpunit.yml " .
+                "CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering."
+            );
+        }
+
         $this->tax = Tax::factory()->create(['status' => Status::ACTIVE]);
     }
 
