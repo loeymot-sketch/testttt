@@ -7,6 +7,14 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # Same non-sentinel secrets as phpunit.xml / docs: required because this
+    # job runs a real `php artisan serve` (APP_ENV=local from .env.example).
+    # phpunit.xml env does NOT apply here — empty FISCAL_* in .env breaks
+    # POS flows that call AuditLogService (422/500 → Playwright failures).
+    env:
+      FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+      FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
+      PRICING_USE_SSOT: "true"
     services:
       mysql:
         image: mysql:8.0
@@ -47,6 +55,12 @@ jobs:
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=foodking_test/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+          sed -i 's|^APP_URL=.*|APP_URL=http://localhost:8000|' .env
+          # Persist fiscal secrets in .env so `config:cache` / Mix / sub-processes
+          # match the job env (Dotenv does not override existing vars, but the
+          # file keeps local `artisan` invocations self-consistent).
+          sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
+          sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
 
       - name: Migrate and seed
         run: php artisan migrate:fresh --seed
@@ -63,6 +77,9 @@ jobs:
         run: php artisan serve &
         env:
           APP_URL: http://localhost:8000
+          FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+          FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
+          PRICING_USE_SSOT: "true"
 
       - name: Wait for server
         run: |

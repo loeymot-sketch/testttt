@@ -58,6 +58,10 @@ jobs:
       KIOSK_MACHINE_USERNAME: kiosk-lecayenne
       KIOSK_MACHINE_PASSWORD: kiosk123
       PRICING_USE_SSOT: 'true'
+      # Defense in depth (same values as phpunit.xml): some subprocesses or
+      # future bootstrap paths read getenv before PHPUnit injects xml env.
+      FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+      FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
 
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +100,10 @@ jobs:
             \$c=preg_replace('/^DB_PASSWORD=.*/m','DB_PASSWORD=root',\$c);
             file_put_contents(\$f,\$c);
           "
+          # Mirror secrets into .env for any bootstrap path that reads the file
+          # before PHPUnit's xml env is applied (defense in depth vs CI flakes).
+          sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
+          sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
 
       - name: Run PHPUnit (MySQL)
         env:
