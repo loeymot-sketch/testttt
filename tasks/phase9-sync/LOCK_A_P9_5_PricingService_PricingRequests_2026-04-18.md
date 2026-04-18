@@ -40,5 +40,5 @@
 
 ## Status
 
-- **ACTIVE** depuis 2026-04-18.
-- Passera à `RELEASED` au commit 9.5.6.
+- **RELEASED (`this commit`)** le 2026-04-18.
+- `PricingRequest::forPos/forTable/forWeb` vérifiés/alignés sans modification du cœur `PricingService`.
