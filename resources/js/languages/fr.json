@@ -152,9 +152,12 @@
         "pay_now": "Payer maintenant",
         "view_all": "Voir tout",
         "change_language": "Changer langue",
-        "confirm_and_print": "Confirmer & Imprimer ticket"
+        "confirm_and_print": "Confirmer & Imprimer ticket",
+        "base_ht": "HT"
     },
     "message": {
+        "new_pos_order": "Nouvelle commande",
+        "new_pos_order_with_id": "Nouvelle commande #{id}",
         "password_update": "Mot de passe mis à jour.",
         "image_upload": "Image téléchargée.",
         "subscribe": "Merci pour votre abonnement !",
