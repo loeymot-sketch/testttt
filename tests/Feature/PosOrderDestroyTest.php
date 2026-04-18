@@ -73,7 +73,15 @@ class PosOrderDestroyTest extends TestCase
         $response = $this->withHeader('x-api-key', config('app.api_key'))
             ->deleteJson('/api/admin/pos-order/' . $order->id);
 
-        $response->assertStatus(403);
+        // Defense in depth: BranchScope hides other-branch orders so route
+        // model binding returns 404 before reaching destroy(); if scope is
+        // ever bypassed (e.g. admin tooling), destroy()'s explicit branch
+        // guard returns 403. Either outcome is acceptable.
+        $this->assertContains(
+            $response->status(),
+            [403, 404],
+            'Cross-branch destroy must be rejected (403 from guard or 404 from scope), got ' . $response->status()
+        );
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'deleted_at' => null,

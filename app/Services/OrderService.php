@@ -1596,23 +1596,26 @@ class OrderService
      */
     public function destroy(Order $order)
     {
+        // [POS-9.1.2] Branch isolation + payment guard + audit log.
+        // [Gate POS-9.1] HTTP guard checks must run OUTSIDE the try/catch
+        // so abort(403,…) (HttpException) propagates as a 403 instead of
+        // being swallowed and re-thrown as a generic 422.
+        $actor = Auth::user();
+        $actorBranchId = (int) ($actor->branch_id ?? 0);
+        $orderBranchId = (int) $order->branch_id;
+
+        // Admin (branch_id=0) can destroy any; branch staff only own branch.
+        if ($actorBranchId > 0 && $actorBranchId !== $orderBranchId) {
+            abort(403, 'Access denied: order does not belong to your branch.');
+        }
+
+        // Block PAID orders unless the actor carries the dedicated permission.
+        if ((int) $order->payment_status === PaymentStatus::PAID
+            && $actor && !$actor->can('pos-destroy-paid')) {
+            abort(403, 'Paid orders cannot be destroyed without elevated permission.');
+        }
+
         try {
-            // [POS-9.1.2] Branch isolation + payment guard + audit log.
-            $actor = Auth::user();
-            $actorBranchId = (int) ($actor->branch_id ?? 0);
-            $orderBranchId = (int) $order->branch_id;
-
-            // Admin (branch_id=0) can destroy any; branch staff only own branch.
-            if ($actorBranchId > 0 && $actorBranchId !== $orderBranchId) {
-                abort(403, 'Access denied: order does not belong to your branch.');
-            }
-
-            // Block PAID orders unless the actor carries the dedicated permission.
-            if ((int) $order->payment_status === PaymentStatus::PAID
-                && $actor && !$actor->can('pos-destroy-paid')) {
-                abort(403, 'Paid orders cannot be destroyed without elevated permission.');
-            }
-
             $reason = trim((string) request('destroy_reason', ''));
 
             DB::transaction(function () use ($order, $actor, $reason) {
@@ -1639,6 +1642,9 @@ class OrderService
                     ]),
                 ]);
             });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            // Bubble HTTP exceptions (403/404) untouched.
+            throw $http;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
