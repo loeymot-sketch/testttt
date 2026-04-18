@@ -237,11 +237,16 @@
       </div>
     </div>
 
-    <!-- [PHASE-6.3] RGPD consent modal — s'ouvre avant register (qui persiste des PII) -->
+    <!-- [PHASE-6.3] RGPD consent modal — s'ouvre avant register (qui persiste des PII).
+         Kiosk Phase 9.1.10 — KsConsentModal émet `accepted` / `declined` (past
+         tense, cf. `emits: ['update:modelValue', 'accepted', 'declined', 'error']`).
+         Avant ce fix, le parent écoutait `@accept` / `@decline` (infinitif), donc
+         le handler n'était JAMAIS appelé : la modale semblait "accepter" mais
+         `submitRegister` n'était jamais exécuté côté loyalty (RGPD broken). -->
     <KsConsentModal
       :model-value="showConsentModal"
-      @accept="onConsentAccept"
-      @decline="onConsentDecline"
+      @accepted="onConsentAccept"
+      @declined="onConsentDecline"
       @update:model-value="(v) => { if (!v) showConsentModal = false; }"
     />
 
