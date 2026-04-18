@@ -15,6 +15,11 @@ use App\Http\Requests\ItemCategoryRequest;
 
 class ItemCategoryService
 {
+    public function __construct(
+        private readonly ItemCategoryHierarchyService $hierarchyService
+    ) {
+    }
+
     protected $itemCateFilter = [
         'name',
         'slug',
@@ -94,7 +99,12 @@ class ItemCategoryService
     public function store(ItemCategoryRequest $request)
     {
         try {
-            $itemCategory = ItemCategory::create($request->validated() + ['slug' => Str::slug($request->name)]);
+            $validated = $request->validated();
+            $this->hierarchyService->validateParent(
+                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null
+            );
+
+            $itemCategory = ItemCategory::create($validated + ['slug' => Str::slug($request->name)]);
             if ($request->image) {
                 $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
             }
@@ -111,7 +121,13 @@ class ItemCategoryService
     public function update(ItemCategoryRequest $request, ItemCategory $itemCategory): ItemCategory
     {
         try {
-            $itemCategory->update($request->validated() + ['slug' => Str::slug($request->name)]);
+            $validated = $request->validated();
+            $this->hierarchyService->validateParent(
+                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
+                (int) $itemCategory->id
+            );
+
+            $itemCategory->update($validated + ['slug' => Str::slug($request->name)]);
             if ($request->image) {
                 $itemCategory->clearMediaCollection('item-category');
                 $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
