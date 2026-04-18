@@ -751,6 +751,15 @@
                     "summary_zero": "Aucune garniture sélectionnée",
                     "summary_one": "{n} garniture sélectionnée",
                     "summary_many": "{n} garnitures sélectionnées"
+                },
+                "supplements": {
+                    "title": "Quel supplément ?",
+                    "subtitle": "Options payantes",
+                    "empty": "Aucun supplément disponible pour cet article",
+                    "description_default": "Supplément",
+                    "cta": {
+                        "confirm": "Ajouter au panier"
+                    }
                 }
             },
             "confirmation": {

@@ -1398,6 +1398,15 @@
                     "summary_one": "{n} topping selected",
                     "summary_many": "{n} toppings selected",
                     "empty_hint": "No topping available for this product."
+                },
+                "supplements": {
+                    "title": "Any extras?",
+                    "subtitle": "Paid extras",
+                    "empty": "No extras available for this item",
+                    "description_default": "Extra",
+                    "cta": {
+                        "confirm": "Add to cart"
+                    }
                 }
             },
             "confirmation": {

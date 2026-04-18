@@ -1372,6 +1372,15 @@
                     "summary_one": "{n} إضافة محددة",
                     "summary_many": "{n} إضافات محددة",
                     "empty_hint": "لا توجد إضافات متوفرة لهذا المنتج."
+                },
+                "supplements": {
+                    "title": "أي إضافة؟",
+                    "subtitle": "خيارات مدفوعة",
+                    "empty": "لا إضافات متاحة لهذا المنتج",
+                    "description_default": "إضافة",
+                    "cta": {
+                        "confirm": "أضف إلى السلة"
+                    }
                 }
             },
             "confirmation": {

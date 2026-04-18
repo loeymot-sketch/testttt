@@ -1,9 +1,9 @@
 <template>
   <div class="kiosk-step-supplements">
-    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.supplements_step_title') }}</h3>
+    <h3 class="kiosk-step-title">{{ supplementsTitle }}</h3>
 
     <div class="kiosk-supplements-info" data-testid="kiosk-step-supplements-info">
-      <span class="kiosk-info-badge" data-testid="kiosk-step-supplements-badge">{{ $t('kiosk.wizard.supplements_badge_paid') }}</span>
+      <span class="kiosk-info-badge" data-testid="kiosk-step-supplements-badge">{{ supplementsSubtitle }}</span>
       <span v-if="totalPrice > 0" class="kiosk-supplements-price">
         +{{ formatPrice(totalPrice) }}
       </span>
@@ -11,7 +11,7 @@
 
     <div v-if="supplementList.length === 0" class="kiosk-empty-state">
       <span class="kiosk-empty-emoji">🍽️</span>
-      <p>{{ $t('kiosk.wizard.supplements_empty') }}</p>
+      <p>{{ supplementsEmptyText }}</p>
     </div>
 
     <div v-else class="kiosk-supplements-list" data-testid="kiosk-step-supplements-list">
@@ -42,7 +42,7 @@
         </div>
         <div class="kiosk-supplement-details">
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
-          <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
+          <span class="kiosk-supplement-desc">{{ supplement.description || supplementDefaultDescription }}</span>
         </div>
         <span class="kiosk-supplement-price" data-testid="kiosk-step-supplements-counter">{{ formatPrice(supplement.price) }}</span>
         <span v-if="localSelections[supplement.id]" class="kiosk-supplement-action active">✓</span>
@@ -81,6 +81,26 @@ export default {
     },
   },
   computed: {
+    supplementsTitle() {
+      return this.$te('kiosk.wizard.step.supplements.title')
+        ? this.$t('kiosk.wizard.step.supplements.title')
+        : this.$t('kiosk.wizard.supplements_step_title');
+    },
+    supplementsSubtitle() {
+      return this.$te('kiosk.wizard.step.supplements.subtitle')
+        ? this.$t('kiosk.wizard.step.supplements.subtitle')
+        : this.$t('kiosk.wizard.supplements_badge_paid');
+    },
+    supplementsEmptyText() {
+      return this.$te('kiosk.wizard.step.supplements.empty')
+        ? this.$t('kiosk.wizard.step.supplements.empty')
+        : this.$t('kiosk.wizard.supplements_empty');
+    },
+    supplementDefaultDescription() {
+      return this.$te('kiosk.wizard.step.supplements.description_default')
+        ? this.$t('kiosk.wizard.step.supplements.description_default')
+        : this.$t('kiosk.wizard.supplement_default_desc');
+    },
     // [AUDIT 2026-04-17 C4] Source unique : helper partitionKioskExtras —
     // les extras "supplements" excluent automatiquement sauces, upgrades
     // frites (étape Formule) et viandes payantes (étape Viande).
