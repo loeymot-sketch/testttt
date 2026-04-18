@@ -3,9 +3,12 @@
 namespace App\Services\Fiscal;
 
 use App\Models\AuditLog;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -40,17 +43,66 @@ class AuditLogService
      *   session_id?: string|null
      * } $data
      */
+    /**
+     * [POS-9-H.2.2 / F-C3 / F-B1]
+     *
+     * Two concurrent writes were reading the same tail of the chain and
+     * persisting two rows with an identical `prev_hash` — forking the
+     * chain and triggering false-positive tampering alerts on the next
+     * verifyChain() sweep.
+     *
+     * Defense in depth:
+     *   1. Cache::lock('audit_chain_b{n}') serialises writers per branch.
+     *   2. DB::transaction groups the tail-read and the INSERT atomically
+     *      against the same connection, so nested writes on the same
+     *      request still see each other.
+     *   3. A UNIQUE(branch_id, prev_hash) index (migration
+     *      2026_04_19_100000_add_unique_chain_index_to_audit_logs.php)
+     *      rejects any remaining fork at the DB level even if Redis is
+     *      down. On a UNIQUE violation we retry exactly once: the tail
+     *      has advanced under us, recompute prev_hash and INSERT again.
+     */
+    private const CHAIN_LOCK_TTL = 10;
+    private const CHAIN_LOCK_WAIT = 5;
+
     public function write(array $data): AuditLog
     {
         if (empty($data['action'])) {
             throw new \InvalidArgumentException('AuditLogService::write() requires a non-empty action.');
         }
 
-        $branchId = $this->resolveBranchId($data);
-        $userId   = $data['user_id'] ?? (Auth::check() ? (int) Auth::id() : null);
-        $payload  = $data['payload'] ?? [];
+        if (!array_key_exists('action', $data)) {
+            throw new \InvalidArgumentException('AuditLogService::write() requires an action.');
+        }
 
-        $request = request();
+        $branchId = $this->resolveBranchId($data);
+
+        $lockKey = 'audit_chain_b' . ($branchId ?? 'global');
+        $lock    = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
+
+        if (!$lock->block(self::CHAIN_LOCK_WAIT)) {
+            throw new RuntimeException(
+                "AuditLogService: could not acquire chain lock '{$lockKey}' within "
+                . self::CHAIN_LOCK_WAIT . 's. Another writer is stuck or the cache '
+                . 'driver is unavailable.'
+            );
+        }
+
+        try {
+            return DB::transaction(function () use ($data, $branchId) {
+                return $this->performInsert($data, $branchId, /* attempt */ 1);
+            });
+        } finally {
+            optional($lock)->release();
+        }
+    }
+
+    private function performInsert(array $data, ?int $branchId, int $attempt): AuditLog
+    {
+        $userId = $data['user_id'] ?? (Auth::check() ? (int) Auth::id() : null);
+        $payload = $data['payload'] ?? [];
+
+        $request   = request();
         $ip        = $data['ip']         ?? ($request instanceof Request ? $request->ip() : null);
         $userAgent = $data['user_agent'] ?? ($request instanceof Request ? substr((string) $request->userAgent(), 0, 512) : null);
         $sessionId = $data['session_id'] ?? ($request instanceof Request && $request->hasSession() ? $request->session()->getId() : null);
@@ -58,19 +110,33 @@ class AuditLogService
         $prevHash    = $this->lastHashFor($branchId);
         $currentHash = $this->computeHash($branchId, $prevHash, $data['action'], $payload);
 
-        return AuditLog::create([
-            'branch_id'    => $branchId,
-            'user_id'      => $userId,
-            'action'       => (string) $data['action'],
-            'resource'     => $data['resource']    ?? null,
-            'resource_id'  => $data['resource_id'] ?? null,
-            'payload'      => $payload,
-            'prev_hash'    => $prevHash,
-            'current_hash' => $currentHash,
-            'ip'           => $ip,
-            'user_agent'   => $userAgent,
-            'session_id'   => $sessionId,
-        ]);
+        try {
+            return AuditLog::create([
+                'branch_id'    => $branchId,
+                'user_id'      => $userId,
+                'action'       => (string) $data['action'],
+                'resource'     => $data['resource']    ?? null,
+                'resource_id'  => $data['resource_id'] ?? null,
+                'payload'      => $payload,
+                'prev_hash'    => $prevHash,
+                'current_hash' => $currentHash,
+                'ip'           => $ip,
+                'user_agent'   => $userAgent,
+                'session_id'   => $sessionId,
+            ]);
+        } catch (QueryException $e) {
+            // A parallel writer slipped past the cache lock (driver outage
+            // or multi-host cache split-brain) and grabbed our prev_hash
+            // first. The UNIQUE(branch_id, prev_hash) index rejected us.
+            // Retry once with the new tail; any further collision is a
+            // real fault and propagates.
+            $isUnique = in_array((string) $e->getCode(), ['23000', '23505'], true)
+                || str_contains(strtolower($e->getMessage()), 'unique');
+            if ($attempt < 2 && $isUnique) {
+                return $this->performInsert($data, $branchId, $attempt + 1);
+            }
+            throw $e;
+        }
     }
 
     /**
