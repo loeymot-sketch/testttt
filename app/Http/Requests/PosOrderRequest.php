@@ -55,8 +55,12 @@ class PosOrderRequest extends FormRequest
                 'required',
                 'numeric'
             ] : ['nullable'],
-            // [AUDIT-P50-BUG4] Allow total=0 for 100% loyalty-redemption orders
-            'total' => ['required', 'numeric', 'min:0'],
+            // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
+            // payload value is only used as a UX cross-check for cash payments
+            // (see withValidator below). nullable so a desynced UI cannot bypass
+            // server logic by spoofing total. (POS-GA-F-47)
+            // [AUDIT-P50-BUG4] kept min:0 — server allows total=0 for 100% loyalty redemption.
+            'total' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
             'address_id' => request('order_type') === OrderType::DELIVERY ? [
@@ -88,7 +92,13 @@ class PosOrderRequest extends FormRequest
             // The server recalculates the real total in OrderService::posOrderStore.
             // A second validation against the server-computed total is enforced there.
             // This check only prevents obvious UI errors (cashier entered less cash than shown).
-            if (request('pos_payment_method') == PosPaymentMethod::CASH && ((float) request('total') > (float) request('pos_received_amount'))) {
+            // [POS-9.1.8] Only run this UX cross-check when the client actually
+            // sent a `total` (now nullable per POS-GA-F-47). The authoritative
+            // total is computed server-side in OrderService::posOrderStore and
+            // re-validated against pos_received_amount there.
+            if (request('pos_payment_method') == PosPaymentMethod::CASH
+                && request()->filled('total')
+                && ((float) request('total') > (float) request('pos_received_amount'))) {
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
             }
 

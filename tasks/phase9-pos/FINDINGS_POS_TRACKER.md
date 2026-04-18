@@ -61,7 +61,7 @@
 | POS-GA-F-44 | P2 | `OrderService::list` dépend exclusivement de `BranchScope` (pas de defense-in-depth) | `app/Services/OrderService.php:102-170` | POS-9.10 | — | open |
 | POS-GA-F-45 | P2 | POS ne s'abonne pas à `ItemAvailabilityChanged` (86 admin non reflété live) | `resources/js/components/admin/pos/PosComponent.vue:1004-1007` | POS-9.6 | — | open |
 | POS-GA-F-46 | P2 | `buildWizardRestorePayload` basé sur heuristiques FR (`includes('pain'\|'viande'\|...')`) | `resources/js/components/admin/pos/ItemComponent.vue:721-915` | POS-9.9 | — | open |
-| POS-GA-F-47 | P2 | `PosOrderRequest` valide encore `total`/`subtotal` depuis payload | `app/Http/Requests/PosOrderRequest.php:36-48, 77-82` | POS-9.10 | — | open |
+| POS-GA-F-47 | P2 | `PosOrderRequest` valide encore `total`/`subtotal` depuis payload | `app/Http/Requests/PosOrderRequest.php:36-48, 77-82` | POS-9.1 | — | resolved (POS-9.1.8 — total nullable, server recomputes) |
 | POS-GA-F-48 | P2 | `correlation_id` régénéré par listener au lieu d'être propagé depuis `X-Correlation-ID` | `app/Listeners/PersistOrderCreatedToOutbox.php:33`, `app/Listeners/PersistOrderStatusChangedToOutbox.php:32` | POS-9.10 | sync | open |
 | POS-GA-F-49 | P2 | Payloads events minimalistes (`reason`, `actor_id`, `source`, `total_tax` manquants) | `app/Listeners/PersistOrderCreatedToOutbox.php:24-30`, `app/Listeners/PersistOrderStatusChangedToOutbox.php:22-29` | POS-9.10 | sync | open |
 | POS-GA-F-50 | P2 | `DomainEvent::scopeFailed(4)` incohérent avec `tries=5` → double dispatch possible | `app/Models/DomainEvent.php:44-48`, `app/Jobs/DispatchDomainEventsJob.php:21-23` | POS-9.10 | sync | open |
