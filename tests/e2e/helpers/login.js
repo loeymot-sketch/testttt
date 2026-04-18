@@ -1,12 +1,13 @@
 /**
- * Login FoodKing — page /login a 3 boutons type="submit" (recherche header, Login, Subscribe).
- * Ne jamais utiliser button[type="submit"] (ambigu, strict mode Playwright).
+ * Login FoodKing — cible les ids du LoginComponent (évite le champ recherche header type="text").
+ * Locale par défaut fr : libellé bouton « Connexion », pas « Login ».
  */
 async function login(page, email, password) {
   await page.goto('/login');
-  await page.locator('input[type="text"]').first().fill(email);
-  await page.locator('input[type="password"]').fill(password);
-  await page.getByRole('button', { name: /^login$/i }).click();
+  await page.locator('#formEmail').waitFor({ state: 'visible', timeout: 20_000 });
+  await page.locator('#formEmail').fill(email);
+  await page.locator('#formPassword').fill(password);
+  await page.getByRole('button', { name: /^(login|connexion)$/i }).click();
 }
 
 async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kiosk123') {

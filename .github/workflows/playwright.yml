@@ -64,9 +64,15 @@ jobs:
           # file keeps local `artisan` invocations self-consistent).
           sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
           sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
+          # E2E staff-only suite (06-staff-only-routing) + borne wizard flag
+          sed -i 's/^STAFF_ONLY_MODE=.*/STAFF_ONLY_MODE=true/' .env
+          sed -i 's/^KIOSK_USE_POS_WIZARD=.*/KIOSK_USE_POS_WIZARD=true/' .env
 
       - name: Migrate and seed
-        run: php artisan migrate:fresh --seed
+        run: |
+          php artisan migrate:fresh --seed
+          # Installed middleware otherwise redirects all web traffic to /install (no SPA).
+          touch storage/installed
 
       - name: Install Node dependencies and build
         run: |
