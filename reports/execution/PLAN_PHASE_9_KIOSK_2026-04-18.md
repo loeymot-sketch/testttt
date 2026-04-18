@@ -80,7 +80,7 @@ Périmètre autorisé pour les implémentations P9.1 → P9.10. Tout fichier hor
 
 - `database/migrations/<TS>_add_allergens_snapshot_to_order_items.php` (nouveau — 9.5.1)
 - `database/migrations/<TS>_scope_idempotency_key_to_branch.php` (nouveau — 9.5.4)
-- `app/Services/FrontendOrderService.php` **(LOCK_A — persistance `allergens_snapshot` depuis pivot)**
+- `app/Services/FrontendOrderService.php` **(LOCK_A — (1) 9.5.1 persistance `allergens_snapshot` depuis pivot, additif ; (2) scope extension 2026-04-18 pour 9.5.5 : aligner le verrou `Cache::lock` d'idempotency kiosk sur `(branch_id, idempotency_key)` — pas de modif pricing SSOT / state machine / autres flows. Unblock `P9_5_BLOCKER_9.5.5_frontend_order_idempotency_lock_scope.md`.)**
 - `app/Services/PricingService.php` **(LOCK_A — cross-item guard 9.5.6, pas de modif cœur SSOT)**
 - `app/Services/OrderService.php` **(LOCK_A — uniquement si nécessaire, sinon noop)**
 - `app/Models/OrderItem.php` **(LOCK_A — cast `allergens_snapshot` JSON)**
