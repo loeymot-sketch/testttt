@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Enums\Activity;
 use App\Enums\OrderType;
 use App\Rules\ValidJsonOrder;
-use Illuminate\Validation\Rule;
 use Smartisan\Settings\Facades\Settings;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -28,23 +27,29 @@ class OrderRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isKioskMachineOrder = $this->isKioskMachineOrder();
+
         return [
-            'branch_id' => request('order_type') == OrderType::DELIVERY ? ['nullable', 'numeric'] : ['required', 'numeric'],
+            // Kiosk branch_id is always server-resolved from KioskMachine; web/app legacy clients may still send it.
+            'branch_id' => ($this->input('order_type') == OrderType::DELIVERY || $isKioskMachineOrder)
+                ? ['nullable', 'numeric']
+                : ['required', 'numeric'],
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
             'subtotal' => ['nullable', 'numeric'],
             'discount' => ['nullable', 'numeric'],
-            'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
+            'delivery_charge' => $this->input('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'numeric'
-            ] : ['nullable'],
-            'total' => ['required', 'numeric'],
+            ] : ['nullable', 'numeric'],
+            // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
+            'total' => ['nullable', 'numeric'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
-            'address_id' => request('order_type') === OrderType::DELIVERY ? [
+            'address_id' => $this->input('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'numeric'
             ] : ['nullable'],
-            'delivery_time' => request('order_type') === OrderType::DELIVERY ? [
+            'delivery_time' => $this->input('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'string'
             ] : ['nullable'],
@@ -79,5 +84,14 @@ class OrderRequest extends FormRequest
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
         });
+    }
+
+    private function isKioskMachineOrder(): bool
+    {
+        $user = $this->user('sanctum');
+
+        return (bool) ($user
+            && $user->tokenCan('kiosk:order')
+            && in_array((int) $this->input('order_type'), [OrderType::KIOSK, OrderType::TAKEAWAY], true));
     }
 }

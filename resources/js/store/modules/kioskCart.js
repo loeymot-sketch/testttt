@@ -8,6 +8,30 @@ const SOURCE_KIOSK = 5;
 const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
 const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
 
+function sanitizeKioskOrderItem(item) {
+    return {
+        item_id: item.item_id,
+        instruction: item.instruction || '',
+        quantity: item.quantity,
+        item_variations: Array.isArray(item.item_variations) ? item.item_variations : [],
+        item_extras: Array.isArray(item.item_extras) ? item.item_extras : [],
+    };
+}
+
+export function buildKioskOrderPayload(state, { orderType, paymentMethod } = {}) {
+    return {
+        // branch_id is intentionally omitted: kiosk orders resolve it server-side from KioskMachine.
+        order_type: orderType || state.orderType || 25,
+        loyalty_code: state.loyaltyCustomer?.loyalty_code || null,
+        // Promo code remains non-financial metadata; the backend recomputes the discount.
+        kiosk_promo_code: state.promoCode || null,
+        is_advance_order: 0,
+        source: SOURCE_KIOSK,
+        payment_method: PAYMENT_METHOD_MAP[paymentMethod] ?? PAYMENT_METHOD_MAP.cash,
+        items: JSON.stringify(state.items.map(sanitizeKioskOrderItem)),
+    };
+}
+
 export const kioskCart = {
     namespaced: true,
     state: {
@@ -304,17 +328,13 @@ export const kioskCart = {
         reset({ commit }) {
             commit('RESET');
         },
-        submitOrder({ commit, state, getters }, { branchId, orderType, paymentMethod } = {}) {
+        submitOrder({ commit, state }, { orderType, paymentMethod } = {}) {
             return new Promise((resolve, reject) => {
                 loadSnapshot().then(snap => {
                     if (snap && isSnapshotStale(snap.savedAt)) {
                         console.warn('[Kiosk] Menu snapshot is stale (>4h). Server will recalculate prices at order time (SSOT).');
                     }
                 }).catch(() => {});
-
-                const resolvedBranchId = branchId || state.branchId;
-                const subtotal = getters.subtotal;
-                const total = getters.total;
 
                 // Store payment method for receipt printing
                 commit('SET_PAYMENT_METHOD', paymentMethod || 'cash');
@@ -328,59 +348,10 @@ export const kioskCart = {
                     commit('SET_IDEMPOTENCY_KEY', idempotencyKey);
                 }
 
-                // Build order lines — item_variations / item_extras are already in server format
-                // (arrays of { id, variation_name, name } / { id, name }) produced by
-                // KioskWizardComponent.buildCartItem(). No index-based reconstruction needed.
-                const orderItems = state.items.map(item => {
-                    const itemPrice = parseFloat(item.convert_price) || 0;
-                    const itemVariationTotal = item.item_variation_total || 0;
-                    const itemExtraTotal = item.item_extra_total || 0;
-                    const totalPrice = (itemPrice + itemVariationTotal + itemExtraTotal) * item.quantity;
-
-                    // Guard: ensure both fields are arrays (defensive for items added via non-wizard paths)
-                    const itemVariations = Array.isArray(item.item_variations) ? item.item_variations : [];
-                    const itemExtras    = Array.isArray(item.item_extras)    ? item.item_extras    : [];
-
-                    return {
-                        item_id: item.item_id,
-                        item_price: item.convert_price,
-                        branch_id: resolvedBranchId,
-                        instruction: item.instruction || '',
-                        quantity: item.quantity,
-                        discount: item.discount || 0,
-                        total_price: totalPrice,
-                        item_variation_total: itemVariationTotal,
-                        item_extra_total: itemExtraTotal,
-                        item_variations: itemVariations,
-                        item_extras: itemExtras,
-                    };
+                const orderPayload = buildKioskOrderPayload(state, {
+                    orderType,
+                    paymentMethod,
                 });
-
-                const orderPayload = {
-                    branch_id: resolvedBranchId,
-                    // [GAP-22-1] Use the order type chosen by the customer (sur place=25, à emporter=10)
-                    // Falls back to state.orderType (set via setOrderType action), then to passed param, then to KIOSK=25
-                    order_type: orderType || state.orderType || 25,
-                    subtotal: subtotal,
-                    discount: state.loyaltyDiscount || 0,
-                    // [SPLASH LOYALTY] Send loyalty_code so backend can validate and deduct points server-side
-                    loyalty_code: state.loyaltyCustomer?.loyalty_code || null,
-                    // Kiosk Phase 9.1.6 — Code promo transmis au serveur pour
-                    // validation finale (SSOT) + increment uses_count. Le
-                    // `promoDiscount` client n'est JAMAIS lu serveur : celui-ci
-                    // recalcule via KioskPromoService + PricingService.
-                    kiosk_promo_code: state.promoCode || null,
-                    delivery_charge: 0,
-                    total: total,
-                    is_advance_order: 0,
-                    source: SOURCE_KIOSK,
-                    payment_method: PAYMENT_METHOD_MAP[paymentMethod] ?? PAYMENT_METHOD_MAP.cash,
-                    coupon_id: null,
-                    address_id: null,
-                    delivery_time: null,
-                    token: null,
-                    items: JSON.stringify(orderItems),
-                };
 
                 axios.post('frontend/order', orderPayload, {
                     headers: { 'X-Idempotency-Key': idempotencyKey },
