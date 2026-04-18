@@ -30,6 +30,9 @@ class RolePermissionTableSeeder extends Seeder
                 // [POS-9.1.1] branch manager = 10%-50% discount
                 ['name' => 'pos-discount-up-to-10'],
                 ['name' => 'pos-discount-over-10-requires-manager'],
+                // [POS-9.4.12] Branch managers drive the daily fiscal close.
+                ['name' => 'pos-manage-fiscal'],
+                ['name' => 'pos-reopen-z'],
                 ['name' => 'online-orders'],
                 ['name' => 'table-orders'],
                 ['name' => 'kitchen-display-system'],

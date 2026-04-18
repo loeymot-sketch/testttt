@@ -158,6 +158,24 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [POS-9.4.12] Fiscal management (NF525 Z/X reports) — Admin + Branch Manager only.
+            [
+                'title'      => 'POS Manage Fiscal (Z/X reports)',
+                'name'       => 'pos-manage-fiscal',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/manage-fiscal',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // [POS-9.4.12] Reopening a closed Z requires manager-level approval (audit-logged).
+            [
+                'title'      => 'POS Reopen Closed Z Report',
+                'name'       => 'pos-reopen-z',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/reopen-z',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',
