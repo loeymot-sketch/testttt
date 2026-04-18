@@ -90,6 +90,7 @@ Périmètre autorisé pour les implémentations P9.1 → P9.10. Tout fichier hor
 - `resources/js/components/backend/frontend/KitchenDisplaySystemComponent.vue:404-427` (affichage allergens snapshotés — 9.5.2)
 - `resources/js/components/backend/frontend/PosComponent.vue:599-605` (drawer expandable — 9.5.7)
 - `resources/js/store/modules/kioskCart.js:235-258` (retirer prix payload client — 9.5.8)
+- `app/Http/Requests/OrderRequest.php` **(scope extension 2026-04-18 — additif uniquement : `total` et montants dérivés passent en `nullable`/`sometimes`, le serveur recompute via PricingService SSOT — même pattern que POS-9.1.8 sur `PosOrderRequest`. Unblock `P9_5_BLOCKER_9.5.8_order_request_validation.md`.)**
 - `app/Jobs/CleanupStalePendingKioskOrders.php` (nouveau — 9.5.3)
 - `app/Console/Kernel.php` (schedule 5 min — 9.5.3)
 - `tests/Feature/Orders/{OrderAllergenSnapshotTest,CleanupStalePendingOrdersTest,IdempotencyBranchScopedTest,KDSAllergenVisibilityTest,CrossItemGuardTest}.php` (nouveaux)
