@@ -22,7 +22,12 @@ trait InstallsAuditLogImmutabilityTriggers
         }
     }
 
-    protected function installImmutabilityTriggers(): void
+    /**
+     * Drop + recreate triggers (e.g. after tampering tests). Do not call from
+     * setUp/tearDown with MySQL + RefreshDatabase — DROP TRIGGER commits and
+     * breaks PHPUnit savepoints.
+     */
+    protected function reinstallImmutabilityTriggers(): void
     {
         $driver = DB::getDriverName();
         $this->dropImmutabilityTriggers();

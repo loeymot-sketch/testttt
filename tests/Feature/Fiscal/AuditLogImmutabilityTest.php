@@ -22,18 +22,6 @@ class AuditLogImmutabilityTest extends TestCase
     use InstallsAuditLogImmutabilityTriggers;
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->installImmutabilityTriggers();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->installImmutabilityTriggers();
-        parent::tearDown();
-    }
-
     private function seedLog(): AuditLog
     {
         return AuditLog::create([

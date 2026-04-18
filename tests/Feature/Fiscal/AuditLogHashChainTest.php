@@ -38,15 +38,8 @@ class AuditLogHashChainTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->installImmutabilityTriggers();
         Config::set('fiscal.audit_secret', 'unit-test-secret-chain');
         $this->service = app(AuditLogService::class);
-    }
-
-    protected function tearDown(): void
-    {
-        $this->installImmutabilityTriggers();
-        parent::tearDown();
     }
 
     public function test_chain_verified_after_sequence_of_writes(): void
@@ -85,7 +78,7 @@ class AuditLogHashChainTest extends TestCase
         } finally {
             // DDL drops survive transaction rollback on MySQL — reinstall so
             // subsequent tests (and other classes) still see INSERT-only triggers.
-            $this->installImmutabilityTriggers();
+            $this->reinstallImmutabilityTriggers();
         }
 
         $firstBroken = $this->service->verifyChain(self::BR);
