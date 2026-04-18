@@ -423,6 +423,15 @@
                             </span>
                           </p>
                         </div>
+                        <div v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0" class="mt-2 flex flex-wrap gap-1">
+                          <span
+                            v-for="(allergen, allergenIdx) in item.allergens_snapshot"
+                            :key="`${item.id || iIdx}-allergen-${allergenIdx}`"
+                            class="rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
+                          >
+                            {{ allergen }}
+                          </span>
+                        </div>
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
                     </div>
