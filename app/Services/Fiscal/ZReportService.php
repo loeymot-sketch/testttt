@@ -209,6 +209,34 @@ class ZReportService
         $cancelCount = (clone $query)->where('status', OrderStatus::CANCELED)->count();
         $refundCount = (clone $query)->where('status', OrderStatus::RETURNED)->count();
 
+        // [POS-9-H.2.8 / F-B6]
+        // Populate total_by_tax_rate by summing order_items.tax_amount
+        // grouped by tax_rate, scoped to the exact same order set we
+        // just aggregated. Using order_items (the already-persisted,
+        // server-recomputed pricing from POS-9.1.8) avoids re-running
+        // PricingService and guarantees consistency with the individual
+        // receipts that are referenced by fiscal_sequence_no.
+        $byTaxRate = [];
+        $paidOrderIds = $orders->pluck('id')->all();
+        if ($paidOrderIds !== []) {
+            $rows = DB::table('order_items')
+                ->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')
+                ->whereIn('order_id', $paidOrderIds)
+                ->whereNotNull('tax_rate')
+                ->groupBy('tax_rate')
+                ->get();
+            foreach ($rows as $r) {
+                // Normalize the key — tax_rate is stored as a string with
+                // inconsistent precision ("10", "10.00", "5.5"), so we
+                // cast through float to canonicalise and then back to
+                // string for a stable JSON-encoded signed payload.
+                $key = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
+                $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + (float) $r->total_tax_for_rate;
+            }
+            $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
+            ksort($byTaxRate);
+        }
+
         // Normalise rounding to 2 decimals so the signed aggregates are stable.
         $byMethod = array_map(fn ($v) => round((float) $v, 2), $byMethod);
         ksort($byMethod);
@@ -218,7 +246,7 @@ class ZReportService
             'total_ht'          => round($totalHt,  2),
             'total_tva'         => round($totalTva, 2),
             'total_by_method'   => $byMethod,
-            'total_by_tax_rate' => $byTaxRate, // reserved — populated when tax_lines become authoritative per-order
+            'total_by_tax_rate' => $byTaxRate,
             'order_count'       => $orderCount,
             'cancel_count'      => $cancelCount,
             'refund_count'      => $refundCount,
