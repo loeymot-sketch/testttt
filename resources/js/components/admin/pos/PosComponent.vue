@@ -887,6 +887,16 @@ export default {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
                 this.checkoutProps.form.branch_id = res.data.data.branch_id
+                // [POS-9.1.9] Bind the POS cart to the active cashier (branch + user).
+                // Without this, all carts share `pos_cart_v2` and a cashier B
+                // logging in after cashier A inherits A's lines (POS-GA-F-41).
+                try {
+                    const authInfo = this.$store.getters['auth/authInfo'] || {};
+                    this.$store.dispatch('posCart/setScope', {
+                        branchId: res.data.data.branch_id,
+                        userId: authInfo.id || null,
+                    });
+                } catch (e) { /* defensive: never block POS bootstrap */ }
                 this.$store.dispatch("frontendBranch/show", this.checkoutProps.form.branch_id).then(res => {
                     this.location = {
                         lat: res.data.data.latitude,

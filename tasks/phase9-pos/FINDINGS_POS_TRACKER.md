@@ -55,7 +55,7 @@
 | POS-GA-F-38 | P1 | `order_serial_no` non séquentiel par branche (`date('dmy').id`) | `app/Services/OrderService.php:475, 801` | POS-9.4 | — | open |
 | POS-GA-F-39 | P1 | `action_logs.branch_id` absent → fuite cross-tenant dashboard | migration `2026_03_06_182733:15-22`, `app/Services/DashboardService.php:305-326` | POS-9.1 | sync | resolved (POS-9.1.4) |
 | POS-GA-F-40 | P1 | Couverture tests POS backend faible (pas double-submit POS, pas `changePaymentStatus`, pas symétrie) | `tests/Feature/` | POS-9.10 | sync | open |
-| POS-GA-F-41 | P1 | Panier localStorage `pos_cart_v2` non scopé par `branch_id`/`user_id` — fuite entre caissiers | `resources/js/store/pos/posCart.js:6-44` | POS-9.9 | — | open |
+| POS-GA-F-41 | P1 | Panier localStorage `pos_cart_v2` non scopé par `branch_id`/`user_id` — fuite entre caissiers | `resources/js/store/pos/posCart.js:6-44` | POS-9.1 | — | resolved (POS-9.1.9 — clé pos_cart_v3:b<branch>:u<user>) |
 | POS-GA-F-42 | P1 | Token séquentiel journalier fabriqué client localStorage — collisions entre caisses | `resources/js/components/admin/pos/PosComponent.vue:1253-1266` | POS-9.8 | — | open |
 | POS-GA-F-43 | P2 | `KitchenDisplaySystemOrderService::list` filtre `branch_id` via `LIKE '%X%'` → faux positifs | `app/Services/KitchenDisplaySystemOrderService.php:75-85` | POS-9.1 | — | resolved (POS-9.1.5) |
 | POS-GA-F-44 | P2 | `OrderService::list` dépend exclusivement de `BranchScope` (pas de defense-in-depth) | `app/Services/OrderService.php:102-170` | POS-9.10 | — | open |
