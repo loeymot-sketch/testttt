@@ -37,7 +37,10 @@
 
 ---
 
-## Vague H.2 — Fiscal correctness (secrets, race, boundaries, format) — ~4 h
+## Vague H.2 — Fiscal correctness (secrets, race, boundaries, format) — ~4 h ✅ DONE (10/10)
+
+**Status** : All 10 items completed. 72 fiscal + audit tests green.
+Gate H.2 verified: grep invariants clean, no regressions introduced on main suite (pre-existing Menu failures confirmed baseline).
 
 **Conditions** : Vague H.1 mergée (sécurité base solide).
 
