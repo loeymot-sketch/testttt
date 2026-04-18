@@ -18,7 +18,7 @@
 | POS-GA-F-01 | P0 | MISSING `ZReport` (NF525 / loi Finance 2018) | backlog | POS-9.4 | — | open |
 | POS-GA-F-02 | P0 | MISSING `XReport` (snapshot intraday) | backlog | POS-9.4 | — | open |
 | POS-GA-F-03 | P0 | MISSING `cash_drawer_sessions` + comptage + écarts | backlog | POS-9.5 | — | open |
-| POS-GA-F-04 | P0 | `action_logs` mutable + sans `branch_id` → fuite cross-tenant | `app/Models/ActionLog.php:8-22`, `app/Services/DashboardService.php:305-326`, migration `2026_03_06_182733` | POS-9.4 | sync (audit infra) | open |
+| POS-GA-F-04 | P0 | `action_logs` mutable + sans `branch_id` → fuite cross-tenant | `app/Models/ActionLog.php:8-22`, `app/Services/DashboardService.php:305-326`, migration `2026_03_06_182733` | POS-9.4 | sync (audit infra) | partial (POS-9.1.4 adds branch_id scoping; immutability = POS-9.4) |
 | POS-GA-F-05 | P0 | Stock non libéré sur CANCELED/REJECTED/RETURNED | `app/Services/Menu/AvailabilityService.php:118-163` | POS-9.5 | sync (listener shared) | open |
 | POS-GA-F-06 | P0 | Discount manuel sans permission / seuil / audit structuré | `app/Services/Pricing/PricingService.php:213-217`, `app/Services/Pricing/DiscountCalculator.php`, `resources/js/components/admin/pos/PosComponent.vue:1139-1158`, `app/Http/Requests/PosOrderRequest.php:38` | POS-9.1 | — | resolved (POS-9.1.1) |
 | POS-GA-F-07 | P0 | MISSING endpoint admin toggle 86 (`AvailabilityService::toggle` non exposé) | `app/Services/Menu/AvailabilityService.php:32-74` | POS-9.5 | sync (controller shared) | open |
@@ -53,7 +53,7 @@
 | POS-GA-F-36 | P1 | Allergens absents d'`ItemResource` admin (POS) → caissier aveugle | `app/Http/Resources/ItemResource.php:19-65` | POS-9.9 | sync | open |
 | POS-GA-F-37 | P1 | TVA sans cascade `order_type` (dine-in 10 % / takeaway 5.5 % / alcool 20 %) | `app/Services/Pricing/PricingService.php:141-152`, `app/Services/Pricing/TaxCalculator.php:9-17` | POS-9.8 | — | open |
 | POS-GA-F-38 | P1 | `order_serial_no` non séquentiel par branche (`date('dmy').id`) | `app/Services/OrderService.php:475, 801` | POS-9.4 | — | open |
-| POS-GA-F-39 | P1 | `action_logs.branch_id` absent → fuite cross-tenant dashboard | migration `2026_03_06_182733:15-22`, `app/Services/DashboardService.php:305-326` | POS-9.1 | sync | open |
+| POS-GA-F-39 | P1 | `action_logs.branch_id` absent → fuite cross-tenant dashboard | migration `2026_03_06_182733:15-22`, `app/Services/DashboardService.php:305-326` | POS-9.1 | sync | resolved (POS-9.1.4) |
 | POS-GA-F-40 | P1 | Couverture tests POS backend faible (pas double-submit POS, pas `changePaymentStatus`, pas symétrie) | `tests/Feature/` | POS-9.10 | sync | open |
 | POS-GA-F-41 | P1 | Panier localStorage `pos_cart_v2` non scopé par `branch_id`/`user_id` — fuite entre caissiers | `resources/js/store/pos/posCart.js:6-44` | POS-9.9 | — | open |
 | POS-GA-F-42 | P1 | Token séquentiel journalier fabriqué client localStorage — collisions entre caisses | `resources/js/components/admin/pos/PosComponent.vue:1253-1266` | POS-9.8 | — | open |

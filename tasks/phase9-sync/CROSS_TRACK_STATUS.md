@@ -17,7 +17,7 @@
 | B | POS Phase 9 | POS-9.1 | 9.1.1 discount permission | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.2 |
 | B | POS Phase 9 | POS-9.1 | 9.1.2 destroy() sécurisé | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.4 |
 | B | POS Phase 9 | POS-9.1 | 9.1.3 BranchIsolationTest | feat/pos-phase-9-1 | resolved (commit) | — | — |
-| B | POS Phase 9 | POS-9.1 | 9.1.4 action_logs.branch_id | feat/pos-phase-9-1 | open | — | POS-9.4 |
+| B | POS Phase 9 | POS-9.1 | 9.1.4 action_logs.branch_id | feat/pos-phase-9-1 | resolved (commit) | — | POS-9.4 |
 | B | POS Phase 9 | POS-9.1 | 9.1.5 KDS LIKE→= | feat/pos-phase-9-1 | open | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.6 dine-in flag | feat/pos-phase-9-1 | open | — | — |
 | B | POS Phase 9 | POS-9.1 | 9.1.7 deliveryBoy save→dispatch | feat/pos-phase-9-1 | open | — | POS-9.2 |
