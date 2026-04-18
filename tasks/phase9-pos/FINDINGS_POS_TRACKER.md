@@ -30,7 +30,7 @@
 | POS-GA-F-13 | P0 | `PaymentService::cashBack` ne logue pas / rate cas "pas de Transaction préalable" | `app/Services/PaymentService.php:29-50` | POS-9.3 | — | open |
 | POS-GA-F-14 | P0 | `OrderService::destroy` physique sans branch check, sans event, sans ActionLog | `app/Services/OrderService.php:1585-1598`, `app/Http/Controllers/Admin/PosOrderController.php:59-68`, `routes/api.php:628` | POS-9.1 | — | resolved (POS-9.1.2) |
 | POS-GA-F-15 | P0 | Drawer POS ne centralise que kiosk cash (1 source sur 5+) | `resources/js/components/admin/pos/PosComponent.vue:1018-1040` | POS-9.6 | — | open |
-| POS-GA-F-16 | P0 | `BranchIsolationTest` est un placeholder (`assertTrue(true)`) | `tests/Feature/BranchIsolationTest.php:9-13` | POS-9.1 | sync | open |
+| POS-GA-F-16 | P0 | `BranchIsolationTest` est un placeholder (`assertTrue(true)`) | `tests/Feature/BranchIsolationTest.php:9-13` | POS-9.1 | sync | resolved (POS-9.1.3) |
 | POS-GA-F-17 | P0 | Dine-in et table selector hardcodés `v-if="false"` | `resources/js/components/admin/pos/PosComponent.vue:121, 235` | POS-9.1 | — | open |
 | POS-GA-F-18 | P0 | Aucune intégration TPE — PAID marqué sans preuve d'encaissement | `resources/js/components/admin/pos/PaymentComponent.vue:64-67, 207-211`, `app/Http/Requests/PosOrderRequest.php:60` | POS-9.7 | — | open |
 | POS-GA-F-19 | P0 | Aucune ouverture tiroir depuis POS | `resources/js/components/admin/pos/PaymentComponent.vue:191-277`, `resources/js/services/kioskHardware.js:259-262` | POS-9.5 | — | open |
