@@ -228,6 +228,13 @@ import {
     readSnapshot as readWizardSnapshotHelper,
     clearSnapshot as clearWizardSnapshotHelper,
 } from '../../../helpers/kioskWizardResumeSnapshot';
+// Phase 9.3.15 — Wizard focus / scroll / aria-live primitives.
+import {
+    focusFirstInteractive,
+    captureScrollPosition,
+    restoreScrollPosition,
+    announceStep,
+} from '../../../helpers/kioskWizardFocusA11y';
 
 export default {
   name: 'KioskWizardComponent',
@@ -1278,29 +1285,18 @@ export default {
       if (!stepType || !this.$refs.stepContent) return;
       this.stepScrollMemory = {
         ...this.stepScrollMemory,
-        [stepType]: this.$refs.stepContent.scrollTop || 0,
+        [stepType]: captureScrollPosition(this.$refs.stepContent),
       };
     },
     restoreStepScroll(stepType) {
       if (!stepType || !this.$refs.stepContent) return;
-      this.$refs.stepContent.scrollTop = this.stepScrollMemory[stepType] || 0;
+      restoreScrollPosition(this.$refs.stepContent, this.stepScrollMemory[stepType] || 0);
     },
     focusFirstStepControl() {
-      const root = this.$refs.stepContent;
-      if (!root || typeof root.querySelector !== 'function') return;
-
-      const firstControl = root.querySelector(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [role="radio"], [role="checkbox"], [tabindex]:not([tabindex="-1"])'
-      );
-
-      if (firstControl && typeof firstControl.focus === 'function') {
-        firstControl.focus({ preventScroll: true });
-        return;
-      }
-
-      if (this.$refs.stepQuestion && typeof this.$refs.stepQuestion.focus === 'function') {
-        this.$refs.stepQuestion.focus({ preventScroll: true });
-      }
+      focusFirstInteractive(this.$refs.stepContent, { fallback: this.$refs.stepQuestion });
+    },
+    announceCurrentStep(message) {
+      announceStep(this.$refs.stepQuestion, message);
     }
   },
   mounted() {
