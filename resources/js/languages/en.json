@@ -1078,7 +1078,8 @@
             "payment_error_generic": "Something went wrong. Please try again.",
             "payment_declined": "Payment declined by the device",
             "payment_cancelled": "Payment cancelled.",
-            "payment_cancelled_toast": "Payment cancelled"
+            "payment_cancelled_toast": "Payment cancelled",
+            "speech_error": "Payment declined. {msg}"
         },
         "upsell_screen": {
             "title": "Anything else?",
@@ -1414,7 +1415,8 @@
                 "receipt_total": "TOTAL",
                 "receipt_loyalty": "LOYALTY: +{n} pts",
                 "receipt_thanks": "Thank you for visiting!",
-                "receipt_present": "Present this ticket at the counter."
+                "receipt_present": "Present this ticket at the counter.",
+                "speech_summary": "Order number {number} confirmed. Total paid: {total}. Please go to the counter."
             }
         },
         "order_type_label": "Order type",

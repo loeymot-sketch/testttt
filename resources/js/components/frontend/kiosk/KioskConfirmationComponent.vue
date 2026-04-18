@@ -130,6 +130,10 @@
 import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+// Kiosk Phase 9.1.8 — TTS sur l'écran de confirmation.
+// Énoncé du numéro de commande + total pour les malvoyants (EAA 2025).
+// Le composable no-op si `kioskSettings.audio` est off — aucun effet de bord.
+import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 
 export default {
   name: 'KioskConfirmationComponent',
@@ -242,9 +246,27 @@ export default {
     this.$nextTick(() => {
       this.printReceipt();
     });
+
+    // Kiosk Phase 9.1.8 — annonce vocale de la confirmation (audio only if
+    // user opted in via a11y toggles). No-op si audio=off, et l'appel est
+    // placé après `$nextTick` pour respecter la règle autoplay Chrome
+    // (lancé en réponse à la navigation utilisateur sur /confirmation).
+    try {
+      this._kioskSpeech = useKioskSpeech({ store: this.$store });
+      const text = this.$t('kiosk.confirmation.speech_summary', {
+        number: String(this.displayNumber || '').replace(/[^0-9A-Za-z]/g, ''),
+        total: this.formatPrice(this.displayTotal || 0),
+      });
+      if (text) {
+        this._kioskSpeech.speak(text, { key: 'kiosk.confirmation.speech_summary' }).catch(() => {});
+      }
+    } catch (_) { /* tolérant à l'absence d'API Web Speech */ }
   },
   beforeUnmount() {
     this.clearTimer();
+    // Kiosk Phase 9.1.8 — stoppe proprement le TTS si l'utilisateur quitte
+    // l'écran avant la fin de la lecture (sinon fuite d'utterance sur idle).
+    try { this._kioskSpeech?.stop(); } catch (_) {}
   },
   methods: {
     startTimer() {

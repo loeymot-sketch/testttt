@@ -1052,7 +1052,8 @@
             "payment_error_generic": "حدث خطأ. حاول مرة أخرى.",
             "payment_declined": "رفض الجهاز الدفع",
             "payment_cancelled": "تم إلغاء الدفع.",
-            "payment_cancelled_toast": "تم إلغاء الدفع"
+            "payment_cancelled_toast": "تم إلغاء الدفع",
+            "speech_error": "تم رفض الدفع. {msg}"
         },
         "upsell_screen": {
             "title": "هل تريد إضافة شيء؟",
@@ -1388,7 +1389,8 @@
                 "receipt_total": "الإجمالي",
                 "receipt_loyalty": "الولاء: +{n} نقطة",
                 "receipt_thanks": "شكراً لزيارتك!",
-                "receipt_present": "قدم هذا الإيصال في الكاونتر."
+                "receipt_present": "قدم هذا الإيصال في الكاونتر.",
+                "speech_summary": "تم تأكيد الطلب رقم {number}. المبلغ المدفوع: {total}. يرجى التوجه إلى الكاونتر."
             }
         },
         "order_type_label": "نوع الطلب",

@@ -208,6 +208,10 @@ import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import kioskHardware from '../../../services/kioskHardware';
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
+// Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
+// Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
+// que le client ne réalise pas que la transaction a échoué.
+import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 
 export default {
   name: 'KioskPaymentComponent',
@@ -234,8 +238,17 @@ export default {
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
     cartTotal() { return this.total; },
   },
+  mounted() {
+    // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
+    // absence de Web Speech API sur le navigateur kiosk).
+    try {
+      this._kioskSpeech = useKioskSpeech({ store: this.$store });
+    } catch (_) { this._kioskSpeech = null; }
+  },
   beforeUnmount() {
     this._lastOrder = null;
+    // Kiosk Phase 9.1.8 — stoppe le TTS si on quitte l'écran pendant la lecture.
+    try { this._kioskSpeech?.stop(); } catch (_) {}
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
@@ -316,6 +329,14 @@ export default {
         this.showToast(msg, 'error', 6000);
         this.submitting = false;
         this.submitted = false;
+        // Kiosk Phase 9.1.8 — annonce vocale de l'erreur (no-op si audio off).
+        // On énonce un message court + clef i18n pour le fallback AR mp3 statique.
+        try {
+          this._kioskSpeech?.speak(
+            this.$t('kiosk.pay_screen.speech_error', { msg }),
+            { key: 'kiosk.pay_screen.speech_error' },
+          ).catch(() => {});
+        } catch (_) {}
       }
     },
 

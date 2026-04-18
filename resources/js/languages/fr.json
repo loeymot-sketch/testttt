@@ -431,7 +431,8 @@
             "payment_error_generic": "Une erreur est survenue. Veuillez réessayer.",
             "payment_declined": "Paiement refusé par l'appareil",
             "payment_cancelled": "Paiement annulé.",
-            "payment_cancelled_toast": "Paiement annulé"
+            "payment_cancelled_toast": "Paiement annulé",
+            "speech_error": "Paiement refusé. {msg}"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -767,7 +768,8 @@
                 "receipt_total": "TOTAL",
                 "receipt_loyalty": "FIDÉLITÉ : +{n} pts",
                 "receipt_thanks": "Merci de votre visite !",
-                "receipt_present": "Présentez ce ticket au comptoir."
+                "receipt_present": "Présentez ce ticket au comptoir.",
+                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir."
             }
         },
         "order_type_label": "Type de commande",
