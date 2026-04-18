@@ -3,7 +3,7 @@
 TASK_ID: KIOSK_PHASE_9_5_2026-04-18
 PHASE: EXECUTE
 RUNNER_MODE: complex
-PRIMARY_MODEL: claude-opus-4-7-thinking-high
+PRIMARY_MODEL: gpt-5.4
 PLAN_FILE: reports/execution/PLAN_PHASE_9_KIOSK_2026-04-18.md
 REPORT_FILE: reports/execution/RUN_P9_5_KIOSK_2026-04-18.md
 GATE_FILE:
