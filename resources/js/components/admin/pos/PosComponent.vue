@@ -1094,6 +1094,20 @@ export default {
         _notifyNewOrder(event) {
             const payload = (event && event.payload) ? event.payload : event || {};
             const orderId = payload.order_id || payload.id || null;
+
+            // [H.3.4 / F-A6] Source filter + self-exclusion.
+            // Cashier-originated orders (POS=15, DINING_TABLE=20) are
+            // created by this very terminal — beeping on them would
+            // confuse the operator. We only notify for orders coming
+            // from *other* sources (KIOSK, online TAKEAWAY, DELIVERY).
+            // OrderType enum values are mirrored here to avoid pulling
+            // the PHP enum into every Vue bundle.
+            const POS_SELF_TYPES = [15, 20];
+            const orderType = parseInt(payload.order_type, 10);
+            if (!Number.isNaN(orderType) && POS_SELF_TYPES.includes(orderType)) {
+                return;
+            }
+
             try {
                 const label = orderId
                     ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
@@ -1119,18 +1133,37 @@ export default {
                 try { this._audioCtx = new Ctx(); } catch (e) { return; }
             }
             const ctx = this._audioCtx;
+
+            // [H.3.4 / H.3.8 F-A15] Browsers suspend the AudioContext
+            // until a user gesture has occurred. Resume() is a no-op
+            // once the context is already running, and returns a
+            // Promise we await via .then(); emitting the beep in the
+            // resume callback avoids swallowed plays right after login.
+            const emit = () => {
+                try {
+                    const osc  = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 880; // A5 — short ding
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                    osc.connect(gain).connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } catch (e) { /* autoplay or context blocked */ }
+            };
+
             try {
-                const osc  = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = 880; // A5 — short ding
-                gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-                osc.connect(gain).connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.4);
-            } catch (e) { /* autoplay or context blocked */ }
+                if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+                    const p = ctx.resume();
+                    if (p && typeof p.then === 'function') {
+                        p.then(emit).catch(() => { /* still locked */ });
+                        return;
+                    }
+                }
+                emit();
+            } catch (e) { /* defensive */ }
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────
