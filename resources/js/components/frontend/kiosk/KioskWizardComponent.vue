@@ -222,6 +222,12 @@ import { onEvent } from '../../../services/eventContract';
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 // Phase 9.3.12 — Double-submit guard factory (cooldown window after submit).
 import { createSubmitGuard } from '../../../helpers/kioskWizardSubmitGuard';
+// Phase 9.3.13 — Wizard snapshot persistence (localStorage + 10 min TTL).
+import {
+    saveSnapshot as saveWizardSnapshotHelper,
+    readSnapshot as readWizardSnapshotHelper,
+    clearSnapshot as clearWizardSnapshotHelper,
+} from '../../../helpers/kioskWizardResumeSnapshot';
 
 export default {
   name: 'KioskWizardComponent',
@@ -908,54 +914,31 @@ export default {
         instruction: ''
       };
     },
-    wizardSnapshotStorageKey() {
-      const itemId = parseInt(this.resolvedItem?.id || this.itemId || 0, 10);
-      return itemId > 0 ? `kiosk:wizard-snapshot:${itemId}` : null;
-    },
     saveWizardSnapshot() {
-      if (typeof window === 'undefined' || !window.sessionStorage || !this.resolvedItem) return;
-      const key = this.wizardSnapshotStorageKey();
-      if (!key) return;
-
-      window.sessionStorage.setItem(key, JSON.stringify({
-        version: 1,
-        item_id: parseInt(this.resolvedItem.id, 10),
+      if (!this.resolvedItem) return;
+      saveWizardSnapshotHelper(this.resolvedItem.id, {
         step_index: this.currentStepIndex,
         selections: this.selections,
-      }));
+      });
     },
     restoreWizardSnapshot() {
-      if (typeof window === 'undefined' || !window.sessionStorage || !this.resolvedItem) return false;
-      const key = this.wizardSnapshotStorageKey();
-      if (!key) return false;
+      if (!this.resolvedItem) return false;
+      const payload = readWizardSnapshotHelper(this.resolvedItem.id);
+      if (!payload) return false;
 
-      try {
-        const raw = window.sessionStorage.getItem(key);
-        if (!raw) return false;
+      this.selections = {
+        ...this.selections,
+        ...(payload.selections || {}),
+      };
 
-        const snapshot = JSON.parse(raw);
-        if (parseInt(snapshot?.item_id || 0, 10) !== parseInt(this.resolvedItem.id, 10)) {
-          return false;
-        }
-
-        this.selections = {
-          ...this.selections,
-          ...(snapshot?.selections || {}),
-        };
-
-        const maxIndex = Math.max((this.activeSteps?.length || 1) - 1, 0);
-        const nextIndex = Math.min(Math.max(parseInt(snapshot?.step_index || 0, 10), 0), maxIndex);
-        this.currentStepIndex = nextIndex;
-        return true;
-      } catch (_) {
-        return false;
-      }
+      const maxIndex = Math.max((this.activeSteps?.length || 1) - 1, 0);
+      const nextIndex = Math.min(Math.max(parseInt(payload.step_index || 0, 10), 0), maxIndex);
+      this.currentStepIndex = nextIndex;
+      return true;
     },
     clearWizardSnapshot() {
-      if (typeof window === 'undefined' || !window.sessionStorage) return;
-      const key = this.wizardSnapshotStorageKey();
-      if (!key) return;
-      window.sessionStorage.removeItem(key);
+      if (!this.resolvedItem) return;
+      clearWizardSnapshotHelper(this.resolvedItem.id);
     },
     async fetchItemById(id) {
       if (!id) return;

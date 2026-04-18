@@ -1530,7 +1530,7 @@ describe('KioskWizardComponent — add to cart submission guard', () => {
 
 describe('KioskWizardComponent — resume snapshot', () => {
   it('wizard_resume_snapshot_restores_state', async () => {
-    window.sessionStorage.clear();
+    window.localStorage.clear();
     const stubs = Object.fromEntries(wizardStubNames.map((name) => [name, true]));
     const wizardItem = {
       id: 777,
@@ -1587,7 +1587,7 @@ describe('KioskWizardComponent — resume snapshot', () => {
     expect(resumed.vm.selections.sauceOrder).toEqual([201]);
 
     resumed.unmount();
-    window.sessionStorage.clear();
+    window.localStorage.clear();
   });
 });
 
