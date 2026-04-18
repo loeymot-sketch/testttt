@@ -1,4 +1,5 @@
 import { kioskSumPaidViandesSurcharge } from './kioskViandeCatalog';
+import { matchAttributeByRole } from './kioskPainCatalog';
 
 const DEFAULT_MENU_PRICING = {
   fullRatio: 1,
@@ -27,7 +28,10 @@ export function getKioskMenuPricingConfig() {
 }
 
 export function getKioskExtraSauceUnitPrice(item) {
-  const sauceAttr = item?.itemAttributes?.find((a) => (a.name || '').toLowerCase().includes('sauce'));
+  const attrs = Array.isArray(item?.itemAttributes)
+    ? item.itemAttributes
+    : Object.values(item?.itemAttributes || {});
+  const sauceAttr = attrs.find((attr) => matchAttributeByRole(attr, 'sauce'));
   const vars = sauceAttr
     ? (item?.variations?.[String(sauceAttr.id)] || item?.variations?.[sauceAttr.id])
     : null;
@@ -41,6 +45,46 @@ export function getKioskExtraSauceUnitPrice(item) {
   }
 
   return unit;
+}
+
+function getSauceVariations(item) {
+  const attrs = Array.isArray(item?.itemAttributes)
+    ? item.itemAttributes
+    : Object.values(item?.itemAttributes || {});
+  const sauceAttr = attrs.find((attr) => matchAttributeByRole(attr, 'sauce'));
+  const vars = sauceAttr
+    ? (item?.variations?.[String(sauceAttr.id)] || item?.variations?.[sauceAttr.id])
+    : null;
+
+  if (Array.isArray(vars)) return vars;
+  if (vars && typeof vars === 'object') return Object.values(vars);
+  return [];
+}
+
+function normalizeSauceSelectionKey(key) {
+  const raw = String(key ?? '');
+  return raw.startsWith('sauce-var-') ? raw.slice('sauce-var-'.length) : raw;
+}
+
+function getSelectedSauceLinePrice(item, key) {
+  const normalizedKey = normalizeSauceSelectionKey(key);
+  const variation = getSauceVariations(item).find((row) => {
+    if (row == null) return false;
+    if (String(row.id ?? '') === normalizedKey) return true;
+    return String(row.name ?? '') === normalizedKey;
+  });
+
+  return parseFloat(variation?.convert_price || variation?.price || 0) || 0;
+}
+
+function getExtraSauceSelectionsTotal(item, sauceOrder = []) {
+  if (!Array.isArray(sauceOrder) || sauceOrder.length <= 1) {
+    return 0;
+  }
+
+  return sauceOrder
+    .slice(1)
+    .reduce((sum, key) => sum + getSelectedSauceLinePrice(item, key), 0);
 }
 
 export function getKioskMenuAddonPrice(item, menuChoice) {
@@ -73,16 +117,13 @@ export function calculateKioskRunningTotal(item, selections = {}) {
   }
 
   let total = parseFloat(item.convert_price) || 0;
-  const extraSauceUnitPrice = getKioskExtraSauceUnitPrice(item);
 
   const sauceOrder = selections.sauceOrder || [];
-  if (sauceOrder.length > 1) {
-    total += (sauceOrder.length - 1) * extraSauceUnitPrice;
-  }
+  total += getExtraSauceSelectionsTotal(item, sauceOrder);
 
   const frySauces = (selections.fritesSauceOrder || []).filter((key) => key && key !== 'sans');
-  if ((selections.menuChoice === 'full' || selections.menuChoice === 'frites') && frySauces.length > 1) {
-    total += (frySauces.length - 1) * extraSauceUnitPrice;
+  if (selections.menuChoice === 'full' || selections.menuChoice === 'frites') {
+    total += getExtraSauceSelectionsTotal(item, frySauces);
   }
 
   if (Array.isArray(item.extras)) {
