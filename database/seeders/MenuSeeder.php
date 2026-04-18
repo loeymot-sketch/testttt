@@ -300,15 +300,23 @@ class MenuSeeder extends Seeder
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         }
 
-        // Delete in correct order to avoid constraint issues
-        if ($driver === 'sqlite') {
+        // Delete in correct order to avoid constraint issues.
+        // On MySQL, TRUNCATE issues an implicit COMMIT which breaks Laravel's
+        // RefreshDatabase per-test transaction — MenuSeederTest then leaks
+        // the full French menu into every subsequent test (phpunit-mysql CI).
+        // Use DELETE (same as SQLite path) whenever not on a real prod DB.
+        $useDelete = $driver === 'sqlite' || app()->environment('testing', 'local');
+
+        if ($useDelete) {
             DB::table('item_addons')->delete();
             DB::table('item_extras')->delete();
             DB::table('item_variations')->delete();
             DB::table('item_attributes')->delete();
             DB::table('items')->delete();
             DB::table('item_categories')->delete();
-            DB::statement("DELETE FROM sqlite_sequence WHERE name IN ('items', 'item_categories', 'item_addons', 'item_extras', 'item_variations', 'item_attributes');");
+            if ($driver === 'sqlite') {
+                DB::statement("DELETE FROM sqlite_sequence WHERE name IN ('items', 'item_categories', 'item_addons', 'item_extras', 'item_variations', 'item_attributes');");
+            }
         } else {
             DB::table('item_addons')->truncate();
             DB::table('item_extras')->truncate();

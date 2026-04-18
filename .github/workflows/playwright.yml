@@ -12,6 +12,9 @@ jobs:
     # phpunit.xml env does NOT apply here — empty FISCAL_* in .env breaks
     # POS flows that call AuditLogService (422/500 → Playwright failures).
     env:
+      # composer post-autoload-dump runs `artisan` before .env exists — without
+      # this, APP_KEY/APP_ENV default to production guards (broadcast/queue).
+      APP_ENV: local
       FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
       FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
       PRICING_USE_SSOT: "true"
