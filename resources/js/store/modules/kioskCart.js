@@ -199,6 +199,12 @@ export const kioskCart = {
         SET_ORDER_TYPE(state, orderType) {
             state.orderType = orderType || 25;
         },
+        /**
+         * [P1] Remove cart lines whose menu row is now unavailable (Echo ItemAvailabilityChanged).
+         */
+        SET_CART_LINES(state, items) {
+            state.items = Array.isArray(items) ? items : [];
+        },
         RESET(state) {
             state.items = [];
             state.orderRef = null;
@@ -324,6 +330,25 @@ export const kioskCart = {
         // [GAP-22-1] Store the order type chosen by the customer (sur place / à emporter)
         setOrderType({ commit }, orderType) {
             commit('SET_ORDER_TYPE', orderType);
+        },
+        /**
+         * Drop lines for items marked unavailable in kioskMenu (real-time rupture / 86).
+         */
+        pruneUnavailableLines({ state, commit, rootState }) {
+            const menuItems = rootState.kioskMenu?.items || [];
+            const byId = new Map(menuItems.map((i) => [parseInt(i.id, 10), i]));
+            const filtered = state.items.filter((line) => {
+                const mid = parseInt(line.item_id, 10);
+                const m = byId.get(mid);
+                if (!m) return true;
+                if (m.is_available === false) return false;
+                const st = m.status !== undefined && m.status !== null ? parseInt(m.status, 10) : null;
+                if (st === 0 || st === 2) return false;
+                return true;
+            });
+            if (filtered.length !== state.items.length) {
+                commit('SET_CART_LINES', filtered);
+            }
         },
         reset({ commit }) {
             commit('RESET');

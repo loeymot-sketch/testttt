@@ -40,6 +40,7 @@ use App\Services\CouponService;
 use App\Services\Pricing\DiscountCalculator;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingService;
+use App\Services\Menu\AvailabilityService;
 
 class FrontendOrderService
 {
@@ -268,7 +269,13 @@ class FrontendOrderService
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
-                    
+
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->frontendOrder->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
+
                     if (!blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client

@@ -27,7 +27,6 @@ final class AvailabilityService
      * re-toggling to the same state returns without emitting.
      *
      * @param  string|null  $reason  Required semantically when $available=false; enforced at UI level.
-     * @return ItemBranchAvailability
      */
     public function toggle(
         int $itemId,
@@ -42,15 +41,15 @@ final class AvailabilityService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$row) {
+            if (! $row) {
                 $row = new ItemBranchAvailability([
-                    'item_id'            => $itemId,
-                    'branch_id'          => $branchId,
-                    'is_available'       => $available,
+                    'item_id' => $itemId,
+                    'branch_id' => $branchId,
+                    'is_available' => $available,
                     'unavailable_reason' => $available ? null : $reason,
-                    'unavailable_since'  => $available ? null : now(),
+                    'unavailable_since' => $available ? null : now(),
                     'daily_consumed_qty' => 0,
-                    'daily_reset_at'     => Carbon::today()->toDateString(),
+                    'daily_reset_at' => Carbon::today()->toDateString(),
                 ]);
                 $row->save();
                 $this->dispatchEvent($itemId, $branchId, $available, $reason);
@@ -62,9 +61,9 @@ final class AvailabilityService
                 return $row;
             }
 
-            $row->is_available       = $available;
+            $row->is_available = $available;
             $row->unavailable_reason = $available ? null : $reason;
-            $row->unavailable_since  = $available ? null : now();
+            $row->unavailable_since = $available ? null : now();
             $row->save();
 
             $this->dispatchEvent($itemId, $branchId, $available, $reason);
@@ -89,7 +88,7 @@ final class AvailabilityService
                 ->where('branch_id', $branchId)
                 ->first();
             $this->toggle($itemId, $branchId, $available, $reason);
-            if (!$before || (bool) $before->is_available !== $available) {
+            if (! $before || (bool) $before->is_available !== $available) {
                 $count++;
             }
         });
@@ -112,6 +111,47 @@ final class AvailabilityService
     }
 
     /**
+     * Reject checkout when any line references an item marked unavailable for this branch.
+     * With `$useRowLock=true`, locks existing `item_branch_availability` rows (same DB transaction)
+     * so concurrent rupture toggles serialize with order commit. Absence of a row = available (V1).
+     * With `$useRowLock=false` (e.g. pricing preview), performs a read-only check without locks.
+     *
+     * @param  array<int|mixed>  $itemIds
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function assertItemsOrderableForBranch(int $branchId, array $itemIds, bool $useRowLock = true): void
+    {
+        $itemIds = array_values(array_unique(array_filter(array_map(static fn ($id) => (int) $id, $itemIds))));
+        if ($branchId < 1 || $itemIds === []) {
+            return;
+        }
+
+        $query = ItemBranchAvailability::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $itemIds)
+            ->orderBy('item_id');
+
+        $rows = $useRowLock
+            ? $query->lockForUpdate()->get()->keyBy('item_id')
+            : $query->get()->keyBy('item_id');
+
+        foreach ($itemIds as $itemId) {
+            $row = $rows->get($itemId);
+            $available = $row ? (bool) $row->is_available : true;
+            if (! $available) {
+                $reason = $row && $row->unavailable_reason
+                    ? (string) $row->unavailable_reason
+                    : 'unavailable';
+                throw new \InvalidArgumentException(
+                    "Article {$itemId} indisponible pour cette branche ({$reason}).",
+                    422
+                );
+            }
+        }
+    }
+
+    /**
      * Apply daily counters after an order is created (no-op if no row exists).
      * Auto-86 once the daily cap is reached.
      */
@@ -126,7 +166,7 @@ final class AvailabilityService
                 ->where('branch_id', $branchId)
                 ->first();
 
-            if (!$row || $row->max_daily_qty === null) {
+            if (! $row || $row->max_daily_qty === null) {
                 continue;
             }
 
@@ -143,15 +183,15 @@ final class AvailabilityService
             );
 
             if ($row->daily_consumed_qty >= $row->max_daily_qty) {
-                $row->is_available       = false;
+                $row->is_available = false;
                 $row->unavailable_reason = 'out_of_stock';
-                $row->unavailable_since  = now();
+                $row->unavailable_since = now();
             }
 
             $row->save();
 
             // Emit only on availability state flip (was available, now 86).
-            if ($wasAvailable && !(bool) $row->is_available) {
+            if ($wasAvailable && ! (bool) $row->is_available) {
                 $this->dispatchEvent(
                     (int) $line->item_id,
                     $branchId,

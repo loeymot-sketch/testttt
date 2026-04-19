@@ -49,6 +49,7 @@ use App\Services\Orders\OrderItemAllergenSnapshot;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingResult;
 use App\Services\Pricing\PricingService;
+use App\Services\Menu\AvailabilityService;
 
 class OrderService
 {
@@ -356,6 +357,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
+
                     if (!blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             $dbItem = $dbItems[$item->item_id] ?? null;
@@ -648,6 +655,12 @@ class OrderService
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
+
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
 
                     // [AUDIT-FIX P1-1] Single Tax::get() — removed duplicate dead query ($dbTaxes unused)
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
@@ -1042,6 +1055,12 @@ class OrderService
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
+
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
 
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                     $realSubtotal = 0;

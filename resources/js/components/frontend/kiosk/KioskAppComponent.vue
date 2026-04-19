@@ -385,6 +385,7 @@ export default {
         this._eventSub = onEvent(branchId, 'ItemAvailabilityChanged', (event) => {
           const payload = event.payload;
           this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
+          this.$store.dispatch('kioskCart/pruneUnavailableLines');
           // If full refetch needed (price/variations changed), trigger it in background
           if (payload.type === 'full') {
             this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});

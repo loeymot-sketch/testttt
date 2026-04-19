@@ -9,14 +9,15 @@ use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\Tax;
 use App\Services\CouponService;
+use App\Services\Menu\AvailabilityService;
 
 final class PricingService
 {
     public function __construct(
         private readonly TaxCalculator $taxCalculator = new TaxCalculator,
         private readonly DiscountCalculator $discountCalculator = new DiscountCalculator,
-    ) {
-    }
+        private readonly ?AvailabilityService $availabilityService = null,
+    ) {}
 
     /**
      * Server-side cart pricing for order creation (lines + tax + coupon/manual).
@@ -27,11 +28,22 @@ final class PricingService
         CouponService $couponService,
     ): PricingResult {
         $requestItems = $req->requestItems;
-        if (!is_array($requestItems)) {
+        if (! is_array($requestItems)) {
             $requestItems = [];
         }
 
         $requestedItemIds = collect($requestItems)->pluck('item_id')->filter()->unique()->values()->all();
+
+        if ($req->branchId > 0 && $requestedItemIds !== []) {
+            $availability = $this->availabilityService ?? app(AvailabilityService::class);
+            // Preview (`orderId === 0`) : lecture seule. Commande réelle : lock sous transaction.
+            $availability->assertItemsOrderableForBranch(
+                $req->branchId,
+                $requestedItemIds,
+                $req->orderId > 0
+            );
+        }
+
         $dbItems = Item::query()
             ->select('id', 'price', 'tax_id')
             ->whereIn('id', $requestedItemIds)
@@ -73,7 +85,7 @@ final class PricingService
         if ($requestItems !== []) {
             foreach ($requestItems as $item) {
                 $dbItem = $dbItems[$item->item_id] ?? null;
-                if (!$dbItem) {
+                if (! $dbItem) {
                     throw new \InvalidArgumentException(
                         "Item ID {$item->item_id} introuvable. Commande rejetée.",
                         422
@@ -85,11 +97,11 @@ final class PricingService
                 if (isset($item->item_variations) && is_array($item->item_variations)) {
                     foreach ($item->item_variations as $variation) {
                         $varId = $variation->id ?? null;
-                        if (!$varId) {
+                        if (! $varId) {
                             continue;
                         }
                         $dbVar = $dbVariations[$varId] ?? null;
-                        if (!$dbVar) {
+                        if (! $dbVar) {
                             throw new \InvalidArgumentException(
                                 "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
                                 422
@@ -109,11 +121,11 @@ final class PricingService
                 if (isset($item->item_extras) && is_array($item->item_extras)) {
                     foreach ($item->item_extras as $extra) {
                         $extraId = $extra->id ?? null;
-                        if (!$extraId) {
+                        if (! $extraId) {
                             continue;
                         }
                         $dbExt = $dbExtras[$extraId] ?? null;
-                        if (!$dbExt) {
+                        if (! $dbExt) {
                             throw new \InvalidArgumentException(
                                 "Extra ID {$extraId} introuvable pour l'article {$item->item_id}.",
                                 422
