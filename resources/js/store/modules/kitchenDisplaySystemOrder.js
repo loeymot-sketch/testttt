@@ -39,6 +39,9 @@ export const kitchenDisplaySystemOrder = {
                     context.dispatch("lists", payload).then().catch();
                     resolve(res);
                 }).catch((err) => {
+                    if (err.response && err.response.status === 409) {
+                        context.dispatch("lists", payload).catch(() => {});
+                    }
                     reject(err);
                 });
             });

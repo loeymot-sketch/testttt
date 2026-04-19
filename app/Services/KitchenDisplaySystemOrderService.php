@@ -16,6 +16,8 @@ use App\Events\OrderStatusChanged;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\OrderStatusRequest;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemOrderService
 {
@@ -115,41 +117,59 @@ class KitchenDisplaySystemOrderService
     public function changeStatus(Order $order, OrderStatusRequest $request)
     {
         try {
-            if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
-                throw new Exception(trans('all.message.invalid_status_transition'), 422);
-            }
+            $newStatus = (int) $request->status;
+            // Compare expected "from" to the locked row so two tabs / stale SPA state cannot overwrite.
+            $expectedFrom = (int) $order->status;
 
-            $oldStatus = $order->status;
+            $result = DB::transaction(function () use ($order, $newStatus, $expectedFrom) {
+                $locked = Order::query()
+                    ->whereKey($order->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-            // [GAP-21-1 + GAP-21-4] Wrap in DB::transaction so that if save() fails,
-            // no notifications are dispatched with a stale status.
-            // Notifications are dispatched AFTER the transaction commits (post-commit block)
-            // to mirror the same pattern used in FrontendOrderService::myOrderStore().
-            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
-                $order->status = $request->status;
-                $order->save();
+                $userBranchId = (int) (auth()->user()->branch_id ?? 0);
+                if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                    abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+                }
+
+                if ((int) $locked->status !== $expectedFrom) {
+                    abort(409, 'Order status was updated elsewhere — please refresh the KDS.');
+                }
+
+                if (!OrderStateMachine::allows((int) $locked->status, $newStatus, auth()->user())) {
+                    throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                }
+
+                $fromLocked = (int) $locked->status;
+                $locked->status = $newStatus;
+                $locked->save();
+
+                OrderStateMachine::recordTransition(
+                    Order::class,
+                    (int) $locked->id,
+                    $fromLocked,
+                    $newStatus,
+                    auth()->check() ? (int) auth()->id() : null,
+                    null
+                );
+
+                return ['model' => $locked->fresh(), 'from' => $fromLocked];
             });
 
-            OrderStateMachine::recordTransition(
-                Order::class,
-                (int) $order->id,
-                (int) $oldStatus,
-                (int) $request->status,
-                auth()->check() ? (int) auth()->id() : null,
-                null
-            );
+            $snapshot = $result['model'];
+            $oldStatus = $result['from'];
 
-            // Post-commit: dispatch notifications and broadcast now that DB is consistent.
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+            SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
 
-            // Broadcast status change so OSS and POS update in real-time
             try {
-                OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                OrderStatusChanged::dispatch($snapshot, $oldStatus, $newStatus);
             } catch (\Exception $e) {
                 Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }
+        } catch (HttpException $e) {
+            throw $e;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

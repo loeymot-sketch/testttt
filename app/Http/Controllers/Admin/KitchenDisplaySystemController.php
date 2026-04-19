@@ -9,6 +9,7 @@ use App\Http\Requests\OrderStatusRequest;
 use App\Http\Resources\KDSOrderItemsResource;
 use App\Http\Resources\KDSOrderDetailsResource;
 use App\Services\KitchenDisplaySystemOrderService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemController extends AdminController
 {
@@ -35,6 +36,8 @@ class KitchenDisplaySystemController extends AdminController
         try {
             $this->kitchenDisplaySystemOrderService->changeStatus($order, $request);
             return response('', 202);
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
