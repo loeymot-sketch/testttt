@@ -1496,7 +1496,9 @@ class OrderService
                         }
                     }
 
-                    if ($request->status == OrderStatus::REJECTED || $request->status == OrderStatus::CANCELED) {
+                    $toStatus = (int) $request->status;
+                    // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
+                    if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([
                             'reason' => 'required|max:700',
                         ]);
@@ -1538,19 +1540,17 @@ class OrderService
                         ),
                     ]);
 
-                    // [POS-9.4.BL.2] NF525 audit trail on cancel/reject. Only these
-                    // two status transitions are fiscally sensitive (everything
-                    // else is internal workflow); the full state-machine event
-                    // trail is already persisted in order_status_transitions via
-                    // OrderStateMachine::recordTransition above.
-                    if ((int) $request->status === OrderStatus::CANCELED
-                        || (int) $request->status === OrderStatus::REJECTED) {
+                    // [POS-9.4.BL.2] NF525 — cancel / reject / return (contrepartie comptable ou clôture client).
+                    if (in_array((int) $request->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
+                        $action = (int) $request->status === OrderStatus::CANCELED
+                            ? 'order.cancelled'
+                            : ((int) $request->status === OrderStatus::REJECTED
+                                ? 'order.rejected'
+                                : 'order.returned');
                         app(AuditLogService::class)->write([
                             'branch_id'   => (int) $order->branch_id,
                             'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                            'action'      => (int) $request->status === OrderStatus::CANCELED
-                                ? 'order.cancelled'
-                                : 'order.rejected',
+                            'action'      => $action,
                             'resource'    => 'order',
                             'resource_id' => (int) $order->id,
                             'payload'     => [

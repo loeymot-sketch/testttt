@@ -158,6 +158,46 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
         );
     }
 
+    public function test_change_status_to_returned_writes_order_returned_audit(): void
+    {
+        $order = $this->createPaidOrder();
+        $order->status = OrderStatus::DELIVERED;
+        $order->save();
+
+        $this->actingAs($this->admin)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::RETURNED,
+                'reason' => 'Produit retourné — non conforme',
+            ])->assertStatus(200);
+
+        $audit = AuditLog::where('action', 'order.returned')
+            ->where('resource_id', $order->id)
+            ->first();
+
+        $this->assertNotNull($audit, 'Expected an order.returned audit entry.');
+        $this->assertSame((int) OrderStatus::RETURNED, (int) $audit->payload['to_status']);
+        $this->assertSame('Produit retourné — non conforme', $audit->payload['reason']);
+
+        $this->assertNull(
+            app(\App\Services\Fiscal\AuditLogService::class)->verifyChain($this->branch->id),
+            'Audit chain must stay intact after return write.'
+        );
+    }
+
+    public function test_returned_without_reason_fails_validation(): void
+    {
+        $order = $this->createPaidOrder();
+        $order->status = OrderStatus::DELIVERED;
+        $order->save();
+
+        $this->actingAs($this->admin)
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::RETURNED,
+            ])->assertStatus(422);
+    }
+
     public function test_change_payment_status_writes_payment_status_changed_audit(): void
     {
         $order = $this->createPaidOrder();
