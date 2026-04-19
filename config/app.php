@@ -66,6 +66,10 @@ return [
     // Playwright enchaîne plusieurs specs avec le même email → surcharger en CI (LOGIN_LOCKOUT_MAX_ATTEMPTS).
     'login_lockout_max_attempts' => max(1, (int) env('LOGIN_LOCKOUT_MAX_ATTEMPTS', 10)),
 
+    // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
+    // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
+    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
+
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
 

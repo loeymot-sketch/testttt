@@ -29,7 +29,6 @@ class RateLimiterConfigTest extends TestCase
      * @var array<string, array{0:int,1:bool}>
      */
     private const EXPECTED_LIMITERS = [
-        'api' => [120, true],
         'admin-mutation' => [30, true],
         'pos-order-create' => [60, true],
         'pos-order-update' => [120, true],
@@ -63,6 +62,27 @@ class RateLimiterConfigTest extends TestCase
                 $expectedPerMinute,
                 $limit->maxAttempts
             )
+        );
+    }
+
+    public function test_api_limiter_cap_matches_config(): void
+    {
+        $resolver = RateLimiter::limiter('api');
+
+        $this->assertIsCallable(
+            $resolver,
+            'Named RateLimiter `api` is not registered in RouteServiceProvider'
+        );
+
+        $request = Request::create('/api/probe', 'POST');
+        $limit = $resolver($request);
+
+        $this->assertInstanceOf(Limit::class, $limit);
+        $expected = max(1, (int) config('app.api_throttle_per_minute', 120));
+        $this->assertSame(
+            $expected,
+            $limit->maxAttempts,
+            'api limiter maxAttempts must match config(app.api_throttle_per_minute) (default 120)'
         );
     }
 
@@ -115,6 +135,7 @@ class RateLimiterConfigTest extends TestCase
         foreach (self::EXPECTED_LIMITERS as $name => [$cap]) {
             $cases[$name] = [$name, $cap];
         }
+
         return $cases;
     }
 }

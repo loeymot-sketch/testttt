@@ -49,11 +49,12 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting()
     {
-        // [AUDIT-P1] 120 req/min per user (authenticated) or per IP (guest/kiosk).
-        // 120 is safe for kiosk boot (menu + categories) while blocking abuse.
-        // Per-route stricter limits (order creation = 10/min, login = 5/min) still apply.
+        // [AUDIT-P1] req/min per user (authenticated) or per IP (guest/kiosk) — config(app.api_throttle_per_minute).
+        // Per-route stricter limits (order creation, login-lockout, etc.) still apply.
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            $perMinute = max(1, (int) config('app.api_throttle_per_minute', 120));
+
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('kiosk-orders', function (Request $request) {
@@ -84,7 +85,11 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login-lockout', function (Request $request) {
-            $key = Str::lower($request->input('email', '')).'|'.$request->ip();
+            $identifier = Str::lower((string) $request->input('email', ''));
+            if ($identifier === '') {
+                $identifier = Str::lower((string) $request->input('username', ''));
+            }
+            $key = $identifier.'|'.$request->ip();
             $max = max(1, (int) config('app.login_lockout_max_attempts', 10));
 
             return Limit::perMinutes(10, $max)->by($key)->response(function () {
