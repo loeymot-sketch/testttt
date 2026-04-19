@@ -34,13 +34,14 @@ class CouponRequest extends FormRequest
             ],
             'description'      => ['nullable', 'string', 'max:900'],
             'code'             => ['required', 'string', 'max:24', Rule::unique("coupons", "code")->ignore($this->route('coupon.id'))],
-            'discount'         => ['required', 'numeric'],
+            // [P9] Non-negative monetary / cap fields (symmetry with P5–P8).
+            'discount'         => ['required', 'numeric', 'min:0'],
             'discount_type'    => ['required', 'numeric', 'max:24'],
             'start_date'       => ['required', 'string',],
             'end_date'         => ['required', 'string',],
-            'minimum_order'    => ['required', 'numeric'],
-            'maximum_discount' => ['required', 'numeric'],
-            'limit_per_user'   => ['nullable', 'numeric'],
+            'minimum_order'    => ['required', 'numeric', 'min:0'],
+            'maximum_discount' => ['required', 'numeric', 'min:0'],
+            'limit_per_user'   => ['nullable', 'numeric', 'min:0'],
             'image'            => $this->route('coupon.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
 
         ];
