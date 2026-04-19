@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * P5 — OrderRequest (kiosk / frontend order): negative client total must be rejected.
+ * P5 / P7 — OrderRequest (kiosk / frontend order): reject bogus negative monetary fields.
  */
 class OrderRequestNegativeTotalTest extends TestCase
 {
@@ -49,5 +49,62 @@ class OrderRequestNegativeTotalTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['total']);
+    }
+
+    public function test_frontend_order_rejects_negative_subtotal(): void
+    {
+        $branch = BranchFactory::new()->create();
+        $user = UserFactory::new()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $item = ItemFactory::new()->create(['price' => 10]);
+
+        $payload = [
+            'order_type' => 10,
+            'branch_id' => $branch->id,
+            'subtotal' => -10,
+            'total' => 10,
+            'delivery_charge' => 0,
+            'is_advance_order' => 0,
+            'source' => 1,
+            'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
+        ];
+
+        $response = $this->actingAs($user)
+            ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->postJson('/api/frontend/order', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['subtotal']);
+    }
+
+    public function test_frontend_order_rejects_negative_discount(): void
+    {
+        $branch = BranchFactory::new()->create();
+        $user = UserFactory::new()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $item = ItemFactory::new()->create(['price' => 10]);
+
+        $payload = [
+            'order_type' => 10,
+            'branch_id' => $branch->id,
+            'subtotal' => 10,
+            'discount' => -3,
+            'total' => 10,
+            'delivery_charge' => 0,
+            'is_advance_order' => 0,
+            'source' => 1,
+            'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
+        ];
+
+        $response = $this->actingAs($user)
+            ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->postJson('/api/frontend/order', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['discount']);
     }
 }

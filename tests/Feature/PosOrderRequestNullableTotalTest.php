@@ -148,4 +148,30 @@ class PosOrderRequestNullableTotalTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_negative_subtotal_rejected_at_validation(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->basePayload([
+                'subtotal' => -5.00,
+            ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['subtotal']);
+    }
+
+    public function test_negative_pos_received_amount_rejected_at_validation(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->basePayload([
+                'pos_received_amount' => -1.00,
+            ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['pos_received_amount']);
+    }
 }

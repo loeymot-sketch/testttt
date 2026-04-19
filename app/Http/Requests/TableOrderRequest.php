@@ -33,8 +33,8 @@ class TableOrderRequest extends FormRequest
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             'subtotal' => ['required', 'numeric', 'min:0'],
-            'discount' => ['nullable', 'numeric'],
-            'delivery_charge' => ['nullable'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'delivery_charge' => ['nullable', 'numeric', 'min:0'],
             // [P6] Symmetry with OrderRequest/PosOrderRequest — reject bogus negative amounts at QR table.
             'total' => ['required', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],

@@ -35,12 +35,14 @@ class OrderRequest extends FormRequest
                 ? ['nullable', 'numeric']
                 : ['required', 'numeric'],
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
-            'subtotal' => ['nullable', 'numeric'],
-            'discount' => ['nullable', 'numeric'],
+            // [P7] Reject negative client-sent amounts (symmetry with P5–P6).
+            'subtotal' => ['nullable', 'numeric', 'min:0'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
             'delivery_charge' => $this->input('order_type') === OrderType::DELIVERY ? [
                 'required',
-                'numeric'
-            ] : ['nullable', 'numeric'],
+                'numeric',
+                'min:0',
+            ] : ['nullable', 'numeric', 'min:0'],
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
             // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
             'total' => ['nullable', 'numeric', 'min:0'],

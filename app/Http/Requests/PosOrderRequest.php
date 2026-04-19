@@ -47,7 +47,8 @@ class PosOrderRequest extends FormRequest
             'customer_id' => ['required', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
-            'subtotal' => ['nullable', 'numeric'],
+            // [P7] Reject negative client-sent amounts if present.
+            'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.1] Mandatory motif for any discount above 0
             'discount_reason' => ['nullable', 'string', 'max:191'],
@@ -58,7 +59,8 @@ class PosOrderRequest extends FormRequest
             'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
                 'numeric',
-            ] : ['nullable'],
+                'min:0',
+            ] : ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
             // payload value is only used as a UX cross-check for cash payments
             // (see withValidator below). nullable so a desynced UI cannot bypass
@@ -77,7 +79,7 @@ class PosOrderRequest extends FormRequest
             'items' => ['required', 'json', new ValidJsonOrder],
             'pos_payment_method' => ['required', 'numeric'],
             'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
-            'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric'] : ['nullable', 'numeric'],
+            'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
         ];
     }
