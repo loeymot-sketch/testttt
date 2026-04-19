@@ -6,15 +6,13 @@ use App\Enums\Activity;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
 use App\Rules\ValidJsonOrder;
-use Smartisan\Settings\Facades\Settings;
 use Illuminate\Foundation\Http\FormRequest;
+use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -28,12 +26,11 @@ class PosOrderRequest extends FormRequest
      * - owner   (pos-discount-unlimited) : 50-100%
      */
     private const DISCOUNT_CASHIER_MAX_PCT = 10.0;
+
     private const DISCOUNT_MANAGER_MAX_PCT = 50.0;
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array
      */
     public function rules(): array
     {
@@ -56,11 +53,11 @@ class PosOrderRequest extends FormRequest
             'discount_reason' => ['nullable', 'string', 'max:191'],
             'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
-                'numeric'
+                'numeric',
             ] : ['nullable'],
             'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
-                'numeric'
+                'numeric',
             ] : ['nullable'],
             // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
             // payload value is only used as a UX cross-check for cash payments
@@ -72,14 +69,14 @@ class PosOrderRequest extends FormRequest
             'is_advance_order' => ['required', 'numeric'],
             'address_id' => request('order_type') === OrderType::DELIVERY ? [
                 'required',
-                'numeric'
+                'numeric',
             ] : ['nullable'],
             'delivery_time' => ['nullable'],
             'coupon_id' => ['nullable', 'numeric'],
             'source' => ['required', 'numeric'],
             'items' => ['required', 'json', new ValidJsonOrder],
             'pos_payment_method' => ['required', 'numeric'],
-            'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string']) : ['nullable', 'string'],
+            'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric'] : ['nullable', 'numeric'],
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
         ];
@@ -94,16 +91,17 @@ class PosOrderRequest extends FormRequest
             // (DINING_TABLE) would bypass the UI and create a dine-in order.
             $orderTypeInt = (int) request('order_type', 0);
             if ($orderTypeInt === OrderType::DINING_TABLE
-                && !(bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
+                && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
                 $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+
                 return;
             }
 
-            if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
+            if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
-            } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
+            } elseif ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
-            } else if (blank(request('order_type'))) {
+            } elseif (blank(request('order_type'))) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
             // [AUDIT-P1-B] NOTE: This validation uses the client-sent 'total' as a preliminary check.
@@ -132,27 +130,30 @@ class PosOrderRequest extends FormRequest
                 $reason = trim((string) request('discount_reason', ''));
                 if (strlen($reason) < 3) {
                     $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
+
                     return;
                 }
 
                 if ($subtotal <= 0) {
                     $validator->errors()->add('discount', 'Cannot apply discount without a valid subtotal.');
+
                     return;
                 }
 
                 $pct = ($discount / $subtotal) * 100.0;
                 $user = auth()->user();
 
-                if (!$user) {
+                if (! $user) {
                     $validator->errors()->add('discount', 'Authentication required to apply a discount.');
+
                     return;
                 }
 
-                if ($pct > self::DISCOUNT_MANAGER_MAX_PCT && !$user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Only an owner can apply a discount above ' . self::DISCOUNT_MANAGER_MAX_PCT . '%.');
-                } elseif ($pct > self::DISCOUNT_CASHIER_MAX_PCT && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Discount above ' . self::DISCOUNT_CASHIER_MAX_PCT . '% requires manager approval.');
-                } elseif (!$user->can('pos-discount-up-to-10') && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
+                if ($pct > self::DISCOUNT_MANAGER_MAX_PCT && ! $user->can('pos-discount-unlimited')) {
+                    $validator->errors()->add('discount', 'Only an owner can apply a discount above '.self::DISCOUNT_MANAGER_MAX_PCT.'%.');
+                } elseif ($pct > self::DISCOUNT_CASHIER_MAX_PCT && ! $user->can('pos-discount-over-10-requires-manager') && ! $user->can('pos-discount-unlimited')) {
+                    $validator->errors()->add('discount', 'Discount above '.self::DISCOUNT_CASHIER_MAX_PCT.'% requires manager approval.');
+                } elseif (! $user->can('pos-discount-up-to-10') && ! $user->can('pos-discount-over-10-requires-manager') && ! $user->can('pos-discount-unlimited')) {
                     $validator->errors()->add('discount', 'You do not have permission to apply POS discounts.');
                 }
             }
@@ -166,7 +167,7 @@ class PosOrderRequest extends FormRequest
             'pos_payment_note.min_digits' => 'The cart must contain at least 4 digits',
             'pos_payment_note.max_digits' => 'The cart must not contain more than 4 digits',
             'pos_received_amount.required' => 'The received amount field is required',
-            'dining_table_id.required' => 'The dining table field is required'
+            'dining_table_id.required' => 'The dining table field is required',
         ];
     }
 }

@@ -6,5 +6,6 @@ return [
     PosPaymentMethod::CARD => 'Card',
     PosPaymentMethod::CASH => 'Cash',
     PosPaymentMethod::OTHER => 'Other',
-    PosPaymentMethod::MOBILE_BANKING => 'MFS'
+    PosPaymentMethod::MOBILE_BANKING => 'MFS',
+    PosPaymentMethod::TICKET_RESTAURANT => 'Titre-restaurant',
 ];
