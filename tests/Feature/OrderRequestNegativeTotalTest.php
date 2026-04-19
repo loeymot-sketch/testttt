@@ -1,0 +1,53 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\Status;
+use Database\Factories\BranchFactory;
+use Database\Factories\ItemFactory;
+use Database\Factories\UserFactory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * P5 — OrderRequest (kiosk / frontend order): negative client total must be rejected.
+ */
+class OrderRequestNegativeTotalTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+    }
+
+    public function test_frontend_order_rejects_negative_total(): void
+    {
+        $branch = BranchFactory::new()->create();
+        $user = UserFactory::new()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $item = ItemFactory::new()->create(['price' => 10]);
+
+        $payload = [
+            'order_type' => 10,
+            'branch_id' => $branch->id,
+            'subtotal' => 10,
+            'total' => -50,
+            'delivery_charge' => 0,
+            'is_advance_order' => 0,
+            'source' => 1,
+            'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
+        ];
+
+        $response = $this->actingAs($user)
+            ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->postJson('/api/frontend/order', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['total']);
+    }
+}

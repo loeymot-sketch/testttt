@@ -42,7 +42,8 @@ class OrderRequest extends FormRequest
                 'numeric'
             ] : ['nullable', 'numeric'],
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
-            'total' => ['nullable', 'numeric'],
+            // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
+            'total' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
             'address_id' => $this->input('order_type') === OrderType::DELIVERY ? [
