@@ -26,7 +26,8 @@ class CouponCheckRequest extends FormRequest
     {
         return [
             'code'  => ['required', 'string', 'max:20'],
-            'total' => ['required', 'numeric'],
+            // [P8] Symmetry with P5–P7 — cart/order totals used for coupon eligibility must not be negative.
+            'total' => ['required', 'numeric', 'min:0'],
         ];
     }
 }
