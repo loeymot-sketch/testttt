@@ -62,6 +62,10 @@ return [
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
 
+    // POST /api/auth/login — fenêtre 10 min (voir RouteServiceProvider::login-lockout). Défaut 10 prod.
+    // Playwright enchaîne plusieurs specs avec le même email → surcharger en CI (LOGIN_LOCKOUT_MAX_ATTEMPTS).
+    'login_lockout_max_attempts' => max(1, (int) env('LOGIN_LOCKOUT_MAX_ATTEMPTS', 10)),
+
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
 

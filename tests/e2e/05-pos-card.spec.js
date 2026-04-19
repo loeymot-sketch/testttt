@@ -9,7 +9,7 @@ const POS_PASSWORD = '123456';
 test.describe('POS Card — payment flow', () => {
   test.beforeEach(async ({ page }) => {
     await login(page, POS_EMAIL, POS_PASSWORD);
-    await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
   });
 
   test('POS surface loads for card payment scenario', async ({ page }) => {

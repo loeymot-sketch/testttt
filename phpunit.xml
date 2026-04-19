@@ -29,6 +29,7 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="MIX_API_KEY" value="test-api-key"/>
+        <env name="LOGIN_LOCKOUT_MAX_ATTEMPTS" value="10"/>
         <env name="STAFF_ONLY_MODE" value="false"/>
         <env name="KIOSK_USE_POS_WIZARD" value="false"/>
         <env name="KIOSK_MACHINE_USERNAME" value="kiosk-lecayenne"/>

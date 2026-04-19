@@ -85,8 +85,9 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('login-lockout', function (Request $request) {
             $key = Str::lower($request->input('email', '')).'|'.$request->ip();
+            $max = max(1, (int) config('app.login_lockout_max_attempts', 10));
 
-            return Limit::perMinutes(10, 10)->by($key)->response(function () {
+            return Limit::perMinutes(10, $max)->by($key)->response(function () {
                 return response()->json([
                     'message' => 'Too many login attempts. Please try again later.',
                     'retry_after' => 900,

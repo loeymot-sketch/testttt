@@ -80,9 +80,9 @@ class RateLimiterConfigTest extends TestCase
 
         $this->assertInstanceOf(Limit::class, $limit);
         $this->assertSame(
-            10,
+            max(1, (int) config('app.login_lockout_max_attempts', 10)),
             $limit->maxAttempts,
-            'login-lockout: V1 spec requires 10 attempts ceiling'
+            'login-lockout maxAttempts must match config(app.login_lockout_max_attempts) (default 10 in prod)'
         );
     }
 

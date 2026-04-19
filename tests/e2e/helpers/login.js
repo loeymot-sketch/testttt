@@ -1,10 +1,13 @@
+const { expect } = require('@playwright/test');
+
 /**
  * Login FoodKing — cible les ids du LoginComponent (évite le champ recherche header type="text").
  * Locale par défaut fr : libellé bouton « Connexion », pas « Login ».
+ * Navigation post-login = Vue Router (SPA) : pas d’événement load fiable après le clic.
  */
 async function login(page, email, password) {
   await page.goto('/login');
-  await page.locator('#formEmail').waitFor({ state: 'visible', timeout: 20_000 });
+  await expect(page.locator('#formEmail')).toBeVisible({ timeout: 20_000 });
   await page.locator('#formEmail').fill(email);
   await page.locator('#formPassword').fill(password);
   await page.getByRole('button', { name: /^(login|connexion)$/i }).click();

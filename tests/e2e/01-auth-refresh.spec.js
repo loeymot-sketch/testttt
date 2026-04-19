@@ -13,16 +13,14 @@ test.describe('Auth Refresh — F5 sur POS', () => {
     // 1. Login
     await login(page, POS_EMAIL, POS_PASSWORD);
 
-    // 2. Attendre la redirection vers POS
-    await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
-    await expect(page).toHaveURL(/\/admin\/pos/);
+    // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.
+    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 
     // 3. F5 — reload
     await page.reload();
 
     // 4. Après reload, doit rester sur /admin/pos (pas redirigé sur / ou /home)
-    await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
-    await expect(page).toHaveURL(/\/admin\/pos/);
+    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 
     // 5. Vérifier qu'on n'est PAS redirigé vers frontend.home
     await expect(page).not.toHaveURL('/');
@@ -31,13 +29,13 @@ test.describe('Auth Refresh — F5 sur POS', () => {
 
   test('user info preserved after F5', async ({ page }) => {
     await login(page, POS_EMAIL, POS_PASSWORD);
-    await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 
     // Store some page state before reload
     const urlBefore = page.url();
 
     await page.reload();
-    await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 
     // URL preserved
     expect(page.url()).toBe(urlBefore);

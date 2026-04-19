@@ -21,10 +21,16 @@ test.describe('Kiosk — écran login borne', () => {
     await page.waitForTimeout(2_000); // laisser Vue se monter
 
     const visibleText = await page.locator('body').innerText();
-    // L'écran doit montrer un message lié à la borne (auto-login ou config)
-    expect(visibleText).toMatch(
-      /automatique|kiosk|borne|connexion|configuration|login|sign.in/i
-    );
+    const url = page.url();
+    // Auto-login silencieux : on peut être déjà sur /kiosk/… (plus de formulaire login).
+    if (/\/kiosk\/login/i.test(url)) {
+      expect(visibleText).toMatch(
+        /automatique|kiosk|borne|connexion|configuration|login|sign.in/i,
+      );
+    } else {
+      expect(url).toMatch(/\/kiosk\//);
+      expect(visibleText.trim().length).toBeGreaterThan(10);
+    }
   });
 
   test('pas d\'erreur JavaScript fatale sur la borne', async ({ page }) => {

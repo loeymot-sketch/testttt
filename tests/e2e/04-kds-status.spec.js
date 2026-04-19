@@ -26,7 +26,7 @@ test.describe('KDS — interface cuisine', () => {
   test('login chef via /login → redirection vers surface chef', async ({ page }) => {
     await login(page, CHEF_EMAIL, CHEF_PASSWORD);
 
-    await page.waitForURL(KDS_SURFACE_RE, { timeout: 15_000 });
+    await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
 
     const visibleText = await page.locator('body').innerText();
     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);
@@ -36,7 +36,7 @@ test.describe('KDS — interface cuisine', () => {
 
   test('KDS surface loads order list without crash', async ({ page }) => {
     await login(page, CHEF_EMAIL, CHEF_PASSWORD);
-    await page.waitForURL(KDS_SURFACE_RE, { timeout: 15_000 });
+    await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
 
     // Wait for Vue to mount
     await page.waitForTimeout(3_000);

@@ -67,6 +67,8 @@ jobs:
           # E2E staff-only suite (06-staff-only-routing) + borne wizard flag
           sed -i 's/^STAFF_ONLY_MODE=.*/STAFF_ONLY_MODE=true/' .env
           sed -i 's/^KIOSK_USE_POS_WIZARD=.*/KIOSK_USE_POS_WIZARD=true/' .env
+          # Suite E2E : >10 POST /login avec le même email (pos@…) — sans ça login-lockout → 429, SPA reste sur /login.
+          if grep -q '^LOGIN_LOCKOUT_MAX_ATTEMPTS=' .env; then sed -i 's/^LOGIN_LOCKOUT_MAX_ATTEMPTS=.*/LOGIN_LOCKOUT_MAX_ATTEMPTS=500/' .env; else echo 'LOGIN_LOCKOUT_MAX_ATTEMPTS=500' >> .env; fi
 
       - name: Migrate and seed
         run: |

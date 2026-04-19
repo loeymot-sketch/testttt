@@ -10,7 +10,7 @@ const POS_PASSWORD = '123456';
 
 async function loginAsPOS(page) {
   await login(page, POS_EMAIL, POS_PASSWORD);
-  await page.waitForURL(/\/admin\/pos/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 }
 
 test.describe('POS Cash — commande complète', () => {
