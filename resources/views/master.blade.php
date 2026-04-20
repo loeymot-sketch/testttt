@@ -7,6 +7,36 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {{-- [C13 / K-6.7] Kiosk-only Content-Security-Policy in Report-Only mode.
+         Deliberately NOT enforced yet : the master layout still uses inline
+         scripts (window.foodkingConfig, pos-wizard shim) and inline styles
+         (Dine-In hide). K-9 will migrate these to nonced scripts then switch
+         to enforcing `Content-Security-Policy`. For now we collect violations
+         so ops can audit the real surface before flipping the switch.
+         Customer-facing POS / admin pages are untouched to avoid breaking
+         existing analytics injections.
+
+         The `/api/frontend/csp-report` endpoint (ported in C2) ingests
+         violations into the `observability` log channel — anonymous,
+         throttled, log-only. `report-uri` is the legacy directive (compat
+         Safari/Firefox/Chrome) ; `report-to` requires a separate HTTP
+         `Report-To` header (future K-10). --}}
+    @if (request()->is('kiosk*'))
+        <meta http-equiv="Content-Security-Policy-Report-Only" content="
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' 'unsafe-eval';
+            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+            font-src 'self' data: https://fonts.gstatic.com;
+            img-src 'self' data: blob: https:;
+            connect-src 'self' ws: wss: https:;
+            frame-ancestors 'none';
+            base-uri 'self';
+            form-action 'self';
+            object-src 'none';
+            report-uri /api/frontend/csp-report;
+        ">
+    @endif
+
     <!-- FONTS — Inter pour le kiosk (Splash DNA) + existing fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

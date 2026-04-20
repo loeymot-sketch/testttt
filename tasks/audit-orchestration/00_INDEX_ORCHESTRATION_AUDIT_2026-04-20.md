@@ -82,6 +82,63 @@
 | T19 | **FIXED (doc)** | 2026-04-20 | `…REPORT_TASK19_LOCKS_FROZEN_ZONES_2026-04-20.md` ; remed: `RUN_T19B_POST_HOC_LOCKS_2026-04-20.md` | T19 FAIL audit → T19b doc-only : **2 POST_HOC_LOCK** créés (P1 stock_sync `b76506ae9`, P3 refund `b007c6344`), 2 LOCK_B (`OrderService`, `PaymentService`) annotés PARTIAL RELEASE 2026-04-20 ; **PricingService diff = orange** (garde dispo en pré-condition `calculateOrder`, pas de changement boucle prix/TVA/discount) — relecture humaine recommandée mais pas REQUIRES_HUMAN_REVIEW critique |
 | T20 | **PASS → GO canary** | 2026-04-20 | `…REPORT_TASK20_GATE_PROD_FINAL_2026-04-20.md` | Verdict gate : initialement CONDITIONAL GO ; **B1+B2+B3 tous levés** par T16b+T17b+T18b+T19b → **GO canary 14 j** ; **T18c + T08b + T09b + T14b V7 livrés** (cf. `SYNTHESE_FINALE_REMEDIATION_2026-04-20.md`) ; **PHPUnit 562/0/8 + Vitest 410/0/0** post-remédiation, 0 régression ; reste backlog : T14c (offline K-3 v2 IDB+jitter), arbitrage NF525 P11+P13, T08 reste (`/kiosk/context`, theme hex), portage testttt depuis p93 si requis |
 
+## Cycle post-T20 — Convergence et hygiène (2026-04-20)
+
+> Travail mené en `RUNNER_MODE: single-session` avec `auto-remediation.mdc` actif.
+> Les ID `A*`, `B*`, `C*`, `X*` correspondent à des micro-tâches lancées hors du
+> plan T01–T20 d'origine. Tracées ici pour audit trail.
+
+### Vague A — Hygiène post-canary (atomic commits + Playwright + diff convergence)
+
+| ID | Statut | Date | Rapport / commit | Notes |
+|----|--------|------|------------------|-------|
+| A1 | **DONE** | 2026-04-20 | 5 commits thématiques | Découpage atomique du cycle de remédiation |
+| A2 | **DONE** | 2026-04-20 | `reports/execution/PLAN_PHASE_9_KIOSK_2026-04-18.md` (annoté) | ESCALATION T04b/T14b/T09b marqués RESOLVED/PARTIAL |
+| A4 | **DONE** | 2026-04-20 | `.gitignore` | Ignores Playwright (`/test-results/`, `/playwright-report/`, `/blob-report/`, `/playwright/.cache/`) |
+| A5 | **DONE** | 2026-04-20 | `RUN_A5_CONVERGENCE_T08B_T09B_2026-04-20.md` | `DispatchDomainEventsJob` aligné p93 (BroadcastManager idiomatique) + Kernel/routes confirmés alignés |
+| A6 | **PARTIAL** | 2026-04-20 | `RUN_A6_PLAYWRIGHT_E2E_2026-04-20.md` | Tooling fix `npm install` + `npx playwright install chromium` ; bloqué sur user POS manquant en BD → B1 |
+| B1 | **HUMAN_GATE** | 2026-04-20 | `RUN_B1_DB_SEED_E2E_2026-04-20.md` | `RoleDoesNotExist` — auto-incr roles à 7+, `EnumRole::ADMIN=1` hardcoded ; `migrate:fresh --seed` destructif requis. Décision A/B/C user. |
+
+### Vague C — Convergence ciblée (zéro-risque)
+
+| ID | Statut | Date | Cible | Notes |
+|----|--------|------|-------|-------|
+| C1 | **DONE** | 2026-04-20 | `phpunit.xml` | `memory_limit=512M` inline (évite flag CLI manuel) |
+| C2 | **DONE** | 2026-04-20 | `app/Http/Controllers/Frontend/CspReportController.php` + route `/api/frontend/csp-report` + `tests/Feature/Observability/CspReportEndpointTest.php` | Endpoint anonyme CSP report ; logge `observability` ; redaction PII |
+| C3 | **DONE** | 2026-04-20 | audit git status | Pas de collision avec P11 |
+| C4 | **DONE** | 2026-04-20 | `app/Http/Middleware/ValidateKioskLocale.php` + Kernel alias + 4 routes (`menu`, `pricing/preview`, `promo/validate`, `upsell`) + `tests/Feature/KioskMultiBranch/KioskLocaleMiddlewareTest.php` | Middleware K-8 — locale validée vs `Branch.available_locales` |
+| C5 | **DONE** | 2026-04-20 | `ValidateKioskLocale` + tests étendus | Logs `observability` sur `kiosk_locale.format_invalid` / `kiosk_locale.not_allowed` |
+| C6 | **DONE** | 2026-04-20 | `config/logging.php` + `tests/Feature/Observability/SecurityLogChannelTest.php` | Canal `security` dédié (daily, 90j, info) — infrastructure-only port |
+
+### Vague X — Tests p93-uniques portés
+
+| ID | Statut | Date | Cible | Notes |
+|----|--------|------|-------|-------|
+| X1 | **DONE** | 2026-04-20 | `tests/Feature/Observability/ObservabilityLogChannelTest.php` | 2/2 PASS — smoke test canal `observability` + invariants `security`/`hardware` préservés |
+| X2 | **DONE** | 2026-04-20 | `tests/Feature/Observability/CorrelationIdEndToEndTest.php` | 4/4 PASS — adapté à `/api/frontend/upsell` (authed) + `/api/frontend/csp-report` (anonymous) |
+| X3 | **CANCELLED** | 2026-04-20 | `tests/Feature/Observability/ObservabilityEventWhitelistTest.php` | Frontend testttt n'émet pas `ui.*`/`observability.*`/`perf.*`/`security.*` → ajouter au backend = dead code, modifier le frontend = collision P11 |
+| X4 | **CANCELLED** | 2026-04-20 | `tests/Feature/Observability/KioskUiEventsWhitelistTest.php` | Idem X3 |
+| X5 | **DONE** | 2026-04-20 | full PHPUnit Feature regression | 589/589 PASS, 0 régression |
+
+### Vague C audit-only (post X5)
+
+| ID | Statut | Date | Périmètre | Verdict |
+|----|--------|------|-----------|---------|
+| C9 | **AUDIT-ONLY** | 2026-04-20 | `database/migrations/` | 3 migrations p93-uniques (item_attributes.role, branches theme cols, kiosk_machines.capabilities) → **SKIP** : zéro consommateur applicatif testttt. Voir `RUN_C9_C10_AUDIT_CONVERGENCE_2026-04-20.md`. |
+| C10 | **AUDIT-ONLY** | 2026-04-20 | `routes/web.php` + `app/Http/Requests/*` + `app/Providers` + `app/Enums` + seeders | Trouvaille : `RouteServiceProvider` a 2 hardenings p93-uniques **K-6.3** (kiosk-orders throttle per-machine `kiosk:{user_id}\|{ip}`) + **K-6.4** (login-lockout key `email ?: username ?: 'anon'`). Coupon* / PosPaymentMethod : testttt **AHEAD**. → **HUMAN_GATE** sur backport (zone auth). |
+| C11 | **HUMAN_GATE** | 2026-04-20 | backport K-6.3 + K-6.4 dans `RouteServiceProvider.php` | Patch ~10 LOC additif, préserve configurabilité testttt + ajoute K-6.3+K-6.4. Zone `auth` → consentement requis. |
+| C12 | **AUDIT-ONLY** | 2026-04-20 | `app/Console/` + `app/Listeners/` + `app/Jobs/` + `app/Observers/` + `config/*` + root configs | testttt **AHEAD partout** (Kernel scheduling, listeners T16b correlation, NF525 fiscal channel, configurable throttle/lockout, Pusher clearing, FISCAL_*_SECRET, playwright workers=1). Convergence p93→testttt épuisée hors zones critiques. |
+
+### Backlog gates restants
+
+- **C7** — K-6 branch_mismatch enforcement dans `KioskEventController` (~93 LOC, zone `branch_id`) → gate
+- **C11** — backport K-6.3 + K-6.4 (zone `auth`) → gate
+- **B1** — DB seed E2E (zone `data`, destructif `migrate:fresh --seed`) → gate
+- **Seeders convergence** (4 differ + 1 unique p93 `ItemAttributeRoleSeeder`) → gate (lié B1)
+- **Order/Pos/Table/KioskMachine Requests** (5 divergent, zones order/payment/branch) → gate par fichier
+- **T14c** — Offline K-3 v2 (IDB + jitter + `ItemAvailabilityChanged` listener + UI conflict resolution) → cycle dédié
+- **T08 reste** — `/kiosk/context` formel + validation hex thème + convergence menu legacy SSOT → cycle K-8 dédié
+
 ## Règle d'or
 
 > **Aucune modification code en T01–T17.** Si une tâche détecte un FAIL, le rapport
