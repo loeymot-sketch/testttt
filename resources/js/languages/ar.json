@@ -595,6 +595,7 @@
         "enter_payment_note": "أدخل ملاحظة الدفع في نقاط البيع",
         "enter_transaction_id": "أدخل معرف المعاملة",
         "mobile_banking": "MFS",
+        "ticket_restaurant": "قسيمة وجبات",
         "msg91_template_variable": "متغير قالب MSG91",
         "default_phone_digit_length": "طول رقم الهاتف الافتراضي",
         "license_code": "رمز الترخيص",

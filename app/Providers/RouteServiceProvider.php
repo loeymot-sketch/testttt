@@ -90,12 +90,13 @@ class RouteServiceProvider extends ServiceProvider
                 $identifier = Str::lower((string) $request->input('username', ''));
             }
             $key = $identifier.'|'.$request->ip();
-            $max = max(1, (int) config('app.login_lockout_max_attempts', 10));
+            $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
+            $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
 
-            return Limit::perMinutes(10, $max)->by($key)->response(function () {
+            return Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response(function () use ($decayMinutes) {
                 return response()->json([
                     'message' => 'Too many login attempts. Please try again later.',
-                    'retry_after' => 900,
+                    'retry_after' => $decayMinutes * 60,
                 ], 429);
             });
         });

@@ -70,6 +70,44 @@ run_check() {
     fi
 }
 
+# filter_aftercommit_wrapped <hits>
+#
+# For each hit line "path:line:content", inspect the 5 lines preceding
+# `line` in `path`. If any of those lines contains `DB::afterCommit(`,
+# the hit is considered properly wrapped and is REMOVED from the output.
+# Otherwise the hit is kept (genuine invariant violation).
+#
+# Used by invariant 4/6 to detect manual after-commit wrapping without
+# needing per-site `// allow:` comments.
+filter_aftercommit_wrapped() {
+    local hits="$1"
+    [[ -z "$hits" ]] && return 0
+    local kept=""
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local file="${line%%:*}"
+        local rest="${line#*:}"
+        local lineno="${rest%%:*}"
+        # Guard: file must exist and lineno must be a positive int.
+        if [[ ! -f "$file" ]] || ! [[ "$lineno" =~ ^[0-9]+$ ]] || (( lineno < 1 )); then
+            kept+="${line}"$'\n'
+            continue
+        fi
+        local start=$(( lineno - 5 ))
+        (( start < 1 )) && start=1
+        # Use awk to inspect the window [start, lineno-1].
+        local has_wrap
+        has_wrap=$(awk -v s="$start" -v e="$((lineno - 1))" \
+            'NR>=s && NR<=e && /DB::afterCommit\(/ { found=1 } END { print (found ? "1" : "0") }' \
+            "$file")
+        if [[ "$has_wrap" != "1" ]]; then
+            kept+="${line}"$'\n'
+        fi
+    done <<< "$hits"
+    # Strip trailing newline.
+    printf '%s' "${kept%$'\n'}"
+}
+
 echo "== POS invariants CI guard (${YELLOW}POS_INVARIANTS_AND_GATES.md §3${NC}) =="
 
 # 1. SSOT pricing — price/total/subtotal must never come from payload in POS layer.
@@ -106,13 +144,44 @@ run_check "3/6 status via OrderStateMachine" \
     app/Http/Controllers/Admin/PosController.php \
     app/Http/Controllers/Admin/PosOrderController.php
 
-# 4. Event broadcast dispatched without afterCommit — scope to App\Events\* only
-#    (jobs are already queued/async; this rule targets broadcast events).
-run_check "4/6 App\\Events\\* dispatch afterCommit" \
-    'App\\\\Events\\\\[A-Za-z]+::dispatch\(' \
-    'afterCommit|shouldDispatchAfterCommit|// allow:' \
-    app/Services/OrderService.php \
-    app/Services/FrontendOrderService.php
+# 4. Event broadcast dispatched without afterCommit — scope to App\Events\* broadcast events.
+#    V5 #2: FQN (\App\Events\X::dispatch) AND short-name (X::dispatch with `use`).
+#    V8 #1: Laravel helpers event(new X(...)) and Event::dispatch(new X(...)).
+#    V9 #1: awk post-filter — if DB::afterCommit( appears in the 5 lines above a hit, skip.
+#    NOTE 2026-04-20: this check WILL fail until P11_DISPATCH_AFTER_COMMIT_REMEDIATION
+#    (V5 #1) implements ShouldDispatchAfterCommit on event classes. Pre-existing
+#    violations in OrderService.php / FrontendOrderService.php are tracked and
+#    will resolve automatically once events implement the contract.
+#    Item/Category catalog events use manual DB::afterCommit wrapping (multi-line);
+#    invariant 4/6 detects the wrap structurally (no per-site // allow:).
+BROADCAST_EVENTS_4_6='OrderCreated|OrderStatusChanged|ItemAvailabilityChanged|ItemCreated|ItemUpdated|ItemDeleted|CategoryCreated|CategoryUpdated|CategoryDeleted'
+PATTERN_4_6="(${BROADCAST_EVENTS_4_6})::dispatch\\(|(event\\(new |Event::dispatch\\(new )(${BROADCAST_EVENTS_4_6})\\b"
+EXCLUDE_4_6='afterCommit|shouldDispatchAfterCommit|// allow:|use App\\\\Events|DB::afterCommit'
+SCOPE_4_6=( app/Services/OrderService.php
+            app/Services/FrontendOrderService.php
+            app/Services/Menu/AvailabilityService.php
+            app/Services/ItemService.php
+            app/Services/ItemCategoryService.php
+            app/Http/Controllers/Admin/AvailabilityController.php )
+
+echo -n "  [4/6 App\\Events\\* dispatch afterCommit] ... "
+raw_hits_4_6=$(grep -rEn --include='*.php' -e "$PATTERN_4_6" "${SCOPE_4_6[@]}" 2>/dev/null || true)
+raw_hits_4_6=$(echo "$raw_hits_4_6" | grep -vE "$EXCLUDE_4_6" || true)
+raw_hits_4_6=$(echo "$raw_hits_4_6" | grep -v '^$' || true)
+filtered_hits_4_6=$(filter_aftercommit_wrapped "$raw_hits_4_6")
+count_4_6=0
+[[ -n "$filtered_hits_4_6" ]] && count_4_6=$(echo "$filtered_hits_4_6" | wc -l | tr -d ' ')
+
+if [[ $count_4_6 -eq 0 ]]; then
+    echo "${GREEN}OK${NC}"
+else
+    echo "${RED}FAIL (${count_4_6} hit(s))${NC}"
+    FAILED=$((FAILED + 1))
+    TOTAL_HITS=$((TOTAL_HITS + count_4_6))
+    if [[ $VERBOSE -eq 1 ]]; then
+        echo "$filtered_hits_4_6" | head -20 | sed 's/^/      /'
+    fi
+fi
 
 # 5. EventContract bypass — broadcast() must build & assert envelope.
 run_check "5/6 EventContract envelope" \

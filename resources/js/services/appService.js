@@ -260,7 +260,7 @@ export default {
 
     formDataShow: function (formData) {
         for (let pair of formData.entries()) {
-            console.log(pair[0] + " : " + pair[1]);
+            // [P13_LOG_HYGIENE] console.log(pair[0] + " : " + pair[1]);
         }
     },
 

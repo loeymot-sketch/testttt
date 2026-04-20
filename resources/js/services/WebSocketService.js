@@ -53,7 +53,7 @@ class WebSocketService {
         const conn = pusher.connection;
 
         conn.bind('state_change', ({ previous, current }) => {
-            console.log(`[WS] ${previous} → ${current}`);
+            // [P13_LOG_HYGIENE] console.log(`[WS] ${previous} → ${current}`);
 
             switch (current) {
                 case 'connected':

@@ -858,6 +858,10 @@ export default {
         dineInEnabled: function () {
             const s = this.setting || {};
             const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+            // [V10 #1] Strict typeof guard: reject arrays/objects/functions before
+            // coercion (String([1]) === '1' would otherwise activate the flag).
+            const t = typeof raw;
+            if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
             return String(raw) === '1' || raw === true;
         },
         categories: function () {
@@ -1111,6 +1115,11 @@ export default {
                         is_available: isAvailable,
                         availability_reason: payload.reason || null,
                     });
+                    // [P12_POS_CART_PRUNE / F-VERIFY-01-02] Mirror kiosk parity:
+                    // remove cart lines for this item_id when it becomes unavailable.
+                    if (!isAvailable) {
+                        try { this.$store.dispatch('posCart/pruneUnavailable', itemId); } catch (e) { /* defensive */ }
+                    }
                 }
             }
 

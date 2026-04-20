@@ -42,3 +42,19 @@ Après lecture, résumer en **≤15 lignes** : stack, surfaces (POS, KDS, OSS, k
 ## Installation globale (optionnel, tous projets sur ce compte)
 
 Copier ce dossier `foodking-handoff` vers `~/.cursor/skills/foodking-handoff/` pour invoquer le même skill hors workspace.
+
+## Hygiène des rapports d'audit
+
+Avant tout commit qui ajoute / modifie un rapport sous `reports/review/AUDIT_*.md`,
+`reports/review/VERIFY_*.md` ou `reports/audit-orchestration/*.md`, exécuter :
+
+```bash
+bash scripts/check-audit-report-integrity.sh -v
+```
+
+Le script échoue si un rapport est < 200 octets (cas observé : un rapport
+restauré depuis un swap vide). Référence : `F-VERIFY-10-02` (cf.
+`reports/review/VERIFY_10_BRANCH_ISOLATION_2026-04-20.md`).
+
+Optionnel : intégrer dans le pre-commit hook local de l'utilisateur. Pas
+d'auto-installation versionnée pour ne pas écraser les hooks personnels.

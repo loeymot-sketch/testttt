@@ -112,4 +112,19 @@ return [
 
     'password_timeout' => 10800,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Login brute-force lockout (RouteServiceProvider login-lockout limiter)
+    |--------------------------------------------------------------------------
+    |
+    | Window = decay_minutes; max_attempts allowed per email|ip in that window.
+    | Defaults match historical prod behavior (10 / 10 minutes).
+    |
+    */
+
+    'login_lockout' => [
+        'max_attempts' => max(1, (int) env('LOGIN_LOCKOUT_MAX_ATTEMPTS', 10)),
+        'decay_minutes' => max(1, (int) env('LOGIN_LOCKOUT_DECAY_MINUTES', 10)),
+    ],
+
 ];

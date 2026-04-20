@@ -463,7 +463,7 @@
   </div>
 </template>
 <script>
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingComponent from "../components/LoadingComponent.vue";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
@@ -577,7 +577,7 @@ export default {
           { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
         ]);
-        console.log(`[KDS] Echo subscribed to branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         // Echo not available or auth failed — polling fallback handles it
         console.warn('[KDS] Echo subscription failed:', e.message);
@@ -588,7 +588,7 @@ export default {
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
-        console.log(`[KDS] Echo unsubscribed from branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KDS] Echo unsubscribed from branch.${branchId}`);
       } catch (e) {
         console.warn('[KDS] Echo unsubscribe error:', e.message);
       }

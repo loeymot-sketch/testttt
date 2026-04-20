@@ -23,6 +23,8 @@
 
 ### 1.1 P0 — Critiques (12 cycles, traiter en V1+V2)
 
+> **Addendum 2026-04-20 (post cycle 05)** : F-VERIFY-17-01 (build pipeline pos-wizard) **requalifié** — pas un bug manifest, mais une décision architecturale à prendre (migration `asset()+time()` → `mix()` dans `master.blade.php`). Voir `reports/execution/RUN_P11_BUILD_PIPELINE_RESTORE_KIOSK_POSWIZARD_2026-04-20.md` §Final report. Cycle P11_BUILD_PIPELINE_RESTORE clos REQUALIFIED ; cycle successeur éventuel : `P11_POS_WIZARD_MIX_MIGRATION` (V2/V3, scope étendu `master.blade.php` + ES module refactor). Alternative : `wontfix intentionnel` (cache-busting request-based actuel suffisant).
+
 | Cycle | Findings | Prio | PRIMARY_MODEL | Subagent | j-h | GATE | Invariants touchés | Dépendances |
 |---|---|---|---|---|---|---|---|---|
 | **P11_RETURNED_IDEMPOTENCY** | F-VERIFY-03-01, 20-* | P0 | GPT5 | complex-impl | 1.0 | **OUI** | OrderStatus state-machine, NF525 audit, dispatch-after-commit | LOCK_A+B OrderService |

@@ -226,7 +226,7 @@ export default {
             },
           },
         ]);
-        console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo subscription failed:', e.message);
       }
@@ -237,7 +237,7 @@ export default {
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
-        console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo unsubscribe error:', e.message);
       }

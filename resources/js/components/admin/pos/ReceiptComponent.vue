@@ -213,6 +213,10 @@ export default {
                 [posPaymentMethodEnum.CARD]: this.$t("label.card"),
                 [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
                 [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+                // [P11_RECEIPT_TR_LABEL] TICKET_RESTAURANT (back enum value = 5).
+                // Refacto futur : remplacer `5` par `posPaymentMethodEnum.TICKET_RESTAURANT`
+                // une fois que P11_FRONT_TR_UI aura complété l'enum JS.
+                5: this.$t("label.ticket_restaurant"),
             },
             orderTypeEnum: orderTypeEnum,
             enums: {

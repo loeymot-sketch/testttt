@@ -134,6 +134,9 @@
                             <th class="db-table-head-th">
                                 {{ $t('label.status') }}
                             </th>
+                            <th class="db-table-head-th" v-if="permissionChecker('items_edit')">
+                                {{ $t('label.availability') }}
+                            </th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_delete')">
                                 {{ $t('label.action') }}
@@ -152,6 +155,7 @@
                                     {{ enums.statusEnumArray[item.status] }}
                                 </span>
                             </td>
+                            <td class="db-table-body-td" v-if="permissionChecker('items_edit')"><AvailabilityToggleComponent :item-id="item.id" :branch-id="null" :is-available="item.is_available ?? true" :unavailable-reason="item.availability_reason || item.unavailable_reason || null" @availability-changed="list" /></td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_delete')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
@@ -168,7 +172,7 @@
 
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" colspan="8">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'"
@@ -217,6 +221,7 @@ import SampleFileComponent from "../components/buttons/import/SampleFileComponen
 import UploadFileComponent from "../components/buttons/import/UploadFileComponent.vue";
 import ImportComponent from "../components/buttons/import/ImportComponent.vue";
 import ItemUploadComponent from './ItemUploadComponent.vue';
+import AvailabilityToggleComponent from './AvailabilityToggleComponent.vue';
 import ENV from '../../../config/env';
 
 export default {
@@ -238,7 +243,8 @@ export default {
         SampleFileComponent,
         UploadFileComponent,
         ImportComponent,
-        ItemUploadComponent
+        ItemUploadComponent,
+        AvailabilityToggleComponent
     },
     data() {
         return {

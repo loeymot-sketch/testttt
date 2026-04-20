@@ -211,6 +211,17 @@ export const posCart = {
             context.commit('subtotal');
         },
         /**
+         * [P12_POS_CART_PRUNE / F-VERIFY-01-02] Remove cart lines whose item_id
+         * matches an item flagged unavailable by the ItemAvailabilityChanged
+         * broadcast. Mirrors the kiosk pattern (kioskCart/pruneUnavailableLines).
+         * Bundle add-ons (pos_line_addons[].item_id) are out of scope: the
+         * server guard remains the SSOT and rejects the order at submit time.
+         */
+        pruneUnavailable: function (context, itemId) {
+            context.commit('pruneUnavailable', itemId);
+            context.commit('subtotal');
+        },
+        /**
          * [POS-9.1.9] Bind the cart to the active cashier (branch + user).
          * Must be called by PosComponent as soon as the auth user is known
          * — before any add-to-cart action — to (a) load the previously saved
@@ -350,6 +361,16 @@ export const posCart = {
                 state.lists.splice(payload.id,1);
             }
             saveCartToStorage(state);
+        },
+        pruneUnavailable: function (state, itemId) {
+            const id = parseInt(itemId, 10);
+            if (!id) return;
+            const before = state.lists.length;
+            state.lists = state.lists.filter(line => parseInt(line.item_id, 10) !== id);
+            if (state.lists.length !== before) {
+                state.discount = 0;
+                saveCartToStorage(state);
+            }
         },
         discount: function (state, payload) {
             state.discount = payload;

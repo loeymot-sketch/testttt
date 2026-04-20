@@ -104,10 +104,10 @@
     <ReceiptComponent :order="order" />
 </template>
 <script>
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingComponent from "../components/LoadingComponent.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
-import ReceiptComponent from "./ReceiptComponent";
+import ReceiptComponent from "./ReceiptComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";

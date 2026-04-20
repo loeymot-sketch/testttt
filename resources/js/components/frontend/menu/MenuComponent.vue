@@ -62,7 +62,7 @@ import CategoryComponent from "../components/CategoryComponent";
 import ItemComponent from "../components/ItemComponent";
 import itemDesignEnum from "../../../enums/modules/itemDesignEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingComponent from "../components/LoadingComponent.vue";
 
 export default {
     name: "MenuComponent",

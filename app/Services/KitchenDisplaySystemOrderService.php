@@ -133,6 +133,17 @@ class KitchenDisplaySystemOrderService
                 }
 
                 if ((int) $locked->status !== $expectedFrom) {
+                    try {
+                        Log::channel('stack')->warning('[KDS_409]', [
+                            'op'                => 'kds.change_status',
+                            'order_id'          => $locked->id ?? null,
+                            'branch_id'         => $locked->branch_id ?? null,
+                            'current_status'    => $locked->status ?? null,
+                            'attempted_status'  => $newStatus,
+                            'user_id'           => auth()->id(),
+                            'reason'            => 'optimistic_lock_conflict',
+                        ]);
+                    } catch (\Throwable $logEx) { /* never break the abort flow */ }
                     abort(409, 'Order status was updated elsewhere — please refresh the KDS.');
                 }
 

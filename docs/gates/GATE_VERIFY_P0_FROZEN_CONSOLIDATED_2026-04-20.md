@@ -525,6 +525,25 @@ L'humain doit, **avant toute exécution**, se prononcer sur chacun des points su
 
 ---
 
+## 16bis. Addendum 2026-04-20 — Écarts plan/code découverts par cycle P11_BUSINESS_RULES_DOC_SYNC
+
+> **Contexte :** le cycle `P11_BUSINESS_RULES_DOC_SYNC` (V1, Composer, GATE=NON) a été exécuté avant la signature humaine de ce brief. Son audit (`reports/execution/RUN_P11_BUSINESS_RULES_DOC_SYNC_2026-04-20.md` §AUDIT) a révélé 6 écarts entre les plans EXECUTE (01/02/03/04) et le code réel au 2026-04-20. **Ces écarts ne modifient pas les objectifs métier** mais précisent la nature des modifications (création vs durcissement). L'humain doit en prendre connaissance **avant** de signer §16 Approval.
+
+| # | Écart observé | Impact sur cycle | Nature réelle du travail |
+|---|---|---|---|
+| 1 | Modèle `ItemBranchAvailability` / table `item_branch_availability` (pas `BranchItemAvailability` / `branch_item_availabilities`) | doc/observation | Nommage à aligner dans plans futurs — pas d'impact code ce brief |
+| 2 | Garde sealed-Z actuelle = **HTTP 409** sur `OrderService::destroy` (L1735-1752) uniquement ; **aucune** garde sur `changeStatus`/`changePaymentStatus` | **C3 (cycle 02)** | "Durcir garde existante" → en fait **"créer garde nouvelle"** sur 2 méthodes. Le plan 02 reste valide ; nouveaux tests ZReportSealedGuardTest créeront 423 attendu. |
+| 3 | Statut `CLOSING` inexistant ; `ZReport` = `open`/`closed` (`app/Models/ZReport.php:15-16`) | **C3 (cycle 02)** | Confirme nécessité migration schema + gate `human-gates.mdc:19`. Plan 02 cohérent. |
+| 4 | `PaymentStateMachine` inexistante dans `app/Domain/Payment/` | **C4 (cycle 03)** | Confirme plan 03 = création de classe neuve (pas refactor). Plan cohérent. |
+| 5 | `coupons.branch_id` et table `coupon_usages` absents ; `limit_per_user` = comptage `OrderCoupon` | **C6/C7 (V2)** | Plans V2 déjà en mode "création" — cohérent. |
+| 6 | Route POS `.../return` inexistante ; `RETURNED` transite via `POST /api/admin/pos-order/change-status/{order}` (`routes/api.php:633-634`) | **C2 (cycle 04 non-top5) + partiel C1** | Pour lockdown KDS, nouvelle route POS à créer (pas "sécuriser route existante"). |
+
+**Conclusion addendum :** les 8 cycles du brief restent tous valides et nécessaires. Décision humaine §16 peut se faire en connaissance de cause. Aucun objectif métier à réviser. Les plans EXECUTE 01/02/03 seront ajustés lexicalement par Claude orchestrator post-signature (création vs durcissement) sans modifier scope ni SCOPE_FILES.
+
+**Référence preuve :** `reports/execution/RUN_P11_BUSINESS_RULES_DOC_SYNC_2026-04-20.md` §AUDIT + `docs/BUSINESS_RULES.md` §"Synthèse des écarts plan / code au 2026-04-20".
+
+---
+
 ## 17. Annexes — références croisées
 
 - Plan maître : `plans/PLAN_POST_VERIFY_2026-04-20.md` §1.1 (P0) + §3 (Gate humain requis)

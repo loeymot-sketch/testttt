@@ -149,7 +149,7 @@ export default {
             handler: () => { this.list(); },
           },
         ]);
-        console.log(`[OSS] Echo subscribed to branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[OSS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         console.warn('[OSS] Echo subscription failed:', e.message);
       }
@@ -159,7 +159,7 @@ export default {
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
-        console.log(`[OSS] Echo unsubscribed from branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[OSS] Echo unsubscribed from branch.${branchId}`);
       } catch (e) {
         console.warn('[OSS] Echo unsubscribe error:', e.message);
       }

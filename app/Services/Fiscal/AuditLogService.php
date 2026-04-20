@@ -69,46 +69,65 @@ class AuditLogService
 
     public function write(array $data): AuditLog
     {
-        if (empty($data['action'])) {
-            throw new \InvalidArgumentException('AuditLogService::write() requires a non-empty action.');
-        }
-
-        if (! array_key_exists('action', $data)) {
-            throw new \InvalidArgumentException('AuditLogService::write() requires an action.');
-        }
-
-        $branchId = $this->resolveBranchId($data);
-
-        // [POS-9-H.2.3 / F-C5]
-        // Reject null branch_id: a call that does not pin a branch would
-        // read the tail across ALL chains (lastHashFor(null) has no WHERE
-        // clause) and poison whichever chain happens to be latest. CLI
-        // jobs must pass branch_id=0 explicitly to write to the system
-        // chain, or a positive branch_id for a tenant chain.
-        if ($branchId === null) {
-            throw new \InvalidArgumentException(
-                'AuditLogService::write() requires an explicit branch_id. '
-                .'Pass branch_id=0 for system/CLI events, or a positive int for a tenant chain.'
-            );
-        }
-
-        $lockKey = 'audit_chain_b'.$branchId;
-        $lock = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
-
-        if (! $lock->block(self::CHAIN_LOCK_WAIT)) {
-            throw new RuntimeException(
-                "AuditLogService: could not acquire chain lock '{$lockKey}' within "
-                .self::CHAIN_LOCK_WAIT.'s. Another writer is stuck or the cache '
-                .'driver is unavailable.'
-            );
-        }
+        $started = microtime(true);
+        $context = ['op' => 'audit_log.write', 'branch_id' => null];
 
         try {
-            return DB::transaction(function () use ($data, $branchId) {
-                return $this->performInsert($data, $branchId, /* attempt */ 1);
-            });
+            if (empty($data['action'])) {
+                throw new \InvalidArgumentException('AuditLogService::write() requires a non-empty action.');
+            }
+
+            if (! array_key_exists('action', $data)) {
+                throw new \InvalidArgumentException('AuditLogService::write() requires an action.');
+            }
+
+            $branchId = $this->resolveBranchId($data);
+            $context['branch_id'] = $branchId;
+
+            // [POS-9-H.2.3 / F-C5]
+            // Reject null branch_id: a call that does not pin a branch would
+            // read the tail across ALL chains (lastHashFor(null) has no WHERE
+            // clause) and poison whichever chain happens to be latest. CLI
+            // jobs must pass branch_id=0 explicitly to write to the system
+            // chain, or a positive branch_id for a tenant chain.
+            if ($branchId === null) {
+                throw new \InvalidArgumentException(
+                    'AuditLogService::write() requires an explicit branch_id. '
+                    .'Pass branch_id=0 for system/CLI events, or a positive int for a tenant chain.'
+                );
+            }
+
+            $lockKey = 'audit_chain_b'.$branchId;
+            $lock = Cache::lock($lockKey, self::CHAIN_LOCK_TTL);
+
+            if (! $lock->block(self::CHAIN_LOCK_WAIT)) {
+                throw new RuntimeException(
+                    "AuditLogService: could not acquire chain lock '{$lockKey}' within "
+                    .self::CHAIN_LOCK_WAIT.'s. Another writer is stuck or the cache '
+                    .'driver is unavailable.'
+                );
+            }
+
+            try {
+                $result = DB::transaction(function () use ($data, $branchId) {
+                    return $this->performInsert($data, $branchId, /* attempt */ 1);
+                });
+                $context['outcome'] = 'success';
+
+                return $result;
+            } finally {
+                optional($lock)->release();
+            }
+        } catch (\Throwable $e) {
+            $context['outcome'] = 'failure';
+            $context['exception_class'] = get_class($e);
+            throw $e;
         } finally {
-            optional($lock)->release();
+            $context['duration_ms'] = (int) ((microtime(true) - $started) * 1000);
+            try {
+                Log::channel('stack')->info('[FISCAL_TIMING]', $context);
+            } catch (\Throwable $logEx) {
+            }
         }
     }
 

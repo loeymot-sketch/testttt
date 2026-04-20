@@ -569,6 +569,7 @@
         "enter_payment_note": "Voer POS-betaalnotitie in",
         "enter_transaction_id": "Voer transactie-ID in",
         "mobile_banking": "MFS",
+        "ticket_restaurant": "Essensgutschein",
         "msg91_template_variable": "MSG91-sjabloonvariabele",
         "default_phone_digit_length": "Standaard telefooncijferlengte",
         "license_code": "licentiecode",

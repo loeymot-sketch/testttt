@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -101,71 +102,89 @@ class ZReportService
      */
     public function close(int $branchId, User|int|null $closedBy = null): ZReport
     {
-        if ($branchId <= 0) {
-            throw new \InvalidArgumentException('ZReportService::close requires a positive branch_id.');
-        }
-
-        $closedById = $closedBy instanceof User ? $closedBy->id : $closedBy;
-        $lockKey    = sprintf('z_report_b%d', $branchId);
-        $lock       = Cache::lock($lockKey, self::LOCK_TTL_SECONDS);
+        $started = microtime(true);
+        $context = ['op' => 'z_report.close', 'branch_id' => $branchId];
 
         try {
-            if (!$lock->block(self::LOCK_ACQUIRE_SECONDS)) {
-                throw new RuntimeException("ZReportService: cannot acquire {$lockKey}.");
+            if ($branchId <= 0) {
+                throw new \InvalidArgumentException('ZReportService::close requires a positive branch_id.');
             }
 
-            return $this->connection->transaction(function () use ($branchId, $closedById) {
-                $open = ZReport::query()
-                    ->where('branch_id', $branchId)
-                    ->where('status', ZReport::STATUS_OPEN)
-                    ->lockForUpdate()
-                    ->first();
+            $closedById = $closedBy instanceof User ? $closedBy->id : $closedBy;
+            $lockKey    = sprintf('z_report_b%d', $branchId);
+            $lock       = Cache::lock($lockKey, self::LOCK_TTL_SECONDS);
 
-                if (!$open) {
-                    throw new RuntimeException("ZReportService: no open Z report to close for branch {$branchId}.");
+            try {
+                if (!$lock->block(self::LOCK_ACQUIRE_SECONDS)) {
+                    throw new RuntimeException("ZReportService: cannot acquire {$lockKey}.");
                 }
 
-                $closedAt   = Carbon::now();
-                $aggregates = $this->aggregate($branchId, $open->opened_at, $closedAt);
+                $result = $this->connection->transaction(function () use ($branchId, $closedById) {
+                    $open = ZReport::query()
+                        ->where('branch_id', $branchId)
+                        ->where('status', ZReport::STATUS_OPEN)
+                        ->lockForUpdate()
+                        ->first();
 
-                $prevHash = (string) (ZReport::query()
-                    ->where('branch_id', $branchId)
-                    ->where('status', ZReport::STATUS_CLOSED)
-                    ->orderByDesc('sequence_no')
-                    ->value('signature') ?? '');
+                    if (!$open) {
+                        throw new RuntimeException("ZReportService: no open Z report to close for branch {$branchId}.");
+                    }
 
-                $signature = $this->sign($branchId, $prevHash, $open->sequence_no, $aggregates, $closedAt);
+                    $closedAt   = Carbon::now();
+                    $aggregates = $this->aggregate($branchId, $open->opened_at, $closedAt);
 
-                $open->forceFill(array_merge($aggregates, [
-                    'closed_at' => $closedAt,
-                    'closed_by' => $closedById,
-                    'prev_hash' => $prevHash !== '' ? $prevHash : null,
-                    'signature' => $signature,
-                    'status'    => ZReport::STATUS_CLOSED,
-                ]))->save();
+                    $prevHash = (string) (ZReport::query()
+                        ->where('branch_id', $branchId)
+                        ->where('status', ZReport::STATUS_CLOSED)
+                        ->orderByDesc('sequence_no')
+                        ->value('signature') ?? '');
 
-                // [POS-9-H.3.2 / F-C7]
-                // Full numeric snapshot — the signature prefix is enough
-                // to cross-reference the HMAC without leaking the full
-                // secret-derived hash in logs.
-                \Illuminate\Support\Facades\Log::channel('fiscal')->info('z_report.close', [
-                    'z_report_id'     => $open->id,
-                    'branch_id'       => $branchId,
-                    'sequence_no'     => $open->sequence_no,
-                    'closed_by'       => $closedById,
-                    'total_ttc'       => (float) $aggregates['total_ttc'],
-                    'total_ht'        => (float) $aggregates['total_ht'],
-                    'total_tva'       => (float) $aggregates['total_tva'],
-                    'order_count'     => (int)  $aggregates['order_count'],
-                    'cancel_count'    => (int)  $aggregates['cancel_count'],
-                    'refund_count'    => (int)  $aggregates['refund_count'],
-                    'signature_prefix'=> substr($signature, 0, 12),
-                ]);
+                    $signature = $this->sign($branchId, $prevHash, $open->sequence_no, $aggregates, $closedAt);
 
-                return $open->refresh();
-            });
+                    $open->forceFill(array_merge($aggregates, [
+                        'closed_at' => $closedAt,
+                        'closed_by' => $closedById,
+                        'prev_hash' => $prevHash !== '' ? $prevHash : null,
+                        'signature' => $signature,
+                        'status'    => ZReport::STATUS_CLOSED,
+                    ]))->save();
+
+                    // [POS-9-H.3.2 / F-C7]
+                    // Full numeric snapshot — the signature prefix is enough
+                    // to cross-reference the HMAC without leaking the full
+                    // secret-derived hash in logs.
+                    \Illuminate\Support\Facades\Log::channel('fiscal')->info('z_report.close', [
+                        'z_report_id'     => $open->id,
+                        'branch_id'       => $branchId,
+                        'sequence_no'     => $open->sequence_no,
+                        'closed_by'       => $closedById,
+                        'total_ttc'       => (float) $aggregates['total_ttc'],
+                        'total_ht'        => (float) $aggregates['total_ht'],
+                        'total_tva'       => (float) $aggregates['total_tva'],
+                        'order_count'     => (int)  $aggregates['order_count'],
+                        'cancel_count'    => (int)  $aggregates['cancel_count'],
+                        'refund_count'    => (int)  $aggregates['refund_count'],
+                        'signature_prefix'=> substr($signature, 0, 12),
+                    ]);
+
+                    return $open->refresh();
+                });
+                $context['outcome'] = 'success';
+
+                return $result;
+            } finally {
+                try { $lock->release(); } catch (\Throwable $e) {}
+            }
+        } catch (\Throwable $e) {
+            $context['outcome'] = 'failure';
+            $context['exception_class'] = get_class($e);
+            throw $e;
         } finally {
-            try { $lock->release(); } catch (\Throwable $e) {}
+            $context['duration_ms'] = (int) ((microtime(true) - $started) * 1000);
+            try {
+                Log::channel('stack')->info('[FISCAL_TIMING]', $context);
+            } catch (\Throwable $logEx) {
+            }
         }
     }
 

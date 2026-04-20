@@ -41,6 +41,7 @@ export const kitchenDisplaySystemOrder = {
                 }).catch((err) => {
                     if (err.response && err.response.status === 409) {
                         context.dispatch("lists", payload).catch(() => {});
+                        context.dispatch("orderItems").catch(() => {});
                     }
                     reject(err);
                 });
