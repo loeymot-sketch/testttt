@@ -18,6 +18,11 @@
         </include>
     </coverage>
     <php>
+        <!-- [C1] Default PHP CLI memory_limit (128M) overflows on the full
+             Feature suite (562 tests, heavy fixtures + Spatie permission
+             cache). Bump to 512M so runs do not require `-d memory_limit=512M`
+             on the CLI. Mirrors the limit used in CI runners. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
@@ -30,7 +35,8 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="MIX_API_KEY" value="test-api-key"/>
-        <env name="LOGIN_LOCKOUT_MAX_ATTEMPTS" value="10"/>
+        <env name="LOGIN_LOCKOUT_MAX_ATTEMPTS" value="1000"/>
+        <env name="LOGIN_LOCKOUT_DECAY_MINUTES" value="1"/>
         <env name="API_THROTTLE_PER_MINUTE" value="120"/>
         <env name="STAFF_ONLY_MODE" value="false"/>
         <env name="KIOSK_USE_POS_WIZARD" value="false"/>
