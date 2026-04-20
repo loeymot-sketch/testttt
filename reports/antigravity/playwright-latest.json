@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 4
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
@@ -20,7 +20,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 4
+          "actualWorkers": 1
         },
         "id": "chromium",
         "name": "chromium",
@@ -55,7 +55,7 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.58.2",
-    "workers": 5,
+    "workers": 1,
     "webServer": null
   },
   "suites": [
@@ -88,12 +88,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5388,
+                      "duration": 5197,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:37.268Z",
+                      "startTime": "2026-04-19T00:32:10.930Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -104,6 +104,40 @@
               "id": "81675b48eccb812da7fd-f37efeab19c3cb455849",
               "file": "01-auth-refresh.spec.js",
               "line": 12,
+              "column": 3
+            },
+            {
+              "title": "user info preserved after F5",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6647,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:32:16.750Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "81675b48eccb812da7fd-a15457369def6ca62079",
+              "file": "01-auth-refresh.spec.js",
+              "line": 30,
               "column": 3
             }
           ]
@@ -136,15 +170,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2173,
+                      "duration": 1387,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:37.268Z",
+                      "startTime": "2026-04-19T00:32:23.421Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -170,15 +204,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1355,
+                      "duration": 2138,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:40.639Z",
+                      "startTime": "2026-04-19T00:32:24.818Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -204,15 +238,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3781,
+                      "duration": 4577,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:42.000Z",
+                      "startTime": "2026-04-19T00:32:26.971Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -223,6 +257,40 @@
               "id": "f6798ae4d119786f0120-0ab80aeb92b6d8e9a85f",
               "file": "02-pos-cash.spec.js",
               "line": 36,
+              "column": 3
+            },
+            {
+              "title": "full POS cash order cycle",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5484,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:32:31.557Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6798ae4d119786f0120-d73b1331dfe9425be18a",
+              "file": "02-pos-cash.spec.js",
+              "line": 51,
               "column": 3
             }
           ]
@@ -255,15 +323,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1316,
+                      "duration": 1260,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:37.262Z",
+                      "startTime": "2026-04-19T00:32:37.058Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -289,15 +357,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3049,
+                      "duration": 3588,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:39.783Z",
+                      "startTime": "2026-04-19T00:32:38.326Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -323,15 +391,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4072,
+                      "duration": 5793,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:42.843Z",
+                      "startTime": "2026-04-19T00:32:41.951Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -341,7 +409,7 @@
               ],
               "id": "b7ccea324dbbbe62a48d-d51f363715866d684e9f",
               "file": "03-kiosk-wizard.spec.js",
-              "line": 30,
+              "line": 36,
               "column": 3
             },
             {
@@ -357,15 +425,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 419,
+                      "duration": 1332,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:46.923Z",
+                      "startTime": "2026-04-19T00:32:47.934Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -375,7 +443,41 @@
               ],
               "id": "b7ccea324dbbbe62a48d-64916e16be5e48f9baf4",
               "file": "03-kiosk-wizard.spec.js",
-              "line": 43,
+              "line": 49,
+              "column": 3
+            },
+            {
+              "title": "kiosk navigation flow — categories and items browsable",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5163,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:32:49.283Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7ccea324dbbbe62a48d-c0dc53b812a052773908",
+              "file": "03-kiosk-wizard.spec.js",
+              "line": 62,
               "column": 3
             }
           ]
@@ -408,15 +510,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1469,
+                      "duration": 500,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:37.271Z",
+                      "startTime": "2026-04-19T00:32:54.462Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -442,15 +544,103 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 20835,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                          "column": 24,
+                          "line": 29
+                        },
+                        "snippet": "  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                            "column": 24,
+                            "line": 29
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n\n\n  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:32:54.967Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                        "column": 24,
+                        "line": 29
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1775,
+                      "duration": 1235,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-19T00:33:16.561Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium-retry1/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "9d204cd80e7226e34828-192fcdf077faa5a80194",
+              "file": "04-kds-status.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "KDS surface loads order list without crash",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6499,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-14T18:01:39.934Z",
+                      "startTime": "2026-04-19T00:33:18.443Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -458,10 +648,418 @@
                   "status": "expected"
                 }
               ],
-              "id": "9d204cd80e7226e34828-192fcdf077faa5a80194",
+              "id": "9d204cd80e7226e34828-41b08766a67333fb72dd",
               "file": "04-kds-status.spec.js",
-              "line": 26,
+              "line": 37,
               "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "05-pos-card.spec.js",
+      "file": "05-pos-card.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POS Card — payment flow",
+          "file": "05-pos-card.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "POS surface loads for card payment scenario",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4395,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:24.956Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "53d9ecf25db9df861281-e580caf42e3721a2069d",
+              "file": "05-pos-card.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "no JavaScript errors on POS card surface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4359,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:29.361Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "53d9ecf25db9df861281-7288d9349fe7fb8a04e4",
+              "file": "05-pos-card.spec.js",
+              "line": 28,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "06-staff-only-routing.spec.js",
+      "file": "06-staff-only-routing.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Staff-only routing — Restructuration V1",
+          "file": "06-staff-only-routing.spec.js",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Root / redirige vers /login (anonyme)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 492,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:33.735Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-76c9d3b7693936031c14",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 11,
+              "column": 5
+            },
+            {
+              "title": "/home redirige vers /login (anonyme, vitrine bloquée)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 467,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:34.234Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-b1ae69898c2e7e98f645",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 17,
+              "column": 5
+            },
+            {
+              "title": "/menu redirige vers /login (anonyme, vitrine bloquée)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:34.710Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-28a5200330e29478ec7e",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 22,
+              "column": 5
+            },
+            {
+              "title": "/offers redirige vers /login (anonyme, vitrine bloquée)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:35.184Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-f209c68366772c8bcba0",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 27,
+              "column": 5
+            },
+            {
+              "title": "Page /login — Signup masqué en staff-only",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 479,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:35.658Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-c67cb04f37805cd6a8e8",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 32,
+              "column": 5
+            },
+            {
+              "title": "Kiosk /kiosk reste accessible (public autonome)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 634,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:36.142Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-3c6cd02d6748b1c945e2",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 39,
+              "column": 5
+            },
+            {
+              "title": "Flag staffOnlyMode exposé dans window.foodkingConfig",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 535,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:36.782Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-2456939a50a1d0970e78",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 48,
+              "column": 5
+            },
+            {
+              "title": "Flag kioskUsePosWizard exposé dans window.foodkingConfig",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 490,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:37.322Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-9027111a85f00c7a8822",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 56,
+              "column": 5
+            },
+            {
+              "title": "Login admin → redirige vers admin.dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1129,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-19T00:33:37.817Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4133bb14d286cf68edd-62529603ebba45099759",
+              "file": "06-staff-only-routing.spec.js",
+              "line": 64,
+              "column": 5
             }
           ]
         }
@@ -470,11 +1068,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-14T18:01:36.527Z",
-    "duration": 10854.925000000001,
-    "expected": 10,
+    "startTime": "2026-04-19T00:32:09.299Z",
+    "duration": 89697.15,
+    "expected": 24,
     "skipped": 0,
     "unexpected": 0,
-    "flaky": 0
+    "flaky": 1
   }
 }

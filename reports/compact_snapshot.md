@@ -1,4 +1,4 @@
-# Compact Snapshot — 2026-04-19 00:17:25
+# Compact Snapshot — 2026-04-20 18:10:59
 
 ## Active Cycle
 TASK_ID: KIOSK_PHASE_9_5_2026-04-18
@@ -16,15 +16,15 @@ GATE_FILE:
 
 ## Last Post-Execute Hook
 [post-execute] tests: PASSED
-[post-execute] lint: SKIPPED — no lint script in package.json
+[post-execute] lint: SKIPPED  no lint script in package.json
 [post-execute] playwright: strategy=playwright-full-e2e
 [post-execute] playwright: BASE_URL=http://localhost:8000
-[post-execute] playwright: flows à valider via MCP tools :
+[post-execute] playwright: flows � valider via MCP tools :
 [post-execute] tests: PASSED
-[post-execute] lint: SKIPPED — no lint script in package.json
+[post-execute] lint: SKIPPED  no lint script in package.json
 [post-execute] playwright: strategy=playwright-full-e2e
 [post-execute] playwright: BASE_URL=http://localhost:8000
-[post-execute] playwright: flows à valider via MCP tools :
+[post-execute] playwright: flows � valider via MCP tools :
 
 ## Open Gates
 No open gate.
