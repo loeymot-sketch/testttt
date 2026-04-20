@@ -125,6 +125,26 @@ return [
             'days' => 30,
         ],
 
+        // [C6 / K-6] Dedicated security channel — rotated daily, retained
+        // 90 days for forensic analysis of `branch_mismatch_claimed`,
+        // `forbidden_ability`, `lockdown_violation`. Separate from
+        // `hardware` so ops can wire alerts (Sentry/Slack) without
+        // hardware noise, and separate from `observability` so SLO
+        // evaluators do not drown out security signal. Mirrors the
+        // testttt-kiosk-p93 reference worktree.
+        //
+        // INFRASTRUCTURE PORT ONLY — the actual K-6 enforcement
+        // (branch_id mismatch detection in KioskEventController) is a
+        // critical-zone change that requires its own audited cycle.
+        // Channel is shipped now so any future enforcement / ad-hoc
+        // diagnostic can call `Log::channel('security')` immediately.
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => 90,
+        ],
+
         'production_json' => [
             'driver' => 'monolog',
             'handler' => StreamHandler::class,
