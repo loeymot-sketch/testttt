@@ -33,7 +33,7 @@
  * intersection avec les allergènes déclarés par le client (DATA_CONTRACT §9.4).
  *
  * Props :
- *  - allergens         : string[] codes de l'item (`gluten`, `milk`, ...)
+ *  - allergens         : string[] codes de l'item (codes FR UE : `gluten`, `lait`, … ; alias EN historiques acceptés)
  *  - customerAllergens : string[] codes déclarés par le client (scan loyalty)
  *  - compact           : true → n'affiche que les codes en intersection
  *
@@ -46,10 +46,33 @@
  * localisé via `$t('allergens.<code>')` si disponible.
  */
 const ICONS = {
-    gluten: '🌾', crustaceans: '🦐', eggs: '🥚', fish: '🐟',
-    peanuts: '🥜', soy: '🌱', milk: '🥛', tree_nuts: '🌰',
-    celery: '🥬', mustard: '🫘', sesame: '🌻', sulphites: '🍷',
-    lupin: '🌼', molluscs: '🐚',
+    // Codes FR (API / seeder UE 1169/2011)
+    gluten: '🌾',
+    crustaces: '🦐',
+    oeufs: '🥚',
+    poisson: '🐟',
+    arachides: '🥜',
+    soja: '🌱',
+    lait: '🥛',
+    fruits_a_coque: '🌰',
+    celeri: '🥬',
+    moutarde: '🫘',
+    sesame: '🌻',
+    sulfites: '🍷',
+    lupin: '🌼',
+    mollusques: '🐚',
+    // Alias codes anglais (snapshots / données legacy)
+    crustaceans: '🦐',
+    eggs: '🥚',
+    fish: '🐟',
+    peanuts: '🥜',
+    soy: '🌱',
+    milk: '🥛',
+    tree_nuts: '🌰',
+    celery: '🥬',
+    mustard: '🫘',
+    sulphites: '🍷',
+    molluscs: '🐚',
 };
 
 export default {

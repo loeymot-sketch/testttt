@@ -2,14 +2,12 @@
   <div class="kiosk-payment" data-testid="kiosk-payment-root">
     <!-- Header -->
     <div class="kiosk-pay-header">
-      <button
+      <button type="button"
         class="kiosk-pay-back"
-        type="button"
         @click="$router.replace({ name: 'kiosk.cart' })"
         :disabled="submitting"
         :aria-label="$t('kiosk.back')"
-        data-testid="kiosk-payment-back"
-      >
+        data-testid="kiosk-payment-back">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -161,7 +159,7 @@
         <h2 id="kiosk-tpe-title" class="kiosk-tpe-title" aria-live="polite">{{ tpeMessage }}</h2>
         <p class="kiosk-tpe-sub">{{ $t('kiosk.pay_screen.tpe_follow') }}</p>
         <div class="kiosk-tpe-spinner" aria-hidden="true"></div>
-        <button
+        <button type="button"
           v-if="tpeCanCancel"
           class="kiosk-tpe-cancel"
           @click="cancelCardPayment"
@@ -181,7 +179,7 @@
         data-testid="kiosk-payment-error"
       >{{ error }}</div>
       <div class="kiosk-pay-confirm-inner">
-      <button
+      <button type="button"
         class="kiosk-btn-confirm"
         :disabled="!method"
         @click="confirmPayment"
@@ -289,10 +287,20 @@ export default {
         const res = await this.submitOrder({ paymentMethod: this.method, orderType: this.orderType });
         const orderId  = res?.data?.data?.id || res?.data?.id;
         const queueNum = res?.data?.data?.queue_number || res?.data?.queue_number;
-        // [AUDIT-52-BUG5] FrontendOrder (kiosk) uses column 'total', NOT 'order_amount' (POS-only column).
-        // Fallback chain: server total → POS order_amount (never set for kiosk) → client cart total.
-        // Using cartTotal as final fallback only — TPE must always charge the server-validated amount.
-        const total    = res?.data?.data?.total ?? res?.data?.data?.order_amount ?? this.cartTotal;
+        const isOfflineId = typeof orderId === 'string' && String(orderId).startsWith('offline_');
+        // [AUDIT-52 / T06] SSOT paiement : total numérique serveur (`OrderDetailsResource.total` / POS `order_amount`).
+        // Hors-ligne seulement : pas de total serveur → repli sur le panier local pour l’UX TPE.
+        const rawTotal = res?.data?.data?.total ?? res?.data?.data?.order_amount;
+        let total;
+        if (isOfflineId) {
+          total = this.cartTotal;
+        } else {
+          const n = rawTotal != null && rawTotal !== '' ? Number(rawTotal) : NaN;
+          if (!Number.isFinite(n)) {
+            throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
+          }
+          total = n;
+        }
 
         // [AUDIT-P2] Check if loyalty discount was silently dropped server-side.
         // This happens when points were consumed by another order between the loyalty check
@@ -307,7 +315,6 @@ export default {
         // do NOT navigate to /waiting/undefined — show a clear error instead.
         // This prevents an infinite poll loop on GET frontend/order/undefined.
         // [AUDIT-P48-BUG3] Clearer logic: throw if no orderId AND it's not an offline queued order.
-        const isOfflineId = typeof orderId === 'string' && orderId.startsWith('offline_');
         if (!orderId && !isOfflineId) {
           throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
         }

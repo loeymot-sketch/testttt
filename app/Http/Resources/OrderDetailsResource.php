@@ -20,6 +20,11 @@ class OrderDetailsResource extends JsonResource
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
             'token' => $this->token,
+            // Montants numériques (SSOT) pour kiosk / TPE / intégrations — complément des *_currency_price.
+            'subtotal' => round((float) ($this->subtotal ?? 0), 2),
+            'discount' => round((float) ($this->discount ?? 0), 2),
+            'total_tax' => round((float) ($this->total_tax ?? 0), 2),
+            'total' => round((float) ($this->total ?? 0), 2),
             'subtotal_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal),
             'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
             'discount_currency_price' => AppLibrary::currencyAmountFormat($this->discount),

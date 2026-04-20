@@ -99,9 +99,9 @@ export function getAllergenCollision(item, customerAllergens = []) {
 
 /**
  * Extrait la liste des codes allergènes d'un item peu importe la forme :
- *  - allergens: [{ code: 'milk' }, ...] (pivot API)
- *  - allergens: ['milk', 'gluten']     (shortcut)
- *  - allergen_flags: {'milk': true}    (legacy)
+ *  - allergens: [{ code: 'lait' }, ...] (pivot API — codes FR UE)
+ *  - allergens: ['lait', 'gluten']     (shortcut)
+ *  - allergen_flags: {'lait': true}    (legacy)
  *
  * @param {Object} item
  * @returns {Array<string>}
