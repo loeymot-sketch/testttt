@@ -1447,6 +1447,149 @@ describe('KioskWizardComponent — P3 i18n wizard (réel)', () => {
   });
 });
 
+// [P-MEGA-01] Tests SUR LE VRAI COMPOSANT (pas sur le mock local).
+// Reproduit puis verrouille le bug rapporté : "Tacos 2/3/4 viandes →
+// on ne peut sélectionner qu'une viande". Cause racine : 3 fonctions
+// (detectViandeCount / shouldAskTacosTaille / inferTacosPresetMeta)
+// utilisaient des regex incohérentes. Refactor : helper SSOT
+// kioskTacosSize.
+describe('KioskWizardComponent (réel) — P-MEGA-01 viandeCount cohérent', () => {
+  const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
+
+  const mountWithItem = (item) =>
+    shallowMount(KioskWizardComponent, {
+      props: { item, onAddToCart: vi.fn(), onClose: vi.fn() },
+      global: {
+        plugins: [kioskWizardTestI18n],
+        stubs,
+        mocks: {
+          $store: { state: { globalState: { lists: {} } } },
+          $router: { go: vi.fn() },
+        },
+      },
+    });
+
+  // Cas qui DEVRAIENT marcher d'après le libellé admin.
+  const sizeCases = [
+    { name: 'Tacos M', expected: 1 },
+    { name: 'Tacos L', expected: 2 },
+    { name: 'Tacos XL', expected: 3 },
+    { name: 'Tacos XXL', expected: 4 },
+    { name: 'Tacos Méga', expected: 4 },
+    { name: 'Tacos Famille', expected: 4 },
+    { name: 'Tacos 2 viandes', expected: 2 },
+    { name: 'Tacos 3 viandes', expected: 3 },
+    { name: 'Tacos 4 viandes', expected: 4 },
+    { name: 'Tacos L 3 viandes', expected: 3 }, // digit gagne sur lettre
+  ];
+
+  sizeCases.forEach(({ name, expected }) => {
+    it(`detectViandeCount("${name}") = ${expected} (sans step Taille préalable)`, async () => {
+      const item = {
+        id: 1000 + expected,
+        name,
+        category_name: 'Tacos',
+        wizard_template: 'tacos',
+        convert_price: 7.5,
+        currency_price: '7,50 €',
+        itemAttributes: [{ id: 1, name: 'Viande' }],
+        variations: { 1: [{ id: 11, name: 'Boeuf' }, { id: 12, name: 'Poulet' }] },
+        extras: [],
+      };
+      const wrapper = mountWithItem(item);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.detectViandeCount()).toBe(expected);
+    });
+  });
+
+  it('shouldAskTacosTaille = false quand le nom contient une taille reconnue', async () => {
+    const wrapper = mountWithItem({
+      id: 2001,
+      name: 'Tacos Méga',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 12,
+      currency_price: '12,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+
+  it('shouldAskTacosTaille = true sur un libellé bordelin (Tacos Spécial), pour éviter le fallback à 1', async () => {
+    const wrapper = mountWithItem({
+      id: 2002,
+      name: 'Tacos Spécial Maison',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 9,
+      currency_price: '9,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(true);
+  });
+
+  it('item.viande_count serveur prime sur tout (P-MEGA-23 future SSOT)', async () => {
+    const wrapper = mountWithItem({
+      id: 2003,
+      name: 'Tacos Spécial Maison', // libellé non reconnu
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      viande_count: 3, // serveur dit "3 viandes"
+      convert_price: 11,
+      currency_price: '11,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.detectViandeCount()).toBe(3);
+    expect(wrapper.vm.shouldAskTacosTaille()).toBe(false);
+  });
+
+  it('selections._tailleMeta.viandeCount prime sur tout le reste', async () => {
+    const wrapper = mountWithItem({
+      id: 2004,
+      name: 'Tacos M', // donnerait 1 par heuristique
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 7,
+      currency_price: '7,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.selections._tailleMeta = { viandeCount: 4, label: 'XXL' };
+    expect(wrapper.vm.detectViandeCount()).toBe(4);
+  });
+
+  it('inferTacosPresetMeta retourne label cohérent pour Tacos Méga', async () => {
+    const wrapper = mountWithItem({
+      id: 2005,
+      name: 'Tacos Méga',
+      category_name: 'Tacos',
+      wizard_template: 'tacos',
+      convert_price: 12,
+      currency_price: '12,00 €',
+      itemAttributes: [],
+      variations: {},
+      extras: [],
+    });
+    await wrapper.vm.$nextTick();
+    const meta = wrapper.vm.inferTacosPresetMeta();
+    expect(meta).not.toBeNull();
+    expect(meta.viandeCount).toBe(4);
+    expect(meta.label).toBe('Méga');
+    expect(meta.size).toBe('MEGA');
+  });
+});
+
 describe('KioskWizardComponent — P5 detectTemplateFromName (alignement wizard_template)', () => {
   const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
   const minimalForTemplate = (overrides) => ({

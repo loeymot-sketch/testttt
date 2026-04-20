@@ -187,6 +187,15 @@ import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../hel
 import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
 import { partitionKioskExtras } from '../../../helpers/kioskExtrasPartition';
 import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
+// [P-MEGA-01] SSOT pour la détection taille / nombre de viandes : un seul
+// helper centralisé remplace les 3 regex divergentes qui causaient le bug
+// "Tacos M / Méga / Famille → 1 viande seulement". Tests : kioskTacosSize.spec.js.
+import {
+  detectTacosSize,
+  viandeCountFromName,
+  hasPresetSizeInName,
+  tacosSizeLabel,
+} from '../../../helpers/kioskTacosSize';
 // Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 
@@ -463,19 +472,32 @@ export default {
       return 'simple';
     },
     detectViandeCount() {
-      // [AUDIT-P2] Prefer explicit taille selection over name heuristic.
-      // When the customer has chosen a size on the taille step, use that count.
-      // The name heuristic is kept as a fallback for templates that don't have a taille step.
+      // [P-MEGA-01] Sources de vérité par ordre de priorité :
+      //   1. Sélection explicite Taille (selections._tailleMeta.viandeCount)
+      //   2. Champ serveur item.viande_count (P-MEGA-23 — quand exposé)
+      //   3. Heuristique nom centralisée (kioskTacosSize)
+      //   4. Fallback à 1 — UNIQUEMENT au moment de l'usage, jamais
+      //      pour décider d'afficher / cacher l'étape Taille (cf.
+      //      shouldAskTacosTaille). Tracé via analytics quand utilisé.
       if (this.selections._tailleMeta?.viandeCount) {
         return this.selections._tailleMeta.viandeCount;
       }
       const item = this.resolvedItem;
       if (!item) return 1;
-      const name = (item.name || '').toLowerCase();
-      if (/\b4\s*viandes?\b/i.test(name) || /\bxxl\b/i.test(name)) return 4;
-      if (/\b3\s*viandes?\b/i.test(name) || /\bxl\b/i.test(name)) return 3;
-      if (/\b2\s*viandes?\b/i.test(name) || /\bl\b/i.test(name)) return 2;
-      if (/\b1\s*viandes?\b/i.test(name)) return 1;
+      if (Number.isInteger(item.viande_count) && item.viande_count >= 1) {
+        return item.viande_count;
+      }
+      const fromName = viandeCountFromName(item.name);
+      if (fromName != null) return fromName;
+      // Fallback observable : l'admin n'a ni step Taille ni libellé reconnu.
+      // On le trace pour pouvoir en quantifier l'incidence côté observabilité
+      // (P-MEGA-15) et alerter quand un libellé bordelin apparaît en prod.
+      try {
+        kioskAnalytics?.track?.('wizard.viande_count_fallback', {
+          item_id: item.id,
+          item_name: item.name,
+        });
+      } catch (_) { /* analytics absente : silencieux */ }
       return 1;
     },
     // [AUDIT 2026-04-17 C2] shouldShowStep s'aligne désormais sur les helpers
@@ -520,35 +542,34 @@ export default {
       return true;
     },
     shouldAskTacosTaille() {
+      // [P-MEGA-01] Cohérent avec detectViandeCount + inferTacosPresetMeta :
+      // on s'appuie sur le helper SSOT kioskTacosSize. Si une taille est
+      // détectable depuis le nom OU une description, l'étape n'est pas
+      // demandée. Sinon on la propose pour éviter le fallback à 1.
       const item = this.resolvedItem;
       if (!item) return false;
       const template = this.effectiveWizardTemplate();
       if (template !== 'tacos') return false;
-      const lower = `${item.name || ''} ${item.description || ''}`.toLowerCase();
-      const hasPresetSize =
-        lower.includes('1 viande') ||
-        lower.includes('2 viande') ||
-        lower.includes('3 viande') ||
-        lower.includes('4 viande') ||
-        lower.includes('xxl') ||
-        lower.includes('xl') ||
-        lower.includes('tacos l') ||
-        lower.includes('tacos m');
-      return !hasPresetSize;
+      const haystack = `${item.name || ''} ${item.description || ''}`;
+      // Si le serveur expose viande_count, on ne demande plus la taille
+      // (l'info est déjà disponible).
+      if (Number.isInteger(item.viande_count) && item.viande_count >= 1) {
+        return false;
+      }
+      return !hasPresetSizeInName(haystack);
     },
     inferTacosPresetMeta() {
+      // [P-MEGA-01] Plus de regex dupliquée : on délègue à kioskTacosSize.
       const item = this.resolvedItem;
       if (!item || this.shouldAskTacosTaille()) return null;
       const viandeCount = this.detectViandeCount();
-      const lower = (item.name || '').toLowerCase();
-      let label = `${viandeCount} viande${viandeCount > 1 ? 's' : ''}`;
-      if (lower.includes('xxl')) label = 'XXL';
-      else if (lower.includes('xl')) label = 'XL';
-      else if (lower.includes('tacos l')) label = 'L';
-      else if (lower.includes('tacos m')) label = 'M';
+      const detectedSize = detectTacosSize(`${item.name || ''} ${item.description || ''}`);
+      const label = tacosSizeLabel(`${item.name || ''} ${item.description || ''}`)
+        || `${viandeCount} viande${viandeCount > 1 ? 's' : ''}`;
       return {
         viandeCount,
         label,
+        size: detectedSize,
         attrId: null,
         realId: null,
       };
