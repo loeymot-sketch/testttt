@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <button
+    <button type="button"
       class="kiosk-btn-print"
       :class="{ 'is-printing': printStatus === 'printing', 'is-done': printStatus === 'done', 'is-error': printStatus === 'error' }"
       @click="printReceipt"
@@ -84,7 +84,7 @@
       <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
+    <button type="button" class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
       {{ $t('kiosk.confirmation.new_order') }} →
     </button>
   </div>

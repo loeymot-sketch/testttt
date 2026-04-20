@@ -72,7 +72,7 @@
 
       <!-- Actions -->
       <div class="kiosk-upsell-actions">
-        <button
+        <button type="button"
           v-if="selectedIds.length > 0"
           class="kiosk-btn-primary"
           :disabled="_adding"
@@ -82,7 +82,7 @@
           <span>{{ $t('kiosk.upsell_screen.add_continue', { n: selectedIds.length }) }}</span>
           <span class="kiosk-btn-price" aria-hidden="true">+{{ formatPrice(addedTotal) }}</span>
         </button>
-        <button
+        <button type="button"
           class="kiosk-upsell-skip"
           @click="skip"
           data-testid="kiosk-upsell-skip"

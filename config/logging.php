@@ -135,6 +135,19 @@ return [
             'level' => 'info',
         ],
 
+        // [K-9 ADR-4] Dedicated observability channel — rotated daily, retained
+        // 90 days. Used by `SloMetricCollector`, `SloEvaluatorJob`, CSP report
+        // endpoint, correlation trace debug, heatmap spill-over. JSON formatter
+        // for downstream Loki/Logtail ingestion. Separate from `security` to
+        // avoid alert fatigue on ops channel routing.
+        'observability' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/observability.log'),
+            'level' => 'info',
+            'days' => 90,
+            'formatter' => \App\Logging\JsonFormatter::class,
+        ],
+
         // [POS-9-H.3.2 / F-C7]
         // Dedicated fiscal channel. Two reasons to isolate it:
         //   1. Retention: NF525 requires 6 years of audit evidence. A

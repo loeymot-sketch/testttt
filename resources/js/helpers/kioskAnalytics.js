@@ -67,6 +67,12 @@ const ALLOWED_EVENTS = new Set([
     'idle_dismissed',
     'consent_given',
     'hardware_error',
+    // [T14b] Offline queue lifecycle events — observability for K-3 hardening.
+    // Backend whitelist mirrored in KioskEventController::ALLOWED_ANALYTICS_EVENTS.
+    'offline.queued',
+    'offline.replayed',
+    'offline.abandoned',
+    'offline.recovered',
 ]);
 
 /* ------------------------------------------------------------------ */

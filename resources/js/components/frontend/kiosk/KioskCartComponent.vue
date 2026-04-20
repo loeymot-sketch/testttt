@@ -2,13 +2,11 @@
   <div class="kiosk-cart" data-testid="kiosk-cart-root">
     <!-- Header -->
     <div class="kiosk-cart-header">
-      <button
+      <button type="button"
         class="kiosk-cart-back"
-        type="button"
         @click="goBackFromCart"
         :aria-label="$t('kiosk.back')"
-        data-testid="kiosk-cart-back"
-      >
+        data-testid="kiosk-cart-back">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -19,7 +17,7 @@
           {{ cartCount }} {{ cartCount > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
         </p>
       </div>
-      <button
+      <button type="button"
         class="kiosk-cart-clear"
         @click="showClearConfirm = true"
         v-if="cartCount > 0"
@@ -45,12 +43,12 @@
           <p id="kiosk-cart-clear-title" class="kiosk-clear-title">{{ $t('kiosk.clear_cart') }}</p>
           <p class="kiosk-clear-sub">{{ $t('kiosk.clear_cart_confirm') }}</p>
           <div class="kiosk-clear-actions">
-            <button
+            <button type="button"
               class="kiosk-clear-yes"
               @click="confirmClear"
               data-testid="kiosk-cart-clear-yes"
             >{{ $t('kiosk.yes_clear') }}</button>
-            <button
+            <button type="button"
               class="kiosk-clear-no"
               @click="showClearConfirm = false"
               data-testid="kiosk-cart-clear-no"
@@ -71,7 +69,7 @@
       <div class="kiosk-cart-empty-icon" aria-hidden="true">🛒</div>
       <h2>{{ $t('kiosk.empty_cart') }}</h2>
       <p>{{ $t('kiosk.empty_cart_hint') }}</p>
-      <button
+      <button type="button"
         class="kiosk-btn-primary"
         @click="$router.push({ name: 'kiosk.categories' })"
         data-testid="kiosk-cart-empty-cta"
@@ -88,7 +86,7 @@
       :aria-label="$t('kiosk.order_type_label')"
       data-testid="kiosk-cart-order-type"
     >
-      <button
+      <button type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_KIOSK }"
         role="radio"
@@ -99,7 +97,7 @@
         <span class="kiosk-order-type-icon" aria-hidden="true">🍽️</span>
         <span class="kiosk-order-type-label">{{ $t('kiosk.dine_in') }}</span>
       </button>
-      <button
+      <button type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_TAKEAWAY }"
         role="radio"
@@ -134,7 +132,7 @@
             <div class="kiosk-cart-item-name-row">
               <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
               <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
-              <button
+              <button type="button"
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
                 @click="editItem(idx)"
@@ -172,7 +170,7 @@
               role="group"
               :aria-label="$t('kiosk.quantity_of', { name: displayCartItemName(item) })"
             >
-              <button
+              <button type="button"
                 class="kiosk-qty-btn minus"
                 @click="changeQty(idx, item.quantity - 1)"
                 :aria-label="$t('kiosk.decrease_qty')"
@@ -187,7 +185,7 @@
                 aria-live="polite"
                 :data-testid="`kiosk-cart-item-qty-${idx}`"
               >{{ item.quantity }}</span>
-              <button
+              <button type="button"
                 class="kiosk-qty-btn plus"
                 :disabled="item.quantity >= maxItemQty"
                 @click="changeQty(idx, item.quantity + 1)"
@@ -261,13 +259,11 @@
               data-testid="kiosk-cart-promo-input"
               @keydown.enter.prevent="applyPromo"
             />
-            <button
-              type="button"
+            <button type="button"
               class="kiosk-cart-promo-apply"
               :disabled="promoLoading || !promoInput.trim()"
               data-testid="kiosk-cart-promo-apply"
-              @click="applyPromo"
-            >
+              @click="applyPromo">
               {{ promoLoading ? $t('kiosk.promo.loading') : $t('kiosk.promo.apply') }}
             </button>
           </div>
@@ -286,19 +282,17 @@
           <span class="kiosk-cart-promo-applied-text">
             {{ $t('kiosk.promo.applied', { code: promoCode, amount: formatPrice(promoDiscount) }) }}
           </span>
-          <button
-            type="button"
+          <button type="button"
             class="kiosk-cart-promo-remove"
             data-testid="kiosk-cart-promo-remove"
-            @click="removePromo"
-          >
+            @click="removePromo">
             {{ $t('kiosk.promo.remove') }}
           </button>
         </div>
       </div>
 
       <!-- Bouton fidélité -->
-      <button
+      <button type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -311,7 +305,7 @@
 
       <!-- Bouton valider → upsell -->
       <div class="kiosk-cart-actions">
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="proceedToUpsell"
           data-testid="kiosk-cart-checkout"
@@ -319,7 +313,7 @@
           <span>{{ $t('kiosk.validate_order') }}</span>
           <span class="kiosk-btn-price">{{ formatPrice(cartTotal) }}</span>
         </button>
-        <button
+        <button type="button"
           class="kiosk-btn-secondary"
           @click="$router.push({ name: 'kiosk.categories' })"
           data-testid="kiosk-cart-add-more"

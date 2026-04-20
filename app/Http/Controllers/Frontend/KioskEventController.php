@@ -119,6 +119,12 @@ class KioskEventController extends Controller
         'idle_dismissed',
         'consent_given',
         'hardware_error',
+        // [T14b] Offline queue lifecycle events — observability for K-3 hardening.
+        // Frontend whitelist mirrored in resources/js/helpers/kioskAnalytics.js::ALLOWED_EVENTS.
+        'offline.queued',
+        'offline.replayed',
+        'offline.abandoned',
+        'offline.recovered',
     ];
 
     private const HARDWARE_TYPES = [

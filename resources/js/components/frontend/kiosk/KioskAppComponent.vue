@@ -17,7 +17,7 @@
         <div class="kiosk-init-error-icon">⚠️</div>
         <p class="kiosk-init-error-title">{{ $t('kiosk.app.service_unavailable') }}</p>
         <p class="kiosk-init-error-sub">{{ branchError }}</p>
-        <button class="kiosk-init-retry-btn" @click="loadBranch">{{ $t('kiosk.app.retry') }}</button>
+        <button type="button" class="kiosk-init-retry-btn" @click="loadBranch">{{ $t('kiosk.app.retry') }}</button>
       </div>
     </transition>
 

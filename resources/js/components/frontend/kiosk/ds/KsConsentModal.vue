@@ -64,32 +64,26 @@
       </label>
 
       <!-- Privacy link -->
-      <button
-        type="button"
+      <button type="button"
         class="ks-consent-privacy"
         data-testid="kiosk-consent-privacy-link"
-        @click="openPrivacy"
-      >
+        @click="openPrivacy">
         {{ $t('kiosk.consent.privacy_link') }}
       </button>
 
       <!-- Actions -->
       <div class="ks-consent-actions">
-        <button
-          type="button"
+        <button type="button"
           class="ks-consent-btn ks-consent-btn--ghost"
           data-testid="kiosk-consent-decline"
           @click="handleDecline"
-          :disabled="submitting"
-        >{{ $t('kiosk.consent.cta_decline') }}</button>
-        <button
-          type="button"
+          :disabled="submitting">{{ $t('kiosk.consent.cta_decline') }}</button>
+        <button type="button"
           class="ks-consent-btn ks-consent-btn--primary"
           data-testid="kiosk-consent-accept"
           :aria-busy="submitting"
           :disabled="submitting"
-          @click="handleAccept"
-        >{{ submitting ? '…' : $t('kiosk.consent.cta_accept') }}</button>
+          @click="handleAccept">{{ submitting ? '…' : $t('kiosk.consent.cta_accept') }}</button>
       </div>
 
       <!-- Nested privacy subdialog -->
@@ -107,13 +101,11 @@
           <div class="ks-consent-privacy-body">
             <p>{{ privacyBody }}</p>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-consent-btn ks-consent-btn--primary"
             :aria-label="$t('kiosk.consent.privacy_close')"
             data-testid="kiosk-consent-privacy-close"
-            @click="closePrivacy"
-          >{{ $t('kiosk.consent.privacy_close') }}</button>
+            @click="closePrivacy">{{ $t('kiosk.consent.privacy_close') }}</button>
         </div>
       </div>
     </div>

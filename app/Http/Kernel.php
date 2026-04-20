@@ -76,5 +76,11 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'localization' => \App\Http\Middleware\localization::class,
         'installed' => \App\Http\Middleware\Installed::class,
+        // [T08b / K-6.1] Register Sanctum ability middleware aliases so routes
+        // can use `abilities:kiosk:order` / `ability:kiosk:order` without the
+        // full FQCN. Mirrors Sanctum's documented usage and aligns with the
+        // testttt-kiosk-p93 reference worktree.
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
     ];
 }

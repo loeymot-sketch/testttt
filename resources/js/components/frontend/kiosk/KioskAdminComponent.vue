@@ -4,7 +4,7 @@
     <!-- ── PIN screen ─────────────────────────────────────────────────── -->
     <transition name="fade-scale" mode="out-in">
       <div v-if="!pinUnlocked" key="pin" class="kiosk-admin-card kiosk-pin-card">
-        <button class="kiosk-admin-close" @click="$emit('close')">✕</button>
+        <button type="button" class="kiosk-admin-close" @click="$emit('close')">✕</button>
 
         <div class="kiosk-pin-icon">🔐</div>
         <h2 class="kiosk-pin-title">{{ $t('kiosk.admin_screen.pin_title') }}</h2>
@@ -34,7 +34,7 @@
 
         <!-- Numpad -->
         <div class="kiosk-pin-numpad">
-          <button
+          <button type="button"
             v-for="n in [1,2,3,4,5,6,7,8,9,'',0,'⌫']"
             :key="n"
             class="kiosk-pin-key"
@@ -64,17 +64,17 @@
             <span class="kiosk-admin-health-dot" aria-hidden="true" />
             <span>{{ healthBadge.label }}</span>
           </div>
-          <button class="kiosk-admin-close" @click="$emit('close')">✕</button>
+          <button type="button" class="kiosk-admin-close" @click="$emit('close')">✕</button>
         </div>
 
         <!-- Imprimante -->
         <div class="kiosk-admin-section">
           <h3>{{ $t('kiosk.admin_screen.section_printer') }}</h3>
-          <button class="kiosk-admin-btn" @click="testPrint" :disabled="busy === 'print'">
+          <button type="button" class="kiosk-admin-btn" @click="testPrint" :disabled="busy === 'print'">
             <span class="btn-icon">🖨️</span>
             <span>{{ busy === 'print' ? $t('kiosk.admin_screen.print_busy') : $t('kiosk.admin_screen.print_test') }}</span>
           </button>
-          <button class="kiosk-admin-btn" @click="openDrawer" :disabled="busy === 'drawer'">
+          <button type="button" class="kiosk-admin-btn" @click="openDrawer" :disabled="busy === 'drawer'">
             <span class="btn-icon">🗄️</span>
             <span>{{ busy === 'drawer' ? $t('kiosk.admin_screen.drawer_busy') : $t('kiosk.admin_screen.drawer_open') }}</span>
           </button>
@@ -93,7 +93,7 @@
               }}
             </span>
           </div>
-          <button class="kiosk-admin-btn" @click="checkTerminal" :disabled="busy === 'terminal'">
+          <button type="button" class="kiosk-admin-btn" @click="checkTerminal" :disabled="busy === 'terminal'">
             <span class="btn-icon">🔌</span>
             <span>{{ busy === 'terminal' ? $t('kiosk.admin_screen.terminal_check_busy') : $t('kiosk.admin_screen.terminal_check') }}</span>
           </button>
@@ -112,7 +112,7 @@
               }}
             </span>
           </div>
-          <button class="kiosk-admin-btn" @click="refreshMenu" :disabled="busy === 'menu'">
+          <button type="button" class="kiosk-admin-btn" @click="refreshMenu" :disabled="busy === 'menu'">
             <span class="btn-icon">🔄</span>
             <span>{{ busy === 'menu' ? $t('kiosk.admin_screen.menu_refresh_busy') : $t('kiosk.admin_screen.menu_refresh') }}</span>
           </button>
@@ -139,7 +139,7 @@
               </span>
             </div>
           </div>
-          <button
+          <button type="button"
             class="kiosk-admin-btn"
             @click="refreshHealth"
             :disabled="busy === 'health'"
@@ -193,7 +193,7 @@
             </label>
           </div>
           <div class="kiosk-admin-actions-row">
-            <button
+            <button type="button"
               class="kiosk-admin-btn"
               @click="saveIdleTimeouts"
               :disabled="busy === 'idle'"
@@ -202,7 +202,7 @@
               <span class="btn-icon">💾</span>
               <span>{{ busy === 'idle' ? $t('kiosk.admin_screen.idle_saving') : $t('kiosk.admin_screen.idle_save') }}</span>
             </button>
-            <button
+            <button type="button"
               class="kiosk-admin-btn"
               @click="resetIdleTimeouts"
               data-testid="kiosk-admin-idle-reset"
@@ -233,7 +233,7 @@
             />
             <span>{{ $t('kiosk.admin_screen.consent_loyalty') }}</span>
           </label>
-          <button
+          <button type="button"
             class="kiosk-admin-btn"
             @click="saveConsent"
             :disabled="busy === 'consent'"
@@ -247,15 +247,15 @@
         <!-- Application -->
         <div class="kiosk-admin-section">
           <h3>{{ $t('kiosk.admin_screen.section_app') }}</h3>
-          <button class="kiosk-admin-btn" @click="reloadApp">
+          <button type="button" class="kiosk-admin-btn" @click="reloadApp">
             <span class="btn-icon">🔄</span>
             <span>{{ $t('kiosk.admin_screen.app_reload') }}</span>
           </button>
-          <button class="kiosk-admin-btn danger" @click="logout">
+          <button type="button" class="kiosk-admin-btn danger" @click="logout">
             <span class="btn-icon">🔓</span>
             <span>{{ $t('kiosk.admin_screen.logout') }}</span>
           </button>
-          <button class="kiosk-admin-btn danger" @click="quitApp" v-if="isElectron">
+          <button type="button" class="kiosk-admin-btn danger" @click="quitApp" v-if="isElectron">
             <span class="btn-icon">⏻</span>
             <span>{{ $t('kiosk.admin_screen.quit_app') }}</span>
           </button>
@@ -278,10 +278,10 @@
           <h3>{{ $t('kiosk.admin_screen.maintenance_title') }}</h3>
           <p class="kiosk-maintenance-body-text">{{ $t('kiosk.admin_screen.maintenance_body') }}</p>
           <div class="kiosk-maintenance-actions">
-            <button class="kiosk-admin-btn danger" @click="enterMaintenanceMode">
+            <button type="button" class="kiosk-admin-btn danger" @click="enterMaintenanceMode">
               {{ $t('kiosk.admin_screen.maintenance_enable') }}
             </button>
-            <button class="kiosk-admin-btn" @click="cancelMaintenanceMode">
+            <button type="button" class="kiosk-admin-btn" @click="cancelMaintenanceMode">
               {{ $t('kiosk.admin_screen.maintenance_cancel') }}
             </button>
           </div>

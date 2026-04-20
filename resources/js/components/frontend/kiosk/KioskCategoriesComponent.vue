@@ -33,13 +33,11 @@
            Aucune régression i18n : les 2 clefs FR/EN/AR restent utilisées
            par le wizard header. -->
       <div class="kiosk-catalogue-top-actions">
-        <button
+        <button type="button"
           class="kiosk-top-chip kiosk-top-chip--active"
-          type="button"
           :aria-label="$t('kiosk.catalog.my_account')"
           data-testid="kiosk-categories-top-account"
-          @click="openMyAccount"
-        >
+          @click="openMyAccount">
           <span class="kiosk-top-chip-icon" aria-hidden="true">👤</span>
           {{ $t('kiosk.catalog.my_account') }}
         </button>
@@ -82,7 +80,7 @@
       <div v-if="loadError" class="kiosk-catalogue-error" role="alert">
         <span class="kiosk-catalogue-error-icon" aria-hidden="true">📡</span>
         <p>{{ $t('kiosk.catalog.load_error_title') }}</p>
-        <button
+        <button type="button"
           class="kiosk-catalogue-retry-btn"
           @click="loadCatalogue"
           data-testid="kiosk-categories-retry"
@@ -99,7 +97,7 @@
           role="navigation"
           data-testid="kiosk-categories-sidebar"
         >
-          <button
+          <button type="button"
             v-for="cat in sidebarCategories"
             :key="cat.kioskRowKey"
             class="kiosk-sidebar-item"
@@ -161,13 +159,11 @@
                   :data-testid="`kiosk-filter-${f.key}`"
                   @toggle="toggleFilter"
                 />
-                <button
+                <button type="button"
                   v-if="activeFilters.length > 0"
-                  type="button"
                   class="kiosk-filter-reset"
                   @click="resetFilters"
-                  data-testid="kiosk-filter-reset"
-                >
+                  data-testid="kiosk-filter-reset">
                   {{ $t('kiosk.catalog.filters_reset') || 'Tout effacer' }}
                 </button>
               </div>
@@ -208,14 +204,12 @@
                       {{ getProductBadge(product) }}
                     </span>
 
-                    <button
+                    <button type="button"
                       class="kiosk-product-add"
-                      type="button"
                       @click.stop="openProduct(product)"
                       :disabled="!!loadingItemId"
                       :aria-label="$t('kiosk.catalog.add', { name: sanitizeItemName(product.name) })"
-                      :data-testid="`kiosk-product-add-${product.id}`"
-                    >
+                      :data-testid="`kiosk-product-add-${product.id}`">
                       <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner" aria-hidden="true"></span>
                       <span v-else aria-hidden="true">+</span>
                     </button>
@@ -261,7 +255,7 @@
         data-testid="kiosk-categories-bottom-bar"
       >
         <div class="kiosk-bottom-summary">
-          <button
+          <button type="button"
             class="kiosk-bottom-cart"
             @click="goToCart"
             :disabled="cartCount === 0"
@@ -285,7 +279,7 @@
         </div>
 
         <div class="kiosk-bottom-actions">
-          <button
+          <button type="button"
             class="kiosk-bottom-abandon"
             @click="abandonOrder"
             data-testid="kiosk-categories-abandon"
@@ -293,7 +287,7 @@
             {{ $t('kiosk.catalog.abandon_order') }}
           </button>
 
-          <button
+          <button type="button"
             class="kiosk-bottom-pay"
             @click="goToCart"
             :disabled="cartCount === 0"

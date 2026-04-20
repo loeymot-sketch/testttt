@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="kiosk-loyalty-header">
-      <button class="kiosk-back-btn" @click="goBack">
+      <button type="button" class="kiosk-back-btn" @click="goBack">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round"/>
@@ -33,12 +33,12 @@
             maxlength="20"
             @keyup.enter="checkLoyalty"
           />
-          <button class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
+          <button type="button" class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
         </div>
 
         <!-- Clavier numérique tactile -->
         <div class="kiosk-numpad">
-          <button
+          <button type="button"
             v-for="key in numpadKeys"
             :key="key"
             class="kiosk-numpad-btn"
@@ -58,7 +58,7 @@
 
         <div v-if="error" class="kiosk-loyalty-error">{{ error }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!code.trim() || loading"
           @click="checkLoyalty"
@@ -67,12 +67,12 @@
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.skip') }}
         </button>
 
         <!-- Register new customer -->
-        <button class="kiosk-loyalty-register-btn" @click="step = 'register'">
+        <button type="button" class="kiosk-loyalty-register-btn" @click="step = 'register'">
           {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
@@ -133,7 +133,7 @@
 
         <div v-if="registerError" class="kiosk-loyalty-error">{{ registerError }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!registerName.trim() || !registerPhone.trim() || registerLoading"
           @click="submitRegister"
@@ -141,7 +141,7 @@
           <span v-if="!registerLoading">{{ $t('kiosk.loyalty_screen.register_submit') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
-        <button class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
+        <button type="button" class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
       </div>
     </div>
 
@@ -184,7 +184,7 @@
 
         <!-- Options : utiliser ou pas -->
         <div v-if="canRedeem" class="kiosk-loyalty-options">
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
             @click="redeemChoice = 'yes'"
@@ -200,7 +200,7 @@
             </div>
           </button>
 
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'no' }"
             @click="redeemChoice = 'no'"
@@ -223,7 +223,7 @@
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
           :disabled="canRedeem && !redeemChoice"
@@ -231,7 +231,7 @@
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.cancel') }}
         </button>
       </div>
@@ -286,7 +286,7 @@
         <p class="kiosk-loyalty-confirm-sub">
           {{ appliedDiscount > 0 ? $t('kiosk.loyalty_screen.confirm_discount_sub') : $t('kiosk.loyalty_screen.confirm_saved_sub') }}
         </p>
-        <button class="kiosk-btn-primary full" @click="proceedToPayment">
+        <button type="button" class="kiosk-btn-primary full" @click="proceedToPayment">
           {{ $t('kiosk.loyalty_screen.continue_payment') }}
         </button>
       </div>

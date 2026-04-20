@@ -14,11 +14,23 @@
  *   - stopAutoSync()       → stop the background loop
  */
 
+import * as kioskAnalytics from './kioskAnalytics';
+
 const QUEUE_KEY = 'kiosk_offline_queue_v1';
 const SYNC_INTERVAL_MS = 30_000;
 
 let _syncTimer = null;
 let _syncInFlight = null;
+
+// [T14b] Thin wrapper so tests can spy on `kioskAnalytics.track`.
+// `track()` is a no-op without consent → always safe; never throws.
+function _track(eventName, payload) {
+    try {
+        if (typeof kioskAnalytics.track === 'function') {
+            kioskAnalytics.track(eventName, payload || {});
+        }
+    } catch (_) { /* silent — observability must never break business flow */ }
+}
 
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
@@ -61,6 +73,11 @@ export function saveOrder(payload, originalKey = null) {
         synced: false,
     });
     _save(queue);
+    // [T14b] Observability — track each enqueue (no PII, just lifecycle).
+    _track('offline.queued', {
+        idempotency_key: localKey,
+        queue_size: queue.length,
+    });
     return localKey;
 }
 
@@ -109,6 +126,11 @@ export async function syncQueue(postFn) {
             entry.synced = true;
             entry.syncedAt = Date.now();
             synced++;
+            // [T14b] Observability — successful replay.
+            _track('offline.replayed', {
+                idempotency_key: entry.localKey,
+                retry_count: entry.attempts,
+            });
         } catch (err) {
             entry.attempts++;
             // Give up after 10 attempts (order is stale)
@@ -117,6 +139,12 @@ export async function syncQueue(postFn) {
                 entry.abandoned = true;
                 entry.abandonedAt = Date.now();
                 abandonedNew++;
+                // [T14b] Observability — abandoned after max attempts.
+                _track('offline.abandoned', {
+                    idempotency_key: entry.localKey,
+                    retry_count: entry.attempts,
+                    error_code: (err && (err.response?.status || err.code)) || 'unknown',
+                });
             }
             failed++;
         }
@@ -168,6 +196,14 @@ export function startAutoSync(postFn, onSync) {
         // [C6] Report newly abandoned orders to the observability endpoint
         if (result.abandonedNew > 0) {
             _reportAbandoned(postFn, result.abandonedNew);
+        }
+        // [T14b] Network/recovery observability — when a sync run replays at
+        // least one queued order, the kiosk has effectively recovered.
+        if (result.synced > 0) {
+            _track('offline.recovered', {
+                replayed_count: result.synced,
+                still_failed: result.failed,
+            });
         }
         if (onSync) onSync(result);
     };

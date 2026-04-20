@@ -6,8 +6,9 @@ use App\Enums\EventType;
 use App\Events\OrderCreated;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PersistOrderCreatedToOutbox
 {
@@ -30,12 +31,30 @@ class PersistOrderCreatedToOutbox
             ],
             'channel' => json_encode(['private-branch.' . $order->branch_id]),
             'broadcast_as' => 'OrderCreated',
-            'correlation_id' => (string) Str::uuid(),
+            'correlation_id' => $this->resolveCorrelationId(),
             'occurred_at' => now(),
         ]);
 
         DB::afterCommit(function () use ($domainEvent): void {
             DispatchDomainEventsJob::dispatch($domainEvent->id)->onQueue('high');
         });
+    }
+
+    private function resolveCorrelationId(): string
+    {
+        $sharedContext = Log::sharedContext();
+        $sharedCorrelationId = is_array($sharedContext) ? ($sharedContext['correlation_id'] ?? null) : null;
+
+        if (is_string($sharedCorrelationId) && trim($sharedCorrelationId) !== '') {
+            return $sharedCorrelationId;
+        }
+
+        $requestCorrelationId = request()?->header('X-Correlation-ID');
+
+        if (is_string($requestCorrelationId) && trim($requestCorrelationId) !== '') {
+            return $requestCorrelationId;
+        }
+
+        return (string) Str::uuid();
     }
 }

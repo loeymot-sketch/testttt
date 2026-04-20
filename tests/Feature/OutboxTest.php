@@ -73,8 +73,11 @@ class OutboxTest extends TestCase
             'occurred_at' => now(),
         ]);
 
-        $pusher = Mockery::mock();
-        $pusher->shouldReceive('trigger')
+        // [T09b] Mock the Laravel Broadcaster::broadcast() API, not the
+        // Pusher SDK trigger(). The job now goes through the standard
+        // Laravel broadcasting API so we assert that contract directly.
+        $connection = Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $connection->shouldReceive('broadcast')
             ->once()
             ->withArgs(function ($channels, $eventName, $data) {
                 return $channels === ['private-branch.1']
@@ -85,15 +88,10 @@ class OutboxTest extends TestCase
                     && $data['payload'] === ['order_id' => 123];
             });
 
-        $connection = Mockery::mock();
-        $connection->shouldReceive('getPusher')
-            ->once()
-            ->andReturn($pusher);
-
         $manager = Mockery::mock(BroadcastManager::class);
         $manager->shouldReceive('connection')
             ->once()
-            ->with('pusher')
+            ->withNoArgs()
             ->andReturn($connection);
 
         $this->app->instance(BroadcastManager::class, $manager);

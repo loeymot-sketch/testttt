@@ -41,21 +41,17 @@
         <span class="kiosk-viande-name">{{ viande.name }}</span>
 
         <div class="kiosk-viande-controls" role="group" :aria-label="viande.name">
-          <button
-            type="button"
+          <button type="button"
             @click="decrement(viande.key)"
             class="kiosk-viande-qty-btn"
             :disabled="(localSelections[viande.key] || 0) === 0"
-            :aria-label="$t('kiosk.wizard.step.viande.remove_one', { name: viande.name })"
-          >−</button>
+            :aria-label="$t('kiosk.wizard.step.viande.remove_one', { name: viande.name })">−</button>
           <span class="kiosk-viande-qty-value" aria-live="polite">{{ localSelections[viande.key] || 0 }}</span>
-          <button
-            type="button"
+          <button type="button"
             @click="increment(viande.key)"
             class="kiosk-viande-qty-btn plus"
             :disabled="totalSelected >= maxViandes"
-            :aria-label="$t('kiosk.wizard.step.viande.add_one', { name: viande.name })"
-          >+</button>
+            :aria-label="$t('kiosk.wizard.step.viande.add_one', { name: viande.name })">+</button>
         </div>
       </div>
     </div>

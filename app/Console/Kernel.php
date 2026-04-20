@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Jobs\CleanupStalePendingKioskOrders;
+use App\Jobs\Observability\SloEvaluatorJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -35,6 +36,11 @@ class Kernel extends ConsoleKernel
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping();
+
+        $schedule->job(new SloEvaluatorJob())
+            ->everyFiveMinutes()
+            ->withoutOverlapping(5)
+            ->onOneServer();
     }
 
     /**

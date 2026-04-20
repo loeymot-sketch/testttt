@@ -67,29 +67,12 @@ class DispatchDomainEventsJob implements ShouldQueue
                 throw $exception;
             }
 
-            /** @var \Illuminate\Broadcasting\Broadcasters\PusherBroadcaster $connection */
-            $connection = app(BroadcastManager::class)->connection('pusher');
-
-            // In test/CI environments without a running Reverb/Pusher instance,
-            // PUSHER_APP_KEY is empty and hitting the broadcaster would raise
-            // a cURL error and fail the sync queue job. We skip the real
-            // network call only when credentials are genuinely missing AND
-            // the BroadcastManager was NOT swapped out by a test mock
-            // (Mockery binds a proxy whose class name contains "Mockery_").
-            // Mirrors the FCM "server key not configured — skipping" pattern
-            // elsewhere in the codebase.
-            $pusherKey = (string) config('broadcasting.connections.pusher.key', '');
-            $isRealManager = get_class(app(BroadcastManager::class)) === BroadcastManager::class;
-
-            if ($pusherKey === '' && $isRealManager) {
-                Log::info('[DispatchDomainEventsJob] Pusher not configured — skipping broadcast', [
-                    'domain_event_id' => $domainEvent->id,
-                    'event_type' => $domainEvent->event_type,
-                    'channels' => $channels,
-                ]);
-            } else {
-                $connection->getPusher()->trigger($channels, $domainEvent->broadcast_as, $envelope);
-            }
+            // [T09b / A5 convergence] Respect `config('broadcasting.default')`
+            // (e.g. `log` in PHPUnit, `pusher` in prod). Hard-coding
+            // `connection('pusher')` breaks CI/tests when PUSHER_* env is unset.
+            // Mirrors testttt-kiosk-p93 reference.
+            $broadcaster = app(BroadcastManager::class)->connection();
+            $broadcaster->broadcast($channels, $domainEvent->broadcast_as, $envelope);
         }
 
         $domainEvent->forceFill([

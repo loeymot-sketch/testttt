@@ -86,8 +86,9 @@ class EventContractTest extends TestCase
             'occurred_at' => $occurredAt,
         ]);
 
-        $pusher = Mockery::mock();
-        $pusher->shouldReceive('trigger')
+        // [T09b] Standard Laravel Broadcaster::broadcast() contract.
+        $connection = Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $connection->shouldReceive('broadcast')
             ->once()
             ->with(['private-branch.1'], 'OrderCreated', Mockery::on(function (array $data) use ($occurredAt, $correlationId): bool {
                 $this->assertSame(1, $data['version']);
@@ -109,15 +110,10 @@ class EventContractTest extends TestCase
                 ];
             }));
 
-        $connection = Mockery::mock();
-        $connection->shouldReceive('getPusher')
-            ->once()
-            ->andReturn($pusher);
-
         $manager = Mockery::mock(BroadcastManager::class);
         $manager->shouldReceive('connection')
             ->once()
-            ->with('pusher')
+            ->withNoArgs()
             ->andReturn($connection);
 
         $this->app->instance(BroadcastManager::class, $manager);
@@ -155,15 +151,12 @@ class EventContractTest extends TestCase
             'occurred_at' => now(),
         ]);
 
-        // Pusher must NOT be called when the envelope is invalid.
-        $pusher = Mockery::mock();
-        $pusher->shouldNotReceive('trigger');
-
-        $connection = Mockery::mock();
-        $connection->shouldReceive('getPusher')->zeroOrMoreTimes()->andReturn($pusher);
+        // [T09b] Broadcaster::broadcast() must NOT be called when envelope invalid.
+        $connection = Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $connection->shouldNotReceive('broadcast');
 
         $manager = Mockery::mock(BroadcastManager::class);
-        $manager->shouldReceive('connection')->zeroOrMoreTimes()->with('pusher')->andReturn($connection);
+        $manager->shouldReceive('connection')->zeroOrMoreTimes()->withNoArgs()->andReturn($connection);
 
         $this->app->instance(BroadcastManager::class, $manager);
         $this->app->instance('broadcast.manager', $manager);

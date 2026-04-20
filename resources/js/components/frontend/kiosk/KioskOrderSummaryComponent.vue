@@ -111,7 +111,7 @@
         role="group"
         aria-labelledby="kiosk-order-summary-qty-label"
       >
-        <button
+        <button type="button"
           @click="decrementQty"
           :disabled="selections.quantity <= 1"
           :aria-label="$t('kiosk.decrease_qty')"
@@ -122,7 +122,7 @@
           :aria-label="$t('kiosk.quantity_of', { n: selections.quantity })"
           aria-live="polite"
         >{{ selections.quantity }}</span>
-        <button
+        <button type="button"
           @click="incrementQty"
           :aria-label="$t('kiosk.increase_qty')"
           data-testid="kiosk-order-summary-qty-plus"

@@ -14,13 +14,11 @@
         <h2 :id="titleId" class="ks-a11y-title" data-testid="kiosk-a11y-title">
           {{ $t('kiosk.a11y.title') }}
         </h2>
-        <button
-          type="button"
+        <button type="button"
           class="ks-a11y-close"
           :aria-label="$t('kiosk.a11y.close')"
           data-testid="kiosk-a11y-close"
-          @click="close"
-        >×</button>
+          @click="close">×</button>
       </div>
 
       <!-- Section langue -->
@@ -30,17 +28,15 @@
       >
         <h3 :id="langHeadingId" class="ks-a11y-section-title">{{ $t('kiosk.a11y.language') }}</h3>
         <div class="ks-a11y-options" role="radiogroup" :aria-labelledby="langHeadingId" data-testid="kiosk-a11y-lang-group">
-          <button
+          <button type="button"
             v-for="opt in localeOptions"
             :key="opt.code"
-            type="button"
             class="ks-a11y-option"
             :class="{ 'is-selected': locale === opt.code }"
             role="radio"
             :aria-checked="locale === opt.code"
             :data-testid="'kiosk-a11y-lang-' + opt.code"
-            @click="selectLocale(opt.code)"
-          >
+            @click="selectLocale(opt.code)">
             <span class="ks-a11y-option-flag" aria-hidden="true">{{ opt.flag }}</span>
             <span class="ks-a11y-option-label">{{ opt.label }}</span>
           </button>
@@ -51,27 +47,23 @@
       <section class="ks-a11y-section" :aria-labelledby="contrastHeadingId">
         <h3 :id="contrastHeadingId" class="ks-a11y-section-title">{{ $t('kiosk.a11y.contrast') }}</h3>
         <div class="ks-a11y-options" role="radiogroup" :aria-labelledby="contrastHeadingId" data-testid="kiosk-a11y-contrast-group">
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-option"
             :class="{ 'is-selected': contrast === 'aa' }"
             role="radio"
             :aria-checked="contrast === 'aa'"
             data-testid="kiosk-a11y-contrast-aa"
-            @click="selectContrast('aa')"
-          >
+            @click="selectContrast('aa')">
             <span class="ks-a11y-option-label">{{ $t('kiosk.a11y.contrast_aa') }}</span>
             <span class="ks-a11y-option-hint">{{ $t('kiosk.a11y.contrast_aa_hint') }}</span>
           </button>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-option"
             :class="{ 'is-selected': contrast === 'aaa' }"
             role="radio"
             :aria-checked="contrast === 'aaa'"
             data-testid="kiosk-a11y-contrast-aaa"
-            @click="selectContrast('aaa')"
-          >
+            @click="selectContrast('aaa')">
             <span class="ks-a11y-option-label">{{ $t('kiosk.a11y.contrast_aaa') }}</span>
             <span class="ks-a11y-option-hint">{{ $t('kiosk.a11y.contrast_aaa_hint') }}</span>
           </button>
@@ -85,16 +77,14 @@
             <span class="ks-a11y-section-title" :id="pmrHeadingId">{{ $t('kiosk.a11y.pmr') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.pmr_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': pmr }"
             role="switch"
             :aria-checked="pmr"
             :aria-labelledby="pmrHeadingId"
             data-testid="kiosk-a11y-pmr-toggle"
-            @click="togglePmr"
-          >
+            @click="togglePmr">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -107,16 +97,14 @@
             <span class="ks-a11y-section-title" :id="audioHeadingId">{{ $t('kiosk.a11y.audio') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.audio_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': audio }"
             role="switch"
             :aria-checked="audio"
             :aria-labelledby="audioHeadingId"
             data-testid="kiosk-a11y-audio-toggle"
-            @click="toggleAudio"
-          >
+            @click="toggleAudio">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -129,16 +117,14 @@
             <span class="ks-a11y-section-title" :id="audioDescHeadingId">{{ $t('kiosk.a11y.audio_description') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.audio_description_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': audioDescription }"
             role="switch"
             :aria-checked="audioDescription"
             :aria-labelledby="audioDescHeadingId"
             data-testid="kiosk-a11y-audio-description-toggle"
-            @click="toggleAudioDescription"
-          >
+            @click="toggleAudioDescription">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -151,16 +137,14 @@
             <span class="ks-a11y-section-title" :id="reducedMotionHeadingId">{{ $t('kiosk.a11y.reduced_motion') }}</span>
             <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.reduced_motion_hint') }}</span>
           </div>
-          <button
-            type="button"
+          <button type="button"
             class="ks-a11y-switch"
             :class="{ 'is-on': reducedMotion }"
             role="switch"
             :aria-checked="reducedMotion"
             :aria-labelledby="reducedMotionHeadingId"
             data-testid="kiosk-a11y-reduced-motion-toggle"
-            @click="toggleReducedMotion"
-          >
+            @click="toggleReducedMotion">
             <span class="ks-a11y-switch-thumb" aria-hidden="true" />
           </button>
         </div>
@@ -168,18 +152,14 @@
 
       <!-- Footer : reset + close -->
       <div class="ks-a11y-footer">
-        <button
-          type="button"
+        <button type="button"
           class="ks-a11y-reset"
           data-testid="kiosk-a11y-reset"
-          @click="reset"
-        >{{ $t('kiosk.a11y.reset') }}</button>
-        <button
-          type="button"
+          @click="reset">{{ $t('kiosk.a11y.reset') }}</button>
+        <button type="button"
           class="ks-a11y-done"
           data-testid="kiosk-a11y-done"
-          @click="close"
-        >{{ $t('kiosk.a11y.done') }}</button>
+          @click="close">{{ $t('kiosk.a11y.done') }}</button>
       </div>
     </div>
   </div>

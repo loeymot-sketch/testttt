@@ -19,7 +19,7 @@
       data-testid="kiosk-idle-lang-selector"
       @click.stop
     >
-      <button
+      <button type="button"
         v-for="lang in enabledLanguages"
         :key="lang"
         class="kiosk-lang-btn"
@@ -33,15 +33,13 @@
     </div>
 
     <!-- [PHASE-4.4] A11y settings button — opens drawer with lang/AAA/PMR/audio -->
-    <button
-      type="button"
+    <button type="button"
       class="kiosk-idle-a11y-btn"
       :aria-label="$t('kiosk.a11y.open')"
       data-testid="kiosk-idle-a11y-btn"
       @click.stop="openSettings"
       @keydown.enter.stop.prevent="openSettings"
-      @keydown.space.stop.prevent="openSettings"
-    >
+      @keydown.space.stop.prevent="openSettings">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
         <path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />

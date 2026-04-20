@@ -18,13 +18,11 @@
           <h2 :id="titleId" class="ks-modal__title">
             <slot name="header">{{ title }}</slot>
           </h2>
-          <button
+          <button type="button"
             v-if="closable"
-            type="button"
             class="ks-modal__close"
             :aria-label="closeLabel"
-            @click="close('close-button')"
-          >×</button>
+            @click="close('close-button')">×</button>
         </header>
 
         <div class="ks-modal__body"><slot /></div>

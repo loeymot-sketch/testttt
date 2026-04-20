@@ -1,6 +1,5 @@
 <template>
-  <button
-    :type="type"
+  <button :type="type"
     :disabled="disabled || loading"
     :aria-busy="loading || null"
     :aria-disabled="disabled || null"
@@ -10,8 +9,7 @@
       `ks-btn--${size}`,
       { 'ks-btn--full': fullWidth, 'ks-btn--loading': loading }
     ]"
-    @click="onClick"
-  >
+    @click="onClick">
     <span v-if="loading" class="ks-btn__spinner" aria-hidden="true" />
     <span v-else-if="$slots.icon || icon" class="ks-btn__icon" aria-hidden="true">
       <slot name="icon">{{ icon }}</slot>

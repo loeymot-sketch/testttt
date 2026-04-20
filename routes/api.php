@@ -940,7 +940,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // [C6] Kiosk observability — structured event logging for operators
     // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
         ->name('kiosk.event');
 
     /* ================================================================
@@ -984,8 +984,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->name('frontend.loyalty.scan');
 
     // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
+    // [K-6.1] Same ability enforcement as /kiosk-event — both aliases must fail-closed. [T08b]
     Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
         ->name('frontend.kiosk.event');
 });
 

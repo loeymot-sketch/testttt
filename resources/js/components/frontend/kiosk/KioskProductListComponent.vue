@@ -2,7 +2,7 @@
   <div class="kiosk-products" data-testid="kiosk-products-root">
     <!-- Header avec nom catégorie -->
     <div class="kiosk-prod-header">
-      <button
+      <button type="button"
         class="kiosk-prod-back"
         @click="$router.push({ name: 'kiosk.categories' })"
         :aria-label="$t('kiosk.back')"
@@ -126,7 +126,7 @@
                 :data-testid="`kiosk-products-price-${product.id}`"
               >{{ formatPrice(product.convert_price) }}</span>
             </div>
-            <button
+            <button type="button"
               class="kiosk-prod-add-btn"
               @click.stop="selectProduct(product)"
               :disabled="!!loadingItemId"
@@ -151,7 +151,7 @@
       <div v-if="loadError" class="kiosk-prod-error" role="alert">
         <span class="kiosk-prod-error-icon" aria-hidden="true">📡</span>
         <p>{{ $t('kiosk.error_loading') }}</p>
-        <button
+        <button type="button"
           class="kiosk-prod-retry-btn"
           @click="loadProducts()"
           data-testid="kiosk-products-retry"

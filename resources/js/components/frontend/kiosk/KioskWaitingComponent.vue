@@ -61,7 +61,7 @@
 
     <!-- Footer (offline) -->
     <div v-if="isOfflineOrder" class="kiosk-waiting-footer">
-      <button class="kiosk-waiting-new-order" @click="newOrder">
+      <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
         {{ $t('kiosk.new_order') }}
       </button>
     </div>
@@ -69,7 +69,7 @@
     <!-- Footer -->
     <div v-else class="kiosk-waiting-footer">
       <template v-if="isReady">
-        <button class="kiosk-waiting-new-order" @click="newOrder">
+        <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
           {{ $t('kiosk.new_order') }}
         </button>
         <span class="kiosk-waiting-auto-reset">
@@ -81,7 +81,7 @@
           {{ $t('kiosk.waiting_subtitle') }}
         </span>
         <!-- Allow cancellation during preparation (before kitchen starts) -->
-        <button
+        <button type="button"
           v-if="showCancelButton"
           class="kiosk-waiting-cancel-btn"
           @click="confirmCancel"
@@ -108,7 +108,7 @@
           <h2>{{ $t('kiosk.waiting_screen.timeout_title') }}</h2>
           <p>{{ $t('kiosk.waiting_screen.timeout_body_1') }}</p>
           <p>{{ $t('kiosk.waiting_screen.timeout_body_2') }}</p>
-          <button class="kiosk-timeout-btn" @click="newOrder">{{ $t('kiosk.waiting_screen.timeout_home') }}</button>
+          <button type="button" class="kiosk-timeout-btn" @click="newOrder">{{ $t('kiosk.waiting_screen.timeout_home') }}</button>
         </div>
       </div>
     </transition>
@@ -122,11 +122,11 @@
           <p v-if="!cancelError">{{ $t('kiosk.waiting_screen.cancel_modal_body') }}</p>
           <p v-else class="kiosk-cancel-error-msg">{{ cancelError }}</p>
           <div class="kiosk-cancel-actions">
-            <button v-if="!cancelError" class="kiosk-cancel-yes" :disabled="cancelLoading" @click="cancelOrder">
+            <button type="button" v-if="!cancelError" class="kiosk-cancel-yes" :disabled="cancelLoading" @click="cancelOrder">
               <span v-if="!cancelLoading">{{ $t('kiosk.waiting_screen.cancel_yes') }}</span>
               <span v-else class="kiosk-spinner-sm"></span>
             </button>
-            <button class="kiosk-cancel-no" @click="closeCancelModal">
+            <button type="button" class="kiosk-cancel-no" @click="closeCancelModal">
               {{ cancelError ? $t('kiosk.waiting_screen.close') : $t('kiosk.waiting_screen.cancel_no') }}
             </button>
           </div>

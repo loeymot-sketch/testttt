@@ -22,14 +22,12 @@
       class="ks-chip__count"
       :aria-label="countAriaLabel || `× ${count}`"
     >× {{ count }}</span>
-    <button
+    <button type="button"
       v-if="removable && selected && !disabled"
-      type="button"
       class="ks-chip__remove"
       :aria-label="removeAriaLabel || 'Retirer'"
       @click.stop="onRemove"
-      @keydown.stop
-    >×</button>
+      @keydown.stop>×</button>
   </div>
 </template>
 
@@ -37,9 +35,9 @@
 /**
  * KsChip — Option toggle (sauces, viandes, garnitures, suppléments).
  *
- * ⚠ Implémenté en `<div role="button">` et PAS en `<button>` natif : l'atome
+ * ⚠ Implémenté en `<div role="button">` et PAS en bouton natif (`button`) : l'atome
  *   supporte un sous-bouton optionnel "retirer" (`removable=true`). Imbriquer
- *   un `<button>` dans un `<button>` est invalide HTML5. Le pattern
+ *   deux éléments `button` HTML5 est invalide. Le pattern
  *   `div[role=button]` + `tabindex=0` + `aria-pressed` est le WCAG-safe pattern
  *   officiel (Authoring Practices 1.2, "Button (Disclosure)").
  *

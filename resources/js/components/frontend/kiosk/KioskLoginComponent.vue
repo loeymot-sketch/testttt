@@ -31,13 +31,11 @@
           <span v-else class="kiosk-login-spinner"></span>
         </button>
 
-        <button
+        <button type="button"
           v-if="maintenanceMode"
-          type="button"
           class="kiosk-login-secondary-btn"
           :disabled="loading"
-          @click="disableMaintenanceMode"
-        >
+          @click="disableMaintenanceMode">
           {{ $t('kiosk.login_screen.exit_maintenance') }}
         </button>
       </div>

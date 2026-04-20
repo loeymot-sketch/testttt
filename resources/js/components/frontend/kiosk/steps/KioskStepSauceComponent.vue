@@ -11,12 +11,10 @@
 
     <div v-if="sauceList.length === 0" class="kiosk-step-empty" role="status" aria-live="polite">
       <p>{{ $t('kiosk.wizard.step.sauce.empty_hint') }}</p>
-      <button
-        type="button"
+      <button type="button"
         class="kiosk-btn-continue"
         :aria-label="$t('kiosk.wizard.step.sauce.skip_btn')"
-        @click="$emit('update', 'sauceOrder', ['_skip'])"
-      >{{ $t('kiosk.wizard.step.sauce.skip_btn') }}</button>
+        @click="$emit('update', 'sauceOrder', ['_skip'])">{{ $t('kiosk.wizard.step.sauce.skip_btn') }}</button>
     </div>
 
     <div v-else class="kiosk-sauce-grid">

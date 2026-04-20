@@ -9,7 +9,7 @@
     <!-- Erreur chargement -->
     <div v-else-if="fetchError && !resolvedItem" class="kiosk-wizard-error">
       <p>{{ fetchError }}</p>
-      <button @click="$router.go(-1)" class="kiosk-btn-back">{{ $t('kiosk.back') }}</button>
+      <button type="button" @click="$router.go(-1)" class="kiosk-btn-back">{{ $t('kiosk.back') }}</button>
     </div>
 
     <!-- Wizard complet -->
@@ -28,12 +28,10 @@
             data-testid="kiosk-wizard-header-allergens"
           />
         </div>
-        <button
-          type="button"
+        <button type="button"
           class="kiosk-wizard-close"
           :aria-label="$t('kiosk.wizard.close_aria')"
-          @click="onAbandonClick"
-        >
+          @click="onAbandonClick">
           ×
         </button>
       </div>
@@ -60,7 +58,7 @@
       </div>
 
       <div class="kiosk-progress-bar">
-        <button
+        <button type="button"
           class="kiosk-progress-arrow"
           @click="prevStep"
           :disabled="currentStepIndex === 0"
@@ -77,7 +75,7 @@
             <span class="kiosk-step-number">{{ index + 1 }}</span>
           </div>
         </div>
-        <button
+        <button type="button"
           class="kiosk-progress-arrow"
           @click="nextStep"
           :disabled="currentStepIndex >= activeSteps.length - 1 || !canAdvance"
@@ -109,14 +107,14 @@
           <button type="button" class="kiosk-btn-abandon" @click="onAbandonClick">
             {{ $t('kiosk.wizard.abandon_item') }}
           </button>
-          <button
+          <button type="button"
             class="kiosk-btn-back"
             @click="prevStep"
             :disabled="currentStepIndex === 0"
           >
             {{ $t('kiosk.wizard.nav_previous') }}
           </button>
-          <button
+          <button type="button"
             @click="currentStepIndex < activeSteps.length - 1 ? nextStep() : addToCart()"
             class="kiosk-btn-next"
             :disabled="!canAdvance"

@@ -115,19 +115,12 @@ class KioskEventBranchIsolationTest extends TestCase
         ])->assertStatus(401);
     }
 
-    public function test_any_valid_sanctum_token_passes_auth_documented_behavior(): void
+    public function test_token_without_kiosk_order_ability_is_rejected(): void
     {
-        // NOTE (Phase 7.4 audit finding) :
-        //   Le controller documente `kiosk:order ability required`, mais la route
-        //   `/api/frontend/kiosk/event` n'applique actuellement que `auth:sanctum`
-        //   (pas de middleware `abilities:kiosk:order`). Tout token valide est accepté.
-        //
-        //   C'est une divergence MINEURE doc/impl pour cet endpoint d'observabilité
-        //   (throttle 30/min par token limite déjà le spam). Le fix consisterait à
-        //   ajouter `abilities:kiosk:order` au middleware — suivi post-Phase-7.
-        //
-        // Ce test CONSIGNE le comportement actuel pour éviter une régression
-        // silencieuse en cas de refactor route.
+        // [T08b] route now ability-gated.
+        // Auparavant : un token sanctum valide sans ability `kiosk:order` passait (200).
+        // Désormais : middleware `abilities:kiosk:order` ajouté sur /kiosk-event ET /kiosk/event
+        // → tout token sans cette ability est rejeté en 403 (fail-closed).
         $branch = Branch::forceCreate([
             'name' => 'X', 'city' => 'Marseille', 'state' => 'PACA',
             'zip_code' => '13', 'address' => 'X', 'status' => 1,
@@ -140,8 +133,7 @@ class KioskEventBranchIsolationTest extends TestCase
                 'type' => 'analytics',
                 'event_name' => 'menu_viewed',
             ]);
-        // Documentation : actuellement 200 (pas de check ability).
-        $this->assertSame(200, $res->status(), 'Current behavior: any sanctum token passes.');
+        $this->assertSame(403, $res->status(), '[T08b] token without kiosk:order ability must be rejected.');
     }
 
     public function test_all_phase5_types_respect_branch_isolation(): void
