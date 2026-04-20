@@ -953,22 +953,22 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
     Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
-        ->middleware(['auth:sanctum', 'throttle:kiosk-menu'])
+        ->middleware(['auth:sanctum', 'throttle:kiosk-menu', 'kiosk.locale'])
         ->name('frontend.menu.kiosk');
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
     Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
-        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
         ->name('frontend.pricing.preview');
 
     // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
     Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'throttle:30,1', 'kiosk.locale'])
         ->name('frontend.promo.validate');
 
     // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
     Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
-        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
         ->name('frontend.upsell.suggest');
 
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).

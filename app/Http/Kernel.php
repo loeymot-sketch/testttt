@@ -82,5 +82,11 @@ class Kernel extends HttpKernel
         // testttt-kiosk-p93 reference worktree.
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+        // [C4 / K-8] Validates `X-Kiosk-Locale` / `?lang=` against
+        // `Branch.available_locales` of the authenticated kiosk machine.
+        // Returns 400 LOCALE_NOT_ALLOWED_FOR_BRANCH when the requested
+        // locale is outside the branch allowlist. Aligned with the
+        // testttt-kiosk-p93 reference worktree.
+        'kiosk.locale' => \App\Http\Middleware\ValidateKioskLocale::class,
     ];
 }
