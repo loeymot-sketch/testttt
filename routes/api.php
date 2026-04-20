@@ -988,6 +988,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
         ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
         ->name('frontend.kiosk.event');
+
+    // [C2 / K-9 ADR-5] POST /api/frontend/csp-report : endpoint anonyme pour
+    // les rapports CSP envoyés par le navigateur (report-uri du meta
+    // `Content-Security-Policy[-Report-Only]`). Throttle 20/min/IP. Route
+    // anonyme par design (CSP natif du navigateur envoie sans auth).
+    // Log-only vers canal `observability` (catégorie `csp_violation`) —
+    // aucune persistance DB (volume imprévisible). Aligné sur le worktree
+    // testttt-kiosk-p93 (référence canary).
+    Route::post('/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
+        ->middleware(['throttle:20,1'])
+        ->name('frontend.csp.report');
 });
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
