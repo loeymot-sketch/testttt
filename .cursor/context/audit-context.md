@@ -31,6 +31,20 @@ Update ACTIVE_CYCLE.md: PHASE → CLOSED, check AUDIT row
 Archive the completed cycle record according to the active project archive convention, then clear ACTIVE_CYCLE.md for the next cycle.
 
 ## If any item fails
+
+Apply the triage below (per `.cursor/rules/auto-remediation.mdc`):
+
+### Triage on failure
+
+1. **Critical zone touched?** — DB schema, auth, frozen zone, invariant logic (OrderService/FrontendOrderService symmetry, branch_id isolation, OrderStatus enum, dispatch-after-commit, pricing backend SSOT) → **GATE** (see "GATE branch" below). No auto-remediation allowed here.
+2. **Same bug for the 3rd consecutive attempt?** (compare `bug_signature` across `REMEDIATION_ATTEMPT_*` entries in `REPORT_FILE`) → **GATE** with "bug irrésolu" template from `auto-remediation.mdc`.
+3. **Otherwise (KO normal, attempt 1 or 2)** → **REMEDIATION** branch (auto, no human gate):
+   - Append `REMEDIATION_ATTEMPT_N` block to `REPORT_FILE` with `bug_signature`, `root_cause`, `correction_plan`
+   - Re-route to the appropriate subagent per `.cursor/routing.md`
+   - Re-run EXECUTE → post-hook → VALIDATE → AUDIT
+   - Stay in PHASE: AUDIT (do not transition to GATE) until either CLOSED or one of the two GATE conditions above is met
+
+### GATE branch
 Write gate brief to `docs/gates/GATE_[TASK_ID]_[DATE].md`
 Update ACTIVE_CYCLE.md: PHASE → GATE, set GATE_FILE
 Do not close. Do not self-resolve.

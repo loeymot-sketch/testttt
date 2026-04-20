@@ -13,7 +13,7 @@ description: >-
 
 - Première ouverture du dépôt sur un **nouveau compte** ou machine.
 - L’utilisateur veut **reprendre le développement** sans redonner tout le contexte à la main.
-- Travail **multi-agents** (planning / Kimi-test / Anti-Gravity) selon `AGENTS.md`.
+- Travail **multi-agents** selon **`AGENTS.md`** : cycle borné (TASK_ID, `run-cycle`), **`.cursor/routing.md`**, sub-agents Task **`foodking-planner-orchestrator`**, **`foodking-complex-implementer`**, **`foodking-routine-implementer`**.
 
 ## Ordre de lecture obligatoire (avant code ou plan important)
 

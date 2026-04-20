@@ -69,7 +69,7 @@ Load `.cursor/context/execute-context.md` and apply its handoff section as the v
 - Confirm only declared subsystems were touched.
 - Confirm `EXECUTE_DELEGATION:` line is present in the log (required for audit traceability).
 - Update `ACTIVE_CYCLE.md`: PHASE → AUDIT, VALIDATE row checked.
-- Halt on two consecutive validation failures — do not retry autonomously.
+- Halt on two consecutive **VALIDATE** failures **without intervening AUDIT-driven remediation** — do not retry autonomously. (REMEDIATION-driven re-runs of EXECUTE → VALIDATE that follow an `audit-context.md` triage are NOT counted as "consecutive validation failures"; they are distinct attempts. See `.cursor/rules/auto-remediation.mdc`.)
 
 ---
 
@@ -78,8 +78,9 @@ Load `.cursor/context/execute-context.md` and apply its handoff section as the v
 Load `.cursor/context/audit-context.md` and follow its checklist exactly.
 
 - If all items pass: append `Audit: PASSED` to the report, set PHASE → CLOSED, archive the cycle.
-- If any item fails: write gate brief to `docs/gates/GATE_[TASK_ID]_[DATE].md`, set PHASE → GATE. Halt:
-  > "Audit gate opened. See [gate file path]. Developer action required."
+- If any item fails: apply the triage defined in `.cursor/context/audit-context.md` ("Triage on failure" section), per `.cursor/rules/auto-remediation.mdc`:
+  - **Critical zone touched** OR **same bug 3rd consecutive attempt** → write gate brief, set PHASE → GATE, halt.
+  - **Otherwise (KO normal, attempt 1 or 2)** → REMEDIATION branch (auto, no human gate): append `REMEDIATION_ATTEMPT_N` to `REPORT_FILE`, return to Step 2 (EXECUTE) for the correction, then Step 3 → 4 → 5 again. Stay in PHASE: AUDIT until either CLOSED or GATE.
 
 ---
 
@@ -90,7 +91,8 @@ Stop immediately and surface the condition on any of:
 - Ambiguity unresolvable from task context
 - Unresolved ESCALATION in plan file
 - Post-execute hook failed or unavailable without developer confirmation
-- Two consecutive validation failures
+- Two consecutive **VALIDATE** failures **without intervening AUDIT remediation** (see Step 4 nuance above)
+- Same bug `bug_signature` reaches **3rd consecutive remediation attempt** (per `.cursor/rules/auto-remediation.mdc`)
 - Manual UX test required (per plan)
 - Product decision required (per plan)
 - Invariant violation detected

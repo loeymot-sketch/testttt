@@ -32,3 +32,9 @@ avis\ d\'expert\ .md
 # Splash reference clone — analyzed and integrated, not part of FoodKing codebase
 splash-partenaire-windows-borne-clone/
 borne-windows/
+
+# Playwright run artifacts (traces, screenshots, videos). Regenerated per run.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

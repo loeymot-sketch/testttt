@@ -1,11 +1,11 @@
 ---
-name: project-handoff
+
+## name: project-handoff
 description: >-
   Charge le contexte du dépôt (FoodKing SaaS — Laravel + Vue) pour une nouvelle session Cursor sans historique de chat.
   Lit README, passation HANDOFF_NEW_CURSOR, cache mémoire, PROJECT_CONTINUITY, AGENTS.md et priorités backlog.
   Use when the user opens this repository on a new Cursor account, says "nouvelle session", "handoff",
   "sans mémoire", "autre compte Cursor", "reprendre le projet", or wants multi-agent orchestration aligned with AGENTS.md.
----
 
 # Session handoff & orchestration
 
@@ -13,7 +13,7 @@ description: >-
 
 - Première ouverture du dépôt sur un **nouveau compte** ou machine.
 - L’utilisateur veut **reprendre le développement** sans redonner tout le contexte à la main.
-- Travail **multi-agents** (planning / Kimi-test / Anti-Gravity) selon `AGENTS.md`.
+- Travail **multi-agents** selon `**AGENTS.md`** : cycle borné (TASK_ID, `run-cycle`), `**.cursor/routing.md**`, sub-agents Task `**foodking-planner-orchestrator**`, `**foodking-complex-implementer**`, `**foodking-routine-implementer**`.
 
 ## Ordre de lecture obligatoire (avant code ou plan important)
 

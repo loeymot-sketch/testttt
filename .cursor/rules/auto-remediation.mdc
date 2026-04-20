@@ -1,0 +1,228 @@
+---
+description: FoodKing — boucle d'auto-remédiation orchestrée. Étend AGENTS.md / run-cycle.md / audit-context.md sans les remplacer. Ne modifie PAS human-gates.mdc.
+globs: ["plans/**", "reports/**", "tasks/**", ".cursor/ACTIVE_CYCLE.md"]
+alwaysApply: false
+---
+
+# FoodKing — Boucle d'auto-remédiation orchestrée
+
+## Principe
+
+Pour une tâche donnée, l'orchestrateur (`foodking-planner-orchestrator`) **ne rend la main au humain qu'à l'une des 3 sorties** :
+
+1. **CLOSED** — audit final OK, rapport produit
+2. **HUMAN_GATE — zone critique** — voir liste `Critical zones` ci-dessous
+3. **HUMAN_GATE — bug irrésolu** — même problème échoue 3 fois consécutives
+
+Tant qu'aucune de ces 3 sorties n'est atteinte, l'orchestrateur **boucle automatiquement** sans demander confirmation.
+
+Cette règle **complète** [run-cycle.md](mdc:.cursor/commands/run-cycle.md) et [audit-context.md](mdc:.cursor/context/audit-context.md) ; elle ne remplace ni [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) ni les hard gates existantes.
+
+---
+
+## Schéma de la boucle
+
+```
+Tu donnes la tâche
+        │
+        ▼
+   Claude PLAN ──────────────► Subagent IMPL ─────► Claude AUDIT
+                                      ▲                  │
+                                      │                  │
+                       relance subagent│                  │ KO normal (essai 1 ou 2)
+                                      │                  ▼
+                                      └──── Claude DIAGNOSTIC + REPLAN + ROUTAGE
+                                                         │
+                                       AUDIT OK ─────────┴──► CLOSED + Rapport final
+                                       3e essai même bug ──► HUMAN_GATE bug irrésolu
+                                       Zone critique ─────► HUMAN_GATE zone critique
+```
+
+---
+
+## Détail des phases (étend `run-cycle.md`)
+
+### Phase AUDIT — branche "KO normal" (nouveau)
+
+Si l'audit détecte un échec qui **n'est PAS** une zone critique (cf. ci-dessous) **ET** que `ATTEMPT_COUNT[bug_signature] < 3` :
+
+L'orchestrateur exécute, **dans la même session**, sans demander confirmation au humain :
+
+1. **Diagnostic** — root cause documentée dans le `REPORT_FILE` :
+   ```
+   REMEDIATION_ATTEMPT_N:
+     bug_signature: <fichier:ligne ou test_name + message court>
+     root_cause: <hypothèse précise, pas le symptôme>
+   ```
+2. **Replan correction** — micro-plan additif au plan actif (ne réécrit pas le plan original) :
+   ```
+     correction_plan:
+       files: [<liste minimale>]
+       change: <opération précise>
+   ```
+3. **Routage** — choix du subagent selon [routing.md](mdc:.cursor/routing.md) :
+   - Composer (`foodking-routine-implementer`) si correction routinière
+   - GPT-5.4 (`foodking-complex-implementer`) si correction complexe
+4. **Lancement** — invocation explicite du subagent via l'outil `Task` avec contexte minimal (plan + diff dernier round + erreur)
+5. **Re-audit** — exécution de la checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff
+
+Trace appendée à `REPORT_FILE` :
+```
+REMEDIATION_ATTEMPT_N:
+  outcome: PASSED | FAILED
+  delegated_to: foodking-routine-implementer | foodking-complex-implementer
+```
+
+### Phase AUDIT — branche "KO critique" (inchangée vs human-gates)
+
+Reste régie par [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) et [audit-context.md](mdc:.cursor/context/audit-context.md) → ouverture de gate brief, halt, attente humain.
+
+---
+
+## Critical zones (déclencheurs HUMAN_GATE jamais auto)
+
+Cette liste est **machine-vérifiable** par l'orchestrateur avant chaque tentative AUTO :
+
+| Catégorie | Patterns / chemins |
+|-----------|--------------------|
+| Schéma DB | `database/migrations/**`, modifications de tables/colonnes/index/contraintes |
+| Auth | `app/Http/Middleware/Auth*`, guards, tokens, login flows, `routes/auth*` |
+| Frozen zones | tout chemin listé `frozen` dans [scope.mdc](mdc:.cursor/rules/scope.mdc) |
+| Symétrie Order | `OrderService::*` modifié sans changement symétrique sur `FrontendOrderService::*` |
+| Branch isolation | logique de filtrage `branch_id` ajoutée/modifiée |
+| OrderStatus | toute introduction de string status hors enum `OrderStatus` |
+| Dispatch | tout `dispatch(...)` ajouté hors `afterCommit` |
+| Pricing | logique de prix côté frontend (toute logique de prix doit rester backend SSOT) |
+
+Si la correction prévue **touche la logique** d'un de ces points → **STOP, gate brief**, demande humaine.
+Si elle ne fait que les **appeler sans modifier** leur logique → AUTO autorisé.
+
+---
+
+## Compteur d'essais (nouveau)
+
+### Signature du bug
+
+`bug_signature = sha1(fichier_principal + symptome_normalise)` où `symptome_normalise` = message d'erreur ou nom de test rouge, sans timestamps/UUID/numéros de ligne variables.
+
+### Règle MAX 3
+
+- `ATTEMPT_COUNT[bug_signature]` est incrémenté à chaque tentative de correction du même bug
+- Si `ATTEMPT_COUNT[bug_signature] == 3` et l'audit échoue encore → **HUMAN_GATE bug irrésolu**
+- Le compteur se réinitialise quand un nouveau bug différent apparaît
+
+### Gate brief "bug irrésolu"
+
+Format dans `docs/gates/GATE_[TASK_ID]_[DATE].md` :
+```
+## Trigger
+Bug irrésolu après 3 tentatives — bug_signature: <hash>
+
+## Tentatives
+1. root_cause hypothèse: ... | fix: ... | résultat: FAILED (raison)
+2. root_cause hypothèse: ... | fix: ... | résultat: FAILED (raison)
+3. root_cause hypothèse: ... | fix: ... | résultat: FAILED (raison)
+
+## Hypothèses restantes
+[Liste des pistes non encore essayées]
+
+## Décision Required
+[Question précise au humain]
+```
+
+---
+
+## Stratégie modèles (verrouillée pour phase critique)
+
+Pendant les phases sensibles (POS, fiscal NF525, multi-tenant, sync) :
+
+- **Chat orchestrateur** = Claude Opus 4.7 (pas d'auto mode)
+- **Subagent routine** = Composer via `foodking-routine-implementer`
+- **Subagent complex** = GPT-5.4 via `foodking-complex-implementer`
+- **Subagent audit indépendant (optionnel)** = `generalPurpose readonly` si l'orchestrateur veut un second avis avant CLOSED
+
+### Anti-gaspillage tokens
+
+L'orchestrateur :
+
+- **Lit uniquement** : plan actif + dernier round du `REPORT_FILE` + diff du dernier round (pas le repo entier)
+- **Délègue le contexte lourd** aux subagents via leur prompt (pas d'inflation conversation parent)
+- **Demande aux subagents** un résumé court en sortie (pas de full diff dans la réponse)
+
+---
+
+## Configuration cycle (RUNNER_MODE)
+
+Pour que cette boucle fonctionne, [`.cursor/ACTIVE_CYCLE.md`](mdc:.cursor/ACTIVE_CYCLE.md) doit avoir :
+
+```
+RUNNER_MODE: single-session
+```
+
+(Si absent ou `manual`, la boucle s'arrête après chaque phase comme prévu par [run-cycle.md](mdc:.cursor/commands/run-cycle.md). Si une autre valeur est présente, l'orchestrateur traite comme `manual` par sécurité.)
+
+---
+
+## Gabarit du rapport final (CLOSED)
+
+À append en queue de `REPORT_FILE` lors du CLOSED :
+
+```
+## Final report
+
+Task: <TASK_ID>
+Plan: <PLAN_FILE>
+Initial implementation: <résumé 2 lignes>
+
+Remediation attempts: <N>
+  Attempt 1: <bug_signature> → diag <root_cause> → fix <change> → PASSED
+  Attempt 2: ...
+  ...
+
+Final audit: PASSED
+Critical zones touched: NONE | <liste>
+Human gate: NONE | <GATE_FILE path>
+
+Cycle: CLOSED after <N> remediation round(s)
+```
+
+---
+
+## Ce que cette règle NE change PAS
+
+- [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) reste intégralement en vigueur. Ses hard gates ne sont jamais court-circuitées.
+- [AGENTS.md](mdc:AGENTS.md) workflow `PLAN → EXECUTE → VALIDATE → AUDIT` reste la colonne vertébrale.
+- [routing.md](mdc:.cursor/routing.md) reste la SSOT pour le choix de modèle par phase.
+- [scope.mdc](mdc:.cursor/rules/scope.mdc) reste en vigueur : pas d'expansion implicite du scope, même en remediation. Si une correction nécessite un fichier hors `SUBSYSTEMS_TOUCHED` → ESCALATION → HUMAN_GATE.
+- Les subagents (`foodking-planner-orchestrator`, `foodking-routine-implementer`, `foodking-complex-implementer`) gardent leurs périmètres respectifs.
+- Aucune modification du code applicatif (`app/`, `resources/`, `routes/`, `database/`) n'est introduite par cette règle.
+
+---
+
+## Interaction avec [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) — sans le modifier
+
+[human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) (alwaysApply) liste comme **hard gate** : « Two consecutive validation failures → Human review — do not retry autonomously ».
+
+**Lecture conjointe (cette règle ne court-circuite pas la précédente)** :
+
+- « Two consecutive validation failures » = **deux échecs VALIDATE consécutifs sans phase AUDIT intermédiaire qui produit une remédiation acceptée**. Dans ce cas → halt humain (règle `human-gates` intacte).
+- Une boucle REMEDIATION saine produit cette séquence : `AUDIT KO → diagnostic + replan + nouveau code (subagent) → nouveau VALIDATE → nouveau AUDIT`. Les VALIDATE successifs ici **ne sont pas « consécutifs »** : ils portent sur des codes différents, séparés par une décision AUDIT documentée. Le compteur `consecutive_validate_failures` est **réinitialisé** par chaque cycle de remédiation accepté.
+- Si au contraire VALIDATE échoue **deux fois de suite sans qu'AUDIT ait pu lancer une remédiation entre les deux** (ex : panne d'outil, écho identique du même crash) → règle `human-gates` s'applique → halt.
+
+**Limites strictes (priment toujours sur cette règle)** :
+
+- Tous les autres « Hard Gates » de [human-gates.mdc](mdc:.cursor/rules/human-gates.mdc) (schema migration, auth, frozen zone, invariant violation, scope expansion, branch_id) restent **inchangés** et sont déjà repris dans la liste `Critical zones` ci-dessus.
+- Tous les « Soft Gates » (planning ambiguity, plan drift, unresolved ESCALATION, unresolved SYMMETRY_NOTE) restent **inchangés**. Une SOFT gate force halt même si on est dans la branche REMEDIATION.
+- « Absolute Prohibitions » de `human-gates.mdc` (no self-approval, no silent gate downgrade, no frozen edit sans gate, no schema sans approval écrit, no branch_id sans review) sont **rappelés** ici et **opposables** à toute tentative AUTO.
+
+---
+
+## Activation
+
+Cette règle s'active automatiquement pour les cycles bornés où :
+
+1. `ACTIVE_CYCLE.md` a `RUNNER_MODE: single-session`
+2. Le `PRIMARY_MODEL` est explicite dans le plan
+3. La tâche n'a pas pré-déclaré de gate humaine en entrée
+
+Pour une tâche routinière sans risque de boucle (ex: doc), la règle est neutre (l'audit passe au premier coup, pas de remédiation déclenchée).

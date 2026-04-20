@@ -36,6 +36,7 @@ Start from these project artifacts in order appropriate to the phase, without su
 7. `.cursor/rules/scope.mdc`
 8. `.cursor/rules/foodking-invariants.mdc`
 9. `.cursor/rules/human-gates.mdc`
+10. `.cursor/rules/auto-remediation.mdc` (loop rules — read before AUDIT phase)
 
 If a context file limits which additional paths may be loaded, obey it. Prefer **current-cycle** artifacts: active task, active plan, active reports, and paths explicitly referenced by the task or plan.
 
@@ -47,7 +48,11 @@ If a context file limits which additional paths may be loaded, obey it. Prefer *
 4. **Invoke** the correct subagent for implementation and for validation—not impersonate them.
 5. Enforce scope and FoodKing invariants; halt and escalate on violation or ambiguity.
 6. Run the **final audit** against the plan and evidence.
-7. **Close** the cycle only when audit criteria are met; otherwise **gate** or **replan** with human-visible rationale.
+7. On audit failure, apply the triage from `.cursor/rules/auto-remediation.mdc` :
+   - **Critical zone touched** → gate brief, stop.
+   - **Same bug 3rd consecutive attempt** → gate brief "bug irrésolu", stop.
+   - **Otherwise (KO normal, attempt 1 or 2)** → diagnostic + micro-replan + re-route to subagent + re-execute + re-audit, all in the **same session**, without asking the human. Append `REMEDIATION_ATTEMPT_N` block to `REPORT_FILE`.
+8. **Close** the cycle only when audit criteria are met; produce the final report per the `auto-remediation.mdc` template.
 
 ## Hard rules
 
