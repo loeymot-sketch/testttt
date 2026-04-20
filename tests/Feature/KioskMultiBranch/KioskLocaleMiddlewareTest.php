@@ -9,6 +9,7 @@ use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
@@ -126,5 +127,93 @@ class KioskLocaleMiddlewareTest extends TestCase
             'Authorization'  => "Bearer {$ctx['token']}",
             'X-Kiosk-Locale' => 'fr',
         ])->getJson(self::URL . '?lang=ar')->assertStatus(200);
+    }
+
+    /**
+     * [C5] Denials must be logged to the `observability` channel so canary
+     * dashboards can detect misconfigured kiosks (drift between
+     * `Branch.available_locales` and the locale the front actually requests).
+     */
+    public function test_off_allowlist_denial_is_logged_to_observability_channel(): void
+    {
+        $captured = $this->captureObservabilityLogs();
+
+        $ctx = $this->makeMachine(['fr', 'en']);
+        $this->withHeaders([
+            'Authorization'  => "Bearer {$ctx['token']}",
+            'X-Kiosk-Locale' => 'ar',
+        ])->getJson(self::URL)->assertStatus(400);
+
+        $hits = array_values(array_filter(
+            $captured->entries,
+            fn ($e) => ($e[1] ?? null) === 'kiosk_locale.not_allowed'
+        ));
+        $this->assertNotEmpty($hits, 'Expected an observability log for the denied locale.');
+        $this->assertSame('kiosk_locale_rejected', $hits[0][2]['category']);
+        $this->assertSame('LOCALE_NOT_ALLOWED_FOR_BRANCH', $hits[0][2]['reason']);
+        $this->assertSame('ar', $hits[0][2]['requested']);
+        $this->assertSame(['fr', 'en'], $hits[0][2]['allowed']);
+        $this->assertSame((int) $ctx['branch']->id, $hits[0][2]['branch_id']);
+        $this->assertSame('frontend.frontend.upsell.suggest', $hits[0][2]['route_name']);
+    }
+
+    public function test_malformed_locale_is_also_logged_to_observability_channel(): void
+    {
+        $captured = $this->captureObservabilityLogs();
+
+        $ctx = $this->makeMachine(['fr', 'en']);
+        $this->withHeaders([
+            'Authorization'  => "Bearer {$ctx['token']}",
+            'X-Kiosk-Locale' => 'WTF-not-a-locale',
+        ])->getJson(self::URL)->assertStatus(400);
+
+        $hits = array_values(array_filter(
+            $captured->entries,
+            fn ($e) => ($e[1] ?? null) === 'kiosk_locale.format_invalid'
+        ));
+        $this->assertNotEmpty($hits, 'Expected an observability log for the malformed locale.');
+        $this->assertSame('kiosk_locale_rejected', $hits[0][2]['category']);
+        $this->assertSame('LOCALE_FORMAT_INVALID', $hits[0][2]['reason']);
+        $this->assertSame('WTF-not-a-locale', $hits[0][2]['requested']);
+    }
+
+    /**
+     * Swap the `observability` channel with an in-memory capture so we can
+     * inspect what the middleware emitted without touching real log files.
+     * Mirrors the pattern used in CspReportEndpointTest.
+     */
+    private function captureObservabilityLogs(): object
+    {
+        $captured = new class {
+            /** @var array<int, array{0:string,1:string,2:array}> */
+            public array $entries = [];
+        };
+
+        $sink = new class($captured) {
+            private object $store;
+            public function __construct(object $s) { $this->store = $s; }
+            public function info(string $msg, array $ctx = []): void { $this->store->entries[] = ['info', $msg, $ctx]; }
+            public function warning(string $msg, array $ctx = []): void { $this->store->entries[] = ['warning', $msg, $ctx]; }
+            public function error(string $msg, array $ctx = []): void { $this->store->entries[] = ['error', $msg, $ctx]; }
+            public function alert(string $msg, array $ctx = []): void { $this->store->entries[] = ['alert', $msg, $ctx]; }
+            public function log(string $level, string $msg, array $ctx = []): void { $this->store->entries[] = [$level, $msg, $ctx]; }
+            public function __call(string $m, array $args): void { $this->store->entries[] = [$m, (string) ($args[0] ?? ''), (array) ($args[1] ?? [])]; }
+        };
+
+        $manager = app('log');
+        Log::swap(new class($manager, $sink) {
+            private $real;
+            private $sink;
+            public function __construct($r, $s) { $this->real = $r; $this->sink = $s; }
+            public function channel(?string $name = null) {
+                if ($name === 'observability') return $this->sink;
+                return $this->real->channel($name);
+            }
+            public function stack(array $c, ?string $n = null) { return $this->real->stack($c, $n); }
+            public function driver(?string $n = null) { return $this->real->driver($n); }
+            public function __call($m, $args) { return $this->real->{$m}(...$args); }
+        });
+
+        return $captured;
     }
 }

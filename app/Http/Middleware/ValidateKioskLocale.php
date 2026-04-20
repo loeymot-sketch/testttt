@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\KioskMachine;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -36,6 +37,17 @@ class ValidateKioskLocale
         }
 
         if (preg_match(self::LOCALE_REGEX, $locale) !== 1) {
+            // [C5 / K-9 ADR-4] Log to observability so canary can detect
+            // misconfigured kiosks or hostile clients sending garbage locales.
+            // Truncate the offending value to bound log size.
+            Log::channel('observability')->info('kiosk_locale.format_invalid', [
+                'category'    => 'kiosk_locale_rejected',
+                'reason'      => 'LOCALE_FORMAT_INVALID',
+                'requested'   => mb_substr($locale, 0, 64),
+                'route_name'  => optional($request->route())->getName(),
+                'ip'          => $request->ip(),
+            ]);
+
             return response()->json([
                 'status'  => false,
                 'message' => 'Locale invalide.',
@@ -59,6 +71,18 @@ class ValidateKioskLocale
 
         $allowed = $machine->branch->activeLocales();
         if (!in_array($locale, $allowed, true)) {
+            // [C5 / K-9 ADR-4] Observability for off-allowlist denials —
+            // signals branch.available_locales drift between menu config
+            // and kiosk runtime. Includes branch_id for cohort filtering.
+            Log::channel('observability')->info('kiosk_locale.not_allowed', [
+                'category'   => 'kiosk_locale_rejected',
+                'reason'     => 'LOCALE_NOT_ALLOWED_FOR_BRANCH',
+                'requested'  => $locale,
+                'allowed'    => $allowed,
+                'branch_id'  => (int) $machine->branch_id,
+                'route_name' => optional($request->route())->getName(),
+            ]);
+
             return response()->json([
                 'status'  => false,
                 'message' => 'Locale non autorisée pour cette branche.',
