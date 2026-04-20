@@ -152,6 +152,15 @@
             >
               {{ getItemSelectionSummary(item) }}
             </div>
+            <KsAllergenBadge
+              v-if="cartLineCatalogItem(item)"
+              class="kiosk-cart-item-allergens"
+              :item="cartLineCatalogItem(item)"
+              :selections="cartLineAllergenSelections(item)"
+              :allergens="[]"
+              :customer-allergens="customerAllergenCodes"
+              :data-testid="`kiosk-cart-item-allergens-${idx}`"
+            />
             <p
               v-if="item.instruction"
               class="kiosk-cart-item-note"
@@ -330,6 +339,8 @@ import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
 const ORDER_TYPE_KIOSK    = 25;
@@ -338,6 +349,7 @@ const ORDER_TYPE_TAKEAWAY = 10;
 export default {
   name: 'KioskCartComponent',
   mixins: [kioskPriceMixin],
+  components: { KsAllergenBadge },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -370,7 +382,12 @@ export default {
       promoError: 'promoError',
       promoLoading: 'promoLoading',
     }),
-    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId']),
+    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId', 'allItems']),
+    customerAllergenCodes() {
+      const profile = this.$store?.getters?.['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
+    },
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
@@ -424,6 +441,23 @@ export default {
     displayCartInstruction(item) {
       if (!item?.instruction) return '';
       return sanitizeKioskCustomerFacingText(item.instruction);
+    },
+
+    cartLineCatalogItem(line) {
+      if (!line?.item_id || !Array.isArray(this.allItems)) return null;
+      return this.allItems.find((i) => String(i.id) === String(line.item_id)) || null;
+    },
+
+    cartLineAllergenSelections(line) {
+      const cat = this.cartLineCatalogItem(line);
+      if (!cat) return { variations: [], extras: [] };
+      const vars = (line.item_variations || [])
+        .map((v) => findVariationObjectById(cat, v.id))
+        .filter(Boolean);
+      const ext = (line.item_extras || [])
+        .map((e) => findExtraObjectById(cat, e.id))
+        .filter(Boolean);
+      return { variations: vars, extras: ext };
     },
 
     // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names

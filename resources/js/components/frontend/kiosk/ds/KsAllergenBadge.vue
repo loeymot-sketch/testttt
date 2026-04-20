@@ -28,6 +28,8 @@
 </template>
 
 <script>
+import { mergeAllergens } from '../../../../helpers/kioskFilters';
+
 /**
  * KsAllergenBadge — Liste des allergènes d'un item, avec alerte si
  * intersection avec les allergènes déclarés par le client (DATA_CONTRACT §9.4).
@@ -81,20 +83,38 @@ export default {
         allergens: { type: Array, default: () => [] },
         customerAllergens: { type: Array, default: () => [] },
         compact: { type: Boolean, default: false },
+        /** Produit catalogue (item wizard / ligne panier enrichie). Optionnel. */
+        item: { type: Object, default: null },
+        /**
+         * Sélections courantes : `{ variations: [...], extras: [...] }`.
+         * Si défini avec `item`, les allergènes affichés = merge item + variations + extras.
+         */
+        selections: { type: Object, default: null },
     },
     computed: {
+        effectiveAllergens() {
+            if (this.item != null && this.selections != null) {
+                return mergeAllergens(
+                    this.item,
+                    this.selections.variations,
+                    this.selections.extras,
+                );
+            }
+            return Array.isArray(this.allergens) ? this.allergens : [];
+        },
         collisionSet() {
             return new Set(this.customerAllergens || []);
         },
         hasCollision() {
-            return (this.allergens || []).some((a) => this.collisionSet.has(a));
+            return (this.effectiveAllergens || []).some((a) => this.collisionSet.has(a));
         },
         visibleAllergens() {
-            if (!Array.isArray(this.allergens)) return [];
+            const base = this.effectiveAllergens;
+            if (!Array.isArray(base)) return [];
             if (this.compact) {
-                return this.allergens.filter((a) => this.collisionSet.has(a));
+                return base.filter((a) => this.collisionSet.has(a));
             }
-            return this.allergens;
+            return base;
         },
         ariaLabel() {
             if (this.hasCollision) {

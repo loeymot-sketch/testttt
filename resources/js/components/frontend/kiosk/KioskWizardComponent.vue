@@ -21,8 +21,10 @@
                Safety FIC UE 1169/2011 + EAA 2025 : le client doit voir en permanence
                les allergènes avant d'ajouter au panier, sans avoir à cliquer. -->
           <KsAllergenBadge
-            v-if="itemAllergenCodes.length > 0"
+            v-if="resolvedItem"
             class="kiosk-wizard-header-allergens"
+            :item="resolvedItem"
+            :selections="allergenBadgeSelections"
             :allergens="itemAllergenCodes"
             :customer-allergens="customerAllergenCodes"
             data-testid="kiosk-wizard-header-allergens"
@@ -270,6 +272,71 @@ export default {
       return raw
         .map((a) => (typeof a === 'string' ? a : (a && a.code) || null))
         .filter(Boolean);
+    },
+    /**
+     * Variations / extras catalogue alignés sur buildCartItem() pour fusionner
+     * les allergènes (extras ex. fromage → lait) dans le badge header.
+     */
+    allergenBadgeSelections() {
+      const item = this.resolvedItem;
+      const selections = this.selections;
+      if (!item) return { variations: [], extras: [] };
+      const variations = [];
+      const extras = [];
+
+      const painMeta = selections._painMeta;
+      if (painMeta?.realId && painMeta?.attrId) {
+        const list = kioskVariationsForAttribute(item, painMeta.attrId);
+        const v = list?.find((x) => x.id === painMeta.realId);
+        if (v) variations.push(v);
+      }
+
+      const viandeMeta = selections._viandeMeta || [];
+      const firstVarViande = viandeMeta.find(
+        (v) => v.source === 'variation' && typeof v.id === 'number',
+      );
+      if (firstVarViande && item.itemAttributes) {
+        const attrs = Array.isArray(item.itemAttributes)
+          ? item.itemAttributes
+          : Object.values(item.itemAttributes || {});
+        const viandeAttr = attrs.find((a) =>
+          (a.name || '').toLowerCase().includes('viande'),
+        );
+        const rawVars = viandeAttr && item.variations?.[viandeAttr.id];
+        const varList = Array.isArray(rawVars) ? rawVars : rawVars ? [rawVars] : [];
+        const v = varList.find((x) => x.id === firstVarViande.id);
+        if (v) variations.push(v);
+      }
+
+      if (selections.sauceOrder?.length > 0) {
+        const v = this.kioskFindSauceVariation(item, selections.sauceOrder[0]);
+        if (v) variations.push(v);
+      }
+
+      if (item.extras) {
+        Object.keys(selections.garnitures || {}).forEach((id) => {
+          if (selections.garnitures[id]) {
+            const ex = item.extras.find((e) => e.id === parseInt(id, 10));
+            if (ex) extras.push(ex);
+          }
+        });
+        Object.keys(selections.supplements || {}).forEach((id) => {
+          if (selections.supplements[id]) {
+            const ex = item.extras.find((e) => e.id === parseInt(id, 10));
+            if (ex) extras.push(ex);
+          }
+        });
+      }
+
+      viandeMeta.forEach((v) => {
+        if (v.source !== 'extra' || typeof v.id !== 'number') return;
+        const count = parseInt(v.count || 0, 10) || 0;
+        const ex = item.extras?.find((e) => e.id === v.id);
+        if (!ex) return;
+        for (let i = 0; i < count; i++) extras.push(ex);
+      });
+
+      return { variations, extras };
     },
     // Kiosk Phase 9.1.2 — Codes allergènes déclarés par le client (scan loyalty).
     // Source : `kioskSettings/customerProfile.declared_allergens` (opt-in RGPD,

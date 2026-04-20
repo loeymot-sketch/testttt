@@ -123,9 +123,107 @@ export function extractAllergenCodes(item) {
     return [];
 }
 
+/**
+ * Ordre canonique UE 1169/2011 (codes FR) pour affichage / comparaison stable.
+ * Aligné sur les clés consommées par KsAllergenBadge / API.
+ */
+export const KIOSK_ALLERGEN_CANONICAL_ORDER = Object.freeze([
+    'gluten',
+    'lait',
+    'oeufs',
+    'poissons',
+    'crustaces',
+    'mollusques',
+    'fruits_a_coque',
+    'arachides',
+    'soja',
+    'celeri',
+    'moutarde',
+    'sesame',
+    'sulfites',
+    'lupin',
+    'anhydride_sulfureux',
+]);
+
+function sortAllergenCodesUnique(codes) {
+    const uniq = [...new Set(codes)];
+    const idx = (c) => {
+        const i = KIOSK_ALLERGEN_CANONICAL_ORDER.indexOf(c);
+        return i === -1 ? 1000 : i;
+    };
+    return uniq.sort((a, b) => {
+        const ia = idx(a);
+        const ib = idx(b);
+        if (ia !== ib) return ia - ib;
+        return String(a).localeCompare(String(b));
+    });
+}
+
+/**
+ * Fusionne allergènes de l'item de base + variations + extras sélectionnés.
+ * Objets sans `allergens` → no-op (extractAllergenCodes → []).
+ *
+ * Si `selectedVariations` est `undefined` (clé absente côté sélections), seuls
+ * les allergènes de l'item de base sont retournés (rétrocompat).
+ *
+ * @param {Object|null} item
+ * @param {Array|undefined} selectedVariations
+ * @param {Array|undefined} selectedExtras
+ * @returns {Array<string>}
+ */
+export function mergeAllergens(item, selectedVariations, selectedExtras) {
+    if (selectedVariations === undefined) {
+        return sortAllergenCodesUnique(extractAllergenCodes(item));
+    }
+    const vars = Array.isArray(selectedVariations) ? selectedVariations : [];
+    const extras = Array.isArray(selectedExtras) ? selectedExtras : [];
+    const out = [];
+    out.push(...extractAllergenCodes(item));
+    vars.forEach((v) => {
+        out.push(...extractAllergenCodes(v && typeof v === 'object' ? v : {}));
+    });
+    extras.forEach((e) => {
+        out.push(...extractAllergenCodes(e && typeof e === 'object' ? e : {}));
+    });
+    return sortAllergenCodesUnique(out);
+}
+
+/**
+ * Résout un objet variation catalogue par id (recherche dans `item.variations`).
+ */
+export function findVariationObjectById(item, variationId) {
+    if (item == null || variationId == null || !item.variations || typeof item.variations !== 'object') {
+        return null;
+    }
+    const vid = parseInt(String(variationId), 10);
+    if (Number.isNaN(vid)) return null;
+    const keys = Object.keys(item.variations);
+    for (let i = 0; i < keys.length; i++) {
+        const list = item.variations[keys[i]];
+        if (!Array.isArray(list)) continue;
+        const found = list.find((v) => v && v.id === vid);
+        if (found) return found;
+    }
+    return null;
+}
+
+/**
+ * Résout un extra catalogue par id.
+ */
+export function findExtraObjectById(item, extraId) {
+    if (item == null || extraId == null || !Array.isArray(item.extras)) return null;
+    const eid = parseInt(String(extraId), 10);
+    if (Number.isNaN(eid)) return null;
+    return item.extras.find((e) => e && e.id === eid) || null;
+}
+
 export default {
     KIOSK_FILTERS,
     applyKioskFilters,
     getAllergenCollision,
     extractAllergenCodes,
+    mergeAllergens,
+    KIOSK_ALLERGEN_CANONICAL_ORDER,
+    findVariationObjectById,
+    findExtraObjectById,
 };
