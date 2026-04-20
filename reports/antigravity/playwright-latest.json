@@ -74,7 +74,7 @@
           "specs": [
             {
               "title": "login POS → F5 → reste sur /admin/pos",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -87,18 +87,106 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5197,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 21295,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:17:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                          "column": 24,
+                          "line": 17
+                        },
+                        "snippet": "  15 |\n  16 |     // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.\n> 17 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  18 |\n  19 |     // 3. F5 — reload\n  20 |     await page.reload();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                            "column": 24,
+                            "line": 17
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  15 |\n  16 |     // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.\n> 17 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  18 |\n  19 |     // 3. F5 — reload\n  20 |     await page.reload();\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:17:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:10.930Z",
+                      "startTime": "2026-04-20T16:20:36.039Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-65dc0--→-F5-→-reste-sur-admin-pos-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-65dc0--→-F5-→-reste-sur-admin-pos-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                        "column": 24,
+                        "line": 17
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21159,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:17:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                          "column": 24,
+                          "line": 17
+                        },
+                        "snippet": "  15 |\n  16 |     // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.\n> 17 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  18 |\n  19 |     // 3. F5 — reload\n  20 |     await page.reload();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                            "column": 24,
+                            "line": 17
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  15 |\n  16 |     // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.\n> 17 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  18 |\n  19 |     // 3. F5 — reload\n  20 |     await page.reload();\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:17:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:20:59.109Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-65dc0--→-F5-→-reste-sur-admin-pos-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-65dc0--→-F5-→-reste-sur-admin-pos-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-65dc0--→-F5-→-reste-sur-admin-pos-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                        "column": 24,
+                        "line": 17
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "81675b48eccb812da7fd-f37efeab19c3cb455849",
@@ -108,7 +196,7 @@
             },
             {
               "title": "user info preserved after F5",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -119,20 +207,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 6647,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20984,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:32:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                          "column": 24,
+                          "line": 32
+                        },
+                        "snippet": "  30 |   test('user info preserved after F5', async ({ page }) => {\n  31 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 32 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  33 |\n  34 |     // Store some page state before reload\n  35 |     const urlBefore = page.url();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                            "column": 24,
+                            "line": 32
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  30 |   test('user info preserved after F5', async ({ page }) => {\n  31 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 32 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  33 |\n  34 |     // Store some page state before reload\n  35 |     const urlBefore = page.url();\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:32:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:16.750Z",
+                      "startTime": "2026-04-20T16:21:21.469Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-67126-ser-info-preserved-after-F5-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-67126-ser-info-preserved-after-F5-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                        "column": 24,
+                        "line": 32
+                      }
+                    },
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21216,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:32:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                          "column": 24,
+                          "line": 32
+                        },
+                        "snippet": "  30 |   test('user info preserved after F5', async ({ page }) => {\n  31 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 32 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  33 |\n  34 |     // Store some page state before reload\n  35 |     const urlBefore = page.url();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                            "column": 24,
+                            "line": 32
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  30 |   test('user info preserved after F5', async ({ page }) => {\n  31 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 32 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  33 |\n  34 |     // Store some page state before reload\n  35 |     const urlBefore = page.url();\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:32:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:21:43.623Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-67126-ser-info-preserved-after-F5-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-67126-ser-info-preserved-after-F5-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/01-auth-refresh-Auth-Refre-67126-ser-info-preserved-after-F5-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js",
+                        "column": 24,
+                        "line": 32
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "81675b48eccb812da7fd-a15457369def6ca62079",
@@ -159,7 +335,7 @@
           "specs": [
             {
               "title": "surface POS chargée sur /admin/pos",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -170,20 +346,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1387,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20958,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:23.421Z",
+                      "startTime": "2026-04-20T16:22:06.010Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-3e3bd-e-POS-chargée-sur-admin-pos-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-3e3bd-e-POS-chargée-sur-admin-pos-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21135,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:22:28.109Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-3e3bd-e-POS-chargée-sur-admin-pos-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-3e3bd-e-POS-chargée-sur-admin-pos-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-3e3bd-e-POS-chargée-sur-admin-pos-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "f6798ae4d119786f0120-4249bdfd35ebce452404",
@@ -193,7 +457,7 @@
             },
             {
               "title": "panier démarre vide — pas de commande fantôme",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -204,20 +468,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 6,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2138,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20934,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:24.818Z",
+                      "startTime": "2026-04-20T16:22:50.428Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-ed34e-e-—-pas-de-commande-fantôme-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-ed34e-e-—-pas-de-commande-fantôme-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21174,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:23:12.456Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-ed34e-e-—-pas-de-commande-fantôme-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-ed34e-e-—-pas-de-commande-fantôme-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-ed34e-e-—-pas-de-commande-fantôme-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "f6798ae4d119786f0120-c03ea61daba51f53fa8c",
@@ -227,7 +579,7 @@
             },
             {
               "title": "pas de crash JavaScript visible sur la surface POS",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -238,20 +590,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 8,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4577,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20979,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:26.971Z",
+                      "startTime": "2026-04-20T16:23:34.936Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-eca75--visible-sur-la-surface-POS-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-eca75--visible-sur-la-surface-POS-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21150,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:23:57.164Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-eca75--visible-sur-la-surface-POS-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-eca75--visible-sur-la-surface-POS-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-eca75--visible-sur-la-surface-POS-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "f6798ae4d119786f0120-0ab80aeb92b6d8e9a85f",
@@ -261,7 +701,7 @@
             },
             {
               "title": "full POS cash order cycle",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -272,20 +712,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 10,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5484,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 21117,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:31.557Z",
+                      "startTime": "2026-04-20T16:24:19.597Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-0c94a-e-full-POS-cash-order-cycle-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-0c94a-e-full-POS-cash-order-cycle-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21145,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                          "column": 22,
+                          "line": 13
+                        },
+                        "snippet": "  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                            "column": 22,
+                            "line": 13
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  11 | async function loginAsPOS(page) {\n  12 |   await login(page, POS_EMAIL, POS_PASSWORD);\n> 13 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                      ^\n  14 | }\n  15 |\n  16 | test.describe('POS Cash — commande complète', () => {\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:13:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:18:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:24:41.926Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-0c94a-e-full-POS-cash-order-cycle-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-0c94a-e-full-POS-cash-order-cycle-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/02-pos-cash-POS-Cash-—-com-0c94a-e-full-POS-cash-order-cycle-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js",
+                        "column": 22,
+                        "line": 13
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "f6798ae4d119786f0120-d73b1331dfe9425be18a",
@@ -323,15 +851,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1260,
+                      "duration": 901,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:37.058Z",
+                      "startTime": "2026-04-20T16:25:04.295Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -357,15 +885,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3588,
+                      "duration": 2635,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:38.326Z",
+                      "startTime": "2026-04-20T16:25:05.620Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -391,15 +919,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5793,
+                      "duration": 3604,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:41.951Z",
+                      "startTime": "2026-04-20T16:25:08.262Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -425,15 +953,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1332,
+                      "duration": 694,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:47.934Z",
+                      "startTime": "2026-04-20T16:25:11.872Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -459,15 +987,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5163,
+                      "duration": 4696,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:49.283Z",
+                      "startTime": "2026-04-20T16:25:12.576Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -510,15 +1038,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 500,
+                      "duration": 546,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:54.462Z",
+                      "startTime": "2026-04-20T16:25:17.292Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -533,7 +1061,7 @@
             },
             {
               "title": "login chef via /login → redirection vers surface chef",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -544,13 +1072,13 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 12,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 20835,
+                      "duration": 20877,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24",
                         "location": {
                           "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
                           "column": 24,
@@ -565,13 +1093,13 @@
                             "column": 24,
                             "line": 29
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://127.0.0.1:8000/login\"\u001b[22m\n\n\n  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:32:54.967Z",
+                      "startTime": "2026-04-20T16:25:17.846Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -592,26 +1120,60 @@
                       }
                     },
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 13,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1235,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 21285,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                          "column": 24,
+                          "line": 29
+                        },
+                        "snippet": "  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                            "column": 24,
+                            "line": 29
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  27 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n  28 |\n> 29 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  30 |\n  31 |     const visibleText = await page.locator('body').innerText();\n  32 |     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:29:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 1,
-                      "startTime": "2026-04-19T00:33:16.561Z",
+                      "startTime": "2026-04-20T16:25:39.448Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium-retry1/error-context.md"
+                        },
                         {
                           "name": "trace",
                           "contentType": "application/zip",
                           "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-65642-direction-vers-surface-chef-chromium-retry1/trace.zip"
                         }
-                      ]
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                        "column": 24,
+                        "line": 29
+                      }
                     }
                   ],
-                  "status": "flaky"
+                  "status": "unexpected"
                 }
               ],
               "id": "9d204cd80e7226e34828-192fcdf077faa5a80194",
@@ -621,7 +1183,7 @@
             },
             {
               "title": "KDS surface loads order list without crash",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -632,20 +1194,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 14,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 6499,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20981,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:39:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                          "column": 24,
+                          "line": 39
+                        },
+                        "snippet": "  37 |   test('KDS surface loads order list without crash', async ({ page }) => {\n  38 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n> 39 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  40 |\n  41 |     // Wait for Vue to mount\n  42 |     await page.waitForTimeout(3_000);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                            "column": 24,
+                            "line": 39
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  37 |   test('KDS surface loads order list without crash', async ({ page }) => {\n  38 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n> 39 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  40 |\n  41 |     // Wait for Vue to mount\n  42 |     await page.waitForTimeout(3_000);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:39:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:18.443Z",
+                      "startTime": "2026-04-20T16:26:02.128Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-3bab2-ds-order-list-without-crash-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-3bab2-ds-order-list-without-crash-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                        "column": 24,
+                        "line": 39
+                      }
+                    },
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21168,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:39:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                          "column": 24,
+                          "line": 39
+                        },
+                        "snippet": "  37 |   test('KDS surface loads order list without crash', async ({ page }) => {\n  38 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n> 39 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  40 |\n  41 |     // Wait for Vue to mount\n  42 |     await page.waitForTimeout(3_000);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                            "column": 24,
+                            "line": 39
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/(kds|admin\\/kitchen-display-system)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  37 |   test('KDS surface loads order list without crash', async ({ page }) => {\n  38 |     await login(page, CHEF_EMAIL, CHEF_PASSWORD);\n> 39 |     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });\n     |                        ^\n  40 |\n  41 |     // Wait for Vue to mount\n  42 |     await page.waitForTimeout(3_000);\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:39:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:26:24.271Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-3bab2-ds-order-list-without-crash-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-3bab2-ds-order-list-without-crash-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/04-kds-status-KDS-—-interf-3bab2-ds-order-list-without-crash-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js",
+                        "column": 24,
+                        "line": 39
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "9d204cd80e7226e34828-41b08766a67333fb72dd",
@@ -672,7 +1322,7 @@
           "specs": [
             {
               "title": "POS surface loads for card payment scenario",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -683,20 +1333,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 16,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4395,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 21019,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                          "column": 24,
+                          "line": 12
+                        },
+                        "snippet": "  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                            "column": 24,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:24.956Z",
+                      "startTime": "2026-04-20T16:26:46.697Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-eb714-s-for-card-payment-scenario-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-eb714-s-for-card-payment-scenario-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                        "column": 24,
+                        "line": 12
+                      }
+                    },
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21101,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                          "column": 24,
+                          "line": 12
+                        },
+                        "snippet": "  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                            "column": 24,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:27:08.865Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-eb714-s-for-card-payment-scenario-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-eb714-s-for-card-payment-scenario-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-eb714-s-for-card-payment-scenario-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                        "column": 24,
+                        "line": 12
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "53d9ecf25db9df861281-e580caf42e3721a2069d",
@@ -706,7 +1444,7 @@
             },
             {
               "title": "no JavaScript errors on POS card surface",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -717,20 +1455,108 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 18,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4359,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20984,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                          "column": 24,
+                          "line": 12
+                        },
+                        "snippet": "  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                            "column": 24,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:29.361Z",
+                      "startTime": "2026-04-20T16:27:31.136Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-98c13--errors-on-POS-card-surface-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-98c13--errors-on-POS-card-surface-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                        "column": 24,
+                        "line": 12
+                      }
+                    },
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21132,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                          "column": 24,
+                          "line": 12
+                        },
+                        "snippet": "  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                            "column": 24,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 20000ms\u001b[22m\n\u001b[2m    24 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  10 |   test.beforeEach(async ({ page }) => {\n  11 |     await login(page, POS_EMAIL, POS_PASSWORD);\n> 12 |     await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 20_000 });\n     |                        ^\n  13 |   });\n  14 |\n  15 |   test('POS surface loads for card payment scenario', async ({ page }) => {\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js:12:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:27:53.218Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-98c13--errors-on-POS-card-surface-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-98c13--errors-on-POS-card-surface-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/05-pos-card-POS-Card-—-pay-98c13--errors-on-POS-card-surface-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
+                        "column": 24,
+                        "line": 12
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "53d9ecf25db9df861281-7288d9349fe7fb8a04e4",
@@ -768,15 +1594,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 492,
+                      "duration": 583,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:33.735Z",
+                      "startTime": "2026-04-20T16:28:15.585Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -802,15 +1628,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 467,
+                      "duration": 472,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:34.234Z",
+                      "startTime": "2026-04-20T16:28:16.636Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -836,15 +1662,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 469,
+                      "duration": 494,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:34.710Z",
+                      "startTime": "2026-04-20T16:28:17.114Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -870,15 +1696,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 469,
+                      "duration": 487,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:35.184Z",
+                      "startTime": "2026-04-20T16:28:17.614Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -904,15 +1730,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 479,
+                      "duration": 493,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:35.658Z",
+                      "startTime": "2026-04-20T16:28:18.106Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -938,15 +1764,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 634,
+                      "duration": 616,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:36.142Z",
+                      "startTime": "2026-04-20T16:28:18.605Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -972,15 +1798,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 535,
+                      "duration": 481,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:36.782Z",
+                      "startTime": "2026-04-20T16:28:19.228Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1006,15 +1832,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 490,
+                      "duration": 485,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:37.322Z",
+                      "startTime": "2026-04-20T16:28:19.715Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1029,7 +1855,7 @@
             },
             {
               "title": "Login admin → redirige vers admin.dashboard",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -1040,20 +1866,96 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 20,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1129,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 30115,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/06-staff-only-routing.spec.js",
+                            "column": 28,
+                            "line": 67
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/(dashboard|pos|kitchen-display-system|kds-order|order-status-screen)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 30000ms\u001b[22m\n\u001b[2m    33 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  65 |         await login(page, 'admin@lecayenne.fr', '123456');\n  66 |         // Le staff admin a defaultPermission.url (\"dashboard\") → /admin/dashboard\n> 67 |         await expect(page).toHaveURL(\n     |                            ^\n  68 |             /\\/admin\\/(dashboard|pos|kitchen-display-system|kds-order|order-status-screen)/,\n  69 |             { timeout: 30_000 },\n  70 |         );\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/06-staff-only-routing.spec.js:67:28"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-19T00:33:37.817Z",
+                      "startTime": "2026-04-20T16:28:20.206Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/06-staff-only-routing-Staf-ac7dd-dirige-vers-admin-dashboard-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/06-staff-only-routing-Staf-ac7dd-dirige-vers-admin-dashboard-chromium/error-context.md"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 30056,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open '/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/.playwright-artifacts-21/traces/c4133bb14d286cf68edd-62529603ebba45099759-retry1.trace'"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/06-staff-only-routing.spec.js",
+                            "column": 28,
+                            "line": 67
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/(dashboard|pos|kitchen-display-system|kds-order|order-status-screen)/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 30000ms\u001b[22m\n\u001b[2m    33 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  65 |         await login(page, 'admin@lecayenne.fr', '123456');\n  66 |         // Le staff admin a defaultPermission.url (\"dashboard\") → /admin/dashboard\n> 67 |         await expect(page).toHaveURL(\n     |                            ^\n  68 |             /\\/admin\\/(dashboard|pos|kitchen-display-system|kds-order|order-status-screen)/,\n  69 |             { timeout: 30_000 },\n  70 |         );\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/06-staff-only-routing.spec.js:67:28"
+                        },
+                        {
+                          "message": "Error: ENOENT: no such file or directory, open '/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/.playwright-artifacts-21/fe9572bf7e7f35afe951a8b4aa5a48d9.zip'"
+                        },
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-20T16:28:51.081Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/06-staff-only-routing-Staf-ac7dd-dirige-vers-admin-dashboard-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/06-staff-only-routing-Staf-ac7dd-dirige-vers-admin-dashboard-chromium-retry1/error-context.md"
+                        }
+                      ]
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "c4133bb14d286cf68edd-62529603ebba45099759",
@@ -1068,11 +1970,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-19T00:32:09.299Z",
-    "duration": 89697.15,
-    "expected": 24,
+    "startTime": "2026-04-20T16:20:35.386Z",
+    "duration": 556449.752,
+    "expected": 14,
     "skipped": 0,
-    "unexpected": 0,
-    "flaky": 1
+    "unexpected": 11,
+    "flaky": 0
   }
 }
