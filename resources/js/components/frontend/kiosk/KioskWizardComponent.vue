@@ -829,6 +829,12 @@ export default {
       this.performCloseWizard();
     },
     performCloseWizard() {
+      // [P-MEGA-05] Si on était en édition, ANNULE l'édition (le store
+      // restaure l'état pre-édition : la cart line originale est intacte
+      // car on ne l'a JAMAIS supprimée à l'ouverture).
+      if (this.$store?.getters?.['kioskCart/isEditingCart']) {
+        this.$store.dispatch('kioskCart/cancelEditingCartItem');
+      }
       if (this.onClose) {
         this.onClose();
         return;
@@ -895,6 +901,8 @@ export default {
               viandeCount: count,
             };
           }
+          // [P-MEGA-05] Restore après fetch + inférences (mode edit via /wizard/:id).
+          this.restoreEditingSelectionsIfAny();
         } else {
           this.fetchError = this.$t('kiosk.wizard.product_not_found');
         }
@@ -1064,7 +1072,14 @@ export default {
         // [KIOSK-17] Pre-computed line total so KioskCartComponent and KioskConfirmationComponent
         // can display it directly without inline recalculation.
         total: lineTotal,
-        instruction: this.buildInstruction()
+        instruction: this.buildInstruction(),
+        // [P-MEGA-05] Snapshot complet des sélections pour permettre la
+        // ré-édition fidèle (cart → wizard → modify → save). Ce champ est
+        // strictement client-side : `sanitizeKioskOrderItem` (kioskCart.js)
+        // ne sérialise PAS ce champ vers le serveur (vérifié par tests
+        // `kioskWizardEditRoundtrip.spec.js`). Donc zéro impact backend, zéro
+        // risque de fuite d'état d'UI vers /api/orders.
+        _wizardSelections: JSON.parse(JSON.stringify(this.selections)),
       };
     },
     buildInstruction() {
@@ -1142,8 +1157,34 @@ export default {
         this.onAddToCart(cartItem);
         if (this.onClose) this.onClose();
       } else {
-        this.$store.dispatch('kioskCart/addItem', cartItem);
+        // [P-MEGA-05] Si on est en mode édition (cart → wizard), on REMPLACE
+        // la ligne en place au lieu d'ajouter une nouvelle ligne. Le store
+        // gère le fallback vers ADD_ITEM si l'édition a été annulée entre-
+        // temps (race rare mais couverte → pas de cartItem perdu).
+        if (this.$store?.getters?.['kioskCart/isEditingCart']) {
+          this.$store.dispatch('kioskCart/replaceEditingCartItem', cartItem);
+        } else {
+          this.$store.dispatch('kioskCart/addItem', cartItem);
+        }
         this.$router.go(-1);
+      }
+    },
+    /**
+     * [P-MEGA-05] Restaure les sélections depuis le snapshot store si le
+     * wizard est ouvert en mode édition. Appelé après resetSelections() +
+     * inférences de taille (l'ordre garantit que le snapshot écrase les
+     * inférences, pas l'inverse).
+     */
+    restoreEditingSelectionsIfAny() {
+      const snap = this.$store?.state?.kioskCart?.editingCartSnapshot;
+      if (!snap) return;
+      const item = this.resolvedItem;
+      if (!item || Number(snap.item_id) !== Number(item.id)) return;
+      if (snap._wizardSelections && typeof snap._wizardSelections === 'object') {
+        this.selections = JSON.parse(JSON.stringify(snap._wizardSelections));
+      } else {
+        if (typeof snap.quantity === 'number') this.selections.quantity = snap.quantity;
+        if (typeof snap.instruction === 'string') this.selections.instruction = snap.instruction;
       }
     }
   },
@@ -1156,6 +1197,9 @@ export default {
         this.selections._tailleMeta = inferredTaille;
         this.selections.taille = inferredTaille.label;
       }
+      // [P-MEGA-05] Restore APRÈS inférences pour qu'un snapshot d'édition
+      // écrase les valeurs par défaut.
+      this.restoreEditingSelectionsIfAny();
     } else if (this.itemId) {
       this.fetchItemById(this.itemId);
     }
@@ -1174,7 +1218,11 @@ export default {
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(() => this.refreshServerPreviewTotal());
   },
-  beforeDestroy() {
+  beforeUnmount() {
+    // [P-MEGA-05] Migration Vue 2 → Vue 3 : `beforeDestroy` n'existe plus,
+    // c'est `beforeUnmount`. Le hook précédent n'était JAMAIS appelé,
+    // créant des leaks silencieux : pas de cancel d'édition orpheline,
+    // pas de track wizard_abandoned, pas de destroy debouncer pricing.
     // Phase 8.8 — wizard closed without completion (global abandon).
     if (this.currentStep && this.currentStepIndex < (this.activeSteps?.length || 0) - 1) {
       try {
@@ -1189,6 +1237,13 @@ export default {
     if (this._kioskPricingPreview && typeof this._kioskPricingPreview.destroy === 'function') {
       this._kioskPricingPreview.destroy();
       this._kioskPricingPreview = null;
+    }
+    // [P-MEGA-05] Guard idle/timeout : si le wizard est démonté sans avoir
+    // été validé (ex : timeout idle, navigation programmatique externe),
+    // on annule l'édition pour ne pas laisser l'état orphelin dans Vuex.
+    // La cart line originale est intacte (jamais supprimée à l'ouverture).
+    if (this.$store?.getters?.['kioskCart/isEditingCart']) {
+      this.$store.dispatch('kioskCart/cancelEditingCartItem');
     }
   },
   watch: {

@@ -57,6 +57,13 @@ export const kioskCart = {
         paymentMethod: null,
         // [GAP-22-1] Sur place (25=KIOSK) ou à emporter (10=TAKEAWAY)
         orderType: 25,
+        // [P-MEGA-05] Édition d'une ligne du panier : on garde l'index +
+        // un snapshot complet (incluant `_wizardSelections`) pour rouvrir
+        // le wizard pré-rempli, REMPLACER en place à la validation, et
+        // restaurer la ligne en cas d'abandon. Aucune suppression
+        // intermédiaire — résilient à un close du wizard ou à un crash.
+        editingCartIndex: null,
+        editingCartSnapshot: null,
     },
     getters: {
         items: (state) => state.items,
@@ -76,6 +83,9 @@ export const kioskCart = {
         upsellShown: (state) => state.upsellShown,
         loyaltyCustomer: (state) => state.loyaltyCustomer,
         loyaltyDiscount: (state) => state.loyaltyDiscount,
+        editingCartIndex: (state) => state.editingCartIndex,
+        editingCartSnapshot: (state) => state.editingCartSnapshot,
+        isEditingCart: (state) => state.editingCartIndex !== null,
         promoCode: (state) => state.promoCode,
         promoDiscount: (state) => state.promoDiscount,
         promoMeta: (state) => state.promoMeta,
@@ -128,6 +138,31 @@ export const kioskCart = {
         },
         REMOVE_ITEM(state, index) {
             state.items.splice(index, 1);
+        },
+        // [P-MEGA-05] Replace une ligne en place (préserve l'index, donc
+        // l'ordre visuel et les coupons attachés à un slot précis).
+        REPLACE_ITEM_AT(state, { index, item }) {
+            if (index < 0 || index >= state.items.length) return;
+            const rawQty = Number(item?.quantity || 1);
+            const safeItem = {
+                ...item,
+                quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY)),
+            };
+            if (!safeItem.total) {
+                const base = parseFloat(safeItem.convert_price) || 0;
+                const varE = parseFloat(safeItem.item_variation_total) || 0;
+                const ext = parseFloat(safeItem.item_extra_total) || 0;
+                safeItem.total = parseFloat(((base + varE + ext) * safeItem.quantity).toFixed(2));
+            }
+            state.items.splice(index, 1, safeItem);
+        },
+        SET_EDITING(state, { index, snapshot }) {
+            state.editingCartIndex = Number.isInteger(index) ? index : null;
+            state.editingCartSnapshot = snapshot ? JSON.parse(JSON.stringify(snapshot)) : null;
+        },
+        CLEAR_EDITING(state) {
+            state.editingCartIndex = null;
+            state.editingCartSnapshot = null;
         },
         UPDATE_QUANTITY(state, { index, quantity }) {
             if (quantity <= 0) {
@@ -221,6 +256,9 @@ export const kioskCart = {
             state.promoMeta = null;
             state.promoError = null;
             state.promoLoading = false;
+            // [P-MEGA-05] Toujours clear l'édition au reset (idle, logout).
+            state.editingCartIndex = null;
+            state.editingCartSnapshot = null;
         },
     },
     actions: {
@@ -257,12 +295,43 @@ export const kioskCart = {
         },
         /**
          * Remove an item by index and return it (used to pre-populate wizard on edit).
+         * @deprecated Use startEditingCartItem to preserve the line during wizard reopen.
          */
         popItem({ commit, state }, index) {
             const item = state.items[index];
             if (!item) return null;
             commit('REMOVE_ITEM', index);
             return { ...item };
+        },
+        /**
+         * [P-MEGA-05] Démarre l'édition d'une ligne du panier sans la
+         * supprimer. Le wizard ouvert ensuite consume `editingCartSnapshot`
+         * pour restaurer les sélections, et appellera `replaceEditingCartItem`
+         * à la validation. Si l'utilisateur abandonne, `cancelEditingCartItem`
+         * laisse la ligne intacte.
+         */
+        startEditingCartItem({ commit, state }, index) {
+            const snapshot = state.items[index];
+            if (!snapshot) return false;
+            commit('SET_EDITING', { index, snapshot });
+            return true;
+        },
+        cancelEditingCartItem({ commit }) {
+            commit('CLEAR_EDITING');
+        },
+        /**
+         * Replace la ligne en édition par un nouveau cartItem produit par
+         * le wizard, et clear l'état d'édition. Si plus rien n'est en
+         * édition (déjà annulé), fallback sur addItem pour ne PAS perdre
+         * l'item construit.
+         */
+        replaceEditingCartItem({ commit, state }, item) {
+            if (state.editingCartIndex === null || state.editingCartIndex === undefined) {
+                commit('ADD_ITEM', item);
+            } else {
+                commit('REPLACE_ITEM_AT', { index: state.editingCartIndex, item });
+            }
+            commit('CLEAR_EDITING');
         },
         updateQuantity({ commit }, payload) {
             commit('UPDATE_QUANTITY', payload);

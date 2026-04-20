@@ -381,6 +381,8 @@ export default {
       'updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType',
       // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
       'validatePromo', 'clearPromo',
+      // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
+      'startEditingCartItem',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -472,12 +474,30 @@ export default {
      * quantity from the old line is NOT pre-set (wizard default = 1 to keep
      * things simple and avoid complexity with selections state).
      */
+    /**
+     * [P-MEGA-05] Édition d'une ligne du panier — version "safe" :
+     * 1. Le store mémorise la cart line via startEditingCartItem (no pop).
+     * 2. Le wizard, à son montage, restaure les sélections depuis le
+     *    snapshot (`_wizardSelections`) et bascule en mode "edit".
+     * 3. À la validation, le wizard fait `replaceEditingCartItem` :
+     *    la ligne est remplacée en place (préserve l'ordre, l'index, les
+     *    coupons attachés à un slot précis).
+     * 4. Si l'utilisateur abandonne (close/abandon), `cancelEditingCartItem`
+     *    laisse la ligne intacte. AUCUN risque de perte.
+     *
+     * Compat ascendante : si pour une raison X le wizard ne bascule pas
+     * en mode edit (item supprimé du catalogue, etc.), la ligne originale
+     * reste dans le panier (pas de double dépense, pas de panier cassé).
+     */
     async editItem(index) {
-      const item = await this.popItem(index);
+      const item = this.cartItems[index];
       if (!item?.item_id) return;
+      const ok = await this.startEditingCartItem(index);
+      if (!ok) return;
       this.$router.push({
         name: 'kiosk.wizard',
         params: { itemId: String(item.item_id) },
+        query: { edit: '1' },
       });
     },
 
