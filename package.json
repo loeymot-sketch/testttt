@@ -10,6 +10,7 @@
         "production": "mix --production",
         "test": "vitest run",
         "test:watch": "vitest",
+        "perf:bundle-check": "node tools/perf/check_bundle_budget.mjs",
         "i18n:audit": "node tools/i18n/audit_locale_keys.mjs"
     },
     "devDependencies": {

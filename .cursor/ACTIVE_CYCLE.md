@@ -3,7 +3,7 @@
 ## PARALLEL_CYCLE_W6_A11Y_PERF (EXECUTE A.2 — a11y kiosk fixes)
 
 TASK_ID: P_MEGA_W6_A11Y_PERF_2026-04-20
-PHASE: EXECUTE A.2 (a11y fixes routine implementer)
+PHASE: VALIDATE (W6.B perf low-risk — post EXECUTE routine-implementer)
 PLAN_FILE: plans/PLAN_P_MEGA_W6_2026-04-20.md
 RUNNER_MODE: single-session
 AUTO_REMEDIATION: ACTIVÉE (pas de critical zone — UI/CSS/perf)

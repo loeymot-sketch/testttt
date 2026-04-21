@@ -168,13 +168,7 @@
 </template>
 
 <script>
-import KioskStepPain from './steps/KioskStepPainComponent.vue';
-import KioskStepTaille from './steps/KioskStepTailleComponent.vue';
-import KioskStepViande from './steps/KioskStepViandeComponent.vue';
-import KioskStepSauce from './steps/KioskStepSauceComponent.vue';
-import KioskStepGarnitures from './steps/KioskStepGarnituresComponent.vue';
-import KioskStepSupplements from './steps/KioskStepSupplementsComponent.vue';
-import KioskStepMenu from './steps/KioskStepMenuComponent.vue';
+import { defineAsyncComponent } from 'vue';
 import KioskOrderSummary from './KioskOrderSummaryComponent.vue';
 // Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard (safety FIC).
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
@@ -201,6 +195,28 @@ import {
 } from '../../../helpers/kioskTacosSize';
 // Phase 8.8 — Analytics wizard (event fired on step enter/complete/abandon).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
+
+const KioskStepPain = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepPainComponent.vue')
+);
+const KioskStepTaille = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepTailleComponent.vue')
+);
+const KioskStepViande = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepViandeComponent.vue')
+);
+const KioskStepSauce = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepSauceComponent.vue')
+);
+const KioskStepGarnitures = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepGarnituresComponent.vue')
+);
+const KioskStepSupplements = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepSupplementsComponent.vue')
+);
+const KioskStepMenu = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepMenuComponent.vue')
+);
 
 export default {
   name: 'KioskWizardComponent',

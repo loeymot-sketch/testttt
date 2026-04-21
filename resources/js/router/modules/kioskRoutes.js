@@ -3,25 +3,25 @@ import store from "../../store/index.js";
 // [C4] Lazy-load all kiosk components into a dedicated "kiosk" webpack chunk.
 // This keeps the initial app.js lighter for non-kiosk surfaces (admin, POS, KDS, OSS).
 // The kiosk chunk is prefetched on the idle screen so navigation feels instant.
-const KioskAppComponent          = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAppComponent.vue");
-const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
-const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
-const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
-const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
-const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
-const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
-const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
-const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
-const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
-const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
-const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
-const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
+const KioskAppComponent          = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskAppComponent.vue");
+const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
+const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
+const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
+const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
+const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
+const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
+const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
+const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
+const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
+const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
+const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
+const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk-admin" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
 // [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
-const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
-const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
-const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
-const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
-const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
+const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
+const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
+const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
+const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
+const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;

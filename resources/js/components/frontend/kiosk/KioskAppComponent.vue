@@ -121,9 +121,13 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import { mapGetters, mapActions } from 'vuex';
 import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
-import KioskAdminComponent from './KioskAdminComponent.vue';
+
+const KioskAdminComponent = defineAsyncComponent(
+  () => import(/* webpackChunkName: "kiosk-admin" */ './KioskAdminComponent.vue')
+);
 import KioskToastComponent from './KioskToastComponent.vue';
 import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
