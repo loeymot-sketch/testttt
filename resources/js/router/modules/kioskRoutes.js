@@ -41,7 +41,14 @@ function getKioskAutoCredentials() {
  * Guard: redirect to kiosk.login if the machine token is absent.
  * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
  */
-function requireKioskAuth(to, from, next) {
+async function requireKioskAuth(to, from, next) {
+    try {
+        if (!store.getters['kioskFilter/hydrated']) {
+            await store.dispatch('kioskFilter/init');
+        }
+    } catch (_) {
+        /* no-op — deep-link / wizard sans Categories ne doit pas bloquer la nav */
+    }
     if (to.name === 'kiosk.login') return next();
     const token = store.state.kioskCart?.kioskToken;
     if (token) return next();

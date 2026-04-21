@@ -9,6 +9,7 @@ use App\Enums\Source;
 use App\Enums\Status;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
+use App\Models\Allergen;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
@@ -17,8 +18,11 @@ use App\Models\KioskMachine;
 use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -30,6 +34,30 @@ use Tests\TestCase;
 class OrderAllergenSnapshotComposedTest extends TestCase
 {
     use RefreshDatabase;
+
+    private bool $createdItemExtraAllergenPivot = false;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Schema::hasTable('item_extra_allergens')) {
+            Schema::create('item_extra_allergens', function (Blueprint $table): void {
+                $table->foreignId('item_extra_id')->constrained('item_extras')->cascadeOnDelete();
+                $table->foreignId('allergen_id')->constrained('allergens')->cascadeOnDelete();
+                $table->primary(['item_extra_id', 'allergen_id']);
+            });
+            $this->createdItemExtraAllergenPivot = true;
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->createdItemExtraAllergenPivot) {
+            Schema::dropIfExists('item_extra_allergens');
+        }
+        parent::tearDown();
+    }
 
     public function test_sentinel_base_item_plus_extra_with_milk_should_snapshot_lait(): void
     {
@@ -83,6 +111,15 @@ class OrderAllergenSnapshotComposedTest extends TestCase
             'name' => 'Fromage',
             'price' => 1.00,
             'status' => Status::ACTIVE,
+        ]);
+
+        $lait = Allergen::query()->firstOrCreate(
+            ['code' => 'lait'],
+            ['name_key' => 'allergens.lait', 'icon' => '🥛', 'sort' => 7],
+        );
+        DB::table('item_extra_allergens')->insert([
+            'item_extra_id' => $extra->id,
+            'allergen_id' => $lait->id,
         ]);
 
         $kioskUser = User::factory()->create([

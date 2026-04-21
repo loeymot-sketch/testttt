@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createApp } from 'vue';
+import { createRouter, createMemoryHistory } from 'vue-router';
 import { createStore } from 'vuex';
+import { flushPromises } from '@vue/test-utils';
 import kioskFilterModule from '../../resources/js/store/modules/kioskFilter.js';
 import { isVariationAllowedByFilters } from '../../resources/js/helpers/kioskFilters.js';
 
@@ -88,5 +91,75 @@ describe('P-MEGA-09 kioskFilter store + isVariationAllowedByFilters', () => {
         expect(isVariationAllowedByFilters({}, ['gluten_free'])).toBe(true);
         expect(isVariationAllowedByFilters({ is_gluten_free: false }, ['gluten_free'])).toBe(false);
         expect(isVariationAllowedByFilters({ is_vegetarian: true }, [])).toBe(true);
+    });
+
+    it('7 — init via route guard : hydraté avant mount enfant (deep-link wizard)', async () => {
+        const mountOrder = [];
+        getItem.mockImplementation((key) => {
+            if (key === STORAGE_FILTERS) return '["spicy"]';
+            if (key === STORAGE_ALLERGENS) return '[]';
+            return null;
+        });
+        const store = makeStore();
+        const guard = async (to, from, next) => {
+            try {
+                if (!store.getters['kioskFilter/hydrated']) {
+                    await store.dispatch('kioskFilter/init');
+                }
+            } catch (_) {
+                /* no-op */
+            }
+            mountOrder.push('guard-after-init');
+            next();
+        };
+        const Child = {
+            name: 'KioskWizardStub',
+            template: '<div class="wiz-stub" />',
+            mounted() {
+                mountOrder.push('child-mounted');
+            },
+        };
+        const routes = [
+            {
+                path: '/kiosk',
+                component: { template: '<router-view />' },
+                beforeEnter: guard,
+                children: [{ path: 'wizard/:itemId', name: 'kiosk.wizard.stub', component: Child }],
+            },
+        ];
+        const router = createRouter({ history: createMemoryHistory(), routes });
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+        const app = createApp({ template: '<router-view />' });
+        app.use(store);
+        app.use(router);
+        app.mount(el);
+        try {
+            await router.push('/kiosk/wizard/42');
+            await flushPromises();
+            expect(store.getters['kioskFilter/hydrated']).toBe(true);
+            expect(store.getters['kioskFilter/activeFilters']).toEqual(['spicy']);
+            expect(mountOrder).toEqual(['guard-after-init', 'child-mounted']);
+        } finally {
+            app.unmount();
+            el.remove();
+        }
+    });
+
+    it('8 — setCustomerAllergens roundtrip (persist + re-init)', async () => {
+        getItem.mockReturnValue(null);
+        await store.dispatch('kioskFilter/init');
+        await store.dispatch('kioskFilter/setCustomerAllergens', ['gluten', 'lait']);
+        expect(store.getters['kioskFilter/customerAllergens']).toEqual(['gluten', 'lait']);
+        expect(setItem).toHaveBeenCalledWith(STORAGE_ALLERGENS, '["gluten","lait"]');
+
+        const store2 = makeStore();
+        getItem.mockImplementation((key) => {
+            if (key === STORAGE_FILTERS) return '[]';
+            if (key === STORAGE_ALLERGENS) return '["gluten","lait"]';
+            return null;
+        });
+        await store2.dispatch('kioskFilter/init');
+        expect(store2.getters['kioskFilter/customerAllergens']).toEqual(['gluten', 'lait']);
     });
 });

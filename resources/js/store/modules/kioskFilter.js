@@ -1,6 +1,7 @@
 import { KIOSK_FILTERS } from '../../helpers/kioskFilters';
 
 const STORAGE_KEY_FILTERS = 'kiosk:filters';
+// RESERVED — sera consommé par P-MEGA-W3.D customer allergen prompt (persistance déjà câblée).
 const STORAGE_KEY_ALLERGENS = 'kiosk:customer_allergens';
 
 function sanitizeFilterIds(raw) {
@@ -66,6 +67,7 @@ export default {
                 window.localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(state.activeFilters));
             } catch (_) { /* private mode */ }
         },
+        // RESERVED — sera consommé par P-MEGA-W3.D customer allergen prompt.
         setCustomerAllergens({ commit, state }, allergens) {
             commit('SET_CUSTOMER_ALLERGENS', allergens);
             try {

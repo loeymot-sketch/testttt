@@ -41,4 +41,21 @@ describe('mergeAllergens (P-MEGA-08)', () => {
         const extra = { allergens: ['lait'] };
         expect(mergeAllergens(item, undefined, [extra])).toEqual(['gluten']);
     });
+
+    it('9 — casse mixte item + extra → un seul code lowercase (gluten)', () => {
+        const item = { allergens: ['Gluten'] };
+        const extra = { allergens: [{ code: 'GLUTEN' }] };
+        expect(mergeAllergens(item, [], [extra])).toEqual(['gluten']);
+    });
+
+    it('10 — selectedVariations null → rétrocompat, extras ignorés (pas de crash)', () => {
+        const item = { allergens: ['gluten'] };
+        const extra = { allergens: ['lait'] };
+        expect(mergeAllergens(item, null, [extra])).toEqual(['gluten']);
+    });
+
+    it('11 — item.allergens string CSV → codes lowercase séparés', () => {
+        const item = { allergens: 'gluten,lait' };
+        expect(mergeAllergens(item, [], [])).toEqual(['gluten', 'lait']);
+    });
 });

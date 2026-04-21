@@ -1,8 +1,60 @@
 # Active Cycle – FoodKing
 
-TASK_ID: P_MEGA_W3_ALLERGENS_PLUS_P23_DRIFT_AUDIT_2026-04-20
-PHASE: CLOSED — Vague 3 fermée (W3.A + W3.B PASSED + audit P-MEGA-23 livré transverse)
-NEXT_DECISION: Attendre arbitrage utilisateur — Voie A (Vague 4 i18n/RTL no-gate), Voie B (gates débloquées), ou Voie C (cycle backend allergens W3.C).
+TASK_ID: P_MEGA_W3_REMEDIATION_2026-04-20
+PHASE: REMEDIATION — explore subagent a détecté 6 bugs invisibles non couverts par Vitest verts (vérification 200% demandée par utilisateur). Branche REMEDIATION per auto-remediation.mdc (pas critical zone, 1er attempt sur ces bug_signatures).
+NEXT_DECISION: Après remediation OK → exécuter plan W4 (déjà livré par planner-orchestrator dans plans/PLAN_P_MEGA_W4_2026-04-20.md).
+
+REMEDIATION_ATTEMPT_1 (W3 bugs invisibles) :
+  outcome_2026-04-21: PASSED — delegated foodking-routine-implementer — report RUN_P_MEGA_W3_REMEDIATION_2026-04-20.md
+  bug_signatures :
+    - de_bn_missing_kiosk_section   (SEV — UI brute en de/bn pour toute clé kiosk.*)
+    - kioskFilter_init_deep_link    (SEV — init store uniquement dans Categories ; deep-link /kiosk/wizard/:id ignore filtres persistés)
+    - allergen_code_case_norm       (MED — codes pas lowercase, doublons "Lait" vs "lait" silencieux)
+    - extractAllergenCodes_string   (MED — drift back item.allergens=string → [] silencieux)
+    - setCustomerAllergens_dead     (LOW — chemin mort, jamais dispatché)
+    - sentinel_phpunit_fixture      (LOW — extra créé sans allergène lait, finding ambigu après fix back partiel)
+  root_cause :
+    - Plan W3 a supposé i18n complet 5 langues sans vérification → drift de/bn préexistant non détecté
+    - Init du store Vuex pas hoisted au router guard ou shell App
+    - Pas de normalisation à la source des codes allergènes
+  correction_plan :
+    files :
+      - resources/js/languages/de.json (ajouter section kiosk minimale : catalog + filters + allergens)
+      - resources/js/languages/bn.json (idem)
+      - resources/js/router/modules/kioskRoutes.js (beforeEnter guard global → dispatch kioskFilter/init si pas hydraté)
+      - resources/js/helpers/kioskFilters.js (lowercase + tolérance string allergens)
+      - resources/js/store/modules/kioskFilter.js (commenter setCustomerAllergens "réservé W3.D" OU le supprimer ; choix subagent)
+      - tests/Feature/Orders/OrderAllergenSnapshotComposedTest.php (attacher allergène lait à l'extra)
+      - tests/js/kioskAllergenMerge.spec.js (3 cas additionnels : casse mixte, null variations, string drift)
+      - tests/js/kioskFilterPersist.spec.js (1 cas additionnel : init via route guard sur deep-link wizard)
+
+PRIOR V14 CYCLE (cohabite, pas écrasé) : T05+T07 fused multi-qty + NF525 snapshot working tree ready, en attente commit utilisateur.
+
+PRIOR W3 CYCLE :
+  - W3.A (P-MEGA-08) : commit a86b8ca03 ; W3.B (P-MEGA-09) : commit 6d7ca7bf1 ; SYNTH : commit 40dfbb40a
+  - SYNTHESE_P_MEGA_W3_2026-04-20.md ; AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md (13 drifts admin/kiosk)
+
+PLAN W4 PRÊT (post-remediation) :
+  - plans/PLAN_P_MEGA_W4_2026-04-20.md (planner-orchestrator)
+  - 2 cycles : W4.A audit i18n outil + W4.B RTL Arabe ; routine implementer ; 0 gate
+  - 4 ESCALATIONs pré-déclarées (drift massif clés, RTL refactor JS, nouvelles clés, Blade SSR)
+
+V14 RECAP (cycle final pour bug "tacos M/Méga/Famille → 1 viande seulement") :
+  - T01 (item_attributes multi-qty) : commit 048761103, 3/3 PHPUnit ✓
+  - T05+T07 fused (working tree, non commité) :
+      • PricingServiceMultiQtyTest 9/9 (incl. 4 mêmes viandes, 2+2, 3+1, violations 422)
+      • OrderItemCompositionSnapshotTest 6/6 (NF525 immutabilité + builder qty multi-extras)
+      • Régression ciblée 94/94 (PricingIntegrity, FrontendOrder, PosOrder, ItemAttribute)
+      • Vitest global 535/535 — 0 régression
+      • Invariants 5/6 ✓ — 1/6 pré-existant KI-001 dispatch waived (cohérent T01)
+  - REPORT : reports/execution/RUN_V14_T05_T07_FUSED_PRICING_SNAPSHOT_2026-04-20.md
+  - Auto-remediation 1 round : safeJsonDecode array_values bug fixed + 3 defensive guards on KioskCategoriesComponent (legacy specs)
+
+PRIOR CYCLE W3 RECAP :
+  - W3.A (P-MEGA-08) : commit a86b8ca03, allergens propagation merge variations+extras
+  - W3.B (P-MEGA-09) : commit 6d7ca7bf1, filtre allergène persistant + greyout a11y
+  - SYNTHESE : reports/execution/SYNTHESE_P_MEGA_W3_2026-04-20.md
+  - AUDIT P-MEGA-23 : reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md
 
 W3 RECAP :
   - W3.A (P-MEGA-08) : commit a86b8ca03, 8/8+529/529 Vitest, sentinel back rouge documenté
@@ -35,10 +87,11 @@ PRIOR CYCLE (closed) : P_MEGA_W1_W2 — 521/521 verts, 5 commits atomiques, 3 ga
 ## Phase Completion
 | Phase | Done |
 |---|---|
-| PLAN | [x] (foodking-planner-orchestrator → plans/PLAN_P_MEGA_W3_2026-04-20.md) |
-| EXECUTE | [x] (foodking-routine-implementer ×2 sub-cycles W3.A + W3.B) |
-| VALIDATE | [x] (npm test 535/535 verts ; PHPUnit sentinel rouge documenté) |
-| AUDIT | [x] (CLOSED PASSED, 0 critical zone touched, 0 gate) |
+| PLAN | [x] V14 G14-A approved + W3 plan PLAN_P_MEGA_W3_2026-04-20.md |
+| EXECUTE | [x] foodking-complex-implementer (V14 T01+T05+T07) + foodking-routine-implementer (W3.A + W3.B) |
+| VALIDATE | [x] PHPUnit 9/9 + 6/6 + 94/94 régression ; Vitest 535/535 ; invariants 5/6 (1 pré-existant KI-001 waived) |
+| AUDIT | [x] CLOSED PASSED (1 remediation round V14 — safeJsonDecode bug + 3 defensive guards Categories) |
+| COMMIT | [ ] V14 working tree ready (5 modifs + 4 nouveaux fichiers) — attente review user |
 
 ## Gate
 [x] None for V4 salve 4 cycles themselves (tests/observability/doc — no frozen zone)

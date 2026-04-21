@@ -93,7 +93,7 @@ export function applyKioskFilters(items, activeFilters = []) {
  */
 export function getAllergenCollision(item, customerAllergens = []) {
     const itemCodes = extractAllergenCodes(item);
-    const set = new Set(customerAllergens || []);
+    const set = new Set((customerAllergens || []).map((c) => String(c).toLowerCase()));
     return itemCodes.filter((c) => set.has(c));
 }
 
@@ -108,17 +108,29 @@ export function getAllergenCollision(item, customerAllergens = []) {
  */
 export function extractAllergenCodes(item) {
     if (!item) return [];
-    if (Array.isArray(item.allergens)) {
-        return item.allergens
+    const allergens = item.allergens;
+    if (typeof allergens === 'string') {
+        return allergens
+            .split(/[,;|]/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+    }
+    if (Array.isArray(allergens)) {
+        return allergens
             .map((a) => {
-                if (typeof a === 'string') return a;
-                if (a && typeof a === 'object' && typeof a.code === 'string') return a.code;
+                if (typeof a === 'string') return a.trim().toLowerCase();
+                if (a && typeof a === 'object') {
+                    if (typeof a.code === 'string') return a.code.trim().toLowerCase();
+                    if (typeof a.name === 'string') return a.name.trim().toLowerCase();
+                }
                 return null;
             })
             .filter((v) => !!v);
     }
     if (item.allergen_flags && typeof item.allergen_flags === 'object') {
-        return Object.keys(item.allergen_flags).filter((k) => item.allergen_flags[k]);
+        return Object.keys(item.allergen_flags)
+            .filter((k) => item.allergen_flags[k])
+            .map((k) => k.toLowerCase());
     }
     return [];
 }
@@ -163,8 +175,8 @@ function sortAllergenCodesUnique(codes) {
  * Fusionne allergènes de l'item de base + variations + extras sélectionnés.
  * Objets sans `allergens` → no-op (extractAllergenCodes → []).
  *
- * Si `selectedVariations` est `undefined` (clé absente côté sélections), seuls
- * les allergènes de l'item de base sont retournés (rétrocompat).
+ * Si `selectedVariations` est `undefined` ou `null` (clé absente / JSON null),
+ * seuls les allergènes de l'item de base sont retournés (rétrocompat).
  *
  * @param {Object|null} item
  * @param {Array|undefined} selectedVariations
@@ -172,7 +184,7 @@ function sortAllergenCodesUnique(codes) {
  * @returns {Array<string>}
  */
 export function mergeAllergens(item, selectedVariations, selectedExtras) {
-    if (selectedVariations === undefined) {
+    if (selectedVariations === undefined || selectedVariations === null) {
         return sortAllergenCodesUnique(extractAllergenCodes(item));
     }
     const vars = Array.isArray(selectedVariations) ? selectedVariations : [];
