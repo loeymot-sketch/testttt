@@ -1,9 +1,52 @@
 # Active Cycle – FoodKing
 
-## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (EXECUTE — W8.A+B clôturés (CLOSED PASSED), W8.C séquentiel P1→P2→P3 EN COURS)
+## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (CLOSED PASSED — W8.A + W8.B + W8.C-P1+P2 livrés ; W8.C-P3 CLOSED with REM-PRODUCT C5 noted ; P4 DEFER spec DGFiP TBD)
 
 TASK_ID: P_MEGA_W8_SECURITY_OBSERVABILITY_2026-04-20
-PHASE: VALIDATE — W8.A.3+4 CLOSED PASSED (d8202bc94+50c0078d2), W8.B.3+4 CLOSED PASSED+REM B3 (1350ced6d+50c0078d2), W8.C-P1.3+4 CLOSED PASSED+REM F-S1 (fd146bb51+aba3c9e12), W8.C-P2.3 CLOSED PASSED (893ea71fb), W8.C-P3.3 EXECUTE PASSED (DUPLICATA marker + migration + sous-composant V14 mitigation)
+PHASE: CLOSED PASSED
+SYNTHESE: reports/execution/SYNTHESE_P_MEGA_W8_2026-04-20.md
+VERIFY_GLOBAL: reports/execution/VERIFY_P_MEGA_W8_C_GLOBAL_2026-04-20.md
+COMMITS: d8202bc94 (W8.A) + 50c0078d2 (W8.A+B REM B3 fuzz) + 1350ced6d (W8.B) + fd146bb51 (W8.C-P1) + aba3c9e12 (W8.C-P1 REM F-S1 PHP cast) + 893ea71fb (W8.C-P2 schedule) + 1c05d5673 (W8.C-P3 DUPLICATA)
+
+OUTCOMES :
+- ✅ K-6.2 branch_mismatch enforcement (anti-spoofing logs + sentinels Feature)
+- ✅ K-6.3+K-6.4 throttle merge kiosk:user|ip + login-lockout fuzz protection
+- ✅ NF525 P1 verifyChain pre-mutation (chaîne HMAC + signatures recompute) + REM F-S1 (filter_var anti PHP cast bool bug)
+- ✅ NF525 P2 schedule fiscal:archive 02:00 toutes branches actives (withoutOverlapping + onOneServer)
+- ⚠️ NF525 P3 DUPLICATA MVP complet (composant + endpoint + migration) — REM-PRODUCT C5 noted (intégration UI POST flow print = décision UX hors scope dev)
+- ❌ NF525 P4 JET XML DEFER (spec DGFiP TBD)
+
+FINDINGS OUVERTS (W9 / backlog) :
+- C5 (HIGH-PRODUCT) : flow JS POST /print-receipt à brancher dans UI POS
+- C7 (LOW) : policy/gate Spatie pos.receipt.reprint si granularité requise
+- G2 (INFO) : FiscalArchiveCommand pourrait appeler verifyChain avant export
+- B3-OPS (MED-OPS) : checklist prod TIMEZONE=Europe/Paris (déjà documenté .env.example L201)
+- B7 (LOW) : retry J-1 schedule
+- B1 (LOW-OPS) : CACHE_DRIVER ≠ array en prod
+
+LOC delta : +740 prod / +890 tests / +1200 reports = ~2830 (vs estimation 2630, +7,6%)
+TESTS : 0 régression, +25 cas nouveaux (2 KioskSecurity + 5 throttle + 4 verifyChain + 2 schedule + 5 ReceiptPrint + 7 Vitest DUPLICATA)
+
+BREACHES : aucune
+- W5 OrderService/PaymentService/Pricing : git diff vide ✅
+- V14 ReceiptComponent.vue : +3 LOC nettes (mitigation sous-composant) ✅
+- branch_id server-authoritative : renforcé (non modifié) ✅
+- dispatch-after-commit : préservé ✅
+- HMAC NF525 chaîne immutable : préservée (verifyChain read-only) ✅
+
+SUBAGENTS UTILISÉS : 8 distincts
+- planner-orchestrator × 1
+- explore × 4 (audits A.1+B.1+C.1 parallèles + verify global C)
+- foodking-complex-implementer × 4 (W8.A, W8.B, W8.C-P1, W8.C-P3)
+- foodking-routine-implementer × 1 (W8.C-P2 schedule trivial)
+
+NEXT : attente input user pour Vague 9 (REM-C5 UI integration + JET XML si spec DGFiP publiée + résolution HUMAN_GATEs accumulés G14-B/C9/GATE_P_MEGA_19)
+
+---
+
+## PARALLEL_CYCLE_W8_HISTORIQUE (PRÉ-CLÔTURE détails)
+
+PHASE_PREV: VALIDATE — W8.A.3+4 CLOSED PASSED (d8202bc94+50c0078d2), W8.B.3+4 CLOSED PASSED+REM B3 (1350ced6d+50c0078d2), W8.C-P1.3+4 CLOSED PASSED+REM F-S1 (fd146bb51+aba3c9e12), W8.C-P2.3 CLOSED PASSED (893ea71fb), W8.C-P3.3 EXECUTE PASSED (DUPLICATA marker + migration + sous-composant V14 mitigation)
 GATES APPROUVÉS (par décideur orchestrateur, suivant recommandations GATE_BRIEFs) :
 - GATE_P_MEGA_20 ✅ APPROUVÉ : D1=A (200+log), D2=A (branch=), D3=A (KioskEventController only)
 - GATE_P_MEGA_21 ✅ APPROUVÉ : D1=A (kiosk:user|ip), D2 cap 5 conservé, D3=A (un commit), D4 hors scope code (signal ops)
