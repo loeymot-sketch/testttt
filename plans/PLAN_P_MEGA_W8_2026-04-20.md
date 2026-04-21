@@ -257,17 +257,26 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 
 | Path | Phase | Intent | Critical zone | Pilier |
 |---|---|---|---|---|
-| `app/Services/Fiscal/ZReportService.php` | C.3 | write (`verifyChain` + appel `open()`) | NF525 — **gated** | 1 |
-| `app/Console/Kernel.php` | C.3 | write minimal (schedule entry) | scheduling infra (additif) — gated | 2 |
-| `resources/js/components/admin/pos/ReceiptComponent.vue` | C.3 | write (marqueur DUPLICATA) | UI receipt (additif) — gated | 3 |
-| Nouvelle resource/endpoint pour `printed_at` / `print_count` | C.3 | NEW | nécessite décision C.2 (pas `OrderDetailsResource` qui est gated W5) | 3 |
-| `database/migrations/2026_*_add_print_count_to_orders.php` | C.3 | **NEW migration** | **HARD GATE schema migration supplémentaire** | 3 (conditionnel) |
-| `app/Services/Fiscal/JetExportService.php` | C.3 | NEW | NF525 export normatif — **gated** | 4 |
-| `app/Console/Commands/FiscalExportJetCommand.php` | C.3 | NEW | NF525 — gated | 4 |
-| `tests/Feature/Fiscal/ZOpenChainVerifiedTest.php` | C.3 | NEW | — | 1 |
-| `tests/Feature/Fiscal/FiscalArchiveScheduledTest.php` | C.3 | NEW | — | 2 |
-| `tests/js/posReceiptDuplicataMarker.spec.js` | C.3 | NEW Vitest | — | 3 |
-| `tests/Feature/Fiscal/JetExportFormatTest.php` | C.3 | NEW | — | 4 |
+| `app/Services/Fiscal/ZReportService.php` | C.3 | write (`verifyChain` + appel `open()`+`close()`) | NF525 — **gated** | 1 |
+| `config/logging.php` | C.3-P1 | write additif (channel `fiscal` si absent) | infra logging — additif | 1 |
+| `config/fiscal.php` | C.3-P1 | NEW ou enrichir (genesis_prev_hash + verify_chain_strict) | NF525 config | 1 |
+| `.env.example` | C.3-P1 + C.3-P3 | doc additive (FISCAL_GENESIS_PREV_HASH, etc.) | — | 1 + 3 |
+| `app/Console/Kernel.php` | C.3-P2 | write minimal (schedule entry) | scheduling infra (additif) — gated | 2 |
+| `resources/js/components/admin/pos/ReceiptComponent.vue` | C.3-P3 | write (intégration sous-composant DUPLICATA) | UI receipt (additif) — gated | 3 |
+| `resources/js/components/admin/pos/ReceiptDuplicataMarker.vue` | C.3-P3 | NEW sous-composant DUPLICATA (D9=B mitigation V14 conflit) | UI additif | 3 |
+| Nouvelle resource/endpoint pour `printed_at` / `print_count` | C.3-P3 | NEW | nécessite décision C.2 (pas `OrderDetailsResource` qui est gated W5) | 3 |
+| `database/migrations/2026_*_add_receipt_print_count_to_orders.php` | C.3-P3 | **NEW migration** | **HARD GATE schema migration approuvée G22-P3-SCHEMA** | 3 (conditionnel) |
+| `app/Services/Fiscal/JetExportService.php` | C.3-P4 | NEW | NF525 export normatif — **DEFER (spec TBD)** | 4 |
+| `app/Console/Commands/FiscalExportJetCommand.php` | C.3-P4 | NEW | NF525 — **DEFER (spec TBD)** | 4 |
+| `tests/Feature/Fiscal/ZOpenChainVerifiedTest.php` | C.3-P1 | NEW | — | 1 |
+| `tests/Feature/Fiscal/FiscalArchiveScheduledTest.php` | C.3-P2 | NEW | — | 2 |
+| `tests/js/posReceiptDuplicataMarker.spec.js` | C.3-P3 | NEW Vitest | — | 3 |
+| `tests/Feature/Fiscal/JetExportFormatTest.php` | C.3-P4 | NEW (DEFER) | — | 4 |
+| `reports/execution/RUN_P_MEGA_W8_C_P1_VERIFYCHAIN_EXECUTE_2026-04-20.md` | C.3-P1 | NEW report | — | 1 |
+| `reports/execution/RUN_P_MEGA_W8_C_P2_SCHEDULE_EXECUTE_2026-04-20.md` | C.3-P2 | NEW report | — | 2 |
+| `reports/execution/RUN_P_MEGA_W8_C_P3_DUPLICATA_EXECUTE_2026-04-20.md` | C.3-P3 | NEW report | — | 3 |
+
+**Note** : extension scope autorisée par décideur orchestrateur 2026-04-20 (cohérent avec GATE_BRIEF_22 P1+P2+P3 ; P4 DEFER explicite). `config/logging.php` + `config/fiscal.php` + `.env.example` sont strictement additifs/config, pas changements logique métier NF525. Reports/execution sont convention.
 
 ---
 
@@ -388,6 +397,7 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 - **E5 (Phase C.3 pilier 3) — Migration `orders.print_count` nécessaire** : sous-gate schema migration distinct du gate principal C.2. À documenter explicitement.
 - **E6 (Phase C.3 pilier 4) — Format JET XML normatif** : spec DGI évolutive (versions multiples). Si C.1 ne peut pas figer la spec exacte au moment de l'audit (lien public DGI ou doc interne), **DÉFÉRER pilier 4** à cycle séparé — n'exécuter que piliers 1+2+3.
 - ~~**ESCALATION 2026-04-21 W8.B.3**~~ **RÉSOLUE 2026-04-20** : Plan SUBSYSTEMS_TOUCHED W8.B étendu pour inclure `.env.example` (doc additive D2), `tests/Unit/Security/RateLimiterConfigTest.php` (correction SSOT `auth.login_lockout.*`), et report convention. Décideur orchestrateur a explicitement validé ces 3 ajouts comme partie intégrante du package W8.B (cohérent GATE_BRIEF_21).
+- **ESCALATION 2026-04-21 W8.C-P1.3** : le brief EXECUTE approuvé pour le pilier 1 demande aussi `config/logging.php` (channel `fiscal` si absent), `config/fiscal.php` (nouvelle config NF525), `.env.example` (doc `FISCAL_*`) et `reports/execution/RUN_P_MEGA_W8_C_P1_VERIFYCHAIN_EXECUTE_2026-04-20.md`, mais ces fichiers ne figurent pas dans `SUBSYSTEMS_TOUCHED` W8.C. Conformément à `execute-context.md`, STOP tant que le plan n'est pas étendu explicitement ou que le périmètre n'est pas réduit aux seuls fichiers déjà autorisés.
 
 ---
 

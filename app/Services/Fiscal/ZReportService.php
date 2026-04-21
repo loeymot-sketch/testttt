@@ -338,9 +338,16 @@ class ZReportService
     {
         if ($strict === null) {
             $configuredStrict = Config::get('fiscal.verify_chain_strict');
-            $strict = is_null($configuredStrict)
-                ? app()->environment('production')
-                : (bool) $configuredStrict;
+            // [W8.C-P1 REM F-S1] Cast safe pour env strings : (bool) 'false' === true (piège PHP).
+            // FILTER_NULL_ON_FAILURE retombe sur l'env Laravel si valeur invalide ('truc', '').
+            if (is_null($configuredStrict)) {
+                $strict = app()->environment('production');
+            } elseif (is_bool($configuredStrict)) {
+                $strict = $configuredStrict;
+            } else {
+                $parsed = filter_var($configuredStrict, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                $strict = $parsed ?? app()->environment('production');
+            }
         }
 
         $genesisPrevHash = (string) Config::get('fiscal.genesis_prev_hash', str_repeat('0', 64));
