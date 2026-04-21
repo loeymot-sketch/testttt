@@ -382,7 +382,7 @@ export default {
 .kiosk-sauce-order {
   position: absolute;
   top: 12px;
-  right: 22px;
+  inset-inline-end: 22px;
   width: 28px;
   height: 28px;
   background: #d7263d;
@@ -399,7 +399,7 @@ export default {
 .kiosk-sauce-add {
   position: absolute;
   top: 12px;
-  right: 22px;
+  inset-inline-end: 22px;
   width: 28px;
   height: 28px;
   border-radius: 50%;

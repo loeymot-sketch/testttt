@@ -1,3 +1,4 @@
+import {watch} from "vue";
 import {createI18n} from "vue-i18n";
 
 const SUPPORTED_LOCALES = ['fr', 'en', 'ar'];
@@ -37,7 +38,15 @@ function detectLocale() {
 }
 
 function loadMessages() {
-    const context  = require.context('./languages', true, /[a-z0-9-_]+\.json$/i);
+    const context =
+        (typeof require !== 'undefined' && typeof require.context === 'function')
+            ? require.context('./languages', true, /[a-z0-9-_]+\.json$/i)
+            : (typeof globalThis.require?.context === 'function'
+                ? globalThis.require.context('./languages', true, /[a-z0-9-_]+\.json$/i)
+                : null);
+    if (!context) {
+        throw new Error('require.context unavailable (webpack or Vitest polyfill required)');
+    }
     const messages = context
         .keys()
         .map((key) => ({ key, locale: key.match(/[a-z0-9-_]+/i)[0] }))
@@ -57,6 +66,11 @@ const i18n = createI18n({
     fallbackLocale:  DEFAULT_LOCALE,
     messages,
 });
+
+watch(
+    () => i18n.global.locale.value,
+    (locale) => setDocumentDirection(locale),
+);
 
 /**
  * Appelé par le router à chaque navigation vers /kiosk/* :

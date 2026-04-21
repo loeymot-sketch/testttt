@@ -7,5 +7,7 @@ export default defineConfig({
         environment: 'happy-dom',
         include: ['tests/js/**/*.spec.js'],
         globals: true,
+        /** Webpack `require.context` (resources/js/i18n.js) — absent sous Vitest. */
+        setupFiles: ['./tests/js/kioskRtl-require-context-polyfill.js'],
     },
 });

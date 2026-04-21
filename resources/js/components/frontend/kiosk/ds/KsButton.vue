@@ -161,7 +161,7 @@ export default {
     height: 1.1em;
     border-radius: 50%;
     border: 3px solid currentColor;
-    border-right-color: transparent;
+    border-inline-end-color: transparent;
     animation: ks-spin var(--kiosk-duration-slow) linear infinite;
 }
 @keyframes ks-spin { to { transform: rotate(360deg); } }

@@ -784,7 +784,7 @@ export default {
   font-size: 13px;
 }
 .kiosk-active-filter-banner__clear {
-  margin-left: auto;
+  margin-inline-start: auto;
   background: transparent;
   border: none;
   color: var(--kiosk-primary, #e8001c);
@@ -845,7 +845,8 @@ export default {
 
 .kiosk-catalogue-header {
   height: 82px;
-  padding: 0 22px 0 18px;
+  padding-block: 0;
+  padding-inline: 18px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1023,7 +1024,7 @@ export default {
 
 .kiosk-sidebar {
   background: var(--kiosk-surface);
-  border-right: 1px solid var(--kiosk-border);
+  border-inline-end: 1px solid var(--kiosk-border);
   padding: 12px 10px 90px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1193,7 +1194,7 @@ export default {
 .kiosk-product-badge {
   position: absolute;
   top: 10px;
-  left: 18px;
+  inset-inline-start: 18px;
   background: var(--kiosk-primary-dark);
   color: white;
   font-size: 11px;
@@ -1207,7 +1208,7 @@ export default {
 .kiosk-product-add {
   position: absolute;
   top: 12px;
-  right: 18px;
+  inset-inline-end: 18px;
   width: 38px;
   height: 38px;
   border: none;
@@ -1268,8 +1269,7 @@ export default {
 
 .kiosk-bottom-bar {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   height: 96px;
   display: grid;
@@ -1309,7 +1309,7 @@ export default {
 
 .kiosk-bottom-abandon {
   color: var(--kiosk-primary-dark);
-  border-right: 1px solid var(--kiosk-border);
+  border-inline-end: 1px solid var(--kiosk-border);
 }
 
 .kiosk-bottom-cart {

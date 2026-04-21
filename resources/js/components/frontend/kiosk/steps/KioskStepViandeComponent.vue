@@ -273,7 +273,7 @@ export default {
 .kiosk-viande-badge-paid {
   position: absolute;
   top: 10px;
-  right: 12px;
+  inset-inline-end: 12px;
   background: #E86B00;
   color: #fff;
   font-size: 11px;

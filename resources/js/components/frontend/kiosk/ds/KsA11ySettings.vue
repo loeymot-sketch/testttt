@@ -379,7 +379,7 @@ export default {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
-  text-align: left;
+  text-align: start;
 }
 
 .ks-a11y-option:hover { background: var(--kiosk-surface-alt); }
@@ -402,7 +402,7 @@ export default {
   font-size: 12px;
   color: var(--kiosk-text-muted);
   font-weight: 500;
-  margin-left: 8px;
+  margin-inline-start: 8px;
 }
 
 .ks-a11y-toggle-row {
@@ -445,7 +445,7 @@ export default {
 .ks-a11y-switch-thumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  inset-inline-start: 3px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -458,7 +458,8 @@ export default {
   border-color: var(--kiosk-primary);
 }
 .ks-a11y-switch.is-on .ks-a11y-switch-thumb {
-  left: 33px;
+  inset-inline-start: auto;
+  inset-inline-end: 3px;
   background: var(--kiosk-text-on-red);
 }
 

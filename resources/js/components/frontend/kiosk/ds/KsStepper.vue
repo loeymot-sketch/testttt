@@ -193,7 +193,7 @@ export default {
 .ks-stepper__check {
     position: absolute;
     top: -4px;
-    right: -4px;
+    inset-inline-end: -4px;
     width: 28px;
     height: 28px;
     border-radius: 50%;

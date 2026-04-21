@@ -421,7 +421,7 @@ export default {
 .kiosk-summary-row:last-child { border-bottom: none; }
 
 .kiosk-summary-row.boisson {
-  padding-left: 14px;
+  padding-inline-start: 14px;
   color: var(--kiosk-text-muted);
   font-size: 12px;
 }

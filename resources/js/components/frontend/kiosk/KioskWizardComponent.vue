@@ -1446,7 +1446,7 @@ export default {
 
 .kiosk-wizard-close {
   position: absolute;
-  right: 18px;
+  inset-inline-end: 18px;
   top: 50%;
   transform: translateY(-50%);
   width: 34px;
@@ -1529,7 +1529,7 @@ export default {
 
 .kiosk-step-visual-index {
   position: absolute;
-  right: -2px;
+  inset-inline-end: -2px;
   bottom: -2px;
   width: 22px;
   height: 22px;

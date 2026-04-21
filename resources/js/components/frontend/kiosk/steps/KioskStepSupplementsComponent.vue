@@ -305,7 +305,7 @@ export default {
 .kiosk-supplement-action {
   position: absolute;
   top: 12px;
-  right: 20px;
+  inset-inline-end: 20px;
   width: 28px;
   height: 28px;
   border-radius: 50%;

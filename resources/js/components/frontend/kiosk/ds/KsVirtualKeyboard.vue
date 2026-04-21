@@ -246,8 +246,7 @@ export default {
 <style scoped>
 .ks-vkeyb {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   z-index: 150;
   background: var(--kiosk-surface);

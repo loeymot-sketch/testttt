@@ -780,6 +780,11 @@ export default {
   font-weight: 300;
 }
 
+[dir="rtl"] .kiosk-cart-bar-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
 /* Feedback tactile */
 .kiosk-touch-ripple {
   position: fixed;
@@ -804,6 +809,11 @@ export default {
 .slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
 .slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
 .slide-right-leave-to   { transform: translateX(100%); opacity: 0; }
+
+[dir="rtl"] .slide-left-enter-from { transform: translateX(-100%); opacity: 0; }
+[dir="rtl"] .slide-left-leave-to   { transform: translateX(100%); opacity: 0; }
+[dir="rtl"] .slide-right-enter-from { transform: translateX(100%); opacity: 0; }
+[dir="rtl"] .slide-right-leave-to   { transform: translateX(-100%); opacity: 0; }
 
 .kiosk-shell-static-enter-active,
 .kiosk-shell-static-leave-active {
@@ -903,11 +913,11 @@ export default {
 }
 .kiosk-init-retry-btn:hover { background: #c0001a; }
 
-/* Zone secrète admin — coin bas-gauche, invisible */
+/* Zone secrète admin — coin bas-inline-start, invisible */
 .kiosk-admin-trigger {
   position: fixed;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: 60px;
   height: 60px;
   z-index: 9990;

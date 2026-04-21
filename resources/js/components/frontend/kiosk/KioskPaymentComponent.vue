@@ -758,7 +758,7 @@ export default {
   border-radius: 50%;
   background: var(--kiosk-primary-soft);
   border: 4px solid var(--kiosk-primary);
-  border-top-color: transparent;
+  border-block-start-color: transparent;
   animation: spin 0.8s linear infinite reverse;
 }
 
