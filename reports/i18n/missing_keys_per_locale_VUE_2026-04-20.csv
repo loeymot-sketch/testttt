@@ -1,17 +1,4 @@
 locale,key,first_seen_in_file
-fr, Active your license code,resources/views/installer/license.blade.php
-fr, Go to iNilabs,resources/views/installer/license.blade.php
-fr, Login to iNilabs,resources/views/installer/license.blade.php
-fr,Step1: ,resources/views/installer/license.blade.php
-fr,Step2: ,resources/views/installer/license.blade.php
-fr,Step3: ,resources/views/installer/license.blade.php
-fr,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-fr,all.label.back_to_home,resources/views/payment.blade.php
-fr,all.label.confirm,resources/views/payment.blade.php
-fr,all.label.congratulations,resources/views/paymentSuccess.blade.php
-fr,all.label.transaction_id,resources/views/paymentSuccess.blade.php
-fr,all.message.payment_successful,resources/views/paymentSuccess.blade.php
-fr,all.message.select_your_payment_method,resources/views/payment.blade.php
 fr,allergens.<code>,resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue
 fr,button.add_addon,resources/js/components/admin/items/addon/ItemAddonCreateComponent.vue
 fr,button.add_address,resources/js/components/admin/administrators/address/AdministratorAddressCreateComponent.vue
@@ -522,19 +509,6 @@ fr,message.table_field_required,resources/js/components/admin/pos/PosComponent.v
 fr,message.table_scan,resources/js/components/admin/diningTable/DiningTableShowComponent.vue
 fr,message.zone_required,resources/js/components/admin/settings/Branch/BranchShowComponent.vue
 fr,message.zone_update_successfully,resources/js/components/admin/settings/Branch/BranchShowComponent.vue
-en, Active your license code,resources/views/installer/license.blade.php
-en, Go to iNilabs,resources/views/installer/license.blade.php
-en, Login to iNilabs,resources/views/installer/license.blade.php
-en,Step1: ,resources/views/installer/license.blade.php
-en,Step2: ,resources/views/installer/license.blade.php
-en,Step3: ,resources/views/installer/license.blade.php
-en,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-en,all.label.back_to_home,resources/views/payment.blade.php
-en,all.label.confirm,resources/views/payment.blade.php
-en,all.label.congratulations,resources/views/paymentSuccess.blade.php
-en,all.label.transaction_id,resources/views/paymentSuccess.blade.php
-en,all.message.payment_successful,resources/views/paymentSuccess.blade.php
-en,all.message.select_your_payment_method,resources/views/payment.blade.php
 en,allergens.<code>,resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue
 en,kiosk.confirmation.auto_return,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
 en,kiosk.confirmation.loyalty_points,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
@@ -579,19 +553,6 @@ en,message.discount_reason_required,resources/js/components/admin/pos/PosCompone
 en,message.something_went_wrong,resources/js/components/admin/pos/ItemComponent.vue
 en,message.something_wrong,resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue
 en,message.zone_required,resources/js/components/admin/settings/Branch/BranchShowComponent.vue
-ar, Active your license code,resources/views/installer/license.blade.php
-ar, Go to iNilabs,resources/views/installer/license.blade.php
-ar, Login to iNilabs,resources/views/installer/license.blade.php
-ar,Step1: ,resources/views/installer/license.blade.php
-ar,Step2: ,resources/views/installer/license.blade.php
-ar,Step3: ,resources/views/installer/license.blade.php
-ar,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-ar,all.label.back_to_home,resources/views/payment.blade.php
-ar,all.label.confirm,resources/views/payment.blade.php
-ar,all.label.congratulations,resources/views/paymentSuccess.blade.php
-ar,all.label.transaction_id,resources/views/paymentSuccess.blade.php
-ar,all.message.payment_successful,resources/views/paymentSuccess.blade.php
-ar,all.message.select_your_payment_method,resources/views/payment.blade.php
 ar,allergens.<code>,resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue
 ar,kiosk.confirmation.auto_return,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
 ar,kiosk.confirmation.loyalty_points,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
@@ -666,19 +627,6 @@ ar,message.new_pos_order_with_id,resources/js/components/admin/pos/PosComponent.
 ar,message.something_went_wrong,resources/js/components/admin/pos/ItemComponent.vue
 ar,message.something_wrong,resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue
 ar,message.zone_required,resources/js/components/admin/settings/Branch/BranchShowComponent.vue
-de, Active your license code,resources/views/installer/license.blade.php
-de, Go to iNilabs,resources/views/installer/license.blade.php
-de, Login to iNilabs,resources/views/installer/license.blade.php
-de,Step1: ,resources/views/installer/license.blade.php
-de,Step2: ,resources/views/installer/license.blade.php
-de,Step3: ,resources/views/installer/license.blade.php
-de,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-de,all.label.back_to_home,resources/views/payment.blade.php
-de,all.label.confirm,resources/views/payment.blade.php
-de,all.label.congratulations,resources/views/paymentSuccess.blade.php
-de,all.label.transaction_id,resources/views/paymentSuccess.blade.php
-de,all.message.payment_successful,resources/views/paymentSuccess.blade.php
-de,all.message.select_your_payment_method,resources/views/payment.blade.php
 de,allergens.<code>,resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue
 de,kiosk.confirmation.auto_return,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
 de,kiosk.confirmation.loyalty_points,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
@@ -753,19 +701,6 @@ de,message.new_pos_order_with_id,resources/js/components/admin/pos/PosComponent.
 de,message.something_went_wrong,resources/js/components/admin/pos/ItemComponent.vue
 de,message.something_wrong,resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue
 de,message.zone_required,resources/js/components/admin/settings/Branch/BranchShowComponent.vue
-bn, Active your license code,resources/views/installer/license.blade.php
-bn, Go to iNilabs,resources/views/installer/license.blade.php
-bn, Login to iNilabs,resources/views/installer/license.blade.php
-bn,Step1: ,resources/views/installer/license.blade.php
-bn,Step2: ,resources/views/installer/license.blade.php
-bn,Step3: ,resources/views/installer/license.blade.php
-bn,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-bn,all.label.back_to_home,resources/views/payment.blade.php
-bn,all.label.confirm,resources/views/payment.blade.php
-bn,all.label.congratulations,resources/views/paymentSuccess.blade.php
-bn,all.label.transaction_id,resources/views/paymentSuccess.blade.php
-bn,all.message.payment_successful,resources/views/paymentSuccess.blade.php
-bn,all.message.select_your_payment_method,resources/views/payment.blade.php
 bn,allergens.<code>,resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue
 bn,kiosk.confirmation.auto_return,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue
 bn,kiosk.confirmation.loyalty_points,resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue

@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import { join, resolve } from 'node:path';
 import {
     flattenJson,
     extractI18nKeysFromVue,
     extractI18nKeysFromBlade,
     diffMissing,
+    parsePhpLocaleFile,
+    resolveBladeKeyToPhp,
 } from '../../tools/i18n/audit_locale_keys.mjs';
+
+const repoRoot = resolve(process.cwd());
 
 describe('P-MEGA-11 i18n audit helpers', () => {
     it('flattenJson merges nested objects into dot keys', () => {
@@ -41,5 +46,28 @@ describe('P-MEGA-11 i18n audit helpers', () => {
     it('diffMissing returns keys used but absent from locale map', () => {
         const present = { a: 1, b: 2 };
         expect(diffMissing(['a', 'b', 'c'], present)).toEqual(['c']);
+    });
+
+    it('parsePhpLocaleFile — flat', () => {
+        const src = `<?php return ['a'=>'1','b'=>'2'];`;
+        expect(parsePhpLocaleFile(src, '')).toEqual({ a: '1', b: '2' });
+    });
+
+    it('parsePhpLocaleFile — nested', () => {
+        const src = `<?php return ['a'=>['b'=>'x','c'=>'y']];`;
+        expect(parsePhpLocaleFile(src, '')).toEqual({ 'a.b': 'x', 'a.c': 'y' });
+    });
+
+    it('extractI18nKeysFromBlade — mixed Blade string order', () => {
+        const source = `@lang('foo.bar') {{ __('baz.qux') }}`;
+        const { staticKeys, dynamicCount } = extractI18nKeysFromBlade(source);
+        expect(staticKeys).toEqual(['foo.bar', 'baz.qux']);
+        expect(dynamicCount).toBe(0);
+    });
+
+    it('resolveBladeKeyToPhp — auth.failed vs unknown', () => {
+        const langFr = join(repoRoot, 'lang/fr');
+        expect(resolveBladeKeyToPhp('auth.failed', langFr)).toBe(true);
+        expect(resolveBladeKeyToPhp('unknown.x', langFr)).toBe(false);
     });
 });
