@@ -1,5 +1,20 @@
 # Active Cycle – FoodKing
 
+## PARALLEL_CYCLE_W3_REM_PLUS_W4 (CLOSED PASSED — coexiste avec V14 ci-dessous)
+
+TASK_ID: P_MEGA_W3_REMEDIATION_PLUS_W4_2026-04-20
+PHASE: CLOSED PASSED — Vérification W3 200% + REMEDIATION (6 bugs invisibles) + Vague 4 complète (W4.A audit tool + REM_2 split Vue/Laravel + W4.B RTL CSS bornés)
+COMMITS : be229442f (W3 REM) → 41712ddca (W4.A) → f4e432caf (W4.A REM_2) → 07e43be3e (W4.B)
+VITEST : 535 → 540 → 546 → 550 → 554 (+19 verts, 0 régression)
+SUBAGENTS : 1× explore + 1× planner-orchestrator + 4× routine-implementer (0 violation routing.md)
+SYNTHESE : reports/execution/SYNTHESE_P_MEGA_W3_REMEDIATION_PLUS_W4_2026-04-20.md
+FINDINGS_OUVERTS : 5 (1 HIGH=FINDING_VUE_FR_JSON_GAP / 1 MED back snapshot / 3 LOW)
+NEXT : arbitrage user — Voie A (Vague 5 P-MEGA-12/13/14 avec 3 HUMAN_GATE), Voie B (cycle FINDING_VUE_FR_JSON_GAP 510 clés), Voie C (P-MEGA-23 implémentations).
+
+---
+
+## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
+
 TASK_ID: V14_04_T02_T20_POS_UI_MULTI_QTY_FUSED
 PHASE: EXECUTE — délégué à foodking-complex-implementer (GPT-5.4) en parallèle avec V14_05_T06 (Composer routine, déjà PASSED) et V14_06_T04 (Composer routine, déjà PASSED)
 NEXT_DECISION: Après T02+T20 PASSED → audit consolidé Vague B (T02+T04+T06+T20) + commit atomique Vague A (V14_T05+T07+SSOT-FIX) + commit Vague B → arbitrage user pour Vague C ou cycles V1 GPT-5.4 PENDING.
