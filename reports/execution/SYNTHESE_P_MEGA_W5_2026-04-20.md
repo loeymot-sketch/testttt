@@ -14,7 +14,7 @@
 | W4.B RTL | CLOSED PASSED | 07e43be3e | 554 |
 | Synthèse W3 REM + W4 | CLOSED | df8b4ce0e | — |
 | **W4 REM_3 locale desync + tool quality** | **CLOSED PASSED** | **781232fb4** | **565** (+11 nouveaux) |
-| **W5 audits + GATE_BRIEFs** | **CLOSED PASSED** | (en cours) | 565 (audits read-only) |
+| **W5 audits + GATE_BRIEFs** | **CLOSED PASSED** | c1c89ff89 | 565 (audits read-only) |
 
 ## W4 — Vérification 200% + REMEDIATION_3
 
@@ -58,11 +58,16 @@ Conformément au plan : auto-remediation **désactivée** pour W5 (3 hard gates)
 
 **Verdict** : 🔴 RED — pas de `OrderService::pay()` unifié, pas de multi-tender, et **commandes kiosk INVISIBLES au Z signé** (filtre `whereNotNull('fiscal_sequence_no')`).
 
-**Findings P0** :
-- F01 🔴 Kiosk hors Z fiscal (sous-déclaration ventes)
-- F02 🔴 Pas d'`OrderService::pay()` unifié
-- F03 🔴 Pas de multi-tender
-- F05/F06 🔴 `payment-confirm` sans `Idempotency-Key` + POS regenère clé (double commande possible)
+**Findings** :
+- F01 🔴 P0 Kiosk hors Z fiscal (sous-déclaration ventes)
+- F02 🔴 P0 Pas d'`OrderService::pay()` unifié
+- F03 🔴 P0 Pas de multi-tender
+- F05/F06 🟡 P1 `payment-confirm` sans `Idempotency-Key` + POS regenère clé (double commande possible) — note correction post-audit : sévérité P1 dans audit source, alignement explicite ici
+
+**Note QUALITY AUDIT W5 (post-publication)** :
+- Audit 14 : 2 templates non audités (`TableOrderReceiptComponent.vue`, `OrderReceiptComponent.vue`) — recommandation : ajout dans cycle d'implémentation receipt unifié (Bloc α)
+- Recyclage QR : `SimpleSoftwareIO\QrCode` déjà présent côté PHP (`DiningTableService`) — recyclable pour P-MEGA-14 Bloc γ (économie dependency JS)
+- GATE_BRIEF 13 A.2 reformulé : invariant `whereNotNull('fiscal_sequence_no')` du `ZReportService` est CORRECT ; seul fix est allocation séquence (A.1)
 
 **Sentinelles à créer** : 6 tests (concurrence `payment-confirm`, double-clic POS, transition `payment_status`, etc.)
 

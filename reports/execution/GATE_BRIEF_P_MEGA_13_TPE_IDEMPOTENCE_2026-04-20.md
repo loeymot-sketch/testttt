@@ -35,8 +35,8 @@
 ## Options (par ordre de criticité)
 
 ### Bloc A — KIOSK FISCAL (P0 absolu, débloque Z signé)
-- A.1 : Appeler `FiscalSequenceService::next` dans `finalizePaidKioskOrder` ou `paymentConfirm` (~80 LOC + migration fillable + tests)
-- A.2 : Inclure les commandes kiosk dans `ZReportService` (~20 LOC ajustement filtre)
+- A.1 : Appeler `FiscalSequenceService::next` dans `finalizePaidKioskOrder` ou `paymentConfirm` — INVARIANT : aucun assouplissement du filtre `whereNotNull('fiscal_sequence_no')` du `ZReportService` (il est CORRECT) ; le seul vrai fix est l'allocation de séquence pour les commandes kiosk PAYÉES (~80 LOC + migration fillable + tests)
+- A.2 : Vérifier que `ZReportService` agrège correctement les commandes kiosk une fois A.1 appliqué (read-only, validation tests sentinelles)
 - A.3 : Tests sentinelles concurrentiels `payment-confirm` x2 (~60 LOC PHPUnit)
 
 ### Bloc B — IDEMPOTENCE PAYMENT-CONFIRM (P0)

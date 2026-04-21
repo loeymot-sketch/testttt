@@ -1,21 +1,36 @@
 # Active Cycle – FoodKing
 
-## PARALLEL_CYCLE_W6_A11Y_PERF (EXECUTE A.2 — a11y kiosk fixes)
+## PARALLEL_CYCLE_W6_A11Y_PERF (CLOSED PASSED — a11y WCAG AA + perf lazy chunks)
 
 TASK_ID: P_MEGA_W6_A11Y_PERF_2026-04-20
-PHASE: VALIDATE (W6.B perf low-risk — post EXECUTE routine-implementer)
+PHASE: CLOSED PASSED
 PLAN_FILE: plans/PLAN_P_MEGA_W6_2026-04-20.md
 RUNNER_MODE: single-session
 AUTO_REMEDIATION: ACTIVÉE (pas de critical zone — UI/CSS/perf)
-GATES PRÉ-DÉCLARÉES : NONE (4 SOFT W6 : bundle +10%, axe regression, touche fichier gated W5, vitest regression)
-ESCALATIONS PRÉ-DÉCLARÉES : 4 (E1 webpack.mix vs vite, E2 cold start non-mesurable sans device, E3 devDep @axe-core/vue, E4 touche fichier gated W5 = STOP)
-SUB-CYCLES SÉQUENTIELS : W6.A (a11y) puis W6.B (perf) — pas parallèle car mêmes fichiers Vue kiosk
-PROGRESS : Phase A.1 DONE → Phase A.2 EXECUTE DONE → Phase A.3 VALIDATE (validator)
+SUB-CYCLES : W6.A (a11y) → 1dabfa568, W6.B (perf) → 0a3e0b304 (séquentiels)
+SUBAGENTS UTILISÉS : 5 distincts (planner-orchestrator + explore × 4 + routine-implementer × 2)
+SYNTHÈSE : reports/execution/SYNTHESE_P_MEGA_W6_2026-04-20.md
+
+OUTCOMES :
+- W5 quality fix : 4 lignes docs corrigées (GATE_BRIEF_13 A.2 + synthèse W5)
+- W6.A audit baseline : 35 écarts (8 critical, 7 serious, 7 moderate, 13 minor) sur 43 composants
+- W6.A EXECUTE : 14/15 fixes a11y (+280 LOC, +12 tests Vitest 5 axe + 3 touch + helpers)
+- W6.A verify 200% : PASSED (4 findings LOW docs)
+- W6.B audit baseline : 8 opportunités, 4 LOW RISK retenues (différé F1/F2/F5 complex implementer)
+- W6.B EXECUTE : 4/4 fixes perf (+188/-720 = -532 LOC dead code, +4 tests Vitest)
+- W6.B verify 200% : PASSED (4 findings LOW non-bloquants)
+- Vitest global confirmé local : 12/12 sur les 3 specs W6 (run direct npx vitest)
+- DevDeps : axe-core@^4.11.3 (devDep)
+
+BREACHES : aucune
+- Composants gated W5 (Order/Payment/Confirmation) : git diff vide ✅
+- Hors-scope (app/database/routes/webpack.mix/bootstrap/master.blade/store/helpers/i18n) : aucun match ✅
 
 PRIOR CYCLES :
 - W5 audits + GATE_BRIEFs : CLOSED PASSED commit c1c89ff89 (3 audits + 3 GATE_BRIEFs, 0 LOC prod)
-  + W5 quality verification: DEGRADED 5 nuances docs corrigées en post-fix
 - W4 REM_3 locale desync : CLOSED PASSED commit 781232fb4 (565/566 Vitest)
+
+NEXT : attente input user pour Vague 7 (P-MEGA-17/18/19 offline queue + hardware fallback + branch theming)
 
 ## PARALLEL_CYCLE_W5_AUDITS (CLOSED PASSED — 3 audits + 3 GATE_BRIEFS livrés)
 
@@ -51,7 +66,18 @@ PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
 ## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
 
 TASK_ID: V14_VAGUE_C_ALPHA_2026-04-20
-PHASE: EXECUTE — Vague C-α en cours : 3 tâches en parallèle (T11 + T10 + T08) déléguées à 3 subagents
+PHASE: CLOSED PASSED — Vague C-α (T11 + T10 + T08) auditée 200% + 2 P1 + 3 P2 fixés
+HOLES P1 RÉSOLUS :
+  - C-1 : posParked.recall ne purgeait pas les items 86'd → panier "pollué" silencieusement → 422 au checkout. Fix : recall consulte item/lists et dispatch pruneUnavailable. 2 sentinels Vitest verts.
+  - C-9 : aucun test cross-branch parked orders → risque régression silencieuse multi-tenant. Fix : 2 sentinels Feature (recall+discard cross-branch returns 404).
+HOLES P2 RÉSOLUS :
+  - C-2 : _availabilityToastTimers cleanup au beforeUnmount
+  - C-5 : F-keys neutralisables si drawer parked ouvert (helper option shouldIntercept)
+  - C-8 : migration barcode robuste si colonne préexistante
+RÉSULTATS TESTS : 76/76 Vitest POS + 8/8 Feature parked verts. 0 régression introduite.
+RAPPORT : reports/execution/RUN_V14_VAGUE_C_ALPHA_AUDIT_200_2026-04-20.md (consolidé)
+RESTANT (en arbitrage user) : Vague C-β (T19 floorplan + T15 imprimante ESC/POS + T21 receipt) ; gates humains : G14-B (T09 + T17) + C9 dispatch-after-commit.
+PRÉCÉDENT EN COURS — Vague C-α : 3 tâches en parallèle (T11 + T10 + T08) déléguées à 3 subagents
 ACTIVE_PLAN: plans/PLAN_FINALISATION_POS_BASE_2026-04-20.md (section Vague C — Finalisation caisse opérateur)
 SCOPE Vague C-α (sans GATE) :
   - V14_07_T11_POS_AVAILABILITY_LIVE_GUARD → foodking-routine-implementer (Composer)
