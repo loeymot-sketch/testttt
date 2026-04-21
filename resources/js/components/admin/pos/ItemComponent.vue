@@ -1,9 +1,17 @@
 <template>
     <div class="grid grid-cols-3 gap-2.5 mb-8 md:mb-0">
-        <div v-for="item in items" :key="item"
-            class="flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:shadow-sm transition cursor-pointer select-none"
+        <div v-for="item in items" :key="item.id || item"
+            :class="tileClassList(item)"
+            :aria-disabled="isCatalogTileUnavailable(item) ? 'true' : 'false'"
+            role="button"
+            :tabindex="isCatalogTileUnavailable(item) ? -1 : 0"
+            :aria-label="$t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
             style="min-height: 90px;"
-            @click.prevent="variationModalShow(item)" data-modal="#item-variation-modal">
+            @click.prevent="onProductTileClick(item)"
+            @keyup.enter.prevent="addItem(item)"
+            @keyup.space.prevent="addItem(item)"
+            data-modal="#item-variation-modal">
+            <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge">{{ $t('pos.item_86_d') }}</span>
             <div class="flex-1 flex items-center justify-center w-full">
                 <h3 class="text-xs font-semibold font-rubik capitalize text-center leading-tight text-[#2E2F38] line-clamp-3">{{ item.name }}</h3>
             </div>
@@ -11,7 +19,7 @@
                 <h4 class="text-[11px] font-rubik font-medium text-primary">
                     {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
                 </h4>
-                <button @click.stop.prevent="variationModalShow(item)" data-modal="#item-variation-modal"
+                <button type="button" tabindex="-1" aria-hidden="true" @click.stop.prevent="onProductTileClick(item)" data-modal="#item-variation-modal"
                     class="flex items-center justify-center w-6 h-6 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition">
                     <i class="lab lab-bag-2 font-fill-primary lab-font-size-10 group-hover:text-white" style="font-size:11px;"></i>
                 </button>
@@ -70,45 +78,40 @@
                             class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                     </div>
                 </div>
-                <div class="mb-4" v-if="item.itemAttributes.length > 1">
-                    <div class="row">
-                        <div v-for="itemAttribute in item.itemAttributes" class="col-12 sm:col-6">
-                            <label class="text-sm leading-6 block font-medium capitalize mb-1.5 text-heading">
-                                {{ itemAttribute.name }}
-                            </label>
-                            <div class="relative">
-                                <i
-                                    class="lab lab-arrow-down text-sm absolute top-1/2 right-2.5 -translate-y-1/2 lab-font-size-16"></i>
-                                <select
-                                    @change.prevent="changeVariationAdjust(itemAttribute.id, temp.item_variations.variations[itemAttribute.id])"
-                                    v-model="temp.item_variations.variations[itemAttribute.id]"
-                                    class="text-xs capitalize rounded-lg h-10 w-full py-1.5 px-2.5 appearance-none transition border border-[#EFF0F6] text-heading hover:border-primary/30">
-                                    <option :value="variation.id" v-for="variation in item.variations[itemAttribute.id]"
-                                        :key="variation">{{ variation.name }} +{{ variation.currency_price }}
-                                    </option>
-                                </select>
+                <div class="mb-4" v-if="item.itemAttributes.length > 0">
+                    <div class="space-y-4">
+                        <div v-for="itemAttribute in item.itemAttributes" :key="itemAttribute.id"
+                            class="rounded-xl border border-[#EFF0F6] p-3 bg-white">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div>
+                                    <h3 class="text-sm leading-6 font-medium capitalize text-heading">
+                                        {{ itemAttribute.name }}
+                                    </h3>
+                                    <p class="text-[11px] text-[#6E7191]">
+                                        Min {{ getAttributeConfig(itemAttribute).minSelect }} / Max {{ getAttributeConfig(itemAttribute).maxSelect }}
+                                    </p>
+                                </div>
+                                <span v-if="isMultiAttribute(itemAttribute)"
+                                    :class="hasAttributeSelectionError(itemAttribute) ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'"
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold">
+                                    {{ getAttributeTotalQuantity(itemAttribute.id) }} / {{ getAttributeConfig(itemAttribute).maxSelect }}
+                                </span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-4" v-else-if="item.itemAttributes.length > 0">
-                    <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">
-                        {{ item.itemAttributes[0].name }}
-                    </h3>
-                    <div class="swiper size-swiper">
-                        <div class="size-tabs">
-                            <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
-                                <SwiperSlide class="!w-fit"
-                                    v-for="variation in item.variations[item.itemAttributes[0].id]" :key="variation">
-                                    <label
-                                        :class="temp.item_variations.variations[variation.item_attribute_id] === variation.id ? 'active' : ''"
-                                        :for="variation.item_attribute_id + '-' + variation.name"
-                                        class="variation-margin-right w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
+
+                            <p v-if="hasAttributeSelectionError(itemAttribute)" class="mb-2 text-[11px] text-red-600">
+                                {{ itemAttribute.name }}: minimum {{ getAttributeConfig(itemAttribute).minSelect }} requis.
+                            </p>
+
+                            <div class="space-y-2">
+                                <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
+                                    <label v-if="!isMultiAttribute(itemAttribute)"
+                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFEDF4]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
+                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition">
                                         <div class="custom-radio sm flex-shrink-0">
-                                            <input :value="variation.id"
-                                                @click="changeVariation(variation.item_attribute_id, variation.id, variation.name, variation.convert_price)"
-                                                v-model="temp.item_variations.variations[variation.item_attribute_id]"
-                                                type="radio" :id="variation.item_attribute_id + '-' + variation.name"
+                                            <input :checked="getVariationQuantity(variation.id) > 0"
+                                                @change="selectLegacyVariation(itemAttribute, variation)"
+                                                type="radio"
+                                                :id="variation.item_attribute_id + '-' + variation.name"
                                                 class="custom-radio-field">
                                             <span class="custom-radio-span"></span>
                                         </div>
@@ -116,42 +119,61 @@
                                         <div class="flex-1 min-w-0">
                                             <h3 class="block capitalize text-xs text-heading">
                                                 {{ textShortener(variation.name, 15) }}</h3>
-                                            <h4 v-if="variation.price > 0"
-                                                class="block text-xs font-medium text-heading">
+                                            <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
                                                 +{{ variation.currency_price }}
                                             </h4>
                                         </div>
                                     </label>
-                                </SwiperSlide>
-                            </Swiper>
+
+                                    <div v-else class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3">
+                                        <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <div class="flex-1 min-w-0">
+                                            <h3 class="block capitalize text-xs text-heading">
+                                                {{ textShortener(variation.name, 18) }}
+                                            </h3>
+                                            <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
+                                                +{{ variation.currency_price }}
+                                            </h4>
+                                        </div>
+                                        <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
+                                            <button @click.prevent="decrementVariation(itemAttribute, variation)"
+                                                :disabled="getVariationQuantity(variation.id) === 0"
+                                                class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                            <span class="text-center w-7 text-xs font-semibold text-heading">
+                                                {{ getVariationQuantity(variation.id) }}
+                                            </span>
+                                            <button @click.prevent="incrementVariation(itemAttribute, variation)"
+                                                :disabled="isAttributeAtMax(itemAttribute)"
+                                                class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="mb-4" v-if="item.extras.length > 0">
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.extras') }}</h3>
-                    <div class="extra-swiper">
-                        <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
-                            <SwiperSlide v-for="extra in item.extras" :key="extra" class="!w-fit !relative">
-                                <label :for="extra.id + extra.name"
-                                    class="extra w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition border-[#F7F7FC] bg-[#F7F7FC]">
-                                    <div class="custom-checkbox w-3 h-3 flex-shrink-0">
-                                        <input :id="extra.id + extra.name"
-                                            @change.prevent="changeExtra($event, extra.id, extra.name)"
-                                            :value="extra.id" type="checkbox" class="custom-checkbox-field">
-                                        <i
-                                            class="fa-solid fa-check custom-checkbox-icon leading-[9px] text-[9px] rounded-[3px]"></i>
-                                    </div>
-                                    <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="block capitalize mb-1 text-xs text-heading">
-                                            {{ textShortener(extra.name, 15) }}</h3>
-                                        <h4 class="block text-xs font-medium text-heading">+{{
-                                            extra.currency_price
-                                            }}</h4>
-                                    </div>
-                                </label>
-                            </SwiperSlide>
-                        </Swiper>
+                    <div class="space-y-2">
+                        <div v-for="extra in item.extras" :key="extra.id"
+                            class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3">
+                            <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="block capitalize mb-1 text-xs text-heading">
+                                    {{ textShortener(extra.name, 18) }}</h3>
+                                <h4 class="block text-xs font-medium text-heading">+{{ extra.currency_price }}</h4>
+                            </div>
+                            <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
+                                <button @click.prevent="decrementExtra(extra)"
+                                    :disabled="getExtraQuantity(extra.id) === 0"
+                                    class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"></button>
+                                <span class="text-center w-7 text-xs font-semibold text-heading">
+                                    {{ getExtraQuantity(extra.id) }}
+                                </span>
+                                <button @click.prevent="incrementExtra(extra)"
+                                    class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -221,8 +243,8 @@
                     <small class="db-field-alert" v-if="instructionError">{{ instructionError }}</small>
                 </div>
                 <div class="pos-add-to-cart-sticky">
-                    <button type="button" :disabled="temp.total_price <= 0" @click.prevent="addToCart"
-                        class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary">
+                    <button type="button" :disabled="!canAddToCart" @click.prevent="addToCart"
+                        class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="icon-bag-2"></i>
                         <span>
                             {{ $t('button.add_to_cart') }} -
@@ -232,6 +254,9 @@
                             }}
                         </span>
                     </button>
+                    <div v-if="itemUnavailabilityBannerVisible" class="alert alert-warning mt-2" role="status">
+                        {{ $t('pos.item_unavailable_during_edit') }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,6 +270,30 @@ import _ from "lodash";
 import alertService from "../../../services/alertService";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
+import {
+    normalizeExtraEntries,
+    normalizeId,
+    normalizeQuantity,
+    normalizeVariationEntries,
+} from "../../../helpers/posNormalizeIds";
+
+function createEmptyTemp() {
+    return {
+        name: "",
+        image: "",
+        item_id: 0,
+        quantity: 0,
+        discount: 0,
+        currency_price: 0,
+        convert_price: 0,
+        item_variations: [],
+        item_extras: [],
+        item_variation_total: 0,
+        item_extra_total: 0,
+        total_price: 0,
+        instruction: "",
+    };
+}
 
 export default {
     name: "itemComponent",
@@ -276,33 +325,29 @@ export default {
                 wrapAround: false,
                 snapAlign: "start"
             },
-            temp: {
-                name: "",
-                image: "",
-                item_id: 0,
-                quantity: 0,
-                discount: 0,
-                currency_price: 0,
-                convert_price: 0,
-                item_variations: {
-                    variations: {},
-                    names: {}
-                },
-                item_extras: {
-                    extras: [],
-                    names: []
-                },
-                item_variation_total: 0,
-                item_extra_total: 0,
-                total_price: 0,
-                instruction: "",
-            },
+            temp: createEmptyTemp(),
             instructionError: ""
         }
     },
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        /**
+         * Live catalogue flag from ItemAvailabilityChanged / API.
+         * Absent legacy items are treated as available (backward compat).
+         */
+        catalogItemAvailable: function () {
+            if (!this.item) return true;
+            const v = this.item.is_available;
+            if (v === undefined || v === null) return true;
+            return v === true || v === 1 || v === '1';
+        },
+        itemUnavailabilityBannerVisible: function () {
+            return Boolean(this.item) && !this.catalogItemAvailable;
+        },
+        canAddToCart: function () {
+            return this.temp.total_price > 0 && !this.hasSelectionErrors() && this.catalogItemAvailable;
         },
     },
     methods: {
@@ -314,6 +359,187 @@ export default {
         },
         currencyFormat: function (amount, decimal, currency, position) {
             return appService.currencyFormat(amount, decimal, currency, position);
+        },
+        resetTempState: function () {
+            this.temp = createEmptyTemp();
+            this.addons = {};
+            this.addonQuantity = {};
+        },
+        getAttributeConfig: function (attribute) {
+            const maxSelect = normalizeQuantity(attribute && attribute.max_select, 1);
+            const allowRepeat = Boolean(attribute && attribute.allow_repeat);
+            const isMulti = maxSelect > 1 || allowRepeat;
+            const minSelectRaw = normalizeId(attribute && attribute.min_select);
+            const minSelect = minSelectRaw === null ? (isMulti ? 0 : 1) : Math.min(minSelectRaw, maxSelect);
+
+            return {
+                minSelect,
+                maxSelect,
+                allowRepeat,
+                isMulti,
+            };
+        },
+        isMultiAttribute: function (attribute) {
+            return this.getAttributeConfig(attribute).isMulti;
+        },
+        getAttributeVariations: function (attribute) {
+            if (!this.item || !attribute) return [];
+            return Array.isArray(this.item.variations && this.item.variations[attribute.id])
+                ? this.item.variations[attribute.id]
+                : [];
+        },
+        getVariationEntriesByAttribute: function (attributeId) {
+            const normalizedAttributeId = normalizeId(attributeId);
+            return normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => entry.item_attribute_id === normalizedAttributeId);
+        },
+        getVariationQuantity: function (variationId) {
+            const normalizedVariationId = normalizeId(variationId);
+            if (normalizedVariationId === null) return 0;
+
+            const existing = normalizeVariationEntries(this.temp.item_variations)
+                .find((entry) => entry.id === normalizedVariationId);
+
+            return existing ? normalizeQuantity(existing.quantity, 1) : 0;
+        },
+        getAttributeTotalQuantity: function (attributeId) {
+            return this.getVariationEntriesByAttribute(attributeId)
+                .reduce((total, entry) => total + normalizeQuantity(entry.quantity, 1), 0);
+        },
+        isAttributeAtMax: function (attribute) {
+            const config = this.getAttributeConfig(attribute);
+            return this.getAttributeTotalQuantity(attribute.id) >= config.maxSelect;
+        },
+        hasAttributeSelectionError: function (attribute) {
+            const config = this.getAttributeConfig(attribute);
+            return this.getAttributeTotalQuantity(attribute.id) < config.minSelect;
+        },
+        hasSelectionErrors: function () {
+            if (!this.item || !Array.isArray(this.item.itemAttributes)) return false;
+            return this.item.itemAttributes.some((attribute) => this.hasAttributeSelectionError(attribute));
+        },
+        setVariationQuantity: function (attribute, variation, quantity) {
+            this.bumpPricingToCatalog();
+            const attributeId = normalizeId(attribute && attribute.id);
+            const variationId = normalizeId(variation && variation.id);
+
+            if (attributeId === null || variationId === null) return;
+
+            const config = this.getAttributeConfig(attribute);
+            const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+            let next = normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => entry.item_attribute_id !== attributeId || entry.id !== variationId);
+
+            if (!config.isMulti) {
+                next = next.filter((entry) => entry.item_attribute_id !== attributeId);
+            }
+
+            if (safeQuantity > 0) {
+                next.push({
+                    id: variationId,
+                    item_attribute_id: attributeId,
+                    quantity: safeQuantity,
+                    variation_name: attribute.name,
+                    name: variation.name,
+                });
+            }
+
+            this.temp.item_variations = next;
+            this.totalPriceSetup();
+        },
+        selectLegacyVariation: function (attribute, variation) {
+            this.setVariationQuantity(attribute, variation, 1);
+        },
+        incrementVariation: function (attribute, variation) {
+            if (this.isAttributeAtMax(attribute)) return;
+            this.setVariationQuantity(attribute, variation, this.getVariationQuantity(variation.id) + 1);
+        },
+        decrementVariation: function (attribute, variation) {
+            this.setVariationQuantity(attribute, variation, this.getVariationQuantity(variation.id) - 1);
+        },
+        getExtraQuantity: function (extraId) {
+            const normalizedExtraId = normalizeId(extraId);
+            if (normalizedExtraId === null) return 0;
+
+            const existing = normalizeExtraEntries(this.temp.item_extras)
+                .find((entry) => entry.id === normalizedExtraId);
+
+            return existing ? normalizeQuantity(existing.quantity, 1) : 0;
+        },
+        setExtraQuantity: function (extra, quantity) {
+            this.bumpPricingToCatalog();
+            const extraId = normalizeId(extra && extra.id);
+
+            if (extraId === null) return;
+
+            const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+            const next = normalizeExtraEntries(this.temp.item_extras)
+                .filter((entry) => entry.id !== extraId);
+
+            if (safeQuantity > 0) {
+                next.push({
+                    id: extraId,
+                    quantity: safeQuantity,
+                    name: extra.name,
+                });
+            }
+
+            this.temp.item_extras = next;
+            this.totalPriceSetup();
+        },
+        incrementExtra: function (extra) {
+            this.setExtraQuantity(extra, this.getExtraQuantity(extra.id) + 1);
+        },
+        decrementExtra: function (extra) {
+            this.setExtraQuantity(extra, this.getExtraQuantity(extra.id) - 1);
+        },
+        initializeDefaultSelections: function () {
+            if (!this.item || !Array.isArray(this.item.itemAttributes)) return;
+
+            _.forEach(this.item.itemAttributes, (attribute) => {
+                const config = this.getAttributeConfig(attribute);
+                const variations = this.getAttributeVariations(attribute);
+
+                if (!config.isMulti && variations.length > 0) {
+                    this.setVariationQuantity(attribute, variations[0], 1);
+                }
+            });
+        },
+        isCatalogTileUnavailable: function (row) {
+            if (!row) return false;
+            const v = row.is_available;
+            if (v === undefined || v === null) return false;
+            return v === false || v === 0 || v === '0';
+        },
+        tileClassList: function (row) {
+            return {
+                'pos-item-tile': true,
+                'is-unavailable': this.isCatalogTileUnavailable(row),
+                'relative flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:shadow-sm transition cursor-pointer select-none': !this.isCatalogTileUnavailable(row),
+                'relative flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white transition select-none': this.isCatalogTileUnavailable(row),
+            };
+        },
+        onProductTileClick: function (selectedItem) {
+            if (this.isCatalogTileUnavailable(selectedItem)) return;
+            this.variationModalShow(selectedItem);
+        },
+        itemOfferPrice: function (row) {
+            if (!row) return '';
+            return row.offer && row.offer.length > 0 ? row.offer[0].currency_price : row.currency_price;
+        },
+        addItem: function (item) {
+            this.onProductTileClick(item);
+        },
+        /**
+         * [T11 POS_AVAILABILITY_LIVE_GUARD] Sync modal item when parent updates list from Echo.
+         */
+        syncItemAvailabilityFromBroadcast: function (itemId, isAvailable, reason) {
+            if (!this.item) return;
+            if (parseInt(this.item.id, 10) !== parseInt(itemId, 10)) return;
+            this.item = Object.assign({}, this.item, {
+                is_available: isAvailable,
+                availability_reason: reason != null ? reason : this.item.availability_reason,
+            });
         },
         infoModalShow: function (name, caution) {
             this.itemInfo = {
@@ -333,6 +559,7 @@ export default {
         variationModalShow: function (selectedItem) {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
+            this.resetTempState();
 
             // [AUDIT 2026-04-17 R2] Surface=pos so the backend only returns
             // extras/variations visible on the cashier channel (NormalItemResource).
@@ -341,16 +568,6 @@ export default {
 
                     const item = res.data.data;
                     this.item = res.data.data;
-
-                    if (this.item.itemAttributes.length > 0) {
-                        _.forEach(this.item.itemAttributes, (element) => {
-                            if (typeof this.item.variations[element.id][0] !== "undefined") {
-                                this.temp.item_variations.variations[this.item.variations[element.id][0].item_attribute_id] = this.item.variations[element.id][0].id;
-                                this.temp.item_variations.names[element.name] = this.item.variations[element.id][0].name;
-                                this.temp.item_variation_total += this.item.variations[element.id][0].convert_price;
-                            }
-                        });
-                    }
 
                     if (this.item.addons.length > 0) {
                         _.forEach(this.item.addons, (addon) => {
@@ -365,7 +582,8 @@ export default {
                     this.temp.discount = 0;
                     this.temp.convert_price = item.offer.length > 0 ? item.offer[0].convert_price : item.convert_price;
                     this.temp.currency_price = item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price;
-                    this.temp.total_price = (item.offer.length > 0 ? item.offer[0].convert_price : item.convert_price) + this.temp.item_variation_total;
+                    this.initializeDefaultSelections();
+                    this.totalPriceSetup();
 
                     const modalTarget = this.$refs.itemVariationModal;
                     // Inject item data directly so wizard doesn't depend solely on XHR interceptor
@@ -391,8 +609,8 @@ export default {
                     this.item = item;
                     this.addons = {};
                     this.addonQuantity = {};
-                    this.temp.item_variations = { variations: {}, names: {} };
-                    this.temp.item_extras = { extras: [], names: [] };
+                    this.temp.item_variations = [];
+                    this.temp.item_extras = [];
                     this.temp.item_variation_total = 0;
                     this.temp.item_extra_total = 0;
                     this.temp.name = cartLine.name;
@@ -403,8 +621,8 @@ export default {
                     this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
                     this.temp.currency_price = cartLine.currency_price;
                     this.temp.instruction = cartLine.instruction || '';
-                    this.temp.item_variations = _.cloneDeep(cartLine.item_variations);
-                    this.temp.item_extras = _.cloneDeep(cartLine.item_extras);
+                    this.temp.item_variations = normalizeVariationEntries(cartLine.item_variations);
+                    this.temp.item_extras = normalizeExtraEntries(cartLine.item_extras);
 
                     _.forEach(cartLine.pos_line_addons || [], (b) => {
                         const ad = item.addons && item.addons.find((x) => String(x.id) === String(b.parent_addon_id));
@@ -476,28 +694,7 @@ export default {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
             this.item = null;
-
-            this.temp.name = "";
-            this.temp.image = "";
-            this.temp.item_id = 0;
-            this.temp.quantity = 0;
-            this.temp.discount = 0;
-            this.temp.currency_price = 0;
-            this.temp.convert_price = 0;
-            this.temp.item_variations = {
-                variations: {},
-                names: {}
-            };
-            this.temp.item_extras = {
-                extras: [],
-                names: []
-            };
-            this.temp.item_variation_total = 0;
-            this.temp.item_extra_total = 0;
-            this.temp.total_price = 0;
-            this.temp.instruction = "";
-            this.addons = {};
-            this.addonQuantity = {}; // [BUG-A6 FIX] Reset addon quantities
+            this.resetTempState();
 
             if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
                 delete this.$refs.itemVariationModal.dataset.wizardTotal;
@@ -516,68 +713,41 @@ export default {
             this.temp.currency_price = this.item.offer.length > 0 ? this.item.offer[0].currency_price : this.item.currency_price;
         },
         changeVariation: function (attributeId, variationId, variationName, variationPrice) {
-            this.bumpPricingToCatalog();
-            this.temp.item_variations.variations[attributeId] = variationId;
-            // [W7 FIX] Coerce both sides to string for comparison — attributeId from DOM events
-            // is a string, while element.id from API response is a number. Strict === fails.
-            // [V2 FIX] Also store names_by_id[attrId] = {attrName, varName} so buildPosCheckoutOrderRow
-            // can join by attrId instead of fragile index-zip.
-            if (!this.temp.item_variations.names_by_id) {
-                this.temp.item_variations.names_by_id = {};
-            }
-            _.forEach(this.item.itemAttributes, (element) => {
-                if (String(element.id) === String(attributeId)) {
-                    this.temp.item_variations.names[element.name] = variationName;
-                    this.temp.item_variations.names_by_id[String(attributeId)] = {
-                        attrName: element.name,
-                        varName: variationName,
-                    };
-                }
-            });
-            this.totalPriceSetup();
+            const attribute = (this.item.itemAttributes || []).find((element) => String(element.id) === String(attributeId));
+            const variation = this.getAttributeVariations(attribute || { id: attributeId })
+                .find((entry) => String(entry.id) === String(variationId));
+
+            if (!attribute || !variation) return;
+
+            this.selectLegacyVariation(attribute, variation);
         },
         changeVariationAdjust: function (attributeId, variationId) {
-            _.forEach(this.item.variations[attributeId], (variation) => {
+            _.forEach(this.getAttributeVariations({ id: attributeId }), (variation) => {
                 if (variation.id === variationId) {
                     this.changeVariation(attributeId, variationId, variation.name, variation.convert_price);
                 }
             });
         },
         changeExtra: function (e, id, name) {
-            this.bumpPricingToCatalog();
-            if (e.target.checked) {
-                this.temp.item_extras.extras.push(id);
-                this.temp.item_extras.names.push(name);
-            } else {
-                for (let i = 0; i < this.temp.item_extras.extras.length; i++) {
-                    if (this.temp.item_extras.extras[i] === id) {
-                        this.temp.item_extras.extras.splice(i, 1);
-                    }
-                }
-                for (let i = 0; i < this.temp.item_extras.names.length; i++) {
-                    if (this.temp.item_extras.names[i] === name) {
-                        this.temp.item_extras.names.splice(i, 1);
-                    }
-                }
-            }
-            this.totalPriceSetup();
+            this.setExtraQuantity({ id, name }, e.target.checked ? 1 : 0);
         },
         totalPriceSetup: function () {
             let item_variation_total = 0;
             let item_extra_total = 0;
             let item_addon_total = 0;
-            _.forEach(this.temp.item_variations.variations, (variationId, attributeId) => {
-                _.forEach(this.item.variations[attributeId], (itemVariation) => {
-                    if (variationId === itemVariation.id) {
-                        item_variation_total += itemVariation.convert_price;
+            _.forEach(normalizeVariationEntries(this.temp.item_variations), (selectedVariation) => {
+                const itemVariations = this.getAttributeVariations({ id: selectedVariation.item_attribute_id });
+                _.forEach(itemVariations, (itemVariation) => {
+                    if (selectedVariation.id === itemVariation.id) {
+                        item_variation_total += (parseFloat(itemVariation.convert_price) || 0) * normalizeQuantity(selectedVariation.quantity, 1);
                     }
                 });
             });
 
-            _.forEach(this.temp.item_extras.extras, (extraId) => {
+            _.forEach(normalizeExtraEntries(this.temp.item_extras), (selectedExtra) => {
                 _.forEach(this.item.extras, (itemExtra) => {
-                    if (extraId === itemExtra.id) {
-                        item_extra_total += itemExtra.convert_price;
+                    if (selectedExtra.id === itemExtra.id) {
+                        item_extra_total += (parseFloat(itemExtra.convert_price) || 0) * normalizeQuantity(selectedExtra.quantity, 1);
                     }
                 });
             });
@@ -743,8 +913,11 @@ export default {
             };
 
             // 1. Variations → pain, viande, sauce
-            if (cartLine.item_variations && cartLine.item_variations.names) {
-                Object.entries(cartLine.item_variations.names).forEach(([attrName, varName]) => {
+            const variationEntries = normalizeVariationEntries(cartLine.item_variations);
+            if (variationEntries.length > 0) {
+                variationEntries.forEach((variationEntry) => {
+                    const attrName = variationEntry.variation_name || '';
+                    const varName = variationEntry.name || '';
                     const attrLower = attrName.toLowerCase();
                     
                     // Pain / Galette — match by exact attrName first, then fallback
@@ -780,7 +953,7 @@ export default {
                             const viandeVar = item.variations[viandeAttr.id].find(v => v.name === varName);
                             if (viandeVar) {
                                 const key = 'v_' + viandeVar.id;
-                                restore.viandes[key] = (restore.viandes[key] || 0) + 1;
+                                restore.viandes[key] = (restore.viandes[key] || 0) + normalizeQuantity(variationEntry.quantity, 1);
                             }
                         }
                     }
@@ -823,8 +996,10 @@ export default {
             }
 
             // 2. Extras → garnitures, suppléments, sauces extras, sauce frites
-            if (cartLine.item_extras && cartLine.item_extras.names) {
-                cartLine.item_extras.names.forEach((extraName) => {
+            const extraEntries = normalizeExtraEntries(cartLine.item_extras);
+            if (extraEntries.length > 0) {
+                extraEntries.forEach((extraEntry) => {
+                    const extraName = extraEntry.name || '';
                     const extra = item.extras?.find(e => e.name === extraName);
                     if (!extra) return;
 
@@ -968,13 +1143,13 @@ export default {
             return {
                 name: this.temp.name,
                 image: this.temp.image,
-                item_id: this.temp.item_id,
-                quantity: this.temp.quantity,
+                item_id: normalizeId(this.temp.item_id) || this.temp.item_id,
+                quantity: normalizeQuantity(this.temp.quantity, 1),
                 discount: this.temp.discount,
                 currency_price: this.temp.currency_price,
                 convert_price: adjustedBaseConvertPrice,
-                item_variations: this.temp.item_variations,
-                item_extras: this.temp.item_extras,
+                item_variations: normalizeVariationEntries(this.temp.item_variations),
+                item_extras: normalizeExtraEntries(this.temp.item_extras),
                 item_variation_total: this.temp.item_variation_total,
                 item_extra_total: this.temp.item_extra_total,
                 instruction: this.temp.instruction,
@@ -983,54 +1158,57 @@ export default {
             };
         },
         addToCart: function () {
+            if (!this.canAddToCart) return;
             var mainPayload = this.buildPosCartMainPayload();
             var editIdx = this.editingCartIndex;
-            var dispatchPromise =
-                editIdx !== null && editIdx >= 0
-                    ? this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
-                    : this.$store.dispatch('posCart/lists', [mainPayload]);
+            var finishSuccess = () => {
+                this.editingCartIndex = null;
+                this.usePricedCartBase = false;
+                this.item = null;
+                this.resetTempState();
+                if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                    delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                }
+                this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+                this.itemArrays = [];
 
-            dispatchPromise
+                alertService.success(this.$t('message.add_to_cart'));
+                appService.modalHide('#item-variation-modal');
+            };
+            var finishError = () => {
+                if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
+                    delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                }
+                this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
+                this.itemArrays = [];
+            };
+
+            if (editIdx !== null && editIdx >= 0) {
+                this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
+                    .then(finishSuccess)
+                    .catch(finishError);
+                return;
+            }
+
+            var optimisticTempId = null;
+            this.$store.dispatch('posCart/addOptimistic', { item: mainPayload })
+                .then((tempId) => {
+                    optimisticTempId = tempId;
+                    return this.$store.dispatch('posCart/lists', [mainPayload]);
+                })
                 .then(() => {
-                    this.editingCartIndex = null;
-                    this.usePricedCartBase = false;
-                    this.item = null;
-                    this.temp.name = "";
-                    this.temp.image = "";
-                    this.temp.item_id = 0;
-                    this.temp.quantity = 0;
-                    this.temp.discount = 0;
-                    this.temp.currency_price = 0;
-                    this.temp.convert_price = 0;
-                    this.temp.item_variations = {
-                        variations: {},
-                        names: {}
-                    };
-                    this.temp.item_extras = {
-                        extras: [],
-                        names: []
-                    };
-                    this.temp.item_variation_total = 0;
-                    this.temp.item_extra_total = 0;
-                    this.temp.total_price = 0;
-                    this.temp.instruction = "";
-                    this.addons = {};
-                    this.addonQuantity = {};
-                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
-                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    if (optimisticTempId != null) {
+                        this.$store.commit('posCart/__optimisticConfirm', optimisticTempId);
+                        this.$store.commit('posCart/subtotal');
                     }
-                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
-                    this.itemArrays = [];
-
-                    alertService.success(this.$t('message.add_to_cart'));
-                    appService.modalHide('#item-variation-modal');
+                    finishSuccess();
                 })
                 .catch(() => {
-                    if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
-                        delete this.$refs.itemVariationModal.dataset.wizardTotal;
+                    if (optimisticTempId != null) {
+                        this.$store.commit('posCart/__optimisticRollback', optimisticTempId);
+                        this.$store.commit('posCart/subtotal');
                     }
-                    this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
-                    this.itemArrays = [];
+                    finishError();
                 });
         },
     },
@@ -1060,6 +1238,7 @@ export default {
                 if (wizardTotal > 0 && this.temp.total_price <= 0) {
                     this.temp.total_price = wizardTotal;
                 }
+                if (!this.canAddToCart) return;
                 this.addToCart();
             });
         }
@@ -1069,6 +1248,24 @@ export default {
 </script>
 
 <style scoped>
+.pos-item-tile.is-unavailable {
+    opacity: 0.45;
+    pointer-events: none;
+    filter: grayscale(0.7);
+}
+.pos-item-86-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: rgba(46, 47, 56, 0.85);
+    color: #fff;
+}
 .pos-add-to-cart-sticky {
     position: sticky;
     bottom: 0;

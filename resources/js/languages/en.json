@@ -26,6 +26,17 @@
         "mollusques": "Molluscs",
         "molluscs": "Molluscs"
     },
+    "a11y": {
+        "skip_to_cart": "Skip to cart",
+        "cart_region": "Order cart",
+        "receipt_preview": "Receipt preview",
+        "increase_qty": "Increase quantity for {item}",
+        "decrease_qty": "Decrease quantity for {item}",
+        "remove_item": "Remove {item} from cart",
+        "add_item": "Add {item}, {price}",
+        "loading_items": "Loading menu items",
+        "cart_updated": "Cart updated"
+    },
     "pos": {
         "item_86_d": "Sold out",
         "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",

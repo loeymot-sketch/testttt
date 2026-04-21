@@ -23,10 +23,21 @@ function makeHandler() {
             const idx = list.findIndex(i => parseInt(i.id, 10) === itemId);
             if (idx !== -1) {
                 const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                const prevName = list[idx].name;
                 list[idx] = Object.assign({}, list[idx], {
                     is_available: isAvailable,
                     availability_reason: payload.reason || null,
                 });
+                if (!isAvailable) {
+                    try { this.$store?.dispatch?.('posCart/pruneUnavailable', itemId); } catch (e) { /* defensive */ }
+                    this._maybeToastItemUnavailableLost?.(itemId, prevName);
+                }
+                try {
+                    const child = this.$refs?.posItemComponent;
+                    if (child && typeof child.syncItemAvailabilityFromBroadcast === 'function') {
+                        child.syncItemAvailabilityFromBroadcast(itemId, isAvailable, payload.reason || null);
+                    }
+                } catch (e) { /* defensive */ }
             }
         }
         if (payload.type === 'full') {
@@ -86,5 +97,22 @@ describe('POS ItemAvailabilityChanged handler [POS-9.1.10]', () => {
         };
         makeHandler().call(ctx, { item_id: 5, is_available: false });
         expect(ctx.itemsRaw[0].is_available).toBe(false);
+    });
+
+    it('after broadcast unavailable, syncs open modal item and does not close modal (child hook)', () => {
+        const sync = vi.fn();
+        const dispatch = vi.fn();
+        const toast = vi.fn();
+        const ctx = {
+            itemsRaw: [{ id: 7, name: 'Burger', is_available: true }],
+            itemList: vi.fn(),
+            $store: { dispatch },
+            $refs: { posItemComponent: { syncItemAvailabilityFromBroadcast: sync } },
+            _maybeToastItemUnavailableLost: toast,
+        };
+        makeHandler().call(ctx, { payload: { item_id: 7, is_available: false, reason: 'out_of_stock' } });
+        expect(sync).toHaveBeenCalledWith(7, false, 'out_of_stock');
+        expect(dispatch).toHaveBeenCalledWith('posCart/pruneUnavailable', 7);
+        expect(toast).toHaveBeenCalledWith(7, 'Burger');
     });
 });

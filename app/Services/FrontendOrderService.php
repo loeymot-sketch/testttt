@@ -734,27 +734,13 @@ class FrontendOrderService
      */
     private function hydrateAllergenSnapshots(array $itemsArray): array
     {
-        if ($itemsArray === []) {
-            return $itemsArray;
-        }
-
-        $itemsById = Item::query()
-            ->select('id', 'allergen_flags')
-            ->with(['allergens' => function ($query): void {
-                $query->select('allergens.id', 'code')->orderBy('sort');
-            }])
-            ->whereIn('id', collect($itemsArray)->pluck('item_id')->filter()->unique()->all())
-            ->get()
-            ->keyBy('id');
-
-        foreach ($itemsArray as $index => $row) {
-            $itemsArray[$index]['allergens_snapshot'] = json_encode(
-                $this->resolveAllergenSnapshot($itemsById->get((int) ($row['item_id'] ?? 0))),
-                JSON_UNESCAPED_UNICODE
-            );
-        }
-
-        return $itemsArray;
+        // [W3.A — gate "tout vert"] Delegates to the shared helper so the
+        // Kiosk path (FrontendOrderService) and the POS path (OrderService)
+        // emit the SAME allergen snapshot — including allergens carried by
+        // item_extras (resolves OrderAllergenSnapshotComposedTest sentinel).
+        // Helper is idempotent and falls back gracefully when the
+        // item_extra_allergens pivot is absent.
+        return \App\Services\Orders\OrderItemAllergenSnapshot::hydrate($itemsArray);
     }
 
     /**

@@ -56,6 +56,35 @@
     </div>
     <div id="today-order" class="col-12 lg:col-9 db-tab-div lg:block hidden">
       <div class="ordersTab">
+        <div class="db-card px-3 py-3 mb-4 flex flex-col xl:flex-row flex-wrap gap-4 xl:items-center xl:justify-between">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="text-sm font-medium text-heading shrink-0">{{ $t('label.kds_station_filter') }}</label>
+            <select v-model="stationFilter" @change="persistKdsUiPrefs"
+              class="h-10 rounded-lg border border-[#D9DBE9] px-3 text-xs text-heading min-w-[10rem] bg-white">
+              <option value="all">{{ $t('label.kds_all_stations') }}</option>
+              <option value="bar">{{ $t('label.kds_bar') }}</option>
+              <option value="cuisine_chaude">{{ $t('label.kds_cuisine_chaude') }}</option>
+              <option value="cuisine_froide">{{ $t('label.kds_cuisine_froide') }}</option>
+            </select>
+            <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer">
+              <input type="checkbox" v-model="groupByTable" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
+              {{ $t('label.kds_group_by_table') }}
+            </label>
+          </div>
+          <div class="flex flex-wrap items-center gap-4">
+            <span class="text-sm font-medium text-heading">{{ $t('label.kds_sound') }}</span>
+            <label class="flex items-center gap-2 text-xs text-heading cursor-pointer">
+              <input type="checkbox" v-model="soundEnabled" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
+              <span class="sr-only">{{ $t('label.kds_sound') }}</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-heading">
+              <span class="whitespace-nowrap">{{ $t('label.kds_volume') }}</span>
+              <input type="range" min="0" max="100" v-model.number="soundVolume" @input="persistKdsUiPrefs"
+                class="w-28 accent-primary" />
+            </label>
+          </div>
+          <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
+        </div>
         <div class="db-card px-3 py-2.5 mb-4">
           <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between">
             <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
@@ -102,14 +131,23 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4" @click="closeFilterSlide($event)">
           <div class="db-card rounded-[10px] h-fit">
-            <div class="p-3 pb-2" :class="dineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
+            <div class="p-3 pb-2" :class="filteredDineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
             </div>
-            <div v-if="dineinOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+            <div v-if="filteredDineinOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
               Aucune commande sur place en cours.
             </div>
-            <div v-if="dineinOrders.length > 0" class="p-3" v-for="dineinOrder in dineinOrders" :key="dineinOrder.id">
-              <div class="w-full rounded-lg border border-[#EFF0F6]">
+            <div v-else class="p-3 space-y-3">
+              <template v-for="(dineinOrder, dIdx) in sortedFilteredDinein" :key="dineinOrder.id">
+                <div v-if="kdsDineinTableHeaderVisible(dineinOrder, dIdx)" class="mb-1">
+                  <button type="button" @click="toggleTableGroup(dineinTableKey(dineinOrder))"
+                    class="w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg bg-[#F7F7FC] text-left text-sm font-semibold text-heading">
+                    <span>{{ dineinTableKey(dineinOrder) }}</span>
+                    <i class="fa-solid" :class="isTableGroupOpen(dineinTableKey(dineinOrder)) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                  </button>
+                </div>
+                <div v-show="!groupByTable || isTableGroupOpen(dineinTableKey(dineinOrder))">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(dineinOrder)">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
                   <div class="flex items-center gap-1 text-[#0084FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#0084FF]"></i>
@@ -143,8 +181,8 @@
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
                     <div v-for="(item, iIdx) in dineinOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
-                      <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
-                      <div>
+                      <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
+                      <div class="flex-1 min-w-0">
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
@@ -167,6 +205,18 @@
                         <!-- [P3-1 FIX] Show instruction on dine-in cards -->
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
                       </div>
+                      <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <button v-if="!kdsIsBumped(dineinOrder.id, item.id)" type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(dineinOrder, item)">
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button v-else-if="kdsCanRecall(dineinOrder.id, item.id)" type="button"
+                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          @click.prevent.stop="kdsRecall(dineinOrder, item)">
+                          {{ $t('button.kds_recall') }}
+                        </button>
+                      </div>
                     </div>
                     <!-- [AUDIT-P2] Print kitchen ticket button -->
                     <button type="button" @click="printKitchenTicket(dineinOrder)"
@@ -187,17 +237,19 @@
                   </div>
                 </div>
               </div>
+                </div>
+              </template>
             </div>
           </div>
           <div class="db-card rounded-[10px] h-fit">
-            <div class="p-3 pb-2" :class="onlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
+            <div class="p-3 pb-2" :class="filteredOnlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.online_orders") }}</h3>
             </div>
-            <div v-if="onlineOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+            <div v-if="filteredOnlineOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
               Aucune commande en ligne en cours.
             </div>
-            <div v-if="onlineOrders.length > 0" class="p-3" v-for="onlineOrder in onlineOrders" :key="onlineOrder.id">
-              <div class="w-full rounded-lg border border-[#EFF0F6]">
+            <div v-if="filteredOnlineOrders.length > 0" class="p-3" v-for="onlineOrder in filteredOnlineOrders" :key="onlineOrder.id">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(onlineOrder)">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]">
                   <div class="flex items-center gap-1 text-[#FF8C1A]">
                     <i class="lab lab-processing lab-font-size-16 text-[#FF8C1A]"></i>
@@ -231,8 +283,8 @@
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
                     <div v-for="(item, iIdx) in onlineOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
-                      <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
-                      <div>
+                      <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
+                      <div class="flex-1 min-w-0">
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
@@ -253,6 +305,18 @@
                           </p>
                         </div>
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                      </div>
+                      <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <button v-if="!kdsIsBumped(onlineOrder.id, item.id)" type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(onlineOrder, item)">
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button v-else-if="kdsCanRecall(onlineOrder.id, item.id)" type="button"
+                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          @click.prevent.stop="kdsRecall(onlineOrder, item)">
+                          {{ $t('button.kds_recall') }}
+                        </button>
                       </div>
                     </div>
                     <!-- [AUDIT-P2] Print kitchen ticket button -->
@@ -277,15 +341,15 @@
             </div>
           </div>
           <div class="db-card rounded-[10px] h-fit">
-            <div class="p-3 pb-2" :class="takeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
+            <div class="p-3 pb-2" :class="filteredTakeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.takeaway") }}</h3>
             </div>
-            <div v-if="takeawayOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+            <div v-if="filteredTakeawayOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
               Aucune commande à emporter en cours.
             </div>
-            <div v-if="takeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in takeawayOrders"
+            <div v-if="filteredTakeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in filteredTakeawayOrders"
               :key="takeawayOrder.id">
-              <div class="w-full rounded-lg border border-[#EFF0F6]">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(takeawayOrder)">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FAF4FF]">
                   <div class="flex items-center gap-1 text-[#9837FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#9837FF]"></i>
@@ -317,8 +381,8 @@
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
                     <div v-for="(item, iIdx) in takeawayOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
-                      <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
-                      <div>
+                      <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
+                      <div class="flex-1 min-w-0">
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
@@ -340,6 +404,18 @@
                         </div>
                         <!-- [P3-1 FIX] Show instruction on takeaway cards -->
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                      </div>
+                      <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <button v-if="!kdsIsBumped(takeawayOrder.id, item.id)" type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(takeawayOrder, item)">
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button v-else-if="kdsCanRecall(takeawayOrder.id, item.id)" type="button"
+                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          @click.prevent.stop="kdsRecall(takeawayOrder, item)">
+                          {{ $t('button.kds_recall') }}
+                        </button>
                       </div>
                     </div>
                     <!-- [AUDIT-P2] Print kitchen ticket button -->
@@ -365,18 +441,18 @@
           </div>
           <!-- Borne (Kiosk) orders column -->
           <div class="db-card rounded-[10px] h-fit">
-            <div class="p-3 pb-2 flex items-center gap-2" :class="kioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
+            <div class="p-3 pb-2 flex items-center gap-2" :class="filteredKioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">🖥️ Borne</h3>
-              <span v-if="kioskOrders.length > 0"
+              <span v-if="filteredKioskOrders.length > 0"
                 class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#e53935] text-white text-[10px] font-bold">
-                {{ kioskOrders.length }}
+                {{ filteredKioskOrders.length }}
               </span>
             </div>
-            <div v-if="kioskOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
+            <div v-if="filteredKioskOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
               Aucune commande borne en cours.
             </div>
-            <div v-if="kioskOrders.length > 0" class="p-3" v-for="kioskOrder in kioskOrders" :key="kioskOrder.id">
-              <div class="w-full rounded-lg border border-[#EFF0F6]">
+            <div v-if="filteredKioskOrders.length > 0" class="p-3" v-for="kioskOrder in filteredKioskOrders" :key="kioskOrder.id">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(kioskOrder)">
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]">
                   <div class="flex items-center gap-2 text-[#e53935]">
                     <i class="lab lab-processing lab-font-size-16 text-[#e53935]"></i>
@@ -403,8 +479,8 @@
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
                     <div v-for="(item, iIdx) in kioskOrder.order_items" :key="item.id || iIdx"
                       class="flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none">
-                      <h4 class="text-sm font-medium">{{ item.quantity }}x</h4>
-                      <div>
+                      <h4 class="text-sm font-medium shrink-0">{{ item.quantity }}x</h4>
+                      <div class="flex-1 min-w-0">
                         <h5 class="text-sm font-medium mb-1">{{ item.item_name }}</h5>
                         <!-- [Y2 FIX] Guard item_variations -->
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
@@ -433,6 +509,18 @@
                           </span>
                         </div>
                         <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                      </div>
+                      <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <button v-if="!kdsIsBumped(kioskOrder.id, item.id)" type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(kioskOrder, item)">
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button v-else-if="kdsCanRecall(kioskOrder.id, item.id)" type="button"
+                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          @click.prevent.stop="kdsRecall(kioskOrder, item)">
+                          {{ $t('button.kds_recall') }}
+                        </button>
                       </div>
                     </div>
                     <!-- [AUDIT-P2] Print kitchen ticket button -->
@@ -473,6 +561,11 @@ import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
+import {
+  filterOrdersByStation,
+  getKdsEscalationClass,
+  parseOrderCreatedMs,
+} from "../../../helpers/kdsDisplay";
 
 
 export default {
@@ -510,6 +603,15 @@ export default {
       autoRefreshInterval: null,
       wsConnected: !!(window._wsService?.isConnected()),
       _eventSub: null,
+      stationFilter: "all",
+      groupByTable: false,
+      soundEnabled: true,
+      soundVolume: 80,
+      /** forces border timer class recompute (orange → red) */
+      waitTick: 0,
+      expandedTableGroups: {},
+      _kdsWaitInterval: null,
+      _kdsOrdersHydrated: false,
     };
   },
   computed: {
@@ -519,6 +621,48 @@ export default {
     orderItems: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/orderItems"];
     },
+    filteredDineinOrders() {
+      return filterOrdersByStation(this.dineinOrders, this.stationFilter);
+    },
+    filteredOnlineOrders() {
+      return filterOrdersByStation(this.onlineOrders, this.stationFilter);
+    },
+    filteredTakeawayOrders() {
+      return filterOrdersByStation(this.takeawayOrders, this.stationFilter);
+    },
+    filteredKioskOrders() {
+      return filterOrdersByStation(this.kioskOrders, this.stationFilter);
+    },
+    sortedFilteredDinein() {
+      const key = (o) => (o.table_name && String(o.table_name).trim()) || "—";
+      const rows = [...this.filteredDineinOrders];
+      if (this.groupByTable) {
+        rows.sort((a, b) => key(a).localeCompare(key(b), undefined, { sensitivity: "base" }));
+      }
+      return rows;
+    },
+  },
+  watch: {
+    orders(newVal, oldVal) {
+      if (!this._kdsOrdersHydrated || oldVal === undefined) {
+        return;
+      }
+      if (newVal.length > oldVal.length) {
+        this.playKdsNewOrderSound();
+      }
+    },
+  },
+  created() {
+    const sf = localStorage.getItem("kds.station_filter");
+    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
+      this.stationFilter = sf;
+    }
+    const gb = localStorage.getItem("kds.group_by_table");
+    this.groupByTable = gb === "1" || gb === "true";
+    const se = localStorage.getItem("kds.sound_enabled");
+    this.soundEnabled = se !== "0" && se !== "false";
+    const sv = parseInt(localStorage.getItem("kds.sound_volume") || "80", 10);
+    this.soundVolume = Number.isFinite(sv) ? Math.min(100, Math.max(0, sv)) : 80;
   },
   mounted() {
     this.closeSidebar();
@@ -527,8 +671,84 @@ export default {
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    this._kdsWaitInterval = setInterval(() => {
+      this.waitTick += 1;
+    }, 30000);
   },
   methods: {
+    kdsWaitClass(order) {
+      void this.waitTick;
+      const ms = parseOrderCreatedMs(order);
+      return getKdsEscalationClass(ms, Date.now());
+    },
+    persistKdsUiPrefs() {
+      localStorage.setItem("kds.station_filter", this.stationFilter);
+      localStorage.setItem("kds.group_by_table", this.groupByTable ? "1" : "0");
+      localStorage.setItem("kds.sound_enabled", this.soundEnabled ? "1" : "0");
+      localStorage.setItem("kds.sound_volume", String(this.soundVolume));
+    },
+    playKdsNewOrderSound() {
+      if (!this.soundEnabled) {
+        return;
+      }
+      const el = this.$refs.kdsNewOrderAudio;
+      if (!el) {
+        return;
+      }
+      el.volume = Math.min(1, Math.max(0, this.soundVolume / 100));
+      el.currentTime = 0;
+      el.play().catch(() => {});
+    },
+    isTableGroupOpen(key) {
+      return this.expandedTableGroups[key] !== false;
+    },
+    toggleTableGroup(key) {
+      const cur = this.isTableGroupOpen(key);
+      this.expandedTableGroups = { ...this.expandedTableGroups, [key]: !cur };
+    },
+    dineinTableKey(order) {
+      return (order.table_name && String(order.table_name).trim()) || "—";
+    },
+    kdsDineinTableHeaderVisible(order, idx) {
+      if (!this.groupByTable) {
+        return false;
+      }
+      const list = this.sortedFilteredDinein;
+      const key = (o) => (o.table_name && String(o.table_name).trim()) || "—";
+      if (idx === 0) {
+        return true;
+      }
+      return key(order) !== key(list[idx - 1]);
+    },
+    kdsIsBumped(orderId, itemId) {
+      return this.$store.getters["kds/bumpTimestamp"](orderId, itemId) != null;
+    },
+    kdsCanRecall(orderId, itemId) {
+      const ts = this.$store.getters["kds/bumpTimestamp"](orderId, itemId);
+      if (ts == null) {
+        return false;
+      }
+      return Date.now() - ts < 60000;
+    },
+    kdsBump(order, item) {
+      this.$store.dispatch("kds/bumpItem", { orderId: order.id, itemId: item.id });
+      this.$nextTick(() => {
+        if (this.$store.getters["kds/isReadyOrder"](order)) {
+          if (order.status !== this.enums.orderStatusEnum.PREPARED) {
+            this.orderStatus(order.id, this.enums.orderStatusEnum.PREPARED);
+          }
+        }
+      });
+    },
+    async kdsRecall(order, item) {
+      const r = await this.$store.dispatch("kds/recallItem", {
+        orderId: order.id,
+        itemId: item.id,
+      });
+      if (r && r.ok === false && r.reason === "grace_expired") {
+        alertService.error(this.$t("message.kds_recall_grace_expired"));
+      }
+    },
     _bindWsService() {
       const ws = window._wsService;
       if (!ws) return;
@@ -576,6 +796,11 @@ export default {
         this._eventSub = onEvents(branchId, [
           { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
+          // [SYNC-001] KDS now also receives ItemAvailabilityChanged so the
+          // station can flag in-flight tickets that include a freshly 86'd item
+          // (rupture stock cuisine). Cheaper to refresh the active list than
+          // to maintain a per-item availability map on the KDS surface.
+          { broadcastAs: 'ItemAvailabilityChanged', handler: () => { this._debouncedRefresh(); } },
         ]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
@@ -621,6 +846,7 @@ export default {
             (item) => item.order_type === orderTypeEnum.KIOSK
           );
           this.loading.isActive = false;
+          this._kdsOrdersHydrated = true;
         })
         .catch((err) => {
           this.loading.isActive = false;
@@ -664,6 +890,7 @@ export default {
           );
 
           this.loading.isActive = false;
+          this._kdsOrdersHydrated = true;
         })
         .catch((err) => {
           this.loading.isActive = false;
@@ -822,6 +1049,10 @@ export default {
   },
   beforeUnmount() {
     this.stopAutoRefresh();
+    if (this._kdsWaitInterval) {
+      clearInterval(this._kdsWaitInterval);
+      this._kdsWaitInterval = null;
+    }
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();
@@ -841,5 +1072,14 @@ export default {
   padding: 6px 12px;
   font-size: 0.85rem;
   font-weight: 600;
+}
+.kds-wait-green {
+  border-color: rgba(34, 197, 94, 0.55) !important;
+}
+.kds-wait-orange {
+  border-color: rgba(245, 158, 11, 0.7) !important;
+}
+.kds-wait-red {
+  border-color: rgba(239, 68, 68, 0.85) !important;
 }
 </style>

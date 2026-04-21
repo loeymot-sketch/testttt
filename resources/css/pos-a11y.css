@@ -1,0 +1,31 @@
+/* Synced from resources/sass/admin/_pos_a11y.scss — imported by resources/css/app.css */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.sr-only.focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    padding: 0.5rem 1rem;
+    background: #1d4ed8;
+    color: #fff;
+    z-index: 9999;
+}
+
+.pos-focus-ring:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}

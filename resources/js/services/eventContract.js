@@ -57,6 +57,42 @@ export function parseEvent(raw) {
     };
 }
 
+/**
+ * LRU-bounded set of correlation IDs already handled in this session.
+ * Mitigates risk of double broadcast (worker race on dispatched_at) by
+ * dropping duplicates before they reach UI handlers (toast spam, double
+ * refresh, double cart prune).
+ *
+ * Capacity = 512 — deliberately small : keeps the dedupe window short
+ * (≈ last few minutes of activity at typical broadcast rate) while
+ * staying RAM-cheap on borne tablets.
+ */
+const SEEN_CORRELATION_CAP = 512;
+const seenCorrelationIds = new Set();
+const seenCorrelationOrder = [];
+
+export function isDuplicateCorrelation(correlationId) {
+    if (!correlationId || typeof correlationId !== 'string') {
+        return false;
+    }
+    if (seenCorrelationIds.has(correlationId)) {
+        return true;
+    }
+    seenCorrelationIds.add(correlationId);
+    seenCorrelationOrder.push(correlationId);
+    if (seenCorrelationOrder.length > SEEN_CORRELATION_CAP) {
+        const evicted = seenCorrelationOrder.shift();
+        seenCorrelationIds.delete(evicted);
+    }
+    return false;
+}
+
+// Test hook : reset the dedupe window between specs.
+export function __resetCorrelationDedupe() {
+    seenCorrelationIds.clear();
+    seenCorrelationOrder.length = 0;
+}
+
 export function onEvent(branchId, broadcastAs, handler) {
     return onEvents(branchId, [{ broadcastAs, handler }]);
 }
@@ -88,6 +124,10 @@ export function onEvents(branchId, bindings) {
                         expectedType,
                         receivedType: parsed.type,
                     });
+                }
+
+                if (isDuplicateCorrelation(parsed.correlationId)) {
+                    return;
                 }
 
                 handler(parsed);

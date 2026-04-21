@@ -1,6 +1,6 @@
 <template>
-    <div id="receiptModal" class="modal">
-        <div class="modal-dialog max-w-[340px] rounded-none" id="print" :dir="direction">
+    <div id="receiptModal" class="modal" role="document" :aria-label="$t('a11y.receipt_preview')">
+        <div :class="receiptDialogClasses" id="print" :dir="direction">
             <div class="modal-header hidden-print">
                 <button type="button" @click="reset"
                     class="modal-close flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-[#FB4E4E]">
@@ -14,6 +14,13 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div v-if="order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name"
+                    class="text-center text-[10px] leading-snug text-heading pb-2 border-b border-dashed border-gray-400">
+                    <p v-if="order.pos_siret">{{ $t('label.siret') }}: {{ order.pos_siret }}</p>
+                    <p v-if="order.pos_vat_intra">{{ $t('label.vat_intra') }}: {{ order.pos_vat_intra }}</p>
+                    <p v-if="order.pos_register_id">{{ $t('label.register_id') }}: {{ order.pos_register_id }}</p>
+                    <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
+                </div>
                 <receipt-duplicata-marker :order="order" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
@@ -61,19 +68,20 @@
                                         }}
                                     </p>
                                 </div>
-                                <p v-if="Object.keys(item.item_variations).length !== 0"
+                                <p v-if="receiptVariationsFor(item).length !== 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}
-                                        <span v-if="index + 1 < Object.keys(item.item_variations).length">, </span>
+                                    <span v-for="(variation, index) in receiptVariationsFor(item)" :key="'var-' + idx + '-' + index">
+                                        <template v-if="variation.label">{{ variation.label }}: </template>
+                                        <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}
+                                        <span v-if="index + 1 < receiptVariationsFor(item).length">, </span>
                                     </span>
                                 </p>
-                                <p v-if="item.item_extras.length > 0"
+                                <p v-if="receiptExtrasFor(item).length > 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                     {{ $t('label.extras') }}:
-                                    <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}
-                                        <span v-if="index + 1 < item.item_extras.length">, </span>
+                                    <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'extra-' + idx + '-' + index">
+                                        <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
+                                        <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                     </span>
                                 </p>
                                 <p v-if="item.instruction"
@@ -158,13 +166,29 @@
                             <tr>
                                 <td class="pt-1 pb-1 pr-1"> {{ $t('label.order_type') }}: {{ enums.orderTypeEnumArray[order.order_type] }}</td>
                             </tr>
-                            <tr>
-                                <td class="pt-1 pb-1 pr-1 align-top text-start">{{ $t('label.payment_type') }}: {{ posPaymentMethodEnumArray[order.pos_payment_method] }}</td>
-                                <td class="pt-1 pb-1 text-end" v-if="order.cash_back_amount > 0">
-                                    <div>{{ $t('label.cash') }}: {{ order.pos_received_currency_amount }}</div>
-                                    <span>{{ $t('label.change') }} : {{ order.cash_back_currency_amount }}</span>
-                                </td>
-                            </tr>
+                            <template v-if="paymentLines.length === 1">
+                                <tr>
+                                    <td class="pt-1 pb-1 pr-1 align-top text-start">{{ $t('label.payment_type') }}:
+                                        {{ paymentMethodLabel(paymentLines[0].method) }}</td>
+                                    <td class="pt-1 pb-1 text-end" v-if="paymentLines[0].change_amount > 0">
+                                        <div>{{ $t('label.cash') }}: {{ order.pos_received_currency_amount }}</div>
+                                        <span>{{ $t('label.change') }} : {{ order.cash_back_currency_amount }}</span>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template v-else-if="paymentLines.length > 1">
+                                <tr>
+                                    <td colspan="2" class="pt-1 pb-0.5 text-start font-semibold">{{ $t('label.tendered_breakdown') }}</td>
+                                </tr>
+                                <tr v-for="(line, idx) in paymentLines" :key="'pay-' + idx">
+                                    <td class="pb-1 pr-1 align-top text-start">{{ paymentMethodLabel(line.method) }}</td>
+                                    <td class="pb-1 text-end">
+                                        <div>{{ line.currency_amount != null ? line.currency_amount : line.amount }}</div>
+                                        <div v-if="line.change_amount > 0">
+                                            <span>{{ $t('label.change') }} : </span>{{ line.change_amount }}</div>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
@@ -172,6 +196,13 @@
                     class="py-2 capitalize text-xl font-bold text-center border-b border-dashed border-gray-400">
                     {{ $t('label.token') }} #{{ order.token }}
                 </h4>
+                <div v-if="nf525FooterLines.length"
+                    class="text-[10px] leading-snug text-heading text-center px-1 py-2 border-b border-dashed border-gray-400">
+                    <p v-for="line in nf525FooterLines" :key="line.key" class="mb-0.5">
+                        <span class="font-semibold">{{ $t('label.' + line.key) }}:</span>
+                        {{ line.value }}
+                    </p>
+                </div>
                 <div class="text-center pt-2 pb-4">
                     <p class="text-[11px] leading-[14px] capitalize text-heading">
                         {{ $t('message.thank_you') }}
@@ -198,6 +229,13 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
+import {
+    formatPaymentsBreakdown as buildPaymentLines,
+    buildNf525Footer,
+    receiptWidthClass as receiptPaperClass,
+    normalizeReceiptVariations,
+    normalizeReceiptExtras,
+} from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "ReceiptComponent",
@@ -244,6 +282,18 @@ export default {
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
+        paperWidthMm: function () {
+            return 58;
+        },
+        receiptDialogClasses: function () {
+            return ['modal-dialog', 'rounded-none', receiptPaperClass(this.paperWidthMm)];
+        },
+        paymentLines: function () {
+            return buildPaymentLines(this.order);
+        },
+        nf525FooterLines: function () {
+            return buildNf525Footer(this.order);
+        },
     },
     mounted() {
         this.$store.dispatch("company/lists").then().catch();
@@ -252,6 +302,31 @@ export default {
         reset: function () {
             appService.modalHide();
         },
+        paymentMethodLabel: function (method) {
+            const n = Number(method);
+            if (!Number.isNaN(n) && this.posPaymentMethodEnumArray[n] !== undefined) {
+                return this.posPaymentMethodEnumArray[n];
+            }
+            if (typeof method === 'string' && method !== '') {
+                return method;
+            }
+            return method ?? '';
+        },
+        // [V14 GLOBAL FINDING G-1 P0 + G-2 P1] Receipt must consume the
+        // immutable composition_snapshot lines (post-T07) AND the legacy
+        // item_variations JSON (pre-T07) without breaking either path.
+        // The snapshot uses `variation_name` as the value and `attribute_name`
+        // as the label ; legacy uses `name` as the value and `variation_name`
+        // as the label. Both shapes are normalized in posReceiptBuilder
+        // helpers so that the printed receipt always shows the historical
+        // attribute / value (NF525 fiscal immutability) AND the per-line
+        // quantity (multi-qty parity with the cart UI).
+        receiptVariationsFor: function (item) {
+            return normalizeReceiptVariations(item ? item.item_variations : []);
+        },
+        receiptExtrasFor: function (item) {
+            return normalizeReceiptExtras(item ? item.item_extras : []);
+        },
     },
     directives: {
         print
@@ -259,9 +334,25 @@ export default {
 }
 </script>
 <style scoped>
+.receipt-58mm {
+    width: 58mm;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.receipt-80mm {
+    width: 80mm;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 @media print {
     .hidden-print {
         display: none !important;
+    }
+    .receipt-58mm {
+        width: 58mm !important;
+    }
+    .receipt-80mm {
+        width: 80mm !important;
     }
 }
 </style>

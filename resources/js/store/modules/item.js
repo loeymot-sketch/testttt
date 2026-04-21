@@ -170,6 +170,23 @@ export const item = {
                 });
             });
         },
+        lookupByBarcode: function (context, code) {
+            return new Promise((resolve, reject) => {
+                const safe = encodeURIComponent(String(code));
+                axios.get(`admin/item/lookup-barcode/${safe}`).then((res) => {
+                    if (res.data && res.data.meta && res.data.meta.duplicate_barcode) {
+                        console.warn('[POS] Multiple items share this barcode; using first match');
+                    }
+                    resolve(res.data.data);
+                }).catch((err) => {
+                    if (err.response && err.response.status === 404) {
+                        resolve(null);
+                        return;
+                    }
+                    reject(err);
+                });
+            });
+        },
     },
     mutations: {
         lists: function (state, payload) {

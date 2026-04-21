@@ -15,6 +15,7 @@ class Branch extends Model
         'name', 'email', 'phone', 'latitude', 'longitude',
         'city', 'state', 'zip_code', 'address', 'zone', 'status',
         'available_locales',
+        'siret', 'vat_intra', 'register_id', 'legal_footer',
     ];
     protected $casts = [
         'id'                 => 'integer',
@@ -31,6 +32,10 @@ class Branch extends Model
         'status'             => 'integer',
         // Kiosk Design V1 — Phase 1.2
         'available_locales'  => 'array',
+        'siret'              => 'string',
+        'vat_intra'          => 'string',
+        'register_id'        => 'string',
+        'legal_footer'       => 'string',
     ];
 
     /**

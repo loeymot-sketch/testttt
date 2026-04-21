@@ -51,12 +51,39 @@ class OutboxTest extends TestCase
         try {
             OrderCreated::dispatch($order);
 
-            $this->assertDatabaseCount('domain_events', 1);
+            // Gate C9 — KI-001 : OrderCreated uses DispatchableAfterCommit, so
+            // the listener (PersistOrderCreatedToOutbox) is NOT invoked while the
+            // transaction is still pending. The afterCommit callback is queued
+            // on the connection's transactionsManager and only fires on COMMIT.
+            // This is strictly safer than the legacy "insert + rely on rollback"
+            // because it eliminates the window where downstream consumers could
+            // observe a row that gets rolled back.
+            $this->assertDatabaseCount('domain_events', 0);
         } finally {
             DB::rollBack();
         }
 
+        // After rollback the queued afterCommit callback is discarded, so no
+        // domain_events row was ever created — exactly the invariant we want.
         $this->assertDatabaseCount('domain_events', 0);
+    }
+
+    public function test_domain_event_persisted_only_after_commit(): void
+    {
+        Queue::fake();
+
+        $order = $this->createOrder();
+
+        DB::transaction(function () use ($order): void {
+            OrderCreated::dispatch($order);
+
+            // Inside the transaction the listener is still deferred.
+            $this->assertDatabaseCount('domain_events', 0);
+        });
+
+        // After successful commit the deferred dispatch fires synchronously
+        // (Queue is faked → handler runs in-process), persisting the outbox row.
+        $this->assertDatabaseCount('domain_events', 1);
     }
 
     public function test_dispatch_job_marks_event_dispatched(): void

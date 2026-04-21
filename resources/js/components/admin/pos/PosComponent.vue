@@ -1,11 +1,20 @@
 <template>
+    <a href="#pos-cart" class="sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
+    <div id="pos-a11y-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <ConnectionStatusBanner />
     <LoadingComponent :props="loading" />
 
     <div class="md:w-[calc(100%-340px)] lg:w-[calc(100%-320px)] xl:w-[calc(100%-377px)]">
+        <div class="flex justify-end mb-3">
+            <router-link :to="{ name: 'admin.pos.floorplan' }"
+                class="inline-flex items-center rounded-lg border border-[#EFF0F6] bg-white px-4 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] transition">
+                {{ $t('label.floorplan') }}
+            </router-link>
+        </div>
         <form @submit.prevent="search"
             class="flex items-center w-full h-[38px] leading-[38px] mb-4 rounded-lg bg-white border-[#EFF0F6] border-t border-l border-b">
-            <input type="text" v-model="props.search.name" :placeholder="$t('label.search_by_menu_item')"
+            <input type="text" :value="props.search.name" @input="onSearchInput"
+                :placeholder="$t('label.search_by_menu_item')"
                 class="w-full px-5 rounded-tl-lg rounded-bl-lg placeholder:text-xs placeholder:font-rubik placeholder:text-[#A0A3BD]">
             <button @click="resetName" type="button" v-if="props.search.name"
                 class="text-sm text-red-500 fa-regular fa-circle-xmark mr-4"></button>
@@ -30,12 +39,17 @@
             </div>
 
             <!-- Best Sellers -->
-            <div v-if="bestSellerItems.length > 0" class="mb-4">
-                <h3 class="text-sm font-semibold font-rubik text-heading mb-3">⭐ Best Sellers</h3>
-                <ItemComponent ref="posItemComponent" :items="bestSellerItems" />
+            <div aria-live="polite" aria-relevant="additions" :aria-busy="loadingItems ? 'true' : 'false'">
+                <SkeletonGrid v-if="loadingItems" :count="12" />
+                <template v-else>
+                    <div v-if="bestSellerItems.length > 0" class="mb-4">
+                        <h3 class="text-sm font-semibold font-rubik text-heading mb-3">⭐ Best Sellers</h3>
+                        <ItemComponent ref="posItemComponent" :items="bestSellerItems" />
+                    </div>
+                    <!-- Pas de best sellers trouvés: monter ItemComponent vide pour permettre l'édition depuis le panier -->
+                    <ItemComponent v-else ref="posItemComponent" :items="[]" />
+                </template>
             </div>
-            <!-- Pas de best sellers trouvés: monter ItemComponent vide pour permettre l'édition depuis le panier -->
-            <ItemComponent v-else ref="posItemComponent" :items="[]" />
         </template>
 
         <!-- FILTRÉ: swiper catégories + liste complète -->
@@ -59,30 +73,38 @@
                 </Swiper>
             </div>
 
-            <ItemComponent ref="posItemComponent" :items="items" />
+            <div aria-live="polite" aria-relevant="additions" :aria-busy="loadingItems ? 'true' : 'false'">
+                <SkeletonGrid v-if="loadingItems" :count="12" />
+                <template v-else>
+                    <ItemComponent ref="posItemComponent" :items="items" />
 
-            <div class="my-12" v-if="items.length === 0 && !props.search.name">
-                <div class="max-w-[350px] mx-auto">
-                    <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                <div class="my-12" v-if="items.length === 0 && !props.search.name">
+                    <div class="max-w-[350px] mx-auto">
+                        <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                    </div>
+                    <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
                 </div>
-                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
-            </div>
-            <div class="my-12" v-else-if="items.length === 0 && props.search.name">
-                <div class="max-w-[250px] mx-auto">
-                    <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+                <div class="my-12" v-else-if="items.length === 0 && props.search.name">
+                    <div class="max-w-[250px] mx-auto">
+                        <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+                    </div>
+                    <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
                 </div>
-                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
+                </template>
             </div>
         </template>
     </div>
 
 
     <div id="pos-cart"
+        role="region"
+        :aria-label="$t('a11y.cart_region')"
         class="db-pos-cartDiv fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[85px] ltr:md:right-5 rtl:md:left-5 md:w-[322px] lg:w-[305px] xl:w-[360px] md:h-[calc(100dvh-85px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
         <div class="p-4 flex-shrink-0">
             <div class="md:hidden text-right mb-3">
-                <button class="db-pos-cartCls" @click="closeCanvas('pos-cart')">
-                    <i class="lab-close-circle-line font-fill-danger lab-font-size-24"></i>
+                <button type="button" class="db-pos-cartCls" @click="closeCanvas('pos-cart')"
+                    :aria-label="$t('button.close')">
+                    <i class="lab-close-circle-line font-fill-danger lab-font-size-24" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="flex items-center w-full gap-4 mb-3">
@@ -95,9 +117,31 @@
                         :search-placeholder="$t('label.search_customer')" />
                 </div>
                 <div data-modal="#addCustomer" @click.prevent="addCustomers"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="$t('button.add_customer')"
+                    @keydown.enter.prevent="addCustomers"
+                    @keydown.space.prevent="addCustomers"
                     class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-circle-plus text-white"></i>
+                    <i class="fa-solid fa-circle-plus text-white" aria-hidden="true"></i>
                 </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <button
+                    type="button"
+                    class="h-10 rounded-xl border border-[#EFF0F6] text-sm font-medium text-heading bg-[#F7F7FC] hover:bg-[#FFEDF4] transition"
+                    :disabled="parkingInFlight"
+                    @click="promptParkOrder"
+                >
+                    {{ $t('pos.park') }}
+                </button>
+                <button
+                    type="button"
+                    class="h-10 rounded-xl border border-[#EFF0F6] text-sm font-medium text-white bg-primary hover:opacity-90 transition"
+                    @click="openParkedOrders"
+                >
+                    {{ $t('pos.parked_orders') }} ({{ parkedOrdersCount }})
+                </button>
             </div>
 
             <!-- Loyalty badge — shown when selected customer has a loyalty account -->
@@ -267,8 +311,8 @@
                     </th>
                 </tr>
             </thead>
-            <tbody>
-                <tr v-for="(cart, index) in carts">
+            <tbody role="list">
+                <tr v-for="(cart, index) in carts" role="listitem">
                     <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
                         <div class="flex gap-2 items-start">
                             <img v-if="cart.image" :src="cart.image" class="w-10 h-10 rounded-md object-cover flex-shrink-0" />
@@ -277,8 +321,9 @@
                                     <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
                                     <button type="button" @click.prevent="editCartLine(index)"
                                         class="shrink-0 text-primary hover:opacity-80"
-                                        :title="$t('button.edit') || 'Modifier'">
-                                        <i class="fa-regular fa-pen-to-square text-xs"></i>
+                                        :title="$t('button.edit') || 'Modifier'"
+                                        :aria-label="$t('button.edit')">
+                                        <i class="fa-regular fa-pen-to-square text-xs" aria-hidden="true"></i>
                                     </button>
                                 </div>
                                 <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) — no instruction clutter -->
@@ -287,31 +332,19 @@
                                 </template>
                                 <!-- Fallback for non-wizard products: show raw variations/extras -->
                                 <template v-else>
-                                <p v-if="Object.keys(cart.item_variations.variations).length !== 0">
-                            <span v-for="(variation, variationName, index) in cart.item_variations.names">
-                                <span class="capitalize text-xs leading-4 font-rubik text-heading">{{
-                                    variationName
-                                    }}:
-                                    &nbsp;</span>
-                                <span class="capitalize text-xs leading-4 font-rubik">{{ variation }}
-                                    <span v-if="index + 1 < Object.keys(cart.item_variations.names).length">,
-                                        &nbsp;</span>
-                                </span>
-                            </span>
-                        </p>
-                        <ul v-if="cart.item_extras.extras.length > 0">
-                            <li class="leading-4">
-                                <span class="capitalize text-xs leading-4 font-rubik text-heading">
-                                    {{ $t('label.extras') }}:
-                                </span>
-                                <p class="capitalize text-xs leading-4 font-rubik">
-                                    <span v-for="(extra, index) in cart.item_extras.names">
-                                        {{ extra }}
-                                        <span v-if="index + 1 < cart.item_extras.extras.length">, &nbsp;</span>
-                                    </span>
-                                </p>
-                            </li>
-                        </ul>
+                                    <p v-if="formatCartVariationSummary(cart)" class="capitalize text-xs leading-4 font-rubik">
+                                        {{ formatCartVariationSummary(cart) }}
+                                    </p>
+                                    <ul v-if="formatCartExtraSummary(cart)">
+                                        <li class="leading-4">
+                                            <span class="capitalize text-xs leading-4 font-rubik text-heading">
+                                                {{ $t('label.extras') }}:
+                                            </span>
+                                            <p class="capitalize text-xs leading-4 font-rubik">
+                                                {{ formatCartExtraSummary(cart) }}
+                                            </p>
+                                        </li>
+                                    </ul>
                                 </template>
 
                         <!-- Menu bundled + extras menu directement sous chaque ligne -->
@@ -342,13 +375,15 @@
                     </td>
                     <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
                         <div class="flex items-center indec-group">
-                            <button @click.prevent="cartQuantityDecrement(index)"
+                            <button type="button" @click.prevent="cartQuantityDecrement(index)"
                                 :class="cart.quantity === 1 ? 'fa-trash-can' : 'fa-minus'"
+                                :aria-label="cart.quantity === 1 ? $t('a11y.remove_item', { item: cart.name }) : $t('a11y.decrease_qty', { item: cart.name })"
                                 class="fa-solid text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
                             <input v-on:keypress="onlyNumber($event)" v-on:keyup="cartQuantityUp(index, $event)"
                                 type="number" :value="cart.quantity"
                                 class="text-center w-7 text-xs font-semibold text-heading indec-value">
-                            <button @click.prevent="cartQuantityIncrement(index)"
+                            <button type="button" @click.prevent="cartQuantityIncrement(index)"
+                                :aria-label="$t('a11y.increase_qty', { item: cart.name })"
                                 class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                         </div>
                     </td>
@@ -366,6 +401,7 @@
             <div class="flex h-[38px]" v-if="carts.length > 0">
                 <div class="dropdown-group">
                     <button
+                        type="button"
                         class="flex items-center justify-start w-[120px] h-full text-sm font-rubik rounded-tl rounded-bl appearance-none border pl-3 text-heading border-[#EFF0F6] dropdown-btn">
                         <span class="flex-1 text-start" v-if="discountType === discountTypeEnum.PERCENTAGE">{{
                             $t("label.percentage") }}</span>
@@ -387,14 +423,14 @@
                 <input v-on:keypress="floatNumber($event)" v-model="discount" type="text"
                     :placeholder="$t('label.add_discount')"
                     class="w-full h-full border-t border-b px-3 border-[#EFF0F6]">
-                <button @click.prevent="applyDiscount" type="submit"
+                <button @click.prevent="applyDiscount" type="button"
                     class="flex-shrink-0 w-16 h-full text-sm font-medium font-rubik capitalize ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg text-white bg-[#008BBA]">
                     {{ $t('button.apply') }}
                 </button>
             </div>
 
             <ul class="flex flex-col gap-1.5 mb-4 mt-4">
-                <li class="flex items-center justify-between">
+                <li class="flex items-center justify-between" role="status" aria-live="polite" aria-atomic="true">
                     <span class="text-sm font-rubik capitalize leading-6 text-[#2E2F38]">
                         {{ $t("label.sub_total") }}
                     </span>
@@ -405,7 +441,7 @@
                         }}
                     </span>
                 </li>
-                <li class="flex items-center justify-between">
+                <li class="flex items-center justify-between" role="status" aria-live="polite" aria-atomic="true">
                     <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.discount") }}</span>
                     <span class="text-sm font-rubik capitalize leading-6">{{
                         currencyFormat(posDiscount,
@@ -413,7 +449,7 @@
                             setting.site_currency_position)
                     }}</span>
                 </li>
-                <li class="flex items-center justify-between" v-if="checkoutProps.form.delivery_charge">
+                <li class="flex items-center justify-between" v-if="checkoutProps.form.delivery_charge" role="status" aria-live="polite" aria-atomic="true">
                     <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.delivery_charge") }}</span>
                     <span class="text-sm font-rubik capitalize leading-6 font-medium text-[#1AB759]">{{
                         currencyFormat(checkoutProps.form.delivery_charge,
@@ -421,7 +457,7 @@
                             setting.site_currency_position)
                     }}</span>
                 </li>
-                <li class="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
+                <li class="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1" role="status" aria-live="polite" aria-atomic="true">
                     <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
                         {{ $t("label.total") }}
                         <!-- [AUDIT-P2] Tax is recalculated server-side from catalog tax_id.
@@ -439,11 +475,11 @@
                 </li>
             </ul>
             <div class="flex items-center justify-center gap-6" v-if="carts.length > 0">
-                <button @click.prevent="resetCart"
+                <button type="button" @click.prevent="resetCart"
                     class="capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#FB4E4E]">
                     {{ $t('button.cancel') }}
                 </button>
-                <button @click.prevent="orderSubmit"
+                <button type="button" @click.prevent="orderSubmit"
                     class="capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#1AB759]">
                     {{ $t('button.order') }}
                 </button>
@@ -459,7 +495,8 @@
         <div class="modal-dialog">
             <div class="modal-header pb-3 border-b border-[#D9DBE9]">
                 <h3 class="capitalize font-medium">{{ $t('button.add_customer') }}</h3>
-                <button @click="resetCustomer" class="modal-close fa-regular fa-circle-xmark"></button>
+                <button type="button" @click="resetCustomer" class="modal-close fa-regular fa-circle-xmark"
+                    :aria-label="$t('button.close')"></button>
             </div>
             <div class="modal-body">
                 <form @submit.prevent="saveCustomer">
@@ -532,6 +569,11 @@
     <!--====================================
       PAYMENT MODAL PART START
   =====================================-->
+    <ParkedOrdersComponent
+        :open="showParkedOrders"
+        @close="showParkedOrders = false"
+        @restored="applyParkedSnapshot"
+    />
     <PaymentComponent :props="checkoutProps" />
     <!--====================================
           PAYMENT MODAL PART END
@@ -671,6 +713,7 @@ import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent.vue";
+import SkeletonGrid from "./SkeletonGrid.vue";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
@@ -681,6 +724,7 @@ import discountTypeEnum from "../../../enums/modules/discountTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
 import PaymentComponent from "./PaymentComponent.vue";
+import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
@@ -694,8 +738,15 @@ import {
     bundledOrderQuantityAndTotal,
     parsePositiveInt,
 } from "../../../helpers/posCartLineMath";
+import {
+    normalizeExtraEntries,
+    normalizeId,
+    normalizeVariationEntries,
+} from "../../../helpers/posNormalizeIds";
 import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
 import { onEvents } from "../../../services/eventContract";
+import debounce from "lodash/debounce";
+import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
 
 export default {
     name: "PosComponent",
@@ -705,6 +756,8 @@ export default {
         ConnectionStatusBanner,
         LoadingComponent,
         ItemComponent,
+        SkeletonGrid,
+        ParkedOrdersComponent,
         Swiper,
         SwiperSlide,
         PaymentComponent
@@ -723,9 +776,15 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            showParkedOrders: false,
             expandedKioskCashOrders: {},
+            parkingInFlight: false,
+            /** [T12] Item grid skeleton while first POS menu fetch is in flight */
+            posItemsFetchPending: false,
             _kioskPollTimer: null,
             _eventSub: null,
+            /** [T11] Debounce map itemId → timer id — max one toast / item / second */
+            _availabilityToastTimers: null,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -870,6 +929,9 @@ export default {
         items: function () {
             return this.$store.getters["item/lists"];
         },
+        loadingItems: function () {
+            return this.posItemsFetchPending && this.$store.getters["item/lists"].length === 0;
+        },
         isLanding: function () {
             return this.props.search.item_category_id === '' && !this.props.search.name;
         },
@@ -898,6 +960,9 @@ export default {
         posDiscount: function () {
             return this.$store.getters['posCart/discount'];
         },
+        parkedOrdersCount: function () {
+            return Number(this.$store.getters['posParked/count'] || 0);
+        },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
@@ -915,11 +980,42 @@ export default {
         },
     },
     beforeUnmount() {
+        if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
+            this._debouncedListRefresh.cancel();
+        }
+        if (this._stopBarcode) {
+            this._stopBarcode();
+        }
+        if (this._stopFKeys) {
+            this._stopFKeys();
+        }
+        // [V14 C-α / FINDING C-2 P2] Clear pending availability toast debounce timers
+        // to avoid late-firing toasts on an unmounted component.
+        if (this._availabilityToastTimers && typeof this._availabilityToastTimers === 'object') {
+            try {
+                Object.keys(this._availabilityToastTimers).forEach((k) => {
+                    const t = this._availabilityToastTimers[k];
+                    if (t) { clearTimeout(t); }
+                    delete this._availabilityToastTimers[k];
+                });
+            } catch (_e) { /* defensive */ }
+        }
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
         this._unsubscribeEcho();
         this._unbindWsService();
     },
     mounted() {
+        this._debouncedListRefresh = debounce(() => {
+            this.itemList();
+        }, 150);
+        this._stopBarcode = createBarcodeDetector((code) => this.onBarcodeScanned(code));
+        // [V14 C-α / FINDING C-5 P2] Disable F-key shortcuts when the parked
+        // orders drawer is open (prevents background category switching while
+        // the operator interacts with the drawer).
+        this._stopFKeys = createFKeyShortcuts(
+            (idx) => this.onFKeyShortcut(idx),
+            { shouldIntercept: () => !this.showParkedOrders }
+        );
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
@@ -1111,6 +1207,7 @@ export default {
                 const idx = list.findIndex(i => parseInt(i.id, 10) === itemId);
                 if (idx !== -1) {
                     const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                    const prevName = list[idx].name;
                     list[idx] = Object.assign({}, list[idx], {
                         is_available: isAvailable,
                         availability_reason: payload.reason || null,
@@ -1119,7 +1216,14 @@ export default {
                     // remove cart lines for this item_id when it becomes unavailable.
                     if (!isAvailable) {
                         try { this.$store.dispatch('posCart/pruneUnavailable', itemId); } catch (e) { /* defensive */ }
+                        this._maybeToastItemUnavailableLost(itemId, prevName);
                     }
+                    try {
+                        const child = this.$refs.posItemComponent;
+                        if (child && typeof child.syncItemAvailabilityFromBroadcast === 'function') {
+                            child.syncItemAvailabilityFromBroadcast(itemId, isAvailable, payload.reason || null);
+                        }
+                    } catch (e) { /* defensive */ }
                 }
             }
 
@@ -1127,6 +1231,28 @@ export default {
             // category move), reload the catalogue in the background.
             if (payload.type === 'full') {
                 try { this.itemList(); } catch (e) { /* defensive */ }
+            }
+        },
+        /**
+         * [T11] One toast per item per ~1s (rapid duplicate broadcasts).
+         */
+        _maybeToastItemUnavailableLost(itemId, itemName) {
+            if (!this._availabilityToastTimers) {
+                this._availabilityToastTimers = Object.create(null);
+            }
+            const key = String(itemId);
+            if (this._availabilityToastTimers[key]) return;
+            this._availabilityToastTimers[key] = true;
+            setTimeout(() => {
+                delete this._availabilityToastTimers[key];
+            }, 1000);
+            try {
+                const label = this.$t
+                    ? this.$t('pos.item_no_longer_available', { name: itemName || ('#' + itemId) })
+                    : ((itemName || itemId) + ' indisponible');
+                alertService.warning(label);
+            } catch (e) {
+                alertService.warning(String(itemName || itemId));
             }
         },
         _unsubscribeEcho() {
@@ -1288,9 +1414,158 @@ export default {
         closeCanvas: function (id) {
             return appService.closeCanvas(id);
         },
+        currentParkSnapshot() {
+            return {
+                lists: this.carts,
+                subtotal: this.subtotal,
+                discount: this.posDiscount,
+                total: (this.subtotal + (Number(this.checkoutProps.form.delivery_charge) || 0)) - this.posDiscount,
+                checkout_form: {
+                    branch_id: this.checkoutProps.form.branch_id,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    order_type: this.checkoutProps.form.order_type,
+                    dining_table_id: this.checkoutProps.form.dining_table_id,
+                    address_id: this.checkoutProps.form.address_id,
+                    delivery_charge: this.checkoutProps.form.delivery_charge,
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code,
+                    pos_payment_method: this.checkoutProps.form.pos_payment_method,
+                    pos_payment_note: this.checkoutProps.form.pos_payment_note,
+                    source: this.checkoutProps.form.source,
+                },
+                selected_address: this.selectedAddress,
+                delivery_inline: {
+                    ...this.deliveryInline,
+                    suggestions: [],
+                    loading: false,
+                    activeIdx: -1,
+                },
+            };
+        },
+        openParkedOrders() {
+            this.showParkedOrders = true;
+            this.$store.dispatch('posParked/fetchList').then().catch(() => {});
+        },
+        async promptParkOrder() {
+            if (this.parkingInFlight) {
+                return;
+            }
+
+            if (!Array.isArray(this.carts) || this.carts.length === 0) {
+                alertService.info(this.$t('pos.park_requires_items'));
+                return;
+            }
+
+            const promptLabel = this.$t('pos.park_label_prompt');
+            const label = window.prompt(promptLabel, '');
+
+            if (label === null) {
+                return;
+            }
+
+            this.parkingInFlight = true;
+
+            try {
+                await this.$store.dispatch('posParked/park', {
+                    label: label.trim() || null,
+                    snapshot: this.currentParkSnapshot(),
+                });
+                await this.$store.dispatch('posCart/resetCart');
+                this.checkoutProps.form.token = "";
+                this.selectedAddress = {};
+                this.resetDeliveryInline();
+                alertService.success(this.$t('pos.park_success'));
+            } catch (error) {
+                alertService.error(this.$t('pos.park_save_error'));
+            } finally {
+                this.parkingInFlight = false;
+            }
+        },
+        applyParkedSnapshot(payload) {
+            const savedForm = payload?.checkout_form || {};
+            const savedOrderType = savedForm.order_type ?? orderTypeEnum.TAKEAWAY;
+            const savedCustomerId = savedForm.customer_id ?? null;
+            const savedSelectedAddress = savedForm.address_id ? (payload?.selected_address || {}) : {};
+            const savedDeliveryInline = payload?.delivery_inline && typeof payload.delivery_inline === 'object'
+                ? {
+                    ...this.deliveryInline,
+                    ...payload.delivery_inline,
+                    suggestions: [],
+                    loading: false,
+                    activeIdx: -1,
+                }
+                : null;
+
+            this.showParkedOrders = false;
+            this.checkoutProps.form.token = "";
+
+            this.$nextTick(() => {
+                if (savedOrderType === orderTypeEnum.DELIVERY) {
+                    this.deliveryOrder();
+                } else if (savedOrderType === orderTypeEnum.DINING_TABLE && this.dineInEnabled) {
+                    this.dineInOrder();
+                } else {
+                    this.takeAwayOrder();
+                }
+
+                this.checkoutProps.form.branch_id = savedForm.branch_id ?? this.checkoutProps.form.branch_id;
+                this.checkoutProps.form.customer_id = savedCustomerId;
+                this.checkoutProps.form.order_type = savedOrderType;
+                this.checkoutProps.form.dining_table_id = savedForm.dining_table_id ?? null;
+                this.checkoutProps.form.address_id = savedForm.address_id ?? null;
+                this.checkoutProps.form.delivery_charge = savedForm.delivery_charge ?? 0;
+                this.checkoutProps.form.loyalty_customer_code = savedForm.loyalty_customer_code ?? null;
+                this.checkoutProps.form.pos_payment_method = savedForm.pos_payment_method ?? posPaymentMethodEnum.CASH;
+                this.checkoutProps.form.pos_payment_note = savedForm.pos_payment_note ?? '';
+                this.address.form.user_id = savedCustomerId;
+                this.selectedAddress = savedSelectedAddress;
+
+                if (savedDeliveryInline) {
+                    this.deliveryInline = savedDeliveryInline;
+                } else {
+                    this.resetDeliveryInline();
+                }
+
+                if (savedCustomerId) {
+                    this.clearAddresses = false;
+                    this.gettingUserAddress(savedCustomerId);
+                    this._loadCustomerLoyalty(savedCustomerId);
+                } else {
+                    this.clearAddresses = true;
+                }
+            });
+        },
         resetName: function () {
+            if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
+                this._debouncedListRefresh.cancel();
+            }
             this.props.search.name = "";
             this.itemList();
+        },
+        onSearchInput: function (event) {
+            this.props.search.name = event.target.value;
+            this._debouncedListRefresh();
+        },
+        onBarcodeScanned: function (code) {
+            this.$store.dispatch("item/lookupByBarcode", code).then((item) => {
+                if (item) {
+                    this.$refs.posItemComponent?.variationModalShow(item);
+                } else {
+                    alertService.error(this.$t("pos.barcode_not_found", { code }));
+                }
+            }).catch(() => {
+                alertService.error(this.$t("pos.barcode_not_found", { code }));
+            });
+        },
+        onFKeyShortcut: function (idx) {
+            const cat = this.categories?.[idx - 1];
+            if (!cat) {
+                return;
+            }
+            if (cat.id === 0 || cat.id === "") {
+                this.allCategory();
+            } else {
+                this.setCategory(cat.id);
+            }
         },
         selectDiscount(value) {
             this.discountType = value;
@@ -1319,11 +1594,14 @@ export default {
         },
         itemList: function (page = 1) {
             this.loading.isActive = true;
+            this.posItemsFetchPending = true;
             this.props.search.page = page;
             this.$store.dispatch("item/lists", this.props.search).then((res) => {
                 this.loading.isActive = false;
+                this.posItemsFetchPending = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                this.posItemsFetchPending = false;
             });
         },
         setCategory: function (id) {
@@ -1390,6 +1668,35 @@ export default {
         bundledLineUnitTotal: function (bundled) {
             return rowUnitBundled(bundled);
         },
+        cartVariationEntries: function (cart) {
+            return normalizeVariationEntries(cart && cart.item_variations);
+        },
+        cartExtraEntries: function (cart) {
+            return normalizeExtraEntries(cart && cart.item_extras);
+        },
+        formatCartVariationSummary: function (cart) {
+            const entries = this.cartVariationEntries(cart);
+            if (entries.length === 0) return '';
+
+            return entries
+                .map((variation) => {
+                    const quantity = Math.max(1, parseInt(variation.quantity, 10) || 1);
+                    const label = variation.name || variation.variation_name || 'Option';
+                    return `${quantity}× ${label}`;
+                })
+                .join(', ');
+        },
+        formatCartExtraSummary: function (cart) {
+            const entries = this.cartExtraEntries(cart);
+            if (entries.length === 0) return '';
+
+            return entries
+                .map((extra) => {
+                    const quantity = Math.max(1, parseInt(extra.quantity, 10) || 1);
+                    return quantity > 1 ? `${quantity}× ${extra.name || 'Extra'}` : (extra.name || 'Extra');
+                })
+                .join(', ');
+        },
         editCartLine: function (index) {
             const line = this.carts[index];
             if (!line || !this.$refs.posItemComponent) return;
@@ -1397,40 +1704,21 @@ export default {
         },
         /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
         buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {
-            let item_variations = [];
-            // [V2 FIX] Join variations by attrId key using names_by_id map (set in changeVariation).
-            // Falls back to index-zip if names_by_id is absent (legacy cart lines or addon rows).
-            const variationEntries = Object.entries(row.item_variations.variations || {});
-            const namesByIdMap = row.item_variations.names_by_id || null;
-            const nameEntries = Object.entries(row.item_variations.names || {});
-            variationEntries.forEach(([attrId, varId], i) => {
-                let variation_name, name;
-                if (namesByIdMap && namesByIdMap[String(attrId)]) {
-                    variation_name = namesByIdMap[String(attrId)].attrName;
-                    name = namesByIdMap[String(attrId)].varName;
-                } else {
-                    const nameEntry = nameEntries[i];
-                    variation_name = nameEntry ? nameEntry[0] : undefined;
-                    name = nameEntry ? nameEntry[1] : undefined;
-                }
-                item_variations.push({
-                    id: varId,
-                    item_id: row.item_id,
-                    item_attribute_id: attrId,
-                    variation_name,
-                    name,
-                });
-            });
-            let item_extras = [];
-            const extraIds = row.item_extras.extras || [];
-            const extraNames = row.item_extras.names || [];
-            extraIds.forEach((extraId, i) => {
-                item_extras.push({
-                    id: extraId,
-                    item_id: row.item_id,
-                    name: extraNames[i] || undefined,
-                });
-            });
+            const item_variations = this.cartVariationEntries(row).map((variation) => ({
+                id: normalizeId(variation.id) || variation.id,
+                item_id: row.item_id,
+                item_attribute_id: normalizeId(variation.item_attribute_id),
+                variation_name: variation.variation_name,
+                name: variation.name,
+                quantity: Math.max(1, parseInt(variation.quantity, 10) || 1),
+            }));
+
+            const item_extras = this.cartExtraEntries(row).map((extra) => ({
+                id: normalizeId(extra.id) || extra.id,
+                item_id: row.item_id,
+                name: extra.name || undefined,
+                quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
+            }));
             return {
                 item_id: row.item_id,
                 item_price: row.convert_price,

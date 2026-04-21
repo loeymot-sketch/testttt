@@ -26,6 +26,17 @@
         "mollusques": "Mollusques",
         "molluscs": "Mollusques"
     },
+    "a11y": {
+        "skip_to_cart": "Aller au panier",
+        "cart_region": "Panier commande",
+        "receipt_preview": "Aperçu du ticket",
+        "increase_qty": "Augmenter la quantité — {item}",
+        "decrease_qty": "Diminuer la quantité — {item}",
+        "remove_item": "Retirer {item} du panier",
+        "add_item": "Ajouter {item}, {price}",
+        "loading_items": "Chargement des articles",
+        "cart_updated": "Panier mis à jour"
+    },
     "pos": {
         "item_86_d": "Épuisé",
         "item_unavailable_during_edit": "Cet article vient de devenir indisponible. Demandez à un manager ou choisissez un autre produit.",

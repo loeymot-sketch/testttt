@@ -39,6 +39,7 @@ class OrderItemResource extends JsonResource
             'total_convert_price'              => AppLibrary::convertAmountFormat($this->total_price),
             'total_currency_price'             => AppLibrary::currencyAmountFormat($this->total_price),
             'instruction'                      => $this->instruction,
+            'kds_station'                      => $this->orderItem?->kds_station ?? 'none',
             'tax_type'                         => $this->tax_type === TaxType::FIXED ? env('CURRENCY') : '%',
             'tax_rate'                         => $this->tax_rate,
             'tax_currency_rate'                => AppLibrary::flatAmountFormat($this->tax_rate),

@@ -63,7 +63,85 @@ class OrderDetailsResource extends JsonResource
             // (CGI art. 242 nonies A — every receipt must list HT base
             // and tax per rate). POS-GA-F-20.
             'tax_lines' => $this->buildTaxLines(),
+            // [T21] NF525 receipt exposure — read-only, no fiscal mutation.
+            'fiscal_sequence_no' => $this->fiscal_sequence_no ?? null,
+            'audit_chain_fingerprint' => $this->buildAuditFingerprint(),
+            'pos_register_id' => optional($this->branch)->register_id,
+            'pos_siret' => optional($this->branch)->siret,
+            'pos_vat_intra' => optional($this->branch)->vat_intra,
+            'pos_legal_footer' => optional($this->branch)->legal_footer,
+            'operator_name' => optional($this->user)->name ?? null,
+            'payments_breakdown' => $this->buildPaymentsBreakdown(),
         ];
+    }
+
+    /**
+     * 12-char hex derived from the latest audit chain hash for this order.
+     * Never exposes the full HMAC / chain value or any secret.
+     */
+    private function buildAuditFingerprint(): ?string
+    {
+        try {
+            $orderId = $this->resource->id ?? $this->id;
+            $log = \App\Models\AuditLog::query()
+                ->where('resource', 'order')
+                ->where('resource_id', $orderId)
+                ->orderByDesc('id')
+                ->first();
+            if (! $log || ! $log->current_hash) {
+                return null;
+            }
+
+            return substr(hash('sha256', (string) $log->current_hash.'|'.$log->id), 0, 12);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function buildPaymentsBreakdown(): array
+    {
+        $order = $this->resource;
+
+        if (method_exists($order, 'payments')) {
+            try {
+                $payments = $order->relationLoaded('payments')
+                    ? ($order->payments ?? collect())
+                    : $order->payments()->get();
+
+                if ($payments instanceof \Illuminate\Support\Collection && $payments->isNotEmpty()) {
+                    return $payments->map(function ($p) {
+                        $amount = (float) ($p->amount ?? 0);
+
+                        return [
+                            'method' => $p->method ?? $p->payment_method ?? null,
+                            'amount' => $amount,
+                            'currency_amount' => $p->currency_amount ?? AppLibrary::currencyAmountFormat($amount),
+                            'change_amount' => (float) ($p->change_amount ?? 0),
+                            'reference' => $p->reference ?? null,
+                        ];
+                    })->values()->all();
+                }
+            } catch (\Throwable $e) {
+                // Single-tender synthetic fallback below.
+            }
+        }
+
+        if ($order->pos_payment_method !== null && $order->pos_payment_method !== '') {
+            $received = (float) ($order->pos_received_amount ?? 0);
+            $total = (float) ($order->total ?? 0);
+            $change = max(0.0, $received - $total);
+            $amountForLine = $received > 0 ? $received : $total;
+
+            return [[
+                'method' => $order->pos_payment_method,
+                'amount' => $amountForLine,
+                'currency_amount' => AppLibrary::currencyAmountFormat($order->pos_received_amount ?? $amountForLine),
+                'change_amount' => $change,
+                'reference' => null,
+            ]];
+        }
+
+        return [];
     }
 
     /**

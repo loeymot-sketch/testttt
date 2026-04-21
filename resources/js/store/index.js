@@ -82,6 +82,9 @@ import { GuestSignup } from "./modules/frontend/GuestSignup";
 import { backendGlobalState } from "./modules/backendGlobalState";
 import { myOrderDetails } from './modules/myOrderDetails';
 import { posCart } from './modules/posCart';
+import { posFloorplan } from './modules/posFloorplan';
+import { posParked } from './modules/posParked';
+import { posCustomer } from './modules/posCustomer';
 import { posOrder } from './modules/posOrder';
 import { transaction } from './modules/transaction';
 import { notificationAlert } from './modules/notificationAlert';
@@ -97,6 +100,7 @@ import { tableDiningOrder } from "./modules/table/tableDiningOrder";
 import { tableOrder } from './modules/tableOrder';
 import { subscriber } from './modules/subscriber';
 import { kitchenDisplaySystemOrder } from './modules/kitchenDisplaySystemOrder';
+import { kds } from './modules/kds';
 import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
 import { kioskCart } from './modules/kioskCart';
@@ -194,6 +198,9 @@ export default new createStore({
         backendGlobalState,
         myOrderDetails,
         posCart,
+        posFloorplan,
+        posParked,
+        posCustomer,
         posOrder,
         transaction,
         notificationAlert,
@@ -210,6 +217,7 @@ export default new createStore({
         tableOrder,
         subscriber,
         kitchenDisplaySystemOrder,
+        kds,
         orderStatusScreenOrder,
         kioskMachine,
         kioskCart,

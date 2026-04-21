@@ -12,6 +12,7 @@ use App\Models\Item;
 use App\Services\ItemService;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemResource;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ChangeImageRequest;
@@ -124,6 +125,43 @@ class ItemController extends AdminController
     {
         try {
            return new NormalItemResource($this->itemService->itemDetails($item));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * POS: resolve an item by exact barcode (available + visible on pos channel).
+     */
+    public function lookupBarcode(string $code)
+    {
+        try {
+            $code = rawurldecode($code);
+            $base = Item::query()
+                ->with('media', 'category', 'offer')
+                ->where('barcode', $code)
+                ->where('is_available', true)
+                ->where(function ($q) {
+                    $q->whereNull('channels')
+                        ->orWhereJsonContains('channels', 'pos');
+                });
+            $count = (clone $base)->count();
+            $item = (clone $base)->orderBy('id')->first();
+            if (! $item) {
+                return response()->json(['error' => 'not_found'], 404);
+            }
+            if ($count > 1) {
+                Log::warning('POS barcode lookup: multiple available items share barcode', [
+                    'barcode' => $code,
+                    'count' => $count,
+                ]);
+            }
+
+            return (new SimpleItemResource($item))->additional([
+                'meta' => [
+                    'duplicate_barcode' => $count > 1,
+                ],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

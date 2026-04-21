@@ -307,15 +307,16 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 
 ### Zones V14 worktree (ne pas écraser modifs en cours non commitées)
 
-- `resources/js/components/admin/pos/**` — OFF-LIMITS **sauf** `ReceiptComponent.vue` pilier 3 (et **uniquement** post-coordination explicite avec worktree V14 dans le gate brief C.2 — vérifier `git status` et conflit potentiel sur `ReceiptComponent.vue`)
+- `resources/js/components/admin/pos/**` — OFF-LIMITS **sauf** `ReceiptComponent.vue` pilier 3 (modif minimaliste D9=B max 8 LOC import + insertion sous-composant) ET **création** `ReceiptDuplicataMarker.vue` autonome (NEW, 0 conflit V14)
 - `resources/js/store/modules/posCart.js`, `posParked.js` — OFF-LIMITS
 - `resources/js/helpers/posBarcode.js`, `posNormalizeIds.js` — OFF-LIMITS
-- `app/Http/Controllers/Admin/Pos/**` — OFF-LIMITS
+- `app/Http/Controllers/Admin/Pos/**` — OFF-LIMITS **sauf création** `app/Http/Controllers/Admin/POS/PosReceiptPrintController.php` (NEW pour W8.C-P3 endpoint receipt_print_count, approuvé décideur orchestrateur 2026-04-20 cohérent G22-P3 D9=B)
 - `app/Models/PosParkedOrder.php`, `app/Services/PosParkedOrderService.php` — OFF-LIMITS
 
 ### Zones admin (out of scope)
 
-- `app/Http/Controllers/Admin/**` (sauf audit readonly) — OFF-LIMITS write
+- `app/Http/Controllers/Admin/**` (sauf audit readonly) — OFF-LIMITS write **sauf** `app/Http/Controllers/Admin/POS/PosReceiptPrintController.php` (NEW W8.C-P3, exception ciblée approuvée)
+- `routes/web.php`, `routes/api.php`, `routes/admin.php` (selon convention POS) : ajout d'UNE seule route POST autorisé pour W8.C-P3 endpoint print-receipt (sinon OFF-LIMITS)
 
 ### Zones livrables W7 (closed PASSED — ne pas remanier)
 
@@ -398,6 +399,7 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 - **E6 (Phase C.3 pilier 4) — Format JET XML normatif** : spec DGI évolutive (versions multiples). Si C.1 ne peut pas figer la spec exacte au moment de l'audit (lien public DGI ou doc interne), **DÉFÉRER pilier 4** à cycle séparé — n'exécuter que piliers 1+2+3.
 - ~~**ESCALATION 2026-04-21 W8.B.3**~~ **RÉSOLUE 2026-04-20** : Plan SUBSYSTEMS_TOUCHED W8.B étendu pour inclure `.env.example` (doc additive D2), `tests/Unit/Security/RateLimiterConfigTest.php` (correction SSOT `auth.login_lockout.*`), et report convention. Décideur orchestrateur a explicitement validé ces 3 ajouts comme partie intégrante du package W8.B (cohérent GATE_BRIEF_21).
 - **ESCALATION 2026-04-21 W8.C-P1.3** : le brief EXECUTE approuvé pour le pilier 1 demande aussi `config/logging.php` (channel `fiscal` si absent), `config/fiscal.php` (nouvelle config NF525), `.env.example` (doc `FISCAL_*`) et `reports/execution/RUN_P_MEGA_W8_C_P1_VERIFYCHAIN_EXECUTE_2026-04-20.md`, mais ces fichiers ne figurent pas dans `SUBSYSTEMS_TOUCHED` W8.C. Conformément à `execute-context.md`, STOP tant que le plan n'est pas étendu explicitement ou que le périmètre n'est pas réduit aux seuls fichiers déjà autorisés.
+- ~~**ESCALATION 2026-04-21 W8.C-P3**~~ **RÉSOLUE 2026-04-20** : Plan SUBSYSTEMS_OFF_LIMITS sections "V14 worktree" et "Zones admin" amendées pour AUTORISER explicitement la création (NEW) de `app/Http/Controllers/Admin/POS/PosReceiptPrintController.php` + ajout d'UNE route POST `/admin/pos/orders/{order}/print-receipt`. Décideur orchestrateur a validé cette exception ciblée comme partie intégrante de l'implémentation G22-P3 D9=B (sous-composant + endpoint dédié séparés du flow OrderService gated W5).
 
 ---
 

@@ -104,6 +104,7 @@
     <ReceiptComponent :order="order" />
 </template>
 <script>
+import _ from "lodash";
 import LoadingComponent from "../components/LoadingComponent.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -114,6 +115,8 @@ import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 // [POS-9.1.12] Hardware bridge for the cash drawer (POS-GA-F-19).
 import { openDrawer } from "../../../services/kioskHardware";
+import { normalizeId } from "../../../helpers/posNormalizeIds";
+import { normalizeCartForApi } from "../../../store/modules/posCart";
 
 export default {
     name: "PaymentComponent",
@@ -213,7 +216,25 @@ export default {
                 }
 
                 this.$store.dispatch("defaultAccess/show").then((res) => {
-                    this.$props.props.form.branch_id = res.data.data.branch_id;
+                    this.$props.props.form.branch_id = normalizeId(res.data.data.branch_id) || res.data.data.branch_id;
+                    // [V14 B-6 FIX] form.items is JSON-stringified by orderSubmit (PosComponent.vue)
+                    // before opening the payment modal. normalizeCartForApi only accepts arrays;
+                    // passing the string would silently empty the cart → ValidJsonOrder 422.
+                    // Parse → normalize (multi-qty + ids) → re-stringify so backend stays happy.
+                    const __rawItems = this.$props.props.form.items;
+                    let __itemsArray;
+                    if (typeof __rawItems === "string") {
+                        try { __itemsArray = JSON.parse(__rawItems) || []; }
+                        catch (_e) { __itemsArray = []; }
+                    } else if (Array.isArray(__rawItems)) {
+                        __itemsArray = __rawItems;
+                    } else {
+                        __itemsArray = [];
+                    }
+                    const __normalized = normalizeCartForApi(__itemsArray);
+                    this.$props.props.form.items = (typeof __rawItems === "string")
+                        ? JSON.stringify(__normalized)
+                        : __normalized;
                     this.$store.dispatch('posOrder/save', this.$props.props.form).then(orderResponse => {
                         // [POS-9.1.12] Open the physical cash drawer the moment a CASH
                         // payment is accepted. The hardware bridge is a no-op when no

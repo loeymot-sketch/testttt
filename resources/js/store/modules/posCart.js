@@ -1,5 +1,13 @@
 import _ from "lodash";
 import { computePosCartLineDisplayTotal } from "../../helpers/posCartLineMath";
+import {
+    normalizeExtraEntries,
+    normalizeExtrasPayload,
+    normalizeId,
+    normalizeQuantity,
+    normalizeVariationEntries,
+    normalizeVariationsPayload,
+} from "../../helpers/posNormalizeIds";
 
 // Clé localStorage pour le panier POS
 /**
@@ -97,6 +105,38 @@ function normPosLineAddons(addons) {
     return Array.isArray(addons) ? addons : [];
 }
 
+function normalizeCartItemId(value, fallback = null) {
+    const normalized = normalizeId(value);
+    return normalized === null ? fallback : normalized;
+}
+
+function buildVariationSignature(variations) {
+    return normalizeVariationEntries(variations)
+        .map((variation) => `${variation.item_attribute_id || '_'}:${variation.id}:${variation.quantity}`)
+        .sort()
+        .join('|');
+}
+
+function buildExtraSignature(extras) {
+    return normalizeExtraEntries(extras)
+        .map((extra) => `${extra.id}:${extra.quantity}`)
+        .sort()
+        .join('|');
+}
+
+/** Same merge signature as `lists` mutation (item_id, variations, extras, instruction, bundled addons). */
+function samePosLineMergeSignature(a, b) {
+    if (!a || !b) return false;
+    if (normalizeCartItemId(a.item_id) !== normalizeCartItemId(b.item_id)) return false;
+    if ((a.instruction || '') !== (b.instruction || '')) return false;
+    if (buildVariationSignature(a.item_variations) !== buildVariationSignature(b.item_variations)) {
+        return false;
+    }
+    if (buildExtraSignature(a.item_extras) !== buildExtraSignature(b.item_extras)) return false;
+    if (posLineAddonsSignature(a.pos_line_addons) !== posLineAddonsSignature(b.pos_line_addons)) return false;
+    return true;
+}
+
 function posLineAddonsSignature(addons) {
     const arr = normPosLineAddons(addons);
     if (arr.length === 0) return '_';
@@ -104,7 +144,7 @@ function posLineAddonsSignature(addons) {
     return arr
         .map((a) => {
             const extrasHash = Array.isArray(a.menu_extras) ? a.menu_extras.slice().sort().join(',') : '';
-            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}`;
+            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}:${buildVariationSignature(a.item_variations)}:${buildExtraSignature(a.item_extras)}`;
         })
         .sort()
         .join('|');
@@ -113,16 +153,16 @@ function posLineAddonsSignature(addons) {
 /** Normalise un addon bundlé en préservant menu_extras et menu_restore */
 function normPosLineAddon(a) {
     return {
-        parent_addon_id: a.parent_addon_id,
+        parent_addon_id: normalizeCartItemId(a.parent_addon_id, a.parent_addon_id),
         name: a.name,
         image: a.image || '',
-        item_id: a.item_id,
-        quantity: a.quantity,
+        item_id: normalizeCartItemId(a.item_id, a.item_id),
+        quantity: normalizeQuantity(a.quantity, 1),
         discount: a.discount || 0,
         currency_price: a.currency_price,
         convert_price: a.convert_price,
-        item_variations: a.item_variations || { variations: {}, names: {} },
-        item_extras: a.item_extras || { extras: [], names: [] },
+        item_variations: normalizeVariationEntries(a.item_variations),
+        item_extras: normalizeExtraEntries(a.item_extras),
         item_variation_total: a.item_variation_total || 0,
         item_extra_total: a.item_extra_total || 0,
         instruction: a.instruction || '',
@@ -132,21 +172,65 @@ function normPosLineAddon(a) {
     };
 }
 
+export function migrateLegacyVariations(item) {
+    if (!item) return [];
+    const normalized = normalizeVariationEntries(item.item_variations);
+    item.item_variations = normalized;
+    return normalized;
+}
+
+export function migrateLegacyExtras(item) {
+    if (!item) return [];
+    const normalized = normalizeExtraEntries(item.item_extras);
+    item.item_extras = normalized;
+    return normalized;
+}
+
+export function migrateLegacySelections(item) {
+    if (!item) return item;
+    migrateLegacyVariations(item);
+    migrateLegacyExtras(item);
+    return item;
+}
+
+export function normalizeCartForApi(items) {
+    return (Array.isArray(items) ? items : []).map((item) => {
+        const normalizedItem = migrateLegacySelections(_.cloneDeep(item));
+
+        return {
+            ...normalizedItem,
+            item_id: normalizeCartItemId(normalizedItem.item_id, normalizedItem.item_id),
+            branch_id: normalizeCartItemId(normalizedItem.branch_id, normalizedItem.branch_id),
+            item_variations: normalizeVariationsPayload(normalizedItem.item_variations),
+            item_extras: normalizeExtrasPayload(normalizedItem.item_extras),
+            pos_line_addons: normPosLineAddons(normalizedItem.pos_line_addons).map((addon) => ({
+                ...addon,
+                item_id: normalizeCartItemId(addon.item_id, addon.item_id),
+                parent_addon_id: normalizeCartItemId(addon.parent_addon_id, addon.parent_addon_id),
+                item_variations: normalizeVariationsPayload(normalizeVariationEntries(addon.item_variations)),
+                item_extras: normalizeExtrasPayload(normalizeExtraEntries(addon.item_extras)),
+            })),
+        };
+    });
+}
+
 /** Forme canonique d'une ligne panier (évite duplication lists vs replaceCartLine) */
 function shapePosListItem(pay) {
+    const normalized = migrateLegacySelections(_.cloneDeep(pay));
+
     return {
         discount: pay.discount,
         image: pay.image,
         instruction: pay.instruction,
         item_extra_total: pay.item_extra_total,
-        item_extras: pay.item_extras,
-        item_id: pay.item_id,
+        item_extras: normalized.item_extras,
+        item_id: normalizeCartItemId(pay.item_id, pay.item_id),
         item_variation_total: pay.item_variation_total,
-        item_variations: pay.item_variations,
+        item_variations: normalized.item_variations,
         name: pay.name,
         currency_price: pay.currency_price,
         convert_price: pay.convert_price,
-        quantity: pay.quantity,
+        quantity: normalizeQuantity(pay.quantity, 1),
         pos_line_addons: normPosLineAddons(pay.pos_line_addons).map(normPosLineAddon),
         cart_display: pay.cart_display || '',
     };
@@ -167,6 +251,9 @@ export const posCart = {
     })(),
     getters: {
         lists: function (state) {
+            state.lists.forEach((item) => {
+                migrateLegacySelections(item);
+            });
             return state.lists;
         },
         subtotal: function (state) {
@@ -177,6 +264,28 @@ export const posCart = {
         },
         restoredFromStorage: function (state) {
             return state.restoredFromStorage || false;
+        },
+        getVariationQuantity: function () {
+            return function (item, variationId) {
+                const variationKey = normalizeId(variationId);
+
+                if (variationKey === null) return 0;
+
+                return normalizeVariationEntries(item && item.item_variations)
+                    .filter((variation) => variation.id === variationKey)
+                    .reduce((total, variation) => total + normalizeQuantity(variation.quantity, 1), 0);
+            };
+        },
+        getAttributeTotalQuantity: function () {
+            return function (item, attributeId) {
+                const attributeKey = normalizeId(attributeId);
+
+                if (attributeKey === null) return 0;
+
+                return normalizeVariationEntries(item && item.item_variations)
+                    .filter((variation) => variation.item_attribute_id === attributeKey)
+                    .reduce((total, variation) => total + normalizeQuantity(variation.quantity, 1), 0);
+            };
         }
     },
     actions: {
@@ -210,6 +319,10 @@ export const posCart = {
             context.commit('replaceCartLine', payload);
             context.commit('subtotal');
         },
+        setItemVariations: function (context, payload) {
+            context.commit('setItemVariations', payload);
+            context.commit('subtotal');
+        },
         /**
          * [P12_POS_CART_PRUNE / F-VERIFY-01-02] Remove cart lines whose item_id
          * matches an item flagged unavailable by the ItemAvailabilityChanged
@@ -235,69 +348,101 @@ export const posCart = {
             const saved = _applyPosCartScope(branchId, userId);
             context.commit('hydrateFromScope', saved);
         },
+        /**
+         * Optimistic POS add: push a shaped line immediately; caller runs `lists` next,
+         * then `__optimisticConfirm` (or `__optimisticRollback` on failure).
+         */
+        addOptimistic: function (context, payload) {
+            const item = payload && payload.item;
+            if (!item) {
+                return null;
+            }
+            const tempId = `${Date.now()}-${Math.random()}`;
+            context.commit('__optimisticAdd', { tempId, item });
+            context.commit('subtotal');
+            return tempId;
+        },
     },
     mutations: {
+        __optimisticAdd: function (state, payload) {
+            const tempId = payload && payload.tempId;
+            const raw = payload && payload.item;
+            if (!tempId || !raw) return;
+            const shaped = shapePosListItem(raw);
+            shaped._optimistic = true;
+            shaped._tempId = tempId;
+            shaped._optimisticListsDelta = shaped.quantity;
+            state.lists.push(shaped);
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
+        __optimisticConfirm: function (state, tempId) {
+            const idx = state.lists.findIndex((l) => l && l._tempId === tempId);
+            if (idx === -1) return;
+            const line = state.lists[idx];
+            const hasOlderDup = state.lists.some((l, i) =>
+                i !== idx &&
+                l &&
+                !l._optimistic &&
+                samePosLineMergeSignature(l, line)
+            );
+            if (hasOlderDup) {
+                state.lists.splice(idx, 1);
+            } else {
+                const delta = line._optimisticListsDelta;
+                if (delta != null && line.quantity > delta) {
+                    line.quantity -= delta;
+                }
+                delete line._optimistic;
+                delete line._tempId;
+                delete line._optimisticListsDelta;
+            }
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
+        __optimisticRollback: function (state, tempId) {
+            const idx = state.lists.findIndex((l) => l && l._tempId === tempId);
+            if (idx === -1) return;
+            state.lists.splice(idx, 1);
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
         lists: function (state, payload) {
             if (payload.length > 0) {
                 let isNew = false;
                 let newChecker = [];
-                let variationAndExtraChecker = [];
                 _.forEach(payload, (pay) => {
+                    const shapedPay = shapePosListItem(pay);
                     if (state.lists.length === 0) {
                         isNew = true;
                     } else {
                         isNew = true;
                         _.forEach(state.lists, (list, listKey) => {
-                            if (list.item_id === pay.item_id) {
+                            migrateLegacySelections(state.lists[listKey]);
 
-                                // [N1+N8 FIX] Symmetric variation check: both stored and incoming must have
-                                // identical key sets and values. Using typeof guard instead of "undefined" string.
-                                const storedVars = (typeof state.lists[listKey].item_variations.variations === 'object' && state.lists[listKey].item_variations.variations !== null)
-                                    ? state.lists[listKey].item_variations.variations : {};
-                                const payVars = (typeof pay.item_variations.variations === 'object' && pay.item_variations.variations !== null)
-                                    ? pay.item_variations.variations : {};
-                                const storedVarKeys = Object.keys(storedVars);
-                                const payVarKeys = Object.keys(payVars);
-                                if (storedVarKeys.length !== payVarKeys.length) {
-                                    // Different number of attributes → definitely different configs
-                                    variationAndExtraChecker.push(false);
-                                } else if (storedVarKeys.length > 0) {
-                                    storedVarKeys.forEach((variationKey) => {
-                                        if (payVars[variationKey] === storedVars[variationKey]) {
-                                            variationAndExtraChecker.push(true);
-                                        } else {
-                                            variationAndExtraChecker.push(false);
-                                        }
-                                    });
-                                }
+                            if (list.item_id === shapedPay.item_id) {
+                                const sameVariations =
+                                    buildVariationSignature(state.lists[listKey].item_variations) ===
+                                    buildVariationSignature(shapedPay.item_variations);
+                                const sameExtras =
+                                    buildExtraSignature(state.lists[listKey].item_extras) ===
+                                    buildExtraSignature(shapedPay.item_extras);
 
-                                // [N8 FIX] Extras: symmetric length + content check (no "undefined" string)
-                                const storedExtras = Array.isArray(state.lists[listKey].item_extras.extras) ? state.lists[listKey].item_extras.extras : [];
-                                const payExtras = Array.isArray(pay.item_extras.extras) ? pay.item_extras.extras : [];
-                                if (storedExtras.length !== payExtras.length) {
-                                    variationAndExtraChecker.push(false);
-                                } else if (payExtras.length > 0) {
-                                    // Every extra in pay must be present in stored (same count already verified)
-                                    const allMatch = payExtras.every(e => storedExtras.includes(e));
-                                    variationAndExtraChecker.push(allMatch ? true : false);
-                                }
-
-                                if (variationAndExtraChecker.includes(false)) {
+                                if (!sameVariations || !sameExtras) {
                                     newChecker.push(false);
                                 } else {
                                     // [V-1 FIX] Check instruction before merging — different instructions = separate items
-                                    var sameInstruction = (state.lists[listKey].instruction || '') === (pay.instruction || '');
+                                    var sameInstruction = (state.lists[listKey].instruction || '') === (shapedPay.instruction || '');
                                     var sameBundled =
                                         posLineAddonsSignature(state.lists[listKey].pos_line_addons) ===
-                                        posLineAddonsSignature(pay.pos_line_addons);
+                                        posLineAddonsSignature(shapedPay.pos_line_addons);
                                     if (sameInstruction && sameBundled) {
                                         newChecker.push(true);
-                                        state.lists[listKey].quantity += pay.quantity;
+                                        state.lists[listKey].quantity += shapedPay.quantity;
                                     } else {
                                         newChecker.push(false);
                                     }
                                 }
-                                variationAndExtraChecker = [];
                             } else {
                                 newChecker.push(false);
                             }
@@ -312,7 +457,7 @@ export const posCart = {
                     }
 
                     if (isNew) {
-                        state.lists.push(shapePosListItem(pay));
+                        state.lists.push(shapedPay);
                         isNew = false;
                     }
                 });
@@ -392,7 +537,7 @@ export const posCart = {
          */
         hydrateFromScope: function (state, saved) {
             if (saved && Array.isArray(saved.lists)) {
-                state.lists = saved.lists;
+                state.lists = saved.lists.map((item) => shapePosListItem(item));
                 state.subtotal = saved.subtotal || 0;
                 state.discount = saved.discount || 0;
                 state.restoredFromStorage = saved.lists.length > 0;
@@ -402,6 +547,39 @@ export const posCart = {
                 state.discount = 0;
                 state.restoredFromStorage = false;
             }
+        },
+        setItemVariations: function (state, payload) {
+            const item = payload && payload.item;
+            const variationId = normalizeId(payload && payload.varId);
+            const attributeId = normalizeId(payload && payload.attrId);
+
+            if (!item || variationId === null) return;
+
+            const quantity = Math.max(0, Math.floor(Number(payload && payload.quantity) || 0));
+            const variations = normalizeVariationEntries(item.item_variations);
+            const existingIndex = variations.findIndex((variation) => variation.id === variationId);
+
+            if (quantity === 0) {
+                if (existingIndex !== -1) {
+                    variations.splice(existingIndex, 1);
+                }
+            } else if (existingIndex !== -1) {
+                variations.splice(existingIndex, 1, {
+                    ...variations[existingIndex],
+                    id: variationId,
+                    item_attribute_id: attributeId,
+                    quantity,
+                });
+            } else {
+                variations.push({
+                    id: variationId,
+                    item_attribute_id: attributeId,
+                    quantity,
+                });
+            }
+
+            item.item_variations = variations;
+            saveCartToStorage(state);
         },
     },
 };

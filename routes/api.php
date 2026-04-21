@@ -5,7 +5,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\OtpController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\Pos\CashDrawerController;
+use App\Http\Controllers\Admin\Pos\CustomerNfcLookupController;
+use App\Http\Controllers\Admin\Pos\FloorplanController;
+use App\Http\Controllers\Admin\Pos\ParkedOrderController;
 use App\Http\Controllers\Admin\Pos\PosReceiptPrintController;
+use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\ChefController;
 use App\Http\Controllers\Admin\ItemController;
@@ -593,6 +598,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('item')->name('item.')->group(function () {
 
         Route::get('/', [ItemController::class, 'index']);
+        Route::get('/lookup-barcode/{code}', [ItemController::class, 'lookupBarcode'])->where('code', '[^/]+');
         Route::get('/show/{item}', [ItemController::class, 'show']);
         Route::post('/', [ItemController::class, 'store']);
         Route::match(['post', 'put', 'patch'], '/{item}', [ItemController::class, 'update']);
@@ -625,6 +631,29 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
         Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
+        Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
+            Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
+            Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
+            Route::get('/{id}', [ParkedOrderController::class, 'show'])->name('show');
+            Route::delete('/{id}', [ParkedOrderController::class, 'destroy'])->name('destroy');
+        });
+        Route::prefix('floorplan')->name('floorplan.')->group(function () {
+            Route::get('/state', [FloorplanController::class, 'state'])->name('state');
+            Route::post('/transfer', [FloorplanController::class, 'transfer'])->name('transfer');
+            Route::post('/{tableId}/assign', [FloorplanController::class, 'assign'])->name('assign');
+            Route::post('/{tableId}/release', [FloorplanController::class, 'release'])->name('release');
+        });
+        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->name('cash-drawer.open');
+        Route::post('/customers/lookup-by-nfc', [CustomerNfcLookupController::class, 'lookup'])->name('customers.lookup-by-nfc');
+    });
+
+    Route::prefix('printers')->name('printers.')->group(function () {
+        Route::get('/', [PrinterController::class, 'index'])->name('index');
+        Route::post('/', [PrinterController::class, 'store'])->name('store');
+        Route::get('/{printer}', [PrinterController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/{printer}', [PrinterController::class, 'update'])->name('update');
+        Route::delete('/{printer}', [PrinterController::class, 'destroy'])->name('destroy');
+        Route::post('/{printer}/test-print', [PrinterController::class, 'testPrint'])->name('test-print');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {

@@ -8,6 +8,9 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Hardware\PrinterTransport\NullPrinterTransport;
+use App\Services\Hardware\PrinterTransport\PrinterTransportInterface;
+use App\Services\Hardware\PrinterTransport\TcpPrinterTransport;
 use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->bind(PrinterTransportInterface::class, function () {
+            if ($this->app->environment('testing')) {
+                return new NullPrinterTransport();
+            }
+
+            return new TcpPrinterTransport();
+        });
     }
 
     /**

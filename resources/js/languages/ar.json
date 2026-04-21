@@ -26,6 +26,17 @@
         "mollusques": "الرخويات",
         "molluscs": "الرخويات"
     },
+    "a11y": {
+        "skip_to_cart": "انتقل إلى السلة",
+        "cart_region": "سلة الطلب",
+        "receipt_preview": "معاينة الإيصال",
+        "increase_qty": "زيادة الكمية — {item}",
+        "decrease_qty": "تقليل الكمية — {item}",
+        "remove_item": "إزالة {item} من السلة",
+        "add_item": "إضافة {item}، {price}",
+        "loading_items": "جاري تحميل عناصر القائمة",
+        "cart_updated": "تم تحديث السلة"
+    },
     "pos": {
         "item_86_d": "نفذ",
         "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
