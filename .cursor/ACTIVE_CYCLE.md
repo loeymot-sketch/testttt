@@ -1,15 +1,33 @@
 # Active Cycle – FoodKing
 
-## PARALLEL_CYCLE_W3_REM_PLUS_W4 (CLOSED PASSED — coexiste avec V14 ci-dessous)
+## PARALLEL_CYCLE_W5_AUDITS (CLOSED PASSED — 3 audits + 3 GATE_BRIEFS livrés)
 
-TASK_ID: P_MEGA_W3_REMEDIATION_PLUS_W4_2026-04-20
-PHASE: CLOSED PASSED — Vérification W3 200% + REMEDIATION (6 bugs invisibles) + Vague 4 complète (W4.A audit tool + REM_2 split Vue/Laravel + W4.B RTL CSS bornés)
-COMMITS : be229442f (W3 REM) → 41712ddca (W4.A) → f4e432caf (W4.A REM_2) → 07e43be3e (W4.B)
-VITEST : 535 → 540 → 546 → 550 → 554 (+19 verts, 0 régression)
-SUBAGENTS : 1× explore + 1× planner-orchestrator + 4× routine-implementer (0 violation routing.md)
-SYNTHESE : reports/execution/SYNTHESE_P_MEGA_W3_REMEDIATION_PLUS_W4_2026-04-20.md
-FINDINGS_OUVERTS : 5 (1 HIGH=FINDING_VUE_FR_JSON_GAP / 1 MED back snapshot / 3 LOW)
-NEXT : arbitrage user — Voie A (Vague 5 P-MEGA-12/13/14 avec 3 HUMAN_GATE), Voie B (cycle FINDING_VUE_FR_JSON_GAP 510 clés), Voie C (P-MEGA-23 implémentations).
+TASK_ID: P_MEGA_W5_EATIN_TPE_RECEIPT_2026-04-20
+PHASE: CLOSED PASSED — 3 audits readonly + 3 GATE_BRIEFs synthétiques pour décision humaine
+PLAN_FILE: plans/PLAN_P_MEGA_W5_2026-04-20.md (par planner-orchestrator)
+RUNNER_MODE: single-session
+AUTO_REMEDIATION: DÉSACTIVÉE pour W5 (3 hard gates par human-gates.mdc — aucune fix auto)
+GATES PRÉ-DÉCLARÉES : 3 (GATE_P_MEGA_12 TVA, GATE_P_MEGA_13 payments idempotence, GATE_P_MEGA_14 NF525 receipt) — TOUTES PRÊTES POUR DÉCISION
+LOC code production W5 : 0 (audit only conformément plan)
+SUBAGENTS W5 : 1× planner + 3× explore parallèles (audits) + 1× orchestrator Claude (GATE_BRIEFs synthèse)
+SYNTHESE : reports/execution/SYNTHESE_P_MEGA_W5_2026-04-20.md
+NEXT_DECISION : 4 voies documentées (W6 sans gate / pré-fix α+δ routine / attente gates W5 / cycle FINDING_VUE_FR_JSON_GAP)
+
+## PARALLEL_CYCLE_W4_REM_3 (CLOSED PASSED — verification 200% + remediation locale desync)
+
+TASK_ID: P_MEGA_W4_REMEDIATION_3_LOCALE_DESYNC_2026-04-20
+PHASE: CLOSED PASSED
+COMMIT: 781232fb4
+VITEST: 565/566 (+11 nouveaux ; 1 échec untracked V14 posNormalizeIds.spec.js hors scope)
+SUBAGENTS : 1× explore (verification 200%) + 1× routine-implementer (REM_3)
+BUGS FIXÉS : 4 (1 SEV locale desync ar/fr, 2 MED tool i18n, 1 LOW multiline)
+SCOPE: 0 fichier hors périmètre autorisé
+
+PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
+  Commits : be229442f (W3 REM) → 41712ddca (W4.A) → f4e432caf (W4.A REM_2) → 07e43be3e (W4.B) → df8b4ce0e (synth W4) → 781232fb4 (W4 REM_3 locale desync + tool quality)
+  Tests : 565/566 (1 échec untracked V14 posNormalizeIds.spec.js hors scope)
+  Subagents : 1× explore + 1× planner + 5× routine-implementer (0 violation routing.md)
+  Findings : 5 ouverts dont 1 HIGH (FINDING_VUE_FR_JSON_GAP 510 clés) + 1 MED back allergens snapshot + 1 LOW partial RTL coverage 5 components
 
 ---
 
