@@ -58,9 +58,11 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('kiosk-orders', function (Request $request) {
+            $userKey = $request->user()?->id ?? 'guest';
+
             return Limit::perMinute(
                 (int) config('kiosk.order_rate_limit', 5)
-            )->by($request->ip())->response(function () {
+            )->by(sprintf('kiosk:%s|%s', $userKey, $request->ip()))->response(function () {
                 return response()->json([
                     'message' => 'Trop de commandes. Veuillez patienter.',
                     'retry_after' => 60,
@@ -85,10 +87,7 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login-lockout', function (Request $request) {
-            $identifier = Str::lower((string) $request->input('email', ''));
-            if ($identifier === '') {
-                $identifier = Str::lower((string) $request->input('username', ''));
-            }
+            $identifier = Str::lower((string) ($request->input('email') ?: $request->input('username') ?: 'anon'));
             $key = $identifier.'|'.$request->ip();
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
