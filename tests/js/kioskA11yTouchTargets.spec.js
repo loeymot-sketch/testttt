@@ -1,9 +1,13 @@
 /**
  * W6.A — Cibles tactiles ≥ 44×44 (WCAG 2.5.5) sur contrôles kiosk critiques.
+ * happy-dom ne fournit pas de layout fiable : on combine présence DOM + contrat CSS
+ * (fichier tokens + styles SFC) au lieu de getBoundingClientRect() seul.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { shallowMount, mount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 import KioskWizardComponent from '../../resources/js/components/frontend/kiosk/KioskWizardComponent.vue';
 import KioskCategoriesComponent from '../../resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue';
@@ -12,6 +16,9 @@ import { createStore } from 'vuex';
 import { kioskSettings } from '../../resources/js/store/modules/kioskSettings';
 import frMessages from '../../resources/js/languages/fr.json';
 
+const ROOT = process.cwd();
+const MIN = 44;
+
 const i18n = createI18n({
   legacy: false,
   locale: 'fr',
@@ -19,29 +26,53 @@ const i18n = createI18n({
   messages: { fr: frMessages },
 });
 
-const MIN = 44;
+/** @param {string} val */
+function pxValue(val) {
+  const m = String(val).trim().match(/^(\d+(?:\.\d+)?)px$/i);
+  return m ? parseFloat(m[1]) : null;
+}
 
-/** Sélecteurs dont le CSS W6 garantit une cible ≥ 44px (fallback si happy-dom ne calcule pas le layout). */
-const TOUCH_CONTRACT_SELECTORS = [
-  '.kiosk-progress-arrow',
-  '.kiosk-wizard-close',
-  '.kiosk-btn-abandon',
-  '.kiosk-btn-back',
-  '.kiosk-btn-next',
-  '.kiosk-top-chip',
-  '.ks-chip__remove',
-];
+/**
+ * Vérifie qu’un bloc de règle CSS garantit une cible tactile ≥ MIN (hauteur ou largeur min).
+ * Accepte min-height / min-width en px ou var(--kiosk-touch*).
+ * @param {string} blockBody
+ * @param {string} label
+ */
+function assertCssBlockTouchMin(blockBody, label) {
+  expect(blockBody, `${label}: bloc CSS manquant`).toBeTruthy();
+  const minH = blockBody.match(/min-height:\s*([^;]+);?/);
+  const minW = blockBody.match(/min-width:\s*([^;]+);?/);
+  const height = blockBody.match(/(?:^|[\s{;])height:\s*([^;]+);?/m);
+  const width = blockBody.match(/(?:^|[\s{;])width:\s*([^;]+);?/m);
 
-function assertMinSize(el) {
-  const w = el.ownerDocument.defaultView;
-  if (!w) return;
-  const cs = w.getComputedStyle(el);
-  const mw = parseFloat(cs.minWidth) || 0;
-  const mh = parseFloat(cs.minHeight) || 0;
-  const r = el.getBoundingClientRect();
-  const bySize = Math.max(mw, mh, r.width, r.height) >= MIN;
-  const byContract = TOUCH_CONTRACT_SELECTORS.some((sel) => el.matches(sel));
-  expect(bySize || byContract).toBe(true);
+  const candidates = [];
+  if (minH) candidates.push(minH[1].trim());
+  if (minW) candidates.push(minW[1].trim());
+  if (height) candidates.push(height[1].trim());
+  if (width) candidates.push(width[1].trim());
+
+  expect(candidates.length, `${label}: aucune dimension tactile`).toBeGreaterThan(0);
+
+  let ok = false;
+  for (const c of candidates) {
+    if (/var\(\s*--kiosk-touch/i.test(c)) {
+      ok = true;
+      break;
+    }
+    const px = pxValue(c);
+    if (px != null && px >= MIN) {
+      ok = true;
+      break;
+    }
+  }
+  expect(ok, `${label}: attendu min-height/min-width ≥ ${MIN}px ou var(--kiosk-touch*)`).toBe(true);
+}
+
+function readVueStyle(relPath) {
+  const full = resolve(ROOT, relPath);
+  const raw = readFileSync(full, 'utf8');
+  const m = raw.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+  return m ? m[1] : '';
 }
 
 const wizardStubs = Object.fromEntries(
@@ -59,7 +90,48 @@ const wizardStubs = Object.fromEntries(
 );
 
 describe('kiosk A11y — touch targets ≥ 44px', () => {
-  it('KioskWizardComponent — boutons header / stepper', async () => {
+  it('kiosk-wizard.css — classes contractuelles tactiles (min ≥ 44px ou token)', () => {
+    const cssPath = resolve(ROOT, 'resources/css/kiosk-wizard.css');
+    const css = readFileSync(cssPath, 'utf8');
+
+    const rules = [
+      [/\.kiosk-touch-btn\s*\{([^}]+)\}/, '.kiosk-touch-btn'],
+      [/\.kiosk-touch-option\s*\{([^}]+)\}/, '.kiosk-touch-option'],
+      [/\.kiosk-counter-btn\s*\{([^}]+)\}/, '.kiosk-counter-btn'],
+      [/\.kiosk-input\s*\{([^}]+)\}/, '.kiosk-input'],
+    ];
+    for (const [re, label] of rules) {
+      const m = css.match(re);
+      assertCssBlockTouchMin(m ? m[1] : '', label);
+    }
+  });
+
+  it('KioskWizardComponent.vue — styles header / stepper / nav (contrat CSS ≥ 44px)', () => {
+    const css = readVueStyle('resources/js/components/frontend/kiosk/KioskWizardComponent.vue');
+    const pairs = [
+      [/\.kiosk-progress-arrow\s*\{([^}]+)\}/, '.kiosk-progress-arrow'],
+      [/\.kiosk-wizard-close\s*\{([^}]+)\}/, '.kiosk-wizard-close'],
+      [/\.kiosk-btn-abandon,\s*\.kiosk-btn-back,\s*\.kiosk-btn-next\s*\{([^}]+)\}/, '.kiosk-btn-abandon/.kiosk-btn-back/.kiosk-btn-next'],
+    ];
+    for (const [re, label] of pairs) {
+      const m = css.match(re);
+      assertCssBlockTouchMin(m ? m[1] : '', label);
+    }
+  });
+
+  it('KioskCategoriesComponent.vue — .kiosk-top-chip (contrat CSS)', () => {
+    const css = readVueStyle('resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue');
+    const m = css.match(/\.kiosk-top-chip\s*\{([^}]+)\}/);
+    assertCssBlockTouchMin(m ? m[1] : '', '.kiosk-top-chip');
+  });
+
+  it('KsChip.vue — .ks-chip__remove (contrat CSS)', () => {
+    const css = readVueStyle('resources/js/components/frontend/kiosk/ds/KsChip.vue');
+    const m = css.match(/\.ks-chip__remove\s*\{([^}]+)\}/);
+    assertCssBlockTouchMin(m ? m[1] : '', '.ks-chip__remove');
+  });
+
+  it('KioskWizardComponent — boutons header / stepper présents + classes contractuelles', async () => {
     const item = {
       id: 9001,
       name: 'Tacos XL',
@@ -85,9 +157,24 @@ describe('kiosk A11y — touch targets ≥ 44px', () => {
       attachTo: document.body,
     });
     await wrapper.vm.$nextTick();
-    const controls = wrapper.element.querySelectorAll('button, [role="button"]');
-    expect(controls.length).toBeGreaterThan(0);
-    controls.forEach(assertMinSize);
+
+    const required = [
+      '.kiosk-progress-arrow',
+      '.kiosk-wizard-close',
+      '.kiosk-btn-abandon',
+      '.kiosk-btn-back',
+      '.kiosk-btn-next',
+    ];
+    for (const sel of required) {
+      const w = wrapper.find(sel);
+      expect(w.exists(), `Selector "${sel}" must exist for touch target check`).toBe(true);
+      const cls = w.classes();
+      const token = sel.replace(/^\./, '');
+      expect(
+        cls.includes(token) || w.element.className.includes(token),
+        `${sel} must carry class ${token}`
+      ).toBe(true);
+    }
     wrapper.unmount();
   });
 
@@ -154,13 +241,15 @@ describe('kiosk A11y — touch targets ≥ 44px', () => {
       attachTo: document.body,
     });
     await wrapper.vm.$nextTick();
-    const chips = wrapper.element.querySelectorAll('.kiosk-top-chip');
-    expect(chips.length).toBeGreaterThan(0);
-    chips.forEach(assertMinSize);
+    const chips = wrapper.findAll('.kiosk-top-chip');
+    expect(chips.length, 'At least one .kiosk-top-chip').toBeGreaterThan(0);
+    chips.forEach((c, i) => {
+      expect(c.classes().includes('kiosk-top-chip'), `chip ${i} must have kiosk-top-chip`).toBe(true);
+    });
     wrapper.unmount();
   });
 
-  it('KsChip — bouton retirer', () => {
+  it('KsChip — bouton retirer présent + classe contractuelle', () => {
     const wrapper = mount(KsChip, {
       props: { selected: true, removable: true },
       slots: { default: 'Tag' },
@@ -168,8 +257,8 @@ describe('kiosk A11y — touch targets ≥ 44px', () => {
       attachTo: document.body,
     });
     const rm = wrapper.find('.ks-chip__remove');
-    expect(rm.exists()).toBe(true);
-    assertMinSize(rm.element);
+    expect(rm.exists(), '.ks-chip__remove must exist').toBe(true);
+    expect(rm.classes().includes('ks-chip__remove')).toBe(true);
     wrapper.unmount();
   });
 });

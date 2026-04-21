@@ -168,7 +168,7 @@ export default {
 
 @media (prefers-reduced-motion: reduce) {
     .ks-btn__spinner {
-        animation: none;
+        animation-duration: 1.5s;
     }
 }
 

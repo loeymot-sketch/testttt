@@ -80,7 +80,7 @@ export default {
             this.$emit('click', e);
         },
         _warnInteractiveA11y() {
-            if (!this.interactive || this.disabled || this.ariaLabel) return;
+            if (process.env.NODE_ENV === 'production' || !this.interactive || this.disabled || this.ariaLabel) return;
             const txt = (this.$el && this.$el.textContent) ? this.$el.textContent.replace(/\s+/g, ' ').trim() : '';
             if (txt.length < 1 && typeof console !== 'undefined' && console.warn) {
                 console.warn('[KsCard] interactive card needs visible text or ariaLabel');

@@ -12,8 +12,7 @@
       :key="toast.id"
       class="kiosk-toast"
       :class="toast.type"
-      :role="toast.type === 'error' ? 'alert' : 'status'"
-      :aria-live="toast.type === 'error' || toast.type === 'warning' ? 'assertive' : 'polite'"
+      :role="toast.type === 'error' ? 'alert' : null"
     >
       <span class="kiosk-toast-icon" aria-hidden="true">{{ ICONS[toast.type] || 'ℹ️' }}</span>
       <span class="kiosk-toast-msg">{{ toast.message }}</span>
@@ -97,8 +96,10 @@ export default {
 .kiosk-toast-close {
   flex-shrink: 0;
   margin-inline-start: 8px;
-  width: 36px;
-  height: 36px;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.18);

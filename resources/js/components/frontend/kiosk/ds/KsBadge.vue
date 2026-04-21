@@ -58,9 +58,9 @@ export default {
     },
     methods: {
         _warnIconOnly() {
-            if (!this.iconOnly || this.ariaLabel) return;
+            if (process.env.NODE_ENV === 'production' || !this.iconOnly || this.ariaLabel) return;
             if (typeof console !== 'undefined' && console.warn) {
-                console.warn('[KsBadge] iconOnly requires ariaLabel for an accessible name');
+                console.warn('[KsBadge] iconOnly=true requires ariaLabel for accessibility');
             }
         },
     },
