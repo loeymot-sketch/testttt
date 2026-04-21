@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\OtpController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\Pos\PosReceiptPrintController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\ChefController;
 use App\Http\Controllers\Admin\ItemController;
@@ -623,6 +624,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {

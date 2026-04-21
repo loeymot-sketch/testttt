@@ -14,6 +14,7 @@
                 </button>
             </div>
             <div class="modal-body">
+                <receipt-duplicata-marker :order="order" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                     <h4 class="text-sm font-normal">{{ branch.address }}</h4>
@@ -196,9 +197,11 @@ import appService from "../../../services/appService";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 
 export default {
     name: "ReceiptComponent",
+    components: { ReceiptDuplicataMarker },
     props: {
         order: Object
     },

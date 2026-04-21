@@ -3,7 +3,7 @@
 ## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (EXECUTE — W8.A+B clôturés (CLOSED PASSED), W8.C séquentiel P1→P2→P3 EN COURS)
 
 TASK_ID: P_MEGA_W8_SECURITY_OBSERVABILITY_2026-04-20
-PHASE: EXECUTE — W8.A.3+4 CLOSED PASSED (commit d8202bc94 + VERIFY 50c0078d2), W8.B.3+4 CLOSED PASSED + REM B3 fuzz (commit 1350ced6d + 50c0078d2), W8.C-P1.3 EXECUTE EN COURS (verifyChain Z), W8.C-P2.3 + W8.C-P3.3 PENDING séquentiel
+PHASE: VALIDATE — W8.A.3+4 CLOSED PASSED (d8202bc94+50c0078d2), W8.B.3+4 CLOSED PASSED+REM B3 (1350ced6d+50c0078d2), W8.C-P1.3+4 CLOSED PASSED+REM F-S1 (fd146bb51+aba3c9e12), W8.C-P2.3 CLOSED PASSED (893ea71fb), W8.C-P3.3 EXECUTE PASSED (DUPLICATA marker + migration + sous-composant V14 mitigation)
 GATES APPROUVÉS (par décideur orchestrateur, suivant recommandations GATE_BRIEFs) :
 - GATE_P_MEGA_20 ✅ APPROUVÉ : D1=A (200+log), D2=A (branch=), D3=A (KioskEventController only)
 - GATE_P_MEGA_21 ✅ APPROUVÉ : D1=A (kiosk:user|ip), D2 cap 5 conservé, D3=A (un commit), D4 hors scope code (signal ops)
