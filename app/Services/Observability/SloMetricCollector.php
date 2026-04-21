@@ -56,12 +56,27 @@ class SloMetricCollector
     {
         $since = Carbon::now()->subDays($windowDays);
         $windowCount = max(1, $windowDays * 24 * 6); // 10-min windows
+
+        /*
+         * [W8.5 HOTFIX] strftime("%s", ...) est SQLite-only ; en MySQL il
+         * lance QueryException 1305 (foodking_test.strftime does not exist),
+         * ce qui faisait crasher SloEvaluatorJob en CI MySQL. On dispatche
+         * sur le driver pour produire une expression portable :
+         *   - SQLite : strftime('%s', created_at) → epoch seconds
+         *   - MySQL  : UNIX_TIMESTAMP(created_at) → epoch seconds
+         * Les deux divisés par 600 donnent l'identifiant de fenêtre 10min.
+         */
+        $driver = ActionLog::query()->getConnection()->getDriverName();
+        $bucketExpr = $driver === 'sqlite'
+            ? "strftime('%s', created_at) / 600"
+            : 'UNIX_TIMESTAMP(created_at) DIV 600';
+
         $observed = ActionLog::query()
             ->where('branch_id', $branch->id)
             ->where('created_at', '>=', $since)
-            ->selectRaw('COUNT(DISTINCT strftime("%s", created_at) / 600) as windows')
+            ->selectRaw("COUNT(DISTINCT {$bucketExpr}) as windows")
             ->value('windows') ?? 0;
-        // Fallback MySQL : on clamp de toute façon entre 0 et 1.
+
         $ratio = min(1.0, max(0.0, ((int) $observed) / $windowCount));
         return round($ratio, 4);
     }
