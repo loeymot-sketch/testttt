@@ -68,7 +68,7 @@ class KioskEventBranchIsolationTest extends TestCase
             ->postJson('/api/frontend/kiosk/event', $body);
     }
 
-    public function test_analytics_event_with_forged_branch_id_logs_real_branch_A(): void
+    public function test_analytics_event_with_forged_branch_id_logs_server_branch_A(): void
     {
         $this->postEvent([
             'type' => 'analytics',
@@ -79,13 +79,10 @@ class KioskEventBranchIsolationTest extends TestCase
         ])->assertStatus(200);
 
         $log = ActionLog::latest()->first();
-        // Le payload `branch_id` IS logged pour détection forensic, mais il
-        // reflète ce que le frontend a envoyé (traitement observabilité,
-        // pas autorisation).
-        // Ce qui compte : la LOGIQUE MÉTIER côté serveur n'utilise PAS ce champ.
-        // Sur ce endpoint observabilité pure, on accepte le log même avec un
-        // branch forgé — on le consigne pour enquête.
-        $this->assertStringContainsString('branch=' . $this->branchBId, $log->details);
+        // Le champ `branch=` doit désormais refléter la branche serveur
+        // autoritaire, et le branch forgé ne vit que dans la méta forensic.
+        $this->assertStringContainsString('branch=' . $this->branchAId, $log->details);
+        $this->assertStringContainsString('"branch_id_claimed":' . $this->branchBId, $log->details);
         // MAIS le user_id persisté reste celui du token A — impossible de
         // voler l'identité d'un autre user.
         $userA = User::where('branch_id', $this->branchAId)->first();

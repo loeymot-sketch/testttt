@@ -196,6 +196,29 @@ class KioskEventController extends Controller
 
         $user    = Auth::user();
         $machine = $user ? KioskMachine::where('user_id', $user->id)->first() : null;
+        $serverBranchId = (int) ($machine?->branch_id ?? 0);
+        $claimedBranchId = $request->input('branch_id');
+        $branchMismatch = $claimedBranchId !== null
+            && (int) $claimedBranchId !== $serverBranchId
+            && $serverBranchId > 0;
+
+        if ($branchMismatch) {
+            try {
+                Log::channel('security')->warning('Kiosk branch_id mismatch detected', [
+                    'event' => 'kiosk.branch_mismatch',
+                    'server_branch_id' => $serverBranchId,
+                    'claimed_branch_id' => (int) $claimedBranchId,
+                    'user_id' => $user?->id,
+                    'machine_id' => $machine?->id,
+                    'machine_username' => $machine?->username,
+                    'route' => $request->path(),
+                    'request_id' => $request->header('X-Request-Id'),
+                    'ip' => $request->ip(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('[K-6.2] Security log channel failed: ' . $e->getMessage());
+            }
+        }
 
         $extra = array_filter([
             'event_name' => $eventName,
@@ -207,11 +230,15 @@ class KioskEventController extends Controller
             'context'    => $request->input('context'),
         ], fn ($v) => $v !== null && $v !== '' && $v !== []);
 
+        if ($branchMismatch) {
+            $extra['branch_id_claimed'] = (int) $claimedBranchId;
+        }
+
         $details = sprintf(
             'type=%s | count=%s | branch=%s | machine=%s | %s%s',
             $type,
             $request->input('count', 1),
-            $request->input('branch_id', $machine?->branch_id ?? 'unknown'),
+            $serverBranchId > 0 ? $serverBranchId : 'unknown',
             $machine?->username ?? 'unknown',
             $request->input('details', ''),
             $extra ? ' | meta=' . json_encode($extra, JSON_UNESCAPED_UNICODE) : ''

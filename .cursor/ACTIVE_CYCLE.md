@@ -1,9 +1,20 @@
 # Active Cycle – FoodKing
 
-## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (AUDITS done + 3 GATE_BRIEFs livrés — HUMAN_GATE global)
+## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (VALIDATE — W8.A.3 exécuté, W8.A.4 prêt ; W8.B/W8.C restent séquencés)
 
 TASK_ID: P_MEGA_W8_SECURITY_OBSERVABILITY_2026-04-20
-PHASE: HUMAN_GATE — 3 audits readonly + 3 GATE_BRIEFs synthétiques pour décision business
+PHASE: VALIDATE — W8.A.4 pending after W8.A.3 PASSED ; W8.B.3 approved but not executed here ; W8.C stays sequential afterwards
+GATES APPROUVÉS (par décideur orchestrateur, suivant recommandations GATE_BRIEFs) :
+- GATE_P_MEGA_20 ✅ APPROUVÉ : D1=A (200+log), D2=A (branch=), D3=A (KioskEventController only)
+- GATE_P_MEGA_21 ✅ APPROUVÉ : D1=A (kiosk:user|ip), D2 cap 5 conservé, D3=A (un commit), D4 hors scope code (signal ops)
+- GATE_P_MEGA_22 décomposé :
+  - G22-P1 ✅ APPROUVÉ : D1=A (toute chaîne), D2=C (pre-open + pre-close), D3=C (strict prod, dégradé testttt)
+  - G22-P2 ✅ APPROUVÉ : D4=A (quotidien 02:00), D5=A (toutes branches), D6=A (local + S3 nightly), D7=A (ZIP+JSON)
+  - G22-P3 ⚠️ APPROUVÉ avec D8=A (orders.receipt_print_count), D9=B (sous-composant DUPLICATA, minimise conflit V14), D10=B (pas log audit_logs MVP)
+  - G22-P3-SCHEMA ⚠️ APPROUVÉ (migration add_receipt_print_count_to_orders)
+  - G22-P4 ❌ DEFER (spec JET TBD)
+SAFETY_CHECK : confirmé 2026-04-20 cette session
+AUTO_REMEDIATION : DÉSACTIVÉE par défaut (zone critical) — REM seulement après VERIFY si bug invisible critique
 LIVRABLES :
 - plans/PLAN_P_MEGA_W8_2026-04-20.md
 - reports/execution/AUDIT_P_MEGA_20_BRANCH_MISMATCH_BASELINE_2026-04-20.md
@@ -26,7 +37,8 @@ PHASE COMPLETION (atteinte) :
 - PLAN ✅ (planner-orchestrator)
 - AUDIT × 3 ✅ (explore parallèles, +1500 lignes markdown)
 - GATE_BRIEFS × 3 ✅ (Claude orchestrateur, décisions D1-D11 documentées)
-- HUMAN_GATE ⏳ attente
+- HUMAN_GATE ✅ (décisions D1/D2/D3 approuvées pour W8.A)
+- EXECUTE W8.A.3 ✅ (K-6.2 branch_mismatch enforcement + spoofing sentinels)
 
 PHASES À VENIR (post-approval) :
 - EXECUTE séquentiel A → B → C par sous-gate approuvé (foodking-complex-implementer GPT-5.4)
@@ -195,6 +207,19 @@ PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
 ---
 
 ## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
+
+TASK_ID: V14_PRODUCTION_GREEN_2026-04-20
+PHASE: CLOSED PASSED — 100% vert (707/707 Vitest + 825/825 PHPUnit) + gate C9 résolu interne via DispatchableAfterCommit + W3.A allergens snapshot fixed + SYNC-001 KDS écoute 86 + SYNC-002 dedupe correlation_id
+TESTS_FINAL :
+  - Vitest : 707/707 ✅ (91 fichiers, +7 nouveaux dedupe)
+  - PHPUnit : 825/825 ✅ (8 skipped legitimate)
+  - 0 fail
+RAPPORT_FINAL : reports/audit-orchestration/RAPPORT_FINAL_PRODUCTION_ALL_GREEN_2026-04-20.md
+DECISION : GO MVP J0 recommandé — gate G14-B humain résiduel pour V2 (T09 + T17 + T22-β)
+SYNC_STATUS : production-grade — outbox + DispatchableAfterCommit + dédupe correlation + KDS 86-aware + branch isolation
+NEXT : commit atomique sur demande utilisateur OU exécution gate G14-B pour V2 J+16
+
+PRÉCÉDENT (CLOSED PASSED) :
 
 TASK_ID: V14_FINAL_PRODUCTION_READINESS_2026-04-20
 PHASE: CLOSED PASSED — Vague D Phase 1 (T12+T13+T14+T16) + Phase 2 (T03+G3+T18+T22-α) livrées + audit transverse 22/22 + rapport production-readiness
