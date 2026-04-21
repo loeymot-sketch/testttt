@@ -1,5 +1,50 @@
 # Active Cycle – FoodKing
 
+## PARALLEL_CYCLE_W7_RESILIENCE_HARDWARE_BRANCH (CLOSED PASSED — W7.A + W7.B livrés ; W7.C HUMAN_GATE business)
+
+TASK_ID: P_MEGA_W7_RESILIENCE_HARDWARE_BRANCH_2026-04-20
+PHASE: CLOSED PASSED
+PLAN_FILE: plans/PLAN_P_MEGA_W7_2026-04-20.md
+RUNNER_MODE: single-session
+AUTO_REMEDIATION: ACTIVÉE (scope front-only, 2 REM1 auto exécutées sur W7.A et W7.B)
+SUB-CYCLES :
+- W7.A (offline queue v2) → AUDIT + EXECUTE complex + VERIFY + REM1 → CLOSED PASSED (commits f1e0d6119 + c1832bf77)
+- W7.B (hardware fallback) → AUDIT + EXECUTE routine + VERIFY + REM1 → CLOSED PASSED (commits 7459487ee + ca2b35c2d)
+- W7.C (branch theming) → AUDIT + GATE_BRIEF → HUMAN_GATE business + schema branches.theme_* (8 décisions requises)
+
+SUBAGENTS UTILISÉS : 6 distincts
+- planner-orchestrator (planning W7)
+- explore × 3 (audits 17/18/19 + verify W7.A + verify W7.B)
+- foodking-complex-implementer × 2 (W7.A.2 EXECUTE + W7.A.4 REM1 — IDB + race + heartbeat)
+- foodking-routine-implementer × 2 (W7.B.2 EXECUTE + W7.B.4 REM1 — printer retry + i18n + ARIA)
+
+VITEST : 700/700 (baseline 685 + 15 nouveaux specs : kioskOfflineQueueV2, kioskOfflineQueueMigration, kioskConfirmationFallback, kioskPaymentTpeTimeout, kioskWaitingAudioFallback)
+LOC delta : +1140 / -290 production ; +28 fichiers touchés ; 0 régression
+
+BREACHES : aucune
+- app/Services/FrontendOrderService.php (gated W5) : git diff vide ✅
+- OrderController::paymentConfirm (gated W5) : git diff vide ✅
+- KioskPaymentComponent.vue : 7 lignes diff strict (import SSOT TPE_TIMEOUT_MS uniquement) ✅
+- Migrations DB / routes / events backend : aucune ✅
+- Symétrie OrderService::pay POS↔Kiosk préservée ✅
+- dispatch-after-commit préservé ✅
+- branch_id propagation queue (REM1) ✅
+- Idempotency-Key replay préservé ✅
+
+GATES OUVERTES :
+- GATE_P_MEGA_19 (business + schema branches.theme_*) — 8 décisions documentées dans docs/gates/GATE_P_MEGA_19_BRANCH_THEMING_2026-04-20.md
+
+SYNTHÈSE : reports/execution/SYNTHESE_P_MEGA_W7_2026-04-20.md
+COMMITS : f1e0d6119 (W7.A) + c1832bf77 (W7.A REM1) + 7459487ee (W7.B) + ca2b35c2d (W7.B REM1)
+
+PRIOR CYCLES :
+- W6 a11y/perf : CLOSED PASSED commits 1dabfa568 + 0a3e0b304 + b2c2c802c + 9c8f9e202
+- W5 audits + GATE_BRIEFs : CLOSED PASSED commit c1c89ff89
+
+NEXT : attente input user pour Vague 8 (P-MEGA-20/21/22 security + observabilité avancée — recommandé non-bloqué) ou résolution HUMAN_GATEs accumulées
+
+---
+
 ## PARALLEL_CYCLE_W6_A11Y_PERF (CLOSED PASSED — a11y WCAG AA + perf lazy chunks)
 
 TASK_ID: P_MEGA_W6_A11Y_PERF_2026-04-20
@@ -64,6 +109,56 @@ PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
 ---
 
 ## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
+
+TASK_ID: V14_VAGUE_D_PHASE1_2026-04-20
+PHASE: EXECUTE — Vague D Phase 1 parallèle (T16 hardware drawer/NFC + T13+T14 fusé KDS lifecycle + T12 perf perceived) → 3 subagents Composer
+PARALLEL_SAFETY :
+  - T16 zone : EscPosCommandBuilder/Service + posNfc.js + CustomerNfcLookupController (disjoint des autres)
+  - T13+T14 zone : KDS components + kds.js + items.kds_station migration (disjoint POS)
+  - T12 zone : SkeletonGrid (NEW) + posCart optimistic mutation + ItemListing virtual scroll (touche posCart partagé)
+ACCEPTABLE_OVERLAP : posCart.js sera touché par T12 uniquement durant Phase 1 ; T18/T22 attendront Phase 2 pour éviter conflit avec T12.
+NEXT_DECISION_AUTO : audit 200% Phase 1 → Phase 2 (T03 + T18 + T22 partiel) → audit transverse final → rapport production-readiness.
+
+PRÉCÉDENT (CLOSED PASSED) :
+
+TASK_ID: V14_GLOBAL_AUDIT_REMEDIATION_2026-04-20
+PHASE: CLOSED PASSED — Audit transverse 4 vagues (A + B + C-α + C-β) + 2 fixes cross-vagues (G-1 P0 NF525 receipt snapshot + G-2 P1 receipt multi-qty) + 7 sentinels (6 Vitest + 1 PHPUnit cross-wave A↔C-β)
+FINDINGS CROSS-VAGUES :
+  - G-1 (P0) RÉSOLU : Receipt template ne consommait PAS composition_snapshot (T07) → reprint reçu post-rename variation imprimait undefined (NF525 brisé). Fix : helpers normalizeReceiptVariations + normalizeReceiptExtras (3 shapes : snapshot, legacy array, very-legacy keyed-object) + ReceiptComponent.vue rebranché.
+  - G-2 (P1) RÉSOLU : Pas de quantity × par variation → "Tacos 4 viandes : Steak, Steak, Steak, Steak" au lieu de "3× Steak + 1× Poulet". Fix : <template v-if="quantity > 1">{{ qty }}× </template>.
+  - G-3 (P2) DÉFÉRÉ Vague D : posParked.recall ne checke pas l'indispo au niveau variation (intersection T03 parité POS↔Kiosk).
+RÉSULTATS TESTS POST-FIXES : 108/108 Vitest POS (+6 sentinels) + 200/200 PHPUnit Pricing|Pos|Floorplan|Printer|Composition|Snapshot|Receipt (+1 sentinel cross-wave A↔C-β). 0 régression. 1 fail pré-existant FINDING_BACK_DEFERRED hors V14.
+RAPPORTS :
+  - reports/audit-orchestration/AUDIT_GLOBAL_4_VAGUES_V14_2026-04-20.md (audit transverse + plan Vague D)
+  - reports/execution/RUN_V14_GLOBAL_AUDIT_REMEDIATION_2026-04-20.md (run consolidé G-1+G-2+sentinels)
+RESTANT 41 % master plan (9 tâches) :
+  - 6 tâches non bloquées (Vague D-α + D-β) : T03 parité, T12 perf, T13 KDS station, T14 KDS bump, T16 hardware drawer/NFC, T18 a11y POS
+  - 3 tâches gate-bloquées : T09 (G14-B), T17 (C9 + G14-B), T22 complet (dépend T17)
+NEXT_DECISION: arbitrage user → (a) lancer Vague D-α (T03+T12+T18 parallèle 0 gate) ; (b) lancer Vague D-β (T13+T14+T16 parallèle 0 gate) ; (c) commit atomique B+C-α+C-β+global ; (d) ouvrir gates humains G14-B/C9 pour T09+T17.
+
+PRÉCÉDENT (CLOSED PASSED) :
+
+TASK_ID: V14_VAGUE_C_BETA_2026-04-20
+PHASE: CLOSED PASSED — Vague C-β (T15 ESC/POS + T19 floorplan + T21 receipt) auditée 200% + 3 P1 + 2 P2 fixés
+HOLES P1 RÉSOLUS :
+  - C-β-T19-1 : MySQL deadlock sur transfer() concurrent (1→2 et 2→1) → verrous par ordre business. Fix : lock par min/max ID puis résolution rôles.
+  - C-β-T19-2 : occupy() sans validation order_id existence + branch_id → floor-plan menteur, fuite multi-tenant. Fix : pré-check Order::where(id, branch_id)->exists() avant lockForUpdate, abort 422.
+  - C-β-T19-3 : occupy() ne syncro pas orders.dining_table_id → KDS / receipt / reporting incohérents. Fix : update direct ciblé multi-tenant guard (pas via OrderService LOCK_B).
+HOLES P2 RÉSOLUS :
+  - C-β-T15-1 : ESC/POS encoding (UTF-8 → CP858) + codepage selection. Fix : selectCodePage() + encodeForPrinter() (iconv TRANSLIT + fallbacks) + injection dans testPrint().
+  - C-β-T19-7 : race UI double-click assign/release/transfer → 409 second call. Fix : inFlight per-table guard try/finally.
+RÉSULTATS TESTS : 102/102 Vitest POS + 11/11 Feature Floorplan + 9/9 Feature Printer (4 sentinels nouveaux). 377 PHPUnit passed sur scope POS|Order|Pricing|Floorplan|Printer|Receipt (3 fails pré-existants FINDING_BACK_DEFERRED hors C-β).
+RAPPORT : reports/execution/RUN_V14_VAGUE_C_BETA_AUDIT_200_REMEDIATION_2026-04-20.md (consolidé)
+RESTANT (en arbitrage user) : Vague D (T20 + T22 + T23 selon master plan) ; gates humains : G14-B (T09 + T17) + C9 dispatch-after-commit ; backlog P2 documenté (UI fiscal admin, 58/80mm config, printer healthcheck).
+ACTIVE_PLAN: plans/PLAN_FINALISATION_POS_BASE_2026-04-20.md (section Vague C — Finalisation caisse opérateur)
+SCOPE Vague C-β livré :
+  - V14_10_T15_HARDWARE_PRINTER_ESC_POS → foodking-complex-implementer (GPT-5.4) — PASSED + remediation codepage
+  - V14_11_T19_POS_TABLE_FLOORPLAN → foodking-complex-implementer (GPT-5.4) — PASSED + remediation 3 P1
+  - V14_12_T21_POS_RECEIPT_REDESIGN → foodking-routine-implementer (Composer) — PASSED
+SAFETY_CHECK : confirmé (re-exécuté 2026-04-20 cette session)
+NEXT_DECISION: arbitrage user → (a) Vague D (T20+T22+T23) ; (b) commit atomique Vagues B+C-α+C-β ; (c) bascule QA staging.
+
+PRÉCÉDENT (CLOSED PASSED) :
 
 TASK_ID: V14_VAGUE_C_ALPHA_2026-04-20
 PHASE: CLOSED PASSED — Vague C-α (T11 + T10 + T08) auditée 200% + 2 P1 + 3 P2 fixés
