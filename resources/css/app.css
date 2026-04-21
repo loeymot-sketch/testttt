@@ -556,3 +556,4 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
 /* KIOSK WIZARD - Styles tactiles pour borne */
 @import './kiosk-wizard.css';
+@import './kiosk-fallback.css';

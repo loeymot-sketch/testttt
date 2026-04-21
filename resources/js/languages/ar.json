@@ -27,7 +27,25 @@
         "molluscs": "الرخويات"
     },
     "pos": {
-        "barcode_not_found": "رمز شريطي غير معروف: {code}"
+        "item_86_d": "نفذ",
+        "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
+        "item_no_longer_available": "«{name}» لم يعد متاحًا.",
+        "park": "تعليق",
+        "parked_orders": "الطلبات المعلّقة",
+        "restore": "استعادة",
+        "discard": "حذف",
+        "empty_parked_orders": "لا توجد طلبات معلّقة.",
+        "parked_order_fallback_label": "طلب بدون عنوان",
+        "park_label_prompt": "عنوان اختياري لهذا الطلب المعلّق",
+        "park_requires_items": "أضف عنصرًا واحدًا على الأقل قبل تعليق هذا الطلب.",
+        "park_success": "تم تعليق الطلب بنجاح.",
+        "park_save_error": "تعذّر تعليق هذا الطلب.",
+        "park_fetch_error": "تعذّر تحميل الطلبات المعلّقة.",
+        "park_restore_success": "تمت استعادة الطلب بنجاح.",
+        "park_restore_error": "تعذّر استعادة هذا الطلب.",
+        "park_restore_requires_empty_cart": "أفرغ السلة الحالية أو علّقها قبل استعادة طلب آخر.",
+        "park_discard_success": "تم حذف الطلب المعلّق.",
+        "park_discard_error": "تعذّر حذف هذا الطلب المعلّق."
     },
     "menu": {
         "dashboard": "لوحة القيادة",
@@ -129,6 +147,8 @@
         "printer_station": "محطة الطباعة",
         "printer_type": "نوع الطابعة",
         "test_print": "طباعة تجريبية",
+        "cash_drawer_open": "فتح درج النقد",
+        "scan_nfc_card": "مسح بطاقة NFC",
         "siret": "SIRET",
         "tendered_breakdown": "تفاصيل الدفع",
         "vat_intra": "رقم ضريبة القيمة المضافة",
@@ -674,7 +694,15 @@
         "easypaisa_mode": "وضع إيزي بايسا",
         "easypaisa_status": "حالة إيزي بايسا",
         "easypaisa_username": "اسم مستخدم إيزي بايسا",
-        "easypaisa_password": "كلمة مرور إيزي بايسا"
+        "easypaisa_password": "كلمة مرور إيزي بايسا",
+        "kds_station_filter": "محطة KDS",
+        "kds_all_stations": "كل المحطات",
+        "kds_bar": "بار",
+        "kds_cuisine_chaude": "مطبخ ساخن",
+        "kds_cuisine_froide": "مطبخ بارد",
+        "kds_group_by_table": "تجميع حسب الطاولة",
+        "kds_sound": "صوت طلب جديد",
+        "kds_volume": "مستوى الصوت"
     },
     "button": {
         "add": "إضافة",
@@ -772,7 +800,9 @@
         "confirm_and_print": "تأكيد وطباعة الإيصال",
         "test_print": "طباعة اختبار",
         "transfer_table": "نقل الطاولة",
-        "release_table": "تحرير الطاولة"
+        "release_table": "تحرير الطاولة",
+        "kds_bump": "جاهز",
+        "kds_recall": "تراجع"
     },
     "number": {
         "10": "10",
@@ -787,6 +817,9 @@
         "printer_unreachable": "تعذر الوصول إلى الطابعة."
     },
     "message": {
+        "kds_recall_grace_expired": "لا يمكن التراجع: انتهت مهلة الإلغاء (60 ثانية).",
+        "nfc_unsupported_browser": "تقنية NFC غير متوفرة في هذا المتصفح.",
+        "nfc_customer_not_found": "لا يوجد عميل وفاء مطابق لهذه البطاقة في هذا الفرع.",
         "pagination_label": "عرض {from} إلى {to} من مدخلات {total}",
         "password_update": "تم تحديث كلمة المرور بنجاح.",
         "photo_update": "تم تحديث الصورة بنجاح.",
@@ -847,27 +880,6 @@
         "payment_method": "طريقة الدفع مطلوبة.",
         "special_instructions_limit": "الحد الأقصى للتعليمات الخاصة هو 190 حرفًا.",
         "confirm_transfer": "أدخل معرف الطاولة الهدف لتأكيد النقل."
-    },
-    "pos": {
-        "item_86_d": "نفذ",
-        "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
-        "item_no_longer_available": "«{name}» لم يعد متاحًا.",
-        "park": "تعليق",
-        "parked_orders": "الطلبات المعلّقة",
-        "restore": "استعادة",
-        "discard": "حذف",
-        "empty_parked_orders": "لا توجد طلبات معلّقة.",
-        "parked_order_fallback_label": "طلب بدون عنوان",
-        "park_label_prompt": "عنوان اختياري لهذا الطلب المعلّق",
-        "park_requires_items": "أضف عنصرًا واحدًا على الأقل قبل تعليق هذا الطلب.",
-        "park_success": "تم تعليق الطلب بنجاح.",
-        "park_save_error": "تعذّر تعليق هذا الطلب.",
-        "park_fetch_error": "تعذّر تحميل الطلبات المعلّقة.",
-        "park_restore_success": "تمت استعادة الطلب بنجاح.",
-        "park_restore_error": "تعذّر استعادة هذا الطلب.",
-        "park_restore_requires_empty_cart": "أفرغ السلة الحالية أو علّقها قبل استعادة طلب آخر.",
-        "park_discard_success": "تم حذف الطلب المعلّق.",
-        "park_discard_error": "تعذّر حذف هذا الطلب المعلّق."
     },
     "kiosk": {
         "welcome": "مرحباً!",
@@ -979,17 +991,11 @@
         "discount_loyalty": "خصم الولاء",
         "discount_promo": "رمز ترويجي {code}",
         "promo": {
-            "label": "رمز ترويجي",
-            "placeholder": "مثال: WELCOME10",
-            "apply": "تطبيق",
-            "loading": "جاري التحقق…",
-            "remove": "إزالة",
-            "applied": "تم تطبيق الرمز {code} (-{amount})",
-            "error": {
-                "empty": "يرجى إدخال رمز.",
-                "invalid": "رمز ترويجي غير صالح أو منتهي.",
-                "network": "تعذر التحقق من هذا الرمز. حاول مرة أخرى."
-            }
+            "aria_label": "العروض الحالية",
+            "badge_label": "عرض",
+            "code_label": "الرمز",
+            "code_aria": "رمز العرض {code}",
+            "min_cart": "بدءًا من {value}"
         },
         "validate_order": "تأكيد الطلب",
         "add_more_items": "إضافة المزيد",
@@ -1043,13 +1049,6 @@
         "allergens": {
             "warning_aria": "تحذير: يحتوي هذا المنتج على مسبب للحساسية صرحت به.",
             "list_aria": "مسببات الحساسية"
-        },
-        "promo": {
-            "aria_label": "العروض الحالية",
-            "badge_label": "عرض",
-            "code_label": "الرمز",
-            "code_aria": "رمز العرض {code}",
-            "min_cart": "بدءًا من {value}"
         },
         "inactivity": {
             "title": "هل أنت هنا؟",
@@ -1105,7 +1104,7 @@
             "tpe_accepted": "تم قبول الدفع",
             "loyalty_not_applied_toast": "تعذّر تطبيق خصم الولاء (نقاط غير كافية عند الدفع). تم تأكيد طلبك بدون الخصم.",
             "invalid_order_response": "استجابة غير صالحة: الطلب غير موجود. حاول مرة أخرى.",
-            "tpe_timeout": "جهاز الدفع لا يستجيب. نادِ أحد الموظفين.",
+            "tpe_timeout": "انتهت مهلة انتظار جهاز الدفع. أعد المحاولة أو اتصل بموظف.",
             "payment_sync_failed": "تم قبول الدفع، لكن الجهاز لم يتمكن من تأكيد الطلب لدى الخادم. يرجى طلب المساعدة من أحد الموظفين.",
             "payment_error_generic": "حدث خطأ. حاول مرة أخرى.",
             "payment_declined": "رفض الجهاز الدفع",
@@ -1432,27 +1431,6 @@
                     "summary_many": "{n} إضافات محددة",
                     "empty_hint": "لا توجد إضافات متوفرة لهذا المنتج."
                 }
-            },
-            "confirmation": {
-                "title": "تم تأكيد الطلب!",
-                "order_number": "رقم الطلب",
-                "total_paid": "المبلغ المدفوع",
-                "message_kitchen": "تم إرسال طلبك إلى المطبخ.",
-                "message_counter": "توجه إلى الكاونتر برقمك.",
-                "loyalty_points": "تهانينا! ربحت +{n} نقاط ولاء!",
-                "auto_return": "العودة تلقائياً خلال {n} ث",
-                "print_button": "طباعة الإيصال",
-                "printing": "جاري الطباعة…",
-                "printed": "تمت الطباعة",
-                "print_error": "خطأ في الطباعة",
-                "new_order": "طلب جديد",
-                "receipt_number": "الرقم",
-                "receipt_discount": "خصم الولاء",
-                "receipt_total": "الإجمالي",
-                "receipt_loyalty": "الولاء: +{n} نقطة",
-                "receipt_thanks": "شكراً لزيارتك!",
-                "receipt_present": "قدم هذا الإيصال في الكاونتر.",
-                "speech_summary": "تم تأكيد الطلب رقم {number}. المبلغ المدفوع: {total}. يرجى التوجه إلى الكاونتر."
             }
         },
         "order_type_label": "نوع الطلب",
@@ -1509,6 +1487,37 @@
             "tpe_error": "مشكلة في جهاز الدفع",
             "call_staff": "يرجى استدعاء أحد أعضاء الفريق",
             "degraded_service": "خدمة محدودة — بعض الوظائف مُقلَّصة"
+        },
+        "confirmation": {
+            "title": "تم تأكيد الطلب!",
+            "order_number": "رقم الطلب",
+            "total_paid": "المبلغ المدفوع",
+            "message_kitchen": "تم إرسال طلبك إلى المطبخ.",
+            "message_counter": "توجه إلى الكاونتر برقمك.",
+            "loyalty_points": "تهانينا! ربحت +{n} نقاط ولاء!",
+            "auto_return": "العودة تلقائياً خلال {n} ث",
+            "print_button": "طباعة الإيصال",
+            "printing": "جاري الطباعة…",
+            "printed": "تمت الطباعة",
+            "print_error": "خطأ في الطباعة",
+            "new_order": "طلب جديد",
+            "receipt_number": "الرقم",
+            "receipt_discount": "خصم الولاء",
+            "receipt_total": "الإجمالي",
+            "receipt_loyalty": "الولاء: +{n} نقطة",
+            "receipt_thanks": "شكراً لزيارتك!",
+            "receipt_present": "قدم هذا الإيصال في الكاونتر.",
+            "speech_summary": "تم تأكيد الطلب رقم {number}. المبلغ المدفوع: {total}. يرجى التوجه إلى الكاونتر.",
+            "fallback_receipt_title": "إيصالك",
+            "fallback_receipt_help": "يبدو أن الطابعة غير متاحة. يمكنك تصوير هذا الإيصال أو طلب موظف.",
+            "print_failed": "الطباعة غير متاحة — سجّل رقمك:",
+            "print_failed_hint": "اعرض هذا الرقم عند الكاونتر."
+        },
+        "payment": {
+            "tpe_timeout_message": "انتهت مهلة انتظار جهاز الدفع. أعد المحاولة أو اتصل بموظف."
+        },
+        "waiting": {
+            "ready_visual_fallback": "طلبك جاهز!"
         }
     }
 }

@@ -1,0 +1,15 @@
+/**
+ * Kiosk hardware fallback (P-MEGA W7.B) — global safety net for
+ * print-failed receipt visibility (ID selector; works alongside scoped SFC styles).
+ */
+#kiosk-print-receipt[data-print-failed="true"] {
+  max-width: 500px;
+  margin: 1.25rem auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e2e4;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  color: #1f1f1f;
+}

@@ -1,5 +1,9 @@
 <template>
-  <div class="kiosk-waiting" :class="{ ready: isReady }">
+  <div
+    class="kiosk-waiting"
+    :class="{ ready: isReady, 'kiosk-ready-flash': _readyFlashActive }"
+    data-testid="kiosk-waiting-root"
+  >
     <!-- Fond animé -->
     <div class="kiosk-waiting-bg" />
 
@@ -141,6 +145,7 @@ import { mapActions } from 'vuex';
 import axios from 'axios';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 import { onEvents } from '../../../services/eventContract';
+import kioskHardware from '../../../services/kioskHardware';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
@@ -155,6 +160,11 @@ const STATUS_CANCELLED = orderStatusEnum.CANCELED;   // 16 — cancelled by admi
 
 export default {
   name: 'KioskWaitingComponent',
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
   props: {
     orderId: { type: [String, Number], required: true },
   },
@@ -177,6 +187,7 @@ export default {
       timedOut: false, // [AUDIT-P1-C] true after 15 min timeout
       _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
+      _readyFlashActive: false,
     };
   },
   mounted() {
@@ -308,9 +319,16 @@ export default {
       }, 1000);
     },
 
-    playReadySound() {
+    async playReadySound() {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) throw new Error('AudioContext unavailable');
+        const ctx = new Ctor();
+        if (ctx.state === 'suspended') {
+          await ctx.resume().catch(() => {});
+        }
+        if (ctx.state !== 'running') throw new Error('AudioContext not running');
+
         [523, 659, 784].forEach((freq, i) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -326,6 +344,17 @@ export default {
         setTimeout(() => {
           try { ctx.close(); } catch (_) {}
         }, 1200);
+      } catch (_) {
+        this.triggerReadyVisualFallback();
+      }
+    },
+
+    triggerReadyVisualFallback() {
+      this.showToast(this.$t('kiosk.waiting.ready_visual_fallback'), 'info', 4000);
+      this._readyFlashActive = true;
+      window.setTimeout(() => { this._readyFlashActive = false; }, 3000);
+      try {
+        kioskHardware.haptic('success');
       } catch (_) {}
     },
 
@@ -771,4 +800,20 @@ export default {
 .slide-down-banner-leave-active { transition: transform 0.35s ease, opacity 0.35s ease; }
 .slide-down-banner-enter-from,
 .slide-down-banner-leave-to { transform: translateY(-100%); opacity: 0; }
+
+/* Audio indisponible — flash visuel 3s (WCAG 2.3.3 reduced motion) */
+.kiosk-waiting.kiosk-ready-flash {
+  animation: kioskReadyFlash 3s ease-out 1;
+}
+@keyframes kioskReadyFlash {
+  0% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0); }
+  15% { box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.12); }
+  100% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-waiting.kiosk-ready-flash {
+    animation: none;
+    box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.08);
+  }
+}
 </style>

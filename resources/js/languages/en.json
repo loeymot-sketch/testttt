@@ -27,7 +27,25 @@
         "molluscs": "Molluscs"
     },
     "pos": {
-        "barcode_not_found": "Unknown barcode: {code}"
+        "item_86_d": "Sold out",
+        "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",
+        "item_no_longer_available": "“{name}” is no longer available.",
+        "park": "Park",
+        "parked_orders": "Parked orders",
+        "restore": "Restore",
+        "discard": "Discard",
+        "empty_parked_orders": "No parked orders.",
+        "parked_order_fallback_label": "Unlabeled order",
+        "park_label_prompt": "Optional label for this parked order",
+        "park_requires_items": "Add at least one item before parking this order.",
+        "park_success": "Order parked successfully.",
+        "park_save_error": "Could not park this order.",
+        "park_fetch_error": "Could not load parked orders.",
+        "park_restore_success": "Order restored successfully.",
+        "park_restore_error": "Could not restore this order.",
+        "park_restore_requires_empty_cart": "Empty or park the current cart before restoring another order.",
+        "park_discard_success": "Parked order discarded.",
+        "park_discard_error": "Could not discard this parked order."
     },
     "menu": {
         "dashboard": "Dashboard",
@@ -137,6 +155,8 @@
         "printer_station": "Printer station",
         "printer_type": "Printer type",
         "test_print": "Test print",
+        "cash_drawer_open": "Open cash drawer",
+        "scan_nfc_card": "Scan NFC card",
         "siret": "SIRET",
         "tendered_breakdown": "Payment breakdown",
         "vat_intra": "VAT ID",
@@ -173,6 +193,7 @@
         "default_currency": "Default Currency",
         "default_language": "Default Language",
         "language_switch": "Language Switch",
+        "loading": "Loading...",
         "online_payment_gateway": "Online Payment Gateway",
         "auto_update": "Auto Update",
         "app_debug": "App Debug",
@@ -706,7 +727,15 @@
         "easypaisa_mode": "Easypaisa mode",
         "easypaisa_status": "Easypaisa Status",
         "easypaisa_username": "Easypaisa Username",
-        "easypaisa_password": "Easypaisa Password"
+        "easypaisa_password": "Easypaisa Password",
+        "kds_station_filter": "KDS station",
+        "kds_all_stations": "All stations",
+        "kds_bar": "Bar",
+        "kds_cuisine_chaude": "Hot kitchen",
+        "kds_cuisine_froide": "Cold kitchen",
+        "kds_group_by_table": "Group by table",
+        "kds_sound": "New order sound",
+        "kds_volume": "Volume"
     },
     "button": {
         "add": "Add",
@@ -805,7 +834,9 @@
         "base_ht": "Net",
         "test_print": "Test print",
         "transfer_table": "Transfer table",
-        "release_table": "Release table"
+        "release_table": "Release table",
+        "kds_bump": "Bump",
+        "kds_recall": "Recall"
     },
     "number": {
         "10": "10",
@@ -820,6 +851,9 @@
         "printer_unreachable": "The printer could not be reached."
     },
     "message": {
+        "kds_recall_grace_expired": "Recall unavailable: the 60-second undo window has passed.",
+        "nfc_unsupported_browser": "NFC is not available in this browser.",
+        "nfc_customer_not_found": "No loyalty customer matches this NFC card for this branch.",
         "new_pos_order": "New order",
         "new_pos_order_with_id": "New order #{id}",
         "pagination_label": "Showing {from} to {to} of {total} entries",
@@ -883,27 +917,6 @@
         "special_instructions_limit": "Special instructions limit is 190 characters.",
         "confirm_transfer": "Enter the target table id to confirm the transfer."
     },
-    "pos": {
-        "item_86_d": "Sold out",
-        "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",
-        "item_no_longer_available": "“{name}” is no longer available.",
-        "park": "Park",
-        "parked_orders": "Parked orders",
-        "restore": "Restore",
-        "discard": "Discard",
-        "empty_parked_orders": "No parked orders.",
-        "parked_order_fallback_label": "Unlabeled order",
-        "park_label_prompt": "Optional label for this parked order",
-        "park_requires_items": "Add at least one item before parking this order.",
-        "park_success": "Order parked successfully.",
-        "park_save_error": "Could not park this order.",
-        "park_fetch_error": "Could not load parked orders.",
-        "park_restore_success": "Order restored successfully.",
-        "park_restore_error": "Could not restore this order.",
-        "park_restore_requires_empty_cart": "Empty or park the current cart before restoring another order.",
-        "park_discard_success": "Parked order discarded.",
-        "park_discard_error": "Could not discard this parked order."
-    },
     "kiosk": {
         "welcome": "Welcome!",
         "tap_to_order": "Touch the screen to order",
@@ -921,17 +934,11 @@
         "discount_loyalty": "Loyalty discount",
         "discount_promo": "Promo code {code}",
         "promo": {
-            "label": "Promo code",
-            "placeholder": "e.g. WELCOME10",
-            "apply": "Apply",
-            "loading": "Checking…",
-            "remove": "Remove",
-            "applied": "Code {code} applied (-{amount})",
-            "error": {
-                "empty": "Please enter a code.",
-                "invalid": "Invalid or expired promo code.",
-                "network": "Could not verify this code. Please try again."
-            }
+            "aria_label": "Active offers",
+            "badge_label": "Offer",
+            "code_label": "Code",
+            "code_aria": "Promo code {code}",
+            "min_cart": "Minimum {value}"
         },
         "checkout": "Checkout",
         "cancel": "Cancel",
@@ -1079,13 +1086,6 @@
             "warning_aria": "Warning: this product contains an allergen you declared.",
             "list_aria": "Allergens"
         },
-        "promo": {
-            "aria_label": "Active offers",
-            "badge_label": "Offer",
-            "code_label": "Code",
-            "code_aria": "Promo code {code}",
-            "min_cart": "Minimum {value}"
-        },
         "inactivity": {
             "title": "Still there?",
             "desc": "Your order will be cleared in",
@@ -1140,7 +1140,7 @@
             "tpe_accepted": "Payment accepted",
             "loyalty_not_applied_toast": "Your loyalty discount could not be applied (not enough points at payment time). Your order was confirmed without the discount.",
             "invalid_order_response": "Invalid server response: order not found. Please try again.",
-            "tpe_timeout": "The payment device is not responding. Please call a team member.",
+            "tpe_timeout": "Payment terminal timed out. Please try again or ask a staff member.",
             "payment_sync_failed": "The payment was accepted, but the kiosk could not confirm the order with the server. Please call a staff member.",
             "payment_error_generic": "Something went wrong. Please try again.",
             "payment_declined": "Payment declined by the device",
@@ -1467,27 +1467,6 @@
                     "summary_many": "{n} toppings selected",
                     "empty_hint": "No topping available for this product."
                 }
-            },
-            "confirmation": {
-                "title": "Order confirmed!",
-                "order_number": "Order number",
-                "total_paid": "Total paid",
-                "message_kitchen": "Your order has been sent to the kitchen.",
-                "message_counter": "Please proceed to the counter with your number.",
-                "loyalty_points": "you earn +{n} loyalty points!",
-                "auto_return": "Auto-return in {n}s",
-                "print_button": "Print receipt",
-                "printing": "Printing…",
-                "printed": "Receipt printed",
-                "print_error": "Print error",
-                "new_order": "New order",
-                "receipt_number": "NUMBER",
-                "receipt_discount": "Loyalty discount",
-                "receipt_total": "TOTAL",
-                "receipt_loyalty": "LOYALTY: +{n} pts",
-                "receipt_thanks": "Thank you for visiting!",
-                "receipt_present": "Present this ticket at the counter.",
-                "speech_summary": "Order number {number} confirmed. Total paid: {total}. Please go to the counter."
             }
         },
         "order_type_label": "Order type",
@@ -1544,6 +1523,37 @@
             "tpe_error": "Payment terminal issue",
             "call_staff": "Please call a staff member",
             "degraded_service": "Degraded service — some features are limited"
+        },
+        "confirmation": {
+            "title": "Order confirmed!",
+            "order_number": "Order number",
+            "total_paid": "Total paid",
+            "message_kitchen": "Your order has been sent to the kitchen.",
+            "message_counter": "Please proceed to the counter with your number.",
+            "loyalty_points": "you earn +{n} loyalty points!",
+            "auto_return": "Auto-return in {n}s",
+            "print_button": "Print receipt",
+            "printing": "Printing…",
+            "printed": "Receipt printed",
+            "print_error": "Print error",
+            "new_order": "New order",
+            "receipt_number": "NUMBER",
+            "receipt_discount": "Loyalty discount",
+            "receipt_total": "TOTAL",
+            "receipt_loyalty": "LOYALTY: +{n} pts",
+            "receipt_thanks": "Thank you for visiting!",
+            "receipt_present": "Present this ticket at the counter.",
+            "speech_summary": "Order number {number} confirmed. Total paid: {total}. Please go to the counter.",
+            "fallback_receipt_title": "Your receipt",
+            "fallback_receipt_help": "The printer seems unavailable. You can take a photo of this receipt or ask a staff member.",
+            "print_failed": "Printing unavailable — note your number:",
+            "print_failed_hint": "Show this number at the counter."
+        },
+        "payment": {
+            "tpe_timeout_message": "Payment terminal timed out. Please try again or ask a staff member."
+        },
+        "waiting": {
+            "ready_visual_fallback": "Your order is ready!"
         }
     }
 }

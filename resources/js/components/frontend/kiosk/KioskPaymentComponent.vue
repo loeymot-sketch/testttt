@@ -204,6 +204,7 @@ import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 // [PHASE-6.1] Unified hardware wrapper — remplace les appels window.borne.* directs
 //             par le contrat {ok, error?} + reporting automatique des erreurs hardware.
 import kioskHardware from '../../../services/kioskHardware';
+import { KIOSK_HARDWARE } from '../../../config/kioskHardware';
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 // Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
@@ -342,7 +343,7 @@ export default {
         // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
         let msg;
         if (err?.message === 'TPE_TIMEOUT') {
-          msg = this.$t('kiosk.pay_screen.tpe_timeout');
+          msg = this.$t('kiosk.payment.tpe_timeout_message');
         } else {
           msg = err?.response?.data?.errors
             ? Object.values(err.response.data.errors).flat().join(' ')
@@ -401,8 +402,8 @@ export default {
 
       // [PHASE-6.1] Passage par kioskHardware — stub auto en navigateur (dev/tests),
       // contrat {ok, error?} uniforme, auto-report vers /frontend/kiosk-event en cas de throw.
-      // [AUDIT-52-BUG7] Wrap dans un timeout global de 120s (TPE peut figer sur chip+PIN).
-      const TPE_TIMEOUT_MS = 120_000;
+      // [AUDIT-52-BUG7] Wrap dans un timeout global (TPE peut figer sur chip+PIN). SSOT: config/kioskHardware.js
+      const { TPE_TIMEOUT_MS } = KIOSK_HARDWARE;
       const amountEuros = this._lastOrder.total || this.cartTotal;
       const tpeMethod = this.method === 'tr' ? 'TR' : 'CB';
       const paymentResult = await Promise.race([

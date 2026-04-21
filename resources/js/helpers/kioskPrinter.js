@@ -16,7 +16,12 @@
  *
  * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
  */
+import { KIOSK_HARDWARE } from '../config/kioskHardware';
 import kioskHardware from '../services/kioskHardware';
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const ESC = '\x1B';
 const GS  = '\x1D';
@@ -215,27 +220,31 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
       loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
       loyalty_customer_name: receipt.loyaltyCustomerName || '',
     };
-    const r = await kioskHardware.printReceipt(orderData);
-    if (r?.ok) {
-      // Certains firmwares bridge renvoient `{ok: true, data: {success|skipped}}`.
-      const raw = r.data || r;
-      if (raw?.success || raw?.skipped || r.ok) {
-        return { method: 'electron' };
-      }
-      console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
-    } else {
-      // printer_unavailable → on tente le fallback ESC/POS direct.
-      if (r?.error && r.error !== 'printer_unavailable') {
+    const maxAttempts = Math.max(1, KIOSK_HARDWARE.PRINTER_RETRY_MAX || 1);
+    const retryDelayMs = KIOSK_HARDWARE.PRINTER_RETRY_MS || 0;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const r = await kioskHardware.printReceipt(orderData);
+      if (r?.ok) {
+        const raw = r.data || r;
+        if (raw?.success || raw?.skipped || r.ok) {
+          return { method: 'electron' };
+        }
+        console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
+      } else if (r?.error && r.error !== 'printer_unavailable') {
         console.warn('[kioskPrinter] printReceipt failed:', r.error);
       }
-    }
 
-    // Fallback ESC/POS via kioskHardware (même service, méthode alternative).
-    const lines = buildEscPosReceipt(receipt);
-    const rEsc = await kioskHardware.printEscPos(lines);
-    if (rEsc?.ok) return { method: 'electron-escpos' };
-    if (rEsc?.error && rEsc.error !== 'printer_unavailable') {
-      console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
+      const lines = buildEscPosReceipt(receipt);
+      const rEsc = await kioskHardware.printEscPos(lines);
+      if (rEsc?.ok) return { method: 'electron-escpos' };
+      if (rEsc?.error && rEsc.error !== 'printer_unavailable') {
+        console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
+      }
+
+      if (attempt < maxAttempts && retryDelayMs > 0) {
+        await sleep(retryDelayMs);
+      }
     }
   }
 

@@ -27,7 +27,25 @@
         "molluscs": "Mollusques"
     },
     "pos": {
-        "barcode_not_found": "Code-barres non reconnu : {code}"
+        "item_86_d": "Épuisé",
+        "item_unavailable_during_edit": "Cet article vient de devenir indisponible. Demandez à un manager ou choisissez un autre produit.",
+        "item_no_longer_available": "« {name} » n'est plus disponible.",
+        "park": "Park",
+        "parked_orders": "Commandes parkées",
+        "restore": "Restaurer",
+        "discard": "Supprimer",
+        "empty_parked_orders": "Aucune commande parkée.",
+        "parked_order_fallback_label": "Commande sans libellé",
+        "park_label_prompt": "Libellé optionnel pour la commande parkée",
+        "park_requires_items": "Ajoutez au moins un article avant de parker cette commande.",
+        "park_success": "Commande parkée avec succès.",
+        "park_save_error": "Impossible de parker cette commande.",
+        "park_fetch_error": "Impossible de charger les commandes parkées.",
+        "park_restore_success": "Commande restaurée avec succès.",
+        "park_restore_error": "Impossible de restaurer cette commande.",
+        "park_restore_requires_empty_cart": "Videz ou parquez le panier courant avant de restaurer une commande.",
+        "park_discard_success": "Commande parkée supprimée.",
+        "park_discard_error": "Impossible de supprimer cette commande parkée."
     },
     "menu": {
         "dashboard": "Tableau de bord",
@@ -69,6 +87,8 @@
         "printer_station": "Station d'impression",
         "printer_type": "Type d'imprimante",
         "test_print": "Test d'impression",
+        "cash_drawer_open": "Ouvrir le tiroir-caisse",
+        "scan_nfc_card": "Scanner la carte NFC",
         "siret": "SIRET",
         "tendered_breakdown": "Détail paiement",
         "vat_intra": "TVA intra",
@@ -103,6 +123,7 @@
         "paid": "Payé",
         "unpaid": "Non payé",
         "language": "Langue",
+        "loading": "Chargement…",
         "default_language": "Langue par défaut",
         "kiosk_idle_video": "Vidéo d'accueil",
         "kiosk_welcome_title": "Titre de bienvenue",
@@ -161,7 +182,15 @@
         "occupied": "Occupée",
         "free": "Libre",
         "reserved": "Réservée",
-        "cleaning": "Nettoyage"
+        "cleaning": "Nettoyage",
+        "kds_station_filter": "Station KDS",
+        "kds_all_stations": "Toutes les stations",
+        "kds_bar": "Bar",
+        "kds_cuisine_chaude": "Cuisine chaude",
+        "kds_cuisine_froide": "Cuisine froide",
+        "kds_group_by_table": "Regrouper par table",
+        "kds_sound": "Son nouveau ticket",
+        "kds_volume": "Volume"
     },
     "button": {
         "add": "Ajouter",
@@ -194,12 +223,17 @@
         "base_ht": "HT",
         "test_print": "Imprimer un test",
         "transfer_table": "Transférer la table",
-        "release_table": "Libérer la table"
+        "release_table": "Libérer la table",
+        "kds_bump": "Prêt",
+        "kds_recall": "Annuler"
     },
     "error": {
         "printer_unreachable": "Impossible de joindre l'imprimante."
     },
     "message": {
+        "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
+        "nfc_unsupported_browser": "Le NFC n'est pas disponible dans ce navigateur.",
+        "nfc_customer_not_found": "Aucun client fidélité ne correspond à cette carte NFC pour cette filiale.",
         "new_pos_order": "Nouvelle commande",
         "new_pos_order_with_id": "Nouvelle commande #{id}",
         "password_update": "Mot de passe mis à jour.",
@@ -238,27 +272,6 @@
         "payment_method_required": "Mode de paiement requis.",
         "special_instructions_limit": "Max 190 caractères.",
         "confirm_transfer": "Saisissez l'identifiant de la table cible pour confirmer le transfert."
-    },
-    "pos": {
-        "item_86_d": "Épuisé",
-        "item_unavailable_during_edit": "Cet article vient de devenir indisponible. Demandez à un manager ou choisissez un autre produit.",
-        "item_no_longer_available": "« {name} » n'est plus disponible.",
-        "park": "Park",
-        "parked_orders": "Commandes parkées",
-        "restore": "Restaurer",
-        "discard": "Supprimer",
-        "empty_parked_orders": "Aucune commande parkée.",
-        "parked_order_fallback_label": "Commande sans libellé",
-        "park_label_prompt": "Libellé optionnel pour la commande parkée",
-        "park_requires_items": "Ajoutez au moins un article avant de parker cette commande.",
-        "park_success": "Commande parkée avec succès.",
-        "park_save_error": "Impossible de parker cette commande.",
-        "park_fetch_error": "Impossible de charger les commandes parkées.",
-        "park_restore_success": "Commande restaurée avec succès.",
-        "park_restore_error": "Impossible de restaurer cette commande.",
-        "park_restore_requires_empty_cart": "Videz ou parquez le panier courant avant de restaurer une commande.",
-        "park_discard_success": "Commande parkée supprimée.",
-        "park_discard_error": "Impossible de supprimer cette commande parkée."
     },
     "kiosk": {
         "welcome": "Bienvenue !",
@@ -305,17 +318,11 @@
         "discount_loyalty": "Réduction fidélité",
         "discount_promo": "Code promo {code}",
         "promo": {
-            "label": "Code promo",
-            "placeholder": "Ex : BIENVENUE10",
-            "apply": "Appliquer",
-            "loading": "Vérification…",
-            "remove": "Retirer",
-            "applied": "Code {code} appliqué (-{amount})",
-            "error": {
-                "empty": "Veuillez saisir un code.",
-                "invalid": "Code promo invalide ou expiré.",
-                "network": "Impossible de vérifier ce code. Réessayez."
-            }
+            "aria_label": "Offres en cours",
+            "badge_label": "Offre",
+            "code_label": "Code",
+            "code_aria": "Code promo {code}",
+            "min_cart": "À partir de {value}"
         },
         "empty_cart": "Votre panier est vide",
         "empty_cart_hint": "Parcourez le menu et ajoutez des articles !",
@@ -433,13 +440,6 @@
             "warning_aria": "Attention : ce produit contient un allergène que vous avez déclaré.",
             "list_aria": "Allergènes"
         },
-        "promo": {
-            "aria_label": "Offres en cours",
-            "badge_label": "Offre",
-            "code_label": "Code",
-            "code_aria": "Code promo {code}",
-            "min_cart": "À partir de {value}"
-        },
         "inactivity": {
             "title": "Toujours là ?",
             "desc": "Votre commande sera effacée dans",
@@ -495,7 +495,7 @@
             "tpe_accepted": "Paiement accepté",
             "loyalty_not_applied_toast": "Votre réduction fidélité n'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction.",
             "invalid_order_response": "Réponse serveur incorrecte : commande introuvable. Veuillez réessayer.",
-            "tpe_timeout": "L'appareil de paiement ne répond pas. Veuillez appeler un membre du personnel.",
+            "tpe_timeout": "Délai d'attente du terminal de paiement dépassé. Veuillez réessayer ou contacter un opérateur.",
             "payment_sync_failed": "Le paiement a été accepté mais la borne n'a pas pu confirmer la commande auprès du serveur. Merci d'appeler un membre du personnel.",
             "payment_error_generic": "Une erreur est survenue. Veuillez réessayer.",
             "payment_declined": "Paiement refusé par l'appareil",
@@ -822,27 +822,6 @@
                     "summary_one": "{n} garniture sélectionnée",
                     "summary_many": "{n} garnitures sélectionnées"
                 }
-            },
-            "confirmation": {
-                "title": "Commande confirmée !",
-                "order_number": "Numéro de commande",
-                "total_paid": "Total payé",
-                "message_kitchen": "Votre commande a été envoyée en cuisine.",
-                "message_counter": "Présentez-vous au comptoir avec votre numéro.",
-                "loyalty_points": "vous gagnez +{n} points fidélité !",
-                "auto_return": "Retour automatique dans {n}s",
-                "print_button": "Imprimer le ticket",
-                "printing": "Impression…",
-                "printed": "Ticket imprimé",
-                "print_error": "Erreur impression",
-                "new_order": "Nouvelle commande",
-                "receipt_number": "NUMÉRO",
-                "receipt_discount": "Réduction fidélité",
-                "receipt_total": "TOTAL",
-                "receipt_loyalty": "FIDÉLITÉ : +{n} pts",
-                "receipt_thanks": "Merci de votre visite !",
-                "receipt_present": "Présentez ce ticket au comptoir.",
-                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir."
             }
         },
         "order_type_label": "Type de commande",
@@ -899,6 +878,37 @@
             "tpe_error": "Problème terminal de paiement",
             "call_staff": "Veuillez appeler un membre de l'équipe",
             "degraded_service": "Service dégradé — certaines fonctions sont réduites"
+        },
+        "confirmation": {
+            "title": "Commande confirmée !",
+            "order_number": "Numéro de commande",
+            "total_paid": "Total payé",
+            "message_kitchen": "Votre commande a été envoyée en cuisine.",
+            "message_counter": "Présentez-vous au comptoir avec votre numéro.",
+            "loyalty_points": "vous gagnez +{n} points fidélité !",
+            "auto_return": "Retour automatique dans {n}s",
+            "print_button": "Imprimer le ticket",
+            "printing": "Impression…",
+            "printed": "Ticket imprimé",
+            "print_error": "Erreur impression",
+            "new_order": "Nouvelle commande",
+            "receipt_number": "NUMÉRO",
+            "receipt_discount": "Réduction fidélité",
+            "receipt_total": "TOTAL",
+            "receipt_loyalty": "FIDÉLITÉ : +{n} pts",
+            "receipt_thanks": "Merci de votre visite !",
+            "receipt_present": "Présentez ce ticket au comptoir.",
+            "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir.",
+            "fallback_receipt_title": "Votre ticket",
+            "fallback_receipt_help": "L'imprimante semble indisponible. Vous pouvez prendre une photo de ce ticket ou demander à un opérateur.",
+            "print_failed": "Impression indisponible — notez votre numéro :",
+            "print_failed_hint": "Présentez ce numéro au comptoir."
+        },
+        "payment": {
+            "tpe_timeout_message": "Délai d'attente du terminal de paiement dépassé. Veuillez réessayer ou contacter un opérateur."
+        },
+        "waiting": {
+            "ready_visual_fallback": "Votre commande est prête !"
         }
     }
 }

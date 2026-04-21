@@ -41,9 +41,9 @@
     </div>
 
     <div v-if="printFailed" class="kiosk-printer-fallback">
-      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') || 'Impression indisponible — notez votre numéro :' }}</p>
+      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') }}</p>
       <div class="kiosk-printer-fallback-number">#{{ displayNumber }}</div>
-      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') || 'Présentez ce numéro au comptoir.' }}</p>
+      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') }}</p>
     </div>
 
     <div class="kiosk-confirmation-message">
@@ -89,8 +89,17 @@
     </button>
   </div>
 
-  <!-- Receipt zone (only visible when printing) -->
-  <div id="kiosk-print-receipt" class="kiosk-receipt-zone">
+  <!-- Receipt zone (hidden unless print dialog / print-failed fallback) -->
+  <div
+    id="kiosk-print-receipt"
+    class="kiosk-receipt-zone"
+    :data-print-failed="printFailed"
+    data-testid="kiosk-print-receipt"
+  >
+    <template v-if="printFailed">
+      <h2 class="kiosk-fallback-receipt-title">{{ $t('kiosk.confirmation.fallback_receipt_title') }}</h2>
+      <p class="kiosk-fallback-receipt-help">{{ $t('kiosk.confirmation.fallback_receipt_help') }}</p>
+    </template>
     <div class="receipt-header">
       <p class="receipt-restaurant">{{ restaurantName }}</p>
       <p class="receipt-date">{{ receiptDate }}</p>
@@ -623,8 +632,33 @@ export default {
 .kiosk-btn-print.is-done { border-color: rgba(46,204,113,0.5); color: #2ecc71; }
 .kiosk-btn-print.is-error { border-color: rgba(232,0,28,0.5); color: #ff6b7a; }
 
-/* Receipt zone — visible only when printing via window.print() */
+/* Receipt zone — visible when printing or fallback after print failure */
 .kiosk-receipt-zone { display: none; }
+
+.kiosk-receipt-zone[data-print-failed="true"] {
+  display: block !important;
+  max-width: 500px;
+  margin: 1.25rem auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e2e4;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  color: #1f1f1f;
+}
+
+.kiosk-fallback-receipt-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+}
+.kiosk-fallback-receipt-help {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
 
 @media print {
   body > * { display: none !important; }
