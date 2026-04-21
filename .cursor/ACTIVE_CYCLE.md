@@ -1,8 +1,14 @@
 # Active Cycle – FoodKing
 
-TASK_ID: P_MEGA_W3_REMEDIATION_2026-04-20
-PHASE: REMEDIATION — explore subagent a détecté 6 bugs invisibles non couverts par Vitest verts (vérification 200% demandée par utilisateur). Branche REMEDIATION per auto-remediation.mdc (pas critical zone, 1er attempt sur ces bug_signatures).
-NEXT_DECISION: Après remediation OK → exécuter plan W4 (déjà livré par planner-orchestrator dans plans/PLAN_P_MEGA_W4_2026-04-20.md).
+TASK_ID: P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20
+PHASE: VALIDATE — W4.A (P-MEGA-11) livré ; invoke Composer validator
+NEXT_DECISION: Drift i18n quantifié (voir RUN_P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20.md). E1/fr massif → pas d'auto-trad ; orchestrateur décide W4.B RTL vs remédiation i18n.
+
+PRIOR W3 REMEDIATION (CLOSED PASSED commit be229442f) :
+  - 540/540 Vitest verts (535 baseline + 5 nouveaux)
+  - 6 bugs invisibles fixés : i18n de/bn baseline, init hoist route guard, lowercase, string-tolerant, RESERVED comment, sentinel fixture
+  - 1 finding nouveau : FINDING_DE_BN_FR_BASELINE_TRANSLATIONS (revue traducteur natif requise)
+  - PHPUnit sentinel reste rouge (intent — prouve dette back OrderItemAllergenSnapshot)
 
 REMEDIATION_ATTEMPT_1 (W3 bugs invisibles) :
   outcome_2026-04-21: PASSED — delegated foodking-routine-implementer — report RUN_P_MEGA_W3_REMEDIATION_2026-04-20.md
@@ -63,10 +69,10 @@ W3 RECAP :
   - AUDIT P-MEGA-23 : reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md (13 drifts, 3 patterns systémiques)
 RUNNER_MODE: single-session
 PRIMARY_MODEL: Composer (foodking-routine-implementer) — front-only, zéro pricing/auth/schema/symmetry/branch_id/dispatch
-PLAN_FILE: plans/PLAN_P_MEGA_W3_2026-04-20.md (cycle W3.A section)
-REPORT_FILE: reports/execution/RUN_P_MEGA_W3_B_FILTER_PERSIST_2026-04-20.md (à produire par subagent)
+PLAN_FILE: plans/PLAN_P_MEGA_W4_2026-04-20.md (section W4.A)
+REPORT_FILE: reports/execution/RUN_P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20.md
 GATE_FILE: aucun (zone safe ; 1 finding cosmétique attendu = NormalItemResource n'expose pas is_* flags)
-EXECUTE_DELEGATION_REQUIRED: foodking-routine-implementer (à confirmer dans REPORT_FILE)
+EXECUTE_DELEGATION_REQUIRED: foodking-routine-implementer — confirmé dans REPORT_FILE W4.A
 
 DELIVERABLES W3.B (per plan) :
   - resources/js/store/modules/kioskFilter.js (NEW) — state + persistance localStorage
@@ -88,7 +94,7 @@ PRIOR CYCLE (closed) : P_MEGA_W1_W2 — 521/521 verts, 5 commits atomiques, 3 ga
 | Phase | Done |
 |---|---|
 | PLAN | [x] V14 G14-A approved + W3 plan PLAN_P_MEGA_W3_2026-04-20.md |
-| EXECUTE | [x] foodking-complex-implementer (V14 T01+T05+T07) + foodking-routine-implementer (W3.A + W3.B) |
+| EXECUTE | [x] foodking-complex-implementer (V14 T01+T05+T07) + foodking-routine-implementer (W3.A + W3.B + W4.A i18n audit tool) |
 | VALIDATE | [x] PHPUnit 9/9 + 6/6 + 94/94 régression ; Vitest 535/535 ; invariants 5/6 (1 pré-existant KI-001 waived) |
 | AUDIT | [x] CLOSED PASSED (1 remediation round V14 — safeJsonDecode bug + 3 defensive guards Categories) |
 | COMMIT | [ ] V14 working tree ready (5 modifs + 4 nouveaux fichiers) — attente review user |

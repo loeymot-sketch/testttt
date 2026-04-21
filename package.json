@@ -9,7 +9,8 @@
         "prod": "npm run production",
         "production": "mix --production",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "i18n:audit": "node tools/i18n/audit_locale_keys.mjs"
     },
     "devDependencies": {
         "@playwright/test": "^1.58.2",

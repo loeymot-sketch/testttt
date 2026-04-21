@@ -1,0 +1,15 @@
+key,fr_value,en_value
+allergens.gluten,Gluten,Gluten
+kiosk.a11y.contrast_aa,Standard,Standard
+kiosk.admin_screen.section_app,Application,Application
+kiosk.loyalty_screen.placeholder_phone,06 12 34 56 78,06 12 34 56 78
+kiosk.pay_screen.tr_sub,Edenred · Swile · Sodexo,Edenred · Swile · Sodexo
+kiosk.upsell_screen.skip_timer,({n}s),({n}s)
+kiosk.wizard.frites_sauce.ketchup,Ketchup,Ketchup
+kiosk.wizard.frites_sauce.mayo,Mayonnaise,Mayonnaise
+kiosk.wizard.step.sauce.fallback_ketchup,Ketchup,Ketchup
+kiosk.wizard.step.sauce.fallback_mayo,Mayonnaise,Mayonnaise
+kiosk.wizard.step.viande.fallback_merguez,Merguez,Merguez
+kiosk.wizard.step.viande.fallback_nuggets,Nuggets,Nuggets
+kiosk.wizard.summary.sauces,Sauces,Sauces
+label.action,Action,Action
