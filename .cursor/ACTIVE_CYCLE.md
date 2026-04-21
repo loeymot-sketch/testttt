@@ -1,10 +1,14 @@
 # Active Cycle – FoodKing
 
-TASK_ID: P_MEGA_W3_B_FILTER_PERSIST_2026-04-20
-PHASE: VALIDATE
-NEXT_DECISION: Audit Claude après réception du diff. Si OK → SYNTHESE_W3 + commit récap. Si KO → auto-remediation per .cursor/rules/auto-remediation.mdc.
+TASK_ID: P_MEGA_W3_ALLERGENS_PLUS_P23_DRIFT_AUDIT_2026-04-20
+PHASE: CLOSED — Vague 3 fermée (W3.A + W3.B PASSED + audit P-MEGA-23 livré transverse)
+NEXT_DECISION: Attendre arbitrage utilisateur — Voie A (Vague 4 i18n/RTL no-gate), Voie B (gates débloquées), ou Voie C (cycle backend allergens W3.C).
 
-PRIOR CYCLE W3.A — CLOSED PASSED (commit a86b8ca03) : 8/8 Vitest verts, 529/529 global, finding back documenté FINDING_BACK_DEFERRED, 0 critical zone, 0 gate.
+W3 RECAP :
+  - W3.A (P-MEGA-08) : commit a86b8ca03, 8/8+529/529 Vitest, sentinel back rouge documenté
+  - W3.B (P-MEGA-09) : commit 6d7ca7bf1, 6/6+535/535 Vitest, finding resource flags documenté
+  - SYNTHESE : reports/execution/SYNTHESE_P_MEGA_W3_2026-04-20.md
+  - AUDIT P-MEGA-23 : reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md (13 drifts, 3 patterns systémiques)
 RUNNER_MODE: single-session
 PRIMARY_MODEL: Composer (foodking-routine-implementer) — front-only, zéro pricing/auth/schema/symmetry/branch_id/dispatch
 PLAN_FILE: plans/PLAN_P_MEGA_W3_2026-04-20.md (cycle W3.A section)
@@ -32,9 +36,9 @@ PRIOR CYCLE (closed) : P_MEGA_W1_W2 — 521/521 verts, 5 commits atomiques, 3 ga
 | Phase | Done |
 |---|---|
 | PLAN | [x] (foodking-planner-orchestrator → plans/PLAN_P_MEGA_W3_2026-04-20.md) |
-| EXECUTE | [x] (foodking-routine-implementer) |
-| VALIDATE | [ ] |
-| AUDIT | [ ] |
+| EXECUTE | [x] (foodking-routine-implementer ×2 sub-cycles W3.A + W3.B) |
+| VALIDATE | [x] (npm test 535/535 verts ; PHPUnit sentinel rouge documenté) |
+| AUDIT | [x] (CLOSED PASSED, 0 critical zone touched, 0 gate) |
 
 ## Gate
 [x] None for V4 salve 4 cycles themselves (tests/observability/doc — no frozen zone)

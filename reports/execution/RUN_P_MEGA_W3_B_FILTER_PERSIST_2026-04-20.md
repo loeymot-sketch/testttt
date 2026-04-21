@@ -38,3 +38,22 @@ Le filtre grille / wizard reste **partiellement cosmétique** tant que `NormalIt
 ## Risque résiduel
 
 Styles greyout uniquement CSS ; aucun changement backend. Quand les flags API seront exposés, le comportement « réel » du filtre s’alignera sans changer le rail UI.
+
+---
+
+## Audit (Claude orchestrateur)
+
+| Item | Vérif | Statut |
+|---|---|---|
+| SUBSYSTEMS_TOUCHED only | `git diff --stat -- 'app/**' 'database/**' 'routes/**'` vide | ✅ |
+| 10/10 fichiers attendus livrés | match plan section P-MEGA-09 | ✅ |
+| EXECUTE_DELEGATION line | présente ligne 4 | ✅ |
+| Tests Vitest | 6/6 nouveaux + 535/535 global | ✅ |
+| A11y greyout sans v-if | Set d'IDs + class additive confirmé | ✅ |
+| Finding `FINDING_RESOURCE_FLAGS_DEFERRED` | documenté | ✅ |
+| PHPUnit baseline failure | logs du 15 avril (pré-existant W1/W2/W3.A) → hors scope | ✅ noté, pas régression |
+
+**Audit: PASSED**
+Cycle: CLOSED after 0 remediation round(s)
+Critical zones touched: NONE
+Human gate: NONE
