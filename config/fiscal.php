@@ -39,6 +39,23 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Z-chain verification
+    |----------------------------------------------------------------------
+    |
+    | `genesis_prev_hash` documents the expected sentinel for the first
+    | Z report in a branch. Legacy rows may still store a null/empty
+    | prev_hash; verification accepts that historical shape so the
+    | check remains read-only and backward compatible.
+    |
+    | `verify_chain_strict` defaults to null so the service can infer
+    | the policy from the current environment (strict in production,
+    | degraded/log-only elsewhere). Set an explicit bool to override.
+    */
+    'genesis_prev_hash' => env('FISCAL_GENESIS_PREV_HASH', str_repeat('0', 64)),
+    'verify_chain_strict' => env('FISCAL_VERIFY_CHAIN_STRICT', null),
+
+    /*
+    |----------------------------------------------------------------------
     | Archive retention (NF525 = 6 years)
     |----------------------------------------------------------------------
     */

@@ -57,6 +57,10 @@ class ZReportService
                 throw new RuntimeException("ZReportService: cannot acquire {$lockKey}.");
             }
 
+            // [W8.C-P1 / P-MEGA-22 Pilier 1]
+            // Validate the historical chain before reserving a new sequence.
+            $this->verifyChain($branchId);
+
             return $this->connection->transaction(function () use ($branchId, $openedById) {
                 $existingOpen = ZReport::query()
                     ->where('branch_id', $branchId)
@@ -118,6 +122,10 @@ class ZReportService
                 if (!$lock->block(self::LOCK_ACQUIRE_SECONDS)) {
                     throw new RuntimeException("ZReportService: cannot acquire {$lockKey}.");
                 }
+
+                // [W8.C-P1 / P-MEGA-22 Pilier 1]
+                // Validate the historical chain before computing a new close signature.
+                $this->verifyChain($branchId);
 
                 $result = $this->connection->transaction(function () use ($branchId, $closedById) {
                     $open = ZReport::query()
@@ -310,26 +318,124 @@ class ZReportService
             return false;
         }
 
-        $aggregates = [
-            'total_ttc'         => (float) $report->total_ttc,
-            'total_ht'          => (float) $report->total_ht,
-            'total_tva'         => (float) $report->total_tva,
-            'total_by_method'   => (array) ($report->total_by_method   ?? []),
-            'total_by_tax_rate' => (array) ($report->total_by_tax_rate ?? []),
-            'order_count'       => (int) $report->order_count,
-            'cancel_count'      => (int) $report->cancel_count,
-            'refund_count'      => (int) $report->refund_count,
+        $expected = $this->computeSignature($report, (string) ($report->prev_hash ?? ''));
+        return hash_equals($expected, (string) $report->signature);
+    }
+
+    /**
+     * [W8.C-P1 / P-MEGA-22 Pilier 1] Verify the integrity of the full
+     * historical Z-report chain for a branch.
+     *
+     * @return array{
+     *     valid: bool,
+     *     first_z_id: int|null,
+     *     last_z_id: int|null,
+     *     count: int,
+     *     errors: array<int, array{z_id: int, kind: string, expected: string, actual: string}>
+     * }
+     */
+    public function verifyChain(int $branchId, ?bool $strict = null): array
+    {
+        if ($strict === null) {
+            $configuredStrict = Config::get('fiscal.verify_chain_strict');
+            $strict = is_null($configuredStrict)
+                ? app()->environment('production')
+                : (bool) $configuredStrict;
+        }
+
+        $genesisPrevHash = (string) Config::get('fiscal.genesis_prev_hash', str_repeat('0', 64));
+        $zReports = ZReport::query()
+            ->where('branch_id', $branchId)
+            ->where('status', ZReport::STATUS_CLOSED)
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $result = [
+            'valid' => true,
+            'first_z_id' => $zReports->first()?->id,
+            'last_z_id' => null,
+            'count' => 0,
+            'errors' => [],
         ];
 
-        $expected = $this->sign(
-            (int) $report->branch_id,
-            (string) ($report->prev_hash ?? ''),
-            (int) $report->sequence_no,
-            $aggregates,
-            $report->closed_at
-        );
+        if ($zReports->isEmpty()) {
+            return $result;
+        }
 
-        return hash_equals($expected, (string) $report->signature);
+        $previousSignature = null;
+        $expectedSequenceNo = null;
+
+        foreach ($zReports as $zReport) {
+            $actualPrevHash = (string) ($zReport->prev_hash ?? '');
+            $expectedPrevHash = $previousSignature ?? $genesisPrevHash;
+
+            $chainMatches = $previousSignature === null
+                ? ($actualPrevHash === '' || hash_equals($expectedPrevHash, $actualPrevHash))
+                : hash_equals($expectedPrevHash, $actualPrevHash);
+
+            if (!$chainMatches) {
+                $result['valid'] = false;
+                $result['errors'][] = [
+                    'z_id' => (int) $zReport->id,
+                    'kind' => 'chain_break',
+                    'expected' => $expectedPrevHash,
+                    'actual' => $actualPrevHash,
+                ];
+            }
+
+            if ($expectedSequenceNo !== null && (int) $zReport->sequence_no !== $expectedSequenceNo) {
+                $result['valid'] = false;
+                $result['errors'][] = [
+                    'z_id' => (int) $zReport->id,
+                    'kind' => 'sequence_gap',
+                    'expected' => (string) $expectedSequenceNo,
+                    'actual' => (string) $zReport->sequence_no,
+                ];
+            }
+
+            $recomputedSignature = $this->computeSignature($zReport, $actualPrevHash);
+            if (!hash_equals((string) $zReport->signature, $recomputedSignature)) {
+                $result['valid'] = false;
+                $result['errors'][] = [
+                    'z_id' => (int) $zReport->id,
+                    'kind' => 'signature_mismatch',
+                    'expected' => $recomputedSignature,
+                    'actual' => (string) $zReport->signature,
+                ];
+            }
+
+            $previousSignature = (string) $zReport->signature;
+            $expectedSequenceNo = (int) $zReport->sequence_no + 1;
+            $result['last_z_id'] = (int) $zReport->id;
+            $result['count']++;
+        }
+
+        if (!$result['valid']) {
+            try {
+                Log::channel('fiscal')->error('NF525 Z-chain verification failed', [
+                    'event' => 'fiscal.z_chain.verification_failed',
+                    'branch_id' => $branchId,
+                    'first_z_id' => $result['first_z_id'],
+                    'last_z_id' => $result['last_z_id'],
+                    'count' => $result['count'],
+                    'errors' => $result['errors'],
+                    'mode' => $strict ? 'strict' : 'degraded',
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('[W8.C-P1] Fiscal log channel failed: ' . $e->getMessage());
+            }
+
+            if ($strict) {
+                throw new RuntimeException(sprintf(
+                    'NF525 Z-chain verification failed for branch %d (count=%d, errors=%d). See fiscal log for details.',
+                    $branchId,
+                    $result['count'],
+                    count($result['errors'])
+                ));
+            }
+        }
+
+        return $result;
     }
 
     private function sign(int $branchId, string $prevHash, int $sequenceNo, array $aggregates, Carbon $closedAt): string
@@ -358,6 +464,32 @@ class ZReportService
         );
 
         return hash_hmac('sha256', $prevHash . '|' . $canonical, $secret);
+    }
+
+    private function computeSignature(ZReport $report, string $prevHash): string
+    {
+        $closedAt = $report->closed_at instanceof Carbon
+            ? $report->closed_at
+            : Carbon::parse($report->closed_at);
+
+        $aggregates = [
+            'total_ttc' => (float) $report->total_ttc,
+            'total_ht' => (float) $report->total_ht,
+            'total_tva' => (float) $report->total_tva,
+            'total_by_method' => (array) ($report->total_by_method ?? []),
+            'total_by_tax_rate' => (array) ($report->total_by_tax_rate ?? []),
+            'order_count' => (int) $report->order_count,
+            'cancel_count' => (int) $report->cancel_count,
+            'refund_count' => (int) $report->refund_count,
+        ];
+
+        return $this->sign(
+            (int) $report->branch_id,
+            $prevHash,
+            (int) $report->sequence_no,
+            $aggregates,
+            $closedAt
+        );
     }
 
     /**
