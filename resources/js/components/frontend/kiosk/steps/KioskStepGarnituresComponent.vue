@@ -16,11 +16,17 @@
         v-for="garniture in garnitureList"
         :key="garniture.id"
         class="kiosk-garniture-row"
-        :class="{ selected: localSelections[garniture.id], removed: !localSelections[garniture.id] }"
+        :class="{
+          selected: localSelections[garniture.id],
+          removed: !localSelections[garniture.id],
+          'kiosk-variation--disabled': !garnitureFilterAllowed(garniture),
+        }"
         role="checkbox"
-        tabindex="0"
+        :tabindex="garnitureFilterAllowed(garniture) ? 0 : -1"
         :aria-checked="!!localSelections[garniture.id]"
+        :aria-disabled="garnitureFilterAllowed(garniture) ? 'false' : 'true'"
         :aria-label="garniture.name"
+        :title="garnitureFilterTooltip(garniture)"
         @click="toggleGarniture(garniture.id)"
         @keydown.enter.prevent="toggleGarniture(garniture.id)"
         @keydown.space.prevent="toggleGarniture(garniture.id)"
@@ -53,13 +59,15 @@
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
+import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 
 export default {
   name: 'KioskStepGarnitures',
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    activeFilters: { type: Array, default: () => [] },
   },
   emits: ['update'],
   data() {
@@ -108,7 +116,8 @@ export default {
         id: g.id,
         name: g.name,
         displayThumb: kioskResolveImageSrc(g.raw),
-        emoji: this.getEmojiForGarniture(g.name)
+        emoji: this.getEmojiForGarniture(g.name),
+        raw: g.raw,
       }));
     }
   },
@@ -132,7 +141,16 @@ export default {
       if (lower.includes('fromage') || lower.includes('cheddar') || lower.includes('cheese')) return '🧀';
       return '🥗';
     },
+    garnitureFilterAllowed(garniture) {
+      return isVariationAllowedByFilters(garniture?.raw || garniture, this.activeFilters || []);
+    },
+    garnitureFilterTooltip(garniture) {
+      if (this.garnitureFilterAllowed(garniture)) return '';
+      return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
+    },
     toggleGarniture(id) {
+      const g = this.garnitureList.find((x) => x.id === id);
+      if (g && !this.garnitureFilterAllowed(g)) return;
       this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
@@ -224,6 +242,12 @@ export default {
   border-color: rgba(232,0,28,0.14);
   background: rgba(232,0,28,0.025);
   box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+}
+
+.kiosk-garniture-row.kiosk-variation--disabled {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
 }
 
 .kiosk-garniture-visual {

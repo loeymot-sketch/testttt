@@ -44,6 +44,31 @@
       </div>
     </div>
 
+    <!-- P-MEGA-09 — Filtres actifs (Vuex + localStorage) : bandeau lisible + reset -->
+    <div
+      v-if="activeFilters.length > 0"
+      class="kiosk-active-filter-banner"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-active-filter-banner"
+    >
+      <span class="kiosk-active-filter-banner__summary">
+        {{ $t('kiosk.catalog.filters_label') }}
+        ({{ activeFilters.length }})
+      </span>
+      <ul class="kiosk-active-filter-banner__list">
+        <li v-for="f in activeFilters" :key="f">{{ $t('kiosk.filters.' + f) }}</li>
+      </ul>
+      <button
+        type="button"
+        class="kiosk-active-filter-banner__clear"
+        @click="resetFilters"
+        data-testid="kiosk-active-filter-banner-clear"
+      >
+        {{ $t('kiosk.catalog.filters_reset') }}
+      </button>
+    </div>
+
     <!-- Phase 8.5 — Bandeau promos (server-driven, jamais calculé côté client) -->
     <KioskPromoCarouselComponent />
 
@@ -137,8 +162,8 @@
               <div class="kiosk-product-zone-header">
                 <h1 class="kiosk-zone-title" data-testid="kiosk-categories-zone-title">{{ selectedCategoryDisplayName }}</h1>
                 <p class="kiosk-zone-subtitle" data-testid="kiosk-categories-zone-count">
-                  {{ filteredProducts.length }}
-                  {{ filteredProducts.length > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
+                  {{ filteredProductCount }}
+                  {{ filteredProductCount > 1 ? $t('kiosk.catalog.product_many') : $t('kiosk.catalog.product_one') }}
                 </p>
               </div>
 
@@ -159,29 +184,27 @@
                   :data-testid="`kiosk-filter-${f.key}`"
                   @toggle="toggleFilter"
                 />
-                <button type="button"
-                  v-if="activeFilters.length > 0"
-                  class="kiosk-filter-reset"
-                  @click="resetFilters"
-                  data-testid="kiosk-filter-reset">
-                  {{ $t('kiosk.catalog.filters_reset') || 'Tout effacer' }}
-                </button>
               </div>
 
               <div class="kiosk-product-grid" role="list">
                 <div
-                  v-for="product in filteredProducts"
+                  v-for="product in catalogProducts"
                   :key="product.id"
                   class="kiosk-product-card"
-                  :class="{ 'is-loading': loadingItemId === product.id }"
+                  :class="{
+                    'is-loading': loadingItemId === product.id,
+                    'kiosk-product-card--filtered-out': !isProductCatalogAllowed(product),
+                  }"
                   role="button"
-                  tabindex="0"
+                  :tabindex="isProductCatalogAllowed(product) ? 0 : -1"
+                  :aria-disabled="!isProductCatalogAllowed(product) ? 'true' : 'false'"
                   :aria-label="sanitizeItemName(product.name)"
                   :aria-busy="loadingItemId === product.id ? 'true' : 'false'"
                   :data-testid="`kiosk-product-card-${product.id}`"
-                  @click="openProduct(product)"
-                  @keydown.enter.prevent="openProduct(product)"
-                  @keydown.space.prevent="openProduct(product)"
+                  :title="productFilteredOutTooltip(product)"
+                  @click="onProductCardActivate(product, $event)"
+                  @keydown.enter.prevent="onProductCardActivate(product, $event)"
+                  @keydown.space.prevent="onProductCardActivate(product, $event)"
                 >
                   <div class="kiosk-product-media">
                     <img
@@ -206,8 +229,8 @@
 
                     <button type="button"
                       class="kiosk-product-add"
-                      @click.stop="openProduct(product)"
-                      :disabled="!!loadingItemId"
+                      @click.stop="onProductCardActivate(product, $event)"
+                      :disabled="!!loadingItemId || !isProductCatalogAllowed(product)"
                       :aria-label="$t('kiosk.catalog.add', { name: sanitizeItemName(product.name) })"
                       :data-testid="`kiosk-product-add-${product.id}`">
                       <span v-if="loadingItemId === product.id" class="kiosk-product-add-spinner" aria-hidden="true"></span>
@@ -350,9 +373,6 @@ export default {
       loadError: false,
       activeItem: null,
       loadingItemId: null,
-      // Phase 8.4 — filtres diététiques (stockés en session, pas persistés
-      // hors session — invariant RGPD : pas de profilage sans consent).
-      activeFilters: [],
       kioskFilterDefs: [
         { key: 'halal',       icon: '🕌', i18n: 'kiosk.filters.halal' },
         { key: 'vegetarian',  icon: '🥗', i18n: 'kiosk.filters.vegetarian' },
@@ -376,6 +396,16 @@ export default {
       'kioskCatalogItems',
     ]),
     ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
+    // [P-MEGA-09 defensive] Read kioskFilter via getters with module-absent fallback,
+    // so legacy specs (and hosts not registering the module) don't crash on .length / .includes.
+    activeFilters() {
+      try { return this.$store?.getters?.['kioskFilter/activeFilters'] || []; }
+      catch (_) { return []; }
+    },
+    hydrated() {
+      try { return !!this.$store?.getters?.['kioskFilter/hydrated']; }
+      catch (_) { return false; }
+    },
     selectedSidebarRow() {
       const sid = parseInt(this.selectedCategoryId, 10);
       const sub = this.kioskSandwichSubcolumn;
@@ -401,12 +431,21 @@ export default {
     selectedCategoryDisplayName() {
       return this.stripLeadingNos(this.selectedCategoryName);
     },
-    filteredProducts() {
-      const base = this.selectedCategoryId
+    /** Liste complète (jamais masquée par v-if — greyout uniquement). */
+    catalogProducts() {
+      return this.selectedCategoryId
         ? this.kioskCatalogItems
         : (this.allItems || []);
-      if (!this.activeFilters || this.activeFilters.length === 0) return base;
-      return applyKioskFilters(base, this.activeFilters);
+    },
+    /** IDs passant applyKioskFilters ; null si aucun filtre → tout autorisé. */
+    allowedProductIdSet() {
+      if (!this.activeFilters?.length) return null;
+      const allowed = applyKioskFilters(this.catalogProducts, this.activeFilters);
+      return new Set(allowed.map((i) => i.id));
+    },
+    filteredProductCount() {
+      if (!this.activeFilters?.length) return this.catalogProducts.length;
+      return applyKioskFilters(this.catalogProducts, this.activeFilters).length;
     },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
@@ -426,6 +465,9 @@ export default {
     },
   },
   async mounted() {
+    if (!this.hydrated) {
+      try { await this.$store.dispatch('kioskFilter/init'); } catch (_) { /* module not registered (legacy host) */ }
+    }
     await this.loadCatalogue();
     if (!this.$route.query.cat && this.selectedCategoryId) {
       this.replaceCategoryQuery(this.selectedCategoryId, this.kioskSandwichSubcolumn === 'cold');
@@ -441,6 +483,24 @@ export default {
   methods: {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
     ...mapActions('kioskCart', ['addItem', 'reset']),
+
+    isProductCatalogAllowed(product) {
+      const set = this.allowedProductIdSet;
+      if (!set) return true;
+      return set.has(product.id);
+    },
+    productFilteredOutTooltip(product) {
+      if (this.isProductCatalogAllowed(product)) return '';
+      const names = (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`));
+      return names.filter(Boolean).join(', ');
+    },
+    onProductCardActivate(product, evt) {
+      if (!this.isProductCatalogAllowed(product)) {
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        return;
+      }
+      this.openProduct(product);
+    },
 
     // Kiosk Phase 9.1.13 — wire du chip "Mon compte" vers l'écran loyalty.
     // Trace analytics optionnelle : si l'event `loyalty_scanned` n'est pas
@@ -666,29 +726,24 @@ export default {
     productAllergens(product) {
       return extractAllergenCodes(product);
     },
-    // Phase 8.4 — gestion filtres (en session, pas persistée hors conversation).
     toggleFilter(key) {
       if (!KIOSK_FILTERS.includes(key)) return;
-      const idx = this.activeFilters.indexOf(key);
-      if (idx >= 0) {
-        this.activeFilters.splice(idx, 1);
-      } else {
-        this.activeFilters.push(key);
-      }
+      const wasOn = this.activeFilters.includes(key);
+      try { this.$store.dispatch('kioskFilter/toggle', key); } catch (_) {}
       try {
         kioskAnalytics.track('filter_toggled', {
           filter: key,
-          active: idx < 0,
+          active: !wasOn,
           active_filters: this.activeFilters.slice(),
-          result_count: this.filteredProducts.length,
+          result_count: this.filteredProductCount,
         });
       } catch (_) {}
     },
     resetFilters() {
       if (this.activeFilters.length === 0) return;
-      this.activeFilters = [];
+      try { this.$store.dispatch('kioskFilter/reset'); } catch (_) {}
       try {
-        kioskAnalytics.track('filter_reset', { result_count: this.filteredProducts.length });
+        kioskAnalytics.track('filter_reset', { result_count: this.filteredProductCount });
       } catch (_) {}
     },
   },
@@ -697,6 +752,62 @@ export default {
 
 <style scoped>
 /* Phase 8.4 — Filter bar */
+/* P-MEGA-09 — bandeau filtres persistés */
+.kiosk-active-filter-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 10px 20px;
+  background: rgba(232, 0, 28, 0.06);
+  border-bottom: 1px solid rgba(232, 0, 28, 0.2);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--kiosk-primary-dark, #a41020);
+}
+.kiosk-active-filter-banner__summary { flex-shrink: 0; }
+.kiosk-active-filter-banner__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+.kiosk-active-filter-banner__list li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(232, 0, 28, 0.22);
+  font-size: 13px;
+}
+.kiosk-active-filter-banner__clear {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--kiosk-primary, #e8001c);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: calc(13px * var(--kiosk-text-scale, 1));
+  padding: 8px 12px;
+}
+.kiosk-active-filter-banner__clear:hover,
+.kiosk-active-filter-banner__clear:focus-visible {
+  color: var(--kiosk-primary-dark, #a41020);
+  outline: none;
+}
+.kiosk-product-card--filtered-out {
+  opacity: 0.42;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
+}
+.kiosk-product-card--filtered-out:active {
+  transform: none;
+}
+
 .kiosk-filter-bar {
   display: flex;
   flex-wrap: wrap;

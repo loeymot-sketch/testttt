@@ -95,10 +95,7 @@
           <component
             :is="currentStepComponent"
             :key="currentStep.type"
-            :step="currentStep"
-            :item="resolvedItem"
-            :selections="selections"
-            v-bind="kioskMenuStepExtraProps"
+            v-bind="wizardStepBindings"
             @update="updateSelection"
           />
         </transition>
@@ -258,6 +255,11 @@ export default {
     };
   },
   computed: {
+    /** Tolère les tests sans module kioskFilter enregistré (liste vide). */
+    activeFilters() {
+      const raw = this.$store?.getters?.['kioskFilter/activeFilters'];
+      return Array.isArray(raw) ? raw : [];
+    },
     resolvedItem() {
       return this.item || this.fetchedItem;
     },
@@ -456,6 +458,20 @@ export default {
     kioskMenuStepExtraProps() {
       if (this.currentStep?.type !== 'menu') return {};
       return { showBoissonOnlyMenuCard: this.kioskShowBoissonOnlyMenuCard };
+    },
+    /** Props communes + filtres catalogue (greyout) uniquement sur les étapes concernées. */
+    wizardStepBindings() {
+      const step = this.currentStep;
+      const base = {
+        step,
+        item: this.resolvedItem,
+        selections: this.selections,
+        ...this.kioskMenuStepExtraProps,
+      };
+      if (['viande', 'sauce', 'garnitures', 'supplements'].includes(step?.type)) {
+        base.activeFilters = this.activeFilters;
+      }
+      return base;
     },
     canAdvance() {
       const step = this.currentStep;

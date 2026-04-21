@@ -19,11 +19,16 @@
         v-for="supplement in supplementList"
         :key="supplement.id"
         class="kiosk-supplement-row"
-        :class="{ selected: localSelections[supplement.id] }"
+        :class="{
+          selected: localSelections[supplement.id],
+          'kiosk-variation--disabled': !supplementFilterAllowed(supplement),
+        }"
         role="checkbox"
-        tabindex="0"
+        :tabindex="supplementFilterAllowed(supplement) ? 0 : -1"
         :aria-checked="!!localSelections[supplement.id]"
+        :aria-disabled="supplementFilterAllowed(supplement) ? 'false' : 'true'"
         :aria-label="`${supplement.name} ${formatPrice(supplement.price)}`"
+        :title="supplementFilterTooltip(supplement)"
         @click="toggleSupplement(supplement.id)"
         @keydown.enter.prevent="toggleSupplement(supplement.id)"
         @keydown.space.prevent="toggleSupplement(supplement.id)"
@@ -55,6 +60,7 @@
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 import { partitionKioskExtras } from '../../../../helpers/kioskExtrasPartition';
+import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 
 export default {
   name: 'KioskStepSupplements',
@@ -62,7 +68,8 @@ export default {
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    activeFilters: { type: Array, default: () => [] },
   },
   emits: ['update'],
   data() {
@@ -90,7 +97,8 @@ export default {
         price: s.price,
         description: s.raw?.description || '',
         thumb: kioskResolveImageSrc(s.raw),
-        emoji: this.getEmojiForSupplement(s.name)
+        emoji: this.getEmojiForSupplement(s.name),
+        raw: s.raw,
       }));
     },
     totalPrice() {
@@ -122,7 +130,16 @@ export default {
       if (lower.includes('glace') || lower.includes('ice cream')) return '🍦';
       return '➕';
     },
+    supplementFilterAllowed(supplement) {
+      return isVariationAllowedByFilters(supplement?.raw || supplement, this.activeFilters || []);
+    },
+    supplementFilterTooltip(supplement) {
+      if (this.supplementFilterAllowed(supplement)) return '';
+      return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
+    },
     toggleSupplement(id) {
+      const s = this.supplementList.find((x) => x.id === id);
+      if (s && !this.supplementFilterAllowed(s)) return;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
       this.localSelections = newSelections;
@@ -224,6 +241,12 @@ export default {
   border: 2px solid rgba(232, 0, 28, 0.42);
   background: rgba(232, 0, 28, 0.05);
   box-shadow: 0 0 0 3px rgba(232, 0, 28, 0.1);
+}
+
+.kiosk-supplement-row.kiosk-variation--disabled {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
 }
 
 .kiosk-supplement-visual {

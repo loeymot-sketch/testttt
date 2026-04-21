@@ -22,11 +22,16 @@
         v-for="(sauce, sIdx) in sauceList"
         :key="sauce.rowKey || ('sauce-' + sIdx + '-' + String(sauce.id ?? sauce.name ?? 'x'))"
         class="kiosk-option-card"
-        :class="{ selected: !!localSelections[selectionKey(sauce)] }"
+        :class="{
+          selected: !!localSelections[selectionKey(sauce)],
+          'kiosk-variation--disabled': !sauceFilterAllowed(sauce),
+        }"
         role="checkbox"
-        tabindex="0"
+        :tabindex="sauceFilterAllowed(sauce) ? 0 : -1"
         :aria-checked="!!localSelections[selectionKey(sauce)]"
+        :aria-disabled="sauceFilterAllowed(sauce) ? 'false' : 'true'"
         :aria-label="sauce.name"
+        :title="sauceFilterTooltip(sauce)"
         @click="toggleSauce(sauce)"
         @keydown.enter.prevent="toggleSauce(sauce)"
         @keydown.space.prevent="toggleSauce(sauce)"
@@ -60,6 +65,7 @@
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 import { getKioskExtraSauceUnitPrice } from '../../../../helpers/kioskPricing';
+import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 
 export default {
   name: 'KioskStepSauce',
@@ -67,7 +73,8 @@ export default {
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    activeFilters: { type: Array, default: () => [] },
   },
   emits: ['update'],
   data() {
@@ -168,6 +175,7 @@ export default {
           name: v.name,
           emoji: this.getEmojiForSauce(v.name),
           thumb: kioskResolveImageSrc(v),
+          raw: v,
         }));
     },
     sauceUnitPriceLabel(sauce) {
@@ -205,7 +213,15 @@ export default {
       const index = this.sauceOrder.findIndex(k => String(k) === String(key));
       return index >= 0 ? index + 1 : 0;
     },
+    sauceFilterAllowed(sauce) {
+      return isVariationAllowedByFilters(sauce?.raw || sauce, this.activeFilters || []);
+    },
+    sauceFilterTooltip(sauce) {
+      if (this.sauceFilterAllowed(sauce)) return '';
+      return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
+    },
     toggleSauce(sauce) {
+      if (!this.sauceFilterAllowed(sauce)) return;
       const key = this.sauceKey(sauce);
       const selKey = String(key);
       const newSelections = { ...this.localSelections };
@@ -306,6 +322,12 @@ export default {
   border-color: rgba(232,0,28,0.14);
   background: rgba(232,0,28,0.025);
   box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+}
+
+.kiosk-option-card.kiosk-variation--disabled {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
 }
 
 .kiosk-sauce-media {

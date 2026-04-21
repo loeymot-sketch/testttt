@@ -1,13 +1,28 @@
 # Active Cycle – FoodKing
 
-TASK_ID: P_MEGA_W3_ALLERGENS_PLUS_P23_DRIFT_AUDIT_2026-04-20
-PHASE: PLAN — délégué à foodking-planner-orchestrator
-NEXT_DECISION: Une fois plan reçu → route EXECUTE au subagent implementer adéquat (routine ou complex selon scope).
+TASK_ID: P_MEGA_W3_B_FILTER_PERSIST_2026-04-20
+PHASE: VALIDATE
+NEXT_DECISION: Audit Claude après réception du diff. Si OK → SYNTHESE_W3 + commit récap. Si KO → auto-remediation per .cursor/rules/auto-remediation.mdc.
+
+PRIOR CYCLE W3.A — CLOSED PASSED (commit a86b8ca03) : 8/8 Vitest verts, 529/529 global, finding back documenté FINDING_BACK_DEFERRED, 0 critical zone, 0 gate.
 RUNNER_MODE: single-session
-PRIMARY_MODEL: à déterminer par le planner (selon scope Vague 3) ; AUDIT P-MEGA-23 reste readonly chez planner-orchestrator
-PLAN_FILE: plans/PLAN_P_MEGA_W3_2026-04-20.md (à produire)
-REPORT_FILE: reports/execution/RUN_P_MEGA_W3_*.md + reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md
-GATE_FILE: aucun anticipé (Vague 3 = front + Resources, zone safe)
+PRIMARY_MODEL: Composer (foodking-routine-implementer) — front-only, zéro pricing/auth/schema/symmetry/branch_id/dispatch
+PLAN_FILE: plans/PLAN_P_MEGA_W3_2026-04-20.md (cycle W3.A section)
+REPORT_FILE: reports/execution/RUN_P_MEGA_W3_B_FILTER_PERSIST_2026-04-20.md (à produire par subagent)
+GATE_FILE: aucun (zone safe ; 1 finding cosmétique attendu = NormalItemResource n'expose pas is_* flags)
+EXECUTE_DELEGATION_REQUIRED: foodking-routine-implementer (à confirmer dans REPORT_FILE)
+
+DELIVERABLES W3.B (per plan) :
+  - resources/js/store/modules/kioskFilter.js (NEW) — state + persistance localStorage
+  - resources/js/store/index.js — registration ligne unique
+  - resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue — bandeau + greyout grid
+  - resources/js/components/frontend/kiosk/KioskWizardComponent.vue + 4 steps — greyout variations
+  - resources/js/helpers/kioskFilters.js — extend isVariationAllowedByFilters()
+  - tests/js/kioskFilterPersist.spec.js — 6 cas Vitest
+DOD : 6 Vitest verts + 0 régression (535/535 attendus) + bandeau visible + greyout sans v-if (a11y) + finding NormalItemResource flags documenté
+
+ARTEFACT TRANSVERSE LIVRÉ (readonly) :
+  - reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md — 13 drifts, 3 patterns systémiques (informe TOUTES les vagues suivantes)
 
 ORCHESTRATION_NOTE: Le planner-orchestrator subagent produit (a) plan EXECUTE Vague 3 = P-MEGA-08 (audit allergens propagation variations + extras) + P-MEGA-09 (filtre allergène persistant + bandeau visible) ; (b) audit transverse readonly P-MEGA-23 (admin↔kiosk drift = racine bug viandes) qui éclaire toutes les vagues suivantes. Délégation EXECUTE faite après réception du plan, JAMAIS dans le chat parent Claude Opus.
 
@@ -16,8 +31,8 @@ PRIOR CYCLE (closed) : P_MEGA_W1_W2 — 521/521 verts, 5 commits atomiques, 3 ga
 ## Phase Completion
 | Phase | Done |
 |---|---|
-| PLAN | [ ] (in progress, foodking-planner-orchestrator) |
-| EXECUTE | [ ] |
+| PLAN | [x] (foodking-planner-orchestrator → plans/PLAN_P_MEGA_W3_2026-04-20.md) |
+| EXECUTE | [x] (foodking-routine-implementer) |
 | VALIDATE | [ ] |
 | AUDIT | [ ] |
 

@@ -20,7 +20,12 @@
         v-for="viande in viandeList"
         :key="viande.key"
         class="kiosk-viande-card"
-        :class="{ active: (localSelections[viande.key] || 0) > 0, 'is-paid': viande.price > 0 }"
+        :class="{
+          active: (localSelections[viande.key] || 0) > 0,
+          'is-paid': viande.price > 0,
+          'kiosk-variation--disabled': !variationFilterAllowed(viande),
+        }"
+        :title="variationFilterTooltip(viande)"
       >
         <span v-if="viande.price > 0" class="kiosk-viande-badge-paid">
           +{{ formatPrice(viande.price) }}
@@ -50,7 +55,7 @@
           <button type="button"
             @click="increment(viande.key)"
             class="kiosk-viande-qty-btn plus"
-            :disabled="totalSelected >= maxViandes"
+            :disabled="totalSelected >= maxViandes || !variationFilterAllowed(viande)"
             :aria-label="$t('kiosk.wizard.step.viande.add_one', { name: viande.name })">+</button>
         </div>
       </div>
@@ -64,6 +69,8 @@
 
 <script>
 import { kioskViandeCatalogForItem } from '../../../../helpers/kioskViandeCatalog';
+import { kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 
 export default {
@@ -72,7 +79,8 @@ export default {
   props: {
     step: Object,
     item: Object,
-    selections: Object
+    selections: Object,
+    activeFilters: { type: Array, default: () => [] },
   },
   emits: ['update'],
   data() {
@@ -147,7 +155,30 @@ export default {
         }));
       this.$emit('update', '_viandeMeta', selectedMeta);
     },
+    resolveCatalogObjectForViande(viande) {
+      if (!this.item || !viande) return null;
+      if (viande.source === 'extra') {
+        return this.item.extras?.find((e) => e.id === viande.id) || null;
+      }
+      const attrs = Array.isArray(this.item.itemAttributes)
+        ? this.item.itemAttributes
+        : Object.values(this.item.itemAttributes || {});
+      const viandeAttr = attrs.find((a) => String(a?.name || '').toLowerCase().includes('viande'));
+      if (!viandeAttr) return null;
+      const list = kioskVariationsForAttribute(this.item, viandeAttr.id);
+      return Array.isArray(list) ? (list.find((v) => v && v.id === viande.id) || null) : null;
+    },
+    variationFilterAllowed(viande) {
+      const raw = this.resolveCatalogObjectForViande(viande);
+      return isVariationAllowedByFilters(raw || { name: viande.name }, this.activeFilters || []);
+    },
+    variationFilterTooltip(viande) {
+      if (this.variationFilterAllowed(viande)) return '';
+      return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
+    },
     increment(key) {
+      const viande = this.viandeList.find((v) => v.key === key);
+      if (viande && !this.variationFilterAllowed(viande)) return;
       if (this.totalSelected < this.maxViandes) {
         this.localSelections[key] = (this.localSelections[key] || 0) + 1;
         this.emitUpdate();
@@ -310,6 +341,12 @@ export default {
 }
 
 .kiosk-viande-card.active .kiosk-viande-name { color: #E8001C; }
+
+.kiosk-viande-card.kiosk-variation--disabled {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+}
 
 .kiosk-viande-controls {
   display: flex;

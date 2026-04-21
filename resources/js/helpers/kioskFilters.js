@@ -217,6 +217,61 @@ export function findExtraObjectById(item, extraId) {
     return item.extras.find((e) => e && e.id === eid) || null;
 }
 
+const UNDER_10_VAR_EUROS = 10;
+
+function getVariationPriceEuros(variation) {
+    if (variation == null) return null;
+    if (typeof variation.base_price_cents === 'number') {
+        return variation.base_price_cents / 100;
+    }
+    if (typeof variation.convert_price !== 'undefined' && variation.convert_price !== null) {
+        const p = parseFloat(variation.convert_price);
+        if (!Number.isNaN(p)) return p;
+    }
+    if (typeof variation.price !== 'undefined' && variation.price !== null) {
+        const p = parseFloat(variation.price);
+        if (!Number.isNaN(p)) return p;
+    }
+    return null;
+}
+
+/**
+ * Filtres catalogue sur une variation / extra (wizard). Tolérant si les
+ * drapeaux API manquent (undefined) — ne bloque que lorsque le champ contredit
+ * explicitement le filtre actif.
+ *
+ * @param {Object|null|undefined} variation
+ * @param {Array<string>} activeFilters
+ * @returns {boolean}
+ */
+export function isVariationAllowedByFilters(variation, activeFilters = []) {
+    if (!Array.isArray(activeFilters) || activeFilters.length === 0) return true;
+    if (!variation) return true;
+    const filters = activeFilters.filter((f) => KIOSK_FILTERS.includes(f));
+    if (filters.length === 0) return true;
+
+    for (const filterId of filters) {
+        if (filterId === 'vegetarian' && variation.is_vegetarian === false) return false;
+        if (filterId === 'halal' && variation.is_halal === false) return false;
+        if (filterId === 'pork_free' && variation.is_pork_free === false) return false;
+        if (filterId === 'spicy' && variation.is_spicy === false) return false;
+        if (filterId === 'gluten_free') {
+            if (variation.is_gluten_free === false) return false;
+            const allergens = Array.isArray(variation.allergens)
+                ? variation.allergens.map((a) =>
+                    (typeof a === 'string' ? a : a?.code || a?.name || '').toLowerCase(),
+                )
+                : [];
+            if (allergens.some((a) => a.includes('gluten'))) return false;
+        }
+        if (filterId === 'under_10') {
+            const p = getVariationPriceEuros(variation);
+            if (p !== null && p >= UNDER_10_VAR_EUROS) return false;
+        }
+    }
+    return true;
+}
+
 export default {
     KIOSK_FILTERS,
     applyKioskFilters,
@@ -226,4 +281,5 @@ export default {
     KIOSK_ALLERGEN_CANONICAL_ORDER,
     findVariationObjectById,
     findExtraObjectById,
+    isVariationAllowedByFilters,
 };
