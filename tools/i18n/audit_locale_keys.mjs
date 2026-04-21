@@ -203,12 +203,26 @@ function unescapePhpString(raw, quote) {
 }
 
 /**
+ * Retire les commentaires HTML et commentaires de bloc JS pour éviter les faux positifs
+ * (`$t` cités dans des commentaires). Les `//` en fin de ligne restent (limitation connue).
+ * @param {string} source
+ */
+export function stripVueSourceForAudit(source) {
+    let s = String(source);
+    s = s.replace(/<!--[\s\S]*?-->/g, '');
+    s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+    return s;
+}
+
+/**
  * @param {string} source
  * @returns {{ staticKeys: string[], dynamicCount: number }}
  */
 export function extractI18nKeysFromVue(source) {
     const staticKeys = [];
     let dynamicCount = 0;
+
+    source = stripVueSourceForAudit(source);
 
     const qStr = `['"]`;
     const reString = new RegExp(`\\$t(?:c)?\\(\\s*${qStr}([^'"]+)${qStr}`, 'g');
@@ -227,12 +241,28 @@ export function extractI18nKeysFromVue(source) {
         staticKeys.push(m[1]);
     }
 
-    const reUtilT = new RegExp(`(?<!\\$)\\bt\\(\\s*${qStr}([^'"]+)${qStr}\\)`, 'g');
+    const reI18nGlobalT = new RegExp(
+        `i18n\\.global\\.t\\(\\s*${qStr}([^'"]+)${qStr}\\s*[,)]`,
+        'g',
+    );
+    while ((m = reI18nGlobalT.exec(source)) !== null) {
+        staticKeys.push(m[1]);
+    }
+
+    const reUseI18nMethodT = new RegExp(
+        `useI18n\\(\\)\\.t\\(\\s*${qStr}([^'"]+)${qStr}\\s*[,)]`,
+        'g',
+    );
+    while ((m = reUseI18nMethodT.exec(source)) !== null) {
+        staticKeys.push(m[1]);
+    }
+
+    const reUtilT = new RegExp(`(?<!\\$)\\bt\\(\\s*${qStr}([^'"]+)${qStr}\\s*[,)]`, 'g');
     while ((m = reUtilT.exec(source)) !== null) {
         staticKeys.push(m[1]);
     }
 
-    const reTpl = /\$t(?:c)?\(\s*`([^`]*?)`\s*\)/g;
+    const reTpl = /\$t(?:c)?\(\s*`([\s\S]*?)`\s*\)/g;
     while ((m = reTpl.exec(source)) !== null) {
         if (/\$\{/.test(m[1])) {
             dynamicCount += 1;
@@ -241,7 +271,7 @@ export function extractI18nKeysFromVue(source) {
         }
     }
 
-    const reI18nTpl = /\$i18n\.t\(\s*`([^`]*?)`\s*\)/g;
+    const reI18nTpl = /\$i18n\.t\(\s*`([\s\S]*?)`\s*\)/g;
     while ((m = reI18nTpl.exec(source)) !== null) {
         if (/\$\{/.test(m[1])) {
             dynamicCount += 1;

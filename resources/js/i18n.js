@@ -3,7 +3,8 @@ import {createI18n} from "vue-i18n";
 
 const SUPPORTED_LOCALES = ['fr', 'en', 'ar'];
 const DEFAULT_LOCALE    = 'fr';
-const KIOSK_LOCALE      = 'fr';   // langue borne : toujours français, immuable
+/** Défaut au boot `/kiosk` avant hydratation Vuex ; la langue réelle vient de `kioskSettings` + `setLocale`. */
+const KIOSK_LOCALE      = 'fr';
 
 function setDocumentDirection(locale) {
     if (typeof document === 'undefined') return;
@@ -73,14 +74,12 @@ watch(
 );
 
 /**
- * Appelé par le router à chaque navigation vers /kiosk/* :
- * garantit que la locale est fr même si l'app a démarré sur une autre URL.
+ * Appelé par le router à chaque navigation vers /kiosk/*.
+ * Ne force plus `KIOSK_LOCALE` : une locale persistée (ex. `ar`) serait écrasée
+ * alors que `applyKioskA11yFromStore` / `setLocale` alignent déjà i18n sur le store.
  */
 export function ensureKioskLocale() {
-    if (i18n.global.locale.value !== KIOSK_LOCALE) {
-        i18n.global.locale.value = KIOSK_LOCALE;
-        setDocumentDirection(KIOSK_LOCALE);
-    }
+    /* no-op — kiosk UI locale = kioskSettings (persisté) */
 }
 
 /** Changer la langue (admin, frontend, etc. — pas la borne) */

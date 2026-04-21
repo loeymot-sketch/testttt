@@ -70,4 +70,25 @@ describe('P-MEGA-11 i18n audit helpers', () => {
         expect(resolveBladeKeyToPhp('auth.failed', langFr)).toBe(true);
         expect(resolveBladeKeyToPhp('unknown.x', langFr)).toBe(false);
     });
+
+    it('11 stripVueComments: HTML comment $t not counted', () => {
+        const source =
+            `<template><!-- $t('comment.fake') -->{{ $t('real.key') }}</template>`;
+        const { staticKeys } = extractI18nKeysFromVue(source);
+        expect(staticKeys).toContain('real.key');
+        expect(staticKeys).not.toContain('comment.fake');
+    });
+
+    it('12 t with options (Composition API)', () => {
+        const source = `t('key.with.opts', { count: 2 })`;
+        const { staticKeys } = extractI18nKeysFromVue(source);
+        expect(staticKeys).toContain('key.with.opts');
+    });
+
+    it('13 template literal multiline $t backtick', () => {
+        const source = '$t(`part1\npart2`)';
+        const { staticKeys, dynamicCount } = extractI18nKeysFromVue(source);
+        expect(dynamicCount).toBe(0);
+        expect(staticKeys).toContain('part1\npart2');
+    });
 });

@@ -126,6 +126,7 @@ import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { onEvent } from '../../../services/eventContract';
 // [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
 import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
+import { setLocale } from '../../../i18n';
 // [PHASE-5] Hardware bridge + analytics helpers
 import kioskHardware from '../../../services/kioskHardware';
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
@@ -300,9 +301,7 @@ export default {
      */
     _wireA11yWatchers() {
       const applyLocale = (lang) => {
-        const v = lang || 'fr';
-        document.documentElement.setAttribute('lang', v);
-        document.documentElement.setAttribute('dir', v === 'ar' ? 'rtl' : 'ltr');
+        setLocale(lang || 'fr');
       };
       this._unwatchA11y = [
         this.$store.watch(
