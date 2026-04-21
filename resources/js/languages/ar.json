@@ -26,6 +26,9 @@
         "mollusques": "الرخويات",
         "molluscs": "الرخويات"
     },
+    "pos": {
+        "barcode_not_found": "رمز شريطي غير معروف: {code}"
+    },
     "menu": {
         "dashboard": "لوحة القيادة",
         "settings": "الإعدادات",
@@ -117,6 +120,18 @@
         "next": "التالي",
         "default": "الافتراضي",
         "action": "إجراء",
+        "audit_fingerprint": "بصمة التدقيق",
+        "fiscal_ticket_no": "رقم إيصال NF525",
+        "legal_mentions": "إشعارات قانونية",
+        "operator": "المشغّل",
+        "register_id": "رقم الصندوق",
+        "printer": "الطابعة",
+        "printer_station": "محطة الطباعة",
+        "printer_type": "نوع الطابعة",
+        "test_print": "طباعة تجريبية",
+        "siret": "SIRET",
+        "tendered_breakdown": "تفاصيل الدفع",
+        "vat_intra": "رقم ضريبة القيمة المضافة",
         "id": "المعرف",
         "name": "الاسم",
         "email": "البريد الإلكتروني",
@@ -645,6 +660,11 @@
         "total_amount": "إجمالي المبلغ",
         "select_payment_method": "اختيار طريقة الدفع",
         "dine_in": "Dine-In",
+        "floorplan": "مخطط الصالة",
+        "occupied": "مشغولة",
+        "free": "متاحة",
+        "reserved": "محجوزة",
+        "cleaning": "قيد التنظيف",
         "phonepe_client_id": "معرّف عميل PhonePe",
         "myfatoorah_api_key": "مفتاح واجهة برمجة تطبيقات ماي فاتورة",
         "myfatoorah_mode": "وضع ماي فاتورة",
@@ -749,7 +769,10 @@
         "add_waiter": "إضافة نادل",
         "add_chef": "أضف شيف",
         "add_kiosk_machine": "إضافة آلة كشك",
-        "confirm_and_print": "تأكيد وطباعة الإيصال"
+        "confirm_and_print": "تأكيد وطباعة الإيصال",
+        "test_print": "طباعة اختبار",
+        "transfer_table": "نقل الطاولة",
+        "release_table": "تحرير الطاولة"
     },
     "number": {
         "10": "10",
@@ -760,7 +783,8 @@
         "1000": "1000"
     },
     "error": {
-        "something_wrong": "هل هناك خطب ما"
+        "something_wrong": "هل هناك خطب ما",
+        "printer_unreachable": "تعذر الوصول إلى الطابعة."
     },
     "message": {
         "pagination_label": "عرض {from} إلى {to} من مدخلات {total}",
@@ -821,7 +845,29 @@
         "no_items_found": "لا توجد عناصر مطابقة لبحثك! جرّب كلمات رئيسية أخرى",
         "no_data_available": "لا توجد بيانات متاحة.",
         "payment_method": "طريقة الدفع مطلوبة.",
-        "special_instructions_limit": "الحد الأقصى للتعليمات الخاصة هو 190 حرفًا."
+        "special_instructions_limit": "الحد الأقصى للتعليمات الخاصة هو 190 حرفًا.",
+        "confirm_transfer": "أدخل معرف الطاولة الهدف لتأكيد النقل."
+    },
+    "pos": {
+        "item_86_d": "نفذ",
+        "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
+        "item_no_longer_available": "«{name}» لم يعد متاحًا.",
+        "park": "تعليق",
+        "parked_orders": "الطلبات المعلّقة",
+        "restore": "استعادة",
+        "discard": "حذف",
+        "empty_parked_orders": "لا توجد طلبات معلّقة.",
+        "parked_order_fallback_label": "طلب بدون عنوان",
+        "park_label_prompt": "عنوان اختياري لهذا الطلب المعلّق",
+        "park_requires_items": "أضف عنصرًا واحدًا على الأقل قبل تعليق هذا الطلب.",
+        "park_success": "تم تعليق الطلب بنجاح.",
+        "park_save_error": "تعذّر تعليق هذا الطلب.",
+        "park_fetch_error": "تعذّر تحميل الطلبات المعلّقة.",
+        "park_restore_success": "تمت استعادة الطلب بنجاح.",
+        "park_restore_error": "تعذّر استعادة هذا الطلب.",
+        "park_restore_requires_empty_cart": "أفرغ السلة الحالية أو علّقها قبل استعادة طلب آخر.",
+        "park_discard_success": "تم حذف الطلب المعلّق.",
+        "park_discard_error": "تعذّر حذف هذا الطلب المعلّق."
     },
     "kiosk": {
         "welcome": "مرحباً!",
@@ -1229,6 +1275,10 @@
             "still_here_sub": "ستنتهي جلستك خلال ثوانٍ",
             "still_here_continue": "نعم، أكمل",
             "admin_trigger_title": "وصول الموظفين"
+        },
+        "offline": {
+            "stale_single": "تحتوي إحدى الطلبات المعلّقة على منتج أصبح غير متاح الآن.",
+            "stale_multiple": "يوجد الآن {count} منتجات غير متاحة في الطلبات المعلّقة."
         },
         "wizard": {
             "loading_product": "جاري تحميل المنتج…",

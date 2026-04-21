@@ -1191,6 +1191,10 @@
             "still_here_continue": "Oui, je continue",
             "admin_trigger_title": "Accès personnel"
         },
+        "offline": {
+            "stale_single": "অপেক্ষমাণ একটি অর্ডারে এখন একটি পণ্য অনুপলব্ধ।",
+            "stale_multiple": "অপেক্ষমাণ অর্ডারগুলিতে এখন {count}টি পণ্য অনুপলব্ধ।"
+        },
         "wizard": {
             "loading_product": "Chargement du produit…",
             "product_not_found": "Produit introuvable.",

@@ -471,7 +471,11 @@ export const kioskCart = {
                     const isNetworkError = !err.response || err.response?.status >= 500;
                     if (isNetworkError) {
                         // [FIX-54-3] Preserve original idempotency key for offline replay
-                        const localKey = saveOrder(orderPayload, idempotencyKey);
+                        // Queue metadata keeps the kiosk branch for stale invalidation only.
+                        // The backend payload still resolves branch_id server-side from KioskMachine.
+                        const localKey = saveOrder(orderPayload, idempotencyKey, {
+                            branchId: state.branchId ?? null,
+                        });
                         // Start background sync so it retries when network comes back
                         // [AUDIT-P0] Pass config (headers) so syncQueue can send X-Idempotency-Key
                         startAutoSync((url, data, config) => axios.post(url, data, config || {}));

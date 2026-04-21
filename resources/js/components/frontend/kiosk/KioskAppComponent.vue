@@ -230,6 +230,8 @@ export default {
       offlineConflictModalOpen: false,
       showOfflineConflictCta: false,
       _offlineQuotaListener: null,
+      _staleToastDebounceTimer: null,
+      _pendingStaleItemIds: new Set(),
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
@@ -349,6 +351,11 @@ export default {
     if (this._offlineQuotaListener) {
       window.removeEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
     }
+    if (this._staleToastDebounceTimer) {
+      clearTimeout(this._staleToastDebounceTimer);
+      this._staleToastDebounceTimer = null;
+    }
+    this._pendingStaleItemIds.clear();
   },
   methods: {
     ...mapActions('kioskCart', ['reset', 'setBranch', 'pruneOfflineQueueOnAvailabilityChanged']),
@@ -418,6 +425,8 @@ export default {
         const res = await this.loadBranchList({ vuex: false });
         const branch = res?.data?.data?.[0];
         if (branch?.id) {
+          // W7.A invariant: one kiosk instance operates on one active branch loaded at boot.
+          // All real-time availability side effects must stay scoped to that branch only.
           this.setBranch(branch.id);
           this.branchLoading = false;
           // Pre-warm menu cache in background so Categories screen is instant
@@ -444,31 +453,98 @@ export default {
       this._leaveEchoChannel();
       try {
         this._eventSub = onEvent(branchId, 'ItemAvailabilityChanged', (event) => {
-          const payload = event.payload;
-          this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
-          this.$store.dispatch('kioskCart/pruneUnavailableLines');
-          this.pruneOfflineQueueOnAvailabilityChanged({
-            itemId: payload?.id || payload?.item_id,
-            branchId,
-          }).then((result) => {
-            if ((result?.updatedEntries || 0) > 0) {
-              this.refreshOfflineConflictEntries(result.entries || []);
-              this.showOfflineConflictCta = true;
-              this.$refs.toast?.show(
-                'Une commande en file d\'attente contient un produit indisponible. Vérifiez avant validation.',
-                'warning',
-                6000,
-              );
-            }
-          }).catch(() => {});
-          // If full refetch needed (price/variations changed), trigger it in background
-          if (payload.type === 'full') {
-            this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
-          }
+          this._handleItemAvailabilityChanged(event, branchId);
         });
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
       }
+    },
+
+    _normalizeBranchId(value) {
+      const normalized = parseInt(value, 10);
+      return Number.isFinite(normalized) ? normalized : null;
+    },
+
+    _getActiveBranchId() {
+      return this._normalizeBranchId(
+        this.$store?.getters?.['kioskCart/branchId']
+          ?? this.$store?.state?.kioskCart?.branchId
+          ?? null
+      );
+    },
+
+    _showToast(message, type = 'info', duration = 2800) {
+      this.$refs.toast?.show(message, type, duration);
+    },
+
+    _scheduleStaleToast(itemId) {
+      const normalizedItemId = parseInt(itemId, 10);
+      this._pendingStaleItemIds.add(Number.isFinite(normalizedItemId) ? normalizedItemId : String(itemId || 'unknown'));
+      if (this._staleToastDebounceTimer) {
+        clearTimeout(this._staleToastDebounceTimer);
+      }
+      this._staleToastDebounceTimer = setTimeout(() => {
+        this._flushStaleToast();
+      }, 800);
+    },
+
+    _flushStaleToast() {
+      const count = this._pendingStaleItemIds.size;
+      this._staleToastDebounceTimer = null;
+      if (count === 0) return;
+
+      const message = count === 1
+        ? this.$t('kiosk.offline.stale_single')
+        : this.$t('kiosk.offline.stale_multiple', { count });
+
+      this._showToast(message, 'warning', 6000);
+      this._pendingStaleItemIds.clear();
+    },
+
+    _handleItemAvailabilityChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      // Defensive guard: a kiosk should only react to the single branch selected at boot.
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return Promise.resolve({ ignored: true, reason: 'branch_mismatch' });
+      }
+
+      this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
+      this.$store.dispatch('kioskCart/pruneUnavailableLines');
+
+      const scopedBranchId = activeBranchId ?? eventBranchId;
+
+      return this.pruneOfflineQueueOnAvailabilityChanged({
+        itemId: payload?.id || payload?.item_id,
+        branchId: scopedBranchId,
+      }).then((result) => {
+        if ((result?.updatedEntries || 0) > 0) {
+          this.refreshOfflineConflictEntries(result.entries || []);
+          this.showOfflineConflictCta = true;
+          this._scheduleStaleToast(payload?.id || payload?.item_id);
+        }
+
+        // If full refetch needed (price/variations changed), trigger it in background.
+        if (payload.type === 'full') {
+          this.$store.dispatch('kioskMenu/fetchMenu', {
+            force: true,
+            branchId: scopedBranchId ?? subscribedBranchId,
+          }).catch(() => {});
+        }
+
+        return result;
+      }).catch(() => ({ ignored: true, reason: 'queue_update_failed' }));
     },
 
     _leaveEchoChannel() {

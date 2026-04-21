@@ -32,10 +32,11 @@ OUTCOME: PASSED
 - Surfaced queue conflicts in kiosk UI through a warning CTA + dedicated accessible modal; resolution actions mutate only offline queue state and do not touch payment or receipt flows.
 
 ## Validation
-- `git log -1 --oneline` confirmed `9c8f9e202`
-- Observed baseline Vitest: `628/628`
+- Delivery HEAD confirmed at execute close: `f1e0d6119`
+- Observed baseline Vitest: `649/649`
 - Targeted queue specs: `30/30`
 - Full Vitest after execute: `649/649`
+- Delivery delta vs `9c8f9e202`: `11 files changed, 1482 insertions(+), 154 deletions(-)`
 
 ## Invariant-sensitive checks
 - Pricing SSOT: untouched, no frontend price logic added.
@@ -47,3 +48,7 @@ OUTCOME: PASSED
 ## Residual risks
 - Broadcast invalidation still depends on existing Echo wiring; this execute extends the listener but does not add frontend Echo bootstrap.
 - When IndexedDB is unavailable, the queue falls back to localStorage with a guarded warning; browser-specific quota behavior still depends on runtime limits.
+
+## POST-VERIFY REMEDIATION_1
+- Follow-up remediation report: `reports/execution/RUN_P_MEGA_W7_A_REM1_2026-04-20.md`
+- Scope: branch-scoped stale invalidation, first-retry backoff fix, lock heartbeat, stale-toast debounce, and report metadata correction after VERIFY 200% degraded verdict.

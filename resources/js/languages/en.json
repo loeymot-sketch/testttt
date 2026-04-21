@@ -26,6 +26,9 @@
         "mollusques": "Molluscs",
         "molluscs": "Molluscs"
     },
+    "pos": {
+        "barcode_not_found": "Unknown barcode: {code}"
+    },
     "menu": {
         "dashboard": "Dashboard",
         "settings": "Settings",
@@ -125,6 +128,18 @@
         "toggle_unavailable": "Mark unavailable",
         "toggle_available": "Mark available",
         "availability_changed": "Availability updated",
+        "audit_fingerprint": "Audit fingerprint",
+        "fiscal_ticket_no": "NF525 receipt #",
+        "legal_mentions": "Legal notice",
+        "operator": "Operator",
+        "register_id": "Cashier ID",
+        "printer": "Printer",
+        "printer_station": "Printer station",
+        "printer_type": "Printer type",
+        "test_print": "Test print",
+        "siret": "SIRET",
+        "tendered_breakdown": "Payment breakdown",
+        "vat_intra": "VAT ID",
         "id": "Id",
         "name": "Name",
         "email": "Email",
@@ -676,6 +691,11 @@
         "total_amount": "Total Amount",
         "select_payment_method": "Select Payment Method",
         "dine_in": "Dine-In",
+        "floorplan": "Floor plan",
+        "occupied": "Occupied",
+        "free": "Free",
+        "reserved": "Reserved",
+        "cleaning": "Cleaning",
         "phonepe_client_id": "Phonepe client id",
         "phonepe_secret_key": "Phonepe secret key",
         "myfatoorah_api_key": "MyFatoorah API Key",
@@ -782,7 +802,10 @@
         "add_chef": "Add Chef",
         "add_kiosk_machine": "Add Kiosk Machine",
         "confirm_and_print": "Confirm & Print Reciept",
-        "base_ht": "Net"
+        "base_ht": "Net",
+        "test_print": "Test print",
+        "transfer_table": "Transfer table",
+        "release_table": "Release table"
     },
     "number": {
         "10": "10",
@@ -793,7 +816,8 @@
         "1000": "1000"
     },
     "error": {
-        "something_wrong": "Something Wrong."
+        "something_wrong": "Something Wrong.",
+        "printer_unreachable": "The printer could not be reached."
     },
     "message": {
         "new_pos_order": "New order",
@@ -856,7 +880,29 @@
         "no_items_found": "No items matched your search! Try different keywords.",
         "no_data_available": "No data available.",
         "payment_method": "The payment method is required.",
-        "special_instructions_limit": "Special instructions limit is 190 characters."
+        "special_instructions_limit": "Special instructions limit is 190 characters.",
+        "confirm_transfer": "Enter the target table id to confirm the transfer."
+    },
+    "pos": {
+        "item_86_d": "Sold out",
+        "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",
+        "item_no_longer_available": "“{name}” is no longer available.",
+        "park": "Park",
+        "parked_orders": "Parked orders",
+        "restore": "Restore",
+        "discard": "Discard",
+        "empty_parked_orders": "No parked orders.",
+        "parked_order_fallback_label": "Unlabeled order",
+        "park_label_prompt": "Optional label for this parked order",
+        "park_requires_items": "Add at least one item before parking this order.",
+        "park_success": "Order parked successfully.",
+        "park_save_error": "Could not park this order.",
+        "park_fetch_error": "Could not load parked orders.",
+        "park_restore_success": "Order restored successfully.",
+        "park_restore_error": "Could not restore this order.",
+        "park_restore_requires_empty_cart": "Empty or park the current cart before restoring another order.",
+        "park_discard_success": "Parked order discarded.",
+        "park_discard_error": "Could not discard this parked order."
     },
     "kiosk": {
         "welcome": "Welcome!",
@@ -1264,6 +1310,10 @@
             "still_here_sub": "Your session will end in a few seconds",
             "still_here_continue": "Yes, continue",
             "admin_trigger_title": "Staff access"
+        },
+        "offline": {
+            "stale_single": "A queued order contains a product that is now unavailable.",
+            "stale_multiple": "{count} queued products are now unavailable."
         },
         "wizard": {
             "loading_product": "Loading product…",

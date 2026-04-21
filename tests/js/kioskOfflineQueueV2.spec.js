@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import axe from 'axe-core';
 
+import KioskAppComponent from '../../resources/js/components/frontend/kiosk/KioskAppComponent.vue';
 import KioskOfflineConflictModalComponent from '../../resources/js/components/frontend/kiosk/KioskOfflineConflictModalComponent.vue';
 
 vi.mock('../../resources/js/helpers/kioskAnalytics', () => ({
@@ -53,8 +54,61 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function makeKioskAppMethodContext(overrides = {}) {
+  const ctx = {
+    _pendingStaleItemIds: new Set(),
+    _staleToastDebounceTimer: null,
+    _showToast: vi.fn(),
+    $t: vi.fn((key, params = {}) => {
+      if (key === 'kiosk.offline.stale_multiple') {
+        return `${params.count} produits indisponibles...`;
+      }
+      return 'Produit indisponible...';
+    }),
+    $store: {
+      commit: vi.fn(),
+      dispatch: vi.fn(() => Promise.resolve()),
+      getters: { 'kioskCart/branchId': 7 },
+      state: { kioskCart: { branchId: 7 } },
+    },
+    pruneOfflineQueueOnAvailabilityChanged: vi.fn(() => Promise.resolve({
+      updatedEntries: 0,
+      entries: [],
+    })),
+    refreshOfflineConflictEntries: vi.fn(() => Promise.resolve()),
+    showOfflineConflictCta: false,
+    ...overrides,
+  };
+
+  ctx._normalizeBranchId = KioskAppComponent.methods._normalizeBranchId.bind(ctx);
+  ctx._getActiveBranchId = KioskAppComponent.methods._getActiveBranchId.bind(ctx);
+  ctx._flushStaleToast = KioskAppComponent.methods._flushStaleToast.bind(ctx);
+  ctx._scheduleStaleToast = KioskAppComponent.methods._scheduleStaleToast.bind(ctx);
+  ctx._handleItemAvailabilityChanged = KioskAppComponent.methods._handleItemAvailabilityChanged.bind(ctx);
+
+  return ctx;
+}
+
+function makeSharedQueueDbMockFactory() {
+  const storage = new Map();
+  const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
+
+  return () => ({
+    getQueueEntry: vi.fn(async (key) => (storage.has(key) ? clone(storage.get(key)) : null)),
+    setQueueEntry: vi.fn(async (key, value) => {
+      storage.set(key, clone(value));
+      return clone(value);
+    }),
+    delQueueEntry: vi.fn(async (key) => {
+      storage.delete(key);
+      return null;
+    }),
+    clearQueueEntries: vi.fn(async () => {
+      storage.clear();
+      return null;
+    }),
+    isIndexedDbReady: vi.fn(() => true),
+  });
 }
 
 async function loadQueueModule(tag = 'default', mockDbFactory = null) {
@@ -113,34 +167,50 @@ describe('kioskOfflineQueue v2', () => {
     expect(queue.__retryDelayForTests(12, 1)).toBe(30000);
   });
 
-  it('skips sync while backoff window is still active and tracks the skip', async () => {
-    const { queue, analytics } = await loadQueueModule('backoff-skip');
-    const trackSpy = analytics.track;
+  it('syncs queued orders immediately on the first replay attempt', async () => {
+    const { queue } = await loadQueueModule('backoff-first-immediate');
 
-    queue.saveOrder({ items: JSON.stringify([{ item_id: 90 }]) }, 'skip-key');
-    const postFn = vi.fn(async () => ({ status: 201 }));
-    const result = await queue.syncQueue(postFn);
-
-    expect(result.synced).toBe(0);
-    expect(result.failed).toBe(0);
-    expect(postFn).not.toHaveBeenCalled();
-    expect(trackSpy).toHaveBeenCalledWith(
-      'offline.queue.v2.backoff_skip',
-      expect.objectContaining({ idempotency_key: 'skip-key', attempts: 1 }),
-    );
-  });
-
-  it('retries successfully once the backoff window has elapsed', async () => {
-    const { queue } = await loadQueueModule('backoff-pass');
-
-    queue.saveOrder({ items: JSON.stringify([{ item_id: 91 }]) }, 'retry-key');
-    await sleep(1200);
+    queue.saveOrder({ items: JSON.stringify([{ item_id: 90 }]) }, 'first-try-key');
     const postFn = vi.fn(async () => ({ status: 201 }));
     const result = await queue.syncQueue(postFn);
 
     expect(result.synced).toBe(1);
-    expect(queue.getPendingCount()).toBe(0);
+    expect(result.failed).toBe(0);
     expect(postFn).toHaveBeenCalledTimes(1);
+    expect(queue.getPendingCount()).toBe(0);
+  });
+
+  it('backs off only after a failed replay attempt and retries after the delay window', async () => {
+    vi.useFakeTimers();
+    const sharedDbMock = makeSharedQueueDbMockFactory();
+    const { queue, analytics } = await loadQueueModule('backoff-after-failure', sharedDbMock);
+    const trackSpy = analytics.track;
+
+    queue.saveOrder({ items: JSON.stringify([{ item_id: 91 }]) }, 'retry-key');
+    const postFn = vi.fn()
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockResolvedValueOnce({ status: 201 });
+
+    const first = await queue.syncQueue(postFn);
+    expect(first.synced).toBe(0);
+    expect(first.failed).toBe(1);
+    expect(postFn).toHaveBeenCalledTimes(1);
+
+    const second = await queue.syncQueue(postFn);
+    expect(second.synced).toBe(0);
+    expect(second.failed).toBe(0);
+    expect(postFn).toHaveBeenCalledTimes(1);
+    expect(trackSpy).toHaveBeenCalledWith(
+      'offline.queue.v2.backoff_skip',
+      expect.objectContaining({ idempotency_key: 'retry-key', attempts: 1 }),
+    );
+
+    await vi.advanceTimersByTimeAsync(1500);
+    const third = await queue.syncQueue(postFn);
+
+    expect(third.synced).toBe(1);
+    expect(queue.getPendingCount()).toBe(0);
+    expect(postFn).toHaveBeenCalledTimes(2);
   });
 
   it('skips immediately when an active lock is already present in the backend', async () => {
@@ -159,7 +229,6 @@ describe('kioskOfflineQueue v2', () => {
   it('reuses the same in-flight sync promise inside one tab to avoid duplicate replay', async () => {
     const { queue } = await loadQueueModule('single-tab-mutex');
     queue.saveOrder({ items: JSON.stringify([{ item_id: 102 }]) }, 'single-tab-key');
-    await sleep(1200);
 
     let calls = 0;
     const postFn = vi.fn(async () => {
@@ -180,10 +249,44 @@ describe('kioskOfflineQueue v2', () => {
       expiresAt: Date.now() - 1,
     });
     queue.saveOrder({ items: JSON.stringify([{ item_id: 103 }]) }, 'expired-lock-key');
-    await sleep(1200);
 
     const result = await queue.syncQueue(vi.fn(async () => ({ status: 201 })));
     expect(result.synced).toBe(1);
+  });
+
+  it('refreshes the cross-tab lock heartbeat while a long sync is still running', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-21T00:00:00Z'));
+    const sharedDbMock = makeSharedQueueDbMockFactory();
+
+    const { queue: queueA } = await loadQueueModule('lock-heartbeat-a', sharedDbMock);
+    queueA.saveOrder({ items: JSON.stringify([{ item_id: 104 }]) }, 'heartbeat-key');
+
+    let resolvePost;
+    const longPost = vi.fn(() => new Promise((resolve) => {
+      resolvePost = resolve;
+    }));
+
+    const pendingSync = queueA.syncQueue(longPost);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const { queue: queueB } = await loadQueueModule('lock-heartbeat-b', sharedDbMock);
+    const otherTabPost = vi.fn(async () => ({ status: 201 }));
+
+    const beforeRefresh = await queueB.syncQueue(otherTabPost);
+    expect(beforeRefresh.skippedByLock).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(61_000);
+    const whileHeartbeatActive = await queueB.syncQueue(otherTabPost);
+    expect(whileHeartbeatActive.skippedByLock).toBe(true);
+    expect(otherTabPost).not.toHaveBeenCalled();
+
+    resolvePost({ status: 201 });
+    await pendingSync;
+
+    const afterRelease = await queueB.syncQueue(otherTabPost);
+    expect(afterRelease.synced).toBe(1);
+    expect(otherTabPost).toHaveBeenCalledTimes(1);
   });
 
   it('marks stale entries when availability changes and deduplicates item ids', async () => {
@@ -198,6 +301,61 @@ describe('kioskOfflineQueue v2', () => {
     expect(first.updatedEntries).toBe(2);
     expect(second.updatedEntries).toBe(0);
     expect((await queue.getStaleEntries()).map((entry) => entry.localKey).sort()).toEqual(['stale-a', 'stale-b']);
+  });
+
+  it('does not mark a queued entry stale when the provided branch does not match', async () => {
+    const { queue } = await loadQueueModule('stale-branch-scope');
+    queue.saveOrder(
+      { items: JSON.stringify([{ item_id: 12 }]) },
+      'branch-scoped-entry',
+      { branchId: 7 },
+    );
+    await flush();
+
+    const result = await queue.markStaleItems({ itemId: 12, branchId: 8 });
+
+    expect(result.updatedEntries).toBe(0);
+    expect(result.markedItems).toBe(0);
+    expect(await queue.getStaleEntries()).toEqual([]);
+  });
+
+  it('ignores availability events from another branch before marking stale items', async () => {
+    const ctx = makeKioskAppMethodContext({
+      pruneOfflineQueueOnAvailabilityChanged: vi.fn(() => Promise.resolve({
+        updatedEntries: 1,
+        entries: [{ localKey: 'stale-entry' }],
+      })),
+    });
+
+    const result = await ctx._handleItemAvailabilityChanged({
+      branchId: 8,
+      payload: { id: 55, branch_id: 8 },
+    }, 7);
+
+    expect(result).toEqual({ ignored: true, reason: 'branch_mismatch' });
+    expect(ctx.$store.commit).not.toHaveBeenCalled();
+    expect(ctx.pruneOfflineQueueOnAvailabilityChanged).not.toHaveBeenCalled();
+    expect(ctx._showToast).not.toHaveBeenCalled();
+  });
+
+  it('debounces stale-item toasts into a single aggregated warning', async () => {
+    vi.useFakeTimers();
+    const toastSpy = vi.fn();
+    const ctx = makeKioskAppMethodContext({ _showToast: toastSpy });
+
+    for (let itemId = 1; itemId <= 5; itemId += 1) {
+      ctx._scheduleStaleToast(itemId);
+      if (itemId < 5) {
+        await vi.advanceTimersByTimeAsync(25);
+      }
+    }
+
+    await vi.advanceTimersByTimeAsync(700);
+    expect(toastSpy).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(toastSpy).toHaveBeenCalledTimes(1);
+    expect(toastSpy).toHaveBeenCalledWith('5 produits indisponibles...', 'warning', 6000);
   });
 
   it('force retry clears stale markers and cancel removes the queued command', async () => {

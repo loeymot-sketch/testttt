@@ -12,6 +12,7 @@ const QUEUE_KEY = 'kiosk:offline-queue:v2';
 const LOCK_KEY = 'kiosk:offline-queue:lock';
 const SYNC_INTERVAL_MS = 30_000;
 const LOCK_TTL_MS = 60_000;
+const LOCK_HEARTBEAT_MS = 20_000;
 const MAX_ATTEMPTS = 10;
 const MAX_BACKOFF_MS = 30_000;
 const QUOTA_EVENT = 'kiosk-offline-queue:quota-exceeded';
@@ -86,28 +87,61 @@ function _safeParseItems(payload) {
     return [];
 }
 
+function _normalizeBranchId(branchId) {
+    const normalized = parseInt(branchId, 10);
+    return Number.isFinite(normalized) ? normalized : null;
+}
+
 function _entryContainsItem(entry, itemId) {
     const normalizedItemId = parseInt(itemId, 10);
     return _safeParseItems(entry?.payload).some((line) => parseInt(line?.item_id, 10) === normalizedItemId);
 }
 
+function _entryMatchesBranch(entry, branchId) {
+    const normalizedBranchId = _normalizeBranchId(branchId);
+    if (normalizedBranchId === null) {
+        return true;
+    }
+
+    // Legacy entries created before branch scoping remain wildcard matches so the
+    // queue can be migrated safely without discarding parked offline orders.
+    const entryBranchId = _normalizeBranchId(entry?.branchId ?? entry?.branch_id ?? null);
+    if (entryBranchId === null) {
+        return true;
+    }
+
+    return entryBranchId === normalizedBranchId;
+}
+
 function _normalizeEntry(entry) {
     const savedAt = Number.isFinite(entry?.savedAt) ? entry.savedAt : now();
-    const attempts = Math.max(1, parseInt(entry?.attempts, 10) || 1);
+    let attempts = Math.max(1, parseInt(entry?.attempts, 10) || 1);
     const staleItems = Array.isArray(entry?.staleItems)
         ? [...new Set(entry.staleItems.map((id) => parseInt(id, 10)).filter(Number.isFinite))]
         : [];
+    let lastFailedAt = Number.isFinite(entry?.lastFailedAt) ? entry.lastFailedAt : null;
+
+    if (lastFailedAt === null && Number.isFinite(entry?.lastAttemptAt)) {
+        const looksLikeInitialEnqueue = attempts <= 1 && entry.lastAttemptAt === savedAt;
+        if (looksLikeInitialEnqueue) {
+            attempts = 1;
+        } else {
+            attempts = Math.max(1, attempts);
+            lastFailedAt = entry.lastAttemptAt;
+        }
+    }
 
     return {
         localKey: entry?.localKey || `offline_${savedAt}_${Math.random().toString(36).slice(2, 8)}`,
         payload: entry?.payload || {},
         savedAt,
         attempts,
-        lastAttemptAt: Number.isFinite(entry?.lastAttemptAt) ? entry.lastAttemptAt : savedAt,
+        lastFailedAt,
         abandoned: entry?.abandoned === true,
         abandonedAt: Number.isFinite(entry?.abandonedAt) ? entry.abandonedAt : null,
         abandonedReason: entry?.abandonedReason || null,
         staleItems,
+        branchId: _normalizeBranchId(entry?.branchId ?? entry?.branch_id ?? null),
     };
 }
 
@@ -156,8 +190,7 @@ async function _migrateLegacyQueue() {
         .filter((entry) => entry && entry.synced !== true)
         .map((entry) => _normalizeEntry({
             ...entry,
-            attempts: entry?.attempts || 1,
-            lastAttemptAt: entry?.savedAt || now(),
+            attempts: Math.max(1, parseInt(entry?.attempts, 10) || 0),
         }));
 
     await setQueueEntry(QUEUE_KEY, migrated);
@@ -229,8 +262,15 @@ function _computeRetryDelay(attempts, randomValue = Math.random()) {
 }
 
 function _computeNextRetryAt(entry, randomValue = Math.random()) {
-    if (!entry.lastAttemptAt) return 0;
-    return entry.lastAttemptAt + _computeRetryDelay(entry.attempts, randomValue);
+    if (!entry.lastFailedAt) return 0;
+    return entry.lastFailedAt + _computeRetryDelay(Math.max(1, entry.attempts - 1), randomValue);
+}
+
+function _buildLock(owner, currentTime = now()) {
+    return {
+        owner,
+        expiresAt: currentTime + LOCK_TTL_MS,
+    };
 }
 
 async function _acquireLock() {
@@ -242,10 +282,7 @@ async function _acquireLock() {
         return null;
     }
 
-    const nextLock = {
-        owner,
-        expiresAt: currentTime + LOCK_TTL_MS,
-    };
+    const nextLock = _buildLock(owner, currentTime);
     await setQueueEntry(LOCK_KEY, nextLock);
     const confirmed = await getQueueEntry(LOCK_KEY);
     if (confirmed?.owner !== owner) {
@@ -253,6 +290,18 @@ async function _acquireLock() {
     }
     _broadcast({ type: 'lock-acquired', owner });
     return owner;
+}
+
+async function _refreshLock(owner) {
+    if (!owner) return false;
+    const lock = await getQueueEntry(LOCK_KEY);
+    if (lock?.owner !== owner) {
+        return false;
+    }
+
+    await setQueueEntry(LOCK_KEY, _buildLock(owner));
+    const confirmed = await getQueueEntry(LOCK_KEY);
+    return confirmed?.owner === owner;
 }
 
 async function _releaseLock(owner) {
@@ -275,20 +324,22 @@ async function _reportAbandoned(postFn, count) {
     } catch (_) {}
 }
 
-export function saveOrder(payload, originalKey = null) {
+export function saveOrder(payload, originalKey = null, options = {}) {
     _ensureLoaded();
     const savedAt = now();
     const localKey = originalKey || `offline_${savedAt}_${Math.random().toString(36).slice(2, 8)}`;
+    const branchId = _normalizeBranchId(options?.branchId ?? options?.branch_id ?? null);
     _queueCache = _mergeQueue(_queueCache, [{
         localKey,
         payload,
         savedAt,
         attempts: 1,
-        lastAttemptAt: savedAt,
+        lastFailedAt: null,
         abandoned: false,
         abandonedAt: null,
         abandonedReason: null,
         staleItems: [],
+        branchId,
     }]);
     _persistQueue();
     _track('offline.queued', {
@@ -321,7 +372,7 @@ export async function markStaleItems({ itemId, branchId = null } = {}) {
     const normalizedItemId = parseInt(itemId, 10);
 
     _queueCache = _queueCache.map((entry) => {
-        if (entry.abandoned || !_entryContainsItem(entry, normalizedItemId)) {
+        if (entry.abandoned || !_entryContainsItem(entry, normalizedItemId) || !_entryMatchesBranch(entry, branchId)) {
             return entry;
         }
         const staleItems = Array.isArray(entry.staleItems) ? [...entry.staleItems] : [];
@@ -369,7 +420,8 @@ export async function forceRetryEntry(localKey) {
         return {
             ...entry,
             staleItems: [],
-            lastAttemptAt: 0,
+            attempts: 1,
+            lastFailedAt: null,
             abandoned: false,
             abandonedAt: null,
             abandonedReason: null,
@@ -396,10 +448,14 @@ export async function syncQueue(postFn) {
         let synced = 0;
         let failed = 0;
         let abandonedNew = 0;
-        const currentTime = now();
         const remaining = [];
+        let lockHeartbeat = null;
 
         try {
+            lockHeartbeat = setInterval(() => {
+                _refreshLock(owner).catch(() => {});
+            }, LOCK_HEARTBEAT_MS);
+
             for (const entry of _queueCache) {
                 if (entry.abandoned) {
                     remaining.push(entry);
@@ -411,11 +467,11 @@ export async function syncQueue(postFn) {
                 }
 
                 const nextRetryAt = _computeNextRetryAt(entry);
-                if (entry.lastAttemptAt && nextRetryAt > currentTime) {
+                if (entry.lastFailedAt && nextRetryAt > now()) {
                     remaining.push(entry);
                     _track('offline.queue.v2.backoff_skip', {
                         idempotency_key: entry.localKey,
-                        attempts: entry.attempts,
+                        attempts: Math.max(1, entry.attempts - 1),
                         retry_at: nextRetryAt,
                     });
                     continue;
@@ -433,15 +489,16 @@ export async function syncQueue(postFn) {
                     });
                 } catch (error) {
                     failed += 1;
+                    const failedAt = now();
                     const attempts = entry.attempts + 1;
                     if (attempts >= MAX_ATTEMPTS) {
                         abandonedNew += 1;
                         remaining.push({
                             ...entry,
                             attempts,
-                            lastAttemptAt: currentTime,
+                            lastFailedAt: failedAt,
                             abandoned: true,
-                            abandonedAt: currentTime,
+                            abandonedAt: failedAt,
                             abandonedReason: (error && (error.response?.status || error.code)) || 'unknown',
                         });
                         _track('offline.abandoned', {
@@ -453,7 +510,7 @@ export async function syncQueue(postFn) {
                         remaining.push({
                             ...entry,
                             attempts,
-                            lastAttemptAt: currentTime,
+                            lastFailedAt: failedAt,
                         });
                     }
                 }
@@ -463,6 +520,9 @@ export async function syncQueue(postFn) {
             await _persistQueue();
             return { synced, failed, abandonedNew, skippedByLock: false };
         } finally {
+            if (lockHeartbeat) {
+                clearInterval(lockHeartbeat);
+            }
             await _releaseLock(owner);
         }
     })();

@@ -1191,6 +1191,10 @@
             "still_here_continue": "Oui, je continue",
             "admin_trigger_title": "Accès personnel"
         },
+        "offline": {
+            "stale_single": "Eine wartende Bestellung enthält jetzt ein nicht verfügbares Produkt.",
+            "stale_multiple": "{count} Produkte in wartenden Bestellungen sind jetzt nicht verfügbar."
+        },
         "wizard": {
             "loading_product": "Chargement du produit…",
             "product_not_found": "Produit introuvable.",
