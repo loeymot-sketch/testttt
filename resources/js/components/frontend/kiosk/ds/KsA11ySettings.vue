@@ -296,7 +296,7 @@ export default {
   background: var(--kiosk-overlay-modal, rgba(26,26,26,0.55));
   display: flex;
   align-items: stretch;
-  justify-content: flex-end;
+  justify-content: end;
 }
 
 .ks-a11y-drawer {

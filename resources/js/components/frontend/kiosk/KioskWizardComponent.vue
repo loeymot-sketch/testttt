@@ -1739,6 +1739,16 @@ export default {
   transform: translateX(-30px);
 }
 
+[dir="rtl"] .step-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+[dir="rtl"] .step-slide-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;

@@ -500,6 +500,10 @@ export default {
   gap: 10px;
 }
 
+[dir="rtl"] .kiosk-qty-controls {
+  direction: ltr;
+}
+
 .kiosk-qty-controls button {
   width: 44px;
   height: 44px;

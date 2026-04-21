@@ -660,7 +660,7 @@ export default {
 .kiosk-offline-indicator {
   position: absolute;
   top: 12px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
   background: rgba(255,165,0,0.15);
@@ -692,7 +692,7 @@ export default {
 .kiosk-abandoned-indicator {
   position: absolute;
   top: 12px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
   background: rgba(232, 0, 28, 0.12);
@@ -721,7 +721,7 @@ export default {
 .kiosk-cart-bar {
   position: absolute;
   bottom: 24px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 100;
   display: flex;

@@ -801,7 +801,7 @@ export default {
 .kiosk-cart-item-controls {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: end;
   gap: 8px;
   flex-shrink: 0;
 }
@@ -814,6 +814,10 @@ export default {
   border-radius: 10px;
   border: 1.5px solid var(--kiosk-border);
   overflow: hidden;
+}
+
+[dir="rtl"] .kiosk-qty-ctrl {
+  direction: ltr;
 }
 
 .kiosk-qty-btn {

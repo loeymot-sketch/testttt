@@ -221,7 +221,7 @@ export default {
     border-top: 1px solid var(--kiosk-border);
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: end;
     gap: var(--kiosk-space-4);
 }
 

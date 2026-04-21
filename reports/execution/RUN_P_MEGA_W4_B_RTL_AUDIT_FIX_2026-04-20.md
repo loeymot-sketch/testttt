@@ -4,41 +4,54 @@
 
 ## Phase AUDIT (lecture)
 
-| Composant | CRITIQUE | MOYEN | TEMPLATE | Notes |
-|-----------|----------|-------|----------|-------|
-| KioskAppComponent.vue | `left:0` admin trigger ; transitions slide-left/right sens fixe LTR ; chevron barre panier | centrages `left:50%` OK (symétriques) | `›` barre panier | Ripple `:style="{ left, top }` — **JS positionnel** (voir ci-dessous) |
-| KioskCartComponent.vue | — | — | — | Uniquement `text-align: center` (neutre) |
-| KioskWizardComponent.vue | `right` close + index step | — | — | — |
-| KioskStepViande/Sauce/Garnitures/Supplements | `right` badges/actions | — | — | — |
-| KioskPaymentComponent.vue | `border-top-color` spinner (processing) | — | — | Aligné `border-block-start` |
-| KioskOrderSummaryComponent.vue | `padding-left` boisson | — | — | — |
-| KioskCategoriesComponent.vue | `margin-left` ; `border-right` sidebar + abandon ; `left`/`right` badges/CTA ; `left`/`right` bottom bar | — | — | — |
-| ds/KsA11ySettings | `text-align:left` ; `margin-left` ; thumb `left` | — | — | Switch : thumb ON en `inset-inline-end` |
-| ds/KsButton | `border-right-color` spinner | — | — | — |
-| ds/KsStepper | `right` check | — | — | — |
-| ds/KsVirtualKeyboard | `left`/`right` 0 | — | — | — |
-| ds/KsChip, KsAllergenBadge, KsModal | — | — | — | Aucun match directionnel dans `<style>` |
-| resources/js/i18n.js | — | — | — | Pas de `watch` sur `locale` → `dir` / `lang` non synchronisés si assignation directe de `locale` |
+### Mécanisme `dir` / `lang`
 
-**Totaux (périmètre audité)** : 16 fichiers Vue + i18n.js — **CRITIQUES ~28 occurrences** corrigées par logical properties / règles `[dir=rtl]` — **MOYENS** documentés (nombres : pas de changement binding prix).
+- `resources/js/i18n.js` : `setDocumentDirection(locale)` + `watch(() => i18n.global.locale, …)` — **OK** (pas de changement requis).
+- `KioskAppComponent.vue` : `_wireA11yWatchers` → `document.documentElement` `lang` + `dir` depuis `kioskSettings.locale` — **OK** (câblage confirmé, pas de `dir` sur la racine `.kiosk-app` ; SSOT = `<html>`).
+
+### Composants audités (liste demandée)
+
+| Composant | Défauts CRITIQUES | MOYENS | Template |
+|-----------|-------------------|--------|----------|
+| KioskAppComponent.vue | `left: 50%` ×3 (indicateurs + barre panier) — préférer axe logique | — | Ripple : style inline `left` px (voir finding) |
+| KioskCartComponent.vue | — | `align-items: flex-end` sur contrôles ligne | — |
+| KioskWizardComponent.vue | Anim `step-slide` translateX non miroité RTL | — | — |
+| KioskStepViande/Sauce/Garnitures/Supplements | Aucun padding/margin physique pertinent | — | — |
+| KioskPaymentComponent.vue | Aucun | — | — |
+| KioskOrderSummaryComponent.vue | — | Step +/- : ordre visuel en RTL | — |
+| KioskCategoriesComponent.vue | — | `align-items: flex-end` sous `.kiosk-sidebar-name` | Déjà `inset-inline-*` sur badges grille |
+| ds/*.vue | KsModal footer + KsA11y backdrop : `justify-content: flex-end` | Autres atoms déjà cohérents | — |
+
+**Synthèse comptage (schéma mission)** : composants ciblés par fichier **23** (incl. 12 fichiers `ds/*.vue` + `i18n.js`).  
+Défauts **CRITIQUES** traités par patch : **3** (`left: 50%` → `inset-inline-start: 50%`) + **1** animation (step-slide, **2** règles `[dir="rtl"]`).  
+Défauts **MOYENS** : **4** (`flex-end` → `end`, `direction: ltr` sur sélecteurs quantité ×2).  
+Défauts **TEMPLATE** (flèches Fa, etc.) : **0** nouveau hors déjà traité (ex. `›` barre panier via `[dir="rtl"]` existant).
 
 ### FINDING_W4B_JS_POSITIONAL_BLOCK
 
-- **Fichier** : `KioskAppComponent.vue` — feedback tactile `.kiosk-touch-ripple` : `rippleStyle` calcule `left` / `top` en pixels depuis l’événement pointer (l. ~197). **Non corrigeable en CSS additif seul** ; laisser tel quel pour ce cycle ; un refactor coordonnées logiques / `inset` serait hors scope routine.
+- **Fichier** : `KioskAppComponent.vue`
+- **Nature** : `rippleStyle` retourne `{ left: ripple.x + 'px', top: ripple.y + 'px' }` pour `.kiosk-touch-ripple` (positionnement depuis coordonnées tactiles).
+- **Décision** : **pas de refactor JS** (hors scope routine). Le ripple reste correct visuellement (coords viewport) ; un cycle **complex** pourrait unifier avec propriétés logiques + calcul si besoin un jour.
 
-## Phase FIX
+## Phase FIX (CSS additif / propriétés logiques)
 
-- **Composants modifiés (styles)** : KioskAppComponent, KioskOrderSummaryComponent, KioskCategoriesComponent, KioskWizardComponent, KioskPaymentComponent, 4 steps (viande, sauce, garnitures, supplements), KsA11ySettings, KsButton, KsStepper, KsVirtualKeyboard.
-- **i18n.js** : `watch(() => locale, setDocumentDirection)` ; fallback `loadMessages()` si `require.context` absent (Vitest / stub Vite) vers `globalThis.require.context` (polyfill setup).
-- **Tests** : `tests/js/kioskRtl.spec.js` (4 cas) ; `tests/js/kioskRtl-require-context-polyfill.js` ; `vitest.config.mjs` → `setupFiles` pour le polyfill.
-- **Clés i18n** : **aucune** nouvelle clé (0 ajout fr/en/ar/de/bn).
+| Fichier | Modification |
+|---------|----------------|
+| KioskAppComponent.vue | `inset-inline-start: 50%` sur `.kiosk-offline-indicator`, `.kiosk-abandoned-indicator`, `.kiosk-cart-bar` |
+| KioskWizardComponent.vue | `[dir="rtl"]` pour `.step-slide-enter-from` / `.step-slide-leave-to` (miroir translateX) |
+| KioskCartComponent.vue | `align-items: end` ; `[dir="rtl"] .kiosk-qty-ctrl { direction: ltr; }` |
+| KioskOrderSummaryComponent.vue | `[dir="rtl"] .kiosk-qty-controls { direction: ltr; }` |
+| KioskCategoriesComponent.vue | `align-items: end` sur `.kiosk-sidebar-name` |
+| ds/KsModal.vue | `justify-content: end` sur `.ks-modal__footer` |
+| ds/KsA11ySettings.vue | `justify-content: end` sur `.ks-a11y-backdrop` |
 
-## Vérification
+**Invariant 1** : aucune modification d’affichage des montants (pas de `toLocaleString`, pas de réordonnancement des bindings prix).
 
-- Vitest global : **554/554** (550 baseline + 4 RTL).
-- `npm run i18n:audit` : même profil de dette qu’avant W4.B (fr/en/ar counts inchangés côté intention — **aucune nouvelle clé** introduite par ce cycle).
+## Phase VÉRIFICATION
 
-## Risque résiduel
+- Vitest : `tests/js/kioskRtl.spec.js` (4 cas : dir rtl, dir ltr retour, lang ar, présence `kiosk` dans `ar.json`). Suite globale : **554/554** (550 baseline + 4).
+- Post-fix : `npm run i18n:audit` — **exit 1** inchangé vs dette W4.A (clés `en` manquantes globales, pas de nouvelle clé introduite par ce cycle ; aucune modification des fichiers `resources/js/languages/*.json`).
 
-- Transitions page hors `slide-left`/`slide-right` non revues ici.
-- FINDING ripple JS : inchangé jusqu’à cycle dédié.
+## Playwright
+
+- **Deferred** (inchangé vs plan : optionnel si infra active).

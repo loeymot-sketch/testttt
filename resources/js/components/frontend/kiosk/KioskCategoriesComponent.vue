@@ -1086,7 +1086,7 @@ export default {
   text-transform: uppercase;
   min-height: 26px;
   display: flex;
-  align-items: flex-end;
+  align-items: end;
 }
 
 .kiosk-sidebar-item.active .kiosk-sidebar-name {

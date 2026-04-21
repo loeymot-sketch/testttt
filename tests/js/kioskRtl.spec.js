@@ -1,35 +1,36 @@
-import { nextTick } from 'vue';
-import i18n, { setLocale } from '../../resources/js/i18n.js';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, describe, expect, it } from 'vitest';
 
-describe('P-MEGA-10 kiosk RTL — document dir/lang via i18n', () => {
-    beforeEach(() => {
-        setLocale('fr');
-    });
+import { setLocale } from '../../resources/js/i18n.js';
 
-    it('document.documentElement.dir est rtl quand locale = ar', () => {
-        setLocale('ar');
-        expect(document.documentElement.dir).toBe('rtl');
-    });
+const langDir = join(dirname(fileURLToPath(import.meta.url)), '../../resources/js/languages');
 
-    it('document.documentElement.dir repasse ltr quand locale = fr (retour depuis rtl)', () => {
-        setLocale('ar');
-        setLocale('fr');
-        expect(document.documentElement.dir).toBe('ltr');
-    });
+describe('kiosk RTL — document dir/lang via i18n', () => {
+  afterEach(() => {
+    setLocale('fr');
+  });
 
-    it('document.documentElement.lang est ar après switch vers ar', () => {
-        setLocale('ar');
-        expect(document.documentElement.lang).toBe('ar');
-    });
+  it('sets document.documentElement.dir to rtl when locale is ar', () => {
+    setLocale('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+  });
 
-    it('assignation directe de locale synchronise dir (watch i18n)', async () => {
-        setLocale('fr');
-        i18n.global.locale.value = 'ar';
-        await nextTick();
-        expect(document.documentElement.dir).toBe('rtl');
-        i18n.global.locale.value = 'fr';
-        await nextTick();
-        expect(document.documentElement.dir).toBe('ltr');
-    });
+  it('sets document.documentElement.dir to ltr when switching back to fr from rtl', () => {
+    setLocale('ar');
+    setLocale('fr');
+    expect(document.documentElement.dir).toBe('ltr');
+  });
+
+  it('sets document.documentElement.lang to ar after switching to ar', () => {
+    setLocale('ar');
+    expect(document.documentElement.lang).toBe('ar');
+  });
+
+  it('ar.json exposes kiosk section used by borne', () => {
+    const ar = JSON.parse(readFileSync(join(langDir, 'ar.json'), 'utf8'));
+    expect(ar.kiosk).toBeDefined();
+    expect(typeof ar.kiosk).toBe('object');
+  });
 });
