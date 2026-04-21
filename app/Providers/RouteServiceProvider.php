@@ -87,7 +87,14 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login-lockout', function (Request $request) {
-            $identifier = Str::lower((string) ($request->input('email') ?: $request->input('username') ?: 'anon'));
+            // [W8.B REM B3] Fuzz protection : si client malveillant envoie email[]=foo,
+            // is_string() empêche TypeError sur cast (string) array.
+            $email    = $request->input('email');
+            $username = $request->input('username');
+            $rawIdentifier = is_string($email) && $email !== ''
+                ? $email
+                : (is_string($username) && $username !== '' ? $username : 'anon');
+            $identifier = Str::lower($rawIdentifier);
             $key = $identifier.'|'.$request->ip();
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));

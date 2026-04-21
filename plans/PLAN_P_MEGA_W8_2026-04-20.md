@@ -247,6 +247,11 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 |---|---|---|---|
 | `app/Providers/RouteServiceProvider.php` | B.3 | write (closures `kiosk-orders` + `login-lockout`) | auth + rate limiting — **gated** |
 | `tests/Feature/Auth/KioskThrottleKeysTest.php` | B.3 | NEW | — |
+| `.env.example` | B.3 | doc additive (`KIOSK_ORDER_RATE_LIMIT=5`) | — — approuvé décideur 2026-04-20 |
+| `tests/Unit/Security/RateLimiterConfigTest.php` | B.3 | aligner SSOT lecture `auth.login_lockout.*` | — — approuvé décideur 2026-04-20 |
+| `reports/execution/RUN_P_MEGA_W8_B_THROTTLE_EXECUTE_2026-04-20.md` | B.3 | NEW report | — — convention reports/ |
+
+**Note** : extension scope autorisée par décideur orchestrateur 2026-04-20 (cohérent avec GATE_BRIEF_21 D2 doc + correction SSOT silencieux). Cf. ESCALATION résolue ci-dessous.
 
 ### W8.C (P-MEGA-22) — fichiers autorisés en WRITE (post-gate, par pilier approuvé)
 
@@ -382,6 +387,7 @@ POST-APPROVAL (séquentiel A → B → C, par gate approuvé) :
 - **E4 (Phase C.1) — `verifyChain` doit valider tous les Z passés** : si la branche a 5+ ans de Z reports, le coût `open()` devient O(N) à chaque ouverture. Décision business à intégrer gate C.2 : (a) verify all (correct mais coûteux), (b) sliding window N derniers (rapide mais incomplet), (c) async pre-check job (complexe).
 - **E5 (Phase C.3 pilier 3) — Migration `orders.print_count` nécessaire** : sous-gate schema migration distinct du gate principal C.2. À documenter explicitement.
 - **E6 (Phase C.3 pilier 4) — Format JET XML normatif** : spec DGI évolutive (versions multiples). Si C.1 ne peut pas figer la spec exacte au moment de l'audit (lien public DGI ou doc interne), **DÉFÉRER pilier 4** à cycle séparé — n'exécuter que piliers 1+2+3.
+- ~~**ESCALATION 2026-04-21 W8.B.3**~~ **RÉSOLUE 2026-04-20** : Plan SUBSYSTEMS_TOUCHED W8.B étendu pour inclure `.env.example` (doc additive D2), `tests/Unit/Security/RateLimiterConfigTest.php` (correction SSOT `auth.login_lockout.*`), et report convention. Décideur orchestrateur a explicitement validé ces 3 ajouts comme partie intégrante du package W8.B (cohérent GATE_BRIEF_21).
 
 ---
 
