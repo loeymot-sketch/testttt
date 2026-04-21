@@ -18,11 +18,9 @@ use App\Models\KioskMachine;
 use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Models\User;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -35,29 +33,17 @@ class OrderAllergenSnapshotComposedTest extends TestCase
 {
     use RefreshDatabase;
 
-    private bool $createdItemExtraAllergenPivot = false;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        if (! Schema::hasTable('item_extra_allergens')) {
-            Schema::create('item_extra_allergens', function (Blueprint $table): void {
-                $table->foreignId('item_extra_id')->constrained('item_extras')->cascadeOnDelete();
-                $table->foreignId('allergen_id')->constrained('allergens')->cascadeOnDelete();
-                $table->primary(['item_extra_id', 'allergen_id']);
-            });
-            $this->createdItemExtraAllergenPivot = true;
-        }
-    }
-
-    protected function tearDown(): void
-    {
-        if ($this->createdItemExtraAllergenPivot) {
-            Schema::dropIfExists('item_extra_allergens');
-        }
-        parent::tearDown();
-    }
+    /*
+     * [W8.5 HOTFIX] Le bloc setUp/tearDown qui faisait Schema::create() puis
+     * Schema::dropIfExists() sur item_extra_allergens a été retiré : sous
+     * MySQL 8.0, ce DDL runtime déclenchait un commit implicite qui cassait
+     * la transaction RefreshDatabase et faisait fuir les fixtures du test
+     * vers les classes suivantes (cause des 11 fails MenuProjectionServiceTest
+     * en CI).
+     *
+     * La table est désormais matérialisée par la migration permanente
+     * 2026_04_22_300000_create_item_extra_allergens_table.php.
+     */
 
     public function test_sentinel_base_item_plus_extra_with_milk_should_snapshot_lait(): void
     {

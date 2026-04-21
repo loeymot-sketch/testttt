@@ -1,5 +1,44 @@
 # Active Cycle – FoodKing
 
+## HOTFIX_W8.5_PHPUNIT_MYSQL_ISOLATION (IN PROGRESS — fix appliqué local, pending CI MySQL push)
+
+TASK_ID: HOTFIX_W8.5_PHPUNIT_MYSQL_ISOLATION_2026-04-21
+PHASE: VERIFY (post-EXECUTE local PASSED, pending CI MySQL run after push)
+ROOT_CAUSE_REPORT: reports/ci/REPORT_PHPUNIT_MYSQL_ISOLATION_ROOT_CAUSE_2026-04-21.md
+MEMORY_GRAPH: reports/memory/MEMORY_GRAPH_W8_W9_2026-04-21.md
+SUBAGENTS_TOUCHED: explore × 1 (very thorough audit MySQL transaction leak)
+
+DÉCOUVERT: pendant VERIFY 200% W8 — CI PHPUnit MySQL rouge depuis 2026-04-20 22:32 (régression antérieure W8 EXECUTE), 11 fails / 856 tests, tous dans MenuProjectionServiceTest. Local SQLite : 13/13 PASSED.
+
+CAUSE ROOT: OrderAllergenSnapshotComposedTest::setUp() faisait Schema::create('item_extra_allergens') runtime → MySQL DDL implicit COMMIT → casse transaction RefreshDatabase → fixtures du test (Tacos bœuf sentinel, catégorie Tacos Test, allergène lait) survivent au rollback et polluent MenuProjectionServiceTest qui s'exécute alphabétiquement après Orders/.
+
+POURQUOI LOCAL ≠ CI:
+- SQLite :memory: recréé par process + savepoints DDL transactionnels
+- MySQL DDL implicit commit documenté (dev.mysql.com/refman/8.0/implicit-commit.html)
+
+FIX APPLIQUÉ:
+1. Migration permanente: database/migrations/2026_04_22_300000_create_item_extra_allergens_table.php (idempotent, FK item_extras+allergens cascade)
+2. Test cleanup: tests/Feature/Orders/OrderAllergenSnapshotComposedTest.php (-15 LOC Schema::create/drop runtime, +12 LOC commentaire)
+3. Compatible: app/Services/Orders/OrderItemAllergenSnapshot::resolveExtraAllergens() supportait déjà absence (Schema::hasTable), enrichi par migration permanente
+
+VERIFY:
+- ✅ vendor/bin/phpunit --filter='OrderAllergenSnapshotComposedTest|MenuProjectionServiceTest' = 14/14 PASSED (1.6s)
+- ✅ vendor/bin/phpunit --testsuite Feature = 708/708 PASSED, 8 skipped, 0 fail, 0 error (2m12)
+- ✅ ReadLints : no errors
+- ⏳ CI MySQL: pending push validation
+
+INVARIANT AJOUTÉ (à enforcer):
+- Pas de Schema::create/drop dans tests/** (uniquement migrations)
+- Audit miroir effectué : 0 autre cas trouvé
+
+FOLLOW-UP RECOMMANDÉ (post-W8.5):
+- GATE_BRIEF: ajouter phpunit-mysql en required-status-check sur main
+- Lint custom: grep CI interdire Schema::create/drop dans tests/**
+
+NEXT: après commit + push CI green → PLAN W9 sur findings W8 (C5 + G2 + B1+B7)
+
+---
+
 ## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (CLOSED PASSED — W8.A + W8.B + W8.C-P1+P2 livrés ; W8.C-P3 CLOSED with REM-PRODUCT C5 noted ; P4 DEFER spec DGFiP TBD)
 
 TASK_ID: P_MEGA_W8_SECURITY_OBSERVABILITY_2026-04-20
