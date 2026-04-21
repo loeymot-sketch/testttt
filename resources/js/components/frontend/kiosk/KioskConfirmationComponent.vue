@@ -95,6 +95,8 @@
     class="kiosk-receipt-zone"
     :data-print-failed="printFailed"
     data-testid="kiosk-print-receipt"
+    :role="printFailed ? 'status' : undefined"
+    :aria-live="printFailed ? 'polite' : undefined"
   >
     <template v-if="printFailed">
       <h2 class="kiosk-fallback-receipt-title">{{ $t('kiosk.confirmation.fallback_receipt_title') }}</h2>
@@ -638,6 +640,7 @@ export default {
 .kiosk-receipt-zone[data-print-failed="true"] {
   display: block !important;
   max-width: 500px;
+  max-height: 80vh;
   margin: 1.25rem auto;
   padding: 1.25rem 1.5rem 1.5rem;
   background: #fff;
@@ -646,6 +649,9 @@ export default {
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
   text-align: center;
   color: #1f1f1f;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kiosk-fallback-receipt-title {

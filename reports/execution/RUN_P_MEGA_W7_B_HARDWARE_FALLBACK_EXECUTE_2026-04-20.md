@@ -42,3 +42,8 @@
 ## Gate
 
 - Aucun `app/**`, `routes/**`, migrations, ni zones TPE interdites (confirm backend / void / compteurs) modifiés.
+
+### Findings post-VERIFY
+
+- F-VERIFY-W7B-01 (LOW) : Timer compte à rebours d'accueil figé pendant retries imprimante (~6-8s pour 3 tentatives + 2 delays). Comportement intentionnel (utilisateur peut consulter ticket fallback) mais non documenté. RECOMMANDATION : ajouter loading state explicite "Impression en cours, veuillez patienter..." pour transparence.
+- F-VERIFY-W7B-02 (LOW) : Politique fail-fast non implémentée — `PRINTER_RETRY_MS` (2s) attendu même si erreur synchrone. À évaluer impact UX (boucle ~6s même si bridge totalement absent).
