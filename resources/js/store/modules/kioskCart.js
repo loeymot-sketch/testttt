@@ -1,5 +1,10 @@
 import axios from "axios";
-import { saveOrder, getPendingCount, startAutoSync } from "../../helpers/kioskOfflineQueue";
+import {
+    getPendingCount,
+    markStaleItems,
+    saveOrder,
+    startAutoSync,
+} from "../../helpers/kioskOfflineQueue";
 import { isSnapshotStale, loadSnapshot } from "../../helpers/kioskMenuCache";
 
 // Source identique à sourceEnum.WEB (pas de valeur KIOSK côté frontend)
@@ -418,6 +423,12 @@ export const kioskCart = {
             if (filtered.length !== state.items.length) {
                 commit('SET_CART_LINES', filtered);
             }
+        },
+        async pruneOfflineQueueOnAvailabilityChanged({ state }, { itemId, branchId } = {}) {
+            return markStaleItems({
+                itemId,
+                branchId: branchId ?? state.branchId ?? null,
+            });
         },
         reset({ commit }) {
             commit('RESET');

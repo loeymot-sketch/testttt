@@ -21,6 +21,7 @@
         "axe-core": "^4.11.3",
         "axios": "^1.1.2",
         "bootstrap": "^5.2.1",
+        "fake-indexeddb": "^6.2.5",
         "happy-dom": "^20.8.8",
         "jsdom": "^29.0.1",
         "laravel-mix": "^6.0.15",

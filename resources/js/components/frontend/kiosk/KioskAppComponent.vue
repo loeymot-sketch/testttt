@@ -69,6 +69,18 @@
       </div>
     </transition>
 
+    <transition name="slide-down">
+      <button
+        v-if="showOfflineConflictCta"
+        type="button"
+        class="kiosk-offline-conflict-cta"
+        data-testid="kiosk-offline-conflict-cta"
+        @click="openOfflineConflictModal"
+      >
+        Voir
+      </button>
+    </transition>
+
     <!-- Vue enfant (page courante) -->
     <router-view
       v-slot="{ Component }"
@@ -115,6 +127,14 @@
       />
     </transition>
 
+    <KioskOfflineConflictModalComponent
+      v-model="offlineConflictModalOpen"
+      :entries="offlineConflictEntries"
+      @opened="trackOfflineConflictModalOpened"
+      @cancel-entry="cancelOfflineConflictEntry"
+      @force-entry="forceOfflineConflictEntry"
+    />
+
     <!-- Toast notifications globales -->
     <KioskToastComponent ref="toast" />
   </div>
@@ -123,12 +143,21 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { mapGetters, mapActions } from 'vuex';
-import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
+import {
+  cancelStaleEntry,
+  forceRetryEntry,
+  getAbandonedCount,
+  getPendingCount,
+  getStaleEntries,
+  startAutoSync,
+  stopAutoSync,
+} from '../../../helpers/kioskOfflineQueue';
 
 const KioskAdminComponent = defineAsyncComponent(
   () => import(/* webpackChunkName: "kiosk-admin" */ './KioskAdminComponent.vue')
 );
 import KioskToastComponent from './KioskToastComponent.vue';
+import KioskOfflineConflictModalComponent from './KioskOfflineConflictModalComponent.vue';
 import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
@@ -162,7 +191,13 @@ const ROUTE_ORDER = [
 export default {
   name: 'KioskAppComponent',
   mixins: [kioskPriceMixin],
-  components: { ConnectionStatusBanner, KioskAdminComponent, KioskToastComponent, KioskInactivityOverlayComponent },
+  components: {
+    ConnectionStatusBanner,
+    KioskAdminComponent,
+    KioskToastComponent,
+    KioskOfflineConflictModalComponent,
+    KioskInactivityOverlayComponent,
+  },
 
   // Provide showToast to all kiosk child components via inject('showToast')
   provide() {
@@ -191,6 +226,10 @@ export default {
       _adminTapCount: 0,
       _adminTapTimer: null,
       _eventSub: null,
+      offlineConflictEntries: [],
+      offlineConflictModalOpen: false,
+      showOfflineConflictCta: false,
+      _offlineQuotaListener: null,
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
@@ -275,6 +314,11 @@ export default {
     this.offlinePending = getPendingCount();
     this.offlineAbandoned = getAbandonedCount();
     this.offlineCheckTimer = setInterval(syncCb, 15000);
+    this.refreshOfflineConflictEntries();
+    this._offlineQuotaListener = () => {
+      this.$refs.toast?.show('File saturée. Veuillez relancer la borne.', 'error', 6000);
+    };
+    window.addEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
     if (window._wsService) {
       this._onWsReconnect = () => {
         if (getPendingCount() > 0) {
@@ -302,9 +346,12 @@ export default {
     if (window._wsService && this._onWsReconnect) {
       window._wsService.off('connected', this._onWsReconnect);
     }
+    if (this._offlineQuotaListener) {
+      window.removeEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
+    }
   },
   methods: {
-    ...mapActions('kioskCart', ['reset', 'setBranch']),
+    ...mapActions('kioskCart', ['reset', 'setBranch', 'pruneOfflineQueueOnAvailabilityChanged']),
     ...mapActions('frontendBranch', { loadBranchList: 'lists' }),
     ...mapActions('globalState', { _setGlobalState: 'set' }),
 
@@ -400,6 +447,20 @@ export default {
           const payload = event.payload;
           this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
           this.$store.dispatch('kioskCart/pruneUnavailableLines');
+          this.pruneOfflineQueueOnAvailabilityChanged({
+            itemId: payload?.id || payload?.item_id,
+            branchId,
+          }).then((result) => {
+            if ((result?.updatedEntries || 0) > 0) {
+              this.refreshOfflineConflictEntries(result.entries || []);
+              this.showOfflineConflictCta = true;
+              this.$refs.toast?.show(
+                'Une commande en file d\'attente contient un produit indisponible. Vérifiez avant validation.',
+                'warning',
+                6000,
+              );
+            }
+          }).catch(() => {});
           // If full refetch needed (price/variations changed), trigger it in background
           if (payload.type === 'full') {
             this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
@@ -413,6 +474,62 @@ export default {
     _leaveEchoChannel() {
       this._eventSub?.unsubscribe();
       this._eventSub = null;
+    },
+
+    async refreshOfflineConflictEntries(entries = null) {
+      const nextEntries = Array.isArray(entries) ? entries : await getStaleEntries();
+      this.offlineConflictEntries = nextEntries;
+      this.showOfflineConflictCta = nextEntries.length > 0;
+    },
+
+    openOfflineConflictModal() {
+      this.offlineConflictModalOpen = true;
+    },
+
+    trackOfflineConflictModalOpened() {
+      try {
+        kioskAnalytics.track('offline.queue.v2.conflict_modal_opened', {
+          count: this.offlineConflictEntries.length,
+        });
+      } catch (_) {}
+    },
+
+    async cancelOfflineConflictEntry(localKey) {
+      const removed = await cancelStaleEntry(localKey);
+      if (removed) {
+        await this.refreshOfflineConflictEntries();
+        this.offlinePending = getPendingCount();
+        this.offlineAbandoned = getAbandonedCount();
+        this.$refs.toast?.show('Commande retirée de la file d\'attente.', 'success', 3000);
+        try {
+          kioskAnalytics.track('offline.queue.v2.conflict_resolved', {
+            action: 'cancel',
+            count: 1,
+          });
+        } catch (_) {}
+      }
+      if (this.offlineConflictEntries.length === 0) {
+        this.offlineConflictModalOpen = false;
+      }
+    },
+
+    async forceOfflineConflictEntry(localKey) {
+      const changed = await forceRetryEntry(localKey);
+      if (changed) {
+        await this.refreshOfflineConflictEntries();
+        this.offlinePending = getPendingCount();
+        this.offlineAbandoned = getAbandonedCount();
+        this.$refs.toast?.show('La commande sera réessayée au prochain cycle.', 'success', 3000);
+        try {
+          kioskAnalytics.track('offline.queue.v2.conflict_resolved', {
+            action: 'force',
+            count: 1,
+          });
+        } catch (_) {}
+      }
+      if (this.offlineConflictEntries.length === 0) {
+        this.offlineConflictModalOpen = false;
+      }
     },
 
     startIdleTimer() {
@@ -729,6 +846,28 @@ export default {
 
 .kiosk-abandoned-icon {
   flex-shrink: 0;
+}
+
+.kiosk-offline-conflict-cta {
+  position: absolute;
+  top: 92px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 201;
+  min-height: 44px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  background: var(--kiosk-primary, #E8001C);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(232, 0, 28, 0.22);
+}
+
+.kiosk-offline-conflict-cta:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
 }
 
 /* Barre panier flottante */

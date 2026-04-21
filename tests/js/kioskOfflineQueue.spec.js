@@ -1,3 +1,5 @@
+import 'fake-indexeddb/auto';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearQueue,
@@ -7,10 +9,18 @@ import {
   syncQueue,
 } from '../../resources/js/helpers/kioskOfflineQueue';
 import * as analytics from '../../resources/js/helpers/kioskAnalytics';
+import { clearQueueEntries, getQueueEntry } from '../../resources/js/helpers/kioskOfflineQueueDb';
+
+function advanceClock(ms) {
+  const next = Date.now() + ms;
+  vi.spyOn(Date, 'now').mockImplementation(() => next);
+}
 
 describe('kioskOfflineQueue', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearQueue();
+    await clearQueueEntries();
+    localStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -21,6 +31,7 @@ describe('kioskOfflineQueue', () => {
 
   it('reuses the same in-flight sync promise to avoid duplicate replay', async () => {
     saveOrder({ items: [{ item_id: 1 }] }, 'offline_key_mutex');
+    advanceClock(1500);
 
     let calls = 0;
     const postFn = vi.fn(async () => {
@@ -55,6 +66,7 @@ describe('kioskOfflineQueue', () => {
     it('emits offline.replayed when a sync attempt succeeds', async () => {
       const trackSpy = vi.spyOn(analytics, 'track').mockImplementation(() => true);
       saveOrder({ items: [{ item_id: 1 }] }, 'offline_key_replay');
+      advanceClock(1500);
 
       await syncQueue(vi.fn(async () => ({ status: 201 })));
 
@@ -79,6 +91,7 @@ describe('kioskOfflineQueue', () => {
 
       // 10 sync runs → entry.attempts hits 10 → abandoned.
       for (let i = 0; i < 10; i++) {
+        advanceClock(35000);
         await syncQueue(failingPost);
       }
 
@@ -99,6 +112,7 @@ describe('kioskOfflineQueue', () => {
       saveOrder({ items: [{ item_id: 1 }] }, 'partial_a');
       saveOrder({ items: [{ item_id: 2 }] }, 'partial_b');
       saveOrder({ items: [{ item_id: 3 }] }, 'partial_c');
+      advanceClock(1500);
 
       let callIdx = 0;
       const flakyPost = vi.fn(async () => {
@@ -126,13 +140,15 @@ describe('kioskOfflineQueue', () => {
         throw err;
       });
 
-      // 9 attempts → still 0 abandoned
-      for (let i = 0; i < 9; i++) {
+      // 8 replay attempts after the initial offline failure → still 0 abandoned
+      for (let i = 0; i < 8; i++) {
+        advanceClock(35000);
         await syncQueue(failingPost);
       }
       expect(getAbandonedCount()).toBe(0);
 
-      // 10th attempt → entry is marked abandoned
+      // 9th replay attempt (= 10th total attempt incl. initial failure) → abandoned
+      advanceClock(35000);
       await syncQueue(failingPost);
       expect(getAbandonedCount()).toBe(1);
     });
@@ -140,6 +156,7 @@ describe('kioskOfflineQueue', () => {
     it('replay reuses original idempotency key as X-Idempotency-Key header', async () => {
       const ORIGINAL_KEY = 'idemp_original_xyz';
       saveOrder({ items: [{ item_id: 7 }] }, ORIGINAL_KEY);
+      advanceClock(1500);
 
       const capturedConfigs = [];
       const captureFn = vi.fn(async (url, payload, config) => {
@@ -176,16 +193,16 @@ describe('kioskOfflineQueue', () => {
         synced: false,
       };
       localStorage.setItem(QUEUE_KEY, JSON.stringify([staleEntry, freshEntry]));
+      advanceClock(35000);
 
       // Trigger a syncQueue run; the fresh pending entry will be POSTed once.
       const okPost = vi.fn(async () => ({ status: 201 }));
       await syncQueue(okPost);
 
-      // After the run: stale (synced + savedAt > 24h) is pruned, fresh is now synced.
-      const finalQueue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      expect(finalQueue.length).toBe(1);
-      expect(finalQueue[0].localKey).toBe('fresh_pending');
-      expect(finalQueue[0].synced).toBe(true);
+      // After the run: the stale synced entry is discarded during migration and
+      // the fresh pending entry is removed after a successful replay.
+      const finalQueue = await getQueueEntry('kiosk:offline-queue:v2');
+      expect(finalQueue).toEqual([]);
     });
   });
 });
