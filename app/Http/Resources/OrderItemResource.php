@@ -28,8 +28,11 @@ class OrderItemResource extends JsonResource
             'quantity'                         => $this->quantity,
             'discount'                         => AppLibrary::currencyAmountFormat($this->discount),
             'price'                            => AppLibrary::currencyAmountFormat($this->price),
-            'item_variations'                  => $this->safeJsonDecode($this->item_variations),
-            'item_extras'                      => $this->safeJsonDecode($this->item_extras),
+            // [T07] Prefer immutable composition_snapshot when present (post-T07 rows);
+            // legacy rows (composition_snapshot=null) fall back to raw item_variations / item_extras JSON.
+            'item_variations'                  => $this->resolveVariationsForApi(),
+            'item_extras'                      => $this->resolveExtrasForApi(),
+            'composition_snapshot'             => $this->safeJsonDecode($this->composition_snapshot),
             'allergens_snapshot'               => $this->safeJsonDecode($this->allergens_snapshot),
             'item_variation_currency_total'    => AppLibrary::currencyAmountFormat($this->item_variation_total),
             'item_extra_currency_total'        => AppLibrary::currencyAmountFormat($this->item_extra_total),
@@ -46,12 +49,48 @@ class OrderItemResource extends JsonResource
     }
 
     /**
+     * [T07] Variations resolution with snapshot priority.
+     *
+     * Returns the snapshot's `lines` array (rich shape) when composition_snapshot
+     * is present and well-formed. Otherwise falls back to the legacy
+     * `item_variations` JSON column (lean [{id,quantity?}] shape).
+     *
+     * Backward compatibility note: existing kiosk/POS clients that consume the
+     * legacy `item_variations` shape continue to work because the snapshot's
+     * `lines` is also an array of objects keyed by `variation_id`. Front-ends that
+     * want richer data (attribute_name, line_total) can read `composition_snapshot`.
+     */
+    private function resolveVariationsForApi(): array
+    {
+        $snapshot = $this->safeJsonDecode($this->composition_snapshot);
+        if (is_array($snapshot) && isset($snapshot['lines']) && is_array($snapshot['lines']) && $snapshot['lines'] !== []) {
+            return array_values($snapshot['lines']);
+        }
+        return $this->safeJsonDecode($this->item_variations);
+    }
+
+    /**
+     * [T07] Extras resolution with snapshot priority. See resolveVariationsForApi.
+     */
+    private function resolveExtrasForApi(): array
+    {
+        $snapshot = $this->safeJsonDecode($this->composition_snapshot);
+        if (is_array($snapshot) && isset($snapshot['extras']) && is_array($snapshot['extras']) && $snapshot['extras'] !== []) {
+            return array_values($snapshot['extras']);
+        }
+        return $this->safeJsonDecode($this->item_extras);
+    }
+
+    /**
      * Safely decode JSON with error checking
      */
     private function safeJsonDecode(mixed $value): mixed
     {
+        // [T07] When Eloquent has already cast the column (composition_snapshot
+        // and allergens_snapshot are cast to 'array'), preserve associative keys
+        // intact — array_values() would strip schema_version/lines/extras.
         if (is_array($value)) {
-            return array_values($value);
+            return $value;
         }
 
         if (empty($value) || !is_string($value)) {

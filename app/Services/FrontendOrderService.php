@@ -289,6 +289,7 @@ class FrontendOrderService
                             $itemPrice = $dbItem->price; // ← prix TOUJOURS depuis la DB
 
                             // [PERF-02] Calculer prix variations depuis collection pre-chargée
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $calcVariationTotal = 0;
                             if (!empty($item->item_variations)) {
                                 foreach ($item->item_variations as $var) {
@@ -309,11 +310,13 @@ class FrontendOrderService
                                             422
                                         );
                                     }
-                                    $calcVariationTotal += $dbVar->price;
+                                    $varQuantity = max(1, (int) ($var->quantity ?? 1));
+                                    $calcVariationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
                             
                             // [PERF-02] Calculer prix extras depuis collection pre-chargée
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $calcExtraTotal = 0;
                             if (!empty($item->item_extras)) {
                                 foreach ($item->item_extras as $ext) {
@@ -333,7 +336,8 @@ class FrontendOrderService
                                             422
                                         );
                                     }
-                                    $calcExtraTotal += $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($ext->quantity ?? 1));
+                                    $calcExtraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -346,6 +350,10 @@ class FrontendOrderService
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id' => $this->frontendOrder->id,
                                 'branch_id' => $this->frontendOrder->branch_id,
@@ -359,6 +367,7 @@ class FrontendOrderService
                                 'price' => $itemPrice,
                                 'item_variations' => json_encode($item->item_variations ?? []),
                                 'item_extras' => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction' => $item->instruction ?? null,
                                 'item_variation_total' => $calcVariationTotal,
                                 'item_extra_total' => $calcExtraTotal,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Kiosk;
 
+use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -19,6 +20,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
  */
 class PricingPreviewRequest extends FormRequest
 {
+    use ValidatesOrderItemVariations;
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -36,12 +39,20 @@ class PricingPreviewRequest extends FormRequest
             'items.*.instruction'                 => ['nullable', 'string', 'max:255'],
             'items.*.item_variations'             => ['nullable', 'array', 'max:20'],
             'items.*.item_variations.*.id'        => ['required_with:items.*.item_variations', 'integer', 'min:1'],
+            'items.*.item_variations.*.quantity'    => ['sometimes', 'nullable', 'integer', 'min:1'],
             'items.*.item_extras'                 => ['nullable', 'array', 'max:30'],
             'items.*.item_extras.*.id'            => ['required_with:items.*.item_extras', 'integer', 'min:1'],
 
             'coupon_code'                         => ['nullable', 'string', 'min:3', 'max:64'],
             'kiosk_promo_code'                    => ['nullable', 'string', 'min:3', 'max:64'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateOrderItemVariationsAfter($validator);
+        });
     }
 
     /**

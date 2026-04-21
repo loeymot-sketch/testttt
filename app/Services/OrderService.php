@@ -374,6 +374,7 @@ class OrderService
                             }
                             $itemPrice = (float) $dbItem->price; // ← prix TOUJOURS depuis la DB
 
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $variationTotal = 0;
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
@@ -383,10 +384,12 @@ class OrderService
                                     if (!$dbVar) {
                                         throw new \InvalidArgumentException("Variation ID {$varId} introuvable.", 422);
                                     }
-                                    $variationTotal += (float) $dbVar->price;
+                                    $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                                    $variationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $extraTotal = 0;
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
@@ -396,7 +399,8 @@ class OrderService
                                     if (!$dbExt) {
                                         throw new \InvalidArgumentException("Extra ID {$extraId} introuvable.", 422);
                                     }
-                                    $extraTotal += (float) $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                                    $extraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -411,6 +415,9 @@ class OrderService
                             $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
 
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
                                 'branch_id'            => $this->order->branch_id,
@@ -424,6 +431,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
                                 'item_extra_total'     => $extraTotal,
@@ -679,6 +687,7 @@ class OrderService
 
                             // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
                             // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $variationTotal = 0;
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
@@ -699,12 +708,14 @@ class OrderService
                                     422
                                 );
                             }
-                            $variationTotal += (float) $dbVar->price;
+                            $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                            $variationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
                             // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
                             // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $extraTotal = 0;
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
@@ -725,7 +736,8 @@ class OrderService
                                     422
                                 );
                             }
-                            $extraTotal += (float) $dbExt->price;
+                            $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                            $extraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
                             
@@ -740,6 +752,9 @@ class OrderService
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
                             
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
                                 'branch_id'            => $this->order->branch_id,
@@ -753,6 +768,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
                                 'item_extra_total'     => $extraTotal,
@@ -1081,6 +1097,7 @@ class OrderService
 
                             // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
                             // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $calcVariationTotal = 0;
                             if (isset($item->item_variations) && !empty($item->item_variations)) {
                                 foreach ($item->item_variations as $var) {
@@ -1098,11 +1115,13 @@ class OrderService
                                             422
                                         );
                                     }
-                                    $calcVariationTotal += $dbVar->price;
+                                    $varQuantity = max(1, (int) ($var->quantity ?? 1));
+                                    $calcVariationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
                             // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $calcExtraTotal = 0;
                             if (isset($item->item_extras) && !empty($item->item_extras)) {
                                 foreach ($item->item_extras as $ext) {
@@ -1120,7 +1139,8 @@ class OrderService
                                             422
                                         );
                                     }
-                                    $calcExtraTotal += $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($ext->quantity ?? 1));
+                                    $calcExtraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -1133,6 +1153,10 @@ class OrderService
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
                                 'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
@@ -1146,6 +1170,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $calcVariationTotal,
                                 'item_extra_total'     => $calcExtraTotal,

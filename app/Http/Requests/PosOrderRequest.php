@@ -5,12 +5,15 @@ namespace App\Http\Requests;
 use App\Enums\Activity;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
+use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Rules\ValidJsonOrder;
 use Illuminate\Foundation\Http\FormRequest;
 use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
+    use ValidatesOrderItemVariations;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -159,6 +162,8 @@ class PosOrderRequest extends FormRequest
                     $validator->errors()->add('discount', 'You do not have permission to apply POS discounts.');
                 }
             }
+
+            $this->validateOrderItemVariationsAfter($validator);
         });
     }
 

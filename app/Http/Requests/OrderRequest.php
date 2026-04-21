@@ -4,12 +4,15 @@ namespace App\Http\Requests;
 
 use App\Enums\Activity;
 use App\Enums\OrderType;
+use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Rules\ValidJsonOrder;
 use Smartisan\Settings\Facades\Settings;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OrderRequest extends FormRequest
 {
+    use ValidatesOrderItemVariations;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -86,6 +89,8 @@ class OrderRequest extends FormRequest
             } else if (blank($orderType)) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
+
+            $this->validateOrderItemVariationsAfter($validator);
         });
     }
 

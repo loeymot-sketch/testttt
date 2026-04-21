@@ -5,6 +5,7 @@ namespace App\Services\Pricing;
 use App\Enums\TaxType;
 use App\Libraries\AppLibrary;
 use App\Models\Item;
+use App\Models\ItemAttribute;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\Tax;
@@ -17,6 +18,7 @@ final class PricingService
         private readonly TaxCalculator $taxCalculator = new TaxCalculator,
         private readonly DiscountCalculator $discountCalculator = new DiscountCalculator,
         private readonly ?AvailabilityService $availabilityService = null,
+        private readonly CompositionSnapshotBuilder $snapshotBuilder = new CompositionSnapshotBuilder,
     ) {}
 
     /**
@@ -76,6 +78,13 @@ final class PricingService
             ? ItemExtra::query()->whereIn('id', $extraIds)->get()->keyBy('id')
             : collect();
 
+        // [T07 SSOT] Preload all involved attributes once for the snapshot builder
+        // (avoids N+1 inside the per-item loop).
+        $attributeIds = $dbVariations->pluck('item_attribute_id')->filter()->unique()->values()->all();
+        $dbAttributes = $attributeIds !== []
+            ? ItemAttribute::query()->whereIn('id', $attributeIds)->get()->keyBy('id')
+            : collect();
+
         $itemsArray = [];
         $lines = [];
         $realSubtotal = 0.0;
@@ -93,6 +102,8 @@ final class PricingService
                 }
                 $itemPrice = (float) $dbItem->price;
 
+                // [T05] Multi-quantity support: variations carry an optional `quantity`
+                // field (default 1, backward-compat with legacy [{id}] payloads).
                 $variationTotal = 0.0;
                 if (isset($item->item_variations) && is_array($item->item_variations)) {
                     foreach ($item->item_variations as $variation) {
@@ -113,10 +124,16 @@ final class PricingService
                                 422
                             );
                         }
-                        $variationTotal += (float) $dbVar->price;
+                        $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                        $variationTotal += (float) $dbVar->price * $varQuantity;
                     }
                 }
 
+                // [T05] Constraints validation per attribute (min/max/allow_repeat from item_attributes T01).
+                $this->assertVariationConstraints($item, $dbVariations);
+
+                // [T05] Multi-quantity support: extras carry an optional `quantity`
+                // field (default 1, backward-compat with legacy [{id}] payloads).
                 $extraTotal = 0.0;
                 if (isset($item->item_extras) && is_array($item->item_extras)) {
                     foreach ($item->item_extras as $extra) {
@@ -137,7 +154,8 @@ final class PricingService
                                 422
                             );
                         }
-                        $extraTotal += (float) $dbExt->price;
+                        $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                        $extraTotal += (float) $dbExt->price * $extraQuantity;
                     }
                 }
 
@@ -163,6 +181,17 @@ final class PricingService
                     $req->roundLineTax
                 );
 
+                // [T07 SSOT] Build the immutable composition_snapshot at order creation
+                // time. NF525 contract: this snapshot must NEVER be re-written and is
+                // the source of truth for reprint / fiscal export. mass-insert below
+                // bypasses the Eloquent 'array' cast → json_encode here is mandatory.
+                $compositionSnapshot = $this->snapshotBuilder->build(
+                    $item,
+                    $dbVariations,
+                    $dbExtras,
+                    $dbAttributes,
+                );
+
                 $itemsArray[$i] = [
                     'order_id' => $req->orderId,
                     'branch_id' => $req->branchId,
@@ -176,6 +205,7 @@ final class PricingService
                     'price' => $itemPrice,
                     'item_variations' => json_encode($item->item_variations ?? []),
                     'item_extras' => json_encode($item->item_extras ?? []),
+                    'composition_snapshot' => json_encode($compositionSnapshot),
                     'instruction' => $item->instruction ?? null,
                     'item_variation_total' => $variationTotal,
                     'item_extra_total' => $extraTotal,
@@ -246,5 +276,85 @@ final class PricingService
             $finalTotal,
             [],
         );
+    }
+
+    /**
+     * [T05] Validate per-attribute constraints (min_select / max_select / allow_repeat)
+     * defined on `item_attributes` table (T01 columns).
+     *
+     * Defaults preserve legacy single-select behaviour:
+     *   - min_select=0 (optional)
+     *   - max_select=1 (single select)
+     *   - allow_repeat=false (no duplicate variation_id within same attribute)
+     *
+     * Throws \InvalidArgumentException 422 with explicit message per violation.
+     */
+    private function assertVariationConstraints(object $item, $dbVariations): void
+    {
+        if (! isset($item->item_variations) || ! is_array($item->item_variations)) {
+            return;
+        }
+
+        // Group payload variations by attribute_id (resolved from DB).
+        $byAttribute = [];      // [attrId => total_qty]
+        $varOccurByAttr = [];   // [attrId => [varId => total_qty_for_that_var]]
+
+        foreach ($item->item_variations as $variation) {
+            $varId = $variation->id ?? null;
+            if (! $varId) {
+                continue;
+            }
+            $dbVar = $dbVariations[$varId] ?? null;
+            if (! $dbVar) {
+                continue;
+            }
+            $attrId = (int) $dbVar->item_attribute_id;
+            $qty = max(1, (int) ($variation->quantity ?? 1));
+            $byAttribute[$attrId] = ($byAttribute[$attrId] ?? 0) + $qty;
+            $varOccurByAttr[$attrId][$varId] = ($varOccurByAttr[$attrId][$varId] ?? 0) + $qty;
+        }
+
+        if ($byAttribute === []) {
+            return;
+        }
+
+        $attrs = \App\Models\ItemAttribute::query()
+            ->whereIn('id', array_keys($byAttribute))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($byAttribute as $attrId => $totalQty) {
+            $attr = $attrs[$attrId] ?? null;
+            if (! $attr) {
+                continue;
+            }
+
+            $min = (int) ($attr->min_select ?? 0);
+            $max = (int) ($attr->max_select ?? 1);
+            $allowRepeat = (bool) ($attr->allow_repeat ?? false);
+
+            if ($max > 0 && $totalQty > $max) {
+                throw new \InvalidArgumentException(
+                    "Attribut {$attr->name} : maximum {$max} sélection(s), reçu {$totalQty}.",
+                    422
+                );
+            }
+            if ($min > 0 && $totalQty < $min) {
+                throw new \InvalidArgumentException(
+                    "Attribut {$attr->name} : minimum {$min} sélection(s) requise(s), reçu {$totalQty}.",
+                    422
+                );
+            }
+            if (! $allowRepeat) {
+                foreach (($varOccurByAttr[$attrId] ?? []) as $varId => $qty) {
+                    if ($qty > 1) {
+                        throw new \InvalidArgumentException(
+                            "Attribut {$attr->name} : la variation #{$varId} ne peut être sélectionnée qu'une seule fois (allow_repeat=false).",
+                            422
+                        );
+                    }
+                }
+            }
+        }
     }
 }

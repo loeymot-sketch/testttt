@@ -154,6 +154,12 @@ return [
     |
     */
 
+    'multi_variation' => [
+        'min' => 'Sélectionnez au moins :min :attribute (actuel : :actual).',
+        'max' => 'Sélectionnez au maximum :max :attribute (actuel : :actual).',
+        'no_repeat' => 'L\'attribut :attribute n\'autorise pas la répétition d\'une même variation.',
+    ],
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

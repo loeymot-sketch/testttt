@@ -1,8 +1,27 @@
 # Active Cycle – FoodKing
 
-TASK_ID: P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20
-PHASE: VALIDATE — W4.A (P-MEGA-11) livré ; invoke Composer validator
-NEXT_DECISION: Drift i18n quantifié (voir RUN_P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20.md). E1/fr massif → pas d'auto-trad ; orchestrateur décide W4.B RTL vs remédiation i18n.
+TASK_ID: V14_04_T02_T20_POS_UI_MULTI_QTY_FUSED
+PHASE: EXECUTE — délégué à foodking-complex-implementer (GPT-5.4) en parallèle avec V14_05_T06 (Composer routine, déjà PASSED) et V14_06_T04 (Composer routine, déjà PASSED)
+NEXT_DECISION: Après T02+T20 PASSED → audit consolidé Vague B (T02+T04+T06+T20) + commit atomique Vague A (V14_T05+T07+SSOT-FIX) + commit Vague B → arbitrage user pour Vague C ou cycles V1 GPT-5.4 PENDING.
+
+ACTIVE_PLAN: plans/PLAN_FINALISATION_POS_BASE_2026-04-20.md (section Vague B = T02+T04+T06+T20)
+ACTIVE_TASK_FILES:
+  - tasks/execute-2026-04-20/V14_04_T02_T20_POS_UI_MULTI_QTY_FUSED.md (en cours, GPT-5.4)
+  - tasks/execute-2026-04-20/V14_05_T06_FORM_REQUEST_MULTI_QTY.md (DONE, Composer)
+  - tasks/execute-2026-04-20/V14_06_T04_FIXTURES_REPAIR_DRY_RUN.md (DONE, Composer)
+ACTIVE_REPORTS:
+  - reports/execution/RUN_V14_T05_T07_FUSED_PRICING_SNAPSHOT_2026-04-20.md (Vague A + addendum SSOT fix)
+  - reports/execution/RUN_V14_T06_FORM_REQUEST_MULTI_QTY_2026-04-20.md (Vague B partiel — DONE)
+  - reports/execution/RUN_V14_T04_FIXTURES_REPAIR_DRY_RUN_2026-04-20.md (Vague B partiel — DONE)
+  - reports/execution/RUN_V14_T02_T20_POS_UI_MULTI_QTY_FUSED_2026-04-20.md (à produire en fin de cycle T02+T20)
+
+PRIOR W4.A (CLOSED PASSED 2 attempts) :
+  - W4.A initial (commit 41712ddca) : tool livré 6/6 tests + run produit faux positif fr=523 (conflation Vue/Blade)
+  - W4.A REMEDIATION_2 (commit f4e432caf) : split Vue/Laravel, 10/10 tool tests + 550/550 global
+  - Drift RÉEL mesuré :
+    VUE : fr=510 en=44 ar=74 de=74 bn=75 (used=1081, dead=376, identical fr=en=14)
+    LARAVEL : fr=20 en=20 ar=25 de=36 bn=33 (used=154, dead=142, files_parsed=80, 0 failed)
+  - FINDING_VUE_FR_JSON_GAP (510 clés Vue absentes de fr.json — dette historique, hors scope W4)
 
 PRIOR W3 REMEDIATION (CLOSED PASSED commit be229442f) :
   - 540/540 Vitest verts (535 baseline + 5 nouveaux)
@@ -69,8 +88,8 @@ W3 RECAP :
   - AUDIT P-MEGA-23 : reports/execution/AUDIT_P_MEGA_23_DRIFT_ROOT_CAUSE_2026-04-20.md (13 drifts, 3 patterns systémiques)
 RUNNER_MODE: single-session
 PRIMARY_MODEL: Composer (foodking-routine-implementer) — front-only, zéro pricing/auth/schema/symmetry/branch_id/dispatch
-PLAN_FILE: plans/PLAN_P_MEGA_W4_2026-04-20.md (section W4.A)
-REPORT_FILE: reports/execution/RUN_P_MEGA_W4_A_I18N_AUDIT_TOOL_2026-04-20.md
+PLAN_FILE: plans/PLAN_P_MEGA_W4_2026-04-20.md (section W4.B)
+REPORT_FILE: reports/execution/RUN_P_MEGA_W4_B_RTL_AUDIT_FIX_2026-04-20.md
 GATE_FILE: aucun (zone safe ; 1 finding cosmétique attendu = NormalItemResource n'expose pas is_* flags)
 EXECUTE_DELEGATION_REQUIRED: foodking-routine-implementer — confirmé dans REPORT_FILE W4.A
 
