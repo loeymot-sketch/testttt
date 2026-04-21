@@ -239,7 +239,7 @@
                   </div>
 
                   <div class="kiosk-product-copy">
-                    <h3 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h3>
+                    <h2 class="kiosk-product-name">{{ sanitizeItemName(product.name) }}</h2>
                     <div v-if="productBadges(product).length" class="kiosk-product-flag-row" aria-hidden="false">
                       <KsBadge
                         v-for="b in productBadges(product)"
@@ -798,6 +798,7 @@ export default {
 .kiosk-active-filter-banner__clear:focus-visible {
   color: var(--kiosk-primary-dark, #a41020);
   outline: none;
+  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);
 }
 .kiosk-product-card--filtered-out {
   opacity: 0.42;
@@ -825,6 +826,10 @@ export default {
   font-size: calc(13px * var(--kiosk-text-scale, 1));
 }
 .kiosk-filter-reset:hover { color: var(--kiosk-primary, #E8001C); }
+.kiosk-filter-reset:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
+}
 
 .kiosk-product-flag-row {
   display: flex;
@@ -916,7 +921,8 @@ export default {
 }
 
 .kiosk-top-chip {
-  height: 38px;
+  min-height: 48px;
+  height: auto;
   padding: 0 14px;
   border-radius: 999px;
   border: none;
@@ -937,6 +943,7 @@ export default {
 .kiosk-top-chip--active:focus-visible {
   opacity: 1;
   outline: none;
+  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);
 }
 .kiosk-top-chip--active:active {
   transform: scale(0.97);

@@ -3,6 +3,7 @@
     :is="tag"
     :role="interactive ? 'button' : null"
     :tabindex="interactive && !disabled ? 0 : null"
+    :aria-label="interactive ? (ariaLabel || null) : null"
     :aria-disabled="disabled || null"
     :aria-pressed="interactive && selected != null ? String(!!selected) : null"
     :class="[
@@ -64,12 +65,26 @@ export default {
         interactive: { type: Boolean, default: false },
         selected: { type: Boolean, default: false },
         disabled: { type: Boolean, default: false },
+        ariaLabel: { type: String, default: null },
     },
     emits: ['click'],
+    mounted() {
+        this._warnInteractiveA11y();
+    },
+    updated() {
+        this._warnInteractiveA11y();
+    },
     methods: {
         onClick(e) {
             if (!this.interactive || this.disabled) return;
             this.$emit('click', e);
+        },
+        _warnInteractiveA11y() {
+            if (!this.interactive || this.disabled || this.ariaLabel) return;
+            const txt = (this.$el && this.$el.textContent) ? this.$el.textContent.replace(/\s+/g, ' ').trim() : '';
+            if (txt.length < 1 && typeof console !== 'undefined' && console.warn) {
+                console.warn('[KsCard] interactive card needs visible text or ariaLabel');
+            }
         },
     },
 };

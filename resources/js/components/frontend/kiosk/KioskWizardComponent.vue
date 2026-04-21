@@ -14,6 +14,7 @@
 
     <!-- Wizard complet -->
     <template v-else-if="resolvedItem">
+      <h1 class="kiosk-wizard-sr-only">{{ sanitizeItemName(resolvedItem.name) }}</h1>
       <div class="kiosk-wizard-header">
         <div class="kiosk-item-info">
           <h2 class="kiosk-item-name">{{ sanitizeItemName(resolvedItem.name) }}</h2>
@@ -62,6 +63,7 @@
       <div class="kiosk-progress-bar">
         <button type="button"
           class="kiosk-progress-arrow"
+          :aria-label="$t('kiosk.wizard.nav_previous')"
           @click="prevStep"
           :disabled="currentStepIndex === 0"
         >
@@ -79,6 +81,7 @@
         </div>
         <button type="button"
           class="kiosk-progress-arrow"
+          :aria-label="$t('kiosk.wizard.nav_next')"
           @click="nextStep"
           :disabled="currentStepIndex >= activeSteps.length - 1 || !canAdvance"
         >
@@ -137,6 +140,7 @@
           @click.self="onAbandonCancel"
         >
           <div
+            ref="abandonModalEl"
             class="kiosk-wizard-abandon-modal"
             role="dialog"
             aria-modal="true"
@@ -1302,6 +1306,10 @@ export default {
     this.$nextTick(() => this.refreshServerPreviewTotal());
   },
   beforeUnmount() {
+    if (this._abandonDocKeydown) {
+      document.removeEventListener('keydown', this._abandonDocKeydown, true);
+      this._abandonDocKeydown = null;
+    }
     // [P-MEGA-05] Migration Vue 2 → Vue 3 : `beforeDestroy` n'existe plus,
     // c'est `beforeUnmount`. Le hook précédent n'était JAMAIS appelé,
     // créant des leaks silencieux : pas de cancel d'édition orpheline,
@@ -1330,6 +1338,44 @@ export default {
     }
   },
   watch: {
+    showAbandonConfirm(open) {
+      if (typeof document === 'undefined') return;
+      if (this._abandonDocKeydown) {
+        document.removeEventListener('keydown', this._abandonDocKeydown, true);
+        this._abandonDocKeydown = null;
+      }
+      if (!open) return;
+      this._abandonDocKeydown = (e) => {
+        if (!this.showAbandonConfirm) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.onAbandonCancel();
+          return;
+        }
+        const root = this.$refs.abandonModalEl;
+        if (!root || !root.contains(document.activeElement)) return;
+        if (e.key !== 'Tab') return;
+        const focusables = [...root.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )];
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      };
+      document.addEventListener('keydown', this._abandonDocKeydown, true);
+      this.$nextTick(() => {
+        const root = this.$refs.abandonModalEl;
+        const firstBtn = root?.querySelector('button');
+        firstBtn?.focus({ preventScroll: true });
+      });
+    },
     // Kiosk Phase 9.1.3 — tout changement de sélection retrigger le preview
     // SSOT (debounced 400 ms côté helper, donc pas de storm réseau). `deep`
     // nécessaire car selections.viandes/sauces/supplements sont des objets.
@@ -1444,19 +1490,41 @@ export default {
   line-height: 1.1;
 }
 
+.kiosk-wizard-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .kiosk-wizard-close {
   position: absolute;
   inset-inline-end: 18px;
   top: 50%;
   transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
+  min-width: 48px;
+  min-height: 48px;
   border: 1.5px solid #dadada;
   border-radius: 50%;
   background: #fff;
   color: #666;
   font-size: 26px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.kiosk-wizard-close:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
 }
 
 .kiosk-step-visuals {
@@ -1562,7 +1630,7 @@ export default {
 
 .kiosk-progress-bar {
   display: grid;
-  grid-template-columns: 42px 1fr 42px;
+  grid-template-columns: 48px 1fr 48px;
   align-items: center;
   gap: 8px;
   padding: 0 18px 10px;
@@ -1571,13 +1639,25 @@ export default {
 }
 
 .kiosk-progress-arrow {
-  width: 36px;
-  height: 36px;
+  min-width: 48px;
+  min-height: 48px;
+  width: 48px;
+  height: 48px;
   border: none;
   background: transparent;
   color: #999;
   font-size: 30px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.kiosk-progress-arrow:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
 }
 
 .kiosk-progress-arrow:disabled {
@@ -1747,6 +1827,20 @@ export default {
 [dir="rtl"] .step-slide-leave-to {
   opacity: 0;
   transform: translateX(30px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-slide-enter-active,
+  .step-slide-leave-active {
+    transition: none !important;
+  }
+  .step-slide-enter-from,
+  .step-slide-leave-to,
+  [dir="rtl"] .step-slide-enter-from,
+  [dir="rtl"] .step-slide-leave-to {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .fade-enter-active,

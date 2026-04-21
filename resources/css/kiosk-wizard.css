@@ -73,7 +73,7 @@
 
 .kiosk-touch-btn-primary:disabled {
   background: #ddd;
-  color: #999;
+  color: #555;
   cursor: not-allowed;
 }
 

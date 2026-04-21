@@ -50,6 +50,20 @@ export default {
         iconOnly: { type: Boolean, default: false },
         ariaLabel: { type: String, default: null },
     },
+    mounted() {
+        this._warnIconOnly();
+    },
+    updated() {
+        this._warnIconOnly();
+    },
+    methods: {
+        _warnIconOnly() {
+            if (!this.iconOnly || this.ariaLabel) return;
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('[KsBadge] iconOnly requires ariaLabel for an accessible name');
+            }
+        },
+    },
 };
 </script>
 

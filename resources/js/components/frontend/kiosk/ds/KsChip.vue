@@ -167,8 +167,10 @@ export default {
 
 .ks-chip__remove {
     margin-inline-start: var(--kiosk-space-2);
-    width: 28px;
-    height: 28px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.24);
     color: inherit;
@@ -180,6 +182,8 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
 }
 .ks-chip__remove:focus-visible {
     outline: 2px solid var(--kiosk-focus-ring);

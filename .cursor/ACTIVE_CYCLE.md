@@ -1,5 +1,22 @@
 # Active Cycle – FoodKing
 
+## PARALLEL_CYCLE_W6_A11Y_PERF (EXECUTE A.2 — a11y kiosk fixes)
+
+TASK_ID: P_MEGA_W6_A11Y_PERF_2026-04-20
+PHASE: EXECUTE A.2 (a11y fixes routine implementer)
+PLAN_FILE: plans/PLAN_P_MEGA_W6_2026-04-20.md
+RUNNER_MODE: single-session
+AUTO_REMEDIATION: ACTIVÉE (pas de critical zone — UI/CSS/perf)
+GATES PRÉ-DÉCLARÉES : NONE (4 SOFT W6 : bundle +10%, axe regression, touche fichier gated W5, vitest regression)
+ESCALATIONS PRÉ-DÉCLARÉES : 4 (E1 webpack.mix vs vite, E2 cold start non-mesurable sans device, E3 devDep @axe-core/vue, E4 touche fichier gated W5 = STOP)
+SUB-CYCLES SÉQUENTIELS : W6.A (a11y) puis W6.B (perf) — pas parallèle car mêmes fichiers Vue kiosk
+PROGRESS : Phase A.1 DONE → Phase A.2 EXECUTE DONE → Phase A.3 VALIDATE (validator)
+
+PRIOR CYCLES :
+- W5 audits + GATE_BRIEFs : CLOSED PASSED commit c1c89ff89 (3 audits + 3 GATE_BRIEFs, 0 LOC prod)
+  + W5 quality verification: DEGRADED 5 nuances docs corrigées en post-fix
+- W4 REM_3 locale desync : CLOSED PASSED commit 781232fb4 (565/566 Vitest)
+
 ## PARALLEL_CYCLE_W5_AUDITS (CLOSED PASSED — 3 audits + 3 GATE_BRIEFS livrés)
 
 TASK_ID: P_MEGA_W5_EATIN_TPE_RECEIPT_2026-04-20
@@ -33,9 +50,25 @@ PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
 
 ## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
 
-TASK_ID: V14_04_T02_T20_POS_UI_MULTI_QTY_FUSED
-PHASE: EXECUTE — délégué à foodking-complex-implementer (GPT-5.4) en parallèle avec V14_05_T06 (Composer routine, déjà PASSED) et V14_06_T04 (Composer routine, déjà PASSED)
-NEXT_DECISION: Après T02+T20 PASSED → audit consolidé Vague B (T02+T04+T06+T20) + commit atomique Vague A (V14_T05+T07+SSOT-FIX) + commit Vague B → arbitrage user pour Vague C ou cycles V1 GPT-5.4 PENDING.
+TASK_ID: V14_VAGUE_C_ALPHA_2026-04-20
+PHASE: EXECUTE — Vague C-α en cours : 3 tâches en parallèle (T11 + T10 + T08) déléguées à 3 subagents
+ACTIVE_PLAN: plans/PLAN_FINALISATION_POS_BASE_2026-04-20.md (section Vague C — Finalisation caisse opérateur)
+SCOPE Vague C-α (sans GATE) :
+  - V14_07_T11_POS_AVAILABILITY_LIVE_GUARD → foodking-routine-implementer (Composer)
+  - V14_08_T10_POS_SEARCH_BARCODE → foodking-routine-implementer (Composer)
+  - V14_09_T08_POS_PARK_HOLD_RECALL → foodking-complex-implementer (GPT-5.4)
+SCOPE OUT (Vague C-β / blocked) :
+  - T19 (floorplan) → différé Vague C-β (conflit PosComponent.vue avec T08/T10)
+  - T15 (printer ESC/POS) → différé Vague C-β (lourd, GPT-5.4 dédié)
+  - T21 (receipt redesign) → dépend T15
+  - T09 (line discount/void) → BLOCKED gate NF525 humain
+  - T17 (payment resilience) → BLOCKED gate C9 + gate humain
+NEXT_DECISION: après les 3 subagents PASSED → audit consolidé Vague C-α 200% → si nécessaire fix critique invisible → commit → arbitrage user pour C-β ou cycles V1 GPT-5.4.
+
+PRÉCÉDENT (CLOSED PASSED) :
+  Vague A (V14 T01+T05+T07 fused) — composition_snapshot SSOT path fix + sentinels
+  Vague B (V14 T02+T04+T06+T20 fused) — UI POS multi-qty + form request + fixtures + HOLE B-6 fix (PaymentComponent normalizeCartForApi sur JSON string)
+  Rapports : RUN_V14_T05_T07_FUSED_PRICING_SNAPSHOT_2026-04-20.md, RUN_V14_VAGUE_B_AUDIT_200_2026-04-20.md
 
 ACTIVE_PLAN: plans/PLAN_FINALISATION_POS_BASE_2026-04-20.md (section Vague B = T02+T04+T06+T20)
 ACTIVE_TASK_FILES:

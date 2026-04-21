@@ -108,7 +108,7 @@
 
         <!-- Infos (bas de carte) -->
         <div class="kiosk-prod-content">
-          <h3 class="kiosk-prod-name">{{ sanitizeItemName(product.name) }}</h3>
+          <h2 class="kiosk-prod-name">{{ sanitizeItemName(product.name) }}</h2>
           <p v-if="product.description" class="kiosk-prod-desc">{{ truncate(product.description, 55) }}</p>
 
           <!-- Prix + bouton -->

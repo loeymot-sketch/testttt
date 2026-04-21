@@ -166,6 +166,12 @@ export default {
 }
 @keyframes ks-spin { to { transform: rotate(360deg); } }
 
+@media (prefers-reduced-motion: reduce) {
+    .ks-btn__spinner {
+        animation: none;
+    }
+}
+
 .ks-btn__icon {
     font-size: 1.2em;
     line-height: 1;

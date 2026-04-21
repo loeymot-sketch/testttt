@@ -17,6 +17,7 @@
         "@popperjs/core": "^2.10.2",
         "@vitejs/plugin-vue": "^5.2.1",
         "@vue/test-utils": "^2.4.6",
+        "axe-core": "^4.11.3",
         "axios": "^1.1.2",
         "bootstrap": "^5.2.1",
         "happy-dom": "^20.8.8",

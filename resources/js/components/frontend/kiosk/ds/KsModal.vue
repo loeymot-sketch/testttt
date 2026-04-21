@@ -2,6 +2,7 @@
   <transition name="ks-modal">
     <div
       v-if="modelValue"
+      ref="modalRoot"
       class="ks-modal"
       :class="{ 'ks-modal--no-pad': bare }"
       role="dialog"
@@ -93,12 +94,11 @@ export default {
                     this._prevOverflow = document.body.style.overflow;
                     document.body.style.overflow = 'hidden';
                     this.$nextTick(() => {
-                        if (this.$refs.panel && this.$refs.panel.focus) {
-                            this.$refs.panel.setAttribute('tabindex', '-1');
-                            this.$refs.panel.focus({ preventScroll: true });
-                        }
+                        this._attachFocusTrap();
+                        this._focusFirstFocusable();
                     });
                 } else {
+                    this._detachFocusTrap();
                     document.body.style.overflow = this._prevOverflow || '';
                     if (this._prevActive && typeof this._prevActive.focus === 'function') {
                         try { this._prevActive.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
@@ -112,9 +112,58 @@ export default {
     },
     beforeUnmount() {
         document.removeEventListener('keydown', this.onKeydown);
+        this._detachFocusTrap();
         if (this._prevOverflow != null) document.body.style.overflow = this._prevOverflow;
     },
     methods: {
+        _focusFirstFocusable() {
+            const panel = this.$refs.panel;
+            if (!panel) return;
+            const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+            const nodes = [...panel.querySelectorAll(sel)].filter(
+                (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+            );
+            const first = nodes[0];
+            if (first && typeof first.focus === 'function') {
+                first.focus({ preventScroll: true });
+            } else {
+                panel.setAttribute('tabindex', '-1');
+                panel.focus({ preventScroll: true });
+            }
+        },
+        _trapKeydownHandler(e) {
+            if (e.key !== 'Tab') return;
+            const panel = this.$refs.panel;
+            if (!panel || !this.modelValue) return;
+            const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+            const focusables = [...panel.querySelectorAll(sel)].filter(
+                (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+            );
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        },
+        _attachFocusTrap() {
+            this._detachFocusTrap();
+            const root = this.$refs.modalRoot;
+            if (!root) return;
+            this._modalTrapListener = (e) => this._trapKeydownHandler(e);
+            root.addEventListener('keydown', this._modalTrapListener);
+        },
+        _detachFocusTrap() {
+            const root = this.$refs.modalRoot;
+            if (root && this._modalTrapListener) {
+                root.removeEventListener('keydown', this._modalTrapListener);
+            }
+            this._modalTrapListener = null;
+        },
         close(reason = 'programmatic') {
             this.$emit('close', reason);
             this.$emit('update:modelValue', false);

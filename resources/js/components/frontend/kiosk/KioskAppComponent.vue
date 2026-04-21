@@ -23,16 +23,22 @@
 
     <!-- Panier flottant (visible hors idle) -->
     <transition name="slide-down">
-      <div v-if="showCartBar && cartCount > 0" class="kiosk-cart-bar" @click.stop="goToCart">
-        <div class="kiosk-cart-bar-left">
+      <button
+        v-if="showCartBar && cartCount > 0"
+        type="button"
+        class="kiosk-cart-bar"
+        :aria-label="cartBarAriaLabel"
+        @click.stop="goToCart"
+      >
+        <span class="kiosk-cart-bar-left">
           <span class="kiosk-cart-bar-badge">{{ cartCount }}</span>
           <span class="kiosk-cart-bar-label">{{ $t('kiosk.app.cart_bar_label') }}</span>
-        </div>
-        <div class="kiosk-cart-bar-right">
+        </span>
+        <span class="kiosk-cart-bar-right">
           <span class="kiosk-cart-bar-total">{{ formatPrice(cartTotal) }}</span>
-          <span class="kiosk-cart-bar-arrow">›</span>
-        </div>
-      </div>
+          <span class="kiosk-cart-bar-arrow" aria-hidden="true">›</span>
+        </span>
+      </button>
     </transition>
 
     <!-- Offline sync indicator -->
@@ -190,6 +196,11 @@ export default {
     ...mapGetters('kioskCart', ['count', 'total']),
     cartCount() { return this.count; },
     cartTotal() { return this.total; },
+    cartBarAriaLabel() {
+      const n = this.cartCount;
+      const articles = n > 1 ? this.$t('kiosk.article_plural') : this.$t('kiosk.article_singular');
+      return `${this.$t('kiosk.app.cart_bar_label')}, ${n} ${articles}, ${this.$t('kiosk.total')} ${this.formatPrice(this.cartTotal)}`;
+    },
     showCartBar() {
       const hiddenRoutes = ['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell'];
       return !hiddenRoutes.includes(this.$route.name);
@@ -734,6 +745,17 @@ export default {
   box-shadow: 0 8px 32px rgba(232, 0, 28, 0.4);
   cursor: pointer;
   gap: 16px;
+  border: none;
+  font: inherit;
+  text-align: start;
+  appearance: none;
+  -webkit-appearance: none;
+  color: inherit;
+}
+
+.kiosk-cart-bar:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 3px;
 }
 
 .kiosk-cart-bar-left {
