@@ -1,5 +1,91 @@
 # Active Cycle – FoodKing
 
+## PARALLEL_CYCLE_W8_SECURITY_OBSERVABILITY (AUDITS done + 3 GATE_BRIEFs livrés — HUMAN_GATE global)
+
+TASK_ID: P_MEGA_W8_SECURITY_OBSERVABILITY_2026-04-20
+PHASE: HUMAN_GATE — 3 audits readonly + 3 GATE_BRIEFs synthétiques pour décision business
+LIVRABLES :
+- plans/PLAN_P_MEGA_W8_2026-04-20.md
+- reports/execution/AUDIT_P_MEGA_20_BRANCH_MISMATCH_BASELINE_2026-04-20.md
+- reports/execution/AUDIT_P_MEGA_21_THROTTLE_BASELINE_2026-04-20.md
+- reports/execution/AUDIT_P_MEGA_22_NF525_READINESS_BASELINE_2026-04-20.md
+- docs/gates/GATE_P_MEGA_20_BRANCH_MISMATCH_2026-04-20.md
+- docs/gates/GATE_P_MEGA_21_THROTTLE_2026-04-20.md
+- docs/gates/GATE_P_MEGA_22_NF525_READINESS_2026-04-20.md
+
+RECOMMANDATIONS ORCHESTRATEUR (à valider par décideur) :
+- GATE_P_MEGA_20 ✅ APPROUVER (D1=A 200+log, D2=A branch=, D3=A KioskEventController only, ~93 LOC)
+- GATE_P_MEGA_21 ✅ APPROUVER (D1=A kiosk:user|ip, D3=A un commit, ~10 LOC)
+- G22-P1 verifyChain ✅ APPROUVER (D1=A toute chaîne, D2=C pre-open+pre-close, D3=C strict prod)
+- G22-P2 schedule ✅ APPROUVER (D4=A quotidien 02:00, D5=A toutes branches, D6=A local+S3 nightly, D7=A ZIP+JSON)
+- G22-P3 DUPLICATA ⚠️ APPROUVER avec D9=B sous-composant (minimise conflit V14 ReceiptComponent.vue)
+- G22-P3-SCHEMA ⚠️ APPROUVER si D8=A (migration orders.receipt_print_count)
+- G22-P4 JET XML ❌ DEFER (spec officielle TBD = code non auditable)
+
+PHASE COMPLETION (atteinte) :
+- PLAN ✅ (planner-orchestrator)
+- AUDIT × 3 ✅ (explore parallèles, +1500 lignes markdown)
+- GATE_BRIEFS × 3 ✅ (Claude orchestrateur, décisions D1-D11 documentées)
+- HUMAN_GATE ⏳ attente
+
+PHASES À VENIR (post-approval) :
+- EXECUTE séquentiel A → B → C par sous-gate approuvé (foodking-complex-implementer GPT-5.4)
+- VERIFY 200% par explore + REM auto-désactivée par défaut
+- SYNTHESE W8 + commit final
+PLAN_FILE: plans/PLAN_P_MEGA_W8_2026-04-20.md
+RUNNER_MODE: single-session
+AUTO_REMEDIATION: DÉSACTIVÉE par défaut (3 hard gates pré-déclarés ; cohérent W5, plus strict que W7)
+
+SUB-CYCLES (12 phases, AUDIT-FIRST) :
+- W8.A (P-MEGA-20 K-6 branch_mismatch enforcement) → A.1 audit (explore) → A.2 GATE_BRIEF (Claude) → [HUMAN HALT] → A.3 EXECUTE complex GPT-5.4 → A.4 VERIFY (explore)
+- W8.B (P-MEGA-21 K-6.3 + K-6.4 throttle merge RouteServiceProvider) → B.1 audit → B.2 GATE_BRIEF → [HUMAN HALT] → B.3 EXECUTE complex GPT-5.4 → B.4 VERIFY
+- W8.C (P-MEGA-22 NF525 readiness 4 piliers : verifyChain + schedule fiscal:archive + DUPLICATA admin POS + JET XML) → C.1 audit → C.2 GATE_BRIEF → [HUMAN HALT par pilier] → C.3 EXECUTE complex GPT-5.4 par pilier approuvé → C.4 VERIFY
+
+ORDRE :
+- AUDITS A.1 ‖ B.1 ‖ C.1 = 3× explore very thorough en PARALLÈLE (scopes disjoints : KioskEventController + RouteServiceProvider + Fiscal/*)
+- 3 GATE_BRIEFS rédigés en séquence par Claude orchestrateur
+- EXECUTE séquentiel A → B → C (jamais en parallèle ; éviter conflits + ordre logique sécurité→auth→fiscal)
+
+GATES PRÉ-DÉCLARÉES (3 hard + 1 conditionnel) :
+- GATE_P_MEGA_20 (branch_id + auth — K-6.2 enforcement)
+- GATE_P_MEGA_21 (auth + rate limiting)
+- GATE_P_MEGA_22 (NF525 réglementaire 4 piliers, décomposable)
+- GATE_P_MEGA_22_PILIER3_SCHEMA (conditionnel — migration orders.print_count si DUPLICATA marker nécessite)
+
+SUBSYSTEMS_OFF_LIMITS (strict) :
+- GATES W5 ouvertes : KioskPaymentComponent.vue / KioskOrderSummaryComponent.vue / KioskConfirmationComponent.vue / OrderDetailsResource.php (P-MEGA-12/13/14)
+- GATE W7.C ouverte : branches.theme_* schema (P-MEGA-19)
+- OrderService / FrontendOrderService / PaymentService / Pricing/* (symétrie POS↔Kiosk déjà cassée W5, interdit d'aggraver)
+- Worktree V14 (POS) non commité
+- Livrables W7 (offline queue v2, hardware fallback)
+- database/migrations/** sauf gate schema explicite pilier 3
+
+INVARIANTS_AT_RISK :
+- branch_id server-authoritative (W8.A renforce le contrat existant, ne le modifie pas)
+- Configurabilité testttt RateLimiter (W8.B merge strict additif)
+- Chaîne HMAC NF525 immutable (W8.C verifyChain est read-only)
+- dispatch-after-commit (aucun nouveau dispatch hors afterCommit)
+- KioskConfirmationComponent.vue gated W5 INTOUCHÉ (DUPLICATA kiosk différé cycle séparé)
+
+ESTIMATIONS LOC :
+- W8.A : ~670 (dont ~93 LOC code prod) — port K-6.2 enforcement + 2 tests Feature spoofing
+- W8.B : ~500 (dont ~10 LOC code prod) — merge K-6.3+K-6.4 + KioskThrottleKeysTest 5 cas
+- W8.C : ~1460 max (dont ~550 LOC code prod si tous piliers) — 4 patches + tests dédiés
+- TOTAL : ~2630 (dont ~650 LOC code prod max)
+
+TESTS ATTENDUS (post-EXECUTE complet) :
+- Vitest : 700 baseline + ~5 (pilier 3 si approuvé) = ~705
+- PHPUnit : +12 cas (2 KioskSecurity + 5 throttle + ~5 fiscal selon piliers)
+
+SUBAGENTS ANTICIPÉS : 7-9 distincts
+- planner-orchestrator (planning W8 — ce cycle)
+- explore × 6 (A.1 + B.1 + C.1 audits parallèles + A.4 + B.4 + C.4 verifies)
+- foodking-complex-implementer × 1-3 (A.3 + B.3 + C.3 selon gates approuvées)
+
+NEXT : lancer 3× explore very thorough en PARALLÈLE pour A.1 + B.1 + C.1 (scopes disjoints, 3 reports baseline)
+
+---
+
 ## PARALLEL_CYCLE_W7_RESILIENCE_HARDWARE_BRANCH (CLOSED PASSED — W7.A + W7.B livrés ; W7.C HUMAN_GATE business)
 
 TASK_ID: P_MEGA_W7_RESILIENCE_HARDWARE_BRANCH_2026-04-20
@@ -110,14 +196,22 @@ PRIOR PARALLEL CYCLE W3 REM + W4 + W4 REM_3 (CLOSED PASSED) :
 
 ## PRIMARY_CYCLE_V14 (en cours — non touché par cycle W3/W4)
 
+TASK_ID: V14_FINAL_PRODUCTION_READINESS_2026-04-20
+PHASE: CLOSED PASSED — Vague D Phase 1 (T12+T13+T14+T16) + Phase 2 (T03+G3+T18+T22-α) livrées + audit transverse 22/22 + rapport production-readiness
+TESTS_FINAL :
+  - Vitest : 700/700 ✅ (90 fichiers)
+  - PHPUnit POS scope : 213/214 ✅ (1 pré-existant FINDING_BACK_DEFERRED out of scope)
+  - 4 fails connus DOCUMENTÉS : 3× DispatchAfterCommit (gate C9) + 1× OrderAllergenSnapshot 'lait' extras
+RAPPORT_FINAL : reports/audit-orchestration/AUDIT_FINAL_PRODUCTION_READY_V14_2026-04-20.md
+DECISION_AWAITING_HUMAN :
+  - GO MVP J0 sur 20/22 tâches (recommandé)
+  - Gates V2 : G14-B (compta + DPO → T09) + C9 (dispatch-after-commit → T17 + résout 3 fails F1)
+NEXT : commit atomique (sur demande utilisateur) OU déclenchement gates humains pour V2.
+
+PRÉCÉDENT (CLOSED PASSED) :
+
 TASK_ID: V14_VAGUE_D_PHASE1_2026-04-20
-PHASE: EXECUTE — Vague D Phase 1 parallèle (T16 hardware drawer/NFC + T13+T14 fusé KDS lifecycle + T12 perf perceived) → 3 subagents Composer
-PARALLEL_SAFETY :
-  - T16 zone : EscPosCommandBuilder/Service + posNfc.js + CustomerNfcLookupController (disjoint des autres)
-  - T13+T14 zone : KDS components + kds.js + items.kds_station migration (disjoint POS)
-  - T12 zone : SkeletonGrid (NEW) + posCart optimistic mutation + ItemListing virtual scroll (touche posCart partagé)
-ACCEPTABLE_OVERLAP : posCart.js sera touché par T12 uniquement durant Phase 1 ; T18/T22 attendront Phase 2 pour éviter conflit avec T12.
-NEXT_DECISION_AUTO : audit 200% Phase 1 → Phase 2 (T03 + T18 + T22 partiel) → audit transverse final → rapport production-readiness.
+PHASE: CLOSED PASSED — Vague D Phase 1 parallèle (3 subagents Composer)
 
 PRÉCÉDENT (CLOSED PASSED) :
 
