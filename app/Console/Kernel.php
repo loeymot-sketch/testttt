@@ -4,8 +4,11 @@ namespace App\Console;
 
 use App\Jobs\CleanupStalePendingKioskOrders;
 use App\Jobs\Observability\SloEvaluatorJob;
+use App\Models\Branch;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
@@ -40,6 +43,43 @@ class Kernel extends ConsoleKernel
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
             ->withoutOverlapping(5)
+            ->onOneServer();
+
+        // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
+        // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
+        $schedule->call(function () {
+            $yesterday = now()->subDay()->format('Y-m-d');
+            try {
+                Branch::query()
+                    ->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->pluck('id')
+                    ->each(function ($branchId) use ($yesterday) {
+                        $exit = Artisan::call('foodking:fiscal:archive', [
+                            'branch_id' => (int) $branchId,
+                            '--from'    => $yesterday,
+                            '--to'      => $yesterday,
+                        ]);
+                        if ($exit !== 0) {
+                            Log::channel('fiscal')->warning('NF525 daily archive non-zero exit', [
+                                'event'     => 'fiscal.archive.daily.partial_failure',
+                                'branch_id' => (int) $branchId,
+                                'date'      => $yesterday,
+                                'exit_code' => $exit,
+                            ]);
+                        }
+                    });
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('NF525 daily archive scheduler crashed', [
+                    'event'   => 'fiscal.archive.daily.scheduler_error',
+                    'message' => $e->getMessage(),
+                    'trace'   => substr($e->getTraceAsString(), 0, 1000),
+                ]);
+            }
+        })
+            ->dailyAt('02:00')
+            ->name('foodking-fiscal-archive-daily')
+            ->withoutOverlapping()
             ->onOneServer();
     }
 
