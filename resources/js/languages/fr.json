@@ -101,6 +101,7 @@
         "cash_drawer_open": "Ouvrir le tiroir-caisse",
         "scan_nfc_card": "Scanner la carte NFC",
         "siret": "SIRET",
+        "duplicata": "DUPLICATA #{n}",
         "tendered_breakdown": "Détail paiement",
         "vat_intra": "TVA intra",
         "name": "Nom",

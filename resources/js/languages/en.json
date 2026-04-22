@@ -169,6 +169,7 @@
         "cash_drawer_open": "Open cash drawer",
         "scan_nfc_card": "Scan NFC card",
         "siret": "SIRET",
+        "duplicata": "DUPLICATE #{n}",
         "tendered_breakdown": "Payment breakdown",
         "vat_intra": "VAT ID",
         "id": "Id",

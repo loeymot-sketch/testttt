@@ -19,3 +19,7 @@ globs:
 | `docs/DEVICE_FLOW.md` | Parcours par surface (POS, kiosk, KDS, OSS, etc.) |
 
 Le cycle agents local, le routage modèle et les rapports sont décrits dans **`AGENTS.md`** et **`.cursor/routing.md`**. Le scope et les invariants métier sont dans **`.cursor/rules/scope.mdc`** et **`.cursor/rules/foodking-invariants.mdc`**.
+
+**Mémoire Graphiti** : protocole obligatoire quand le MCP est chargé — **`.cursor/rules/graphiti-memory.mdc`** ; index des domaines — **`memory/INDEX.md`**.
+
+**Système global (agents + sous-agents + évolution mémoire)** : **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`**.

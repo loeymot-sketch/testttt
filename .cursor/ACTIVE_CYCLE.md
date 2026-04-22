@@ -1,5 +1,119 @@
 # Active Cycle – FoodKing
 
+## CYCLE_W10_EXECUTION_CLOSEOUT (IN_PROGRESS — mémoire 180 + MCP global + commit + CI + prod)
+
+**TASK_ID** : `P_EXEC_CLOSEOUT_GRAPHITI_CI_PROD_2026-04-22`  
+**Plan SSOT** : `plans/PLAN_EXECUTION_CLOSEOUT_GRAPHITI_CI_PROD_2026-04-22.md`  
+**Ordre** : Piste A (POS+Centrale : PLAN-MEM-1) ∥ Piste B (humain : PLAN-MEM-3) → C (smoke) → D (commit sur « go commit ») → E (CI) → F (prod J-7→J+7).  
+**Gate mémoire** : `python3 memory/verify.py` → count **≥ 175** (180 idéal) avant de considérer PLAN-MEM-1 **CLOSED**.
+
+**Gouvernance globale (2e passe 2026-04-22)** : primer multi-agents + Graphiti vivant + tokens « zéro effet négatif » → **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** + rapport **`reports/audit/AUDIT_SECOND_PASS_GLOBAL_GOVERNANCE_REPORT_2026-04-22.md`**.
+
+---
+
+## CYCLE_W9_AUDIT_GLOBAL_PROD_READY (COMPLETED PASSED — local 200%, pending commit + CI push)
+
+TASK_ID: P_AUDIT_GLOBAL_W1_W9_PROD_READY_2026-04-21
+PHASE: VERIFY 200% local PASSED ; pending commit + CI MySQL push + Playwright opt-in
+PARENT: CYCLE_W9_NF525_HARDENING_RECEIPT_POLICY (audit final stage)
+REPORTS:
+- reports/audit/AUDIT_W1_W9_GLOBAL_2026-04-21.md (5 explore agents, 10 fixes, 10 accepted findings)
+- reports/audit/AUDIT_W1_W9_PROD_READY_2026-04-21.md (4 prod-hardening fixes added on top)
+
+DELIVERABLES PROD-HARDENING (4 ajouts code + 1 cycle doc) :
+
+PROD-1 — TOCTOU FiscalArchive eliminated
+- app/Console/Commands/FiscalArchiveCommand.php : verify+build sous Cache::lock('z_report_b{n}', 600s, wait 30s)
+- Garantie : la fenêtre cryptographique vérifiée == la fenêtre exportée (aucun Z ne peut s'ouvrir/fermer pendant l'archive)
+- Fail-fast structuré si lock indisponible (log channel `fiscal`, exit FAILURE)
+
+PROD-2 — Idempotency lookup tenant-scoped (admin cross-tenant collision)
+- app/Services/OrderService.php::posOrderStore : lookup `where idempotency_key = ? AND branch_id = ?`
+- Empêche un Admin (branch_id=0) de récupérer la commande d'une autre branche via une clé identique
+- Couvert par le test existant `IdempotencyBranchScoped` (2 scénarios déjà verts)
+
+PROD-3 — CI migration drift guard
+- .github/workflows/phpunit.yml : nouveau step `Migration drift check` (migrate --pretend + migrate + migrate:status) AVANT phpunit
+- Détecte un .php migration cassé / non-autoloadable AVANT que les tests fail avec "table X not found"
+
+PROD-4 — Pre-deployment gate
+- app/Console/Commands/PreflightProductionCommand.php : `php artisan app:preflight-production [--strict]`
+- Vérifie 14 dimensions : APP_ENV, APP_DEBUG, APP_KEY, TIMEZONE, CACHE_DRIVER, QUEUE_CONNECTION, BROADCAST_DRIVER, SESSION_DRIVER, LOG_LEVEL, LOG_CHANNEL, FISCAL_AUDIT_SECRET, FISCAL_Z_REPORT_SECRET, FISCAL_VERIFY_CHAIN_BEFORE_ARCHIVE, DB reachability, Cache round-trip
+- Exit 0 = safe to flip symlink ; exit 1 = au moins un CRITICAL
+- Mode `--strict` = warnings traités comme erreurs (CI/CD gate)
+
+VERIFY 200% (LOCAL) :
+- ✅ vendor/bin/phpunit --testsuite Feature = 718/718 PASSED (2124 assertions, 8 skipped MySQL-only, 145s)
+- ✅ vendor/bin/phpunit --filter "FiscalArchive|ZOpenChain|ReceiptPrint|PosOrder|Idempotency" = 61/61 PASSED (231 assertions, 9s)
+- ✅ npx vitest run = 719/719 PASSED (93 fichiers, 9s)
+- ✅ ReadLints (4 fichiers modifiés/créés) : no errors
+- ✅ php artisan app:preflight-production (dry-run local) : détecte correctement secrets prod manquants + LOG_LEVEL debug + APP_ENV local — comportement attendu
+
+INVARIANTS PRÉSERVÉS :
+- NF525 : audit_logs INSERT-only chaîné, Z signature HMAC, fiscal_sequence_no monotone, archive J-1 verify+build atomique
+- Multi-tenant : branch_id scope sur idempotency lookup (PROD-2), CleanupStalePendingKioskOrders (FIX-5 W9-AUDIT)
+- Boot fail-fast : CACHE_DRIVER ≠ array|null en prod, secrets fiscal min 32 chars (FIX-2 W9-AUDIT + PROD-4)
+- Concurrence : Cache::lock partagé sur archive ET open/close ET audit chain ET receipt print
+
+NEXT STEPS :
+1. Commit groupé (PROD-1..4 + ACTIVE_CYCLE + AUDIT_PROD_READY report)
+2. Push CI : phpunit MySQL + drift check + playwright (opt-in)
+3. Run `php artisan app:preflight-production --strict` sur staging avant flip symlink prod
+
+---
+
+## CYCLE_W9_NF525_HARDENING_RECEIPT_POLICY (COMPLETED PASSED — local 200%, pending commit + CI push)
+
+TASK_ID: P_MEGA_W9_NF525_HARDENING_2026-04-21
+PHASE: VERIFY 200% local PASSED ; pending commit + CI MySQL push
+PARENT_FINDINGS: W8 OUTCOMES (C5 + C7 + G2 + B1 + B3-OPS + B7)
+MEMORY_GRAPH: reports/memory/MEMORY_GRAPH_W8_W9_2026-04-21.md
+
+SUB-CYCLES :
+- ✅ W9.A — verifyChain @ FiscalArchiveCommand (G2 finding)
+- ✅ W9.B — policy ticket reprint + audit chain NF525 (C5 + C7)
+- ✅ W9.C — OPS docs (.env.example checklist : TIMEZONE / CACHE_DRIVER / verify_chain_before_archive / fiscal retry monitoring) (B1 + B3-OPS + B7)
+- ✅ W9.D — UI badge DUPLICATA branché au POST /print-receipt (REM-PRODUCT C5 du W8.C-P3)
+
+DELIVERABLES W9.A :
+- config/fiscal.php : `verify_chain_before_archive` (default true, env override)
+- app/Console/Commands/FiscalArchiveCommand.php : flag `--no-verify`, méthode `verifyZChainOrFail`, manifest schema v3 (z_chain_verified + z_chain_verify_meta)
+- tests/Feature/Fiscal/FiscalArchiveVerifyChainTest.php : 5 tests / 24 assertions (chaîne intacte, corrompue, --no-verify, config disabled, branche vide)
+- tests/Feature/Fiscal/FiscalArchiveTest.php : assertion schema v2 → v3 + nouvelles clés
+
+DELIVERABLES W9.B :
+- app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php : émission AuditLogService::write chaînée, distinction action `pos.receipt.print` (1ère) vs `pos.receipt.reprint` (≥2), réponse JSON enrichie `audit_emitted` (signal UI fail-soft)
+- tests/Feature/Admin/POS/ReceiptPrintControllerTest.php : 8 tests / 30 assertions (3 nouveaux = audit row 1ère / audit row reprint / 3 prints distincts)
+
+DELIVERABLES W9.C :
+- .env.example : section CHECKLIST PROD (CACHE_DRIVER ≠ array, TIMEZONE=Europe/Paris, FISCAL_VERIFY_CHAIN_BEFORE_ARCHIVE, retry J-1 fiscal:archive)
+
+DELIVERABLES W9.D :
+- resources/js/components/admin/pos/ReceiptComponent.vue : refonte handler print (POST API increment AVANT capture DOM, localPrintCount réactif, hidden v-print button programmatic click, fail-soft impression continue même si API down)
+- tests/js/posReceiptPrintFlow.spec.js : 4 tests Vitest (call API, badge réactif avant print, continuité opérationnelle si API down, anti re-entrant click)
+
+VERIFY 200% (LOCAL) :
+- ✅ vendor/bin/phpunit tests/Feature/Fiscal/ = 109/109 PASSED (375 assertions, 14s)
+- ✅ vendor/bin/phpunit tests/Feature/Admin/POS/ReceiptPrintControllerTest.php = 8/8 PASSED (30 assertions, 1.5s)
+- ✅ vendor/bin/phpunit --filter "Receipt|Pos" = 145/145 PASSED (440 assertions, 3 skipped historiques)
+- ✅ npx vitest run tests/js/posReceiptPrintFlow.spec.js tests/js/posReceiptDuplicataMarker.spec.js = 11/11 PASSED
+- ✅ ReadLints (6 fichiers modifiés) : no errors
+
+INVARIANTS PRÉSERVÉS :
+- ✅ HMAC NF525 chaîne immutable (verifyChain read-only, audit_logs INSERT-only)
+- ✅ branch_id server-authoritative (Auth::user()->branch_id, jamais depuis request())
+- ✅ dispatch-after-commit (audit emit hors transaction métier, fail-soft)
+- ✅ schema_version bumped (manifest backward-compat lecteurs v2 par check existence clé)
+- ✅ Tenant scope (Auth user branch + atomic update where branch_id)
+
+TRADE-OFFS DOCUMENTÉS :
+- W9.B audit fail-soft : choix conscient (continuité opérationnelle > evidence parfaite). Échec = log + flag UI `audit_emitted=false`. Recovery via re-impression manuelle ou alerte SIEM.
+- W9.D fallback optimistic local bump : si API down, badge DUPLICATA apparaît côté UI mais compteur DB pas synchronisé. Re-sync au prochain print réussi via `watch order.id`.
+
+NEXT : commit groupé W9 (4 sub-cycles) + push CI MySQL + Playwright validation
+
+---
+
 ## HOTFIX_W8.5_PHPUNIT_MYSQL_ISOLATION (IN PROGRESS — fix appliqué local, pending CI MySQL push)
 
 TASK_ID: HOTFIX_W8.5_PHPUNIT_MYSQL_ISOLATION_2026-04-21

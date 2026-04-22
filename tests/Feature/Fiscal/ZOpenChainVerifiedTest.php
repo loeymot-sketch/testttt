@@ -110,6 +110,51 @@ class ZOpenChainVerifiedTest extends TestCase
         $this->assertSame((string) $reports[1]->id, (string) $result['errors'][0]['z_id']);
     }
 
+    /**
+     * [W9-AUDIT TEST-2] Sequence gap detection.
+     *
+     * Z reports are numbered consecutively per branch starting at 1. A gap
+     * in the sequence (e.g. an admin manually drops a row) MUST be reported
+     * as `sequence_gap` so SIEM and the fiscal:archive command can refuse
+     * to ship a bundle whose evidence ordering is broken.
+     *
+     * Note: tampering with `sequence_no` ALSO breaks the signature (it is
+     * canonicalised inside the HMAC), so the verifier produces both
+     * `sequence_gap` and `signature_mismatch` errors. The test asserts the
+     * gap is present without assuming exact error ordering.
+     */
+    public function test_sequence_gap_is_detected_in_chain(): void
+    {
+        $branch = Branch::factory()->create();
+        $reports = $this->createClosedZReports($branch, 3);
+
+        // Force a gap: bump the 2nd report sequence_no from 2 → 5.
+        // Chain prev_hash stays valid (we don't touch it), so chain_break
+        // does NOT fire on row 2 itself, but signature_mismatch will fire
+        // because sequence_no is part of the HMAC canonical payload.
+        $reports[1]->forceFill([
+            'sequence_no' => 5,
+        ])->saveQuietly();
+
+        $result = $this->service->verifyChain($branch->id);
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(3, $result['count']);
+
+        $sequenceGapErrors = array_values(array_filter(
+            $result['errors'],
+            fn ($err) => ($err['kind'] ?? null) === 'sequence_gap'
+        ));
+
+        $this->assertNotEmpty(
+            $sequenceGapErrors,
+            'verifyChain MUST report sequence_gap when Z numbering is non-consecutive.'
+        );
+        $this->assertSame((string) $reports[1]->id, (string) $sequenceGapErrors[0]['z_id']);
+        $this->assertSame('2', (string) $sequenceGapErrors[0]['expected']);
+        $this->assertSame('5', (string) $sequenceGapErrors[0]['actual']);
+    }
+
     public function test_strict_mode_throws_runtime_exception(): void
     {
         $branch = Branch::factory()->create();

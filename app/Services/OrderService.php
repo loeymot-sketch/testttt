@@ -565,9 +565,23 @@ class OrderService
     {
         // [AUDIT-P49-BUG6] Idempotency: if the cashier double-clicks submit (slow network),
         // return the existing order instead of creating a duplicate.
+        //
+        // [W9-AUDIT PROD-2] Tenant-scope the lookup: previously the query ignored
+        // BranchScope for Admin (branch_id=0), which means the same idempotency key
+        // forwarded by two different branches would incorrectly resolve to the first
+        // matching order across the whole tenant — leaking an order from branch A
+        // to a cashier on branch B as their "duplicate". The intent of idempotency
+        // is per-(branch, key), not per-tenant. We resolve the target branch from
+        // the request payload (already validated against the cashier's own branch
+        // a few lines below for non-admin users), so the lookup is now safe across
+        // both Admin (branch_id=0) and cashier flows.
         $idempotencyKey = $request->header('X-Idempotency-Key');
         if ($idempotencyKey) {
-            $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+            $targetBranchId = (int) ($request->branch_id ?: 0);
+            $existing = Order::query()
+                ->where('idempotency_key', $idempotencyKey)
+                ->when($targetBranchId > 0, fn ($q) => $q->where('branch_id', $targetBranchId))
+                ->first();
             if ($existing) {
                 return $existing;
             }

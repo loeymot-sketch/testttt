@@ -31,8 +31,16 @@ class SloEvaluatorJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
+    /*
+     * [W9-AUDIT FIX-6] Observability evaluator must be resilient to transient DB
+     * hiccups (Redis hiccup, replica lag) — a single failure should not blank an
+     * entire 5-minute SLO bucket. Three attempts with exponential backoff give
+     * the job ~30s of grace before final failure, while staying well under the
+     * 5-minute scheduling cadence (no overlap risk).
+     */
+    public int $tries = 3;
     public int $timeout = 120;
+    public int $backoff = 10;
 
     public function handle(SloMetricCollector $collector): void
     {

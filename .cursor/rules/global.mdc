@@ -25,10 +25,15 @@ It halts and escalates — never self-approves — on any gate trigger, scope ex
 invariant violation, two consecutive validation failures, or unresolvable ambiguity.
 Full policies: `human-gates.mdc`, `scope.mdc`, `foodking-invariants.mdc`.
 
-## Token Discipline
-- Do not re-read files already in context
-- Do not re-explain decisions already recorded in the plan file
-- Structured output only in reports — no narrative
+## Graphiti (mémoire inter-sessions)
+- When the Graphiti MCP server is loaded for this workspace, **query it first** on any non-trivial task (see `.cursor/rules/graphiti-memory.mdc` and `AGENTS.md` § MCP).
+- If Graphiti is not loaded, continue without blocking; one-line note to enable `~/.cursor/mcp.json` is enough.
+
+## Token Discipline (quality-first — zero negative optimization)
+- **Goal**: maximum correct intelligence per cycle — not shortest answers. Removing detail, skipping invariants, or omitting Graphiti queries to "save tokens" is **forbidden** when it reduces correctness or auditability.
+- **Allowed savings only**: do not re-read files already in full context; do not paste verbatim large blobs already in the plan; use **Graphiti** + `## PRIOR_CONTEXT` to avoid re-opening dozens of historical reports; use phase summaries per `context-hygiene.mdc` §4 **after** a phase completes (handoff), not to shrink the plan itself.
+- Do not re-explain decisions already recorded in the plan file (link/summarize in one line if needed).
+- Structured output in reports — narrative allowed in plans/gates when it carries decisions, risks, or test strategy.
 - Flag real risks only — no speculative commentary on out-of-scope subsystems
 
 ## Reports Discipline

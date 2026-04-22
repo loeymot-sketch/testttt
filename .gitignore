@@ -38,3 +38,5 @@ borne-windows/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+memory/ingest.env
+memory/__pycache__/

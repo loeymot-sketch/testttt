@@ -9,6 +9,7 @@ use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
 use App\Events\SendOrderSms;
 use App\Models\FrontendOrder;
+use App\Models\Scopes\BranchScope;
 
 class CleanupStalePendingKioskOrders
 {
@@ -16,7 +17,15 @@ class CleanupStalePendingKioskOrders
     {
         $staleThreshold = now()->subMinutes(15);
 
-        FrontendOrder::withoutGlobalScopes()
+        /*
+         * [W9-AUDIT FIX-5] Console job runs without Auth context: BranchScope is bypassed
+         * naturally, but `withoutGlobalScopes()` would ALSO drop SoftDeletingScope, risking
+         * the auto-rejection of orders that were already soft-deleted (e.g. by a manual
+         * admin action). Drop only BranchScope (multi-tenant by design) and keep the
+         * soft-delete guard intact.
+         */
+        FrontendOrder::withoutGlobalScope(BranchScope::class)
+            ->whereNull('deleted_at')
             ->where('status', OrderStatus::PENDING)
             ->where('source_surface', 'kiosk')
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])

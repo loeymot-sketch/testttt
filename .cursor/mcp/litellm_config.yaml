@@ -27,25 +27,22 @@ model_list:
       model: moonshot/moonshot-v1-8k
       api_key: "os.environ/MOONSHOT_API_KEY"
 
-  # --- Embeddings → OpenAI officiel (clé dédiée ; Kimi/Moonshot ne les expose souvent pas) ---
-  # Définir OPENAI_EMBEDDING_API_KEY dans ~/.cursor/mcp.json (mcpServers.graphiti.env).
+  # --- Embeddings → OpenRouter (clé OPENROUTER_API_KEY + OPENROUTER_API_BASE dans ~/.cursor/mcp.json) ---
+  # Doc LiteLLM: model "openrouter/openai/text-embedding-3-small" + os.environ/OPENROUTER_API_KEY
   - model_name: text-embedding-ada-002
     litellm_params:
-      model: openai/text-embedding-3-small
-      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
-      api_base: "https://api.openai.com/v1"
+      model: openrouter/openai/text-embedding-3-small
+      api_key: "os.environ/OPENROUTER_API_KEY"
 
   - model_name: text-embedding-3-small
     litellm_params:
-      model: openai/text-embedding-3-small
-      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
-      api_base: "https://api.openai.com/v1"
+      model: openrouter/openai/text-embedding-3-small
+      api_key: "os.environ/OPENROUTER_API_KEY"
 
   - model_name: text-embedding-3-large
     litellm_params:
-      model: openai/text-embedding-3-small
-      api_key: "os.environ/OPENAI_EMBEDDING_API_KEY"
-      api_base: "https://api.openai.com/v1"
+      model: openrouter/openai/text-embedding-3-small
+      api_key: "os.environ/OPENROUTER_API_KEY"
 
 litellm_settings:
   drop_params: true          # ignore params non supportés (ex: seed, logprobs)

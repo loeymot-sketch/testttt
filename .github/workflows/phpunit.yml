@@ -105,6 +105,29 @@ jobs:
           sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
           sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
 
+      # [W9-AUDIT PROD-3] Migration drift guard.
+      # If a developer adds a migration in a feature branch but forgets to
+      # commit the corresponding model/test changes (or vice versa), or if a
+      # migration file is malformed and would silently fail RefreshDatabase,
+      # this step catches it BEFORE the test suite runs (which would otherwise
+      # surface as opaque "table X not found" errors deep in a test run).
+      #
+      # `migrate --pretend` parses every migration file without executing it,
+      # which validates syntax + class autoloading. `migrate:status` then
+      # confirms every file maps to a registered batch.
+      - name: Migration drift check
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: foodking_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          php artisan migrate --pretend --no-interaction
+          php artisan migrate --no-interaction
+          php artisan migrate:status
+
       - name: Run PHPUnit (MySQL)
         env:
           DB_CONNECTION: mysql

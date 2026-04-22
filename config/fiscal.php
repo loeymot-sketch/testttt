@@ -56,6 +56,29 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | [W9.A / G2] verifyChain pre-archive (defense in depth)
+    |----------------------------------------------------------------------
+    |
+    | When true, FiscalArchiveCommand calls ZReportService::verifyChain()
+    | before producing the bundle. Goal : never ship an archive whose Z
+    | chain HMAC is broken (NF525 evidence integrity).
+    |
+    | - true  + chain OK  → archive proceeds, manifest records z_chain_verified=true
+    | - true  + chain KO  → archive ABORTED, log fiscal CRITICAL, exit FAILURE
+    | - false             → verify skipped, manifest records z_chain_verified=null
+    |
+    | The CLI flag --no-verify on the artisan command bypasses verification
+    | regardless of this config (intended for ops recovery scenarios; use
+    | with care as the resulting bundle should not be considered evidence).
+    */
+    'verify_chain_before_archive' => filter_var(
+        env('FISCAL_VERIFY_CHAIN_BEFORE_ARCHIVE', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE
+    ) ?? true,
+
+    /*
+    |----------------------------------------------------------------------
     | Archive retention (NF525 = 6 years)
     |----------------------------------------------------------------------
     */

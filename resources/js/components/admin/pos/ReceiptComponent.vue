@@ -7,11 +7,24 @@
                     <i class="lab lab-back-bold lab-font-size-16 text-white"></i>
                     <span class="text-xs leading-5 capitalize text-white">{{ $t('button.close') }}</span>
                 </button>
-                <button type="button" v-print="printObj"
-                    class="flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-[#1AB759]">
+                <button
+                    type="button"
+                    @click="handlePrintClick"
+                    :disabled="isPrinting"
+                    :aria-busy="isPrinting"
+                    data-testid="receipt-print-trigger"
+                    class="flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-[#1AB759] disabled:opacity-60">
                     <i class="lab lab-print-bold lab-font-size-16 text-white"></i>
                     <span class="text-xs leading-5 capitalize text-white">{{ $t('button.print_invoice') }}</span>
                 </button>
+                <button
+                    ref="hiddenPrintButton"
+                    type="button"
+                    v-print="printObj"
+                    class="hidden"
+                    aria-hidden="true"
+                    tabindex="-1"
+                    data-testid="receipt-hidden-print-button">_</button>
             </div>
             <div class="modal-body">
                 <div v-if="order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name"
@@ -21,7 +34,7 @@
                     <p v-if="order.pos_register_id">{{ $t('label.register_id') }}: {{ order.pos_register_id }}</p>
                     <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
                 </div>
-                <receipt-duplicata-marker :order="order" />
+                <receipt-duplicata-marker :order="effectiveOrder" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                     <h4 class="text-sm font-normal">{{ branch.address }}</h4>
@@ -223,6 +236,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import print from "vue3-print-nb";
 import appService from "../../../services/appService";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
@@ -245,6 +259,13 @@ export default {
     },
     data() {
         return {
+            // [W9.D] Local override of `order.receipt_print_count`. We
+            // bump this BEFORE triggering the print so that the
+            // ReceiptDuplicataMarker (computed off `effectiveOrder`)
+            // shows up on the printed paper from the 2nd impression
+            // onwards. Initialised lazily from the prop in mounted().
+            localPrintCount: null,
+            isPrinting: false,
             printObj: {
                 id: "print",
                 popTitle: this.$t("menu.order_receipt"),
@@ -294,9 +315,42 @@ export default {
         nf525FooterLines: function () {
             return buildNf525Footer(this.order);
         },
+        /*
+         * [W9.D + W9-AUDIT TEST-3] Reactive view of the order with the
+         * locally-bumped print count. We never mutate the upstream prop.
+         *
+         * Take the MAX of (local optimistic, parent prop). Reasoning:
+         * - The local count is bumped right after the print POST resolves,
+         *   so it's the most up-to-date value during the print sequence.
+         * - The parent prop catches up later via store refetch; at that
+         *   point baseCount === localCount (no-op).
+         * - If the parent ever pushes a HIGHER count (e.g. another tab
+         *   printed concurrently), MAX ensures we don't regress the badge.
+         * - The counter is monotonically increasing by design (NF525
+         *   evidence), so MAX is semantically correct.
+         */
+        effectiveOrder: function () {
+            const baseCount = Number(this.order?.receipt_print_count ?? 0);
+            const localCount = this.localPrintCount;
+            const effectiveCount = localCount === null
+                ? baseCount
+                : Math.max(baseCount, localCount);
+            return {
+                ...this.order,
+                receipt_print_count: effectiveCount,
+            };
+        },
     },
     mounted() {
         this.$store.dispatch("company/lists").then().catch();
+        this.localPrintCount = Number(this.order?.receipt_print_count ?? 0);
+    },
+    watch: {
+        // Keep local count in sync if the parent swaps to a different
+        // order in the same modal mount (e.g. operator switching tabs).
+        'order.id': function () {
+            this.localPrintCount = Number(this.order?.receipt_print_count ?? 0);
+        },
     },
     methods: {
         reset: function () {
@@ -326,6 +380,59 @@ export default {
         },
         receiptExtrasFor: function (item) {
             return normalizeReceiptExtras(item ? item.item_extras : []);
+        },
+        // [W9.D / G3] Receipt print + reprint policy.
+        //
+        // Flow:
+        //   1. POST /admin/pos/orders/{id}/print-receipt to atomically
+        //      bump the server-side counter and emit the NF525 audit
+        //      row (pos.receipt.print or pos.receipt.reprint).
+        //   2. Reflect the new count locally so the DUPLICATA badge
+        //      shows BEFORE we capture the DOM for printing.
+        //   3. Wait one tick so the badge actually renders.
+        //   4. Programmatically click the hidden v-print button to
+        //      trigger vue3-print-nb's iframe pipeline.
+        //
+        // Failure handling: if the API call fails (network blip, lock
+        // contention, server error) we still proceed with the print —
+        // the operator MUST be able to hand a paper ticket to the
+        // customer for operational continuity. We optimistically bump
+        // the local count so the UI badge reflects intent; the next
+        // successful call will re-sync with the server-authoritative
+        // value via `watch order.id`.
+        async handlePrintClick() {
+            if (this.isPrinting) {
+                return;
+            }
+            this.isPrinting = true;
+            try {
+                if (this.order?.id) {
+                    try {
+                        const { data } = await axios.post(
+                            `admin/pos/orders/${this.order.id}/print-receipt`
+                        );
+                        this.localPrintCount = Number(
+                            data?.receipt_print_count
+                            ?? (Number(this.localPrintCount ?? 0) + 1)
+                        );
+                    } catch (apiError) {
+                        // Optimistic local bump so DUPLICATA appears
+                        // even if the server temporarily refuses.
+                        this.localPrintCount = Number(this.localPrintCount ?? 0) + 1;
+                        console.warn('[ReceiptComponent] increment API failed, printing anyway', apiError);
+                    }
+                }
+
+                await this.$nextTick();
+                const trigger = this.$refs.hiddenPrintButton;
+                if (trigger && typeof trigger.click === 'function') {
+                    trigger.click();
+                } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                    window.print();
+                }
+            } finally {
+                this.isPrinting = false;
+            }
         },
     },
     directives: {

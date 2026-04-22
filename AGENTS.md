@@ -4,6 +4,10 @@
 Cursor local agent. No cloud orchestration. No external framework.
 Auto/Premium routing: disabled. Model selection is explicit per cycle.
 
+## Global system primer (multi-agents, Graphiti, tokens — lecture clé)
+
+Tout nouvel intervenant (session Cursor, sub-agent Task, CLI terminal, humain) qui touche **orchestration**, **mémoire**, ou **discipline de contexte** : lire **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** après ce fichier. Y sont définis : ordre de lecture obligatoire, **`foodking-routine-implementer` / `foodking-complex-implementer`**, terminal **`claude` / `codex`**, **mise à jour continue de Graphiti**, et la politique **« intelligence max — zéro optimisation négative »** (tokens : supprimer le gaspillage, pas la substance).
+
 ## Workflow
 PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
 
@@ -72,25 +76,99 @@ Halt and generate a gate brief on any of:
 - Frozen zones require gate clearance before any edit
 
 ## MCP
-Phase 1: Filesystem MCP only.
-Phase 2: Graphiti MCP (mémoire inter-cycles — décisions architecture, contexte passé, historique cycles).
-Phase 3: Playwright MCP (tests E2E automatiques sur flows critiques FoodKing).
-  Package : @playwright/mcp@latest (npx, pas d'install global)
-  Browser : Chromium
-  BASE_URL : http://localhost:8000
-  Config : .cursor/mcp/playwright.json
-  Flows couverts : POS Cash, POS Card, Kiosk, KDS, Auth refresh (F5)
-  Déclencheur : plan déclare playwright-mcp | playwright-critical-flow | playwright-full-e2e
-  Rapport : reports/antigravity/latest.md
-  Règle : le Planner-Orchestrator seul décide si un cycle requiert E2E — jamais auto-déclenché.
-  Server : github.com/getzep/graphiti — `mcp_server/graphiti_mcp_server.py`
-  Clone local : `/Users/1millnonstop/graphiti` (commit épinglé — voir `.cursor/mcp/graphiti.json`)
-  Backend : Neo4j AuraDB Free Tier
-  Config : `.cursor/mcp/graphiti.json` (gitignored — copier depuis `graphiti.json.example` vers `~/.cursor/mcp.json` si besoin)
-  Dépannage : `.cursor/mcp/GRAPHITI_TROUBLESHOOTING.md` (LiteLLM `healthy_count`, clé Moonshot 401, stop/restart proxy)
-  Scope : lecture avant PLAN (query subsystem), écriture après CLOSE (episode + décisions clés).
-  Group ID : `foodking` (isolation des entités FoodKing dans le graphe Graphiti)
-  Règle : ne jamais bloquer la phase PLAN si Graphiti est indisponible — continuer sans contexte.
+
+### Phase 1 — Filesystem
+Filesystem MCP only for repo reads where applicable.
+
+### Phase 2 — Graphiti (mémoire inter-cycles — **présent dans toutes les sessions où le serveur est enregistré**)
+
+**Objectif** : décisions d’architecture, invariants, sync borne↔POS↔KDS, fiscal NF525, historique de cycles — récupérables sans relire des centaines de fichiers.
+
+| Élément | Détail |
+|--------|--------|
+| **Enregistrement Cursor (obligatoire côté humain)** | Fusionner le bloc `graphiti` dans **`~/.cursor/mcp.json`** (Settings → MCP). Modèle : **`.cursor/mcp/graphiti.json.example`**. Le dépôt ne peut pas injecter un MCP automatiquement dans l’IDE. |
+| **Règle agent (automatique dès que le MCP est chargé)** | Voir **`.cursor/rules/graphiti-memory.mdc`** (always-on) + **`global.mdc`** : avant toute tâche non triviale, appeler au moins **`search_memory_facts`** (et optionnellement **`search_memory_nodes`**) avec `group_ids=["foodking"]`. |
+| **Après AUDIT / CLOSE** | Si `add_memory` est disponible : enregistrer les décisions durables (ADR, gate, invariant clarifié). |
+| **Si Graphiti absent de la session** | **Ne pas bloquer** PLAN / EXECUTE : une ligne « Graphiti non chargé » + secours **`memory/INDEX.md`** + lecture ciblée des JSONL sous `memory/episodes/`. |
+| **Server** | Zep Graphiti — wrapper local **`.cursor/mcp/start-graphiti-mcp.sh`** (voir exemple JSON). Clone typique : `/Users/1millnonstop/graphiti`. |
+| **Backend** | Neo4j (ex. Aura) — credentials hors repo. |
+| **Dépannage** | **`.cursor/mcp/GRAPHITI_TROUBLESHOOTING.md`** (LiteLLM, embeddings, redémarrage proxy). |
+| **Group ID** | Toujours **`foodking`**. |
+| **Ingestion / vérif locale** | `memory/ingest.py`, `memory/verify.py`, `bin/graphiti-ingest.sh` ; index des domaines **`memory/INDEX.md`**. |
+
+**Intégration bounded cycle** : la commande **`.cursor/commands/run-cycle.md`** inclut l’appel Graphiti en **Step 0 item 5** (query avant PLAN).
+
+### Phase 3 — Playwright MCP (tests E2E sur flows critiques FoodKing)
+
+- Package : `@playwright/mcp@latest` (npx, pas d’install global)
+- Browser : Chromium
+- BASE_URL : `http://localhost:8000`
+- Config : `.cursor/mcp/playwright.json`
+- Flows couverts : POS Cash, POS Card, Kiosk, KDS, Auth refresh (F5)
+- Déclencheur : plan déclare `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e`
+- Rapport : `reports/antigravity/latest.md`
+- Règle : le Planner-Orchestrator seul décide si un cycle requiert E2E — jamais auto-déclenché.
+
+---
+
+## Terminal allies — Claude Code & OpenAI Codex (abonnements Pro)
+
+Ces outils **complètent** le routage interne Cursor (`.cursor/routing.md` : PLAN/AUDIT Claude modèle Cursor, EXECUTE complexe GPT-5.4, routine Composer). **Aucun remplacement** des rôles du dépôt : ce sont des **alliés optionnels** que tu lances **toi** depuis le terminal intégré Cursor quand tu veux plus de profondeur ou un second passage.
+
+### A — Anthropic **Claude Code** (audits / orchestration textuelle, abonnement Anthropic)
+
+1. Dans Cursor : **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`) → chercher **Claude Code** (Anthropic) → **Installer**.
+2. Ouvrir le terminal intégré Cursor.
+3. Lancer une fois :
+
+```bash
+claude
+```
+
+4. Première exécution : se connecter avec le compte Anthropic (abonnement Pro/Max) — utilise les quotas du compte, **sans** clé API dans le dépôt.
+
+**Appels non interactifs (audit / plan d’orchestration)** :
+
+```bash
+claude "Audite tout le code livré sur ce cycle et produis un plan d'orchestration des corrections restantes, en respectant les invariants FoodKing (AGENTS.md)."
+```
+
+**Usage aligné sur ton workflow** : orchestration initiale et tâches courantes → **Claude dans Cursor** ; **audits finaux / second passage** → **`claude "..."`** dans le terminal quand tu le décides.
+
+### B — OpenAI **Codex** CLI (implémentations lourdes, abonnement ChatGPT Plus/Pro)
+
+1. Dans le terminal Cursor :
+
+```bash
+npm install -g @openai/codex
+```
+
+2. Lancer :
+
+```bash
+codex
+```
+
+3. Première exécution : choisir **Sign in with ChatGPT** — utilise les crédits du compte ChatGPT Pro, **sans** clé API dans le dépôt.
+
+**Appels non interactifs** :
+
+```bash
+codex "Implémente uniquement ce qui est décrit dans plans/PLAN_<TASK>_<DATE>.md ; ne modifie pas le hors-scope ; respecte AGENTS.md et les frozen zones."
+```
+
+**Usage aligné sur ton workflow** : implémentations **complexes** déjà planifiées dans `plans/` → **`codex "..."`** ; validation → toujours **PHPUnit / Vitest** + cycle Cursor VALIDATE/AUDIT.
+
+### Résumé opérationnel (sans changer le plan de phases du dépôt)
+
+| Besoin | Outil terminal | Quand |
+|--------|----------------|-------|
+| Audit global / orchestration textuelle profonde | `claude "..."` | Après livraison, ou boucle 2e audit |
+| Patch large multi-fichiers guidé par un plan existant | `codex "..."` | EXECUTE complexe hors session Cursor ou en parallèle humaine |
+| Cycle officiel FoodKing (gates, routing, preflight prod) | Cursor + `run-cycle` + subagents | Toujours la source de vérité procédurale |
+
+**Sécurité** : ne jamais coller de secrets (Neo4j, OpenRouter, clés API) dans les prompts terminal ; les abonnements gèrent l’auth OAuth du CLI.
+
 
 ## Pre-Execution
 Run `.cursor/hooks/safety-check.sh` manually before every execution phase.

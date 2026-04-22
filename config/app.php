@@ -106,8 +106,18 @@ return [
     |
     */
 
-    // Must match the server timezone — change via TIMEZONE env variable
-    'timezone' => env('TIMEZONE') ?: 'UTC',
+    /*
+     * [W9-AUDIT B3-OPS] NF525 fiscal pipeline (Z reports, fiscal:archive J-1
+     * scheduled at 02:00, audit_logs canonization) MUST run in the merchant's
+     * legal timezone. UTC default would shift the J-1 archive window by 1-2h
+     * and produce evidence with timestamps off by the same amount, which is
+     * acceptable cryptographically (signature canonizes to UTC) but confusing
+     * legally for French operators.
+     *
+     * Default is now Europe/Paris (the merchant base of operations); override
+     * via TIMEZONE env variable for non-FR deployments.
+     */
+    'timezone' => env('TIMEZONE') ?: 'Europe/Paris',
 
     /*
     |--------------------------------------------------------------------------

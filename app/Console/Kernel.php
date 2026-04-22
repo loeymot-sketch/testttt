@@ -32,13 +32,19 @@ class Kernel extends ConsoleKernel
                 ->delete();
         })->everyFifteenMinutes()->name('purge-expired-otps')->withoutOverlapping();
 
+        // [W9-AUDIT FIX-6] Both rescue + cleanup must run on a single application
+        // node when scaled horizontally to avoid double-processing the same outbox
+        // batch / stale order set across nodes. `withoutOverlapping` only prevents
+        // re-entry on the SAME host; `onOneServer` adds cross-host serialization.
         $schedule->command('foodking:outbox:rescue')
             ->everyMinute()
-            ->withoutOverlapping();
+            ->withoutOverlapping()
+            ->onOneServer();
 
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
-            ->withoutOverlapping();
+            ->withoutOverlapping()
+            ->onOneServer();
 
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()

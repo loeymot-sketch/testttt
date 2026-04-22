@@ -69,6 +69,24 @@ class AppServiceProvider extends ServiceProvider
                     . 'Set QUEUE_CONNECTION in your .env file.'
                 );
             }
+
+            /*
+             * [W9-AUDIT B1-OPS] AuditLogService::write uses Cache::lock(audit_chain_b{n})
+             * to serialize hash-chain inserts across concurrent workers. With CACHE_DRIVER=array
+             * (or any in-process driver), the lock is per-process only, so two PHP-FPM workers
+             * can write rows that collide on the UNIQUE(branch_id, prev_hash) index OR worse,
+             * silently break the chain if the index is missing on a legacy install.
+             * Fail-fast at boot if a non-shared cache driver is configured in production.
+             */
+            $cacheDriver = config('cache.default');
+            $forbiddenCacheDrivers = ['array', 'null'];
+            if (in_array($cacheDriver, $forbiddenCacheDrivers, true)) {
+                throw new \RuntimeException(
+                    "CACHE_DRIVER='{$cacheDriver}' is forbidden in production: NF525 audit chain integrity "
+                    . 'requires a shared cache driver (redis or memcached) for cross-worker locks. '
+                    . 'Set CACHE_DRIVER=redis (recommended) or CACHE_DRIVER=memcached in your .env file.'
+                );
+            }
         }
     }
 

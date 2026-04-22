@@ -161,6 +161,7 @@
         "cash_drawer_open": "فتح درج النقد",
         "scan_nfc_card": "مسح بطاقة NFC",
         "siret": "SIRET",
+        "duplicata": "نسخة طبق الأصل #{n}",
         "tendered_breakdown": "تفاصيل الدفع",
         "vat_intra": "رقم ضريبة القيمة المضافة",
         "id": "المعرف",

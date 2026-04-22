@@ -2,6 +2,8 @@
 
 Defines each agent's model, phase ownership, and responsibility in the Cursor-local multi-agent system.
 
+**Primer complet** (lecture obligatoire multi-agents, Graphiti, terminal allies, tokens) : **[GLOBAL_SYSTEM_PRIMER.md](./GLOBAL_SYSTEM_PRIMER.md)**.
+
 ## Agent Roster
 
 | Agent | Model | Phase | Responsibility |

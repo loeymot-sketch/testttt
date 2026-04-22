@@ -88,9 +88,13 @@ class FiscalArchiveTest extends TestCase
         $zip->close();
 
         $this->assertSame($this->branch->id, $manifest['branch_id']);
-        $this->assertSame(2,                  $manifest['schema_version']);
+        // [W9.A] schema_version bumped to 3: manifest now records the
+        // pre-archive Z-chain verification result (defense-in-depth).
+        $this->assertSame(3,                  $manifest['schema_version']);
         $this->assertSame(6,                  $manifest['retention_years']);
         $this->assertArrayHasKey('layout', $manifest);
+        $this->assertArrayHasKey('z_chain_verified', $manifest);
+        $this->assertArrayHasKey('z_chain_verify_meta', $manifest);
 
         $this->assertCount(1, $zReports,
             'Archive must contain the Z closed during the window.');
