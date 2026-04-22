@@ -40,3 +40,7 @@ borne-windows/
 /playwright/.cache/
 memory/ingest.env
 memory/__pycache__/
+
+# Memory tooling outputs (CI/local; commit only when establishing a baseline)
+/reports/memory/verify_snapshot.json
+/reports/memory/jsonl_manifest.json

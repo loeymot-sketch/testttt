@@ -147,3 +147,14 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
         run: vendor/bin/phpunit --filter FrontendSurfaceFilteringTest --testdox
+
+      # P3 — bounded-cycle traceability (non-blocking): warn if recent RUN_*.md
+      # lack EXECUTE_DELEGATION (run-cycle.md Step 2/4).
+      - name: Delegation evidence audit (warn only)
+        if: success() || failure()
+        run: bash scripts/check-run-delegation-warn.sh
+
+      # P4 — versioned JSONL fingerprint for memory drift reviews.
+      - name: Memory JSONL manifest
+        if: success() || failure()
+        run: bash scripts/memory-jsonl-manifest.sh

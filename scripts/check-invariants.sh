@@ -184,9 +184,11 @@ else
 fi
 
 # 5. EventContract bypass — broadcast() must build & assert envelope.
+#    Exclude Concerns/DispatchableAfterCommit.php — the trait overrides
+#    broadcast() to wrap after-commit; hits there are structural false positives.
 run_check "5/6 EventContract envelope" \
     'broadcast\(' \
-    'buildEnvelope|assertEnvelopeValid|// allow:' \
+    'buildEnvelope|assertEnvelopeValid|// allow:|Concerns/DispatchableAfterCommit' \
     app/Events/
 
 # 6. Sensitive actions without audit log.

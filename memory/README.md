@@ -54,10 +54,14 @@ bash bin/graphiti-ingest.sh                 # ingère TOUS les fichiers episodes
 bash bin/graphiti-ingest.sh 03_domain      # ingère seulement les fichiers matchant '03_domain'
 DRY_RUN=1 bash bin/graphiti-ingest.sh      # affiche sans envoyer
 
-# Ingestion longue (180 épisodes ≈ 60-90 min) : lancer détaché en background
+# Ingestion longue (≈182 épisodes JSONL courants, 60–120 min selon workers) : lancer détaché en background
 nohup bash bin/graphiti-ingest.sh > /tmp/foodking-ingest.log 2>&1 &
 disown
 tail -f /tmp/foodking-ingest.log | grep -E "ingest|drain"
+
+# P0 — drain étendu (recommandé pour fermer l’écart Neo4j vs JSONL) :
+#   bash bin/graphiti-p0-long-drain.sh
+# (exporte DRAIN_TIMEOUT=7200 et DRAIN_STALL_ITERS=120 puis délègue à graphiti-ingest.sh)
 ```
 
 Le script :
@@ -77,7 +81,8 @@ Variables utiles :
 ## Vérification de l'état Neo4j
 
 ```bash
-python3 memory/verify.py        # compte les épisodes + smoke-test 8 queries
+python3 memory/verify.py              # compte épisodes + requêtes domaine (14 fichiers + smoke)
+python3 memory/verify.py --json       # idem + écrit reports/memory/verify_snapshot.json
 ```
 
 ## Recherche après ingestion
@@ -132,3 +137,10 @@ Aucun secret dans `memory/` ni dans `bin/graphiti-ingest.sh` : tout est lu depui
 Checklist détaillée (quand mettre à jour quoi) : **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md` §4.2**.
 
 Ne pas s’appuyer uniquement sur le chat : le **JSONL versionné** reste la source de vérité ; Neo4j est l’index dérivé.
+
+## Manifest JSONL (drift guard P4)
+
+```bash
+bash scripts/memory-jsonl-manifest.sh              # → reports/memory/jsonl_manifest.json
+bash scripts/memory-jsonl-manifest.sh --check reports/memory/jsonl_manifest.json
+```

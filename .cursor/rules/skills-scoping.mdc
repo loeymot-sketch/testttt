@@ -1,0 +1,46 @@
+---
+description: Guardrails for third-party Cursor skills vs FoodKing SSOT (AGENTS, gates, frozen zones, orchestration).
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Skills Scoping – FoodKing
+
+## Authority order (never inverted)
+
+1. `AGENTS.md`, `.cursor/routing.md`, `.cursor/commands/run-cycle.md`, `.cursor/ACTIVE_CYCLE.md`
+2. `.cursor/rules/*.mdc` — especially `human-gates.mdc`, `project-invariants.mdc`, `architecture.mdc`, `scope.mdc`, `playwright.mdc`
+3. User instructions for the current task
+4. Optional agent skills under `.cursor/skills/**` and MCP tools — **assist only**
+
+A skill must not override a hard gate, frozen-zone policy, FoodKing invariant, or bounded-cycle delegation rules.
+
+## Install path note
+
+`npx skills` may stage files under `.agents/skills/`. **Canonical skills for this repo** are mirrored under `.cursor/skills/` (same skill name). Prefer editing and reviewing the `.cursor/skills/` copy for commits and handoff.
+
+## `frontend-design` (Anthropic example skill)
+
+- Use for **non-frozen** UI polish: layout, typography, spacing, affordances, microcopy tone on **scoped** Vue/CSS changes.
+- **Do not** introduce a parallel design system, global theme rewrites, or a cross-surface “visual refresh” without an explicit plan line in `SUBSYSTEMS_TOUCHED` and alignment with existing Bootstrap / Tailwind / component patterns in the files you touch.
+- **Do not** drive changes to fiscal flows, payment-critical UI, or any path that project docs mark as frozen — **read-only** there unless a cleared gate is on record per `human-gates.mdc` / `project-invariants.mdc`.
+
+## `web-design-guidelines` (Vercel)
+
+- Default mode: **read-only audit** — fetch current guidelines from the URL in the skill, read the requested files, report findings in the format the guidelines specify (e.g. terse `file:line`).
+- When the user or plan asks for a **retained** audit, write under `reports/audit/` with a dated filename. The skill is not permission to widen scope or “fix everything in passing.”
+
+## `systematic-debugging` (Superpowers excerpt)
+
+- Use for reproduce → evidence → minimal fix. Still **stop and escalate** on gate triggers, scope pressure, or invariant risk; no scope expansion “because we are debugging.”
+
+## `foodking-vue-best-practices` (project-local)
+
+- Vue 3 + Laravel Mix stack; follow patterns already present in `resources/js/`. Server-side pricing remains SSOT — no client-authoritative price logic.
+
+## Skills to avoid here (unless a human explicitly overrides in the task)
+
+- **React-centric** product guidance on this **Vue** codebase (e.g. generic `react-best-practices` for app code).
+- **Full Superpowers** bundle as a second methodology — only the cherry-picked `systematic-debugging` skill is in scope.
+- **Redundant Playwright “best practices”** skills when `.cursor/rules/playwright.mdc` already governs E2E.
+- **Generic agent-orchestration** packs that contradict the bounded cycle and delegation rules in `AGENTS.md`.

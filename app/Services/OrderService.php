@@ -577,7 +577,7 @@ class OrderService
         // both Admin (branch_id=0) and cashier flows.
         $idempotencyKey = $request->header('X-Idempotency-Key');
         if ($idempotencyKey) {
-            $targetBranchId = (int) ($request->branch_id ?: 0);
+            $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency PROD-2 scoped lookup (not order-create)
             $existing = Order::query()
                 ->where('idempotency_key', $idempotencyKey)
                 ->when($targetBranchId > 0, fn ($q) => $q->where('branch_id', $targetBranchId))
