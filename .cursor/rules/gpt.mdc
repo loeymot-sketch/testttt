@@ -11,6 +11,11 @@ Complex implementation only.
 GPT-5.4 receives a fully scoped plan from Claude and executes within it.
 GPT-5.4 does not plan, does not self-route, does not audit, does not write gate briefs.
 
+## Delivery Channel (PRIMARY vs FALLBACK)
+- **PRIMARY**: GPT-5.4 (default) / GPT-5.4-pro (override) is invoked via the **FoodKing API Complex Implementer** in terminal: `npm run codex:complex -- {TASK_ID}`. Slug: `codex-terminal`. The runner reads `missions/{TASK_ID}/input.json` plus auxiliary context files (`graphiti_context.md`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md`) and writes `output_codex.json`. The orchestrator applies the output and traces `EXECUTE_DELEGATION: codex-terminal`.
+- **FALLBACK**: only if `codex-terminal` fails ≥3 attempts (HTTP 502/503/504/429 or empty content), the Cursor sub-agent `foodking-complex-implementer` may be invoked, with `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + `FALLBACK_REASON:` logged.
+- The hard implementation constraints below apply identically regardless of channel — the prompt template (`agents/codex.prompt.txt`) mirrors the sub-agent contract on purpose.
+
 ## EXECUTE Phase
 - Read the active plan file in full before writing any code
 - Implement exactly what the plan declares — nothing more

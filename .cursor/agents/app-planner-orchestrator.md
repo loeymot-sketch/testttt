@@ -34,7 +34,7 @@ Start from these project artifacts in order appropriate to the phase, without su
 5. `.cursor/context/audit-context.md` (audit)
 6. `.cursor/rules/global.mdc`
 7. `.cursor/rules/scope.mdc`
-8. `.cursor/rules/foodking-invariants.mdc`
+8. `.cursor/rules/project-invariants.mdc`
 9. `.cursor/rules/human-gates.mdc`
 10. `.cursor/rules/auto-remediation.mdc` (loop rules — read before AUDIT phase)
 

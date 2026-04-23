@@ -5,6 +5,7 @@ import {
     normalizeExtrasPayload,
     normalizeId,
     normalizeQuantity,
+    normalizeVariationEntries,
     normalizeVariationsPayload,
 } from '../../resources/js/helpers/posNormalizeIds';
 
@@ -73,5 +74,20 @@ describe('posNormalizeIds', () => {
                 item_extras: [{ id: 17, quantity: 2 }],
             },
         ]);
+    });
+
+    it('normalizeVariationEntries preserves variation_name + name (wizard edit / restore path)', () => {
+        const out = normalizeVariationEntries([
+            {
+                id: '1',
+                item_attribute_id: '2',
+                quantity: '1',
+                name: 'Steak',
+                variation_name: 'Viande 1',
+            },
+        ]);
+        expect(out[0].variation_name).toBe('Viande 1');
+        expect(out[0].name).toBe('Steak');
+        expect(out[0].id).toBe(1);
     });
 });

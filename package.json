@@ -1,6 +1,10 @@
 {
     "private": true,
     "scripts": {
+        "codex:complex": "node agents/codex.runner.mjs",
+        "codex:prepare": "node agents/codex.prepare.mjs",
+        "codex:smoke": "node agents/codex.smoke.mjs",
+        "codex:fast": "node agents/codex.env-fast.mjs",
         "dev": "npm run development",
         "development": "mix",
         "watch": "mix watch",
@@ -11,7 +15,9 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "perf:bundle-check": "node tools/perf/check_bundle_budget.mjs",
-        "i18n:audit": "node tools/i18n/audit_locale_keys.mjs"
+        "i18n:audit": "node tools/i18n/audit_locale_keys.mjs",
+        "verify:boucle": "bash scripts/verify-orchestration-boucle.sh",
+        "verify:boucle:full": "VERIFY_BILLING_FULL=1 bash scripts/verify-orchestration-boucle.sh"
     },
     "devDependencies": {
         "@playwright/test": "^1.58.2",

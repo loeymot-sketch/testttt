@@ -1765,3 +1765,64 @@ Verifying French integrity...
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next
+
+============================================================
+TASK_ID: T-LOOP-HELPER-001
+PHASE: EXECUTE→VALIDATE→AUDIT
+DATE: 2026-04-23
+EXECUTE_DELEGATION: codex-terminal
+EXECUTE_MODEL: gpt-5.4
+ROUNDS: 3 (initial + R1 contract-drift + R2 message-drift + R3 PASSED)
+TESTS: vitest tests/js/posCentsArith.spec.js → 12/12 PASSED (391ms)
+INVARIANTS_CONSIDERED: pricing_ssot
+SUBSYSTEMS_TOUCHED: resources/js/helpers/, tests/js/
+AUDIT_CHANNEL: cursor-session (claude-terminal optional second pass)
+AUDIT_CHANNEL: claude-terminal (verified, exit 0)
+AUDIT_VERDICT: CLOSED
+AUDIT_NOTES:
+  - invariants OK (pricing SSOT, no OrderStatus string, no branch_id, no dispatch)
+  - scope drift mineur: toCents ajouté en plus des 3 helpers initialement listés (acceptable, signalé dans audit Claude)
+  - tests 12/12 PASSED — couverture suffisante pour le périmètre
+  - trace EXECUTE_DELEGATION conforme au contrat docs/orchestration/CODEX_API_DELEGATION.md §10
+============================================================
+
+================================================================
+TASK_ID: T-LOOP-FORMAT-CENTS-001
+DATE: 2026-04-23
+EXECUTE_DELEGATION: codex-terminal
+EXECUTE_MODEL: gpt-5.4
+EXECUTE_DURATION_MS: 63605
+ROUNDS: 1
+TESTS: tests/js/posFormatCents.spec.js → 12/12 PASSED
+TESTS_FULL_SUITE: 96 files, 749/749 PASSED (no regression)
+INVARIANTS_CONSIDERED: pricing_ssot
+SCOPE_RESERVED: resources/js/helpers/posFormatCents.js,tests/js/posFormatCents.spec.js
+SCOPE_REFUSED_COLLISIONS: 0
+================================================================
+================================================================
+DATE: 2026-04-24 — CLAUDE TERMINAL AUDIT (stand-alone, procédure)
+AUDIT_CHANNEL: claude-terminal
+TERMINAL_AUDIT_OK: 1
+FOODKING_CLAUDE_ORCHESTRATE: context + audit (custom prompt, exit 0)
+DURATION_WALL_MS: 78813
+REPORT: reports/execution/RUN_CLAUDE_TERMINAL_AUDIT_2026-04-24.md
+VERDICT_CLAUDE: CONDITIONAL (rémédiation run-cycle+routing appliquée post-run — voir rapport)
+================================================================
+================================================================
+DATE: 2026-04-24 — TEST + VALIDATION claude (terminal) model=opus
+VERIFY_BILLING_FULL=1: verify-orchestration-boucle => ALL_GREEN (claude + codex)
+claude -p --model opus: VALIDE POUR CYCLE, exit 0, ~33s
+REPORT: reports/execution/RUN_TERMINAL_OPUS_VALIDATION_2026-04-24.md
+================================================================
+
+=== T-PARCOURS-OPTIMIZE-001 (2026-04-24) ===
+EXECUTE_DELEGATION: cursor-direct (M1: split .cursor/ACTIVE_CYCLE.md → ACTIVE_CYCLE_ARCHIVE.md, déterministe)
+EXECUTE_DELEGATION: codex-terminal (M2: Quick start contract en tête de AGENTS.md, modèle gpt-5.4, 1 round, ~50s)
+AUDIT_CHANNEL: claude-terminal
+TERMINAL_AUDIT_OK: 1
+VERDICT: PASS (zéro issue, zéro recommandation)
+GAINS_TOKENS: -10 935 (ACTIVE_CYCLE) ; +index intelligent AGENTS.md §0 Quick start
+REPORT: reports/execution/RUN_T-PARCOURS-OPTIMIZE-001_2026-04-24.md
+
+=== REMEDIATION SSOT 2026-04-24 (zero negative) ===
+ACTIVE_CYCLE: ajout en-tete RUNNER_MODE + PLAN_FILE + REPORT_FILE (align run-cycle Step 0 + AGENTS — suite split archive T-PARCOURS-OPTIMIZE-001; check-active-cycle: OK 1x IN_PROGRESS)

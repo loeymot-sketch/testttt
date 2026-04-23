@@ -1,0 +1,52 @@
+{
+  "task_id": "T-PARCOURS-OPTIMIZE-001",
+  "role": "FoodKing API Complex Implementer (codex-terminal, gpt-5.4)",
+  "mission": "Rédige un nouveau bloc Markdown intitulé `## 0. Quick start contract — read this first` à insérer en TÊTE du fichier `AGENTS.md` (juste après le titre H1 `# FoodKing – Cursor Agent Operating Contract`, AVANT la section actuelle `## Parcours obligatoire`). Ce bloc doit permettre à TOUT agent (modèle LLM ou humain) qui ouvre le repo de comprendre en <60 secondes : (1) ce qu'il DOIT lire en priorité absolue, (2) ce qu'il peut différer, (3) la commande shell unique à lancer pour démarrer un cycle borné. Aucun amputation des sections existantes.",
+  "hard_constraints": [
+    "Le bloc commence exactement par la ligne `## 0. Quick start contract — read this first` (titre H2 niveau 2).",
+    "Longueur cible : 35 à 60 lignes Markdown (pas plus).",
+    "Inclure une TABLE markdown nommée `### Reading priority` avec EXACTEMENT 3 colonnes : `Priority` (P0 / P1 / P2), `What to read`, `Why`. P0 = obligatoire-avant-toute-action ; P1 = obligatoire-avant-tout-EXECUTE ; P2 = à lire on-demand selon le sujet.",
+    "P0 doit lister AU MOINS : `AGENTS.md §1 Parcours obligatoire`, `.cursor/ACTIVE_CYCLE.md` (continuation), `.cursor/rules/global.mdc` (auto-attaché — mentionné pour info).",
+    "P1 doit lister AU MOINS : `docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`, `.cursor/commands/run-cycle.md`, `docs/orchestration/MEMORY_MATRIX.md`, `.cursor/routing.md`.",
+    "P2 doit lister AU MOINS : `docs/orchestration/CODEX_API_DELEGATION.md` (quand EXECUTE complexe), `.cursor/ACTIVE_CYCLE_ARCHIVE.md` (forensique humain), `docs/orchestration/EXPORT_CONFIG_CODEX_GPT_API_ET_AUDIT_PERSISTANCE.md` (nouveau poste).",
+    "Inclure une mini section `### One-line bootstrap` avec UN SEUL bloc shell (```bash …```) listant 3 commandes max : `npm run verify:boucle`, `bash scripts/agent-activity-log.sh tail 50`, et la mention que `run-cycle <TASK_ID>` initie tout cycle borné.",
+    "Inclure une note explicite `### Quality-first, not token-cheap` (1 paragraphe ~3 phrases) qui rappelle : on lit les P0+P1 intégralement (pas de skim), les économies tokens ne se font JAMAIS sur la substance des règles ; cf. `.cursor/rules/global.mdc § Token Discipline`.",
+    "Inclure une dernière mini-section `### If you're a new human contributor` (2-3 lignes) pointant vers `docs/orchestration/EXPORT_CONFIG_CODEX_GPT_API_ET_AUDIT_PERSISTANCE.md`.",
+    "AUCUN lien cassé : tous les chemins cités doivent être relatifs au repo et exister (mentionner uniquement les fichiers listés ci-dessus).",
+    "Style : direct, impératif, zéro fioriture. Français autorisé pour la voix du contrat (cohérence avec §1 Parcours obligatoire), mais titres en anglais comme dans le reste de AGENTS.md.",
+    "Pas de bloc HTML, pas d'emojis, pas de référence à du code applicatif (pas de noms Vue/Laravel) — c'est un contrat de lecture, pas une doc technique.",
+    "Le bloc DOIT se terminer par une ligne séparatrice `---` suivie d'une ligne vide, pour s'enchaîner proprement avec `## Parcours obligatoire` qui suit."
+  ],
+  "deliverable_format": {
+    "files_to_modify": [
+      {
+        "path": "AGENTS.md",
+        "operation": "insert_after_line",
+        "anchor": "# FoodKing – Cursor Agent Operating Contract",
+        "insert_blank_line_before": true,
+        "content_key": "quick_start_block"
+      }
+    ],
+    "code_blocks": {
+      "quick_start_block": "<le markdown complet du bloc, en chaine literale prête à insérer>"
+    },
+    "implementation_steps": [
+      "Étape 1 : composer le bloc selon hard_constraints",
+      "Étape 2 : vérifier mentalement chaque chemin cité (existence dans le repo)",
+      "Étape 3 : compter les lignes (35..60)",
+      "Étape 4 : retourner le bloc dans code_blocks.quick_start_block"
+    ],
+    "risks": "<liste éventuelle ou 'none'>",
+    "notes": "<contexte additionnel>",
+    "execution_trace": {
+      "delegation": "codex-terminal",
+      "model": "gpt-5.4",
+      "task_id": "T-PARCOURS-OPTIMIZE-001"
+    }
+  },
+  "out_of_scope": [
+    "Modifier ou supprimer toute section existante de AGENTS.md (sections 1+).",
+    "Modifier des fichiers autres que AGENTS.md.",
+    "Ajouter des fichiers ou des dépendances."
+  ]
+}

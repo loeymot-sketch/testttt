@@ -89,6 +89,10 @@
 <script>
 import alertService from "../../../services/alertService";
 
+// [Phase-8 / T19] Plan de salle : `posFloorplan` (state/assign/transfer), UI
+// libre / occupé, garde-fous double-clic — **non-régression** assign 409, transfer
+// cross-branch 422/404 (voir `FloorplanControllerTest`, GATE C-β / branch_id).
+
 export default {
     name: "FloorplanComponent",
     data() {

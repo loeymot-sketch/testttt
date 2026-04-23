@@ -1,5 +1,7 @@
 # RUN — P13_LOG_HYGIENE — 2026-04-20
 
+EXECUTE_DELEGATION: foodking-routine-implementer
+
 TASK_ID: P13_LOG_HYGIENE_2026-04-20
 PLAN: tasks/execute-2026-04-20/12_EXECUTE_P13_LOG_HYGIENE.md
 PRIMARY_MODEL: Composer (foodking-routine-implementer)

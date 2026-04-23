@@ -1,0 +1,34 @@
+{
+  "name": "codex-complex-implementor",
+  "type": "sub-agent",
+  "role": "complex_implementation",
+  "endpoint": "${CODEX_API_BASE}/chat/completions",
+  "method": "POST",
+  "headers": {
+    "Authorization": "Bearer ${CODEX_API_KEY}",
+    "Content-Type": "application/json"
+  },
+  "body_template": {
+    "model": "${CODEX_MODEL_COMPLEX}",
+    "messages": [
+      {
+        "role": "user",
+        "content": "<prompt final>"
+      }
+    ]
+  },
+  "constraints": {
+    "forbidden_params": [
+      "user",
+      "top_p",
+      "presence_penalty",
+      "frequency_penalty",
+      "max_tokens"
+    ],
+    "note": "Body minimal uniquement côté codex.runner.mjs (pas d’extras par défaut)."
+  },
+  "output": {
+    "format": "json",
+    "path": "missions/{{TASK_ID}}/output_codex.json"
+  }
+}

@@ -1,5 +1,6 @@
 /**
  * POS operator accessibility helpers (focus trap, screen reader announcements).
+ * [Phase-9 / T18] — garde-fous Vitest : `posA11y.spec.js`, `posComponentA11y.spec.js`.
  */
 
 // Trap focus inside modal/drawer for POS modals

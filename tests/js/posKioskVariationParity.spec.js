@@ -132,4 +132,9 @@ describe('POS ↔ Kiosk variation parity (T03)', () => {
         expect(kioskIds).not.toContain(602);
         expect(posIds.includes(601) && kioskIds.includes(601)).toBe(true);
     });
+
+    // (Audit terminal 2026-04) cas « kioskMaxSlots < max_select » : documenté ici
+    // sans test Vitest supplémentaire — kioskTryIncrement délègue à posTryIncrement
+    // (variationParityFixtures.js) quand le total est sous le cap. Un scénario E2E
+    // « taille T2 + 4 max » relève du wizard produit, pas de cette suite pure.
 });

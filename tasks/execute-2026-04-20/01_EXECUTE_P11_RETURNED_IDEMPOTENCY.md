@@ -40,7 +40,7 @@
 - `database/migrations/**` (aucune migration prévue)
 - Routes, controllers, requests (aucune modif)
 
-## Invariants at Risk (foodking-invariants)
+## Invariants at Risk (project-invariants)
 - **OrderStatus state-machine SSOT** — guard `from === to` doit distinguer "rejeu idempotent" vs "transition implicite tolérée"
 - **NF525 audit chain** — `AuditLogService::write('order.returned')` ne doit pas dédoubler → verify-chain resterait intègre MAIS le compteur séquentiel serait pollué
 - **OrderService ↔ FrontendOrderService symmetry** — si la garde s'applique uniquement à OrderService, documenter l'asymétrie avec `SYMMETRY_NOTE` (soft gate per human-gates.mdc:36)
@@ -84,7 +84,7 @@ Si le subagent détecte qu'un fichier hors SCOPE_FILES est requis :
 ## Remediation (`auto-remediation.mdc`)
 - **Attempt 1-2 (KO non critique)** → Claude diagnose + micro-replan + re-route GPT-5.4 + re-EXECUTE + re-AUDIT (même session, sans confirmation humaine)
 - **Attempt 3 même `bug_signature`** → **HUMAN_GATE bug irrésolu** (format auto-remediation.mdc:116-131)
-- **Diff touche zone critique hors SCOPE** → **HUMAN_GATE zone critique** (foodking-invariants.mdc + human-gates.mdc:23)
+- **Diff touche zone critique hors SCOPE** → **HUMAN_GATE zone critique** (project-invariants.mdc + human-gates.mdc:23)
 
 ## Deliverables
 - Diff applicatif minimal et ciblé (≤ ~80 lignes attendues)

@@ -1,7 +1,8 @@
 # RUN — P_MEGA_W6_A_A11Y_EXECUTE (Phase A.2)
 
-**Date** : 2026-04-21  
-**EXECUTE_DELEGATION** : foodking-routine-implementer
+EXECUTE_DELEGATION: foodking-routine-implementer
+
+**Date** : 2026-04-21
 
 ## Outcome
 

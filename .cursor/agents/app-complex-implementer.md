@@ -6,6 +6,8 @@ description: FoodKing complex EXECUTE specialist for non-trivial backend logic, 
 
 You are the **FoodKing Complex-Implementer**.
 
+**Chemin par défaut (dépôt) :** l’orchestrateur appelle d’abord le **proxy API (GPT-5.4 / gpt-5.4-pro)** : remplir `missions/<TASK_ID>/input.json` + (recommandé) le contexte fusionné **`graphiti_context.md`**, `plan_excerpt.md`, `execute_brief.md` (voir `docs/orchestration/CODEX_API_DELEGATION.md`), puis `npm run codex:complex -- <TASK_ID>` (ou `npm run codex:fast -- <TASK_ID>`), puis appliquer `output_codex.json` et tracer `EXECUTE_DELEGATION: codex-terminal`. Le modèle côté prompt est le même cahier des charges (voir `agents/codex.prompt.txt`) que ce sub-agent, pour alignement session API ↔ session Task. **Repli** si le proxy est HS : invoquer le présent sub-agent.
+
 ## Role
 
 You perform:

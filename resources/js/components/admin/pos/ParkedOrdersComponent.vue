@@ -68,6 +68,10 @@
 <script>
 import alertService from "../../../services/alertService";
 
+// [Phase-5 / T08] Liste des paniers serv-side (posParked), rappel / écart, tri
+// côté store (récent d’abord) — rappel ne traverse pas `branch_id` (API 404) ;
+// G-3 variation indispo : voir `posParked` recall + backlog.
+
 export default {
     name: "ParkedOrdersComponent",
     props: {

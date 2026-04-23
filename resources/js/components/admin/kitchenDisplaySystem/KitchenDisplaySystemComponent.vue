@@ -4,6 +4,41 @@
   <div v-if="!wsConnected" class="ws-reconnect-banner">
     Connexion temps réel perdue — actualisation automatique toutes les 10s...
   </div>
+  <div
+    v-if="kdsIsCentralAdmin"
+    class="kds-hint-banner kds-hint-banner--info"
+    role="status"
+  >
+    {{ $t("label.kds_admin_polling_hint") }}
+  </div>
+  <div
+    v-if="kdsOrderApproachingCap"
+    class="kds-hint-banner kds-hint-banner--warning"
+    role="alert"
+  >
+    {{ $t("label.kds_order_cap_warning", { n: orders.length }) }}
+  </div>
+  <div
+    v-if="kdsOrderListAtCap"
+    class="kds-hint-banner kds-hint-banner--danger"
+    role="alert"
+  >
+    {{ $t("label.kds_order_list_full_warning", { n: orders.length }) }}
+  </div>
+  <div
+    v-if="!kdsHideBumpInfo"
+    class="kds-hint-banner kds-hint-banner--neutral flex flex-wrap items-center justify-between gap-2 text-left"
+    role="note"
+  >
+    <span class="min-w-0 flex-1">{{ $t("label.kds_bump_local_only_notice") }}</span>
+    <button
+      type="button"
+      class="shrink-0 text-xs font-medium underline text-[#4b5563]"
+      @click="dismissKdsBumpNotice"
+    >
+      {{ $t("label.kds_dismiss_hint") }}
+    </button>
+  </div>
   <div class="row md:mt-4 lg:mt-0">
     <div class="lg:hidden flex items-center w-full px-4">
       <button
@@ -18,6 +53,7 @@
         <div class="h-screen md:h-[calc(100vh-127px)] overflow-hidden">
           <div class="p-3 pb-2 border-b border-[#D9DBE9]">
             <h3 class="text-lg font-semibold">{{ $t('label.items_board') }}</h3>
+            <p class="text-[11px] text-[#6E7191] leading-snug mt-1">{{ $t("label.kds_items_board_scope") }}</p>
           </div>
           <ul class="h-full thin-scrolling overflow-auto pb-12">
             <!-- [N7 FIX] Stable key using item_id + instruction hash instead of object reference -->
@@ -43,7 +79,11 @@
                     </span>
                   </p>
                 </span>
-                <div v-if="orderItem.instruction" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ orderItem.instruction }}</div>
+                <div
+                  v-if="orderItem.instruction"
+                  :class="[kdsInstructionClass(orderItem.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                  style="white-space: pre-line"
+                >{{ orderItem.instruction }}</div>
               </div>
               <div
                 class="text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">{{
@@ -203,7 +243,11 @@
                           </p>
                         </div>
                         <!-- [P3-1 FIX] Show instruction on dine-in cards -->
-                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                        <div
+                          v-if="item.instruction && item.instruction !== ''"
+                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          style="white-space: pre-line"
+                        >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <button v-if="!kdsIsBumped(dineinOrder.id, item.id)" type="button"
@@ -304,7 +348,11 @@
                             </span>
                           </p>
                         </div>
-                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                        <div
+                          v-if="item.instruction && item.instruction !== ''"
+                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          style="white-space: pre-line"
+                        >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <button v-if="!kdsIsBumped(onlineOrder.id, item.id)" type="button"
@@ -403,7 +451,11 @@
                           </p>
                         </div>
                         <!-- [P3-1 FIX] Show instruction on takeaway cards -->
-                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                        <div
+                          v-if="item.instruction && item.instruction !== ''"
+                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          style="white-space: pre-line"
+                        >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <button v-if="!kdsIsBumped(takeawayOrder.id, item.id)" type="button"
@@ -508,7 +560,11 @@
                             {{ allergen }}
                           </span>
                         </div>
-                        <div v-if="item.instruction && item.instruction !== ''" class="kds-instruction mt-1 text-xs text-heading" style="white-space: pre-line;">{{ item.instruction }}</div>
+                        <div
+                          v-if="item.instruction && item.instruction !== ''"
+                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          style="white-space: pre-line"
+                        >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <button v-if="!kdsIsBumped(kioskOrder.id, item.id)" type="button"
@@ -566,7 +622,11 @@ import {
   getKdsEscalationClass,
   parseOrderCreatedMs,
 } from "../../../helpers/kdsDisplay";
+import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 
+// [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
+// d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
+// OrderService ici (GATE plan). Polling 10s si WS down.
 
 export default {
   name: "KitchenDisplaySystemComponent",
@@ -612,9 +672,22 @@ export default {
       expandedTableGroups: {},
       _kdsWaitInterval: null,
       _kdsOrdersHydrated: false,
+      kdsHideBumpInfo: false,
     };
   },
   computed: {
+    kdsIsCentralAdmin() {
+      return parseInt(this.$store.getters["auth/authBranchId"] || 0, 10) <= 0;
+    },
+    /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */
+    kdsOrderApproachingCap() {
+      const n = Array.isArray(this.orders) ? this.orders.length : 0;
+      return n >= 45 && n < 50;
+    },
+    /** Exactement 50 = requête backend limit(50) — d’autres commandes actives peuvent exister */
+    kdsOrderListAtCap() {
+      return Array.isArray(this.orders) && this.orders.length === 50;
+    },
     orders: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/lists"];
     },
@@ -653,6 +726,11 @@ export default {
     },
   },
   created() {
+    try {
+      this.kdsHideBumpInfo = localStorage.getItem("kds.hide_bump_info") === "1";
+    } catch (e) {
+      this.kdsHideBumpInfo = false;
+    }
     const sf = localStorage.getItem("kds.station_filter");
     if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
       this.stationFilter = sf;
@@ -676,6 +754,17 @@ export default {
     }, 30000);
   },
   methods: {
+    kdsInstructionClass(text) {
+      return kdsInstructionVisualClass(text);
+    },
+    dismissKdsBumpNotice() {
+      try {
+        localStorage.setItem("kds.hide_bump_info", "1");
+      } catch (e) {
+        /* ignore */
+      }
+      this.kdsHideBumpInfo = true;
+    },
     kdsWaitClass(order) {
       void this.waitTick;
       const ms = parseOrderCreatedMs(order);
@@ -976,7 +1065,17 @@ export default {
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${extras}</div>`);
         }
         if (item.instruction) {
-          lines.push(`<div style="font-size:11px;color:#666;margin-top:3px;white-space:pre-line;">${e(item.instruction)}</div>`);
+          const vis = kdsInstructionVisualClass(item.instruction);
+          let instStyle =
+            "font-size:11px;color:#666;margin-top:3px;white-space:pre-line";
+          if (vis === "kds-instruction--allergen") {
+            instStyle =
+              "font-size:11px;color:#7f1d1d;background:#fef2f2;border:1px solid #fecaca;padding:4px 6px;border-radius:4px;margin-top:3px;white-space:pre-line;font-weight:600";
+          } else if (vis === "kds-instruction--exclusion") {
+            instStyle =
+              "font-size:11px;color:#7c2d12;background:#fff7ed;border:1px solid #fdba74;padding:4px 6px;border-radius:4px;margin-top:3px;white-space:pre-line";
+          }
+          lines.push(`<div style="${instStyle}">${e(item.instruction)}</div>`);
         }
         lines.push('</div>');
       });
@@ -1017,6 +1116,11 @@ export default {
           }));
         }).catch((err) => {
           this.loading.isActive = false;
+          if (err?.response?.status === 409) {
+            alertService.error(this.$t("message.kds_status_conflict"));
+            this._debouncedRefresh();
+            return;
+          }
           // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
           const msg = err?.response?.data?.message || err?.message || 'Erreur réseau';
           alertService.error(msg);
@@ -1064,6 +1168,61 @@ export default {
 <style scoped>
 .kds-instruction {
   line-height: 1.5;
+  border-left: 3px solid #e0e0e0;
+  padding-left: 0.4rem;
+}
+.kds-instruction--note {
+  color: #4e4b66;
+  border-left-color: #a0a3bd;
+  background: rgba(160, 163, 189, 0.08);
+  border-radius: 0 4px 4px 0;
+  padding: 0.2rem 0.35rem 0.2rem 0.4rem;
+}
+.kds-instruction--exclusion {
+  color: #7c2d12;
+  border-left-color: #f97316;
+  background: #fff7ed;
+  font-weight: 600;
+  border-radius: 0 4px 4px 0;
+  padding: 0.2rem 0.35rem 0.2rem 0.4rem;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);
+}
+.kds-instruction--allergen {
+  color: #7f1d1d;
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  font-weight: 700;
+  border-radius: 0 4px 4px 0;
+  padding: 0.2rem 0.35rem 0.2rem 0.4rem;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);
+}
+.kds-hint-banner {
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.kds-hint-banner--info {
+  background: #e0f2fe;
+  color: #0c4a6e;
+  border-bottom: 1px solid #bae6fd;
+}
+.kds-hint-banner--warning {
+  background: #fffbeb;
+  color: #78350f;
+  border-bottom: 1px solid #fde68a;
+}
+.kds-hint-banner--neutral {
+  background: #f4f4f5;
+  color: #3f3f46;
+  border-bottom: 1px solid #e4e4e7;
+}
+.kds-hint-banner--danger {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-bottom: 1px solid #fecaca;
+  font-weight: 600;
 }
 .ws-reconnect-banner {
   background: #f59e0b;

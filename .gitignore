@@ -6,6 +6,7 @@
 /storage/logs/
 /storage/debugbar/
 .env
+.env.codex
 .env.backup
 .env.testing
 .cursor/mcp/graphiti.json
@@ -40,6 +41,7 @@ borne-windows/
 /playwright/.cache/
 memory/ingest.env
 memory/__pycache__/
+missions/**/output_codex.json
 
 # Memory tooling outputs (CI/local; commit only when establishing a baseline)
 /reports/memory/verify_snapshot.json

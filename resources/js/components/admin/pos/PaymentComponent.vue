@@ -194,6 +194,8 @@ export default {
             this.cashReceivedRaw = 0;
         },
         confirmOrder: function () {
+            // [Phase-3 / T17] Paiement POS : single-flight, erreurs API (catch → alertService),
+            // normalisation items string→array (V14 B-6), libellé d’échec réseau côté catch.
             // [AUDIT-P2] Strict single-flight guard: if already submitting, bail out immediately.
             // The :disabled on the button is the first line of defense; this is the second.
             if (this.loading.isActive) return;

@@ -1,0 +1,14 @@
+{
+  "task_id": "T-LOOP-HELPER-001-R3",
+  "context": "Round 3 (FINAL) remediation. Tests in tests/js/posCentsArith.spec.js are AUTHORITATIVE and IMMUTABLE. The previous round changed two error messages and broke 2 tests.",
+  "objective": "Replace resources/js/helpers/posCentsArith.js so all 12 tests in tests/js/posCentsArith.spec.js pass. The exact error messages REQUIRED by the test regexes are:\n  - addCents/subCents/sumCents on negative input -> message must contain the literal substring 'cannot be negative' (case-insensitive). Example: 'left cannot be negative', 'values[1] cannot be negative'.\n  - subCents(10, 20) (where right > left) -> message must contain the literal substring 'result cannot be negative'.\n  - toCents on non-finite / string -> message must contain 'finite number'.\n  - toCents on >2 decimals (like 0.345) -> message must contain 'at most 2 decimal places'.\n  - addCents/subCents inputs that are non-integer / non-finite / strings -> the SAME 'finite number' message must appear when type assertion fails (look at the spec: addCents('10', 5) is expected to throw /finite number/i).\n\nSplit error messages so:\n  - assertFiniteNumber throws 'X must be a finite number' (matches /finite number/i)\n  - the integer/non-negative check throws separate messages: if not integer -> 'X must be an integer number of cents' ; if negative -> 'X cannot be negative' (matches /cannot be negative/i)\n  - subCents result-negative case -> 'result cannot be negative' (matches /result cannot be negative/i)\n  - toCents amount<0 -> 'amount cannot be negative'\n  - toCents bad decimals -> 'amount must have at most 2 decimal places'\n\nKeep all other behaviour identical. Use TypeError for type errors and RangeError for value-range errors (this is what the original tests pass with — and any Error subclass matches .toThrow(regex)). Implementation MUST preserve toCents milli-unit logic that accepts 0.30000004 and rejects 0.345.",
+  "constraints": [
+    "Single file replace: resources/js/helpers/posCentsArith.js",
+    "DO NOT touch tests/js/posCentsArith.spec.js",
+    "Named exports + default object exports unchanged",
+    "Variadic sumCents (rest params), not array",
+    "addCents/subCents/sumCents take INTEGER cents (throw on float / string / NaN / Infinity / negative)",
+    "toCents takes a FLOAT amount and returns integer cents"
+  ],
+  "expected_output_format": "Strict JSON: { files_to_modify, implementation_steps, code_blocks: [{ path, op:'replace', excerpt:<FULL FILE BODY> }], risks, notes, execution_trace: { delegation:'codex-terminal', invariants_considered:['pricing_ssot'] } }. No markdown."
+}

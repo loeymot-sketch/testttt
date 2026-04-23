@@ -41,18 +41,44 @@ build_json() {
 }
 
 if [[ "${1:-}" == "--check" && -n "${2:-}" ]]; then
+  # On ne compare que `.files` : `generated_at` change à chaque seconde sinon --check serait bruit.
   cur=$(mktemp)
   build_json > "${cur}"
-  if cmp -s "${cur}" "$2"; then
-    echo "OK: manifest matches $2"
+  if python3 - "$2" "$cur" <<'PY'
+import json, sys
+p_committed, p_fresh = sys.argv[1], sys.argv[2]
+with open(p_committed) as f:
+    a = json.load(f).get("files", {})
+with open(p_fresh) as f:
+    b = json.load(f).get("files", {})
+sys.exit(0 if a == b else 1)
+PY
+  then
+    echo "OK: manifest .files (SHA JSONL) matches $2"
     rm -f "${cur}"
     exit 0
   fi
-  echo "DIFF: current episodes hashes differ from $2" >&2
-  diff -u "$2" "${cur}" >&2 || true
+  echo "DIFF: episode hashes/lines in .files differ from $2" >&2
+  diff -u "$2" "${cur}" >&2 | head -n 40 || true
   rm -f "${cur}"
   exit 1
 fi
 
-build_json > "${OUT}"
+tmpf=$(mktemp)
+build_json > "${tmpf}"
+if [[ -f "$OUT" ]]; then
+  if python3 - "$OUT" "$tmpf" <<'PY'
+import json, sys
+with open(sys.argv[1]) as a, open(sys.argv[2]) as b:
+    if json.load(a).get("files") == json.load(b).get("files"):
+        sys.exit(0)
+sys.exit(1)
+PY
+  then
+    rm -f "$tmpf"
+    echo "OK: ${OUT} (SHA JSONL inchangé — génération ignorée, pas de bruit git sur generated_at)"
+    exit 0
+  fi
+fi
+mv -f "$tmpf" "${OUT}"
 echo "Wrote ${OUT}"

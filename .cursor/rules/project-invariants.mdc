@@ -7,7 +7,7 @@ alwaysApply: true
 # FoodKing Domain Invariants
 
 Violation of any invariant at any phase triggers an immediate gate.
-Claude checks at plan and audit. GPT-5.4 checks at execution. Composer halts and logs on contact.
+Claude checks at plan and audit. GPT-5.4 (delivered via **`codex-terminal`** primarily, sub-agent `foodking-complex-implementer` only as fallback) checks at execution. Composer halts and logs on contact.
 
 ---
 

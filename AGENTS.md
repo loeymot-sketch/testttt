@@ -1,12 +1,81 @@
 # FoodKing – Cursor Agent Operating Contract
 
+## 0. Quick start contract — read this first
+
+Commence ici. Ne lance aucune action tant que tu n'as pas lu les priorités P0.
+Ce contrat fixe l'ordre minimal de lecture pour comprendre le repo en moins de 60 secondes.
+Lis complètement ce qui est marqué obligatoire ; diffère seulement ce qui est explicitement classé P2.
+
+### Reading priority
+
+| Priority | What to read | Why |
+| --- | --- | --- |
+| P0 | `AGENTS.md §1 Parcours obligatoire` | Cadre impératif de travail, ordre de lecture, discipline de cycle. |
+| P0 | `.cursor/ACTIVE_CYCLE.md` (continuation) | État courant du cycle actif, contexte vivant, reprise sans divergence. |
+| P0 | `.cursor/rules/global.mdc` (auto-attaché — mentionné pour info) | Règles globales toujours applicables, même si déjà injectées par l'outil. |
+| P1 | `docs/orchestration/GLOBAL_SYSTEM_PRIMER.md` | Vocabulaire, architecture d'orchestration, invariants transverses. |
+| P1 | `.cursor/commands/run-cycle.md` | Procédure exacte pour démarrer un cycle borné correctement. |
+| P1 | `docs/orchestration/MEMORY_MATRIX.md` | Où chercher la mémoire utile sans relire tout le dépôt. |
+| P1 | `.cursor/routing.md` | Routage des tâches, choix du bon canal, limites d'intervention. |
+| P2 | `docs/orchestration/CODEX_API_DELEGATION.md` (quand EXECUTE complexe) | À lire si tu délègues ou exécutes du complexe via API. |
+| P2 | `.cursor/ACTIVE_CYCLE_ARCHIVE.md` (forensique humain) | Historique utile pour audit humain, pas requis au démarrage. |
+| P2 | `docs/orchestration/EXPORT_CONFIG_CODEX_GPT_API_ET_AUDIT_PERSISTANCE.md` (nouveau poste) | Configuration et persistance utiles surtout lors d'un nouvel environnement. |
+
+Règle simple : P0 avant toute action, P1 avant tout EXECUTE, P2 seulement à la demande du sujet.
+Si un doute persiste après P0+P1, arrête-toi et relis ; n'improvise pas.
+
+### One-line bootstrap
+
+```bash
+npm run verify:boucle
+bash scripts/agent-activity-log.sh tail 50
+run-cycle <TASK_ID>
+```
+
+Utilise `run-cycle <TASK_ID>` pour initier tout cycle borné.
+Les deux autres commandes servent à vérifier l'état local et le journal d'activité avant d'exécuter.
+
+### Quality-first, not token-cheap
+
+Lis P0 et P1 intégralement, sans skim. Les économies de tokens ne se font jamais sur la substance des règles, seulement sur la répétition, le bruit et les relectures inutiles. En cas de tension entre vitesse et rigueur, applique la rigueur ; voir `.cursor/rules/global.mdc § Token Discipline`.
+
+### If you're a new human contributor
+
+Commence par `docs/orchestration/EXPORT_CONFIG_CODEX_GPT_API_ET_AUDIT_PERSISTANCE.md` pour préparer ton poste et comprendre le mode de persistance attendu.
+Lis-le après P0, puis enchaîne sur P1 avant toute contribution effective.
+
+---
+
+## 1. Parcours obligatoire — **nouvelle conversation** **et** **continuation** (production, non négociable)
+
+> **Objectif** : qu’**à chaque** session (premier message ou 500e message), l’exécutant sache **quel** chemin suivre — **sans** supposer un historique de chat. Tout est **dans le dépôt** ; l’histoire de conversation **n’est pas** la SSOT.
+
+**Règle d’or** : *aucune* modification de code **produit** (hors `plans/`, `reports/`, `docs/gates/`, `missions/`, JSONL gouvernance) **dans le cadre d’un travail borné** sans **(a)** parcours ci-dessous **et** **(b)** cycle `run-cycle` + plan actif, sauf **exception** explicite humaine (notée dans le plan / gate).
+
+| Étape | Action | Quand / pourquoi |
+|-------|--------|------------------|
+| **0. Continuation** | Lire **`.cursor/ACTIVE_CYCLE.md`**. | Si `PHASE` n’est **pas** vide et le cycle n’est **pas** archivé : **reprendre** ce `TASK_ID` / ce `PLAN_FILE` / ce `REPORT_FILE` — **ne pas** dupliquer un second cycle fantôme. Si humain confirme **nouveau** sujet : réinitialiser / nouveau `TASK_ID` selon `run-cycle` Step 0. |
+| **1. Lecture initiale** | Lire **ce fichier** (`AGENTS.md`) **puis** **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** (table §1 = ordre complet : routing, `run-cycle`, Graphiti, `MEMORY_MATRIX`, etc.). | **Avant** tout code ou plan non trivial. Même en « continuation » si le contexte a dérivé ou l’onglet a été rafraîchi. |
+| **2. Cycle structuré (SSOT procédurale)** | Toute tâche avec **`TASK_ID`** : suivre **`.cursor/commands/run-cycle.md`** et la commande **`run-cycle <TASK_ID>`** (ou équivalent explicite dans le chat : enchaîner les **Steps 0 → 5** sans en sauter). | **C’est** le programme de production en boucle : `PLAN → EXECUTE → VALIDATE → AUDIT → [GATE \| CLOSE]`. Aucun « close » sans `AUDIT` (sauf gate humain documenté). |
+| **3. Vérification d’environnement** | `npm run verify:boucle` (0 requête API, binaire + doc). Avant un **gros** sujet ou un **nouveau** poste : `npm run verify:boucle:full` (1× smoke `claude` + 1× `codex:smoke` — preuve d’API). | Évite de découvrir en **Step 5** que le terminal d’audit ou le proxy d’`EXECUTE` est mort. Voir `run-cycle` Step 0 item 8. |
+| **4. Secrets & outils machine** | Binaire **`claude`** sur le **`PATH`** (Claude Code CLI) pour l’**AUDIT** PRIMARY en terminal. Variables **`CODEX_*`** dans **`.env.codex`** / **`.env`** pour **`codex-terminal`**. (Option) MCP Graphiti selon `~/.cursor/mcp.json`. | Chaque poste de dev/CI. Sans `claude` : noter dès le **plan** l’`AUDIT` fallback + `AUDIT_FALLBACK_REASON`. Sans `CODEX_*` : pas d’`EXECUTE` complexe PRIMARY. |
+| **5. Traces & mémoire (déjà dans ce fichier)** | **`EXECUTE_DELEGATION:`** avant VALIDATE ; **`AUDIT_CHANNEL:`** + **`TERMINAL_AUDIT_OK: 1`** si audit terminal OK ; `docs/orchestration/MEMORY_MATRIX.md` ; `scripts/agent-activity-log.sh` (tail / start / done). | Traçabilité = **même** qualité en prod sur N agents parallèles. |
+
+**Ce n’est pas optionnel** pour travailler « en production FoodKing » : c’est le **contrat** d’onboarding. Les **règles** `.cursor/rules/*.mdc` (dont **`global.mdc` — alwaysApply**) et ce fichier **s’imposent** **à** tout modèle, **dans** toute conversation, dès l’ouverture du dépôt.
+
+**Pour un humain / nouveau compte** : mêmes étapes ; la doc **`docs/orchestration/EXPORT_CONFIG_CODEX_GPT_API_ET_AUDIT_PERSISTANCE.md`** regroupe l’**export** config API + persistance des règles hors-chat.
+
 ## Engine
 Cursor local agent. No cloud orchestration. No external framework.
 Auto/Premium routing: disabled. Model selection is explicit per cycle.
 
 ## Global system primer (multi-agents, Graphiti, tokens — lecture clé)
 
-Tout nouvel intervenant (session Cursor, sub-agent Task, CLI terminal, humain) qui touche **orchestration**, **mémoire**, ou **discipline de contexte** : lire **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** après ce fichier. Y sont définis : ordre de lecture obligatoire, **`foodking-routine-implementer` / `foodking-complex-implementer`**, terminal **`claude` / `codex`**, **mise à jour continue de Graphiti**, et la politique **« intelligence max — zéro optimisation négative »** (tokens : supprimer le gaspillage, pas la substance).
+Tout nouvel intervenant (session Cursor, sub-agent Task, CLI terminal, humain) qui touche **orchestration**, **mémoire**, ou **discipline de contexte** : lire **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** après ce fichier. Y sont définis : ordre de lecture obligatoire, **`foodking-routine-implementer` / `foodking-complex-implementer`**, terminal **`claude` / `codex`**, **mise à jour continue de Graphiti**, et la politique **« intelligence max — zéro optimisation négative »** (tokens : supprimer le gaspillage, pas la substance). Pour audits longs et robustesse **opération + agentique + mémoire** : **`docs/orchestration/MEGA_CHECKLIST_AUTONOMY_AND_MEMORY.md`** (180 tâches) et le narratif **`reports/audit/MEGA_AUDIT_SYSTEM_OPERATION_AGENTIC_2026-04-23.md`**.
+
+**Discipline mémoire (qui écrit où, qui lit quoi, quand)** : **`docs/orchestration/MEMORY_MATRIX.md`** — matrice unique des **4 stores autorisés** (Code A · Graphiti+JSONL B · Missions C · Rapports D), table d'écriture par phase, ordre de lecture pour une nouvelle session, anti-patterns. Aucun nouveau store de mémoire ne peut être ajouté sans gate `docs/gates/GATE_MEMORY_*`. Décisions 2026-04-23 sur OpenSpace et claude-mem : **non intégrés**, justifications dans la matrice.
+
+**Synchro multi-agents (cross-conv, cross-terminal)** : `.cursor/rules/cross-agent-sync.mdc` (alwaysApply) + `reports/AGENT_ACTIVITY_LOG.md` (append-only) + `scripts/agent-activity-log.sh` (`tail | start | done | collisions | active`). Au démarrage de session : `tail 50` (~500 tokens). Avant édition produit (Step 2 EXECUTE) : `start` (refus exit 2 si collision). À la clôture (Step 5 CLOSE) : `done`. Évite que deux agents (Cursor convs / `codex-terminal` / `claude-terminal` / humain) modifient les mêmes fichiers à leur insu.
 
 ## Workflow
 PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
@@ -14,14 +83,17 @@ PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
 No phase may be skipped. Audit always precedes close.
 
 ## Model Roles
-| Model | Role |
-|---|---|
-| Claude | Plan, architect, orchestrate, audit |
-| GPT-5.4 | Complex implementation |
-| Composer | Routine edits, reports, summaries |
+| Model | Role | Channel (priorité **économie d’abonnement / token**) |
+|---|---|---|
+| Claude | Plan, architect, orchestrate, **audit** | **PLAN** : le plus souvent en **session Cursor** (orchestrateur) — c’est l’entretien cerveau, pas l’appel `codex`. **AUDIT (après chaque implementation)** : **PRIMAIRE = terminal** `bash scripts/foodking-claude-orchestrate.sh` (`context` → `audit` ou `audit-brief`) — s’appuie sur l’**abonnement Anthropic (Claude Code CLI)**, *pas* sur l’orchestrateur de modèles de Cursor. **FALLBACK AUDIT** : audit dans la **session Cursor** (Claude) **seulement** si le terminal est indisponible — tracer `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:`. Voir `run-cycle.md` Step 5. |
+| **GPT-5.4 / GPT-5.4-pro** | **Complex implementation (PRIMARY)** | **`codex-terminal`** — `npm run codex:complex` (proxy + `CODEX_API_KEY`) — n’emprunte **pas** l’**usage de modèles** de l’**abonnement Cursor** (validé 2026-04-23). |
+| GPT-5.4 (fallback) | Complex implementation (FALLBACK only) | **Sub-agent** `foodking-complex-implementer` (Task Cursor) — consomme le **compte côté Cursor (API du plan)**. **Uniquement** si `codex-terminal` a échoué ≥3 reprises ou moyen d’exécution indispo. |
+| Composer | Routine edits, reports, summaries | Sub-agent `foodking-routine-implementer` — compte côté Cursor. |
+
+**Principe unique (symétrique) — à valider en prod sur chaque cycle :** **implementation complexe = terminale d’abord (GPT + API)**, **audit = terminale d’abord (Claude + abonnement Anthropic)**, le **repli** vers les **sub-agents Cursor** n’intervient qu’en **défaut d’exécution** du **terminal** côté concerné, avec `FALLBACK_*` explicite dans le rapport. Preuve d’environnement : `bash scripts/verify-orchestration-boucle.sh` ; smoke complet : `VERIFY_BILLING_FULL=1` (consomme un minima d’appels API).
 
 One PRIMARY_MODEL per cycle. Roles do not overlap.
-Full routing policy: `.cursor/routing.md`
+Full routing policy: `.cursor/routing.md`. Naming: the **PRIMARY complex implementer is officially "FoodKing API Complex Implementer"** (slug `codex-terminal`); see `docs/orchestration/CODEX_API_DELEGATION.md`.
 
 ## Authoritative multi-agent bounded cycle (SSOT)
 
@@ -32,7 +104,17 @@ For **TASK_ID-driven** work in Cursor, this path is **authoritative** and overri
 3. **Plan artifact:** `plans/PLAN_[TASK_ID]_[DATE].md` per `.cursor/context/plan-context.md` (from `plans/PLAN_TEMPLATE.md` when applicable).
 4. **Phase instructions:** `.cursor/context/plan-context.md` (PLAN), `.cursor/context/execute-context.md` (EXECUTE), `.cursor/context/audit-context.md` (AUDIT); VALIDATE per `run-cycle.md` when `validate-context.md` is absent.
 
-**EXECUTE delegation:** Implementation is performed only after **explicit** delegation to the subagent matching `PRIMARY_MODEL` and routing intent (see `.cursor/routing.md` and **Step 2** in `run-cycle.md`): **`foodking-routine-implementer`** for Composer (routine), **`foodking-complex-implementer`** for GPT-5.4 (complex). Do not treat a cycle as properly executed if product edits were made without that delegation pattern (or the documented exception in `run-cycle.md`).
+**EXECUTE delegation (PRIMARY first, FALLBACK only on failure):**
+
+- **Routine** → `Task` → `foodking-routine-implementer`.
+- **Complexe — PRIMARY** : **`codex-terminal`** — la **FoodKing API Complex Implementer** (proxy OpenAI-compatible). Procédure :
+  1. Préparer `missions/{TASK_ID}/input.json` (+ optionnels : `graphiti_context.md` issu de `search_memory_facts(group_ids=["foodking"])`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md` — auto-fusionnés par le runner).
+  2. Lancer `npm run codex:complex -- {TASK_ID}` (variante rapide : `npm run codex:fast` ; modèle par défaut `gpt-5.4`, override : `CODEX_MODEL_COMPLEX=gpt-5.4-pro`). Clés `CODEX_*` dans `.env` / `.env.codex`. Bootstrap mission : `npm run codex:prepare -- {TASK_ID}`.
+  3. Appliquer `missions/{TASK_ID}/output_codex.json` dans la session Cursor (créer/éditer les fichiers exactement comme indiqué).
+  4. Tracer `EXECUTE_DELEGATION: codex-terminal` dans `reports/post_execute_latest.log` et le `REPORT_FILE`.
+- **Complexe — FALLBACK (uniquement si le proxy est HS après ≥3 reprises retry/504/empty)** : `Task` → `foodking-complex-implementer` (sub-agent Cursor, consomme le quota du modèle premium de l'abonnement Cursor — à éviter sauf indispo réelle du proxy).
+
+Référence complète : **`docs/orchestration/CODEX_API_DELEGATION.md`** (naming, fallback contract, audit handoff, token discipline, schéma boucle). Procédure cycle : `.cursor/commands/run-cycle.md`. La trace `EXECUTE_DELEGATION` dans le rapport est **obligatoire** pour passer en VALIDATE.
 
 Sections below labeled **Legacy workflow** remain valid for **PR-centric / review-loop** habits but **do not replace** this SSOT for bounded cycles.
 
@@ -58,6 +140,10 @@ Sections below labeled **Legacy workflow** remain valid for **PR-centric / revie
 - workflows/report-format.md
 - workflows/task-status.md
 - reports/README.md
+- docs/orchestration/MEGA_CHECKLIST_AUTONOMY_AND_MEMORY.md
+- docs/orchestration/WORKFLOW_AUDIT_GRAPHIQUE_2026-04-23.md
+- docs/orchestration/TERMINAL_CLAUDE_GRAPHITI_ORCHESTRATION.md
+- docs/orchestration/ROUTING_MATRIX.md
 
 ## Stop Conditions
 Halt and generate a gate brief on any of:
@@ -66,6 +152,8 @@ Halt and generate a gate brief on any of:
 - FoodKing invariant violation
 - Two consecutive validation failures
 - Planning ambiguity unresolvable from task context
+- **`codex-terminal` indisponible après reprises (proxy 502/503/504 ou contenu vide pour ≥3 tentatives consécutives sur la même tâche)** : basculer sur le fallback `Task → foodking-complex-implementer` et **noter explicitement** `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + une ligne `FALLBACK_REASON:` dans le rapport.
+- **Audit en terminal (PRIMARY) indisponible** (`claude` absent, auth/quota/réseau après **une** tentative de `context` + `audit-brief` ou `audit` documentée) : basculer l’**AUDIT** dans la **session Cursor** (même checklist `audit-context.md`) + **`AUDIT_CHANNEL: cursor-session`** + **`AUDIT_FALLBACK_REASON:`** (obligatoire). **Ne jamais** omettre la raison, sinon l’on ne sait plus si c’est un choix d’économie ou un défaut d’environnement.
 
 ## FoodKing Non-Negotiables
 - Backend is pricing SSOT — no frontend price logic
@@ -133,7 +221,31 @@ claude
 claude "Audite tout le code livré sur ce cycle et produis un plan d'orchestration des corrections restantes, en respectant les invariants FoodKing (AGENTS.md)."
 ```
 
-**Usage aligné sur ton workflow** : orchestration initiale et tâches courantes → **Claude dans Cursor** ; **audits finaux / second passage** → **`claude "..."`** dans le terminal quand tu le décides.
+**Wrapper recommandé (vérification `PATH` + `claude -p` + `--add-dir` vers la racine du dépôt)** — depuis la racine Git :
+
+```bash
+bash scripts/foodking-claude-orchestrate.sh check     # s'assure que `claude` (Claude Code) est installé
+bash scripts/foodking-claude-orchestrate.sh smoketest # 1 requête API min. — valide abonnement / auth (retourne TERMINAL_OK)
+bash scripts/foodking-claude-orchestrate.sh context   # écrit reports/audit/_TERMINAL_CONTEXT_BRIEF.md (cycle + JSONL + INDEX)
+bash scripts/foodking-claude-orchestrate.sh audit-brief  # claude -p : lit ce fichier d'abord = tokens maîtrisés + alimentation mémoire
+bash scripts/foodking-claude-orchestrate.sh audit     # audit / plan d'orchestration non interactif (prompt FoodKing)
+bash scripts/foodking-claude-orchestrate.sh repl      # session interactive (équivalent : `claude` seul)
+```
+
+Lecture : **`docs/orchestration/TERMINAL_CLAUDE_GRAPHITI_ORCHESTRATION.md`** (Cursor vs sub-agent vs terminal, Graphiti, économie de contexte).
+
+**Après chaque supplémentation (ADR, JSONL, fin de lot)** — ordre pour alimenter la base **sans** gaspiller l’abonnement :
+
+1. Mettre la décision / invariant dans le bon `memory/episodes/*.jsonl` (voir `memory/INDEX.md` + `docs/orchestration/GLOBAL_SYSTEM_PRIMER.md` §4.2).
+2. `bash scripts/after-execute-memory.sh` — rafraîchit le manifeste SHA, vérifie le même contrat que CI, rappelle les `bin/graphiti-ingest.sh <préfixe>` pour les fichiers modifiés, puis lance l’ingest côté poste si la stack est up.
+3. (Option Graphiti) `python3 memory/verify.py` si le MCP / Neo4j tournent.
+4. (Option abonnement Anthropic **ciblé**) `bash scripts/foodking-claude-orchestrate.sh context` puis `... audit-brief` — le terminal lit d’abord le bref disque ; ou raccourci : `... post-execute` pour enchaîner l’étape 2 + `context` (sans lancer l’audit payant à ta place).
+
+Le wrapper branche `stdin` sur `/dev/null` pour `claude -p` (audit) : dans un **terminal non TTY** (ou agent automatisé), sans cela Claude Code affiche *no stdin data* et refuse de lire le prompt. Ne pas l’enlever si tu scripts l’orchestration.
+
+Si `check` échoue : installer l'extension **Claude Code** (Cursor) ou le binaire `claude` côté Anthropic, et vérifier que le dossier binaire (souvent `~/.local/bin`) est sur le `PATH` du terminal intégré.
+
+**Usage aligné sur ton workflow** : orchestration initiale et tâches courantes → **Claude dans Cursor** ; **audits finaux / second passage** → **`claude "..."` ou le wrapper `foodking-claude-orchestrate.sh audit`** quand tu le décides.
 
 ### B — OpenAI **Codex** CLI (implémentations lourdes, abonnement ChatGPT Plus/Pro)
 

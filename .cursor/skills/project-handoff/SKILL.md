@@ -26,7 +26,7 @@ description: >-
 
 ## Règles déjà dans le repo (ne pas ignorer)
 
-- `.cursor/rules/project-continuity.mdc` (alwaysApply).
+- `.cursor/rules/project-continuity.mdc` (chargement à la demande).
 - Petits diffs ; pas de contournement **recalcul prix serveur** ni **authz** cassée.
 
 ## Réponse attendue de l’agent

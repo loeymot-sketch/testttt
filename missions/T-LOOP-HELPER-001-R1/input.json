@@ -1,0 +1,14 @@
+{
+  "task_id": "T-LOOP-HELPER-001-R1",
+  "context": "FoodKing POS helper. Round 1 of REMEDIATION on T-LOOP-HELPER-001 helper resources/js/helpers/posCentsArith.js. Vitest fails on case toCents(0.30000004) -> expects 30 but throws RangeError 'amount must have at most 2 decimal places' because EPSILON (1e-6) is too strict for typical float-imprecision artefacts where (amount*100) - Math.round((amount+EPSILON)*100) can be O(1e-3).",
+  "objective": "Patch resources/js/helpers/posCentsArith.js so that toCents(0.30000004) returns 30 (i.e. tolerates pure float-imprecision near a 2-decimal value) WHILE STILL rejecting toCents(0.345) (genuine 3-decimal). Strategy: compare amount*1000 to Math.round(amount*1000) with a tolerance of ~1e-3 (i.e. the rounded *milli-units* must equal *cents*10*); equivalent: the value floor((amount*1000+0.5))/10 must be an integer cents value. Keep export shape, function signatures and other helpers unchanged. Do NOT modify the test file.",
+  "constraints": [
+    "Only modify resources/js/helpers/posCentsArith.js (single file).",
+    "Keep addCents, subCents, sumCents, named + default export shape identical.",
+    "toCents must still throw on negative, NaN, Infinity, strings.",
+    "toCents(0.345) must still throw 'at most 2 decimal places'.",
+    "toCents(0.30000004) must return 30. toCents(0.1) must return 10. toCents(12.34) must return 1234.",
+    "No external dependency."
+  ],
+  "expected_output_format": "Strict JSON object with files_to_modify, implementation_steps, code_blocks (array of { path, op, excerpt }), risks, notes, execution_trace { delegation: 'codex-terminal', invariants_considered: ['pricing_ssot'] }. excerpt for posCentsArith.js must be the FULL replacement file body. No markdown, no commentary outside the JSON."
+}

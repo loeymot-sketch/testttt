@@ -748,6 +748,12 @@ import { onEvents } from "../../../services/eventContract";
 import debounce from "lodash/debounce";
 import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
 
+// [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
+// `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
+// logique prix côté client (SSOT serveur). Voir plan 10 phases, Phase 6.
+// [Phase-9 / T18] A11y opérateur : skip link → panier, `#pos-a11y-live`, rôle
+// `region` panier — helpers `posA11y` (focus / announce). Pas d’`outline: none` arbitraire.
+
 export default {
     name: "PosComponent",
     components: {

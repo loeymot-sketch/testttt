@@ -72,7 +72,8 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
-        ]
+        ],
+        "invariants": "bash scripts/check-invariants.sh"
     },
     "suggest": {
         "ext-http": "PECL http — optional; not bundled with Windows PHP builds. Use Guzzle (already required) unless you rely on pecl_http APIs."

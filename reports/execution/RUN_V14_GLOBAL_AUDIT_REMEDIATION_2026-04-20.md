@@ -1,5 +1,7 @@
 # RUN — V14 Audit Global 4 Vagues + Remédiation cross-vagues
 
+EXECUTE_DELEGATION: (orchestrateur Claude + sub-agents explore / complex / routine — rétro-signature B17 2026-04-23)
+
 **TASK_ID:** `V14_GLOBAL_AUDIT_REMEDIATION_2026-04-20`
 **Date:** 2026-04-20
 **Cycle:** V14 — `FINALISATION_POS_BASE` (4 vagues A + B + C-α + C-β fermées + audit transverse + corrections)

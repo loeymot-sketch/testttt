@@ -6,6 +6,12 @@ alwaysApply: true
 
 # Global Rules – FoodKing
 
+## New or continued session — **mandatory path** (applies to **every** conversation and **every** model)
+
+- **The chat log is not the SSOT.** **This repo** (`AGENTS.md`, `.mdc` rules, `docs/orchestration/`, `run-cycle.md`) is.
+- On **any** new thread **or** long continuation: (1) Read **`AGENTS.md` § *Parcours obligatoire*** first, then **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** (§1 table). (2) If resuming work, read **`.cursor/ACTIVE_CYCLE.md`** *before* starting a duplicate cycle — follow the same `TASK_ID` / `PHASE` until `CLOSE` or an explicit new task. (3) For bounded work: run **`run-cycle` / `run-cycle.md`** (Steps 0–5) — do not skip `AUDIT` before `CLOSE`. (4) Run `npm run verify:boucle` (and `verify:boucle:full` when API proof is needed) per `AGENTS.md`. (5) Ensure `claude` on `PATH` and `CODEX_*` env for `codex-terminal` per `AGENTS.md` / `agents/codex.env.example`. (6) Obey **`MEMORY_MATRIX.md`**, `EXECUTE_DELEGATION`, `AUDIT_CHANNEL` + `TERMINAL_AUDIT_OK` when using terminal audit, and **`agent-activity-log.sh`** (tail / start / done).
+- Full checklist and French wording: **`AGENTS.md` → section *Parcours obligatoire*.
+
 ## Cycle Structure
 PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
 
@@ -19,15 +25,26 @@ Audit precedes close on every cycle without exception.
 - Mid-cycle model switch requires Claude confirmation logged under `ESCALATION` in the plan file
 - Full routing policy: `.cursor/routing.md`
 
+## Complex EXECUTE Delegation (PRIMARY = `codex-terminal`)
+- The **FoodKing API Complex Implementer** (slug `codex-terminal`) is the **primary** route for all complex EXECUTE work — not the Cursor sub-agent.
+- Procedure: prepare `missions/{TASK_ID}/input.json` (+ optional `graphiti_context.md` / `plan_excerpt.md` / `execute_brief.md`), run `npm run codex:complex -- {TASK_ID}` (default model `gpt-5.4`, override `CODEX_MODEL_COMPLEX=gpt-5.4-pro`), apply `output_codex.json`, log `EXECUTE_DELEGATION: codex-terminal`.
+- The Cursor sub-agent `foodking-complex-implementer` is **fallback only** — invoked iff `codex-terminal` fails ≥3 reprises (HTTP 502/503/504/429 ou contenu vide). Trace alors `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + `FALLBACK_REASON:` dans le rapport.
+- Reference docs: `docs/orchestration/CODEX_API_DELEGATION.md`, `AGENTS.md` § "EXECUTE delegation".
+
 ## Autonomy Contract
 The agent operates autonomously within declared scope.
 It halts and escalates — never self-approves — on any gate trigger, scope expansion,
 invariant violation, two consecutive validation failures, or unresolvable ambiguity.
-Full policies: `human-gates.mdc`, `scope.mdc`, `foodking-invariants.mdc`.
+Full policies: `human-gates.mdc`, `scope.mdc`, `project-invariants.mdc`.
 
 ## Graphiti (mémoire inter-sessions)
 - When the Graphiti MCP server is loaded for this workspace, **query it first** on any non-trivial task (see `.cursor/rules/graphiti-memory.mdc` and `AGENTS.md` § MCP).
 - If Graphiti is not loaded, continue without blocking; one-line note to enable `~/.cursor/mcp.json` is enough.
+
+## Channel economics — terminal first (SSOT, symmetric with EXECUTE)
+- **Complex implementation (`codex-terminal`)** is the **default**; Cursor sub-agent `foodking-complex-implementer` is **only** a fallback if the **terminal** path fails (≥3 retries or runner unavailable) — `EXECUTE_DELEGATION: …` + `FALLBACK_REASON:`. See `AGENTS.md` and `docs/orchestration/CODEX_API_DELEGATION.md`.
+- **Claude AUDIT after implementation** is **by default the terminal** (`bash scripts/foodking-claude-orchestrate.sh context` then `audit` or `audit-brief` — **Anthropic subscription** via `claude` CLI). The **in-session** Cursor audit is a **FALLBACK** only: `AUDIT_CHANNEL: cursor-session` **plus** a mandatory `AUDIT_FALLBACK_REASON:`. Traces live in the cycle `REPORT_FILE` and/or `post_execute` log. See `run-cycle.md` Step 5; verify env with `bash scripts/verify-orchestration-boucle.sh`.
+- Never invert primary/fallback for billing convenience without that trace — that would be indistinguishable from a mistake in production evidence.
 
 ## Token Discipline (quality-first — zero negative optimization)
 - **Goal**: maximum correct intelligence per cycle — not shortest answers. Removing detail, skipping invariants, or omitting Graphiti queries to "save tokens" is **forbidden** when it reduces correctness or auditability.
@@ -44,4 +61,4 @@ Full policies: `human-gates.mdc`, `scope.mdc`, `foodking-invariants.mdc`.
 ## Absolute Prohibitions
 The agent must never: self-approve a gate, expand scope without human instruction,
 edit a frozen zone without cleared gate, modify `.cursor/routing.md` mid-cycle.
-All invariant prohibitions enforced per `foodking-invariants.mdc`.
+All invariant prohibitions enforced per `project-invariants.mdc`.

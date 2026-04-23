@@ -60,17 +60,18 @@ L'orchestrateur exécute, **dans la même session**, sans demander confirmation 
        files: [<liste minimale>]
        change: <opération précise>
    ```
-3. **Routage** — choix du subagent selon [routing.md](mdc:.cursor/routing.md) :
+3. **Routage** — choix du chemin selon [routing.md](mdc:.cursor/routing.md) :
    - Composer (`foodking-routine-implementer`) si correction routinière
-   - GPT-5.4 (`foodking-complex-implementer`) si correction complexe
-4. **Lancement** — invocation explicite du subagent via l'outil `Task` avec contexte minimal (plan + diff dernier round + erreur)
-5. **Re-audit** — exécution de la checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff
+   - **GPT-5.4 via `codex-terminal` (PRIMARY)** si correction complexe — `npm run codex:complex -- {TASK_ID}` ; fallback subagent `foodking-complex-implementer` uniquement si le proxy est HS (cf. `docs/orchestration/CODEX_API_DELEGATION.md`)
+4. **Lancement** — pour `codex-terminal` : préparer `missions/{TASK_ID}/input.json` + brief minimal (plan + diff + erreur) puis run la commande ; pour le subagent (fallback) : invocation via `Task` avec contexte minimal
+5. **Re-audit** — **PRIMARY** : même checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff, lancée **d’abord** via le terminal : `bash scripts/foodking-claude-orchestrate.sh context` puis `audit-brief` (ou `audit`) ; tracer `AUDIT_CHANNEL: claude-terminal` (+ `TERMINAL_AUDIT_OK: 1` quand c’est vraiment exécuté). **FALLBACK** (session Cursor) **uniquement** si le terminal a échoué — `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:`. (Symétrie avec l’**EXÉCUTE** : `codex-terminal` PRIMARY, sub-agent FALLBACK — même règle d’économie d’abonnement.)
 
 Trace appendée à `REPORT_FILE` :
 ```
 REMEDIATION_ATTEMPT_N:
   outcome: PASSED | FAILED
-  delegated_to: foodking-routine-implementer | foodking-complex-implementer
+  delegated_to: foodking-routine-implementer | codex-terminal | foodking-complex-implementer (codex-terminal-fallback)
+  fallback_reason: <required if foodking-complex-implementer was used instead of codex-terminal>
 ```
 
 ### Phase AUDIT — branche "KO critique" (inchangée vs human-gates)
@@ -138,7 +139,8 @@ Pendant les phases sensibles (POS, fiscal NF525, multi-tenant, sync) :
 
 - **Chat orchestrateur** = Claude Opus 4.7 (pas d'auto mode)
 - **Subagent routine** = Composer via `foodking-routine-implementer`
-- **Subagent complex** = GPT-5.4 via `foodking-complex-implementer`
+- **Complex EXECUTE (PRIMARY)** = GPT-5.4 / GPT-5.4-pro via **`codex-terminal`** (`npm run codex:complex`)
+- **Complex EXECUTE (FALLBACK)** = sub-agent `foodking-complex-implementer` (uniquement si `codex-terminal` échoue ≥3 reprises)
 - **Subagent audit indépendant (optionnel)** = `generalPurpose readonly` si l'orchestrateur veut un second avis avant CLOSED
 
 ### Anti-gaspillage tokens

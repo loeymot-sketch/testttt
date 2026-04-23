@@ -1,5 +1,7 @@
 /**
  * E2E partiel T22 — Catalogue → Tacos (4 viandes mix 3+1) → extra → caisse (espèces, sans retry) → reçu.
+ * Plan 10 phases — **Phase 10** ; E2E **GATE** opt-in (`workflows/qa-loop.md`) : compte POS
+ * + seed alignés, voir `E2E_POS_USER` / `E2E_POS_PASS` (défauts souvent absents en local).
  *
  * Prérequis data : item type tacos M avec attribut viandes min/max adaptés, extras (ex. cheddar), branche avec identité fiscale (SIRET/TVA) pour le pied de reçu.
  *

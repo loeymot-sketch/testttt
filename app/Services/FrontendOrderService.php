@@ -692,13 +692,15 @@ class FrontendOrderService
                         Auth::check() ? (int) Auth::id() : null,
                         null
                     );
-                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens
+                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens.
+                    // Use OrderStatusChanged::dispatch (DispatchableAfterCommit) — not event(new …), which
+                    // bypasses the trait and can fire before DB commit.
                     try {
-                        event(new \App\Events\OrderStatusChanged(
+                        OrderStatusChanged::dispatch(
                             $frontendOrder,
                             $oldStatus,
-                            $request->status
-                        ));
+                            (int) $request->status
+                        );
                     } catch (\Exception $e) {
                         Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
                     }

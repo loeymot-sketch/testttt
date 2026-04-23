@@ -202,7 +202,13 @@
         "kds_cuisine_froide": "Cuisine froide",
         "kds_group_by_table": "Regrouper par table",
         "kds_sound": "Son nouveau ticket",
-        "kds_volume": "Volume"
+        "kds_volume": "Volume",
+        "kds_admin_polling_hint": "Compte central (multi-succursales) : le flux en direct n'est pas abonné — l'écran se rafraîchit environ toutes les 60 s. Utilisez la recherche ou revenez ici pour forcer.",
+        "kds_order_cap_warning": "Charge élevée : {n} commande(s) listée(s) — proche du plafond d'affichage (50). Pensez à clôturer ou filtrer par statut.",
+        "kds_order_list_full_warning": "Liste pleine ({n} affichée(s), max. serveur) : d'autres commandes actives existent peut-être — filtrez par statut ou cherchez un n° de ticket.",
+        "kds_bump_local_only_notice": "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.",
+        "kds_items_board_scope": "Aperçu des articles à produire (commandes acceptées ou en préparation) — exclut les fiches entièrement bouclées côté file « commandes du jour » si statut prêt servi.",
+        "kds_dismiss_hint": "Ne plus afficher"
     },
     "button": {
         "add": "Ajouter",
@@ -244,6 +250,7 @@
     },
     "message": {
         "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
+        "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",
         "nfc_unsupported_browser": "Le NFC n'est pas disponible dans ce navigateur.",
         "nfc_customer_not_found": "Aucun client fidélité ne correspond à cette carte NFC pour cette filiale.",
         "new_pos_order": "Nouvelle commande",

@@ -9,12 +9,14 @@ One PRIMARY_MODEL per cycle. Assignment is explicit in every plan file.
 
 | Phase | Model | Permitted scope |
 |---|---|---|
-| PLAN | Claude | Read task, write scoped plan, flag invariant risks and gate conditions |
-| EXECUTE — complex | GPT-5.4 | Backend logic, sync, data layer, API contracts, non-trivial algorithms; **schema/migrations (non-routine)** |
-| EXECUTE — routine | Composer | CRUD, config, UI copy, boilerplate, scaffold generation **excluding** database migrations and any schema/DDL work |
+| PLAN | Claude | **Typiquement en session Cursor** (orchestrateur) : lire la tâche, écrire le plan, signaler invariants / gates. Peut s’orchestrer 100 % terminal, mais n’est **pas** soumise à la règle « abonnement d’abord » (c’est l’intelligence de dialogue, pas l’API proxy codex / pas l’audit terminal). |
+| EXECUTE — complex (PRIMARY) | **`codex-terminal`** — GPT-5.4 / GPT-5.4-pro via **FoodKing API Complex Implementer** (proxy OpenAI-compatible) | **Priorité d’économie** : n’utilise **pas** le sub-agent ni le quota de modèles de l’abonnement Cursor. Préparer `missions/{TASK_ID}/input.json` (+ contextes), `npm run codex:complex -- {TASK_ID}`, appliquer `output_codex.json`, `EXECUTE_DELEGATION: codex-terminal`. Voir `docs/orchestration/CODEX_API_DELEGATION.md`. |
+| EXECUTE — complex (FALLBACK) | Sub-agent Cursor `foodking-complex-implementer` | **Uniquement** si le terminal (proxy) échoue ≥3 reprises (HTTP 502/503/504/429 ou contenu vide), ou binaire/ENV indispo. **Facturé côté Cursor (usage API de l’abonnement Cursor)**. Trace : `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + `FALLBACK_REASON:`. |
+| EXECUTE — routine | Composer (sub-agent `foodking-routine-implementer`) | CRUD, config, UI copy, boilerplate — facturation Cursor. |
 | VALIDATE | Composer | Diff summary, test results, anomaly flags, report draft |
-| AUDIT | Claude | Plan adherence, invariant check, drift assessment, gate brief or close |
-| GATE BRIEF | Claude → Human | Claude writes, human decides, loop blocked until resolved |
+| **AUDIT (PRIMARY)** | **Claude** via **terminal** | **`bash scripts/foodking-claude-orchestrate.sh context` puis `audit` ou `audit-brief`**. S’appuie sur l’**abonnement Anthropic** (claude CLI) — ne consomme pas l’orchestrateur de modèles de Cursor. Trace **obligatoire en lot** dès qu’un audit terminal a **réussi** : `AUDIT_CHANNEL: claude-terminal` **et** `TERMINAL_AUDIT_OK: 1`. Si l’appel échoue, **ne pas** tracer seul le canal `claude-terminal` sans `TERMINAL_AUDIT_OK: 1` : retenter 1× ou `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:` (voir `run-cycle.md` Step 5). |
+| **AUDIT (FALLBACK)** | **Claude** en **session Cursor** | Uniquement si le terminal ne peut **pas** auditer (binaire `claude` absent, auth/quota, réseau) après une tentative. **Consomme le compte côté Cursor (modèle de la session).** Trace : `AUDIT_CHANNEL: cursor-session` + **`AUDIT_FALLBACK_REASON: <1 ligne>`** obligatoire. |
+| GATE BRIEF | Claude → Human | Même règle d’orchestrateur, mais brouillon de gate côté procédure humaine. |
 | REPORT | Composer | Cycle summary aligned to `reports/` discipline |
 
 ---

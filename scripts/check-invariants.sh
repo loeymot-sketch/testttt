@@ -108,6 +108,42 @@ filter_aftercommit_wrapped() {
     printf '%s' "${kept%$'\n'}"
 }
 
+# filter_dispatchableaftercommit_traits <hits>
+#
+# Call sites like OrderCreated::dispatch() go through
+# app/Events/Concerns/DispatchableAfterCommit (gate C9 / KI-001) which
+# defers to connection()->afterCommit when inside a transaction. The
+# mechanical grep for "DB::afterCommit(" on the 5 lines above the call
+# would still flag these — they are not violations.
+#
+# If a line dispatches OrderCreated or OrderStatusChanged via ::dispatch and
+# the corresponding event class file contains DispatchableAfterCommit, drop
+# the hit. (Do NOT use event(new X) for those — that bypasses the trait's
+# static dispatch; fix in code, not here.)
+filter_dispatchableaftercommit_traits() {
+    local hits="$1"
+    [[ -z "$hits" ]] && return 0
+    local kept=""
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local cont="${line#*:*:}"
+        # event(new \App\Events\Order* — must not be ignored by this filter;
+        # it must be removed in code.
+        if echo "$cont" | grep -qE 'OrderCreated::dispatch|\\\\Events\\\\OrderCreated::dispatch'; then
+            if grep -qF 'DispatchableAfterCommit' "$REPO_ROOT/app/Events/OrderCreated.php" 2>/dev/null; then
+                continue
+            fi
+        fi
+        if echo "$cont" | grep -qE 'OrderStatusChanged::dispatch|\\\\Events\\\\OrderStatusChanged::dispatch'; then
+            if grep -qF 'DispatchableAfterCommit' "$REPO_ROOT/app/Events/OrderStatusChanged.php" 2>/dev/null; then
+                continue
+            fi
+        fi
+        kept+="${line}"$'\n'
+    done <<< "$hits"
+    printf '%s' "${kept%$'\n'}"
+}
+
 echo "== POS invariants CI guard (${YELLOW}POS_INVARIANTS_AND_GATES.md §3${NC}) =="
 
 # 1. SSOT pricing — price/total/subtotal must never come from payload in POS layer.
@@ -148,10 +184,10 @@ run_check "3/6 status via OrderStateMachine" \
 #    V5 #2: FQN (\App\Events\X::dispatch) AND short-name (X::dispatch with `use`).
 #    V8 #1: Laravel helpers event(new X(...)) and Event::dispatch(new X(...)).
 #    V9 #1: awk post-filter — if DB::afterCommit( appears in the 5 lines above a hit, skip.
-#    NOTE 2026-04-20: this check WILL fail until P11_DISPATCH_AFTER_COMMIT_REMEDIATION
-#    (V5 #1) implements ShouldDispatchAfterCommit on event classes. Pre-existing
-#    violations in OrderService.php / FrontendOrderService.php are tracked and
-#    will resolve automatically once events implement the contract.
+#    NOTE 2026-04-23: OrderCreated / OrderStatusChanged use trait DispatchableAfterCommit
+#    (app/Events/Concerns/DispatchableAfterCommit.php). Call sites Order*::dispatch()
+#    are NOT violations — filter_dispatchableaftercommit_traits drops them. Never use
+#    event(new OrderStatusChanged(...)) — that bypasses the trait's static dispatch().
 #    Item/Category catalog events use manual DB::afterCommit wrapping (multi-line);
 #    invariant 4/6 detects the wrap structurally (no per-site // allow:).
 BROADCAST_EVENTS_4_6='OrderCreated|OrderStatusChanged|ItemAvailabilityChanged|ItemCreated|ItemUpdated|ItemDeleted|CategoryCreated|CategoryUpdated|CategoryDeleted'
@@ -169,6 +205,7 @@ raw_hits_4_6=$(grep -rEn --include='*.php' -e "$PATTERN_4_6" "${SCOPE_4_6[@]}" 2
 raw_hits_4_6=$(echo "$raw_hits_4_6" | grep -vE "$EXCLUDE_4_6" || true)
 raw_hits_4_6=$(echo "$raw_hits_4_6" | grep -v '^$' || true)
 filtered_hits_4_6=$(filter_aftercommit_wrapped "$raw_hits_4_6")
+filtered_hits_4_6=$(filter_dispatchableaftercommit_traits "$filtered_hits_4_6")
 count_4_6=0
 [[ -n "$filtered_hits_4_6" ]] && count_4_6=$(echo "$filtered_hits_4_6" | wc -l | tr -d ' ')
 

@@ -251,6 +251,10 @@ import {
     normalizeReceiptExtras,
 } from "../../../helpers/posReceiptBuilder";
 
+// [Phase-4 / T15–T21] Aperçu reçu + impression (NF525, composition_snapshot / legacy),
+// POST /print-receipt, duplicata, continuité si API down (W9.D) — ne pas refondre
+// le gabarit légal sans relecture (voir plan 10 phases, GATE reçu).
+
 export default {
     name: "ReceiptComponent",
     components: { ReceiptDuplicataMarker },

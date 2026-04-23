@@ -10,14 +10,18 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e",
@@ -70,7 +74,7 @@
           "specs": [
             {
               "title": "flux: tacos + viandes 3+1 + extra + paiement espèces + composition reçu",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -79,8 +83,110 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26753,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:36:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:81:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                          "column": 22,
+                          "line": 36
+                        },
+                        "snippet": "  34 |   await page.locator('#formPassword').fill(POS_PASSWORD);\n  35 |   await page.getByRole('button', { name: /^(login|connexion)$/i }).click();\n> 36 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 25_000 });\n     |                      ^\n  37 | }\n  38 |\n  39 | /**"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                            "column": 22,
+                            "line": 36
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  34 |   await page.locator('#formPassword').fill(POS_PASSWORD);\n  35 |   await page.getByRole('button', { name: /^(login|connexion)$/i }).click();\n> 36 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 25_000 });\n     |                      ^\n  37 | }\n  38 |\n  39 | /**\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:36:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:81:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-22T23:02:23.073Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/pos-tacos-4-viandes-cash-f-d9dc1-nt-espèces-composition-reçu-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/pos-tacos-4-viandes-cash-f-d9dc1-nt-espèces-composition-reçu-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                        "column": 22,
+                        "line": 36
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26034,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:36:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:81:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                          "column": 22,
+                          "line": 36
+                        },
+                        "snippet": "  34 |   await page.locator('#formPassword').fill(POS_PASSWORD);\n  35 |   await page.getByRole('button', { name: /^(login|connexion)$/i }).click();\n> 36 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 25_000 });\n     |                      ^\n  37 | }\n  38 |\n  39 | /**"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                            "column": 22,
+                            "line": 36
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/admin\\/pos/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:8000/login\"\u001b[39m\nTimeout: 25000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 25000ms\u001b[22m\n\u001b[2m    29 × unexpected value \"http://localhost:8000/login\"\u001b[22m\n\n\n  34 |   await page.locator('#formPassword').fill(POS_PASSWORD);\n  35 |   await page.getByRole('button', { name: /^(login|connexion)$/i }).click();\n> 36 |   await expect(page).toHaveURL(/\\/admin\\/pos/, { timeout: 25_000 });\n     |                      ^\n  37 | }\n  38 |\n  39 | /**\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:36:22)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts:81:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-04-22T23:02:52.888Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/pos-tacos-4-viandes-cash-f-d9dc1-nt-espèces-composition-reçu-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/pos-tacos-4-viandes-cash-f-d9dc1-nt-espèces-composition-reçu-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/pos-tacos-4-viandes-cash-f-d9dc1-nt-espèces-composition-reçu-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/pos/tacos-4-viandes-cash-flow.spec.ts",
+                        "column": 22,
+                        "line": 36
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
                 }
               ],
               "id": "a33968aa40abda60e9e8-59ffa38d999738c99aad",
@@ -95,11 +201,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-21T12:17:11.527Z",
-    "duration": 79.80700000000002,
+    "startTime": "2026-04-22T23:02:22.485Z",
+    "duration": 56953.523,
     "expected": 0,
-    "skipped": 1,
-    "unexpected": 0,
+    "skipped": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

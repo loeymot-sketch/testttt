@@ -19,6 +19,17 @@ on:
     branches: [main, develop]
 
 jobs:
+  # E04 (méga-checklist) : scripts/check-invariants.sh (6 greps) — bloque le merge sur régression.
+  # P11 / KI-001 : Order* utilise DispatchableAfterCommit ; le script filtre les faux positifs
+  # (grep « DB::afterCommit » au-dessus du call site) + jamais event(new Order*) (contourne le trait).
+  invariants-grep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: POS invariants (grep) — E04
+        run: bash scripts/check-invariants.sh
+
   phpunit-mysql:
     runs-on: ubuntu-latest
     services:
@@ -154,7 +165,8 @@ jobs:
         if: success() || failure()
         run: bash scripts/check-run-delegation-warn.sh
 
-      # P4 — versioned JSONL fingerprint for memory drift reviews.
-      - name: Memory JSONL manifest
+      # P4 / A05 — JSONL SHA256 = baseline versionnée ; toute modif `memory/episodes/*.jsonl`
+      # exige de régénérer le manifest dans le même commit (bash scripts/memory-jsonl-manifest.sh).
+      - name: Memory JSONL manifest (A05 --check)
         if: success() || failure()
-        run: bash scripts/memory-jsonl-manifest.sh
+        run: bash scripts/memory-jsonl-manifest.sh --check reports/memory/jsonl_manifest.json

@@ -747,7 +747,13 @@
         "kds_cuisine_froide": "Cold kitchen",
         "kds_group_by_table": "Group by table",
         "kds_sound": "New order sound",
-        "kds_volume": "Volume"
+        "kds_volume": "Volume",
+        "kds_admin_polling_hint": "Central (multi-branch) account: no live stream subscription — the board refreshes about every 60s. Use search or leave and return to force a refresh.",
+        "kds_order_cap_warning": "High load: {n} order(s) listed — near the display cap (50). Close out or filter by status.",
+        "kds_order_list_full_warning": "List at cap ({n} shown, server max) — more active orders may exist. Filter by status or search a ticket #.",
+        "kds_bump_local_only_notice": "Bump/ready marks are stored in this browser only — they are not synced across KDS devices.",
+        "kds_items_board_scope": "Items to produce (accepted or in-progress orders) — does not mirror every line when an order is fully done on the main board.",
+        "kds_dismiss_hint": "Dismiss"
     },
     "button": {
         "add": "Add",
@@ -864,6 +870,7 @@
     },
     "message": {
         "kds_recall_grace_expired": "Recall unavailable: the 60-second undo window has passed.",
+        "kds_status_conflict": "This order was changed elsewhere. The list was refreshed—check the status before you act.",
         "nfc_unsupported_browser": "NFC is not available in this browser.",
         "nfc_customer_not_found": "No loyalty customer matches this NFC card for this branch.",
         "new_pos_order": "New order",
