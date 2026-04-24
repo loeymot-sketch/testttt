@@ -7,7 +7,7 @@ alwaysApply: true
 # FoodKing Domain Invariants
 
 Violation of any invariant at any phase triggers an immediate gate.
-Claude checks at plan and audit. GPT-5.4 (delivered via **`codex-terminal`** primarily, sub-agent `foodking-complex-implementer` only as fallback) checks at execution. Composer halts and logs on contact.
+Claude checks at plan and audit. GPT-5.5 (delivered via **`codex-extension`** (CLI `codex`, compte ChatGPT Pro) primarily, sub-agent `foodking-complex-implementer` only as fallback) checks at execution. Composer halts and logs on contact.
 
 ---
 
@@ -24,7 +24,7 @@ Violation trigger: any pricing logic outside the Laravel backend.
 `OrderStatus` values are defined in one authoritative enum in the codebase.
 No hardcoded string values for order status on backend or frontend.
 New statuses are added to the enum first, then referenced everywhere else.
-GPT-5.4 must locate and cite the enum file in the plan before implementing any order-status logic.
+GPT-5.5 must locate and cite the enum file in the plan before implementing any order-status logic.
 
 Violation trigger: string literal used where an `OrderStatus` enum value is required.
 
@@ -45,7 +45,7 @@ Violation trigger: query or mutation that crosses `branch_id` boundaries without
 Event and job dispatch occurs strictly after the DB transaction commits.
 No dispatch inside a transaction block before commit.
 No dispatch in a `finally` clause that could execute before commit confirmation.
-GPT-5.4 must verify commit-before-dispatch for every cycle that touches the event or job layer.
+GPT-5.5 must verify commit-before-dispatch for every cycle that touches the event or job layer.
 
 Violation trigger: dispatch call that can execute before DB commit completes.
 
@@ -54,7 +54,7 @@ Violation trigger: dispatch call that can execute before DB commit completes.
 ## 5. OrderService / FrontendOrderService Symmetry
 If either `OrderService` or `FrontendOrderService` is modified in a cycle, the other must be reviewed.
 Symmetry review is not optional.
-GPT-5.4 logs any asymmetry risk under `SYMMETRY_NOTE` in the plan file before completing execution.
+GPT-5.5 logs any asymmetry risk under `SYMMETRY_NOTE` in the plan file before completing execution.
 Claude confirms symmetry status during audit. An unresolved `SYMMETRY_NOTE` blocks cycle close.
 
 Violation trigger: one service modified without a completed symmetry review of the other.
@@ -75,6 +75,6 @@ Violation trigger: edit to a frozen zone file without a cleared and logged gate.
 | Phase | Model | Responsibility |
 |---|---|---|
 | PLAN | Claude | Identify which invariants are at risk; list under `INVARIANTS_AT_RISK` in plan file |
-| EXECUTE | GPT-5.4 | Respect all invariants; stop and log `ESCALATION` on any conflict |
+| EXECUTE | GPT-5.5 | Respect all invariants; stop and log `ESCALATION` on any conflict |
 | EXECUTE | Composer | Halt immediately on contact with any invariant-governed system; log `ESCALATION` |
 | AUDIT | Claude | Confirm every declared invariant was respected; gate on any violation found |

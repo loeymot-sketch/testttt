@@ -24,11 +24,11 @@
 | Phase | Store A (code) | Store B (Graphiti / JSONL) | Store C (missions) | Store D (rapports / cycle) |
 |------|----------------|----------------------------|---------------------|----------------------------|
 | **PLAN** | — | *Lecture seule* (`search_memory_facts`) | crée `missions/<TASK>/graphiti_context.md` + `plan_excerpt.md` | crée `plans/PLAN_*.md`, met à jour `ACTIVE_CYCLE.md` PHASE→EXECUTE |
-| **EXECUTE complex (codex-terminal)** | écrit (apply `output_codex.json`) | — | écrit `output_codex.json` (par le runner) | trace `EXECUTE_DELEGATION: codex-terminal` dans `post_execute_latest.log` |
+| **EXECUTE complex (`codex-extension`, CLI `codex` + Pro)** | écrit (apply `output_codex.json`) | — | écrit `output_codex.json` (par le wrapper) | trace `EXECUTE_DELEGATION: codex-extension` dans `post_execute_latest.log` / `REPORT_FILE` |
 | **EXECUTE routine (`foodking-routine-implementer`)** | écrit | — | — | trace `EXECUTE_DELEGATION: foodking-routine-implementer` |
-| **EXECUTE fallback (`foodking-complex-implementer`)** | écrit | — | — | trace `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + `FALLBACK_REASON:` |
+| **EXECUTE fallback (`foodking-complex-implementer`)** | écrit | — | — | trace `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:` |
 | **VALIDATE** | — (lit, run tests) | — | — | écrit résultats tests dans `REPORT_FILE` + `post_execute_latest.log` |
-| **AUDIT** | — | écrit (1 ligne JSONL → ingest) **si décision durable** | — | écrit verdict (`AUDIT_VERDICT: CLOSED \| NEEDS_FIX \| GATE`) + `AUDIT_CHANNEL: cursor-session \| claude-terminal` |
+| **AUDIT** | — | écrit (1 ligne JSONL → ingest) **si décision durable** | — | écrit **`AUDIT_VERDICT: PASS \| REWORK`**, compteur `REMEDIATION_AUDIT_CYCLE` si reprise, + `Audit: PASSED` seulement si `PASS` ; + `AUDIT_CHANNEL: claude-terminal \| cursor-session` |
 | **CLOSE** | — | `bash scripts/after-execute-memory.sh` (manifest + ingest si JSONL touché) | archive ou laisse | append `## Final report` dans `REPORT_FILE` |
 | **GATE** (zone critique / 3e remediation) | — | — | — | écrit `docs/gates/GATE_<TASK>_<DATE>.md`, halt humain |
 
@@ -44,7 +44,7 @@
 | "Pourquoi cette décision a été prise ?" | **B** (`12_decisions_log.jsonl` ou `search_memory_facts`) | `docs/gates/` (D) |
 | "Que faisait le cycle précédent ?" | **D** (`ACTIVE_CYCLE.md`, dernier `RUN_*.md`) | **C** (`missions/<DERNIER_TASK>/`) |
 | "Que doit livrer cette tâche ?" | **D** (`plans/PLAN_<TASK>_*.md`) | **C** (`missions/<TASK>/input.json`) |
-| "Le sub-agent codex-terminal a livré quoi ?" | **C** (`missions/<TASK>/output_codex.json`) | **D** (`post_execute_latest.log`) |
+| "Qu'a livré l’EXECUTE `codex-extension` ?" | **C** (`missions/<TASK>/output_codex.json`) | **D** (`post_execute_latest.log`, `GPT_SELF_AUDIT_*.md`) |
 | "Quelle invariant interdit ce que je veux faire ?" | **B** (`02_architecture_invariants.jsonl`) + `.cursor/rules/project-invariants.mdc` | **A** (le code lui-même) |
 | "Qui a auditeur le dernier cycle ?" | **D** (`AUDIT_VERDICT` + `AUDIT_CHANNEL` dans `RUN_*.md`) | — |
 
@@ -75,7 +75,7 @@
 
 - ❌ Coller un résumé de chat dans `reports/` "pour mémoire" → c'est un **pseudo-store**. Si c'est important : 1 ligne JSONL dans **B** + référence dans **D**.
 - ❌ Stocker une décision dans un commit message uniquement → invisible à `search_memory_facts`.
-- ❌ Mettre la sortie de `codex-terminal` ailleurs que dans `missions/<TASK>/output_codex.json`.
+- ❌ Mettre la sortie `codex-extension` ailleurs que dans `missions/<TASK>/output_codex.json` (ou hors dépôt) sans traçage **D**.
 - ❌ Ajouter un nouveau dossier "doc/" parallèle à `docs/orchestration/` → consolider ici.
 - ❌ Écrire dans Graphiti **pendant** PLAN ou EXECUTE (ça pollue les faits avec des hypothèses non auditées) — Graphiti = phase AUDIT/CLOSE.
 - ❌ Lire `reports/` antérieurs à 30 jours sans passer par Graphiti d'abord (token waste, et Graphiti **est** le résumé canonique).

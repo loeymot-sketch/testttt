@@ -23,15 +23,25 @@ Définition de référence : `agents/codex.env.example` + copie longue : `dist/c
 |----------|-------------|------|
 | `CODEX_API_BASE` | **Oui** | Ex. `https://subtp7eu3nc8.tokenclub.top/v1` (fournisseur/proxy) |
 | `CODEX_API_KEY` | **Oui** | Clé `sk-…` côté fournisseur (jamais dans le git — `.gitignore` contient `.env.codex`) |
-| `CODEX_MODEL_COMPLEX` | Non (défaut `gpt-5.4`) | Sur un proxy **tiers**, le *nom* du modèle est **celui annoncé par le proxy** (souvent pas les noms publics `gpt-4o` de l’API OpenAI directe) |
+| `CODEX_MODEL_COMPLEX` | Non (défaut **`gpt-5.5-high`**) | Sur un proxy **tiers**, le *nom* du modèle est **celui annoncé par le proxy** (ex. `gpt-5.5-high` / `gpt-5.5` / `gpt-5.5-pro`) |
 | `CODEX_WIRE` | Non (défaut `chat`) | `chat` → `/chat/completions` ; `responses` → `/responses` (si le proxy l’expose) |
 | `CODEX_RAW_PROMPT` | Non | `1` = envoi brut de `input.json` sans le template `codex.prompt.txt` |
 | `CODEX_DISABLE_STREAM` | Non | `1` = requêtes non-stream (souvent **504** sur prompts longs derrière Cloudflare — **déconseillé** par défaut) |
 | `CODEX_NO_NORMALIZE_M` | Non | `1` = désactive le renommage de la clé JSON top-level `m` → `instruction` (certaines proxies vident le contenu sinon) |
 | `CODEX_AUX_CONTEXT_FILES` | Non | CSV de fichiers sous `missions/<TASK_ID>/` fusionnés (défaut : graphiti, plan, brief, snapshot) |
 | `RETRY_MAX` / `SLEEP_BASE_MS` | Non | Repli proxy : 502/503/504/429 + contenu vide |
+| `CODEX_MAX_COMPLETION_TOKENS` | Non (sinon **défaut 2M** côté runner) | Surcharge du plafond **max_completion_tokens** (sortie) |
+| `CODEX_NO_DEFAULT_OUTPUT_BUDGET` | Non | `1` = ne **pas** envoyer de plafond par défaut (délègue au fournisseur) |
+| `CODEX_DEFAULT_MAX_COMPLETION_TOKENS` | Non (défaut **2_000_000** ; cap **2M** côté code) | Plafond par défaut ajustable (l’API n’accepte pas l’infini) |
+| `CODEX_MAX_TOKENS` | Non | Surcharge **`max_tokens`** (API / proxys plus anciens) **à la place** de `max_completion_tokens` |
+| `CODEX_LOG_USAGE` | Non | `1` = log **stderr** des champs `usage` (prompt / completion / total) quand la réponse est JSON, pour cadrer avec le dashboard |
+| `CODEX_REASONING_EFFORT` | Non | Passe `reasoning: { effort: … }` quand l’API le supporte (voir `agents/codex.env.example`) |
+| `CODEX_NO_ONESHOT_FALLBACK` | Non | `1` = pas de repli **one-shot** après un stream en erreur (évite 504 sur gros prompts) |
+| `CODEX_UNDICI_LONG_STREAM` | Non (défaut actif en Node 20+ avec `node:undici`) | `0` = ne pas appliquer le patch dispatcher |
+| `CODEX_UNDICI_BODY_TIMEOUT_MS` | Non | Délai max **entre** deux morceaux du flux corps ; `0` = **illimité** (défaut) |
+| `CODEX_UNDICI_HEADERS_TIMEOUT_MS` / `…_CONNECT_TIMEOUT_MS` | Non | Connexion / en-têtes (ms) ; défauts **600_000** dans le runner |
 
-**Chargement** : le runner charge `.env` puis **`.env.codex`** (sans écrraser des variables déjà posées par le shell).
+**Chargement** : le runner charge `.env` puis **`.env.codex`** (sans écraser des variables déjà posées par le shell).
 
 ## A.3 Corps de requête (équivalent `curl` pour OpenClaw / autre outil)
 
@@ -46,7 +56,7 @@ User-Agent: FoodKing-codex-runner/2.2 (Node)   # (optionnel)
 
 ```json
 {
-  "model": "gpt-5.4",
+  "model": "gpt-5.5-high",
   "messages": [
     { "role": "user", "content": "<prompt final — string>" }
   ],
@@ -89,7 +99,7 @@ Ces éléments sont des **fichiers versionnés** : toute personne / machine qui 
 | Artefact | Effet |
 |----------|--------|
 | `AGENTS.md` | Contrat : phases, délégation `codex-terminal`, invariants, MCP, terminal `claude` |
-| `.cursor/routing.md` | Qui fait quoi par phase (Claude / GPT-5.4 / Composer) |
+| `.cursor/routing.md` | Qui fait quoi par phase (Claude / **GPT-5.5** / Composer) |
 | `.cursor/commands/run-cycle.md` | Déroulé du cycle + Graphiti + trace `EXECUTE_DELEGATION` |
 | `.cursor/rules/*.mdc` | Règles (dont `global.mdc`, invariants) — *always-apply* selon globs |
 | `.cursor/agents/*.md` | Rôles des sub-agents Cursor (dont fallback `foodking-complex-implementer`) |

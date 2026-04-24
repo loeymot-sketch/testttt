@@ -1,19 +1,19 @@
 ---
-description: GPT-5.4 role contract. Complex implementation only. Receives a scoped plan from Claude. Does not plan, route, or audit.
+description: GPT-5.5 role contract. Complex implementation only. Receives a scoped plan from Claude. Does not plan, route, or audit.
 globs: ["**/*.php", "**/*.ts", "**/*.js", "**/*.vue", "**/*.json"]
 alwaysApply: false
 ---
 
-# GPT-5.4 – Role Contract
+# GPT-5.5 – Role Contract
 
 ## Role
 Complex implementation only.
-GPT-5.4 receives a fully scoped plan from Claude and executes within it.
-GPT-5.4 does not plan, does not self-route, does not audit, does not write gate briefs.
+GPT-5.5 receives a fully scoped plan from Claude and executes within it.
+GPT-5.5 does not plan, does not self-route, does not audit, does not write gate briefs.
 
 ## Delivery Channel (PRIMARY vs FALLBACK)
-- **PRIMARY**: GPT-5.4 (default) / GPT-5.4-pro (override) is invoked via the **FoodKing API Complex Implementer** in terminal: `npm run codex:complex -- {TASK_ID}`. Slug: `codex-terminal`. The runner reads `missions/{TASK_ID}/input.json` plus auxiliary context files (`graphiti_context.md`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md`) and writes `output_codex.json`. The orchestrator applies the output and traces `EXECUTE_DELEGATION: codex-terminal`.
-- **FALLBACK**: only if `codex-terminal` fails ≥3 attempts (HTTP 502/503/504/429 or empty content), the Cursor sub-agent `foodking-complex-implementer` may be invoked, with `EXECUTE_DELEGATION: foodking-complex-implementer (codex-terminal-fallback)` + `FALLBACK_REASON:` logged.
+- **PRIMARY**: GPT-5.5 (default) / GPT-5.5-pro (override) is invoked via the **FoodKing Codex Complex Implementer** in terminal: `npm run codex:complex -- {TASK_ID}` (wrapper `bash scripts/codex-extension-execute.sh` → `codex exec` + compte ChatGPT Pro). Slug: `codex-extension`. The build step reads `missions/{TASK_ID}/input.json` plus auxiliary context files (`graphiti_context.md`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md`) and writes `output_codex.json` + auto-audit `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md`. The orchestrator applies the output and traces `EXECUTE_DELEGATION: codex-extension`. **Legacy** proxy+API key: `npm run codex:complex:proxy-legacy` only in emergencies.
+- **FALLBACK**: only if `codex` / the extension path fails (≥2 documented attempts or binary missing), the Cursor sub-agent `foodking-complex-implementer` may be invoked, with `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:` logged.
 - The hard implementation constraints below apply identically regardless of channel — the prompt template (`agents/codex.prompt.txt`) mirrors the sub-agent contract on purpose.
 
 ## EXECUTE Phase

@@ -2,8 +2,36 @@
  * Pure helpers for KDS station filter + wait-time escalation styling (unit-tested).
  */
 
+/** [Lot 2.C / F-07] Minimum gap between "new order" chimes when WS floods. */
+export const KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS = 2500;
+
+/**
+ * @param {number} lastPlayedAt
+ * @param {number} [nowMs]
+ * @returns {boolean}
+ */
+export function shouldPlayKdsNewOrderSound(lastPlayedAt, nowMs = Date.now()) {
+    if (lastPlayedAt == null || !Number.isFinite(lastPlayedAt)) {
+        return true;
+    }
+    return nowMs - lastPlayedAt >= KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS;
+}
+
 export const LS_STATION_FILTER = 'kds.station_filter';
 export const LS_GROUP_BY_TABLE = 'kds.group_by_table';
+
+/**
+ * [Lot 2.F / F-10] Station filter is persisted per logged-in user so two staff
+ * on the same browser profile do not overwrite each other’s KDS view.
+ * Falls back to the legacy unscoped key when `userId` is missing/invalid.
+ */
+export function kdsStationFilterStorageKey(userId) {
+    const n = userId == null || userId === '' ? 0 : parseInt(userId, 10);
+    if (!Number.isFinite(n) || n <= 0) {
+        return LS_STATION_FILTER;
+    }
+    return `${LS_STATION_FILTER}.u${n}`;
+}
 
 const STATIONS = ['bar', 'cuisine_chaude', 'cuisine_froide', 'none'];
 

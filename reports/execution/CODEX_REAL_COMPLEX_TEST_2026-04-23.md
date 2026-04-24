@@ -4,6 +4,8 @@ Date : 2026-04-23
 Endpoint : `https://subtp7eu3nc8.tokenclub.top/v1`
 Runner : `npm run codex:complex` (mode streaming forcé suite aux 504 récurrents en non-stream sur prompts longs)
 
+> **Note 2026-04 (upgrade modèle)** : le **défaut projet** des runners est `**gpt-5.5-high`** (et `**gpt-5.5**` / `**gpt-5.5-pro**` en override). Les mesures ci-dessous concernent des exécutions **historiques** aux identifiants `**gpt-5.4` / `gpt-5.4-pro`** — le comportement (streaming, invariants) reste la référence. Voir `reports/execution/RUN_CODEX_GPT55_DEFAULT_UPGRADE_2026-04-24.md` et `reports/execution/RUN_CODEX_GPT55_HIGH_DEFAULT_2026-04-23.md` pour la validation `gpt-5.5*`.
+
 ## Pourquoi ce test
 
 Tu as demandé un test réel sur du complexe / créatif (pas du ping). J’ai créé deux missions FoodKing-réalistes, lancé chacune sur **gpt-5.4** ET **gpt-5.4-pro**, et inspecté les sorties.
@@ -11,27 +13,32 @@ Tu as demandé un test réel sur du complexe / créatif (pas du ping). J’ai cr
 ## Missions
 
 ### 1) `T-COMPLEX-POS-PAYMENT`
+
 - Objectif : composant Vue 3 `PosPaymentSplitDialog.vue` (split cash + carte) avec règle stricte cash + card === total au centime, props validés, emit `confirm` avec entiers en centimes + `txn_uuid`, aucun appel API, aucun calcul de prix front.
 - Format demandé : SFC `.vue` complet, rien d’autre.
 - Inputs : `missions/T-COMPLEX-POS-PAYMENT/input.json`
 
 ### 2) `T-COMPLEX-LARAVEL-JOB`
+
 - Objectif : `App\Jobs\NotifyKitchenOnOrderConfirmed` — recharge Order avec `where('branch_id', ...)`, vérifie statut via enum `App\Enums\OrderStatus::CONFIRMED` (jamais string), broadcast sur canal privé `branch.{id}.kitchen`, gère `ModelNotFoundException`, `tries=3`, `backoff=30`.
 - Format demandé : code PHP complet, rien d’autre.
 - Inputs : `missions/T-COMPLEX-LARAVEL-JOB/input.json`
 
 ## Résultats bruts
 
-| Mission | Modèle | Sortie | Taille | Statut |
-|---|---|---|---|---|
-| POS payment | gpt-5.4 | `output_gpt54.json` | 9 041 octets | ✅ |
+
+| Mission     | Modèle      | Sortie                 | Taille       | Statut          |
+| ----------- | ----------- | ---------------------- | ------------ | --------------- |
+| POS payment | gpt-5.4     | `output_gpt54.json`    | 9 041 octets | ✅               |
 | POS payment | gpt-5.4-pro | `output_gpt54pro.json` | 8 633 octets | ✅ (1 retry 504) |
-| Laravel Job | gpt-5.4 | `output_gpt54.json` | 1 334 octets | ✅ |
-| Laravel Job | gpt-5.4-pro | `output_gpt54pro.json` | 1 633 octets | ✅ |
+| Laravel Job | gpt-5.4     | `output_gpt54.json`    | 1 334 octets | ✅               |
+| Laravel Job | gpt-5.4-pro | `output_gpt54pro.json` | 1 633 octets | ✅               |
+
 
 ## Audit qualitatif (invariants FoodKing)
 
 ### POS payment — gpt-5.4 (`missions/T-COMPLEX-POS-PAYMENT/output_gpt54.json`)
+
 - ✅ SFC complet : `<template>` + `<script setup>` + `<style scoped>`
 - ✅ Props : `total: Number` (validator `Number.isInteger && >= 0`), `currency: String`, `orderId: Number`
 - ✅ `emit('confirm', { cash, card, txn_uuid })` avec entiers centimes
@@ -43,11 +50,13 @@ Tu as demandé un test réel sur du complexe / créatif (pas du ping). J’ai cr
 - ✅ Génération `txn_uuid` via `crypto.randomUUID()` (fallback)
 
 ### POS payment — gpt-5.4-pro (`missions/T-COMPLEX-POS-PAYMENT/output_gpt54pro.json`)
+
 - ✅ Mêmes invariants couverts + ajout `v-model` (`modelValue`/`update:modelValue`)
 - ✅ Sanitization input (gère `,` → `.`, double point, etc.)
 - ✅ Slightly plus défensif sur le parsing
 
 ### Laravel Job — gpt-5.4
+
 - ✅ Enum `App\Enums\OrderStatus::CONFIRMED` (pas de string)
 - ✅ `where('branch_id', $this->branchId)->findOrFail($this->orderId)` (isolation explicite)
 - ✅ `with('kitchenItems')`
@@ -58,6 +67,7 @@ Tu as demandé un test réel sur du complexe / créatif (pas du ping). J’ai cr
 - ✅ Aucune écriture BD, aucune logique de prix
 
 ### Laravel Job — gpt-5.4-pro
+
 - ✅ Mêmes invariants + traits sur lignes séparées (PSR cleaner)
 - ✅ Payload broadcast plus structuré (`order_id`, `branch_id`, `status->value`, `kitchen_items`)
 - ✅ Cast enum→value au broadcast (utile pour clients front)
@@ -75,8 +85,8 @@ Tu as demandé un test réel sur du complexe / créatif (pas du ping). J’ai cr
 
 1. **Streaming activé par défaut** — le proxy renvoie `504 Gateway time-out` (HTML Cloudflare) sur les prompts longs en mode non-stream. Le streaming garde la connexion vivante et passe sans souci.
 2. **Retry sur 504** — ajouté à `isRetry` dans `agents/codex.runner.mjs` (et fallback HTML→`makeApiError(504)` dans `doOneShot`).
-3. **`CODEX_RAW_PROMPT=1`** — pour les missions où on veut le format de sortie libre (Vue/PHP brut), bypass le template JSON-strict du sub-agent.
-4. **`CODEX_NO_NORMALIZE_M`** — déjà en place : règle le bug proxy sur la clé `m` top-level.
+3. `**CODEX_RAW_PROMPT=1`** — pour les missions où on veut le format de sortie libre (Vue/PHP brut), bypass le template JSON-strict du sub-agent.
+4. `**CODEX_NO_NORMALIZE_M**` — déjà en place : règle le bug proxy sur la clé `m` top-level.
 
 ## Ce que ça change concrètement pour toi
 
@@ -100,3 +110,4 @@ missions/T-COMPLEX-LARAVEL-JOB/
 
 agents/codex.runner.mjs    (retry 504 + fallback HTML)
 ```
+

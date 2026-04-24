@@ -1,0 +1,6 @@
+{
+  "task": "STRESS-TOKEN-DEEP",
+  "objective": "Test charge volontaire : maximiser la profondeur et le volume de sortie pour valider l'absence de plafond cote app FoodKing (runner) et estimer le comportement reel du proxy (tokens, duree).",
+  "instruction": "Ecris en francais, en Markdown, un manuel d'ingénierie logicielle **fictif** pour un \"SaaS de commande en restaurant multi-tenant, POS, KDS, audit, conformite RGPD US/EU, integration paiements, haute dispo, DR\".\n\n**Exigence de volume (obligatoire) :** viser **au minimum 8000 mots** de contenu (hors compteurs) reparti en **24 sections** `##` numerotees, chaque section : **au moins 320 mots** de prose dense (risques, diagrammes en texte, contraintes, controles, non-repudiation, journalisation, alertes, runbooks, pas de code source, mais noms d'artefacts OK).\n\nApres l'**annexe** finale, ajoute une seule ligne `MOTS: <entier estime> | TOKS_SORTIE_INDICATIF: <entier> | SECTIONS: 24` pour que l'on puisse verifier la taille. Ne tronque pas arbitrairement a mi-chemin; si le modele a une vraie limite et doit s'arrêter, termine proprement avec un encadre explicite `ARRET_LIMITE_MODELE` + derniere phrase complete.",
+  "output_spec": "Fichier unique, Markdown, pas de blocs de code, listes longues et tableaux markdown autorises. Ton technique."
+}

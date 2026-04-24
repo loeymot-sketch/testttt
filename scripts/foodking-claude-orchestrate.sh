@@ -140,19 +140,67 @@ case "$cmd" in
     ;;
   smoketest|ping|auth-test)
     # Sans stdin, claude -p se plaint en TTY partiel / agent — /dev/null force le mode « prompt seul ».
-    out=$(claude -p "Reply with exactly the single word: TERMINAL_OK" --add-dir "$REPO_ROOT" </dev/null 2>&1) || {
-      echo "[foodking-claude-orchestrate] ERROR: claude -p a échoué (auth, réseau, ou quota). Sortie:" >&2
-      echo "$out" >&2
-      exit 1
+    # Le modèle ou le CLI peut entourer la réponse (markdown, espaces) : on accepte toute sous-chaîne TERMINAL_OK
+    # (casse) après normalisation, avec reprises légères (réseau / premier cold start).
+    _claude_out_matches_ok() {
+      local raw="$1"
+      # Retire retours invisibles / bannières vides, ANSI courants, backticks
+      local norm
+      norm=$(printf '%s' "$raw" | tr -d '\r' 2>/dev/null || true)
+      # Remplace séquences ANSI (échap + [ + … + lettre) — portabe sans \e littéral cassé
+      if command -v perl >/dev/null 2>&1; then
+        norm=$(printf '%s' "$norm" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' 2>/dev/null || true)
+      fi
+      norm=$(printf '%s' "$norm" | tr '[:upper:]' '[:lower:]' 2>/dev/null || true)
+      case "$norm" in
+        *terminal_ok*) return 0 ;;
+        *) return 1 ;;
+      esac
     }
-    if echo "$out" | grep -q "TERMINAL_OK"; then
-      echo "[foodking-claude-orchestrate] OK: abonnement / auth API — réponse contient TERMINAL_OK"
-      echo "$out" | head -5
-    else
-      echo "[foodking-claude-orchestrate] WARN: sortie inattendue (attendu TERMINAL_OK) :" >&2
-      echo "$out" >&2
+    _claude_run_smoketest_once() {
+      local prompt_text="$1"
+      claude -p "$prompt_text" --add-dir "$REPO_ROOT" </dev/null 2>&1
+    }
+    SMOKE_P1="Reply with exactly the single word: TERMINAL_OK and nothing else."
+    SMOKE_P2="Output the single line TERMINAL_OK. No other words."
+    out=""
+    ok=0
+    for try in 1 2 3; do
+      for PMT in "$SMOKE_P1" "$SMOKE_P2"; do
+        set +e
+        out=$(_claude_run_smoketest_once "$PMT")
+        ex=$?
+        set -e
+        if [[ $ex -ne 0 ]]; then
+          if [[ -n "$FOODKING_CLAUDE_SMOKE_DEBUG" ]]; then
+            echo "[foodking-claude-orchestrate] DEBUG: try=$try ex=$ex prompt=${PMT:0:40}..." >&2
+            echo "$out" >&2
+          fi
+          continue
+        fi
+        if _claude_out_matches_ok "$out"; then
+          ok=1
+          break 2
+        fi
+        if [[ -n "$FOODKING_CLAUDE_SMOKE_DEBUG" ]]; then
+          echo "[foodking-claude-orchestrate] DEBUG: no match, try=$try" >&2
+          printf '%s' "$out" | head -c 2000 >&2; echo >&2
+        fi
+      done
+      if [[ $try -lt 3 ]]; then
+        sleep 2
+      fi
+    done
+    if [[ "$ok" -ne 1 ]]; then
+      echo "[foodking-claude-orchestrate] ERROR: smoketest: aucun TERMINAL_OK reçu après 3 reprises. Dernière sortie (début):" >&2
+      printf '%s' "$out" | head -c 3000 >&2; echo >&2
+      echo "[foodking-claude-orchestrate] Astuces: export ANTHROPIC (auth), réseau / VPN, quota. Debug: FOODKING_CLAUDE_SMOKE_DEBUG=1 $0 smoketest" >&2
+      echo "[foodking-claude-orchestrate] Vérif. manuelle:  $0 check  &&  $0 repl  (même binaire: $(command -v claude))" >&2
       exit 1
     fi
+    echo "[foodking-claude-orchestrate] OK: abonnement / auth API — réponse contient TERMINAL_OK"
+    echo "$out" | head -8
+    echo "TERMINAL_OK"
     ;;
   audit|orchestrate)
     if [[ $# -ge 1 ]]; then

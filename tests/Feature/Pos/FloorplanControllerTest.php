@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Events\OrderTableChanged;
 use App\Models\Branch;
 use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class FloorplanControllerTest extends TestCase
@@ -180,6 +182,86 @@ class FloorplanControllerTest extends TestCase
             'target_table_id' => $target->id,
             'order_id' => $order->id,
         ]);
+    }
+
+    /**
+     * [F-02] After a transfer the floor-plan service must dispatch
+     * OrderTableChanged so the KDS can refresh table_name + flash the card.
+     */
+    public function test_transfer_dispatches_order_table_changed_event(): void
+    {
+        Event::fake([OrderTableChanged::class]);
+
+        $order = $this->makeOrder(null);
+        $source = DiningTable::factory()->create([
+            'branch_id' => $this->branch->id,
+            'occupancy_status' => 'occupied',
+            'occupied_order_id' => $order->id,
+            'occupied_at' => now()->subMinutes(3),
+        ]);
+        $target = DiningTable::factory()->create(['branch_id' => $this->branch->id]);
+        $order->update(['dining_table_id' => $source->id]);
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->postJson('/api/admin/pos/floorplan/transfer', [
+                'source_table_id' => $source->id,
+                'target_table_id' => $target->id,
+            ])
+            ->assertOk();
+
+        Event::assertDispatched(OrderTableChanged::class, function (OrderTableChanged $event) use ($order, $source, $target) {
+            return (int) $event->order->id === (int) $order->id
+                && (int) $event->previousTableId === (int) $source->id
+                && (int) $event->newTableId === (int) $target->id
+                && $event->action === 'transfer';
+        });
+    }
+
+    /**
+     * [F-02] An assignation (occupy) on a brand-new table must also dispatch
+     * OrderTableChanged with previous_table_id = null and action = 'occupy'.
+     */
+    public function test_assign_dispatches_order_table_changed_event(): void
+    {
+        Event::fake([OrderTableChanged::class]);
+
+        $table = DiningTable::factory()->create(['branch_id' => $this->branch->id]);
+        $order = $this->makeOrder(null);
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->postJson("/api/admin/pos/floorplan/{$table->id}/assign", ['order_id' => $order->id])
+            ->assertOk();
+
+        Event::assertDispatched(OrderTableChanged::class, function (OrderTableChanged $event) use ($order, $table) {
+            return (int) $event->order->id === (int) $order->id
+                && $event->previousTableId === null
+                && (int) $event->newTableId === (int) $table->id
+                && $event->action === 'occupy';
+        });
+    }
+
+    /**
+     * [F-02] An idempotent re-assignation of the SAME table to the same order
+     * must NOT re-dispatch OrderTableChanged (avoid noisy KDS flashes on
+     * retried POST / network double-tap).
+     */
+    public function test_assign_idempotent_does_not_re_dispatch_event(): void
+    {
+        $table = DiningTable::factory()->create(['branch_id' => $this->branch->id]);
+        $order = $this->makeOrder($table->id);
+        $table->update([
+            'occupancy_status' => 'occupied',
+            'occupied_order_id' => $order->id,
+            'occupied_at' => now(),
+        ]);
+
+        Event::fake([OrderTableChanged::class]);
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->postJson("/api/admin/pos/floorplan/{$table->id}/assign", ['order_id' => $order->id])
+            ->assertOk();
+
+        Event::assertNotDispatched(OrderTableChanged::class);
     }
 
     public function test_transfer_within_the_same_branch_frees_the_source_and_occupies_the_target(): void

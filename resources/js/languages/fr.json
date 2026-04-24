@@ -56,7 +56,11 @@
         "park_restore_error": "Impossible de restaurer cette commande.",
         "park_restore_requires_empty_cart": "Videz ou parquez le panier courant avant de restaurer une commande.",
         "park_discard_success": "Commande parkée supprimée.",
-        "park_discard_error": "Impossible de supprimer cette commande parkée."
+        "park_discard_error": "Impossible de supprimer cette commande parkée.",
+        "receipt_print_forbidden": "Impression refusée (droits insuffisants). Le ticket est imprimé ; le compteur fiscal n'a pas été mis à jour côté serveur.",
+        "receipt_print_not_found": "Commande introuvable côté serveur. Le ticket est imprimé ; vérifiez la commande.",
+        "receipt_print_conflict": "Conflit lors de l'enregistrement du reçu. Le ticket est imprimé ; vérifiez l'état fiscal.",
+        "receipt_print_server_error": "Le serveur n'a pas pu enregistrer l'impression. Le ticket est imprimé quand même."
     },
     "menu": {
         "dashboard": "Tableau de bord",
@@ -208,7 +212,17 @@
         "kds_order_list_full_warning": "Liste pleine ({n} affichée(s), max. serveur) : d'autres commandes actives existent peut-être — filtrez par statut ou cherchez un n° de ticket.",
         "kds_bump_local_only_notice": "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.",
         "kds_items_board_scope": "Aperçu des articles à produire (commandes acceptées ou en préparation) — exclut les fiches entièrement bouclées côté file « commandes du jour » si statut prêt servi.",
-        "kds_dismiss_hint": "Ne plus afficher"
+        "kds_dismiss_hint": "Ne plus afficher",
+        "kds_sync_stamp": "Synchronisé il y a {ago}",
+        "kds_sync_never": "Pas encore synchronisé",
+        "kds_allergens_badge": "Allergènes",
+        "kds_allergens_badge_aria": "Voir les allergènes de cette commande",
+        "kds_allergens_modal_title": "Allergènes de la commande #{order_id}",
+        "kds_allergens_modal_intro": "Vérifiez chaque article avant préparation. L'information est purement informative et ne bloque PAS le flux normal.",
+        "kds_allergens_for_item": "{item_name} : {allergens}",
+        "kds_allergens_modal_none": "Aucun allergène déclaré pour cet article.",
+        "ws_session_invalid_text": "Session expirée — votre session est terminée. Rechargez la page.",
+        "ws_session_invalid_action": "Recharger"
     },
     "button": {
         "add": "Ajouter",
@@ -243,7 +257,8 @@
         "transfer_table": "Transférer la table",
         "release_table": "Libérer la table",
         "kds_bump": "Prêt",
-        "kds_recall": "Annuler"
+        "kds_recall": "Annuler",
+        "kds_allergens_modal_close": "Fermer"
     },
     "error": {
         "printer_unreachable": "Impossible de joindre l'imprimante."
@@ -505,6 +520,7 @@
             "processing_title": "Envoi de la commande…",
             "processing_sub": "Veuillez patienter",
             "tpe_follow": "Suivez les instructions sur l'appareil de paiement",
+            "tpe_stuck_help": "Si l'écran ne répond plus, utilisez « Annuler le paiement » ci-dessous ou le bouton du terminal.",
             "cancel_payment": "Annuler le paiement",
             "confirm": "Confirmer — {amount}",
             "tpe_card": "Insérez votre carte sur l'appareil de paiement",
@@ -662,6 +678,7 @@
             "confirm_saved_sub": "Vos points seront crédités après la commande",
             "continue_payment": "Continuer vers le paiement",
             "error_not_found": "Code ou numéro introuvable. Vérifiez et réessayez.",
+            "request_timeout": "Le serveur met trop de temps à répondre. Vérifiez la connexion et réessayez.",
             "toast_discount": "Réduction de {amount} appliquée !",
             "toast_saved": "Fidélité enregistrée — points crédités après la commande",
             "toast_welcome": "Bienvenue {name} ! Compte fidélité créé.",

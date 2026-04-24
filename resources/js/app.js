@@ -21,14 +21,21 @@ import DefaultComponent from "./components/DefaultComponent";
 import router from './router';
 import store from './store';
 import axios from 'axios';
-import i18n, { getCurrentLocale } from "./i18n";
+import i18n from "./i18n";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
 import VueSimpleAlert from "vue3-simple-alert";
 import VueNextSelect from 'vue-next-select';
 import 'vue-next-select/dist/index.css';
 import VueApexCharts from "vue3-apexcharts";
-import ENV from './config/env';
+
+// [POS-V4 W2 #1 FIX D.3 2026-04-26] Shared axios setup module — see
+// resources/js/shared/axios-setup.js. Extracted from this file's L52-L89 to
+// eliminate the duplicated copy that lived in pos-app.js. Both entries now
+// import the SAME request interceptor + token reader; each declares its own
+// 401 RESPONSE handler explicitly (this file = kiosk-aware; pos-app.js =
+// POS-only). See AUDIT_W2_DEDICATED_ENTRY_CLAUDE_2026-04-26.md D.3.
+import { applySharedAxiosDefaults } from './shared/axios-setup';
 
 
 /* Start tooltip alert code */
@@ -48,45 +55,11 @@ const options = {
 /* End tooltip alert code */
 
 
-/* Start axios code*/
-const API_URL = ENV.API_URL;
-const API_KEY = ENV.API_KEY;
-
-axios.defaults.baseURL = API_URL + '/api';
-
-function readTokenFromVuexLocalStorage() {
-    let kioskToken = store.state.kioskCart?.kioskToken || null;
-    let userToken = store.state.auth?.authToken || null;
-    let language = store.state.globalState?.lists?.language_code || null;
-    if (!kioskToken && !userToken && localStorage.getItem('vuex')) {
-        try {
-            const vuex = JSON.parse(localStorage.getItem('vuex'));
-            kioskToken = kioskToken || vuex.kioskCart?.kioskToken || null;
-            userToken = userToken || vuex.auth?.authToken || null;
-            language = language || vuex.globalState?.lists?.language_code || null;
-        } catch (_) { /* ignore */ }
-    }
-    const token = kioskToken || userToken;
-    return { token, language };
-}
-
-axios.interceptors.request.use(
-    config => {
-        config.headers['x-api-key'] = API_KEY;
-
-        // [PHASE-37] Add Accept-Language header for backend localization
-        const currentLocale = getCurrentLocale();
-        config.headers['Accept-Language'] = currentLocale;
-
-        const { token, language } = readTokenFromVuexLocalStorage();
-        config.headers['Authorization'] = token ? `Bearer ${token}` : '';
-        const lang = currentLocale || language;
-        if (lang) config.headers['x-localization'] = lang;
-
-        return config;
-    },
-    error => Promise.reject(error),
-);
+/* Start axios code */
+// [POS-V4 W2 #1 FIX D.3] Defaults + request interceptor are now centralized.
+// See ./shared/axios-setup.js. The 401 RESPONSE handler stays here because it
+// uses Vue Router (router.push to auth.login) — kiosk-aware variant.
+applySharedAxiosDefaults(axios, store);
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)

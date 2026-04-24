@@ -17,6 +17,21 @@ function makeHandler() {
         const payload = (event && event.payload) ? event.payload : event || {};
         const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
         if (!itemId) return;
+
+        // [F-04bis] Mirror PosComponent.vue: distinguish global catalogue update
+        // (is_available null/undefined) from branch-scoped flip (true|false).
+        const hasAvailabilitySignal =
+            payload.is_available === true || payload.is_available === false ||
+            payload.is_available === 1 || payload.is_available === 0 ||
+            payload.is_available === '1' || payload.is_available === '0';
+
+        if (!hasAvailabilitySignal) {
+            if (payload.type === 'full') {
+                try { this.itemList(); } catch (e) { /* defensive */ }
+            }
+            return;
+        }
+
         const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
                    : (Array.isArray(this.items) ? this.items : null);
         if (list) {
@@ -97,6 +112,60 @@ describe('POS ItemAvailabilityChanged handler [POS-9.1.10]', () => {
         };
         makeHandler().call(ctx, { item_id: 5, is_available: false });
         expect(ctx.itemsRaw[0].is_available).toBe(false);
+    });
+
+    // [F-04bis] Sentinel: a global broadcast (admin edit price/status, branch_id null,
+    // is_available null) MUST NOT prune the cart and MUST NOT flip is_available=false
+    // on the item locally. Before the fix, undefined was coerced to false.
+    it('[F-04bis] global broadcast (is_available null) does NOT prune the cart and does NOT flip availability', () => {
+        const dispatch = vi.fn();
+        const toast = vi.fn();
+        const ctx = {
+            itemsRaw: [{ id: 7, name: 'Burger', is_available: true }],
+            itemList: vi.fn(),
+            $store: { dispatch },
+            $refs: {},
+            _maybeToastItemUnavailableLost: toast,
+        };
+        makeHandler().call(ctx, {
+            payload: { item_id: 7, is_available: null, branch_id: null, type: 'price', price: 9.5 },
+        });
+        expect(ctx.itemsRaw[0].is_available).toBe(true);
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(toast).not.toHaveBeenCalled();
+        expect(ctx.itemList).not.toHaveBeenCalled();
+    });
+
+    it('[F-04bis] global broadcast with type="full" still triggers itemList() (refresh) but does NOT prune', () => {
+        const dispatch = vi.fn();
+        const ctx = {
+            itemsRaw: [{ id: 7, name: 'Burger', is_available: true }],
+            itemList: vi.fn(),
+            $store: { dispatch },
+            $refs: {},
+        };
+        makeHandler().call(ctx, {
+            payload: { item_id: 7, is_available: null, branch_id: null, type: 'full' },
+        });
+        expect(ctx.itemList).toHaveBeenCalledOnce();
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(ctx.itemsRaw[0].is_available).toBe(true);
+    });
+
+    it('[F-04bis] branch flip with is_available=false still prunes (regression guard)', () => {
+        const dispatch = vi.fn();
+        const ctx = {
+            itemsRaw: [{ id: 7, name: 'Burger', is_available: true }],
+            itemList: vi.fn(),
+            $store: { dispatch },
+            $refs: {},
+            _maybeToastItemUnavailableLost: vi.fn(),
+        };
+        makeHandler().call(ctx, {
+            payload: { item_id: 7, is_available: false, branch_id: 3, reason: 'out_of_stock', type: 'branch_availability' },
+        });
+        expect(ctx.itemsRaw[0].is_available).toBe(false);
+        expect(dispatch).toHaveBeenCalledWith('posCart/pruneUnavailable', 7);
     });
 
     it('after broadcast unavailable, syncs open modal item and does not close modal (child hook)', () => {

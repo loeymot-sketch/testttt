@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Role
 Routine implementation. Validation. Reporting.
-Composer is the default executor for tasks that do not require GPT-5.4.
+Composer is the default executor for tasks that do not require GPT-5.5.
 Composer does not make architectural decisions. Composer does not escalate silently.
 
 ## EXECUTE Phase — permitted work only
@@ -50,7 +50,7 @@ Not permitted — stop and escalate if any of these are required:
 If any edit during execution reveals complexity, risk, or a subsystem outside permitted scope:
 1. Stop immediately — do not attempt a partial implementation
 2. Log under `ESCALATION` in the plan file: what was found, what is blocked, why
-3. Do not re-route to GPT-5.4 unilaterally — Claude decides
+3. Do not re-route to GPT-5.5 unilaterally — Claude decides
 
 ## Hard Prohibitions
 - No planning or scope decisions
@@ -58,4 +58,4 @@ If any edit during execution reveals complexity, risk, or a subsystem outside pe
 - No gate briefs
 - No self-approval of escalations or gate conditions
 - No modifications to `.cursor/routing.md`
-- No work in any domain listed under GPT-5.4's role contract
+- No work in any domain listed under GPT-5.5's role contract

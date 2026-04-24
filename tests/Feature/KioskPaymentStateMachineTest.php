@@ -17,6 +17,7 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\User;
+use App\Services\FrontendOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Smartisan\Settings\Facades\Settings;
@@ -240,6 +241,94 @@ class KioskPaymentStateMachineTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+        ]);
+
+        Event::assertDispatched(OrderCreated::class);
+        Event::assertDispatched(OrderStatusChanged::class);
+    }
+
+    /**
+     * [F-21] Defense in depth — finalizePaidKioskOrder must REJECT a non-paid order
+     * even if called directly (bypassing the controller pre-check). Caller paths like
+     * job retries, future refactors, or any service-to-service call must NOT be able
+     * to advance an unpaid kiosk order to ACCEPT.
+     *
+     * @see app/Services/FrontendOrderService.php finalizePaidKioskOrder
+     * @see tasks/gates/GATE_FROZEN_F21_FINALIZE_PAID_KIOSK_2026-04-23.md
+     * @see plans/PLAN_POS_KIOSK_KDS_SYNC_REPAIR_v2_2026-04-23.md lot 1.G
+     */
+    public function test_finalize_paid_kiosk_order_rejects_unpaid_order(): void
+    {
+        Event::fake([OrderCreated::class, OrderStatusChanged::class]);
+
+        $unpaidOrder = FrontendOrder::forceCreate([
+            'order_serial_no' => '310326F21A',
+            'user_id' => $this->kioskUser->id,
+            'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::UNPAID,
+            'payment_method' => PaymentGateway::CARD,
+            'order_type' => OrderType::TAKEAWAY,
+            'source' => Source::APP,
+            'subtotal' => 12.50,
+            'total' => 12.50,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'order_datetime' => now(),
+            'preparation_time' => 30,
+            'queue_number' => 'A0F21',
+        ]);
+
+        $service = app(FrontendOrderService::class);
+        $promoted = $service->finalizePaidKioskOrder($unpaidOrder);
+
+        $this->assertFalse($promoted, 'Service must return false when payment is not confirmed.');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $unpaidOrder->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::UNPAID,
+        ]);
+
+        Event::assertNotDispatched(OrderCreated::class);
+        Event::assertNotDispatched(OrderStatusChanged::class);
+    }
+
+    /**
+     * [F-21] Counterpart positive path — calling the service directly on a paid order
+     * still succeeds (no regression introduced by the defense-in-depth check).
+     */
+    public function test_finalize_paid_kiosk_order_promotes_paid_order_when_called_directly(): void
+    {
+        Event::fake([OrderCreated::class, OrderStatusChanged::class]);
+
+        $paidOrder = FrontendOrder::forceCreate([
+            'order_serial_no' => '310326F21B',
+            'user_id' => $this->kioskUser->id,
+            'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING,
+            'payment_status' => PaymentStatus::PAID,
+            'payment_method' => PaymentGateway::CARD,
+            'order_type' => OrderType::TAKEAWAY,
+            'source' => Source::APP,
+            'subtotal' => 12.50,
+            'total' => 12.50,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'order_datetime' => now(),
+            'preparation_time' => 30,
+            'queue_number' => 'A0F21B',
+        ]);
+
+        $service = app(FrontendOrderService::class);
+        $promoted = $service->finalizePaidKioskOrder($paidOrder);
+
+        $this->assertTrue($promoted, 'Service must promote a paid kiosk order to ACCEPT.');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $paidOrder->id,
             'status' => OrderStatus::ACCEPT,
             'payment_status' => PaymentStatus::PAID,
         ]);

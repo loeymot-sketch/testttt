@@ -16,6 +16,7 @@ use App\Enums\OrderStatus;
 use App\Models\OrderCoupon;
 use App\Models\Transaction;
 use App\Enums\PaymentStatus;
+use App\Events\OrderCanceled; // allow: domain event class import — audit log written by ActionLog/AuditLogService at call sites.
 use App\Events\SendOrderSms;
 use App\Models\OrderAddress;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingResult;
 use App\Services\Pricing\PricingService;
 use App\Services\Menu\AvailabilityService;
+use App\Services\DiningTableService;
 
 class OrderService
 {
@@ -992,6 +994,14 @@ class OrderService
                 } catch (\Exception $e) {
                     Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
                 }
+                // [MEGA 2.J / F-16] Dine-in: free floorplan table when this order is paid
+                // and still holds the table. SYMMETRY_NOTE: kiosk has no parallel dine-in
+                // table bind — FrontendOrderService unchanged.
+                try {
+                    app(DiningTableService::class)->tryReleaseTableAfterPosOrderPaid($order);
+                } catch (\Throwable $e) {
+                    Log::warning('[posOrderStore] floorplan table release: ' . $e->getMessage());
+                }
             }
             
             return $this->order;
@@ -1518,6 +1528,16 @@ class OrderService
                     } catch (\Exception $e) {
                         Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: ' . $e->getMessage());
                     }
+                    // [F-01] Compensating release of branch-scoped stock counters when an order
+                    // is cancelled (self-cancel path). Idempotent via the `released_qty` ledger
+                    // — safe even if dispatched more than once or paired with a future refund.
+                    if (in_array((int) $request->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                        try {
+                            OrderCanceled::dispatch($order); // allow: stock-release dispatch; ActionLog already recorded by self-cancel branch caller.
+                        } catch (\Exception $e) {
+                            Log::warning('[OrderService] OrderCanceled on self-cancel failed: ' . $e->getMessage()); // allow: warning only
+                        }
+                    }
                 } else {
                     // [FIX-54-7] Return 403 instead of silent 200 for non-owner
                     abort(403, 'Access denied: you do not own this order.');
@@ -1614,6 +1634,16 @@ class OrderService
                     \App\Events\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, (int) $request->status);
                 } catch (\Exception $e) {
                     Log::warning('OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                }
+                // [F-01] Compensating release of branch-scoped stock counters when an order
+                // is cancelled or rejected by admin / POS / branch staff. Idempotent ledger
+                // (order_items.released_qty) makes this safe to dispatch unconditionally.
+                if (in_array((int) $request->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                    try {
+                        OrderCanceled::dispatch($order); // allow: stock-release dispatch; AuditLogService::write already called above for order.cancelled / order.rejected.
+                    } catch (\Exception $e) {
+                        Log::warning('[OrderService] OrderCanceled on admin cancel failed: ' . $e->getMessage()); // allow: warning only
+                    }
                 }
             }
             return $order;

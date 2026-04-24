@@ -18,14 +18,13 @@
     ]
   },
   "constraints": {
-    "forbidden_params": [
+    "forbidden_in_body_template": [
       "user",
       "top_p",
       "presence_penalty",
-      "frequency_penalty",
-      "max_tokens"
+      "frequency_penalty"
     ],
-    "note": "Body minimal uniquement côté codex.runner.mjs (pas d’extras par défaut)."
+    "note": "Body minimal par défaut (connecteur **proxy+clé** / `codex:complex:proxy-legacy` uniquement). **PRIMARY** = CLI `codex` + `codex-extension-execute.sh` (pas ce schéma HTTP). Le runner proxy peut fusionner un plafond de sortie via l’environnement (`CODEX_MAX_COMPLETION_TOKENS` ou `CODEX_MAX_TOKENS`)."
   },
   "output": {
     "format": "json",

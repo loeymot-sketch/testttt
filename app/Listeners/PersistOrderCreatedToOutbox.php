@@ -36,7 +36,8 @@ class PersistOrderCreatedToOutbox
         ]);
 
         DB::afterCommit(function () use ($domainEvent): void {
-            DispatchDomainEventsJob::dispatch($domainEvent->id)->onQueue('high');
+            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+            DispatchDomainEventsJob::dispatch($domainEvent->id);
         });
     }
 

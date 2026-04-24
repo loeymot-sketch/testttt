@@ -187,7 +187,14 @@
                   </button>
                 </div>
                 <div v-show="!groupByTable || isTableGroupOpen(dineinTableKey(dineinOrder))">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(dineinOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="[kdsWaitClass(dineinOrder), flashTableChangeIds[dineinOrder.id] ? 'kds-table-flash' : '']">
+                <button
+                  v-if="orderHasAllergens(dineinOrder)"
+                  type="button"
+                  class="kds-allergens-badge"
+                  @click.prevent.stop="openAllergensModal(dineinOrder)"
+                  :aria-label="$t('label.kds_allergens_badge_aria')"
+                >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
                   <div class="flex items-center gap-1 text-[#0084FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#0084FF]"></i>
@@ -293,7 +300,14 @@
               Aucune commande en ligne en cours.
             </div>
             <div v-if="filteredOnlineOrders.length > 0" class="p-3" v-for="onlineOrder in filteredOnlineOrders" :key="onlineOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(onlineOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(onlineOrder)">
+                <button
+                  v-if="orderHasAllergens(onlineOrder)"
+                  type="button"
+                  class="kds-allergens-badge"
+                  @click.prevent.stop="openAllergensModal(onlineOrder)"
+                  :aria-label="$t('label.kds_allergens_badge_aria')"
+                >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]">
                   <div class="flex items-center gap-1 text-[#FF8C1A]">
                     <i class="lab lab-processing lab-font-size-16 text-[#FF8C1A]"></i>
@@ -397,7 +411,14 @@
             </div>
             <div v-if="filteredTakeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in filteredTakeawayOrders"
               :key="takeawayOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(takeawayOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(takeawayOrder)">
+                <button
+                  v-if="orderHasAllergens(takeawayOrder)"
+                  type="button"
+                  class="kds-allergens-badge"
+                  @click.prevent.stop="openAllergensModal(takeawayOrder)"
+                  :aria-label="$t('label.kds_allergens_badge_aria')"
+                >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FAF4FF]">
                   <div class="flex items-center gap-1 text-[#9837FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#9837FF]"></i>
@@ -504,7 +525,14 @@
               Aucune commande borne en cours.
             </div>
             <div v-if="filteredKioskOrders.length > 0" class="p-3" v-for="kioskOrder in filteredKioskOrders" :key="kioskOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6]" :class="kdsWaitClass(kioskOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(kioskOrder)">
+                <button
+                  v-if="orderHasAllergens(kioskOrder)"
+                  type="button"
+                  class="kds-allergens-badge"
+                  @click.prevent.stop="openAllergensModal(kioskOrder)"
+                  :aria-label="$t('label.kds_allergens_badge_aria')"
+                >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]">
                   <div class="flex items-center gap-2 text-[#e53935]">
                     <i class="lab lab-processing lab-font-size-16 text-[#e53935]"></i>
@@ -604,6 +632,55 @@
         </div>
       </div>
     </div>
+    <!-- [F-03 / Lot 1.C] Adaptive sync badge: reassures the kitchen that the
+         board is up to date even when WebSocket is degraded. Color shifts to
+         orange after 30s without sync. -->
+    <div class="kds-sync-footer">
+      <span
+        class="kds-sync-stamp"
+        :class="{ 'kds-sync-stamp--stale': syncBadgeIsStale }"
+        :title="syncBadgeText"
+      >
+        {{ syncBadgeText }}
+      </span>
+    </div>
+    <div
+      v-if="allergensModal.open"
+      ref="allergensModalRoot"
+      class="kds-allergens-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('label.kds_allergens_modal_title', { order_id: allergensModal.order && allergensModal.order.id ? allergensModal.order.id : '' })"
+      tabindex="-1"
+      @click.self="closeAllergensModal"
+      @keydown.esc="closeAllergensModal"
+      @keydown="onAllergensModalKeydown"
+    >
+      <div class="kds-allergens-modal-content">
+        <header class="kds-allergens-modal-header">
+          <h2>{{ $t('label.kds_allergens_modal_title', { order_id: allergensModal.order && allergensModal.order.id ? allergensModal.order.id : '' }) }}</h2>
+          <button
+            ref="allergensModalCloseButton"
+            type="button"
+            class="kds-allergens-modal-close"
+            @click="closeAllergensModal"
+          >{{ $t('button.kds_allergens_modal_close') }}</button>
+        </header>
+        <p class="kds-allergens-modal-intro">{{ $t('label.kds_allergens_modal_intro') }}</p>
+        <ul class="kds-allergens-modal-list">
+          <li
+            v-for="(orderItem, allergenIndex) in allergensModalItems"
+            :key="(orderItem.id || orderItem.item_id || allergenIndex) + '-' + allergenIndex"
+            class="kds-allergens-modal-list-item"
+          >
+            <strong>{{ orderItem.item_name || orderItem.name || (orderItem.item && orderItem.item.name) || '-' }}</strong>
+            <span>{{ sortedAllergens(orderItem.allergens_snapshot).length
+              ? sortedAllergens(orderItem.allergens_snapshot).join(' \u00B7 ')
+              : $t('label.kds_allergens_modal_none') }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -615,14 +692,18 @@ import askEnum from "../../../enums/modules/askEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
+import kdsSyncService from "../../../services/KdsSyncService";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
 import {
   filterOrdersByStation,
   getKdsEscalationClass,
+  kdsStationFilterStorageKey,
   parseOrderCreatedMs,
+  shouldPlayKdsNewOrderSound,
 } from "../../../helpers/kdsDisplay";
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
+import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -663,6 +744,11 @@ export default {
       autoRefreshInterval: null,
       wsConnected: !!(window._wsService?.isConnected()),
       _eventSub: null,
+      // [F-02] Order ids that just had their dining-table changed; cards in this
+      // set get a 2s CSS flash so the kitchen notices the table moved (gate G-2:
+      // in_place_with_css_flash — never re-print, never play a sound).
+      flashTableChangeIds: {},
+      _tableFlashTimers: {},
       stationFilter: "all",
       groupByTable: false,
       soundEnabled: true,
@@ -673,6 +759,24 @@ export default {
       _kdsWaitInterval: null,
       _kdsOrdersHydrated: false,
       kdsHideBumpInfo: false,
+      // [F-03 / Lot 1.C] Adaptive polling fallback metadata: keep listener
+      // unsubscribers and the per-second tick used to update the "Synchronized
+      // Xs ago" badge. The KdsSyncService itself manages cadence based on
+      // wsService state — we only consume its `sync` events here.
+      kdsSyncUnsubscribers: [],
+      syncNowTick: Date.now(),
+      _kdsSyncStampTimer: null,
+      // [Lot 2.I / G-4] Non-blocking allergens modal state. Opened from the
+      // ⚠ Allergens badge on each order-card. Purely informational — does NOT
+      // gate kdsBump / kdsRecall / orderStatus / printKitchenTicket.
+      allergensModal: {
+        open: false,
+        order: null,
+      },
+      // [Audit 2.I F-02] element to return focus to when modal closes (badge / background).
+      allergenModalReturnFocus: null,
+      // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
+      _kdsLastNewOrderSoundAt: 0,
     };
   },
   computed: {
@@ -687,6 +791,26 @@ export default {
     /** Exactement 50 = requête backend limit(50) — d’autres commandes actives peuvent exister */
     kdsOrderListAtCap() {
       return Array.isArray(this.orders) && this.orders.length === 50;
+    },
+    // [F-03 / Lot 1.C] Last-sync badge — uses kdsSyncService.lastSyncAt and
+    // re-renders every second via syncNowTick.
+    humanizedSyncAgo() {
+      const stamp = kdsSyncService.lastSyncAt;
+      if (!stamp) return null;
+      const diffMs = Math.max(0, this.syncNowTick - new Date(stamp).getTime());
+      const seconds = Math.floor(diffMs / 1000);
+      if (seconds < 60) return `${seconds}s`;
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes}m`;
+    },
+    syncBadgeText() {
+      if (!this.humanizedSyncAgo) return this.$t("label.kds_sync_never");
+      return this.$t("label.kds_sync_stamp", { ago: this.humanizedSyncAgo });
+    },
+    syncBadgeIsStale() {
+      const stamp = kdsSyncService.lastSyncAt;
+      if (!stamp) return true;
+      return (this.syncNowTick - new Date(stamp).getTime()) > 30000;
     },
     orders: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/lists"];
@@ -714,6 +838,14 @@ export default {
       }
       return rows;
     },
+    // [Lot 2.I / G-4] Items shown in the allergens modal. Backwards-compatible
+    // with both the new orderItems shape and the legacy order_items shape that
+    // some surfaces still emit.
+    allergensModalItems() {
+      const order = this.allergensModal.order;
+      if (!order) return [];
+      return order.orderItems || order.order_items || [];
+    },
   },
   watch: {
     orders(newVal, oldVal) {
@@ -731,7 +863,33 @@ export default {
     } catch (e) {
       this.kdsHideBumpInfo = false;
     }
-    const sf = localStorage.getItem("kds.station_filter");
+    // [Lot 2.F / F-10] Per-user storage key; migrate from legacy kds.station_filter once.
+    const uid = this.kdsAuthUserId();
+    const sKey = kdsStationFilterStorageKey(uid);
+    let sf = null;
+    try {
+      sf = localStorage.getItem(sKey);
+    } catch (e) {
+      sf = null;
+    }
+    if (sf == null && uid > 0) {
+      try {
+        const leg = localStorage.getItem("kds.station_filter");
+        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide") {
+          sf = leg;
+          localStorage.setItem(sKey, leg);
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (sf == null) {
+      try {
+        sf = localStorage.getItem("kds.station_filter");
+      } catch (e) {
+        sf = null;
+      }
+    }
     if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
       this.stationFilter = sf;
     }
@@ -752,10 +910,94 @@ export default {
     this._kdsWaitInterval = setInterval(() => {
       this.waitTick += 1;
     }, 30000);
+    // [F-03 / Lot 1.C] Adaptive polling fallback. Pauses automatically when
+    // wsService.state === 'CONNECTED'; accelerates when degraded; backoffs on
+    // 5xx. Safe to mount unconditionally — the service no-ops while WS is up.
+    this.kdsSyncUnsubscribers.push(
+      kdsSyncService.on('sync', ({ gatedIds = [], orders = [], deleted_ids = [] }) => {
+        const hasFreshOrders = orders.some((o) => !gatedIds.includes(o.id));
+        const hasDeletes = (deleted_ids || []).length > 0;
+        this.syncNowTick = Date.now();
+        if (hasFreshOrders || hasDeletes) {
+          this._debouncedRefresh && this._debouncedRefresh();
+        }
+      })
+    );
+    this.kdsSyncUnsubscribers.push(
+      kdsSyncService.on('error', () => { this.syncNowTick = Date.now(); })
+    );
+    try {
+      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0, 10);
+      kdsSyncService.start(branchId);
+    } catch (e) { /* defensive: never break KDS mount because of poller */ }
+    this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
     kdsInstructionClass(text) {
       return kdsInstructionVisualClass(text);
+    },
+    // [Lot 2.I / G-4] Thin wrappers over pure helpers in kdsAllergens.js so
+    // they remain unit-testable in isolation (see tests/js/kdsAllergens.spec.js).
+    orderHasAllergens(order) {
+      return kdsOrderHasAllergens(order);
+    },
+    sortedAllergens(snapshot) {
+      return kdsSortedAllergens(snapshot);
+    },
+    openAllergensModal(order) {
+      this.allergenModalReturnFocus =
+        typeof document !== "undefined" && document.activeElement
+          ? document.activeElement
+          : null;
+      this.allergensModal = { open: true, order };
+      this.$nextTick(() => {
+        const el = this.$refs.allergensModalCloseButton;
+        if (el && typeof el.focus === "function") {
+          try { el.focus(); } catch (_) { /* defensive: focus is best-effort */ }
+        }
+      });
+    },
+    closeAllergensModal() {
+      const returnTo = this.allergenModalReturnFocus;
+      this.allergenModal = { open: false, order: null };
+      this.allergenModalReturnFocus = null;
+      this.$nextTick(() => {
+        if (returnTo && typeof returnTo.focus === "function") {
+          try { returnTo.focus(); } catch (_) { /* best-effort */ }
+        }
+      });
+    },
+    // [Audit 2.I F-01] Keep Tab / Shift+Tab inside the dialog (simple 2-node cycle).
+    onAllergensModalKeydown(e) {
+      if (e.key !== "Tab") {
+        return;
+      }
+      const root = this.$refs.allergensModalRoot;
+      const content = root && root.querySelector && root.querySelector(".kds-allergens-modal-content");
+      if (!content) {
+        return;
+      }
+      const focusables = Array.from(
+        content.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((n) => n.offsetParent !== null || n === document.activeElement);
+      // One focusable (e.g. only Close): keep Tab from moving focus out of the dialog.
+      if (focusables.length < 2) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     },
     dismissKdsBumpNotice() {
       try {
@@ -770,8 +1012,17 @@ export default {
       const ms = parseOrderCreatedMs(order);
       return getKdsEscalationClass(ms, Date.now());
     },
+    kdsAuthUserId() {
+      const u = this.$store.getters["auth/authInfo"] || {};
+      const id = u.id != null ? parseInt(u.id, 10) : 0;
+      return Number.isFinite(id) && id > 0 ? id : 0;
+    },
     persistKdsUiPrefs() {
-      localStorage.setItem("kds.station_filter", this.stationFilter);
+      try {
+        localStorage.setItem(kdsStationFilterStorageKey(this.kdsAuthUserId()), this.stationFilter);
+      } catch (e) {
+        /* private mode / quota */
+      }
       localStorage.setItem("kds.group_by_table", this.groupByTable ? "1" : "0");
       localStorage.setItem("kds.sound_enabled", this.soundEnabled ? "1" : "0");
       localStorage.setItem("kds.sound_volume", String(this.soundVolume));
@@ -780,6 +1031,12 @@ export default {
       if (!this.soundEnabled) {
         return;
       }
+      // [Lot 2.C / F-07] Throttle: burst of new orders (WS) must not machine-gun the chime.
+      const now = Date.now();
+      if (!shouldPlayKdsNewOrderSound(this._kdsLastNewOrderSoundAt, now)) {
+        return;
+      }
+      this._kdsLastNewOrderSoundAt = now;
       const el = this.$refs.kdsNewOrderAudio;
       if (!el) {
         return;
@@ -890,6 +1147,13 @@ export default {
           // (rupture stock cuisine). Cheaper to refresh the active list than
           // to maintain a per-item availability map on the KDS surface.
           { broadcastAs: 'ItemAvailabilityChanged', handler: () => { this._debouncedRefresh(); } },
+          // [F-02] Floor-plan transfer / occupy → update the table label in place
+          // and flash the card briefly. Refresh re-fetches table_name from the
+          // backend; flash provides the visual cue (gate G-2 decision).
+          {
+            broadcastAs: 'OrderTableChanged',
+            handler: (payload) => { this._handleTableChanged(payload); },
+          },
         ]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
       } catch (e) {
@@ -1132,6 +1396,35 @@ export default {
         alertService.error(msg);
       }
     },
+    /**
+     * [F-02] Handle OrderTableChanged events.
+     *
+     * Per orchestrator gate G-2 (in_place_with_css_flash):
+     *   - Refresh the list so the new table_name appears (SSOT = backend).
+     *   - Mark the order id as "freshly moved" for ~2s so the card flashes.
+     *   - NEVER replay a sound and NEVER trigger a re-print — this is a silent,
+     *     visual-only signal that respects the kitchen rush flow.
+     *
+     * Idempotent: receiving the same payload twice resets the 2s timer.
+     */
+    _handleTableChanged(payload) {
+      const orderId = parseInt(payload?.order_id || 0);
+      if (orderId <= 0) {
+        this._debouncedRefresh();
+        return;
+      }
+      this.flashTableChangeIds = { ...this.flashTableChangeIds, [orderId]: true };
+      if (this._tableFlashTimers[orderId]) {
+        clearTimeout(this._tableFlashTimers[orderId]);
+      }
+      this._tableFlashTimers[orderId] = setTimeout(() => {
+        const next = { ...this.flashTableChangeIds };
+        delete next[orderId];
+        this.flashTableChangeIds = next;
+        delete this._tableFlashTimers[orderId];
+      }, 2000);
+      this._debouncedRefresh();
+    },
     // [AUDIT-P49-BUG7] Debounced refresh: prevents simultaneous list()+items()+Echo refresh.
     _debouncedRefresh() {
       if (this._refreshTimeout) {
@@ -1161,6 +1454,16 @@ export default {
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();
     this._unbindWsService();
+    Object.values(this._tableFlashTimers || {}).forEach((t) => { try { clearTimeout(t); } catch (e) {} });
+    this._tableFlashTimers = {};
+    // [F-03 / Lot 1.C] Tear down adaptive polling cleanly.
+    try { kdsSyncService.stop(); } catch (e) { /* ignore */ }
+    (this.kdsSyncUnsubscribers || []).forEach((u) => { try { u && u(); } catch (e) {} });
+    this.kdsSyncUnsubscribers = [];
+    if (this._kdsSyncStampTimer) {
+      clearInterval(this._kdsSyncStampTimer);
+      this._kdsSyncStampTimer = null;
+    }
   },
 };
 </script>
@@ -1224,6 +1527,24 @@ export default {
   border-bottom: 1px solid #fecaca;
   font-weight: 600;
 }
+/* [F-03 / Lot 1.C] Sync stamp footer — discrete, never blocks the grid. */
+.kds-sync-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 12px 6px 12px;
+  background: transparent;
+  pointer-events: none;
+}
+.kds-sync-stamp {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.kds-sync-stamp--stale {
+  color: #f59e0b;
+  font-weight: 600;
+}
 .ws-reconnect-banner {
   background: #f59e0b;
   color: #fff;
@@ -1240,5 +1561,129 @@ export default {
 }
 .kds-wait-red {
   border-color: rgba(239, 68, 68, 0.85) !important;
+}
+
+/* [F-02] Visual cue for in-place table reassignment.
+ * Per orchestrator gate G-2 (in_place_with_css_flash):
+ *   - 2 second cyan pulse — non-blocking, no sound, no re-print.
+ *   - High enough contrast to be noticed mid-rush, low enough not to alarm.
+ * The class is removed automatically by _handleTableChanged() after 2 s.
+ */
+@keyframes kds-table-flash-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 132, 255, 0.0);
+    background-color: transparent;
+  }
+  20% {
+    box-shadow: 0 0 0 6px rgba(0, 132, 255, 0.45);
+    background-color: rgba(0, 132, 255, 0.08);
+  }
+  60% {
+    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.25);
+    background-color: rgba(0, 132, 255, 0.04);
+  }
+}
+.kds-table-flash {
+  animation: kds-table-flash-pulse 2s ease-out 1;
+  border-color: rgba(0, 132, 255, 0.7) !important;
+}
+/* [Lot 2.I / G-4] Non-blocking allergens badge + modal. Visual emphasis only;
+   does NOT gate any kitchen action. Designed for visibility at ~2m distance. */
+.kds-allergens-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  border: 0;
+  border-radius: 9999px;
+  background: #B91C1C;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.5rem 0.75rem;
+  text-transform: uppercase;
+}
+.kds-allergens-badge:hover,
+.kds-allergens-badge:focus-visible {
+  background: #991B1B;
+  outline: 3px solid #FCA5A5;
+  outline-offset: 2px;
+}
+.kds-allergens-modal-overlay {
+  align-items: center;
+  background: rgba(17, 24, 39, 0.72);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: 1rem;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 9999;
+}
+.kds-allergens-modal-content {
+  background: #FFFFFF;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  color: #111827;
+  max-height: min(80vh, 42rem);
+  max-width: 42rem;
+  overflow-y: auto;
+  padding: 1.5rem;
+  width: 100%;
+}
+.kds-allergens-modal-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+.kds-allergens-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+.kds-allergens-modal-close {
+  border: 1px solid #D1D5DB;
+  border-radius: 0.5rem;
+  background: #F9FAFB;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+}
+.kds-allergens-modal-close:hover,
+.kds-allergens-modal-close:focus-visible {
+  background: #F3F4F6;
+  outline: 3px solid #93C5FD;
+  outline-offset: 2px;
+}
+.kds-allergens-modal-intro {
+  color: #374151;
+  margin: 1rem 0;
+}
+.kds-allergens-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.kds-allergens-modal-list-item {
+  border: 1px solid #FCA5A5;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+.kds-allergens-modal-list-item span {
+  color: #B91C1C;
+  font-weight: 800;
 }
 </style>

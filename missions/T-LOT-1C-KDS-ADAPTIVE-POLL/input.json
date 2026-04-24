@@ -1,0 +1,176 @@
+{
+  "task_id": "T-LOT-1C-KDS-ADAPTIVE-POLL",
+  "lot": "1.C (Phase 1, P0) — KDS adaptive polling fallback with version-gate and dedupe. Backend exposes a new sync endpoint; frontend introduces an adaptive poller that pauses when WebSocket is healthy, accelerates when degraded, and never overwrites fresher state.",
+  "finding_origin": "F-03 (audit massif POS↔Kiosk↔KDS, sourced reports/audit/AUDIT_MASSIF_POS_KIOSK_KDS_SYNC_2026-04-23.md). NEW-02/NEW-04 from second-opinion GPT-5.4-pro reinforced: a static 30s polling fallback is too slow for kitchen rush AND can race with WS replays. We need adaptive cadence + version-gate + dedupe + backoff.",
+  "context_already_landed_in_repo": {
+    "wsService": "resources/js/services/WebSocketService.js — singleton wsService with states {DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING, DEGRADED, SESSION_INVALID}. Exposes wsService.state (string), wsService.isConnected(), wsService.on('state_change', cb), wsService.on('auth_error', cb), wsService.on('session_invalid', cb). Single source of truth for connection health.",
+    "wsService_window_global": "window._wsService is set in resources/js/bootstrap.js so any Vue component can read connection state without re-importing.",
+    "kds_component": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue — currently subscribes to private-branch.{branchId} via onEvents() (resources/js/services/eventContract.js). On any of OrderCreated, OrderStatusChanged, ItemAvailabilityChanged, OrderTableChanged → debounced refresh (300ms) → calls items() + _refreshWithCurrentFilter(). NO polling fallback today.",
+    "kds_controller": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php exposes GET /api/admin/kds-order/ → returns KDSOrderDetailsResource collection of active orders (status in {ACCEPT, PREPARING, PREPARED}, today's date, optional filters). Limit 50.",
+    "kds_service": "app/Services/KitchenDisplaySystemOrderService.php — list(Request $request) returns the active orders. Branch isolation: if auth user has branch_id > 0 it scopes; admin (branch_id=0) sees all. Already correct for multi-tenant.",
+    "outbox_pattern": "All sync-relevant events go through DomainEvent → DispatchDomainEventsJob → broadcast on private-branch.{branchId}. See app/Jobs/DispatchDomainEventsJob.php and app/Domain/Events/EventContract.php (BROADCAST_MAP).",
+    "auth_middleware": "Routes in routes/api.php under prefix('kds-order') sit in the admin group with sanctum auth + permission:kitchen-display-system. Reuse the same group for the new endpoint.",
+    "existing_polling_pattern_in_repo": "resources/js/services/wsServicePolling reference: WebSocketService.js already has a heartbeat loop with exponential backoff for reconnect. Use the same setInterval / clearTimeout idioms for consistency.",
+    "test_setup": "Backend tests use tests/TestCase.php (RefreshDatabase + seedSpatieRoles + seedMinimalSettings); Frontend tests use Vitest with happy-dom (vitest.config.js loads tests/js/**.spec.js). See tests/js/wsAuthExpired.spec.js and tests/js/wsAuthRefreshLoop.spec.js for established WS testing patterns (manual emit + assertion).",
+    "branch_id_resolution_in_controllers": "auth()->user()->branch_id is the authoritative branch. NEVER trust ?branch_id query string from client (multi-tenant guard rule). Admin (branch_id=0) can pass an explicit ?branch_id=N override; otherwise default to user's branch."
+  },
+  "scope_files_to_create": [
+    "app/Http/Controllers/Admin/KdsSyncController.php",
+    "app/Services/KdsSyncService.php",
+    "resources/js/services/KdsSyncService.js",
+    "tests/Feature/Admin/KdsSyncControllerTest.php",
+    "tests/js/kdsSyncCadence.spec.js",
+    "tests/js/kdsVersionGate.spec.js",
+    "tests/js/kdsDedupeByIdVersion.spec.js",
+    "tests/js/kdsBackoffOn5xx.spec.js"
+  ],
+  "scope_files_to_modify": [
+    "routes/api.php (add Route::get('/api/admin/kds-order/sync', [KdsSyncController::class, 'sync']) inside the existing kds-order prefix group)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (mount/unmount the new KdsSyncService, listen to its 'kds:sync' event, render lastSyncAt badge — KEEP all existing Echo subscriptions intact)"
+  ],
+  "do_NOT_touch": [
+    "resources/js/services/WebSocketService.js (already validated by Lot 1.E — read-only)",
+    "app/Services/KitchenDisplaySystemOrderService.php (frozen for sync-repair v2 to avoid breaking the 50-order list logic)",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php (frozen — new sync endpoint goes in a NEW controller)",
+    "app/Domain/Events/EventContract.php (versioning untouched — new endpoint is REST, not broadcast)",
+    "Any model migration outside the new sync endpoint scope"
+  ],
+  "endpoint_contract": {
+    "method": "GET",
+    "path": "/api/admin/kds-order/sync",
+    "auth": "sanctum + permission:kitchen-display-system (reuse existing middleware group)",
+    "query_params": {
+      "since": "ISO-8601 timestamp (UTC). Required. The client's last successful sync stamp. Server returns deltas after this moment.",
+      "branch_id": "Optional integer. Admin (auth user branch_id=0) MAY override; for non-admin, server ALWAYS uses auth user branch_id (ignore query value). When branch_id resolved is 0 (admin global view), server returns all branches active orders.",
+      "include_deleted": "Optional bool, default true. When true, also returns deleted_ids of orders that left the active window (status changed to DELIVERED/CANCELED/REJECTED OR soft-deleted) since `since`."
+    },
+    "response_200_shape": {
+      "server_now": "ISO-8601 timestamp UTC — used by client as next 'since' value",
+      "branch_id": "int|null — the branch scope actually applied (echoed for sanity)",
+      "version": "int — monotonic counter from cache or db sequence; informational, NOT required for client correctness",
+      "orders": "array of objects — active orders that have been created OR updated since `since`. Each item MUST include: id (int), order_serial_no (string), status (int), updated_at (ISO-8601), version (int = max(updated_at_unix, status_changed_at_unix) — used by client version-gate). Plus the same shape as KDSOrderDetailsResource so the client can reuse its existing render code.",
+      "deleted_ids": "array of int — order ids that no longer belong to the active KDS window (left to DELIVERED/CANCELED/REJECTED OR soft-deleted) since `since`."
+    },
+    "error_responses": {
+      "400": "Missing or unparseable `since` query param.",
+      "403": "Auth user lacks kitchen-display-system permission, or non-admin user passed cross-branch branch_id.",
+      "503": "Synthetic — used by frontend tests to validate backoff. Not produced by real backend code path."
+    },
+    "performance_target": "p99 < 250ms when called every 5s by a single branch with up to 50 active orders.",
+    "caching_strategy": "Use Cache::remember(\"kds.sync.{branch_id}.{minute_bucket}\", 5, fn() => …) to coalesce concurrent polls in the same minute. Cache key MUST include the resolved branch_id (multi-tenant key isolation)."
+  },
+  "kds_sync_service_php_contract": {
+    "namespace": "App\\Services",
+    "class": "KdsSyncService",
+    "responsibility": "Pure read-side query that returns active KDS orders updated since a given timestamp + the ids of orders that recently left the active window. NO write side-effects.",
+    "public_methods": [
+      "sync(int $branchId, \\DateTimeImmutable $since, bool $includeDeleted = true): array — returns ['server_now' => string, 'branch_id' => int|null, 'version' => int, 'orders' => array, 'deleted_ids' => array]",
+      "computeOrderVersion(\\App\\Models\\Order $order): int — returns max(updated_at->getTimestamp(), status_changed_at->getTimestamp()) — single helper, called by sync() to enrich each order"
+    ],
+    "implementation_notes": [
+      "Use Order::with('orderItems') and the SAME active-window predicate as KitchenDisplaySystemOrderService::list (status IN [ACCEPT, PREPARING, PREPARED] + today/advance window).",
+      "Filter ->where('updated_at', '>=', $since) on top.",
+      "When branchId > 0, ->where('branch_id', $branchId).",
+      "For deleted_ids: query Order::onlyTrashed()->where('deleted_at', '>=', $since)->where('branch_id', $branchId)->pluck('id') AND Order::where('updated_at', '>=', $since)->whereIn('status', [DELIVERED, CANCELED, REJECTED])->where('branch_id', $branchId)->pluck('id'). Merge + unique.",
+      "server_now = (new CarbonImmutable())->toIso8601String() — captured at the START of the request before reads to avoid time drift losses.",
+      "version = (int) (microtime(true) * 1000) — coarse monotonic; NOT used for correctness, only telemetry. Client correctness comes from per-order `version` field."
+    ]
+  },
+  "kds_sync_service_js_contract": {
+    "module_path": "resources/js/services/KdsSyncService.js",
+    "exports": {
+      "default_export": "Singleton instance kdsSyncService",
+      "named_exports": ["KdsSyncService class (for tests)", "KDS_SYNC_STATE constants {IDLE, ACTIVE, BACKOFF, STOPPED}"]
+    },
+    "constructor_args": {
+      "wsService": "Reference to wsService (defaults to window._wsService if absent — gracefully degrades)",
+      "fetchFn": "Optional fetch function override (for tests); defaults to window.fetch.bind(window)",
+      "now": "Optional () => Date.now() override (for tests); defaults to Date.now"
+    },
+    "public_api": {
+      "start(branchId)": "Begin the adaptive poll loop for the given branch. Idempotent — calling twice is a no-op until stop() is called.",
+      "stop()": "Cancel any pending interval / timeout. Idempotent.",
+      "forceSync()": "Trigger an immediate sync regardless of current cadence. Returns Promise resolving with the server payload. Useful for manual refresh button.",
+      "on(eventName, callback)": "Subscribe to events: 'sync', 'error', 'state_change', 'cadence_change'. Returns an unsubscribe fn.",
+      "get state()": "Returns one of KDS_SYNC_STATE values.",
+      "get lastSyncAt()": "Returns ISO-8601 string of last successful sync, or null.",
+      "get currentIntervalMs()": "Returns number — currently active polling interval in ms (Infinity when paused)."
+    },
+    "cadence_rules_table": {
+      "wsState_CONNECTED": "intervalMs = Infinity (poll paused). One drift-check ping every 60s only.",
+      "wsState_RECONNECTING_or_DEGRADED": "intervalMs = 5000 + jitter(0..2000)",
+      "wsState_DISCONNECTED_or_SESSION_INVALID": "intervalMs = 10000 + jitter(0..3000)",
+      "high_activity_override": "If lastSync returned > 5 new orders in the last 60s window, AND wsState != CONNECTED → intervalMs = 3000 + jitter(0..1000)",
+      "backoff_on_5xx": "On HTTP 5xx response, double the current interval (cap 30000), enter STATE.BACKOFF. Reset to normal cadence on next 2xx response.",
+      "abort_on_session_invalid": "If wsState becomes SESSION_INVALID, log warning, keep polling at 10s — user must reload (banner already exists). Do NOT spam refresh-token endpoint."
+    },
+    "version_gate_logic": "On each successful sync, for each order in payload.orders, ALWAYS emit 'sync' event but include a `versionGated:true` flag if existing client store has a higher or equal version for that id. KDS component renderer uses this flag to skip re-render. Implementation tip: maintain a Map<orderId, version> inside KdsSyncService.",
+    "dedupe_logic": "Map<orderId, lastSeenVersion> with FIFO eviction at 256 entries. If incoming version <= lastSeen, mark versionGated:true. Otherwise update map and emit fresh.",
+    "events_payload_shape": {
+      "sync": "{ orders: [...], deleted_ids: [...], server_now: string, lastSyncAt: string, gatedIds: number[] /* ids that were rejected by version-gate */ }",
+      "error": "{ status: number|null, message: string, willRetryInMs: number }",
+      "state_change": "{ from: string, to: string }",
+      "cadence_change": "{ from: number, to: number, reason: string /* 'ws_connected'|'ws_degraded'|'ws_disconnected'|'high_activity'|'backoff_5xx'|'reset_after_200' */ }"
+    }
+  },
+  "kds_component_integration": {
+    "lifecycle": "In mounted(): import kdsSyncService, call kdsSyncService.start(this.$store.getters['auth/authBranchId']) AFTER subscribeEcho(). In beforeUnmount(): kdsSyncService.stop() and unsubscribe from its events.",
+    "merge_strategy": "On 'sync' event: for each order NOT in gatedIds, the existing _debouncedRefresh() is sufficient (already idempotent at backend list level). Optimization not required — the refresh already filters and renders correctly. Goal of this lot is correctness, not micro-optimization.",
+    "ui_badge_lastSyncAt": "Add a small footer-style div in the KDS template (above the closing </div> of the main grid) that displays: <span class='kds-sync-stamp'>{{ $t('label.kds_sync_stamp', { ago: humanizedAgo }) }}</span>. humanizedAgo computed from kdsSyncService.lastSyncAt (e.g., '8s', '2m'). Color: gray when fresh, orange after 30s without sync.",
+    "i18n_keys_to_add": {
+      "fr": { "kds_sync_stamp": "Synchronisé il y a {ago}", "kds_sync_never": "Pas encore synchronisé" },
+      "en": { "kds_sync_stamp": "Synchronized {ago} ago", "kds_sync_never": "Not yet synchronized" },
+      "ar": { "kds_sync_stamp": "تمت المزامنة منذ {ago}", "kds_sync_never": "لم تتم المزامنة بعد" }
+    }
+  },
+  "tests_required": [
+    "KdsSyncControllerTest::test_sync_returns_orders_updated_since — Create 3 orders, sleep, update 1, call /sync?since=<between> → response.orders contains only the updated one.",
+    "KdsSyncControllerTest::test_sync_returns_deleted_ids_for_orders_that_left_active_window — Create order, mark DELIVERED, call /sync → deleted_ids contains that id.",
+    "KdsSyncControllerTest::test_sync_branch_isolation_non_admin_cannot_cross — Auth as branch-1 user, pass ?branch_id=2, expect 403 OR silently scoped to branch 1 (your choice — document in implementation_steps which strategy you chose).",
+    "KdsSyncControllerTest::test_sync_admin_can_view_all_branches_with_branch_id_zero — Admin user with branch_id=0 sees orders from all branches.",
+    "KdsSyncControllerTest::test_sync_server_now_advances_monotonically — Two consecutive calls return server_now strictly increasing.",
+    "KdsSyncControllerTest::test_sync_caching_does_not_leak_branch — Branch 1 polls, then branch 2 polls in the same minute → branch 2 gets branch 2 data, not cached branch 1 data.",
+    "KdsSyncControllerTest::test_sync_rejects_missing_since_with_400.",
+    "kdsSyncCadence.spec.js — Mock wsService with state CONNECTED → currentIntervalMs is Infinity; switch to DISCONNECTED → currentIntervalMs becomes ~10000 (assert in [10000, 13000] window for jitter).",
+    "kdsSyncCadence.spec.js — Switch wsService state from CONNECTED to RECONNECTING → cadence_change event emitted with reason='ws_degraded'.",
+    "kdsVersionGate.spec.js — Inject mock fetch returning order id=1 version=100. Call forceSync() twice with same payload → second emit has gatedIds containing 1.",
+    "kdsVersionGate.spec.js — Inject mock fetch returning order id=1 version=100, then version=99 (older) → gatedIds contains 1 on second call.",
+    "kdsDedupeByIdVersion.spec.js — Map size never exceeds 256 (insert 300 distinct ids, oldest evicted).",
+    "kdsBackoffOn5xx.spec.js — Mock fetch returning 503 → currentIntervalMs doubles, state=BACKOFF; subsequent 200 response → state returns to ACTIVE/IDLE and cadence resets.",
+    "kdsBackoffOn5xx.spec.js — Backoff caps at 30000 ms even after multiple 5xx in a row."
+  ],
+  "non_negotiable_constraints": [
+    "Backend: NEVER trust ?branch_id from client for non-admin users; always derive from auth()->user()->branch_id.",
+    "Backend: Cache key MUST include the resolved branch_id to prevent multi-tenant cache poisoning.",
+    "Backend: GET /api/admin/kds-order/sync MUST be idempotent (no DB writes, no event dispatch).",
+    "Frontend: KdsSyncService MUST NOT instantiate a second WebSocket — it is purely an HTTP poller.",
+    "Frontend: When wsService.state == 'CONNECTED', polling MUST be paused (intervalMs = Infinity). Verify via tests.",
+    "Frontend: Aborting a stale fetch when stop() is called — use AbortController; do not let stale responses fire 'sync' events after stop().",
+    "Frontend: Singleton enforcement — multiple .start() calls without .stop() in between MUST be no-op (do not stack timers).",
+    "All new files: include a header docblock referencing F-03, NEW-02, NEW-04 (cite plans/MEGA_PLAN_SYNC_HARDENING_v3_2026-04-23.md as authority).",
+    "i18n keys: add the 3 keys (kds_sync_stamp, kds_sync_never) in fr/en/ar JSON files; do NOT touch other keys.",
+    "Tests: NEVER use real timers in vitest specs — use vi.useFakeTimers + vi.advanceTimersByTime."
+  ],
+  "acceptance_criteria_measurable": [
+    "GET /api/admin/kds-order/sync?since=<iso> returns 200 with the documented shape; 400 on missing since; 403 on cross-branch attempt by non-admin.",
+    "When wsService.state === 'CONNECTED', kdsSyncService.currentIntervalMs === Infinity (no polling network calls).",
+    "When wsService.state changes from CONNECTED → DISCONNECTED, kdsSyncService emits cadence_change AND schedules the next sync within 10–13 seconds.",
+    "Two consecutive polls returning the same order with version=N → second emit has versionGated:true for that id, the KDS component does NOT re-render that card (verified by spy on _debouncedRefresh in component spec — out of scope here, the unit-level guarantee is the gatedIds payload).",
+    "On HTTP 503 response, currentIntervalMs doubles, capped at 30000. On next 2xx, cadence resets to the WS-state-driven base.",
+    "All 7 backend tests + 7 frontend tests pass.",
+    "scripts/check-invariants.sh remains 6/6.",
+    "Existing KDS component subscribeEcho() flow is NOT broken (regression test: KitchenDisplaySystemComponent mounts without console errors)."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. code_blocks contain FULL file bodies for new files (op='create') and surgical patch excerpts for the 2 modified files (op='replace'). Orchestrator (Claude Opus) will apply patches, validate, and run tests. Do NOT assume any auto-application.",
+  "self_check_before_returning": [
+    "Did you keep WebSocketService.js untouched?",
+    "Did you keep KitchenDisplaySystemOrderService.php untouched?",
+    "Does every cache key include the resolved branch_id?",
+    "Are all timers in JS tests using vi.useFakeTimers (not setTimeout)?",
+    "Does every backend test extend Tests\\TestCase and use RefreshDatabase + seedSpatieRoles + seedMinimalSettings?",
+    "Did you add the 3 i18n keys in the 3 language files?",
+    "Did you add the new route INSIDE the existing kds-order prefix group, not outside?",
+    "Does kdsSyncService.start(branchId) become a no-op on second call without intermediate stop()?",
+    "Is the AbortController correctly wired so stop() cancels in-flight fetch?"
+  ]
+}

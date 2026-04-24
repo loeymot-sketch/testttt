@@ -1,34 +1,79 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadProjectEnvForCodex, resolveRepoRootFromScriptDir } from "./codex-load-env.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..");
-
-function loadFileEnv(f) {
-  if (!fs.existsSync(f)) return;
-  const raw = fs.readFileSync(f, "utf8");
-  for (const line of raw.split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#") || !t.includes("=")) continue;
-    const i = t.indexOf("=");
-    const k = t.slice(0, i).trim();
-    let v = t.slice(i + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
-      v = v.slice(1, -1);
-    if (k && process.env[k] === undefined) process.env[k] = v;
-  }
-}
-loadFileEnv(path.join(root, ".env"));
-loadFileEnv(path.join(root, ".env.codex"));
+const root = resolveRepoRootFromScriptDir(__dirname);
+loadProjectEnvForCodex(root);
 
 const API_BASE = (process.env.CODEX_API_BASE || "").replace(/\/$/, "");
-const API_KEY = process.env.CODEX_API_KEY || "";
-/** Défaut `gpt-5.4` (souvent plus stable sur le proxy) ; `gpt-5.4-pro` en override si ton fournisseur renvoie du texte. */
-const MODEL = process.env.CODEX_MODEL_COMPLEX || "gpt-5.4";
-const WIRE = (process.env.CODEX_WIRE || "chat").toLowerCase();
+/** Clé : `CODEX_API_KEY` (prioritaire) ou `OPENAI_API_KEY` (équivalent provider OpenAI). */
+const API_KEY = (process.env.CODEX_API_KEY || process.env.OPENAI_API_KEY || "").trim();
+/**
+ * Défaut `gpt-5.4` (aligné fournisseur tokenclub / profil type OpenAI) ; override : `CODEX_MODEL_COMPLEX`.
+ * `CODEX_REASONING_EFFORT=...` → `reasoning: { effort }` (xhigh → high côté JSON) sur `/chat/completions` et fusionné sur `/responses` si supporté.
+ */
+const MODEL = process.env.CODEX_MODEL_COMPLEX || "gpt-5.5";
+
+function optionalChatReasoning() {
+  const raw = (process.env.CODEX_REASONING_EFFORT || "").trim().toLowerCase();
+  if (!raw) return {};
+  const eff = (raw === "xhigh" ? "high" : raw);
+  if (!/^(low|medium|high|minimal|none)$/.test(eff)) return {};
+  return { reasoning: { effort: eff } };
+}
+
+/**
+ * Plafond de **sortie** (génération). L’API n’accepte pas `Infinity` en JSON — le plafond **le plus haut géré
+ * ici** est **2_000_000** (≈ « le max que le connecteur autorise »), pas une économie de crédit.
+ * Désactiver l’envoi d’un plafond : `CODEX_NO_DEFAULT_OUTPUT_BUDGET=1` (délègue 100% au fournisseur).
+ * Surcharge explicite : `CODEX_MAX_COMPLETION_TOKENS` / `CODEX_MAX_TOKENS` (cette dernière → `max_tokens`).
+ */
+const MAX_COMPLETION_CAP = 2_000_000;
+const DEFAULT_MAX_COMPLETION_TOKENS = Math.min(
+  MAX_COMPLETION_CAP,
+  Math.max(1, parseInt(process.env.CODEX_DEFAULT_MAX_COMPLETION_TOKENS || "2000000", 10) || 2_000_000)
+);
+function optionalOutputTokenBudget() {
+  const mct = (process.env.CODEX_MAX_COMPLETION_TOKENS || "").trim();
+  const mt = (process.env.CODEX_MAX_TOKENS || "").trim();
+  if (mct) {
+    const n = Math.min(MAX_COMPLETION_CAP, Math.max(1, parseInt(mct, 10) || 0));
+    if (n) return { max_completion_tokens: n };
+  }
+  if (mt) {
+    const n = Math.min(MAX_COMPLETION_CAP, Math.max(1, parseInt(mt, 10) || 0));
+    if (n) return { max_tokens: n };
+  }
+  if ((process.env.CODEX_NO_DEFAULT_OUTPUT_BUDGET || "").toLowerCase() === "1") return {};
+  return { max_completion_tokens: DEFAULT_MAX_COMPLETION_TOKENS };
+}
+
+function logTokenUsageIfRequested(usage) {
+  if (!usage || (process.env.CODEX_LOG_USAGE || "").toLowerCase() !== "1") return;
+  if (typeof usage !== "object") return;
+  const c = (k) => (k in usage ? usage[k] : "—");
+  console.error(
+    "[codex] usage brut API — prompt_tokens:",
+    c("prompt_tokens"),
+    "completion_tokens:",
+    c("completion_tokens"),
+    "total_tokens:",
+    c("total_tokens"),
+    "(+ évent. raison / cache selon le fournisseur; comparer au dashboard.)"
+  );
+}
+
+function logChatUsageIfRequested(d) {
+  if (d?.usage) logTokenUsageIfRequested(d.usage);
+}
+/** Fournisseur type OpenAI : `wire_api=responses` → défaut `responses` ; `chat` pour `/chat/completions` + stream. */
+const WIRE = (process.env.CODEX_WIRE || "responses").toLowerCase();
 const RAW_PROMPT = (process.env.CODEX_RAW_PROMPT || "").toLowerCase() === "1";
 const DISABLE_STREAM = (process.env.CODEX_DISABLE_STREAM || "").toLowerCase() === "1";
+/** 1 = ne jamais repasser en one-shot (évite 504/timeout gateway sur gros prompts ; à combiner avec stream, défaut). */
+const NO_ONESHOT_FALLBACK = (process.env.CODEX_NO_ONESHOT_FALLBACK || "").toLowerCase() === "1";
 const RETRY_MAX = Math.min(12, Math.max(1, parseInt(process.env.RETRY_MAX || "8", 10) || 8));
 const SLEEP_BASE_MS = Math.max(200, parseInt(process.env.SLEEP_BASE_MS || "2000", 10) || 2000);
 const taskId = process.argv[2] || "PING";
@@ -44,7 +89,9 @@ const AUX_GLOB = (process.env.CODEX_AUX_CONTEXT_FILES || defaultAux)
   .filter(Boolean);
 
 if (!API_BASE || !API_KEY) {
-  console.error("Définis CODEX_API_BASE + CODEX_API_KEY dans .env et/ou .env.codex.");
+  console.error(
+    "Définis CODEX_API_BASE + (CODEX_API_KEY ou OPENAI_API_KEY) dans .env et/ou .env.codex."
+  );
   process.exit(1);
 }
 if (!fs.existsSync(inPath)) {
@@ -173,13 +220,14 @@ function extractFromResponses(d) {
   return d?.text?.value || (d && JSON.stringify(d, null, 2)) || "";
 }
 
-function parseSseLine(line, onDelta) {
+function parseSseLine(line, onDelta, onChunkJson) {
   const t = line.trim();
   if (!t || t.startsWith(":") || !t.startsWith("data: ")) return;
   const data = t.slice(6);
   if (data === "[DONE]") return;
   try {
     const j = JSON.parse(data);
+    if (onChunkJson) onChunkJson(j);
     const c = j.choices?.[0]?.delta?.content;
     if (typeof c === "string" && c.length) onDelta(c);
     else if (Array.isArray(c)) {
@@ -193,12 +241,17 @@ function parseSseLine(line, onDelta) {
   }
 }
 
+/** Dernier `usage` observé (souvent sur un chunk final avant [DONE] ; pas tous les fournisseurs l’émettent en stream). */
 async function readSseDeltas(r) {
-  if (!r.body) return "";
+  if (!r.body) return { text: "", usage: undefined };
   const reader = r.body.getReader();
   const dec = new TextDecoder();
   let carry = "";
   let out = "";
+  let lastUsage;
+  const onChunk = (j) => {
+    if (j && typeof j.usage === "object") lastUsage = j.usage;
+  };
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -206,18 +259,19 @@ async function readSseDeltas(r) {
     carry += dec.decode(value, { stream: true });
     const j = carry.lastIndexOf("\n");
     if (j === -1) continue;
-    for (const line of carry.slice(0, j + 1).split("\n")) parseSseLine(line, (c) => (out += c));
+    for (const line of carry.slice(0, j + 1).split("\n"))
+      parseSseLine(line, (c) => (out += c), onChunk);
     carry = carry.slice(j + 1);
   }
-  if (carry.length) for (const line of carry.split("\n")) parseSseLine(line, (c) => (out += c));
-  return out;
+  if (carry.length) for (const line of carry.split("\n")) parseSseLine(line, (c) => (out += c), onChunk);
+  return { text: out, usage: lastUsage };
 }
 
 async function doResponses() {
   const res = await fetch(`${API_BASE}/responses`, {
     method: "POST",
     headers: { ...headers, Accept: "application/json" },
-    body: JSON.stringify({ model: MODEL, input: prompt }),
+    body: JSON.stringify({ model: MODEL, input: prompt, ...optionalChatReasoning() }),
   });
   const t = await res.text();
   let d;
@@ -236,7 +290,12 @@ async function doOneShot() {
   const res = await fetch(`${API_BASE}/chat/completions`, {
     method: "POST",
     headers: { ...headers, Accept: "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      ...optionalChatReasoning(),
+      ...optionalOutputTokenBudget(),
+    }),
   });
   const t = await res.text();
   let d;
@@ -249,6 +308,7 @@ async function doOneShot() {
     throw new Error(`HTTP ${res.status} — non-JSON: ${t.slice(0, 500)}`);
   }
   if (!res.ok) throw makeApiError(res.status, d);
+  logChatUsageIfRequested(d);
   const out = textFromChatCompletion(d);
   if (out && String(out).trim().length) return out;
   const err = new Error("api");
@@ -265,6 +325,8 @@ async function doStream() {
       model: MODEL,
       messages: [{ role: "user", content: prompt }],
       stream: true,
+      ...optionalChatReasoning(),
+      ...optionalOutputTokenBudget(),
     }),
   });
   const ct = (res.headers.get("content-type") || "").toLowerCase();
@@ -282,6 +344,7 @@ async function doStream() {
     const t = await res.text();
     const d = JSON.parse(t);
     if (d?.error) throw makeApiError(400, d);
+    logChatUsageIfRequested(d);
     const t2 = textFromChatCompletion(d);
     if (t2 && String(t2).trim().length) return t2;
     const err = new Error("api");
@@ -290,8 +353,50 @@ async function doStream() {
     throw err;
   }
   const s = await readSseDeltas(res);
-  if (s && s.length) return s;
+  if (s.usage) logTokenUsageIfRequested(s.usage);
+  if (s.text && s.text.length) return s.text;
+  if (NO_ONESHOT_FALLBACK) {
+    const err = new Error("api");
+    err.status = 200;
+    err.data = { error: { message: "Stream sans texte assistant (repli one-shot désactivé par CODEX_NO_ONESHOT_FALLBACK=1).", hint: "Réessayer, ou vérifier le proxy / le modèle." } };
+    throw err;
+  }
   return doOneShot();
+}
+
+/**
+ * Node 20+ : `node:undici` permet de désactiver/étirer le timeout de lecture du **corps** (SSE),
+ * pratique si le modèle fait une longue pause **entre** des morceaux de flux. Sur Node 18, ignore silencieusement.
+ */
+async function installLongStreamDispatcher() {
+  if ((process.env.CODEX_UNDICI_LONG_STREAM || "1").toLowerCase() === "0") return;
+  try {
+    const u = await import("node:undici");
+    if (!u?.setGlobalDispatcher || !u?.Agent) return;
+    const num = (v, def) => {
+      if (v === undefined || v === "" || v == null) return def;
+      const n = Math.max(0, parseInt(String(v), 10) || 0);
+      return Number.isFinite(n) && n > 0 ? n : def;
+    };
+    const bRaw = process.env.CODEX_UNDICI_BODY_TIMEOUT_MS;
+    const bodyTimeout = bRaw === undefined || bRaw === "" ? 0 : Math.max(0, parseInt(String(bRaw), 10) || 0);
+    u.setGlobalDispatcher(
+      new u.Agent({
+        connectTimeout: num(process.env.CODEX_UNDICI_CONNECT_TIMEOUT_MS, 600_000),
+        headersTimeout: num(process.env.CODEX_UNDICI_HEADERS_TIMEOUT_MS, 600_000),
+        bodyTimeout,
+      })
+    );
+    if ((process.env.CODEX_UNDICI_DEBUG || "").toLowerCase() === "1")
+      console.error(
+        "[codex] undici: bodyTimeout_ms=",
+        bodyTimeout,
+        "(0=désactive ; délai max entre 2 morceaux du flux), Node",
+        process.version
+      );
+  } catch {
+    /* Node<20 : pas de `node:undici` intégré */
+  }
 }
 
 async function withRetry(name, fn) {
@@ -316,6 +421,7 @@ async function withRetry(name, fn) {
 
 void (async () => {
   try {
+    await installLongStreamDispatcher();
     if (WIRE === "responses" || WIRE === "r") {
       const t = await withRetry("responses", () => doResponses());
       fs.writeFileSync(outPath, String(t), "utf8");
@@ -334,6 +440,11 @@ void (async () => {
     try {
       t = await withRetry("stream", () => doStream());
     } catch (e) {
+      if (NO_ONESHOT_FALLBACK) {
+        if (e?.data) console.error(JSON.stringify(e.data, null, 2));
+        else console.error("❌", e?.message || e);
+        process.exit(1);
+      }
       console.error("[codex] stream a échoué après reprises, repli chat (sans stream)…", e?.status || e?.message);
       t = await withRetry("chat/one-shot", () => doOneShot());
     }

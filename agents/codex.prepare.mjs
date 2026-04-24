@@ -42,9 +42,9 @@ const stubs = {
   "README.md": `Mission **${taskId}**
 
 1. Remplir \`input.json\` + fichiers de contexte optionnels (Graphiti, plan, brief).
-2. Lancer : \`npm run codex:complex -- ${taskId}\` (recommandé: \`CODEX_DISABLE_STREAM=1\` si 503 en stream).
-3. Appliquer le JSON produit : \`output_codex.json\` ; tracer \`EXECUTE_DELEGATION: codex-terminal\` dans le rapport.
-4. Voir : \`docs/orchestration/CODEX_API_DELEGATION.md\`.\n`,
+2. Lancer : \`npm run codex:complex -- ${taskId}\` (CLI \`codex\` + compte ChatGPT Pro). Legacy proxy : \`npm run codex:complex:proxy-legacy\`.
+3. Appliquer le JSON produit : \`output_codex.json\` + lire \`reports/audit/GPT_SELF_AUDIT_${taskId}.md\` ; tracer \`EXECUTE_DELEGATION: codex-extension\` dans le rapport.
+4. Voir : \`docs/orchestration/CODEX_API_DELEGATION.md\` ; instructions Codex : \`agents/codex-extension-instructions.md\`.\n`,
 };
 
 for (const [name, body] of Object.entries(stubs)) {
@@ -53,4 +53,4 @@ for (const [name, body] of Object.entries(stubs)) {
 }
 
 console.log(`Dossier mission: ${mdir}`);
-console.log("Ensuite: npm run codex:complex -- " + taskId);
+console.log("Ensuite: npm run codex:complex -- " + taskId + "  (binaire 'codex' requis — compte ChatGPT Pro)");

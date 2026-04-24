@@ -1,0 +1,25 @@
+Rapport écrit. Voici le résumé des divergences clés :
+
+---
+
+## Verdict cross-check : **PARTIAL / AMEND**
+
+### 3 divergences avec l'audit Claude
+
+| # | Sujet | Claude | Cross-check |
+|---|---|---|---|
+| D1 | W0-B BINDING_MAP | PASS (squelette conforme) | PARTIAL — 8,7% de couverture PosComponent, critère "≥1 binding" auto-assoupli par l'auteur |
+| D2 | `pricing_ssot` violation | "violation conditionnelle" → D1 OK | Le qualificatif "conditionnelle" n'existe pas dans l'invariant stable — auto-atténuation non autorisée |
+| D3 | Décision globale | `heal` | `AMEND` — volume de lacunes trop élevé pour un simple heal |
+
+### 5 angles morts non couverts par Claude
+
+1. **AM-1** : PosComponent couvert à 8,7% dans la BINDING_MAP — le critère ≥1 est un critère gaming
+2. **AM-2** : `branch_id` commenté l.72 de ParkedOrdersComponent — désactivation production ou debug ? Non tranché
+3. **AM-3** : 4 refactors P0 (magic int, mute props, garde CI, guard idempotency) sans agent assigné ni phase W
+4. **AM-4** : Bundle actuel possiblement déjà hors budget 220 KB gzip — valeur zéro jamais mesurée
+5. **AM-5** : `OrderService/FrontendOrderService symétrie` — déclarée "lacune totale" dans HYPERREVIEW, absente des 5 risques de l'audit final
+
+### Risque de gouvernance principal
+
+La **double dépendance Claude** (orchestrateur + auteur des critères + auditeur de ses propres livrables) est une faiblesse structurelle. Codex HS × 2 invalide la procédure de double audit — le fallback "Claude simule un second auditeur" ne corrige pas les angles morts systémiques du modèle.

@@ -22,7 +22,7 @@ globs:
 
 Le cycle agents local, le routage modèle et les rapports sont décrits dans **`AGENTS.md`** et **`.cursor/routing.md`**. Le scope et les invariants métier sont dans **`.cursor/rules/scope.mdc`** et **`.cursor/rules/project-invariants.mdc`**.
 
-**EXECUTE complexe** : chemin **primaire = `codex-terminal`** (`npm run codex:complex` via API proxy, voir **`docs/orchestration/CODEX_API_DELEGATION.md`**) ; le sub-agent `foodking-complex-implementer` est **fallback uniquement** quand le proxy ne répond pas après reprises.
+**EXECUTE complexe** : chemin **primaire = `codex-extension`** (`npm run codex:complex` → `bash scripts/codex-extension-execute.sh` + CLI `codex` compte Pro, voir **`docs/orchestration/CODEX_API_DELEGATION.md`**) ; le sub-agent `foodking-complex-implementer` est **fallback uniquement** quand `codex exec` n’est pas utilisable. **Proxy API legacy** : `npm run codex:complex:proxy-legacy` (urgence).
 
 **Mémoire Graphiti** : protocole obligatoire quand le MCP est chargé — **`.cursor/rules/graphiti-memory.mdc`** ; index des domaines — **`memory/INDEX.md`**.
 

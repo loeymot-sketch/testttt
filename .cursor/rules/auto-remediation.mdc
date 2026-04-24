@@ -8,11 +8,12 @@ alwaysApply: false
 
 ## Principe
 
-Pour une tâche donnée, l'orchestrateur (`foodking-planner-orchestrator`) **ne rend la main au humain qu'à l'une des 3 sorties** :
+Pour une tâche donnée, l'orchestrateur (`foodking-planner-orchestrator`) **ne rend la main au humain qu'à l'une des 4 sorties** :
 
-1. **CLOSED** — audit final OK, rapport produit
+1. **CLOSED** — `AUDIT_VERDICT: PASS` (audit **Claude** terminal ou fallback tracé) + VALIDATE requis, rapport final
 2. **HUMAN_GATE — zone critique** — voir liste `Critical zones` ci-dessous
-3. **HUMAN_GATE — bug irrésolu** — même problème échoue 3 fois consécutives
+3. **HUMAN_GATE — bug irrésolu** — **même** `bug_signature` échoue **3** fois de suite (règle MAX 3, indépendante du plafond ci-dessous)
+4. **HUMAN_GATE — remédiation audit** — `AUDIT_VERDICT: REWORK` est toujours en vigueur au **5e** tour d’`REMEDIATION_AUDIT_CYCLE` pour le même `TASK_ID` (voir [run-cycle.md](mdc:.cursor/commands/run-cycle.md) Step 5)
 
 Tant qu'aucune de ces 3 sorties n'est atteinte, l'orchestrateur **boucle automatiquement** sans demander confirmation.
 
@@ -23,19 +24,15 @@ Cette règle **complète** [run-cycle.md](mdc:.cursor/commands/run-cycle.md) et 
 ## Schéma de la boucle
 
 ```
-Tu donnes la tâche
-        │
-        ▼
-   Claude PLAN ──────────────► Subagent IMPL ─────► Claude AUDIT
-                                      ▲                  │
-                                      │                  │
-                       relance subagent│                  │ KO normal (essai 1 ou 2)
-                                      │                  ▼
-                                      └──── Claude DIAGNOSTIC + REPLAN + ROUTAGE
-                                                         │
-                                       AUDIT OK ─────────┴──► CLOSED + Rapport final
-                                       3e essai même bug ──► HUMAN_GATE bug irrésolu
-                                       Zone critique ─────► HUMAN_GATE zone critique
+Tâche / plan (PLAN) ──► EXECUTE (ex. codex-extension) ──► VALIDATE ──► AUDIT (Claude terminal)
+                                             ▲                              │
+                                             │     AUDIT_VERDICT: REWORK    │
+                    replan (Claude) + re-EXEC (N<5) ◄┘  (compteur REMEDIATION_AUDIT_CYCLE)
+                                              │
+                      AUDIT_VERDICT: PASS  ──► CLOSED
+                      5e REWORK sans PASS────► HUMAN_GATE (audit)
+                      3e essai MÊME bug_signature ──► HUMAN_GATE (bug)
+                      Zone critique ──── ─────────────► HUMAN_GATE (critique)
 ```
 
 ---
@@ -62,16 +59,16 @@ L'orchestrateur exécute, **dans la même session**, sans demander confirmation 
    ```
 3. **Routage** — choix du chemin selon [routing.md](mdc:.cursor/routing.md) :
    - Composer (`foodking-routine-implementer`) si correction routinière
-   - **GPT-5.4 via `codex-terminal` (PRIMARY)** si correction complexe — `npm run codex:complex -- {TASK_ID}` ; fallback subagent `foodking-complex-implementer` uniquement si le proxy est HS (cf. `docs/orchestration/CODEX_API_DELEGATION.md`)
-4. **Lancement** — pour `codex-terminal` : préparer `missions/{TASK_ID}/input.json` + brief minimal (plan + diff + erreur) puis run la commande ; pour le subagent (fallback) : invocation via `Task` avec contexte minimal
-5. **Re-audit** — **PRIMARY** : même checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff, lancée **d’abord** via le terminal : `bash scripts/foodking-claude-orchestrate.sh context` puis `audit-brief` (ou `audit`) ; tracer `AUDIT_CHANNEL: claude-terminal` (+ `TERMINAL_AUDIT_OK: 1` quand c’est vraiment exécuté). **FALLBACK** (session Cursor) **uniquement** si le terminal a échoué — `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:`. (Symétrie avec l’**EXÉCUTE** : `codex-terminal` PRIMARY, sub-agent FALLBACK — même règle d’économie d’abonnement.)
+   - **GPT-5.5 via `codex-extension` (PRIMARY)** si correction complexe — `npm run codex:complex -- {TASK_ID}` (CLI `codex` + Pro) ; fallback subagent `foodking-complex-implementer` si `codex` est HS (cf. `docs/orchestration/CODEX_API_DELEGATION.md` ; **legacy** proxy = `npm run codex:complex:proxy-legacy` — urgence)
+4. **Lancement** — pour `codex-extension` : préparer `missions/{TASK_ID}/input.json` + brief minimal (plan + diff + erreur) puis `npm run codex:complex -- {TASK_ID}` ; pour le subagent (fallback) : invocation via `Task` avec contexte minimal
+5. **Re-audit** — **PRIMARY** : même checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff, lancée **d’abord** via le terminal : `bash scripts/foodking-claude-orchestrate.sh context` puis `audit-brief` (ou `audit`) ; tracer `AUDIT_CHANNEL: claude-terminal` (+ `TERMINAL_AUDIT_OK: 1` quand c’est vraiment exécuté). **FALLBACK** (session Cursor) **uniquement** si le terminal a échoué — `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:`. (Symétrie : `codex-extension` PRIMARY, sub-agent FALLBACK.)
 
 Trace appendée à `REPORT_FILE` :
 ```
 REMEDIATION_ATTEMPT_N:
   outcome: PASSED | FAILED
-  delegated_to: foodking-routine-implementer | codex-terminal | foodking-complex-implementer (codex-terminal-fallback)
-  fallback_reason: <required if foodking-complex-implementer was used instead of codex-terminal>
+  delegated_to: foodking-routine-implementer | codex-extension | foodking-complex-implementer (codex-extension-fallback)
+  fallback_reason: <required if foodking-complex-implementer was used instead of codex-extension>
 ```
 
 ### Phase AUDIT — branche "KO critique" (inchangée vs human-gates)
@@ -100,7 +97,19 @@ Si elle ne fait que les **appeler sans modifier** leur logique → AUTO autoris�
 
 ---
 
-## Compteur d'essais (nouveau)
+## Boucle audit → orchestration → EXECUTE (plafond 5)
+
+**Séparée** de la règle `bug_signature` / MAX 3 ci-dessous. Elle couvre le cas : **l’audit Claude (terminal) ordonne le travail restant** (`AUDIT_VERDICT: REWORK`) même si les tests ou le self-audit Codex n’indiquaient rien d’équivalent.
+
+- Chaque `REWORK` incrémente `REMEDIATION_AUDIT_CYCLE` (1..5) dans le `REPORT_FILE` (voir [run-cycle.md](mdc:.cursor/commands/run-cycle.md) Step 5).
+- **1 ≤ N < 5** : replan (Claude) + **EXECUTE** (PRIMARY `codex-extension` quand c’est de la complexité), puis re-VALIDATE → re-AUDIT.
+- **N = 5** et verdict encore `REWORK` → **HUMAN_GATE** — plus de boucle autonome sans intervention humaine.
+
+La **décision de fond** portée par **`AUDIT_VERDICT` est toujours celle de Claude** (canal terminal PRIMARY) ; le fallback `AUDIT_CHANNEL: cursor-session` applique la même règle de comptage.
+
+---
+
+## Compteur d'essais (bug_signature — règle MAX 3)
 
 ### Signature du bug
 
@@ -139,8 +148,8 @@ Pendant les phases sensibles (POS, fiscal NF525, multi-tenant, sync) :
 
 - **Chat orchestrateur** = Claude Opus 4.7 (pas d'auto mode)
 - **Subagent routine** = Composer via `foodking-routine-implementer`
-- **Complex EXECUTE (PRIMARY)** = GPT-5.4 / GPT-5.4-pro via **`codex-terminal`** (`npm run codex:complex`)
-- **Complex EXECUTE (FALLBACK)** = sub-agent `foodking-complex-implementer` (uniquement si `codex-terminal` échoue ≥3 reprises)
+- **Complex EXECUTE (PRIMARY)** = GPT-5.5 / GPT-5.5-pro via **`codex-extension`** (`npm run codex:complex` → `codex exec`)
+- **Complex EXECUTE (FALLBACK)** = sub-agent `foodking-complex-implementer` (uniquement si `codex` / `codex exec` est indisponible après reprises)
 - **Subagent audit indépendant (optionnel)** = `generalPurpose readonly` si l'orchestrateur veut un second avis avant CLOSED
 
 ### Anti-gaspillage tokens

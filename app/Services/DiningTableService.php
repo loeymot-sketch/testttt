@@ -4,10 +4,13 @@ namespace App\Services;
 
 
 use Exception;
+use App\Events\OrderTableChanged;
 use App\Models\Branch;
 use App\Models\DiningTable;
 use App\Models\DiningTableAuditLog;
 use App\Models\Order;
+use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
@@ -221,6 +224,14 @@ class DiningTableService
             // assignation time so KDS / receipts / reporting stay coherent with
             // the floor-plan. Direct ciblé update — NEVER through OrderService
             // (LOCK_B). Multi-tenant guard via where('branch_id') is mandatory.
+            $order = Order::query()
+                ->where('id', $orderId)
+                ->where('branch_id', $branchId)
+                ->lockForUpdate()
+                ->first();
+
+            $previousTableId = $order ? (int) ($order->dining_table_id ?? 0) ?: null : null;
+
             Order::query()
                 ->where('id', $orderId)
                 ->where('branch_id', $branchId)
@@ -236,6 +247,17 @@ class DiningTableService
                 'metadata' => ['table_id' => $tableId],
                 'created_at' => now(),
             ]);
+
+            // [F-02] Notify KDS only when the table assignment actually changed.
+            // After-commit dispatch via DispatchableAfterCommit trait.
+            if ($order !== null && $previousTableId !== $tableId) {
+                OrderTableChanged::dispatch(
+                    $order->fresh(),
+                    $previousTableId,
+                    $tableId,
+                    'occupy'
+                );
+            }
 
             return $table->fresh();
         });
@@ -275,6 +297,41 @@ class DiningTableService
 
             return $table->fresh();
         });
+    }
+
+    /**
+     * [MEGA 2.J / F-16] Dine-in POS: when payment is completed for an order that
+     * still holds the table, free the table for the next guests. No-op if the
+     * table is free or held by another order.
+     */
+    public function tryReleaseTableAfterPosOrderPaid(Order $order): void
+    {
+        if ((int) $order->order_type !== OrderType::DINING_TABLE) {
+            return;
+        }
+        if ((int) $order->payment_status !== PaymentStatus::PAID) {
+            return;
+        }
+        $tableId = (int) ($order->dining_table_id ?? 0);
+        if ($tableId <= 0) {
+            return;
+        }
+        $userId = (int) (\Illuminate\Support\Facades\Auth::id() ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+        $branchId = (int) $order->branch_id;
+        $table = DiningTable::query()
+            ->where('id', $tableId)
+            ->where('branch_id', $branchId)
+            ->first();
+        if ($table === null || $table->isFree()) {
+            return;
+        }
+        if ((int) ($table->occupied_order_id ?? 0) !== (int) $order->id) {
+            return;
+        }
+        $this->release($userId, $branchId, $tableId);
     }
 
     public function transfer(int $userId, int $branchId, int $sourceTableId, int $targetTableId): DiningTable
@@ -329,7 +386,14 @@ class DiningTableService
                 'occupied_at' => null,
             ]);
 
+            $orderForBroadcast = null;
             if ($orderId > 0) {
+                $orderForBroadcast = Order::query()
+                    ->where('id', $orderId)
+                    ->where('branch_id', $branchId)
+                    ->lockForUpdate()
+                    ->first();
+
                 Order::query()
                     ->where('id', $orderId)
                     ->where('branch_id', $branchId)
@@ -349,6 +413,18 @@ class DiningTableService
                 ],
                 'created_at' => now(),
             ]);
+
+            // [F-02] Notify KDS that the in-flight prep card moved tables.
+            // After-commit dispatch — KDS can update the table label and flash
+            // the card per gate G-2 decision (in_place_with_css_flash).
+            if ($orderForBroadcast !== null) {
+                OrderTableChanged::dispatch(
+                    $orderForBroadcast->fresh(),
+                    $sourceTableId,
+                    $targetTableId,
+                    'transfer'
+                );
+            }
 
             return $target->fresh();
         });

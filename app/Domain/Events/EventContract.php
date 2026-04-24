@@ -36,6 +36,8 @@ final class EventContract
         'OrderStatusChanged'        => EventType::ORDER_STATUS_CHANGED,
         'OrderItemAdded'            => EventType::ORDER_ITEM_ADDED,
         'OrderCancelled'            => EventType::ORDER_CANCELLED,
+        // [F-02] KDS table reassignment fan-out.
+        'OrderTableChanged'         => EventType::ORDER_TABLE_CHANGED,
         'ItemAvailabilityChanged'   => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
         'StockLow'                  => EventType::STOCK_LOW,
     ];
@@ -49,6 +51,8 @@ final class EventContract
         EventType::ORDER_STATUS_CHANGED           => ['order_id', 'old_status', 'new_status'],
         EventType::ORDER_ITEM_ADDED               => ['order_id', 'item_id'],
         EventType::ORDER_CANCELLED                => ['order_id'],
+        // [F-02] OrderTableChanged minimum payload — see PersistOrderTableChangedToOutbox.
+        EventType::ORDER_TABLE_CHANGED            => ['order_id', 'new_table_id'],
         EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status'],
         EventType::STOCK_LOW                      => ['item_id'],
     ];

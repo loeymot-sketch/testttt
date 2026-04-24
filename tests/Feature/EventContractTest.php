@@ -30,6 +30,7 @@ class EventContractTest extends TestCase
             'order.status_changed',
             'order.item_added',
             'order.cancelled',
+            'order.table_changed',
             'menu.item_availability_changed',
             'stock.low',
         ];

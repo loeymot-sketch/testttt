@@ -28,11 +28,11 @@ You are working inside a high-discipline AI-assisted software development workfl
 
 9. **FoodKing — model roles** (see `AGENTS.md` and `.cursor/routing.md`; do not substitute legacy nicknames for these roles):
    - **Claude** — Plan, architect, orchestrate, **audit (PRIMARY: terminal** `claude` via `scripts/foodking-claude-orchestrate.sh` so audit uses the **Anthropic subscription**, not the Cursor model orchestration budget; **FALLBACK:** same checklist in the Cursor session with `AUDIT_FALLBACK_REASON:`). See `AGENTS.md`, `run-cycle.md` Step 5, `global.mdc` "Channel economics".
-   - **GPT-5.4 / GPT-5.4-pro via `codex-terminal` (PRIMARY)** — Complex implementation through the **FoodKing API Complex Implementer** (`npm run codex:complex` + your API key / proxy, **not** Cursor’s model-usage path). The Cursor sub-agent `foodking-complex-implementer` is **fallback only** (proxy unreachable; log `FALLBACK_REASON:`).
+   - **GPT-5.5 / GPT-5.5-pro via `codex-extension` (PRIMARY)** — Complex implementation through the **FoodKing Codex Complex Implementer** (`npm run codex:complex` → `codex` CLI + **ChatGPT Pro**, **not** Cursor’s model-usage path; **legacy** = proxy+key: `npm run codex:complex:proxy-legacy`). The Cursor sub-agent `foodking-complex-implementer` is **fallback only** (`codex` unreachable; log `FALLBACK_REASON:`).
    - **Composer** — Routine edits, reports, summaries; routine EXECUTE and validate/report phases when the plan assigns them.
    - **Cursor** — Orchestration environment (main chat, commands, Task tool).
 
-10. **FoodKing — bounded cycle and sub-agents:** For TASK_ID-driven work, follow **`AGENTS.md`** (authoritative SSOT): phases **PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]**; use **`.cursor/commands/run-cycle.md`**, **`.cursor/ACTIVE_CYCLE.md`**, plan and context files under **`.cursor/context/`** and **`plans/`**. Implementation only after **explicit** delegation: **`foodking-planner-orchestrator`** (planning/orchestration as documented); **complex EXECUTE → `codex-terminal` (PRIMARY)** via `npm run codex:complex` and apply `output_codex.json`; **fallback only** = `foodking-complex-implementer` sub-agent if proxy fails ≥3 reprises; **routine EXECUTE → `foodking-routine-implementer`**. Do not treat a cycle as properly executed if product code changed without `EXECUTE_DELEGATION:` line in the report (codex-terminal | foodking-routine-implementer | foodking-complex-implementer (codex-terminal-fallback) | explicit-prompt-bind).
+10. **FoodKing — bounded cycle and sub-agents:** For TASK_ID-driven work, follow **`AGENTS.md`** (authoritative SSOT): phases **PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]**; use **`.cursor/commands/run-cycle.md`**, **`.cursor/ACTIVE_CYCLE.md`**, plan and context files under **`.cursor/context/`** and **`plans/`**. Implementation only after **explicit** delegation: **`foodking-planner-orchestrator`** (planning/orchestration as documented); **complex EXECUTE → `codex-extension` (PRIMARY)** via `npm run codex:complex` and apply `output_codex.json` (+ `GPT_SELF_AUDIT_*.md`); **fallback only** = `foodking-complex-implementer` if `codex exec` fails; **routine EXECUTE → `foodking-routine-implementer`**. `EXECUTE_DELEGATION:` must be present: `codex-extension` | `foodking-routine-implementer` | `foodking-complex-implementer (codex-extension-fallback)` | `explicit-prompt-bind`.
 
 11. One **PRIMARY_MODEL** per cycle; roles do not overlap. Full routing: **`.cursor/routing.md`**.
 
@@ -65,7 +65,7 @@ You are working inside a high-discipline AI-assisted software development workfl
 
 19. Prefer explicit reasoning over guessing.
 
-20. If a task should be handled by Claude (planning, audit, architecture) rather than by Composer or GPT-5.4 implementation work, say so clearly.
+20. If a task should be handled by Claude (planning, audit, architecture) rather than by Composer or GPT-5.5 implementation work, say so clearly.
 
 21. If the requested implementation is too large, break it into phases and smaller tasks first.
 

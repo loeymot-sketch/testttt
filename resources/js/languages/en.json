@@ -56,7 +56,11 @@
         "park_restore_error": "Could not restore this order.",
         "park_restore_requires_empty_cart": "Empty or park the current cart before restoring another order.",
         "park_discard_success": "Parked order discarded.",
-        "park_discard_error": "Could not discard this parked order."
+        "park_discard_error": "Could not discard this parked order.",
+        "receipt_print_forbidden": "Print rejected (insufficient permissions). The ticket still prints; the fiscal counter was not updated on the server.",
+        "receipt_print_not_found": "Order not found on the server. The ticket still prints; please verify the order.",
+        "receipt_print_conflict": "Conflict while recording the receipt. The ticket still prints; check the fiscal state.",
+        "receipt_print_server_error": "The server could not record the print. The ticket still prints."
     },
     "menu": {
         "dashboard": "Dashboard",
@@ -753,7 +757,17 @@
         "kds_order_list_full_warning": "List at cap ({n} shown, server max) — more active orders may exist. Filter by status or search a ticket #.",
         "kds_bump_local_only_notice": "Bump/ready marks are stored in this browser only — they are not synced across KDS devices.",
         "kds_items_board_scope": "Items to produce (accepted or in-progress orders) — does not mirror every line when an order is fully done on the main board.",
-        "kds_dismiss_hint": "Dismiss"
+        "kds_dismiss_hint": "Dismiss",
+        "kds_sync_stamp": "Synchronized {ago} ago",
+        "kds_sync_never": "Not yet synchronized",
+        "kds_allergens_badge": "Allergens",
+        "kds_allergens_badge_aria": "View allergens for this order",
+        "kds_allergens_modal_title": "Allergens for order #{order_id}",
+        "kds_allergens_modal_intro": "Verify each item before preparation. This information is purely informational and does NOT block the normal flow.",
+        "kds_allergens_for_item": "{item_name}: {allergens}",
+        "kds_allergens_modal_none": "No allergens declared for this item.",
+        "ws_session_invalid_text": "Session expired — your session has ended. Reload the page.",
+        "ws_session_invalid_action": "Reload"
     },
     "button": {
         "add": "Add",
@@ -854,7 +868,8 @@
         "transfer_table": "Transfer table",
         "release_table": "Release table",
         "kds_bump": "Bump",
-        "kds_recall": "Recall"
+        "kds_recall": "Recall",
+        "kds_allergens_modal_close": "Close"
     },
     "number": {
         "10": "10",
@@ -1150,6 +1165,7 @@
             "processing_title": "Sending your order…",
             "processing_sub": "Please wait",
             "tpe_follow": "Follow the instructions on the payment device",
+            "tpe_stuck_help": "If the screen freezes, use \"Cancel payment\" below or the button on the terminal.",
             "cancel_payment": "Cancel payment",
             "confirm": "Confirm — {amount}",
             "tpe_card": "Insert your card in the payment device",
@@ -1307,6 +1323,7 @@
             "confirm_saved_sub": "Your points will be credited after the order",
             "continue_payment": "Continue to payment",
             "error_not_found": "Code or number not found. Check and try again.",
+            "request_timeout": "The server is taking too long. Check the connection and try again.",
             "toast_discount": "Discount of {amount} applied!",
             "toast_saved": "Loyalty saved — points credited after the order",
             "toast_welcome": "Welcome {name}! Loyalty account created.",

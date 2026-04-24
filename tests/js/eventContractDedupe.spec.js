@@ -28,7 +28,9 @@ describe('eventContract — correlation dedupe (SYNC-002)', () => {
     });
 
     it('evicts the oldest entry once the LRU cap is exceeded (allows replay after rotation)', () => {
-        const cap = 512;
+        // NEW-01 raised the cap from 512 → 2048; keep this test in sync with
+        // SEEN_CORRELATION_CAP in eventContract.js.
+        const cap = 2048;
         for (let i = 0; i < cap; i++) {
             isDuplicateCorrelation(`corr-${i}`);
         }

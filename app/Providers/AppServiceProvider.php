@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Services\Hardware\PrinterTransport\NullPrinterTransport;
 use App\Services\Hardware\PrinterTransport\PrinterTransportInterface;
 use App\Services\Hardware\PrinterTransport\TcpPrinterTransport;
+use App\Services\Observability\SyncMetricsRecorder;
 use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,11 @@ class AppServiceProvider extends ServiceProvider
 
             return new TcpPrinterTransport();
         });
+
+        // [NEW-04] Single recorder instance per request — keeps internal state
+        // (correlation cache, etc.) consistent across the call stack and avoids
+        // re-instantiating the service for every metric write.
+        $this->app->singleton(SyncMetricsRecorder::class);
     }
 
     /**

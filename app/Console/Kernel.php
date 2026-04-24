@@ -46,6 +46,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [MEGA 2.G / F-11] Purge POS parked-order snapshots older than 24h (TTL).
+        $schedule->command('pos:purge-parked-orders --older-than-hours=24')
+            ->dailyAt('03:15')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
             ->withoutOverlapping(5)

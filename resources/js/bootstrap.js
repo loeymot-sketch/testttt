@@ -14,6 +14,30 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+// [NEW-04 / Audit T G9] Capture the X-Correlation-ID echoed back by
+// CorrelationIdMiddleware so MetricsBatcher.readCorrelationId() can attach
+// the SAME id to client-metrics POSTs. Without this, frontend telemetry would
+// be unjoinable to the originating backend trace. The interceptor is
+// non-blocking (best-effort) and never rejects the request chain.
+try {
+    window.axios.interceptors.response.use((response) => {
+        try {
+            const cid = response?.headers?.['x-correlation-id']
+                || response?.headers?.['X-Correlation-ID'];
+            if (cid && typeof cid === 'string') {
+                window.__correlationId = cid;
+                try { localStorage.setItem('correlation_id', cid); } catch (_) { /* private mode */ }
+            }
+        } catch (_) {
+            // Defensive — header parsing must never break the response chain.
+        }
+        return response;
+    });
+} catch (_) {
+    // Axios not installed / interceptors unavailable — telemetry just falls
+    // back to null correlation_id. Non-fatal.
+}
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting
@@ -86,6 +110,40 @@ if (_MIX_PUSHER_APP_KEY) {
             window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
         }
     };
+
+    // [F-12] Reactively detect subscription/auth errors on Echo private/presence channels.
+    // When Pusher emits `pusher:subscription_error` (token expired, signature mismatch),
+    // we (1) reinject the latest local token (cheap retry — handles login-token rotation),
+    // (2) forward the failure to wsService which tracks a sliding-window counter and
+    // promotes the connection to SESSION_INVALID after 3 failures within 60s.
+    // No timer-based proactive refresh: there is no backend refresh-token endpoint.
+    function _bindSubscriptionErrorHandler(channel) {
+        if (!channel || channel.__hasAuthErrorBinding) return channel;
+        const subscription = channel.subscription || channel;
+        if (subscription && typeof subscription.bind === 'function') {
+            const handler = (payload) => {
+                try { window._refreshEchoAuth?.(); } catch (_) { /* ignore */ }
+                try { wsService.handleSubscriptionError(payload); } catch (_) { /* ignore */ }
+            };
+            subscription.bind('pusher:subscription_error', handler);
+            subscription.bind('subscription_error', handler);
+            channel.__hasAuthErrorBinding = true;
+        }
+        return channel;
+    }
+
+    if (typeof window.Echo.private === 'function') {
+        const _origPrivate = window.Echo.private.bind(window.Echo);
+        window.Echo.private = (...args) => _bindSubscriptionErrorHandler(_origPrivate(...args));
+    }
+    if (typeof window.Echo.encryptedPrivate === 'function') {
+        const _origEncPrivate = window.Echo.encryptedPrivate.bind(window.Echo);
+        window.Echo.encryptedPrivate = (...args) => _bindSubscriptionErrorHandler(_origEncPrivate(...args));
+    }
+    if (typeof window.Echo.join === 'function') {
+        const _origJoin = window.Echo.join.bind(window.Echo);
+        window.Echo.join = (...args) => _bindSubscriptionErrorHandler(_origJoin(...args));
+    }
 
     wsService.start();
     window._wsService = wsService;

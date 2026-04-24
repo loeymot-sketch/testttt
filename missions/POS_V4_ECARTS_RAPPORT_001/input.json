@@ -1,0 +1,19 @@
+{
+  "mission": "POS_V4_ECARTS_RAPPORT_001",
+  "instruction": "EXECUTE: create a single new markdown file at the path given below. Full French prose. This is the GPT-5.5 second opinion on *what is still missing* to adapt the external POS (4) v4 design pack to FoodKing goals (POS as operational hub, coherence with Kiosk, KDS, admin, branch isolation, pricing SSOT, order lifecycle). No changes to app code.",
+  "target_file": "reports/audit/RAPPORT_ECARTS_DESIGN_POS_V4_SYSTEMIQUE_2026-04-25.md",
+  "evidence_baked_in": {
+    "tests_reels_exemples": "PHPUnit: tests/Feature/PosParkedOrderTest.php, tests/Feature/Pos/FloorplanControllerTest.php, tests/Feature/Pos/PosPurgeParkedScheduleTest.php, tests/Feature/Admin/POS/ReceiptPrintControllerTest.php, tests/Feature/PosUITest.php. Vitest: tests/js/posComponent.spec.js, posParked.spec.js, posFloorplan.spec.js, posReceiptBuilder.spec.js, posPaymentItemsNormalize.spec.js. Les noms 'ParkedOrdersStoreTest' / 'ReceiptServiceTest' du README export sont probablement des placeholders.",
+    "invariants_foodking": "Pricing backend SSOT, OrderStatus enum, branch_id isolation, dispatch after commit, possible symmetry OrderService/FrontendOrderService if order paths touched.",
+    "gaps_historiques_rapport": "Conflit #FF006B vs #0084FF; preview.html incohérent; pas de binding map; pas de perfs caisse; scope dark indéfini; JSX previews vs SFC .vue; URL design API 403."
+  },
+  "structure_requise": [
+    "Titre + métadonnée second avis API (modèle gpt-5.5-h/pro via codex)",
+    "1) Alignement but global FoodKing (5 axes: caisse, sync cuisine, kiosque, branche, conformité) — quoi le design ne garantit pas encore",
+    "2) Matrice des manques: Décision produit / Design pack / Gouvernance repo / Intégration / Validation",
+    "3) P0 P1 P2 avec propriétaire suggéré (produit, design, lead tech)",
+    "4) Convergence ou désaccord avec l’audit 2026-04-24 et le plan READINESS 2026-04-25",
+    "5) Liste de contrôle finale (15 items max) avant de dire 'le design est adapté'"
+  ],
+  "interdit": "Modifier du .vue, .php, routes — uniquement créer le fichier markdown ciblé."
+}

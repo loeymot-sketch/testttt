@@ -1,0 +1,12 @@
+{
+  "mission": "POS_V4_FINAL_AUDIT_W0_001",
+  "role": "Audit Codex/GPT 5.5 cross-check des livrables W0 POS v4",
+  "instruction": "CREATE only the file reports/audit/AUDIT_FINAL_W0_CODEX_2026-04-26.md (full French). You re-audit the W0 deliverables with a sceptical second-opinion lens (different from Claude). Inputs to read: reports/audit/HYPERREVIEW_CLAUDE_POS_V4_EXEC_FINAL_2026-04-26.md, reports/audit/W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, docs/design/BINDING_MAP_POS_V4.md, reports/baseline/POS_V4_PERF_BASELINE_W0.md, resources/css/pos-v4.css. Sections (exact order): ## Verdict cross-check (CONCUR / PARTIAL / DIVERGE) ## 5 angles morts du livrable W0 ## Quoi corriger avant W1 (P0/P1) ## Risque coordination multi-agent ## Sign-off Codex (GO/AMEND/STOP). Forbidden: any other file modification. Output the markdown body inside code_blocks[0].excerpt op=create.",
+  "prior_context_paths": [
+    "reports/audit/HYPERREVIEW_CLAUDE_POS_V4_EXEC_FINAL_2026-04-26.md",
+    "reports/audit/W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md",
+    "docs/design/BINDING_MAP_POS_V4.md",
+    "reports/baseline/POS_V4_PERF_BASELINE_W0.md",
+    "resources/css/pos-v4.css"
+  ]
+}

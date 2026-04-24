@@ -140,6 +140,11 @@
         };
     </script>
 
+    {{-- [POS-V4 W1-B 2026-04-26] Vendor chunking — order is critical: --}}
+    {{-- manifest (webpack runtime) → vendor (third-party libs) → app (our code). --}}
+    {{-- Reverting requires running `git checkout webpack.mix.js master.blade.php` then `npm run production`. --}}
+    <script src="{{ mix('js/manifest.js') }}"></script>
+    <script src="{{ mix('js/vendor.js') }}"></script>
     <script src="{{ mix('js/app.js') }}"></script>
     <script src="{{ asset('themes/default/js/drawer.js') }}"></script>
     <script src="{{ asset('themes/default/js/modal.js') }}"></script>

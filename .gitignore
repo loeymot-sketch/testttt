@@ -7,8 +7,10 @@
 /storage/debugbar/
 .env
 .env.codex
+.env.cursor
 .env.backup
 .env.testing
+.env.anthropic.local
 .cursor/mcp/graphiti.json
 .phpunit.result.cache
 npm-debug.log

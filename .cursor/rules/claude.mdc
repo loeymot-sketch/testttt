@@ -38,7 +38,7 @@ Claude **does** write **governance artifacts**: plan files under `plans/`, gate 
 - Claude reads the cleared gate brief before resuming or closing the cycle
 
 ## FoodKing Planning Constraints
-- Pricing in scope → confirm backend-first routing before assigning GPT-5.4
+- Pricing in scope → confirm backend-first routing before assigning GPT-5.5
 - `OrderService` or `FrontendOrderService` in scope → include explicit symmetry review step
 - Dispatch logic in scope → state post-commit constraint explicitly in plan
 - Frozen zone in scope → write gate brief before implementation, not after

@@ -16,21 +16,27 @@ class PersistItemAvailabilityChangedToOutbox
 {
     public function handle(ItemAvailabilityChanged $event): void
     {
+        // [F-04bis] All payloads (global and branch-scoped) MUST include the same
+        // contract keys so frontend handlers can rely on `is_available`, `branch_id`
+        // and `reason` being PRESENT (possibly null) in every event. Before this
+        // fix, global events omitted `is_available`, which made POS/KDS/Kiosk
+        // handlers wrongly prune carts on plain price/structural changes (the
+        // handler reads `payload.is_available === true` ⇒ false when undefined).
         $payload = [
-            'item_id' => $event->itemId,
-            'status'  => $event->status,
-            'price'   => $event->price,
-            'type'    => $event->type,
+            'item_id'      => $event->itemId,
+            'status'       => $event->status,
+            'price'        => $event->price,
+            'type'         => $event->type,
+            'is_available' => $event->isAvailable,
+            'branch_id'    => $event->branchId,
+            'reason'       => $event->reason,
         ];
 
         if ($event->branchId !== null) {
-            // Branch-scoped toggle (MENU_86) — single-branch channel, include rupture metadata.
-            $payload['branch_id']    = $event->branchId;
-            $payload['is_available'] = $event->isAvailable;
-            $payload['reason']       = $event->reason;
+            // Branch-scoped toggle (MENU_86) — single-branch channel.
             $channels = ['private-branch.' . $event->branchId];
         } else {
-            // Global menu change (admin edits item) — broadcast to every active branch.
+            // Global menu change (admin edits item) — fan-out to every active branch.
             $channels = Branch::query()
                 ->where('status', Status::ACTIVE)
                 ->pluck('id')
@@ -52,7 +58,8 @@ class PersistItemAvailabilityChangedToOutbox
         ]);
 
         DB::afterCommit(function () use ($domainEvent): void {
-            DispatchDomainEventsJob::dispatch($domainEvent->id)->onQueue('high');
+            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+            DispatchDomainEventsJob::dispatch($domainEvent->id);
         });
     }
 

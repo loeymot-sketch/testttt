@@ -225,12 +225,19 @@ class KitchenDisplaySystemOrderService
                 // [L2 FIX] Normalize instruction: trim whitespace and lowercase to avoid
                 // spurious KDS splits caused by minor formatting differences
                 $instruction = mb_strtolower(trim($item['instruction'] ?? ''));
+                // [Lot 2.I / G-5] split lines whose allergens snapshots differ — food safety.
+                // Two order_items sharing item_id+variations+extras+instruction MUST appear
+                // as 2 distinct KDS lines if their allergens_snapshot differ. Otherwise the
+                // chef sees "Burger x2" with allergens of the FIRST item only — masking the
+                // second customer's allergy declaration.
+                $allergensHash = sha1(json_encode($this->normalizeAllergensForHash($item['allergens_snapshot'] ?? [])));
 
                 return json_encode([
                     'item_id' => $item['item_id'],
                     'item_variations' => $variations,
                     'item_extras' => $extras,
                     'instruction' => $instruction,
+                    'allergens_hash' => $allergensHash,
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();
@@ -243,5 +250,32 @@ class KitchenDisplaySystemOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * [Lot 2.I / G-5] Deterministic allergen hash input.
+     *
+     * Defensive against legacy data shapes (null, JSON object, scalar string)
+     * that may exist on rows pre-dating the 2026_04_18_140004 backfill. Empty
+     * snapshot, null, and non-array values all collapse to the same hash so
+     * items WITHOUT declared allergens still merge together (regression safe).
+     *
+     * @param  mixed  $snapshot
+     * @return array<int, string>
+     */
+    private function normalizeAllergensForHash($snapshot): array
+    {
+        if (! is_array($snapshot)) {
+            return [];
+        }
+
+        $normalized = array_values(array_unique(array_map(
+            'strval',
+            array_filter($snapshot, static fn ($value) => $value !== null && $value !== '')
+        )));
+
+        sort($normalized);
+
+        return $normalized;
     }
 }

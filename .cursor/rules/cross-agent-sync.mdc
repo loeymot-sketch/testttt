@@ -1,5 +1,5 @@
 ---
-description: Synchronisation multi-agents (Cursor convs, codex-terminal, claude-terminal). Évite que deux agents touchent les mêmes fichiers en même temps. Append-only, lecture par tail (~500 tokens).
+description: Synchronisation multi-agents (Cursor convs, codex-extension, claude-terminal). Évite que deux agents touchent les mêmes fichiers en même temps. Append-only, lecture par tail (~500 tokens).
 globs: ["**/*"]
 alwaysApply: true
 ---
@@ -7,7 +7,7 @@ alwaysApply: true
 # FoodKing — Synchronisation multi-agents (cross-conv, cross-terminal)
 
 ## Pourquoi
-Plusieurs agents peuvent travailler en parallèle (deux conversations Cursor, `codex-terminal`, `claude-terminal`, humain). Sans signal partagé, deux agents peuvent éditer le même fichier en même temps et se contredire. Cette règle est l'**unique** mécanisme de coordination procédurale entre conversations.
+Plusieurs agents peuvent travailler en parallèle (deux conversations Cursor, `codex-extension`, `claude-terminal`, humain). Sans signal partagé, deux agents peuvent éditer le même fichier en même temps et se contredire. Cette règle est l'**unique** mécanisme de coordination procédurale entre conversations.
 
 C'est une **extension du store D** de [docs/orchestration/MEMORY_MATRIX.md](mdc:docs/orchestration/MEMORY_MATRIX.md) (rapports/cycle), **pas** un nouveau store : aucun gate à ouvrir.
 
@@ -30,7 +30,7 @@ L'agent (ou l'orchestrateur) **réclame** son périmètre :
 ```bash
 bash scripts/agent-activity-log.sh start <AGENT> <TASK_ID> execute "<FICHIERS_OU_DOSSIERS_CSV>" "<note>"
 ```
-- `<AGENT>` ∈ `cursor-claude | cursor-composer | codex-terminal | claude-terminal | human`
+- `<AGENT>` ∈ `cursor-claude | cursor-composer | codex-extension | claude-terminal | human`
 - `<FICHIERS_OU_DOSSIERS_CSV>` : lister précisément les fichiers ou un dossier racine (ex `resources/js/components/admin/pos/`)
 - **Si exit code 2 (REFUS / collision)** : *halt*. Soit re-planifier sur un sous-périmètre disjoint, soit attendre que l'autre agent libère, soit ouvrir une coordination humaine. **Ne pas forcer.**
 
@@ -48,7 +48,7 @@ Pas besoin de réclamer si l'agent ne **modifie** pas les fichiers du projet (le
 Stable et auto-décrivante. Exemples valides :
 - `cursor-claude` — conv Cursor avec Claude comme PRIMARY
 - `cursor-composer` — sub-agent `foodking-routine-implementer`
-- `codex-terminal` — `npm run codex:complex`
+- `codex-extension` — `npm run codex:complex` (CLI `codex`, compte ChatGPT Pro)
 - `claude-terminal` — `bash scripts/foodking-claude-orchestrate.sh audit`
 - `human` — édition manuelle dans IDE
 

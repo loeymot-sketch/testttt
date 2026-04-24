@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminPosV4Controller;
 use App\Http\Controllers\Frontend\PaymentController;
 use App\Http\Controllers\Frontend\RootController;
 use App\Http\Controllers\Installer\InstallerController;
@@ -42,5 +43,16 @@ Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(fun
     Route::match(['get', 'post'], '/{paymentGateway:slug}/{order}/cancel', [PaymentController::class, 'cancel'])->name('cancel');
     Route::get('/successful/{order}', [PaymentController::class, 'successful'])->name('successful');
 });
+
+// [POS-V4 W2 #1 2026-04-26] Dedicated POS V4 entry — MUST be declared BEFORE
+// the catch-all below so Laravel matches it first. Serves admin-pos-v4.blade.php
+// (loads pos-app.js, NOT app.js). See docs/design/ADR_POS_V4_DEDICATED_ENTRY.md.
+// Pattern: {any?} captures sub-routes (e.g. /admin/pos-v4/floorplan) so the
+// Vue Router on the client can handle deep links without server bouncing them
+// to the legacy SPA. Rollback: delete this Route::get line + the use import.
+Route::get('/admin/pos-v4/{any?}', [AdminPosV4Controller::class, 'index'])
+    ->middleware(['installed'])
+    ->where(['any' => '.*'])
+    ->name('admin.pos.v4');
 
 Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);

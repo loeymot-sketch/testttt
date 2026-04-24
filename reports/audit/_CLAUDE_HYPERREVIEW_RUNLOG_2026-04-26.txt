@@ -1,0 +1,22 @@
+L'écriture du fichier nécessite votre approbation. Veuillez autoriser l'accès en écriture pour le créer.
+
+En attendant, voici le résumé des 10 sections du rapport :
+
+---
+
+**Verdict : GO-WITH-AMENDS** — 3 raisons :
+1. Structure W0–W4 exécutable
+2. **Violations `pricing_ssot` CONFIRMÉES dans le code existant** (PosComponent:1683,1772 + ItemComponent:735–760) — à tracer avant G1
+3. `pos-v4.css` absent + namespace `.fk-pos-v4` absent de tous les SFC → CI inforçable
+
+**Principales découvertes issues de la lecture du dépôt** (non dans les plans) :
+- `PosComponent.vue:1772` → `total = subtotal + delivery_charge - discount` (calcul frontend actif)
+- `PosComponent.vue:1390` → filtre statuts via `[4, 7, 8]` integers nus (violation `order_status`)
+- `PaymentComponent.vue:255` → `form.total = 0` sur erreur (bug destructif)
+- `PosComponent.vue` = 122 KB — budget JS 220 KB probablement dépassé
+
+**Contradiction principale** : **MASTER §5** pose PosComponent/shell en zone 1 ; **EXEC FINAL §4** le passe en position 5. Justifié par §15 mais crée un angle mort sur header/branche et résumé-total.
+
+**3 micro-exits W0 immédiats** : (E1) créer `pos-v4.css` stub, (E2) audit violations pricing → `W0_PRICING_VIOLATIONS_INVENTORY.txt`, (E3) baseline gzip des 9 SFC.
+
+**5 STOP triggers** : ST1 pricing calc non tracé · ST2 status literal/int nu · ST3 cross-branch non documenté · ST4 CSS hors namespace · ST5 ADR non signé J0-12h ou BINDING_MAP incomplète au JOIN.

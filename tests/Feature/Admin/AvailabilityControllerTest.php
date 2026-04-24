@@ -345,4 +345,58 @@ class AvailabilityControllerTest extends TestCase
 
         Bus::assertDispatched(DispatchDomainEventsJob::class);
     }
+
+    /**
+     * [F-04bis] Sentinel: a GLOBAL ItemAvailabilityChanged event (admin edits item
+     * status / price / variations — branchId == null) must persist a payload that
+     * INCLUDES `is_available`, `branch_id` and `reason` keys (with null values for
+     * global emission). Before this fix, those keys were OMITTED from the global
+     * payload, which made frontend handlers (POS / Kiosk) wrongly coerce
+     * `payload.is_available === true` to false → cart pruned on plain price edits.
+     *
+     * @see app/Listeners/PersistItemAvailabilityChangedToOutbox.php
+     * @see resources/js/components/admin/pos/PosComponent.vue _onItemAvailabilityChanged
+     */
+    public function test_global_item_availability_changed_payload_includes_full_contract_keys(): void
+    {
+        Bus::fake();
+
+        Branch::factory()->create(['status' => Status::ACTIVE]);
+        Branch::factory()->create(['status' => Status::ACTIVE]);
+
+        $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
+        $tax = Tax::factory()->create(['status' => Status::ACTIVE]);
+        $item = Item::factory()->create([
+            'item_category_id' => $category->id,
+            'tax_id' => $tax->id,
+            'status' => Status::ACTIVE,
+            'price' => 9.5,
+        ]);
+
+        event(ItemAvailabilityChanged::fromItem($item, 'price'));
+
+        $domainEvent = DomainEvent::query()
+            ->where('aggregate_id', $item->id)
+            ->whereNull('branch_id')
+            ->latest('id')
+            ->first();
+        $this->assertNotNull(
+            $domainEvent,
+            'Global ItemAvailabilityChanged must persist a domain_events row with branch_id=null.'
+        );
+
+        $payload = is_array($domainEvent->payload)
+            ? $domainEvent->payload
+            : json_decode($domainEvent->payload, true);
+
+        $this->assertArrayHasKey('item_id', $payload);
+        $this->assertArrayHasKey('is_available', $payload, '[F-04bis] is_available MUST be present in global payload.');
+        $this->assertArrayHasKey('branch_id', $payload, '[F-04bis] branch_id MUST be present in global payload.');
+        $this->assertArrayHasKey('reason', $payload, '[F-04bis] reason MUST be present in global payload.');
+        $this->assertSame((int) $item->id, (int) $payload['item_id']);
+        $this->assertNull($payload['is_available'], '[F-04bis] is_available is null in global emission (no flip semantics).');
+        $this->assertNull($payload['branch_id'], '[F-04bis] branch_id is null in global emission (fan-out to all active branches).');
+        $this->assertNull($payload['reason'], '[F-04bis] reason is null in global emission.');
+        $this->assertSame('price', $payload['type']);
+    }
 }

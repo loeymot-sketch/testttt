@@ -1,72 +1,104 @@
-import fs from "node:fs";
+/**
+ * Vérifie clé + endpoint + modèle : une requête minimale, succès = assistant avec texte.
+ * Ne loggue pas la clé. Exit 0 si le proxy renvoie un contenu non vide.
+ * Usage: npm run codex:smoke
+ */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadProjectEnvForCodex, resolveRepoRootFromScriptDir } from "./codex-load-env.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..", "..");
-
-function loadEnv(f) {
-  if (!fs.existsSync(f)) return;
-  for (const line of fs.readFileSync(f, "utf8").split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#") || !t.includes("=")) continue;
-    const i = t.indexOf("=");
-    const k = t.slice(0, i).trim();
-    let v = t.slice(i + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
-      v = v.slice(1, -1);
-    if (k && process.env[k] === undefined) process.env[k] = v;
-  }
-}
-loadEnv(path.join(root, ".env"));
-loadEnv(path.join(root, ".env.codex"));
-loadEnv(path.join(__dirname, ".env"));
-loadEnv(path.join(__dirname, ".env.codex"));
+const root = resolveRepoRootFromScriptDir(__dirname);
+loadProjectEnvForCodex(root);
 
 const API_BASE = (process.env.CODEX_API_BASE || "").replace(/\/$/, "");
-const API_KEY = process.env.CODEX_API_KEY || "";
-const MODEL = process.env.CODEX_MODEL_COMPLEX || "gpt-5.4";
+const API_KEY = (process.env.CODEX_API_KEY || process.env.OPENAI_API_KEY || "").trim();
+const MODEL = process.env.CODEX_MODEL_COMPLEX || "gpt-5.5";
 
 if (!API_BASE || !API_KEY) {
-  console.error("[smoke] Missing CODEX_API_BASE / CODEX_API_KEY (.env or .env.codex).");
-  process.exit(1);
+  console.error(
+    "[codex:smoke] CODEX_API_BASE + (CODEX_API_KEY ou OPENAI_API_KEY) requis ( .env / .env.codex )."
+  );
+  process.exit(2);
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const headers = { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" };
+const headers = {
+  Authorization: `Bearer ${API_KEY}`,
+  "Content-Type": "application/json",
+};
+
+/** Aligné sur le runner : plafond par défaut = max supporté 2M (désactiver: CODEX_NO_DEFAULT_OUTPUT_BUDGET=1). */
+function smokeOutputBudget() {
+  const cap = 2_000_000;
+  const mct = (process.env.CODEX_MAX_COMPLETION_TOKENS || "").trim();
+  if (mct) {
+    const n = Math.min(cap, Math.max(1, parseInt(mct, 10) || 0));
+    if (n) return { max_completion_tokens: n };
+  }
+  const mt = (process.env.CODEX_MAX_TOKENS || "").trim();
+  if (mt) {
+    const n = Math.min(cap, Math.max(1, parseInt(mt, 10) || 0));
+    if (n) return { max_tokens: n };
+  }
+  if ((process.env.CODEX_NO_DEFAULT_OUTPUT_BUDGET || "").toLowerCase() === "1") return {};
+  const d = Math.min(
+    cap,
+    Math.max(1, parseInt(process.env.CODEX_DEFAULT_MAX_COMPLETION_TOKENS || "2000000", 10) || 2_000_000)
+  );
+  return { max_completion_tokens: d };
+}
+
 const body = {
   model: MODEL,
   messages: [{ role: "user", content: "Reply with exactly: OK" }],
+  ...smokeOutputBudget(),
 };
 
-for (let attempt = 0; attempt < 4; attempt++) {
-  try {
-    const r = await fetch(`${API_BASE}/chat/completions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-    const t = await r.text();
-    let j;
-    try {
-      j = JSON.parse(t);
-    } catch {
-      console.error(`[smoke] HTTP ${r.status} non-JSON (proxy gateway?). Body head:`, t.slice(0, 200));
-      if (attempt < 3) {
-        await sleep(2000 * (1 + attempt));
-        continue;
-      }
-      process.exit(1);
-    }
-    const c = j?.choices?.[0]?.message?.content;
-    if (typeof c === "string" && c.trim().length) {
-      console.log(`[smoke] OK | model=${j?.model || MODEL} | reply=${JSON.stringify(c).slice(0, 80)}`);
-      process.exit(0);
-    }
-    console.error(`[smoke] HTTP ${r.status} but assistant content was empty (attempt ${attempt + 1}/4).`);
-  } catch (e) {
-    console.error(`[smoke] network error (attempt ${attempt + 1}/4):`, e.message);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 4;
+
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  if (attempt > 0) {
+    const w = 1500 * attempt;
+    console.error(`[codex:smoke] reprise ${attempt + 1}/${maxAttempts} (réponse vide) — attente ${w}ms…`);
+    await sleep(w);
   }
-  if (attempt < 3) await sleep(2000 * (1 + attempt));
+  const r = await fetch(`${API_BASE}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body) });
+  const t = await r.text();
+  let j;
+  try {
+    j = JSON.parse(t);
+  } catch {
+    console.error("[codex:smoke] non-JSON", r.status, t.slice(0, 300));
+    process.exit(1);
+  }
+  if (!r.ok) {
+    if ((r.status === 502 || r.status === 503 || r.status === 429) && attempt < maxAttempts - 1) continue;
+    console.error("[codex:smoke] HTTP", r.status, JSON.stringify(j?.error || j, null, 0));
+    process.exit(1);
+  }
+  const content = j?.choices?.[0]?.message?.content;
+  const ok = typeof content === "string" && content.trim().length > 0;
+  if (ok) {
+    const note = attempt > 0 ? ` (tentative ${attempt + 1})` : "";
+    const b = body.max_completion_tokens ?? body.max_tokens ?? "—";
+    console.log(
+      "[codex:smoke] OK | modèle:",
+      j?.model || MODEL,
+      "| plafond sortie (requête):",
+      b,
+      "| extrait:",
+      JSON.stringify(content).slice(0, 80),
+      note
+    );
+    process.exit(0);
+  }
+  if (attempt < maxAttempts - 1) continue;
+  console.error(
+    "[codex:smoke] RÉPONSES 200 SANS CONTENU d’assistant après",
+    maxAttempts,
+    "tentative(s) — le dashboard peut quand même afficher des tokens. Variables : autres modèles, fournisseur, période. Modèle :",
+    MODEL
+  );
+  process.exit(1);
 }
-process.exit(1);

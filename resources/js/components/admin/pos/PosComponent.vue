@@ -716,6 +716,7 @@ import ItemComponent from "./ItemComponent.vue";
 import SkeletonGrid from "./SkeletonGrid.vue";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import roleEnum from "../../../enums/modules/roleEnum";
@@ -1206,6 +1207,29 @@ export default {
             const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
             if (!itemId) return;
 
+            // [F-04bis] Distinguish two emission modes (event contract is now uniform —
+            // see app/Listeners/PersistItemAvailabilityChangedToOutbox + ItemAvailabilityChanged):
+            //   • Global catalogue update — admin edited item status/price/variations.
+            //     `is_available` is null/undefined; `branch_id` is null; type is one of
+            //     'status' | 'price' | 'full'. MUST NOT prune the cart (the item is still
+            //     available everywhere — we just need to refresh the catalogue if the
+            //     change was structural).
+            //   • Branch-scoped flip — MENU_86 toggle / auto-86 / release-after-cancel.
+            //     `is_available` is explicitly true|false; `branch_id` is set.
+            //     Apply normal pruning logic.
+            const hasAvailabilitySignal =
+                payload.is_available === true || payload.is_available === false ||
+                payload.is_available === 1 || payload.is_available === 0 ||
+                payload.is_available === '1' || payload.is_available === '0';
+
+            if (!hasAvailabilitySignal) {
+                // Global catalogue change — refresh items list silently if structural.
+                if (payload.type === 'full') {
+                    try { this.itemList(); } catch (e) { /* defensive */ }
+                }
+                return;
+            }
+
             // Locate item in the cached POS list (this.itemsRaw / this.items).
             const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
                        : (Array.isArray(this.items) ? this.items : null);
@@ -1362,9 +1386,14 @@ export default {
                     ...(resKiosk?.data?.data || []),
                     ...(resTakeaway?.data?.data || []),
                 ];
-                // Client-side filter by status (ACCEPT=4, PREPARING=7, PREPARED=8)
+                // [POS-V4 W0+] Filter via orderStatusEnum (invariant: no magic int for OrderStatus)
+                const ACTIVE_KIOSK_STATUSES = [
+                    orderStatusEnum.ACCEPT,
+                    orderStatusEnum.PREPARING,
+                    orderStatusEnum.PREPARED,
+                ];
                 this.kioskCashOrders = all
-                    .filter(o => [4, 7, 8].includes(parseInt(o.order_status ?? o.status, 10)))
+                    .filter(o => ACTIVE_KIOSK_STATUSES.includes(parseInt(o.order_status ?? o.status, 10)))
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             } catch (_) {
                 this.kioskCashOrders = [];
@@ -1387,7 +1416,8 @@ export default {
             if (order._collecting) return;
             order._collecting = true;
             try {
-                await axios.post(`admin/kds-order/change-status/${order.id}`, { status: 13 }); // 13 = DELIVERED
+                // [POS-V4 W0+] Use orderStatusEnum (invariant: no magic int for OrderStatus)
+                await axios.post(`admin/kds-order/change-status/${order.id}`, { status: orderStatusEnum.DELIVERED });
                 await this.loadKioskCashOrders();
             } catch (err) {
                 const msg = err?.response?.data?.message || 'Erreur lors de l\'encaissement';
@@ -1746,7 +1776,14 @@ export default {
             }
             this.loading.isActive = true;
             this.checkoutProps.form.subtotal = this.subtotal;
+            // @pricing-allowed-block start
+            // [POS-V4 W0+ DISCOVERY 2026-04-26] Pre-modal display total — backend remains SSOT and recomputes server-side.
+            // Identical pattern to ItemComponent.totalPriceSetup (W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, decision D1).
+            // signoff-pending — date_limit: 2026-05-10
+            // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
+            // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
             this.checkoutProps.form.total = parseFloat(this.subtotal + this.checkoutProps.form.delivery_charge - this.checkoutProps.form.discount).toFixed(this.setting.site_digit_after_decimal_point);
+            // @pricing-allowed-block end
             this.checkoutProps.form.items = [];
             _.forEach(this.carts, (item) => {
                 const mainQty = parsePositiveInt(item.quantity, 1);
@@ -1794,9 +1831,16 @@ export default {
                 }
             }
 
-            // [AUDIT-P50-BUG2] Generate idempotency key for POS orders to prevent double-submit duplicates
-            // This key is unique per checkout attempt and sent in X-Idempotency-Key header
-            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${this.checkoutProps.form.branch_id || 0}`;
+            // [AUDIT-P50-BUG2 + POS-V4 W0+] Generate idempotency key for POS orders to prevent double-submit duplicates
+            // This key is unique per checkout attempt and sent in X-Idempotency-Key header.
+            // INVARIANT (branch_id isolation): a null branch_id would suffix the key with "_0_" and risk
+            // cross-branch collisions on a shared backend key store. We hard-stop here instead of falling back to 0.
+            const _branchId = this.checkoutProps.form.branch_id;
+            if (_branchId == null || _branchId === '' || _branchId === 0) {
+                this.loading.isActive = false;
+                return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+            }
+            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
 
             this.loading.isActive = false;
             appService.modalShow('#orderpayment');

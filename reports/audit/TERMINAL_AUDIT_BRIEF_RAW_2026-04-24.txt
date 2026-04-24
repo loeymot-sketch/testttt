@@ -1,0 +1,54 @@
+---
+
+## Audit court — 2026-04-24
+
+---
+
+### Cycle actif
+
+| Champ | Valeur |
+|---|---|
+| **Cycle** | `CYCLE_W10_EXECUTION_CLOSEOUT` — `IN_PROGRESS` |
+| **TASK_ID** | `P_EXEC_CLOSEOUT_GRAPHITI_CI_PROD_2026-04-22` |
+| **Gate mémoire** | SATISFAITE (`verify.py` → 182 épisodes ≥ 180) |
+| **Dernier lot** | `2.I` clôturé (allergens KDS, a11y, 811/811 vitest, 936 phpunit) |
+| **Statut Graphiti** | Non requêtable ici — alimenté via JSONL local (182 facts) |
+| **Pending** | Commit → CI → Prod (Pistes D → E → F selon plan) |
+
+---
+
+### 5 prochaines priorités — méga-checklist `[ ]`
+
+| # | ID | Action concrète |
+|---|---|---|
+| 1 | **A07** | Après lot 2.I + lots NEW-01..04 : ajouter **1 ligne par ADR/gate** dans `12_decisions_log.jsonl` + ingest ciblé `12_decisions` (backlog immédiat : 4 lots fermés hier sans entry ADR dédiée) |
+| 2 | **B04** | Rétro-remplir `EXECUTE_DELEGATION:` sur les rapports `RUN_*.md` — baseline 26,5 % (30/113) → montée vers 100 % ; commencer par les 4 rapports des lots NEW-01..04 |
+| 3 | **A08** | Après NEW-03 (invariant `ShouldQueueJobsDeclareTriesTest`) et NEW-04 (branche isolation 403 + resolveBranchScope) : **1 ligne** dans `02_architecture_invariants.jsonl` + ingest |
+| 4 | **B09** | Plans `plans/*.md` : baseline 44,7 % avec `## PRIOR_CONTEXT` — viser les plans ouverts sur KDS/POS, ajouter la section avant tout prochain EXECUTE |
+| 5 | **A14** | Ticket correctif idempotence `memory/ingest.py` (re-run sans `clear_graph` → duplicates) + doc « re-ingest safe » — risque accru maintenant que le count dépasse 180 |
+
+---
+
+### Rappel EXECUTE_DELEGATION
+
+Avant tout RUN délégué à Cursor/Codex, le rapport doit porter :
+
+```
+EXECUTE_DELEGATION: <agent> | <TASK_ID> | <timestamp>
+AUDIT_CHANNEL: claude_code_cli_independent
+TERMINAL_AUDIT_OK: 1
+```
+
+Les lots NEW-01..04 et 2.I l'ont respecté (`decided_by` + `implementer` + `auditor` dans JSONL). Toute prochaine exécution sans ces sentinelles = **KO audit**.
+
+---
+
+### Ce qui devrait devenir une entrée `12_decisions_log` + ingest
+
+Trois décisions de la nuit méritent une ligne ADR formelle :
+
+1. **`resolveBranchScope()` + gate `hasRole('Admin')` pour null branch_id** (NEW-04, A1 audit Claude) — rule architecturale branch-isolation critique, absente du JSONL 12.
+2. **`ShouldQueueJobsDeclareTriesTest` comme invariant architectural** (NEW-03, T-CLA-3) — toute class `ShouldQueue` DOIT déclarer `$tries` ; décision defensive bloquante, à mémoriser comme frozen rule.
+3. **Lot 2.I : Tab trap WCAG obligatoire dans les modals KDS** (audit 2.I, a11y) — standard UX/a11y désormais imposé sur tout modal KDS/Kiosk.
+
+Ces trois entrées → `12_decisions_log.jsonl` + `bash scripts/after-execute-memory.sh` → ingest ciblé `12`.

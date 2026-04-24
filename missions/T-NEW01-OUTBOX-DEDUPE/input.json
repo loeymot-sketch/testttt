@@ -1,0 +1,93 @@
+{
+  "task_id": "T-NEW01-OUTBOX-DEDUPE",
+  "lot": "NEW-01 (Phase 1bis, Vague 3) — Outbox replay/dedupe consumer-side hardening. Backend: pessimistic lock around `dispatched_at IS NULL` check inside DispatchDomainEventsJob::handle() to defeat worker race. Frontend: extend LRU correlation dedupe cap from 512 to 2048 + persist to sessionStorage with TTL 10 minutes so a tab reload does not lose the dedupe window.",
+  "finding_origin": "NEW-01 from second-opinion GPT-5.4-pro (reports/audit/SECOND_OPINION_GPT54PRO_SYNC_PLAN_2026-04-23.json). Risk: under queue worker scaling (2+ workers polling the `high` queue), the read-then-write check in DispatchDomainEventsJob::handle() (lines 37-39 and 78-81 of app/Jobs/DispatchDomainEventsJob.php) is NOT atomic: both workers can pass the `dispatched_at !== null` guard before either writes, broadcasting twice. Frontend LRU 512 (resources/js/services/eventContract.js lines 73-91) absorbs most duplicates, but is lost on tab reload AND too small for high-volume branches (>50 events/min).",
+  "context_already_in_repo": {
+    "DispatchDomainEventsJob": "app/Jobs/DispatchDomainEventsJob.php — handles broadcasting one DomainEvent row to Pusher. Uses ->onQueue('high'), tries=5, backoff=[1,5,30,300]. Current handle() does: find row → if dispatched_at != null return → increment attempts → broadcast → forceFill dispatched_at=now. The window between the find()/refresh() and forceFill() is the race surface.",
+    "DomainEvent_model": "app/Models/DomainEvent.php — Eloquent model on `domain_events` table. Columns include id, event_type, channel (json|string), broadcast_as, payload, dispatched_at (nullable timestamp), attempts (int), last_error (nullable text), correlation_id (string).",
+    "EventContract": "app/Domain/Events/EventContract.php — buildEnvelope/assertEnvelopeValid. Already includes correlation_id in the V1 envelope (verified). Do NOT touch the contract itself.",
+    "frontend_dedupe": "resources/js/services/eventContract.js lines 63-97 — current LRU 512 in-memory only. SEEN_CORRELATION_CAP, seenCorrelationIds Set, seenCorrelationOrder array, isDuplicateCorrelation(correlationId) function, __resetCorrelationDedupe() test hook. Used in the rawHandler (line 132).",
+    "test_setup_phpunit": "tests/TestCase.php with seedSpatieRoles + seedMinimalSettings; SQLite memory mode by default; closest stylistic neighbor for outbox tests is tests/Feature/EventContractTest.php and tests/Feature/Outbox/* (look for existing Persist*ToOutbox tests).",
+    "test_setup_vitest": "tests/js/*.spec.js with happy-dom; closest neighbor for correlation dedupe tests is tests/js/correlationDedupe.spec.js if it already exists — search first.",
+    "broadcasting_default_in_tests": "config('broadcasting.default') is set to 'log' in PHPUnit (CI/test path), 'pusher' in prod. The job already respects this via app(BroadcastManager::class)->connection() — DO NOT hard-code pusher."
+  },
+  "scope_files_to_modify": [
+    "app/Jobs/DispatchDomainEventsJob.php (wrap the dispatched_at guard + broadcast + dispatched_at=now mutation in a single DB::transaction with lockForUpdate; preserve all existing logic — tries, backoff, contract validation, last_error semantics, correlation context, BroadcastManager::default)",
+    "resources/js/services/eventContract.js (raise SEEN_CORRELATION_CAP from 512 to 2048; add sessionStorage persistence with 10-min TTL, gracefully degrade if storage unavailable; KEEP the same export surface — isDuplicateCorrelation, __resetCorrelationDedupe — without breaking callers)"
+  ],
+  "scope_files_to_create": [
+    "tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php",
+    "tests/js/correlationDedupePersistence.spec.js",
+    "tests/js/correlationDedupeCapacity.spec.js"
+  ],
+  "do_NOT_touch": [
+    "app/Domain/Events/EventContract.php (envelope schema is frozen V1)",
+    "app/Listeners/Persist*ToOutbox.php (5 listeners — producer side untouched in this lot)",
+    "app/Models/DomainEvent.php (no schema change required)",
+    "config/broadcasting.php",
+    "Anything in app/Services/* (this lot is infra-only, no business logic touched)"
+  ],
+  "backend_contract": {
+    "design_pattern": "CLAIM-THEN-BROADCAST-THEN-FINALIZE-OR-RELEASE. The broadcast MUST happen OUTSIDE any open DB transaction (project invariant: commit_before_dispatch). Strategy in 3 phases:",
+    "phase_1_claim_atomic": "Open a SHORT DB::transaction(function() use (&$claimed, &$domainEvent, &$skip) {...}). Inside, re-fetch the DomainEvent with ->lockForUpdate(); if not found OR dispatched_at !== null, set $skip = true and return (transaction commits a no-op). Otherwise, IMMEDIATELY mutate the row to claim it: forceFill(['dispatched_at' => now(), 'attempts' => $domainEvent->attempts + 1])->save(). The lock + claim mutation form one atomic block. Commit and release the lock.",
+    "phase_2_broadcast_outside_tx": "After the transaction commits (so commit_before_dispatch invariant holds), perform contract validation + broadcaster->broadcast(...). NO DB transaction is open during the network call.",
+    "phase_3a_success": "On successful broadcast, $domainEvent->forceFill(['last_error' => null])->save() (a tiny separate write to clear last_error if it was non-null from a previous failed attempt). The dispatched_at timestamp set in phase 1 stays as the claim/dispatch marker.",
+    "phase_3b_failure_release": "If contract validation OR broadcaster throws, RELEASE the claim by forceFill(['dispatched_at' => null, 'last_error' => $e->getMessage()])->save() so the queue retry (tries=5/backoff) can re-attempt cleanly. THEN rethrow the original exception. PayloadMismatchException semantics preserved: last_error is populated AND the exception is rethrown (so the job lands in failed_jobs after `tries` attempts).",
+    "concurrency_acceptance": "Given 2 worker processes competing on the same DomainEvent row, EXACTLY ONE broadcasts. The losing worker acquires the row lock AFTER the winner committed the claim, observes dispatched_at != null, sets $skip = true, and returns silently — no second broadcast.",
+    "logging": "On the no-op path (dispatched_at already set after lock), emit Log::info('[DispatchDomainEventsJob] Skipped (already dispatched by concurrent worker)', ['domain_event_id' => $id]). On the failure-release path, the existing Log::warning in failed() still fires after `tries` attempts.",
+    "invariant_compliance": "This pattern complies with commit_before_dispatch (broadcast happens only after the claim transaction is committed) AND defeats the worker race (claim is atomic via lockForUpdate). DO NOT wrap the broadcast call inside the transaction."
+  },
+  "frontend_contract": {
+    "cap": "SEEN_CORRELATION_CAP raised from 512 to 2048.",
+    "ttl_ms": "TTL = 10 * 60 * 1000 (10 minutes). Each entry stored as { id: string, ts: number }; on isDuplicateCorrelation lookup, expired entries are evicted lazily.",
+    "storage": "sessionStorage key = 'foodking_correlation_dedupe_v1'. Stored value = JSON array of { id, ts } entries. Read on module load; written on every mutation (insert / evict). Wrap reads/writes in try/catch — sessionStorage may throw under quota or privacy mode; on failure, fall back to in-memory LRU only and log once via console.warn.",
+    "api_compatibility": "isDuplicateCorrelation(correlationId) signature unchanged. __resetCorrelationDedupe() must also clear sessionStorage. Add new __forceLoadCorrelationDedupe() exported helper (test-only) that re-reads from sessionStorage — useful to assert persistence across simulated reloads in vitest.",
+    "regression_guard": "All existing callers (the rawHandler in onEvents, line 132) MUST keep working without code changes. Verify by running existing tests/js/eventContract*.spec.js or correlationDedupe*.spec.js if present."
+  },
+  "tests_required": [
+    "OutboxConcurrentWorkerDedupeTest::test_two_sequential_handle_calls_only_broadcast_once — Run job A which claims+broadcasts and sets dispatched_at, then run job B (same id) → B observes dispatched_at != null after lockForUpdate, returns silently. Mock BroadcastManager and assert broadcaster called EXACTLY ONCE total.",
+    "OutboxConcurrentWorkerDedupeTest::test_claim_is_committed_before_broadcast — Use a custom broadcaster spy that, INSIDE its broadcast() method, opens a fresh DB connection and asserts the row already has dispatched_at != null. Confirms the claim transaction is committed BEFORE the network call (commit_before_dispatch invariant).",
+    "OutboxConcurrentWorkerDedupeTest::test_broadcast_failure_releases_claim_for_retry — Mock broadcaster to throw RuntimeException; call handle(); assert exception rethrown AND dispatched_at is NULL again AND last_error contains the message — a subsequent handle() call must succeed.",
+    "OutboxConcurrentWorkerDedupeTest::test_payload_contract_violation_writes_last_error_and_releases_claim — Use a DomainEvent with malformed payload; assert PayloadMismatchException rethrown, last_error populated, AND dispatched_at NULL (so retries can run).",
+    "OutboxConcurrentWorkerDedupeTest::test_unrelated_domain_events_do_not_block_each_other — Persist 2 DomainEvent rows with different ids; handle both sequentially; both broadcast; assert no false skip.",
+    "correlationDedupePersistence.spec.js::it persists across simulated reload — Insert 3 ids, call __forceLoadCorrelationDedupe() (which reads from sessionStorage), then assert isDuplicateCorrelation returns true for each.",
+    "correlationDedupePersistence.spec.js::it gracefully degrades when sessionStorage throws — Stub sessionStorage.setItem to throw; assert no crash, isDuplicateCorrelation still works in-memory.",
+    "correlationDedupePersistence.spec.js::it expires entries older than TTL — Stub Date.now to inject controlled timestamps; assert expired entries are evicted.",
+    "correlationDedupeCapacity.spec.js::it never exceeds 2048 entries — Insert 2500 distinct ids; assert internal map size <= 2048; assert oldest evicted (FIFO)."
+  ],
+  "non_negotiable_constraints": [
+    "Backend: NEVER broadcast inside an open DB transaction (commit_before_dispatch invariant). The CLAIM transaction MUST be committed before broadcaster->broadcast() runs.",
+    "Backend: NEVER serialize/deserialize the DomainEvent in a way that bypasses the lock (use Eloquent DomainEvent::query()->lockForUpdate()->find($this->domainEventId) INSIDE the claim transaction).",
+    "Backend: NEVER hard-code 'pusher' connection — keep app(BroadcastManager::class)->connection() to remain test-friendly.",
+    "Backend: PayloadMismatchException semantics (last_error written, rethrown) MUST be preserved bit-for-bit, AND the claim MUST be released (dispatched_at=null) on failure so retries work.",
+    "Backend: attempts counter MUST increment exactly once per handle() invocation, regardless of broadcast success/failure (so tries=5 is respected).",
+    "Frontend: sessionStorage failure MUST NOT crash isDuplicateCorrelation — degrade gracefully with one console.warn at first failure.",
+    "Frontend: Default export surface (isDuplicateCorrelation, __resetCorrelationDedupe) UNCHANGED. New __forceLoadCorrelationDedupe is test-only (under __ prefix).",
+    "Frontend: TTL eviction MUST be lazy (only evicted on lookup) to keep the hot path O(1) — no setInterval, no timers.",
+    "All tests MUST run under the existing PHPUnit / Vitest configurations without new setup."
+  ],
+  "acceptance_criteria_measurable": [
+    "Two simultaneous handle() calls on the same DomainEvent row → broadcaster invoked exactly 1×.",
+    "Two simultaneous handle() calls on DIFFERENT rows → both broadcast, no spurious lock contention.",
+    "Broadcaster throwing → transaction rolls back, dispatched_at NULL, exception rethrown for queue retry.",
+    "PayloadMismatchException flow: last_error column is populated and exception is rethrown.",
+    "Frontend dedupe survives a simulated tab reload (re-init module from sessionStorage).",
+    "Frontend dedupe never exceeds 2048 entries.",
+    "Frontend dedupe entries older than 10 min are evicted on next lookup.",
+    "Frontend gracefully degrades to in-memory only when sessionStorage throws.",
+    "scripts/check-invariants.sh remains 6/6.",
+    "All existing tests/js/* and tests/Feature/Outbox/* tests still pass (no regression)."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. code_blocks contain FULL file bodies for new test files (op='create') and surgical patch excerpts for modified files (op='replace'). Orchestrator (Claude Opus) will apply patches manually after sanity review.",
+  "self_check_before_returning": [
+    "Did you keep app/Domain/Events/EventContract.php untouched?",
+    "Did you keep PayloadMismatchException semantics intact (last_error written, rethrown)?",
+    "Is the broadcast call OUTSIDE any open DB transaction? (commit_before_dispatch invariant — verify visually)",
+    "Does the claim transaction atomically (a) lockForUpdate (b) check dispatched_at (c) set dispatched_at=now+attempts++ in ONE block?",
+    "On broadcast failure, is the claim properly released (dispatched_at=null) AND the exception rethrown?",
+    "Does the JS module read sessionStorage on module load (no lazy load that would miss reload scenarios)?",
+    "Does isDuplicateCorrelation degrade gracefully if sessionStorage.setItem throws (try/catch + one console.warn)?",
+    "Did you avoid hard-coding the Pusher connection?",
+    "Did you write at LEAST 5 backend tests + 4 frontend tests covering the new pattern?"
+  ]
+}

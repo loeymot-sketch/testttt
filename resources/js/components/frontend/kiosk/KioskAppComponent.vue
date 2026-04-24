@@ -520,6 +520,25 @@ export default {
         return Promise.resolve({ ignored: true, reason: 'branch_mismatch' });
       }
 
+      // [F-04bis] Distinguish global catalogue update (is_available null/undefined,
+      // type = 'status' | 'price' | 'full', branch_id null) from a real branch-scoped
+      // availability flip (is_available === true|false, type = 'branch_availability').
+      // Global updates MUST NOT prune the kiosk cart — they only require a menu refresh
+      // if the change was structural (variations / categories changed).
+      const hasAvailabilitySignal =
+        payload.is_available === true || payload.is_available === false ||
+        payload.is_available === 1 || payload.is_available === 0;
+
+      if (!hasAvailabilitySignal) {
+        if (payload.type === 'full') {
+          this.$store.dispatch('kioskMenu/fetchMenu', {
+            force: true,
+            branchId: activeBranchId ?? eventBranchId ?? subscribedBranchId,
+          }).catch(() => {});
+        }
+        return Promise.resolve({ ignored: true, reason: 'global_no_availability_signal' });
+      }
+
       this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
       this.$store.dispatch('kioskCart/pruneUnavailableLines');
 

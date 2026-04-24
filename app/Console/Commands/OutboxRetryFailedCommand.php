@@ -30,7 +30,8 @@ class OutboxRetryFailedCommand extends Command
                 'dispatched_at' => null,
             ])->save();
 
-            DispatchDomainEventsJob::dispatch($event->id)->onQueue('high');
+            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+            DispatchDomainEventsJob::dispatch($event->id);
         }
 
         $this->info('Reset and re-queued ' . $events->count() . ' failed domain events.');

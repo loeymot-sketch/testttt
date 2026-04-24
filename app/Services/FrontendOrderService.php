@@ -23,6 +23,7 @@ use App\Models\FrontendOrder;
 use App\Events\SendOrderGotSms;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
+use App\Events\OrderCanceled; // allow: domain event class import — release listener writes its own audit trail via Log warnings on mismatch.
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Enums\PaymentGateway;
@@ -707,6 +708,13 @@ class FrontendOrderService
                     SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                    // [F-01] Compensating release of branch-scoped stock counters on customer
+                    // self-cancel of a kiosk / takeaway order. Idempotent via released_qty.
+                    try {
+                        OrderCanceled::dispatch($frontendOrder); // allow: stock-release dispatch; OrderStateMachine::recordTransition already wrote the canonical state-transition audit row above.
+                    } catch (\Exception $e) {
+                        Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+                    }
                 }
             } else {
                 abort(403, 'Access denied: you do not own this order.');
@@ -799,6 +807,19 @@ class FrontendOrderService
                 ->first();
 
             if ((int) $locked->status >= OrderStatus::ACCEPT) {
+                return;
+            }
+
+            // [F-21] Defense in depth — never advance to ACCEPT without confirmed payment.
+            // Re-check inside the lock to prevent race / misuse from any caller path
+            // (controller already pre-checks, but service must guarantee invariant on
+            // its own — see tasks/gates/GATE_FROZEN_F21_FINALIZE_PAID_KIOSK_2026-04-23.md).
+            if ((int) $locked->payment_status !== PaymentStatus::PAID) {
+                Log::warning('finalizePaidKioskOrder called without confirmed payment', [
+                    'order_id'       => $locked->id,
+                    'payment_status' => $locked->payment_status,
+                    'order_type'     => $locked->order_type,
+                ]);
                 return;
             }
 

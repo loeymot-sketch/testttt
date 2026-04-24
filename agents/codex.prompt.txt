@@ -27,10 +27,10 @@ If the requirement is **ambiguous** or would **violate** an above constraint: re
 - Output must be **machine-usable** for a developer to apply (patches, steps, not prose-only hand-waving).
 
 ## Response format
-Return **strictly one JSON object** with keys: `files_to_modify` (string array), `implementation_steps` (string array), `code_blocks` (array of { `path`, `op` in {"replace","create"}, `excerpt` }), `risks`, `notes`, and `execution_trace` with `delegation: "codex-terminal"` and `invariants_considered` (string array, subset of pricing_ssot, order_status, branch_id, commit_before_dispatch). **No** markdown, **no** commentary outside the JSON. Arrays may be empty; strings must be valid JSON when embedded.
+Return **strictly one JSON object** with keys: `files_to_modify` (string array), `implementation_steps` (string array), `code_blocks` (array of { `path`, `op` in {"replace","create"}, `excerpt` }), `risks`, `notes`, and `execution_trace` with `delegation: "codex-extension"` and `invariants_considered` (string array, subset of pricing_ssot, order_status, branch_id, commit_before_dispatch). **No** markdown, **no** commentary outside the JSON. Arrays may be empty; strings must be valid JSON when embedded.
 
 - `excerpt` should be **full replacement file body** for `op: "create"`, or a **clear patch-style description** the developer can turn into a diff; keep excerpts bounded to what the task authorises.
-- `execution_trace.delegation` must be literally **`codex-terminal`**.
+- `execution_trace.delegation` must be literally **`codex-extension`** (Codex CLI + compte ChatGPT Pro).
 
 ## Prior context (Graphiti, plan, EXECUTE brief — may be empty)
 The following block is **optional** and injected from files under `missions/<TASK_ID>/` by the project runner. Treat it as authoritative for cross-session memory / plan except where it conflicts with a Hard constraint; if it conflicts, prefer the Hard constraints and add **ESCALATION** to `risks`.

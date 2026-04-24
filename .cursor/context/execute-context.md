@@ -1,4 +1,4 @@
-# Execute Phase – Load Instructions (GPT-5.4 | Composer)
+# Execute Phase – Load Instructions (GPT-5.5 via `codex-extension` | Composer)
 
 ## Mandatory reads — in this order only
 
@@ -49,3 +49,5 @@ Check EXECUTE row in Phase Completion
 
 Developer invokes FoodKing-Validator (Composer).
 Composer reads `ACTIVE_CYCLE.md`, loads `PLAN_FILE`, then reads `reports/post_execute_latest.log` as validation input.
+
+`VALIDATE` (tests/CI verts) ne **clôture** **pas** le cycle : [run-cycle.md](mdc:.cursor/commands/run-cycle.md) Step 5 exige `AUDIT_VERDICT: PASS` (Claude) avant `CLOSED`. Sur `REWORK`, re-boucle orchestration + EXECUTE avec plafond 5.

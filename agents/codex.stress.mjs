@@ -9,30 +9,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadProjectEnvForCodex, resolveRepoRootFromScriptDir } from "./codex-load-env.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..");
-
-function loadFileEnv(f) {
-  if (!fs.existsSync(f)) return;
-  for (const line of fs.readFileSync(f, "utf8").split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#") || !t.includes("=")) continue;
-    const i = t.indexOf("=");
-    const k = t.slice(0, i).trim();
-    let v = t.slice(i + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
-      v = v.slice(1, -1);
-    if (k && process.env[k] === undefined) process.env[k] = v;
-  }
-}
-loadFileEnv(path.join(root, ".env"));
-loadFileEnv(path.join(root, ".env.codex"));
+const root = resolveRepoRootFromScriptDir(__dirname);
+loadProjectEnvForCodex(root);
 
 const API_BASE = (process.env.CODEX_API_BASE || "").replace(/\/$/, "");
-const API_KEY = process.env.CODEX_API_KEY || "";
+const API_KEY = (process.env.CODEX_API_KEY || process.env.OPENAI_API_KEY || "").trim();
 if (!API_BASE || !API_KEY) {
-  console.error("[stress] manque CODEX_API_BASE/CODEX_API_KEY");
+  console.error("[stress] manque CODEX_API_BASE + (CODEX_API_KEY ou OPENAI_API_KEY)");
   process.exit(2);
 }
 
@@ -110,7 +96,7 @@ async function runModel(model) {
 }
 
 const models = process.argv.slice(2);
-const list = models.length ? models : ["gpt-5.4", "gpt-5.4-pro"];
+const list = models.length ? models : ["gpt-5.4", "gpt-5.5-high", "gpt-5.5-pro", "gpt-5.5"];
 const summary = [];
 for (const m of list) summary.push(await runModel(m));
 

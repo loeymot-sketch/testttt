@@ -238,6 +238,7 @@
 <script>
 import axios from "axios";
 import print from "vue3-print-nb";
+import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
@@ -420,6 +421,16 @@ export default {
                             ?? (Number(this.localPrintCount ?? 0) + 1)
                         );
                     } catch (apiError) {
+                        const status = apiError?.response?.status;
+                        if (status === 403) {
+                            alertService.warning(this.$t('pos.receipt_print_forbidden'));
+                        } else if (status === 404) {
+                            alertService.warning(this.$t('pos.receipt_print_not_found'));
+                        } else if (status === 409) {
+                            alertService.warning(this.$t('pos.receipt_print_conflict'));
+                        } else {
+                            alertService.warning(this.$t('pos.receipt_print_server_error'));
+                        }
                         // Optimistic local bump so DUPLICATA appears
                         // even if the server temporarily refuses.
                         this.localPrintCount = Number(this.localPrintCount ?? 0) + 1;

@@ -321,6 +321,9 @@ export default {
     showToast: { default: () => () => {} },
   },
 
+  // [MEGA 2.E / F-09] Hard cap on loyalty check latency (QR/keyboard path uses same API).
+  LOYALTY_HTTP_TIMEOUT_MS: 25000,
+
   data() {
     return {
       step: 'input',
@@ -423,8 +426,9 @@ export default {
     ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.get('frontend/loyalty/config');
+        const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
         this.minRedeemPoints = cfg.min_redeem_points || 100;
         if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
@@ -483,8 +487,9 @@ export default {
       if (!this.code.trim()) return;
       this.loading = true;
       this.error = null;
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() });
+        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() }, { timeout: ms });
         const data = res.data?.data || res.data || {};
         // Normalize field names: API returns `points`, UI uses `loyalty_point`
         this.customer = {
@@ -494,8 +499,12 @@ export default {
         this.discountValue = parseFloat(data.discount_value || 0);
         this.step = 'balance';
       } catch (err) {
-        const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-        this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          this.error = this.$t('kiosk.loyalty_screen.request_timeout');
+        } else {
+          const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
+          this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        }
       } finally {
         this.loading = false;
       }

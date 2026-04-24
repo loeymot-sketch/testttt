@@ -1,0 +1,237 @@
+{
+  "executive_summary": "The plan is directionally useful but too confident on several under-proven assumptions, especially around event ordering, reconnect recovery, and payment/order state integrity. One major risk is under-rated: F-21 should be treated as P0 because it can promote unpaid kiosk orders into accepted workflow, which is business-corrupting, not just a significant risk. Another major weakness is that most tests are acceptance/sentinel style and do not meaningfully exercise concurrency, duplicate delivery, reconnect storms, or after-commit ordering failures.",
+  "agreements": [
+    "Keeping Phase 0 as a blocking read-before-write step for F-04/F-07/F-13 is correct; those findings are not safe to fix blind.",
+    "1.B using a compensation listener instead of modifying OrderService directly is the right containment choice given frozen zones and lifecycle sensitivity.",
+    "1.D insisting on after-commit dispatch for floorplan transfer is correct; dispatch-inside-transaction would create visible ghost states.",
+    "1.E adding explicit user feedback for expired Echo auth is necessary; silent websocket auth death is operationally toxic.",
+    "2.H adding backend locking on transfer is correctly identified as server-side, not something UI polling can solve.",
+    "The plan correctly distinguishes UX-only silent prune issues from state-integrity issues."
+  ],
+  "disagreements": [
+    {
+      "target": "F-21 / phase 2.F",
+      "objection": "This is under-rated. Promoting a kiosk order to ACCEPT without confirmed payment is not a minor backend assertion gap; it can create unpaid production work, kitchen load, false revenue expectations, and reconciliation corruption.",
+      "suggested_change": "Reclassify F-21 to P0 and pull it ahead of most Phase 2 work, ideally immediately after 1.B/1.D. Acceptance should require a negative-path test proving unpaid orders cannot advance."
+    },
+    {
+      "target": "1.C",
+      "objection": "A 30 s polling fallback is too weak for a production KDS. The stated acceptance 'disconnected 60 s, refreshes twice' does not prove missed events are tolerably recovered during active service. It also ignores reconnect race windows where events arrive both via WS and poll.",
+      "suggested_change": "Tighten to adaptive polling: 5-10 s while disconnected during open service hours, back off when idle, and add dedupe/version checks so poll refresh cannot regress newer local state."
+    },
+    {
+      "target": "1.A",
+      "objection": "Acceptance 'visible on all branches within one second' is not credible if implementation fans out one event per active branch through outbox/broadcast. It also says nothing about duplicate emission, ordering, or branch explosion cost.",
+      "suggested_change": "Replace with measurable backend criteria: for N active branches, outbox contains exactly N branch-scoped events within T seconds, no duplicates on retry, and frontend handlers are idempotent under duplicate delivery."
+    },
+    {
+      "target": "1.D",
+      "objection": "Using OrderStatusChanged with same status as a fake refresh event is semantically dirty and risks unintended listeners doing business logic on status events.",
+      "suggested_change": "Prefer a dedicated OrderTableChanged event. If same-status reuse is unavoidable, audit all subscribers first and document why they are side-effect free."
+    },
+    {
+      "target": "F-06 / phase 2.J",
+      "objection": "The proposed fix only enriches OrderCreated payload. That may reduce one observed race but does not solve ordering issues under websocket reconnect, duplicate deliveries, or late ItemAvailabilityChanged replay.",
+      "suggested_change": "Define ordering semantics explicitly: versioned availability state or monotonic timestamps/correlation IDs on both events, plus frontend dedupe/last-write rules."
+    },
+    {
+      "target": "P0 hierarchy overall",
+      "objection": "The plan demotes F-05 out of P0 entirely while leaving F-21 in P1. Even if F-05 is truly not idempotency, F-21 is clearly more dangerous than several current P0 items because it affects money-state and kitchen execution.",
+      "suggested_change": "Promote F-21 to P0, keep F-05 demoted if evidence holds, and consider moving F-12 earlier than 1.D because a dead realtime channel degrades every other sync fix."
+    },
+    {
+      "target": "Phase 0 exit criterion",
+      "objection": "It says gates tranchées 'at least binary OK/différé', which is too soft. Binary defer is not enough when downstream tasks depend on product behavior choices.",
+      "suggested_change": "Require each gate to be resolved to one implementation path, owner, and accepted UX/business behavior before dependent work starts."
+    },
+    {
+      "target": "Global test criteria",
+      "objection": "100% green on added feature files and vitest says nothing about regression risk, race safety, or production realism.",
+      "suggested_change": "Add explicit non-happy-path criteria: duplicate event replay, websocket reconnect, token expiry mid-session, concurrent transfer attempts, and rollback/after-commit tests."
+    }
+  ],
+  "missing_findings": [
+    {
+      "id": "NEW-01",
+      "title": "Replay/duplicate delivery handling is not addressed as a first-class risk",
+      "why_missed": "The audit mentions LRU correlation cap in F-23, but the plan treats it as P2 technical debt rather than part of the core correctness model. Once 1.A/1.C/1.D/1.E add more event traffic and polling, duplicate processing becomes much more likely.",
+      "severity": "P1",
+      "suggested_fix": "Define idempotent event handling across POS/KDS/Kiosk using correlation IDs plus monotonic entity versions or updated_at checks; add duplicate/replay tests before expanding broadcast fan-out."
+    },
+    {
+      "id": "NEW-02",
+      "title": "Reconnect storm and stale snapshot overwrite risk",
+      "why_missed": "The plan adds polling fallback and auth refresh, but nowhere defines how stale poll responses, delayed websocket events, and local optimistic state reconcile after reconnect.",
+      "severity": "P1",
+      "suggested_fix": "Introduce entity versioning or last_update timestamps in payloads and require frontend stores to reject stale updates; add chaos tests with delayed poll response overtaking fresher WS event."
+    },
+    {
+      "id": "NEW-03",
+      "title": "Outbox fan-out scalability and retry amplification",
+      "why_missed": "1.A may convert one global event into N branch events per active branch. The plan has no throughput ceiling, retry policy, dedupe strategy, or operational guardrail.",
+      "severity": "P1",
+      "suggested_fix": "Benchmark outbox fan-out at realistic branch counts, enforce unique event keys per branch/item/change cause, and add retry backoff/poison handling observability."
+    },
+    {
+      "id": "NEW-04",
+      "title": "Observability/SLO gap for sync health",
+      "why_missed": "The plan relies on acceptance language like 'visible under 2 s' or 'within the second' but defines no telemetry to know this in production.",
+      "severity": "P1",
+      "suggested_fix": "Add metrics/logging for event dispatch lag, websocket auth failures, poll fallback activation, transfer conflict rate, and stock release latency with alert thresholds."
+    },
+    {
+      "id": "NEW-05",
+      "title": "Cancellation/refund compensation may over-release stock on partial refunds or repeated events",
+      "why_missed": "F-01 focuses on missing release path, but the plan assumes a full mirror decrement/release model. It does not mention partial refunds, item-level cancellations, or idempotency of release listeners.",
+      "severity": "P0",
+      "suggested_fix": "Model release at line-item/quantity granularity, make release listener idempotent by order-state transition and item quantities, and test duplicate OrderCanceled/RefundCreated delivery."
+    }
+  ],
+  "side_effects_per_p0_fix": [
+    {
+      "plan_item": "1.A",
+      "risk": "Branch fan-out can create event storms, duplicate outbox rows, and uneven lag across branches. If active branches scale, 'global item unavailable' becomes an O(N branches) hot path.",
+      "mitigation": "Use deterministic dedupe keys per item-branch-cause-version, benchmark fan-out, and add a cap/monitor on outbox queue growth."
+    },
+    {
+      "plan_item": "1.B",
+      "risk": "releaseForOrder may over-credit availability on partial refunds, repeated cancellation events, or orders already never decremented due to prior failure. It can silently corrupt inventory state in the opposite direction.",
+      "mitigation": "Make release idempotent against persisted order transition markers and released quantities; support partial/item-level release explicitly; add duplicate-event tests."
+    },
+    {
+      "plan_item": "1.C",
+      "risk": "Polling plus websocket can cause duplicate refreshes, thundering herd after a network flap, and stale poll responses overwriting fresher WS-driven state.",
+      "mitigation": "Use jittered polling, cancel in-flight polls on reconnect, gate store updates by freshness/version, and debounce per entity not just globally."
+    },
+    {
+      "plan_item": "1.D",
+      "risk": "Reusing OrderStatusChanged as a fake same-status refresh can trigger unrelated subscribers, duplicate receipts/notifications, or analytics contamination. A custom event introduces backward-compat break if older clients ignore it.",
+      "mitigation": "Prefer dedicated OrderTableChanged; if custom, maintain temporary dual-dispatch compatibility or ensure clients degrade safely; audit all existing listeners before shipping."
+    },
+    {
+      "plan_item": "1.E",
+      "risk": "Proactive auth refresh every ~25 min can create hidden refresh loops, race with logout/session revocation, or mask auth problems while keeping a zombie UI alive. Banner-only guidance may also frustrate users if refresh would have sufficed.",
+      "mitigation": "Define a single refresh strategy with bounded retries, explicit session-invalid state, and server/client contract for token expiry. Test logout and expired refresh-token paths."
+    },
+    {
+      "plan_item": "1.F",
+      "risk": "Documenting an intentional global broadcast topology without fixing subscriber reachability can become a paper-over defect: teams may close the issue while clients still miss events.",
+      "mitigation": "Gate documentation closure on an executable integration test proving actual end-to-end reception by subscribed clients, not just architectural intent."
+    }
+  ],
+  "test_coverage_gaps": [
+    "No duplicate delivery tests for ItemAvailabilityChanged, OrderStatusChanged, or future OrderTableChanged.",
+    "No after-commit failure test proving 1.D does not dispatch when transaction rolls back.",
+    "No concurrent refund/cancel tests for 1.B, especially duplicate event delivery or partial refunds.",
+    "No stale poll vs fresh websocket race tests for 1.C.",
+    "No websocket reconnect storm test: disconnect, queue local actions, reconnect, receive burst, verify no regressions.",
+    "No multi-tab/multi-device transfer conflict test combining 2.G and 2.H.",
+    "No branch explosion/performance test for 1.A fan-out.",
+    "No auth-expiry boundary test where subscription_error arrives while polling fallback is active.",
+    "No negative-path test for F-21 proving unpaid kiosk orders cannot enter ACCEPT/PREPARING workflow.",
+    "No tests for old clients or mixed-version clients if eventContract gains new event types.",
+    "Sentinel shell checks smell like existence tests, not behavior tests; they will not catch semantic regressions.",
+    "Acceptance tests are mostly happy-path and time-based; none validate monotonicity or eventual consistency bounds under packet loss or retry."
+  ],
+  "routing_challenges": [
+    {
+      "plan_item": "1.E",
+      "current_routing": "foodking-complex-implementer",
+      "suggested_routing": "complex implementer plus explicit product/security review",
+      "reason": "This is not just coding complexity; it changes auth/session UX and could conflict with backend token lifecycle policy."
+    },
+    {
+      "plan_item": "1.C",
+      "current_routing": "foodking-routine-implementer",
+      "suggested_routing": "complex implementer",
+      "reason": "Looks UI-bounded but actually touches recovery semantics, duplicate refresh behavior, and race handling with existing websocket updates."
+    },
+    {
+      "plan_item": "2.J",
+      "current_routing": "mix selon item",
+      "suggested_routing": "complex implementer",
+      "reason": "Changing OrderCreated payload and frontend one-pass handling affects event contracts and cross-surface semantics; easy to introduce hidden compatibility issues."
+    },
+    {
+      "plan_item": "2.G",
+      "current_routing": "mix selon item",
+      "suggested_routing": "complex implementer",
+      "reason": "Choosing Echo vs adaptive polling for floorplan is architecture-affecting and intersects conflict resolution, not just UI messaging."
+    },
+    {
+      "plan_item": "1.A frontend test JS",
+      "current_routing": "foodking-routine-implementer",
+      "suggested_routing": "routine implementer only if backend event payload contract is frozen first",
+      "reason": "Frontend tests written before contract closure will lock in potentially wrong semantics."
+    }
+  ],
+  "reclassification_verdict": {
+    "F-05": "nuance",
+    "F-07": "nuance",
+    "explanation": "F-05: I tentatively agree the original audit likely misidentified the localStorage counter as the true idempotency key, but the plan over-celebrates this. A Date.now()+Math.random()+branchId client-generated key may be 'good enough' statistically, yet without seeing backend uniqueness scope and retry behavior, I would not call the entire risk cosmetic. Third reading: not the claimed collision vector, but still a resilience/traceability concern, so demotion from P0 is fine while keeping a note that timeout/retry coupling in F-25 remains dangerous. F-07: I agree it is not proven as written if pruning really hinges only on is_available=false regardless of type. But this is only a partial exoneration: if payload shape or channel routing differs by type, branch_availability can still fail operationally even with type-agnostic handler code. So 'false positive on formulation, real integration risk remains' is the correct stance."
+  },
+  "gate_reformulations": [
+    {
+      "gate": "G-1",
+      "reformulated": "When an order is canceled/refunded and stock becomes available again, should availability be restored automatically for the exact canceled quantity immediately, or require a manager action? Choose one behavior and identify whether it applies to full cancel only or also partial/item-level refund."
+    },
+    {
+      "gate": "G-2",
+      "reformulated": "On table transfer, must KDS show the new table by updating the existing card in place only, or must it also emit a reprint/secondary operator-visible signal? Pick one expected operator behavior so the event contract is unambiguous."
+    },
+    {
+      "gate": "G-3",
+      "reformulated": "Is branchId=null in ItemAvailabilityChanged an intentional global-broadcast design with proven client reachability, yes or no? If yes, provide the actual subscribed channel and one passing end-to-end test; if no, implement per-branch fan-out."
+    },
+    {
+      "gate": "G-4",
+      "reformulated": "If allergens are modified after order creation, must KDS surface a warning before preparation, yes or no? If yes, choose the exact signal: blocking warning, non-blocking badge, or accepted silent risk."
+    },
+    {
+      "gate": "G-5",
+      "reformulated": "For grouped KDS lines containing different allergen snapshots, must the UI split them into separate rows or keep grouping with an explicit allergen-difference badge? Choose one display rule and accept its board-density tradeoff."
+    }
+  ],
+  "parallelization_opportunities": [
+    "1.B + 1.D can run in parallel if different engineers own order-cancel compensation vs table-transfer events; they touch different services, but coordinate event contract review.",
+    "1.C + 1.E can run in parallel on frontend/realtime track, but only if a shared connection-state contract is defined first to avoid conflicting fallback/auth behaviors.",
+    "1.A investigation/backend and 1.B backend can run in parallel after INV-01/INV-02 complete; there is little code overlap beyond event infrastructure.",
+    "2.A + 2.B + 2.D + 2.E are mostly UI/store behavior and can run together once event payloads are frozen.",
+    "2.G + 2.H should be designed together but implemented in parallel: one engineer on backend locking/conflicts, another on frontend subscription/conflict UX.",
+    "2.C and 2.D can run in parallel because backend parked recall availability pruning and UI warning surfacing are separable, but merge only after API response shape is settled."
+  ],
+  "final_recommended_order": [
+    "INV-01",
+    "INV-02",
+    "INV-03",
+    "INV-05",
+    "1.A",
+    "1.B",
+    "2.F",
+    "1.E",
+    "1.C",
+    "1.D",
+    "2.H",
+    "2.G",
+    "2.J",
+    "2.B",
+    "2.A",
+    "2.C",
+    "2.D",
+    "2.E",
+    "INV-04",
+    "2.I"
+  ],
+  "red_flags": [
+    "The source material is too thin to validate whether OrderCanceled and RefundCreated are emitted exactly once, item-granular, or after commit; that uncertainty directly affects correctness of 1.B.",
+    "There is no explicit rollback strategy if 1.A fan-out causes outbox pressure or broadcast lag in production.",
+    "The plan claims 'no architectural gap' from the original audit, but reconnect ordering and duplicate delivery semantics are architectural enough that this confidence is unjustified.",
+    "Gates are framed as product choices, but some are actually correctness prerequisites; treating them as deferable risks coding against moving targets.",
+    "No compatibility policy is stated for currently deployed POS/KDS clients if new event types or payload fields are introduced."
+  ],
+  "confidence": "medium",
+  "execution_trace": {
+    "delegation": "codex-terminal",
+    "role": "second-opinion-reviewer"
+  }
+}

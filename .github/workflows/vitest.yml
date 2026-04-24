@@ -23,5 +23,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # POS v4 W0+ ST-1 — invariant guards (no magic int OrderStatus, no client-side pricing).
+      # Both must pass before any test job; failure here blocks the merge.
+      - name: POS v4 invariant guards (orderStatus + pricing SSOT)
+        run: |
+          npm run pos:lint:status
+          npm run pos:lint:pricing
+
       - name: Run Vitest
         run: npx vitest run --reporter=verbose

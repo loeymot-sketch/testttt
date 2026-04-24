@@ -1,0 +1,87 @@
+{
+  "task_id": "T-NEW03-QUEUE-SCALABILITY",
+  "lot": "NEW-03 (Phase 1bis, Vague 3) — Queue topology + retry SLO. Route DispatchDomainEventsJob on `high`, SendFcmNotificationJob on `notifications`. Tighten retry policy (tries=5, backoff=[1,5,15,60,300]). Add structured failed() log + tests proving routing + retry curve. Document the worker topology so ops can spin --queue=high,notifications,default in Forge/Octane.",
+  "finding_origin": "NEW-03 from MEGA_PLAN_SYNC_HARDENING_v3 Phase 1bis. Risk: in rush hour, slow SendOrderMail/Sms/Push or SendFcmNotificationJob saturate the default queue and starve DispatchDomainEventsJob → POS/KDS see stale data because the broadcast outbox lags 30+ seconds. Without a dedicated `high` priority queue AND a worker config that drains `high` before `default`, the SLO `outbox_dispatch_latency_p95 < 2s` cannot be held during peak.",
+  "context_already_in_repo": {
+    "DispatchDomainEventsJob": "app/Jobs/DispatchDomainEventsJob.php — already has `$this->onQueue('high')` in the constructor, `tries=5`, `backoff=[1,5,30,300]` (4 entries; Laravel reuses the last value for any further attempts beyond the array length). NEW-01 implemented the claim-then-broadcast-then-finalize-or-release pattern; we MUST NOT touch the handle() body, only the retry policy fields and the failed() hook.",
+    "SendFcmNotificationJob": "app/Jobs/SendFcmNotificationJob.php — `tries=3`, `backoff()` returns [10,30], `timeout=30`. NO onQueue() call → goes to 'default'. We will route to 'notifications' so it cannot starve `high`.",
+    "CleanupStalePendingKioskOrders": "app/Jobs/CleanupStalePendingKioskOrders.php — does NOT implement ShouldQueue (runs synchronously from scheduler). OUT OF SCOPE for routing.",
+    "queue_config": "config/queue.php — default driver is `env('QUEUE_CONNECTION', 'sync')`. Connections defined: sync, database, beanstalkd. PHPUnit uses `sync`. Production uses `database` (per docs/QUEUE_WORKER_SETUP.md). No `redis` block needed for this lot.",
+    "phpunit_setup": "tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php is the closest neighbor — uses RefreshDatabase + Bus::fake() patterns. Use Bus::fake() to assert dispatched onQueue() in unit tests without spinning a real worker.",
+    "existing_dispatch_sites": [
+      "app/Listeners/PersistOrderCreatedToOutbox.php:39 — already ->onQueue('high')",
+      "app/Listeners/PersistOrderStatusChangedToOutbox.php:38 — already ->onQueue('high')",
+      "app/Listeners/PersistOrderTableChangedToOutbox.php:64 — already ->onQueue('high')",
+      "app/Listeners/PersistItemAvailabilityChangedToOutbox.php:61 — already ->onQueue('high')",
+      "app/Console/Commands/OutboxRescueCommand.php:23 — already ->onQueue('high')",
+      "app/Console/Commands/OutboxRetryFailedCommand.php:33 — already ->onQueue('high')",
+      "app/Traits/HasDomainEvents.php:57 — already ->onQueue('high')",
+      "app/Listeners/SendFcmOnOrderCreated.php — calls SendFcmNotificationJob::dispatch(...) without onQueue (3 sites: lines ~38, ~54, ~69) → MUST chain ->onQueue('notifications') OR move the routing into the job constructor (preferred)",
+      "app/Listeners/SendFcmOnOrderStatusChange.php — calls SendFcmNotificationJob::dispatch(...) without onQueue (line ~51)"
+    ]
+  },
+  "scope_files_to_modify": [
+    "app/Jobs/DispatchDomainEventsJob.php — change $backoff from [1,5,30,300] to [1,5,15,60,300] (5 entries per MEGA_PLAN). Keep tries=5, keep onQueue('high'). Enhance failed() with a structured Log::error(...) including queue name + connection + attempt count + delay-since-creation, plus a Sentry breadcrumb if app(Sentry\\State\\Scope::class) is available (defensive class_exists check, no hard dep). Do NOT touch handle().",
+    "app/Jobs/SendFcmNotificationJob.php — add `$this->onQueue('notifications')` in the constructor (or set `$queue = 'notifications'` property). Keep tries=3, backoff=[10,30], timeout=30."
+  ],
+  "scope_files_to_create": [
+    "docs/operations/QUEUE_TOPOLOGY.md — Markdown doc: 3 queues (high, notifications, default), Supervisor command `php artisan queue:work --queue=high,notifications,default --tries=0 --sleep=1`, recommended numprocs (2 high + 2 notifications + 1 default for SMB; 4+4+2 for high-volume), monitoring snippets (queue:monitor, queue:failed), troubleshooting (queue:retry, queue:flush failed). Reference docs/QUEUE_WORKER_SETUP.md as the existing primer; this new file is the topology SSOT.",
+    "tests/Feature/Queue/DispatchDomainEventsJobRetryTest.php — PHPUnit feature test with Bus::fake(). Test cases: (a) test_dispatch_routes_to_high_queue (assert Bus::dispatched DispatchDomainEventsJob with onQueue=='high'), (b) test_backoff_curve_is_one_five_fifteen_sixty_three_hundred (instantiate the job and read $backoff array directly), (c) test_tries_is_five (assert $tries === 5), (d) test_failed_callback_logs_structured_payload (Log::spy + dispatch failure simulation; assert Log::error received the structured array with keys queue, connection, attempts, error).",
+    "tests/Feature/Queue/SendFcmNotificationJobRoutingTest.php — PHPUnit feature test with Bus::fake(). Test cases: (a) test_routes_to_notifications_queue (instantiate the job and read $queue or call getQueue() — note Laravel sets the queue at dispatch time via onQueue(), so we use Bus::fake + assert the queue), (b) test_default_tries_and_backoff (read $tries and backoff() return)."
+  ],
+  "do_NOT_touch": [
+    "DispatchDomainEventsJob::handle() (claim-then-broadcast-then-finalize-or-release pattern from NEW-01 — frozen)",
+    "SendFcmNotificationJob::handle() (FCM send pattern is stable)",
+    "CleanupStalePendingKioskOrders (sync execution from scheduler — explicitly out of scope)",
+    "Any listener that already calls ->onQueue('high') (already correct)",
+    "config/queue.php (no driver/topology change in PHP — only the operations doc captures the worker --queue=... order)",
+    "scripts/check-invariants.sh, AGENTS.md, frozen zones in OrderService etc."
+  ],
+  "backend_contract": {
+    "queue_routing_principle": "Each Job class encodes its own queue assignment in the constructor (or as a $queue property) so dispatch sites do NOT need to chain ->onQueue(...). Listeners and commands MAY still chain it explicitly for symmetry/visibility. The single source of truth is the job class.",
+    "retry_policy_dispatch_domain_events": "tries=5 (terminal failure after 5 attempts → failed_jobs row + failed() callback). $backoff=[1,5,15,60,300] (1s/5s/15s/60s/5min — covers a 6-min Pusher outage with 5 attempts before final).",
+    "retry_policy_send_fcm": "Unchanged: tries=3, backoff=[10,30]. FCM has its own server-side retry; we don't want to amplify a 503 storm.",
+    "failed_callback_structured_log": "Log::error('[DispatchDomainEventsJob] Final failure dispatching domain event', ['domain_event_id'=>..., 'event_type'=>..., 'queue'=>$this->queue ?? 'high', 'connection'=>$this->connection ?? config('queue.default'), 'attempts'=>$this->attempts(), 'error'=>$exception->getMessage(), 'error_class'=>get_class($exception)]). The Sentry breadcrumb is OPTIONAL and MUST be guarded by class_exists('Sentry\\State\\Scope') AND function_exists('Sentry\\addBreadcrumb') so the code does not break in environments without the SDK.",
+    "log_level_failed": "Use Log::error in failed() (it's a terminal failure after exhausted retries). The previous Log::warning is being upgraded to error precisely because it deserves a pager-level signal.",
+    "preserve_contract_violation_prefix": "The existing logic that prefixes last_error with 'contract_violation: ' for PayloadMismatchException MUST remain intact (NEW-01 audit G1 fix). Only the Log::warning → Log::error and the structured payload change."
+  },
+  "tests_required": [
+    "DispatchDomainEventsJobRetryTest::test_dispatch_routes_to_high_queue — Bus::fake(); call any code path that dispatches the job (e.g. trigger an OrderCreated event flow OR directly DispatchDomainEventsJob::dispatch(123)); assert Bus::assertDispatched(DispatchDomainEventsJob::class, fn($job) => $job->queue === 'high').",
+    "DispatchDomainEventsJobRetryTest::test_backoff_curve_is_one_five_fifteen_sixty_three_hundred — $job = new DispatchDomainEventsJob(1); expect($job->backoff)->toEqual([1, 5, 15, 60, 300]).",
+    "DispatchDomainEventsJobRetryTest::test_tries_is_five — expect($job->tries)->toBe(5).",
+    "DispatchDomainEventsJobRetryTest::test_failed_callback_logs_structured_payload — create a DomainEvent, dispatch the job, simulate exception, call ->failed($exception); Log::shouldReceive('error')->once()->with(...).",
+    "DispatchDomainEventsJobRetryTest::test_failed_callback_preserves_contract_violation_prefix_for_payload_mismatch — covers NEW-01 G1 regression with the new log level.",
+    "SendFcmNotificationJobRoutingTest::test_routes_to_notifications_queue — Bus::fake(); SendFcmNotificationJob::dispatch(null, 'topic', 'title', 'body'); Bus::assertDispatched(SendFcmNotificationJob::class, fn($job) => $job->queue === 'notifications').",
+    "SendFcmNotificationJobRoutingTest::test_default_tries_and_backoff — assert $tries === 3 and backoff() === [10, 30]."
+  ],
+  "non_negotiable_constraints": [
+    "DispatchDomainEventsJob::handle() body MUST NOT change (NEW-01 frozen).",
+    "SendFcmNotificationJob::handle() body MUST NOT change.",
+    "Queue assignment encoded in the job class constructor; existing ->onQueue('high') chains in listeners/commands STAY (defense in depth).",
+    "Sentry integration MUST be optional (class_exists guard) — codebase does not require sentry/sentry-laravel.",
+    "Log::error in failed() MUST NOT lose any field that Log::warning previously carried (domain_event_id, event_type, error). Add fields, never remove.",
+    "PayloadMismatchException → 'contract_violation: ' prefix in last_error MUST remain (NEW-01 G1).",
+    "All existing tests (Outbox, OutboxConcurrentWorkerDedupe, EventContract, KdsSyncController, etc.) MUST still pass.",
+    "scripts/check-invariants.sh MUST remain 6/6.",
+    "No new composer require, no new ServiceProvider, no migration."
+  ],
+  "acceptance_criteria_measurable": [
+    "DispatchDomainEventsJob::$backoff === [1, 5, 15, 60, 300].",
+    "DispatchDomainEventsJob dispatched onto queue 'high' (provable via Bus::fake assertions).",
+    "SendFcmNotificationJob dispatched onto queue 'notifications'.",
+    "failed() logs a structured array with at least: domain_event_id, event_type, queue, connection, attempts, error, error_class.",
+    "docs/operations/QUEUE_TOPOLOGY.md exists, references the 3 queues + Supervisor command + monitoring snippets.",
+    "All test files green: 7+ new test cases pass; full test suite + 6/6 invariants stay green."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. Surgical patches (op='replace') for the 2 modified job files; full bodies (op='create') for the 1 doc + 2 test files.",
+  "self_check_before_returning": [
+    "Did you keep DispatchDomainEventsJob::handle() and SendFcmNotificationJob::handle() bit-for-bit?",
+    "Is the new $backoff exactly [1, 5, 15, 60, 300] (5 elements, not 4)?",
+    "Did you guard the Sentry breadcrumb with class_exists + function_exists?",
+    "Did you log queue + connection + attempts + error_class in failed()?",
+    "Did you preserve the contract_violation: prefix for PayloadMismatchException in failed()?",
+    "Did you assign 'notifications' queue in the SendFcmNotificationJob constructor (not in dispatch sites)?",
+    "Are all 7 tests using Bus::fake() / Log::spy() / instance inspection (no real queue worker)?",
+    "Does the topology doc include the explicit Supervisor command with --queue=high,notifications,default ordering?"
+  ]
+}

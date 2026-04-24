@@ -1,9 +1,11 @@
-import AdministratorComponent from "../../components/admin/administrators/AdministratorComponent";
-import AdministratorListComponent from "../../components/admin/administrators/AdministratorListComponent";
-import AdministratorShowComponent from "../../components/admin/administrators/AdministratorShowComponent";
-import AdministratorOrderDetailsComponent
-    from "../../components/admin/administrators/AdministratorOrderDetailsComponent";
-
+// [POS-V4 W1-C 2026-04-26] Lazy-load all SFC imports into webpack chunk "admin-shell".
+// Pattern identical to posRoutes.js (W1-A) and kioskRoutes.js. Converted by
+// tools/refactor/lazy_router_modules.mjs. Goal: reduce app.js first-paint
+// (see reports/baseline/POS_V4_PERF_HISTORY.md — cross-cycle SSOT).
+const AdministratorComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/administrators/AdministratorComponent");
+const AdministratorListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/administrators/AdministratorListComponent");
+const AdministratorShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/administrators/AdministratorShowComponent");
+const AdministratorOrderDetailsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/administrators/AdministratorOrderDetailsComponent");
 export default [
     {
         path: "/admin/administrators",

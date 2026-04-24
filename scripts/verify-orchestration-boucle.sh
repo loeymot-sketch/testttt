@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # FoodKing — Vérification opérationnelle de la « boucle » terminal-first
-# (EXECUTE : codex-terminal PRIMARY ; AUDIT : claude terminal PRIMARY)
+# (EXECUTE : codex-extension / CLI codex + Pro PRIMARY ; AUDIT : claude terminal PRIMARY)
 # -----------------------------------------------------------------------------
 # Par défaut : zéro appel API / zéro quota (sauf check --version de claude si présent).
 #   bash scripts/verify-orchestration-boucle.sh
 #
-# Avec preuves d'extremité (consomme un minimum de crédits API) :
+# Avec preuves d'extremité (consomme un minimum de crédits) :
 #   VERIFY_BILLING_FULL=1 bash scripts/verify-orchestration-boucle.sh
 #   → 1x claude -p "TERMINAL_OK" (abonnement Anthropic)
-#   → 1x npm run codex:smoke (proxy OpenAI + CODEX_*)
+#   → 1x npm run codex:smoke (CLI `codex` + compte ChatGPT Pro, pas de clé dans le dépôt)
 #
 # Exit 0 = environnement prêt à exécuter le plan (au moins : claude + smoke codex en mode FULL)
 # Exit 1 = binaire claude manquant (bloquant pour AUDIT PRIMARY)
@@ -50,7 +50,7 @@ if [[ "$FULL" == "1" ]]; then
     ok_claude_api=1
     echo "[OK] claude terminal API / abonnement — réponse contient TERMINAL_OK"
   else
-    echo "[FAIL] claude smoketest — auth / réseau / quota. AUDIT terminal HS → fallback cursor-session + AUDIT_FALLBACK_REASON:"
+    echo "[FAIL] claude smoketest — auth / réseau / quota, ou sortie inattendue. Debug: FOODKING_CLAUDE_SMOKE_DEBUG=1 bash $REPO_ROOT/scripts/foodking-claude-orchestrate.sh smoketest"
     echo
     echo "=== RÉSULTAT: claude API FAIL (exit 3) — boucle opérationnelle en mode dégradé (audit session) ==="
     exit 3
@@ -60,26 +60,31 @@ else
   echo "[--] claude API non testé (défaut). Pour 1x test API : VERIFY_BILLING_FULL=1 $0"
 fi
 
-# 3) codex-terminal / proxy (optionnel) — 1 requête smoke
+# 3) codex extension / CLI (optionnel) — 1 requête smoke (compte ChatGPT Pro, pas de clé API requise)
+# shellcheck source=./codex-resolve-bin.sh
+# shellcheck disable=SC1091
 if [[ "$FULL" == "1" ]]; then
   echo
-  echo "[--] VERIFY_BILLING_FULL=1 : npm run codex:smoke (proxy OpenAI) …"
-  if [[ -f "$REPO_ROOT/.env.codex" ]] || [[ -f "$REPO_ROOT/.env" ]]; then
-    if npm run codex:smoke --prefix "$REPO_ROOT" 2>&1; then
-      ok_codex=1
-      echo "[OK] codex-terminal (npm run codex:smoke) — proxy répond"
-    else
-      echo "[FAIL] codex:smoke — vérifier CODEX_API_BASE, CODEX_API_KEY, réseau."
-      echo
-      echo "=== RÉSULTAT: codex proxy FAIL (exit 2) — EXÉCUTE complexe : fallback foodking-complex-implementer + FALLBACK_REASON: ==="
-      exit 2
-    fi
+  echo "[--] VERIFY_BILLING_FULL=1 : npm run codex:smoke (CLI codex, compte Pro) …"
+  source "$REPO_ROOT/scripts/codex-resolve-bin.sh"
+  if B="$(codex_resolved_bin)"; then
+    echo "[--] binaire codex: $B"
   else
-    echo "[WARN] .env / .env.codex absent — skip codex:smoke (à configurer pour EXÉCUTE PRIMARY)"
+    echo "[FAIL] binaire 'codex' introuvable. Dans le dépôt: npm install (@openai/codex)  OU  global: npm i -g @openai/codex"
+    exit 2
+  fi
+  if npm run codex:smoke --prefix "$REPO_ROOT" 2>&1; then
+    ok_codex=1
+    echo "[OK] codex-extension (npm run codex:smoke) — codex exec repond"
+  else
+    echo "[FAIL] codex:smoke — auth: lancer le binaire codex (voir ci-dessus) puis Sign in with ChatGPT (Pro) ; évent. codex auth logout + reconnect."
+    echo
+    echo "=== RÉSULTAT: codex CLI FAIL (exit 2) — EXÉCUTE : fallback foodking-complex-implementer + FALLBACK_REASON:  |  urgence: npm run codex:smoke:proxy-legacy (proxy+clé) ==="
+    exit 2
   fi
 else
   echo
-  echo "[--] codex proxy non testé (défaut). Config : .env.codex (CODEX_*) + npm run codex:smoke en VERIFY_BILLING_FULL=1"
+  echo "[--] codex (extension Pro) non teste (defaut). FULL: npm run codex:smoke avec VERIFY_BILLING_FULL=1"
 fi
 
 # 4) Fichiers procéduraux

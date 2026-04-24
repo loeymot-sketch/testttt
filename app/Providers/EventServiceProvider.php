@@ -11,8 +11,11 @@ use App\Events\CategoryUpdated;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
+use App\Events\OrderTableChanged;
+use App\Events\RefundCreated;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
 use App\Events\SendOrderGotSms;
@@ -30,8 +33,11 @@ use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
+use App\Listeners\ReleaseAvailabilityOnOrderCanceled;
+use App\Listeners\ReleaseAvailabilityOnRefundCreated;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
+use App\Listeners\PersistOrderTableChangedToOutbox;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -104,6 +110,18 @@ class EventServiceProvider extends ServiceProvider
             SendFcmOnOrderCreated::class,
             PersistOrderCreatedToOutbox::class,
             DecrementItemAvailabilityOnOrder::class,
+        ],
+        // [F-01 + NEW-05] Compensating release of stock counters on cancel / refund.
+        // Idempotent via order_items.released_qty ledger inside AvailabilityService.
+        OrderCanceled::class => [
+            ReleaseAvailabilityOnOrderCanceled::class,
+        ],
+        RefundCreated::class => [
+            ReleaseAvailabilityOnRefundCreated::class,
+        ],
+        // [F-02] Floorplan transfer / occupy → KDS gets a non-disruptive update.
+        OrderTableChanged::class => [
+            PersistOrderTableChangedToOutbox::class,
         ],
         ItemAvailabilityChanged::class => [
             PersistItemAvailabilityChangedToOutbox::class,

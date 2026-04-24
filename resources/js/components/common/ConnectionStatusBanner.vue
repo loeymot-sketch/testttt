@@ -1,11 +1,24 @@
 <template>
   <div
-    v-if="showBanner && !dismissed"
+    v-if="visible"
     class="connection-status-banner"
-    :class="isOffline ? 'connection-status-banner--offline' : 'connection-status-banner--reconnecting'"
+    :class="bannerClass"
+    role="alert"
+    :aria-live="isSessionInvalid ? 'assertive' : 'polite'"
   >
     <span class="connection-status-banner__text">{{ bannerText }}</span>
+
     <button
+      v-if="isSessionInvalid"
+      type="button"
+      class="connection-status-banner__action"
+      @click="reloadPage"
+    >
+      {{ reloadLabel }}
+    </button>
+
+    <button
+      v-else
       type="button"
       class="connection-status-banner__close"
       aria-label="Fermer"
@@ -32,7 +45,10 @@ export default {
     };
   },
   computed: {
-    showBanner() {
+    isSessionInvalid() {
+      return this.wsState === WS_STATE.SESSION_INVALID;
+    },
+    showTransientBanner() {
       if (this.bannerTick < 0) return false;
       if (!this.disconnectedSince) return false;
       return Date.now() - this.disconnectedSince > 5000;
@@ -42,20 +58,41 @@ export default {
       if (!this.disconnectedSince) return false;
       return Date.now() - this.disconnectedSince > 30000;
     },
+    visible() {
+      // [F-12] session_invalid takes precedence and ignores the dismissal flag.
+      if (this.isSessionInvalid) return true;
+      return this.showTransientBanner && !this.dismissed;
+    },
+    bannerClass() {
+      if (this.isSessionInvalid) return "connection-status-banner--session-invalid";
+      return this.isOffline
+        ? "connection-status-banner--offline"
+        : "connection-status-banner--reconnecting";
+    },
     bannerText() {
+      if (this.isSessionInvalid) {
+        return this.$te && this.$te("ws_session_invalid_text")
+          ? this.$t("ws_session_invalid_text")
+          : "Session expirée — votre session est terminée. Rechargez la page.";
+      }
       return this.isOffline
         ? "Connexion perdue — hors ligne"
         : "Reconnexion en cours…";
     },
+    reloadLabel() {
+      return this.$te && this.$te("ws_session_invalid_action")
+        ? this.$t("ws_session_invalid_action")
+        : "Recharger";
+    },
   },
   watch: {
-    showBanner(val) {
+    visible(val) {
       if (!val) this.dismissed = false;
     },
   },
   mounted() {
     this.wsState = wsService.getState();
-    if (this.wsState !== WS_STATE.CONNECTED) {
+    if (this.wsState !== WS_STATE.CONNECTED && this.wsState !== WS_STATE.SESSION_INVALID) {
       this.disconnectedSince = Date.now();
     }
 
@@ -63,6 +100,9 @@ export default {
       this.wsState = current;
       if (current === WS_STATE.CONNECTED) {
         this.disconnectedSince = null;
+        this.dismissed = false;
+      } else if (current === WS_STATE.SESSION_INVALID) {
+        // session_invalid is terminal until reload — keep disconnectedSince as-is
         this.dismissed = false;
       } else if (previous === WS_STATE.CONNECTED) {
         this.disconnectedSince = Date.now();
@@ -81,6 +121,13 @@ export default {
     if (this._bannerInterval) {
       clearInterval(this._bannerInterval);
     }
+  },
+  methods: {
+    reloadPage() {
+      if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function") {
+        window.location.reload();
+      }
+    },
   },
 };
 </script>
@@ -114,6 +161,10 @@ export default {
   background: #b91c1c;
 }
 
+.connection-status-banner--session-invalid {
+  background: #7f1d1d;
+}
+
 .connection-status-banner__text {
   flex: 1;
 }
@@ -135,5 +186,21 @@ export default {
 
 .connection-status-banner__close:hover {
   opacity: 1;
+}
+
+.connection-status-banner__action {
+  background: #fff;
+  color: #7f1d1d;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.connection-status-banner__action:hover {
+  background: #fef2f2;
 }
 </style>

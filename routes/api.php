@@ -92,6 +92,8 @@ use App\Http\Controllers\Admin\DeliveryBoyAddressController;
 use App\Http\Controllers\Admin\CreditBalanceReportController;
 use App\Http\Controllers\Admin\AdministratorAddressController;
 use App\Http\Controllers\Admin\KitchenDisplaySystemController;
+use App\Http\Controllers\Admin\KdsSyncController;
+use App\Http\Controllers\Admin\Observability\SyncOverviewController;
 use App\Http\Controllers\Table\OrderController as TableOrderController;
 use App\Http\Controllers\Frontend\ItemController as FrontendItemController;
 use App\Http\Controllers\Frontend\PageController as FrontendPageController;
@@ -808,6 +810,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [KitchenDisplaySystemController::class, 'index']);
         Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']);
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
+        // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.
+        Route::get('/sync', [KdsSyncController::class, 'sync']);
+    });
+
+    // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
+    Route::prefix('observability')->name('observability.')->group(function () {
+        Route::get('/sync-overview', [SyncOverviewController::class, 'index'])->name('sync-overview');
+        Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
+            ->middleware('throttle:60,1')
+            ->name('client-metrics');
     });
     Route::prefix('oss-order')->name('ossOrder.')->group(function () {
         Route::get('/', [OrderStatusScreenController::class, 'index']);

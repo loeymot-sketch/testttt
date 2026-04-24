@@ -1,0 +1,23 @@
+Rapport écrit. Synthèse :
+
+---
+
+## Résultat — AUDIT FINAL W0 : `PASS-WITH-FIX`
+
+### Vérification croisée des 4 critères §7
+
+| Critère | Résultat |
+|---|---|
+| **W0-A** — décision pricing_ssot écrite | **PASS** — D1/D2/D3 documentées, D1 recommandée, preuve code l.734-770, 7 appelants recensés. Signature vide = OK car humain. |
+| **W0-B** — 9 SFC avec ≥1 binding, statut ≠ vide | **PASS** — 9/9 SFC présents, ≥1 binding chacun, colonnes statut renseignées (KEEP/TODO/REFACTOR). JOIN gate W1 : 7/9 NON (attendu squelette). |
+| **W0-C** — contamination = 0, stub conforme | **PARTIEL** — `grep fk-pos-v4/fk-dark` = 0 confirmé ✓, app.css clean ✓, pos-v4.css stub ✓ — **FAIL** sur bundle metrics : chunk KB gzip, LCP, CLS, TTI = "À MESURER". |
+| **Bonus** — pos-v4.css sans sélecteur hors `.fk-pos-v4` | **PASS avec note** — seule déviation : `[data-pos-v4-disabled] .fk-pos-v4` (rollback HYPERREVIEW §9 — exception documentée). 23 occurrences confirmées. |
+
+### Décision : `heal`
+
+3 items bloquants avant W1 (tous actionnables) :
+1. `npm run build` → documenter chunk POS KB gzip dans le baseline
+2. Créer + signer `ADR_POS_V4_COULEUR.md` (human gate)
+3. Signer W0-A §6 `[D1]` — Tech Lead + Backend owner (human gate)
+
+W1 ouvert sans ces 3 items = violation JOIN gate = STOP S4 immédiat.

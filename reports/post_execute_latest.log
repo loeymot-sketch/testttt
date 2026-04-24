@@ -1826,3 +1826,26 @@ REPORT: reports/execution/RUN_T-PARCOURS-OPTIMIZE-001_2026-04-24.md
 
 === REMEDIATION SSOT 2026-04-24 (zero negative) ===
 ACTIVE_CYCLE: ajout en-tete RUNNER_MODE + PLAN_FILE + REPORT_FILE (align run-cycle Step 0 + AGENTS — suite split archive T-PARCOURS-OPTIMIZE-001; check-active-cycle: OK 1x IN_PROGRESS)
+2026-04-24T01:21:28+02:00 EXECUTE_DELEGATION: cursor-composer (P1 2.I closure + a11y + tests) | AUDIT: claude_code_cli reports/audit/AUDIT_LOT_2I_2026-04-24.md | tests: 811 vitest 936 phpunit 6/6 invariants
+
+--- T-LOT-2ABD-2026-04-24 ---
+EXECUTE_DELEGATION: cursor-composer (direct; no codex mission)
+P2 2.A: tests/js/posOrderIdempotency.spec.js (X-Idempotency-Key + mock appService)
+P2 2.D: ReceiptComponent toasts 403/404/409 + pos.receipt_print_*
+P2 2.B: KioskPaymentComponent tpe_stuck_help + i18n fr/en/ar
+check-invariants: 6/6
+vitest: 112 files 813 passed
+
+--- T-LOT-2FGH-2026-04-24 ---
+EXECUTE_DELEGATION: cursor-composer (direct)
+2.F: kdsStationFilterStorageKey + KDS per-user localStorage + migration
+2.G: Kernel schedule pos:purge-parked-orders daily 03:15 + PosPurgeParkedScheduleTest
+2.H: KioskPayment submitting through TPE/cash, processing v-if !tpeWaiting
+check-invariants 6/6, vitest 814, phpunit spot + suite relevant
+
+--- T-LOT-2CEJ-2026-04-24 ---
+EXECUTE_DELEGATION: cursor-composer (direct)
+2.C: kdsDisplay throttle + KDS playKdsNewOrderSound
+2.E: KioskLoyalty axios timeout 25s + i18n request_timeout
+2.J: DiningTableService::tryReleaseTableAfterPosOrderPaid + OrderService after pos store
+PHPFeat: DiningTableReleaseAfterPosOrderTest; vitest +1; check-invariants 6/6

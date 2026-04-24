@@ -56,7 +56,11 @@
         "park_restore_error": "تعذّر استعادة هذا الطلب.",
         "park_restore_requires_empty_cart": "أفرغ السلة الحالية أو علّقها قبل استعادة طلب آخر.",
         "park_discard_success": "تم حذف الطلب المعلّق.",
-        "park_discard_error": "تعذّر حذف هذا الطلب المعلّق."
+        "park_discard_error": "تعذّر حذف هذا الطلب المعلّق.",
+        "receipt_print_forbidden": "رُفضت الطباعة (صلاحيات غير كافية). يُطبَع الإيصال لكن العداد لم يُحدَّث على الخادم.",
+        "receipt_print_not_found": "الطلب غير موجود على الخادم. يُطبَع الإيصال؛ تحقق من الطلب.",
+        "receipt_print_conflict": "تعارض عند تسجيل الإيصال. يُطبَع الإيصال؛ راجع الحالة الضريبية.",
+        "receipt_print_server_error": "تعذّر على الخادم تسجيل الطباعة. يُطبَع الإيصال على أي حال."
     },
     "menu": {
         "dashboard": "لوحة القيادة",
@@ -720,7 +724,17 @@
         "kds_order_list_full_warning": "القائمة ممتلئة ({n}، الحد من الخادم) — قد تكون هناك طلبات أخرى. رشّح حسب الحالة أو ابحث برقم التذكرة.",
         "kds_bump_local_only_notice": "تعليمات «جاهز» محلية في هذا المتصفح فقط — غير متزامنة بين شاشات المطبخ.",
         "kds_items_board_scope": "أصناف قيد التحضير (مقبول/قيد التجهيز) — قد لا تطابق كل الأوامر عند اكتمال التقديم.",
-        "kds_dismiss_hint": "إخفاء"
+        "kds_dismiss_hint": "إخفاء",
+        "kds_sync_stamp": "تمت المزامنة منذ {ago}",
+        "kds_sync_never": "لم تتم المزامنة بعد",
+        "kds_allergens_badge": "مسببات الحساسية",
+        "kds_allergens_badge_aria": "عرض مسببات الحساسية لهذا الطلب",
+        "kds_allergens_modal_title": "مسببات الحساسية للطلب رقم #{order_id}",
+        "kds_allergens_modal_intro": "تحقّق من كل صنف قبل التحضير. هذه المعلومات للعِلم فقط ولا تَحجب سير العمل.",
+        "kds_allergens_for_item": "{item_name}: {allergens}",
+        "kds_allergens_modal_none": "لا توجد مسببات حساسية معلنة لهذا الصنف.",
+        "ws_session_invalid_text": "انتهت الجلسة — انتهت جلستك. أعد تحميل الصفحة.",
+        "ws_session_invalid_action": "إعادة التحميل"
     },
     "button": {
         "add": "إضافة",
@@ -820,7 +834,8 @@
         "transfer_table": "نقل الطاولة",
         "release_table": "تحرير الطاولة",
         "kds_bump": "جاهز",
-        "kds_recall": "تراجع"
+        "kds_recall": "تراجع",
+        "kds_allergens_modal_close": "إغلاق"
     },
     "number": {
         "10": "10",
@@ -1114,6 +1129,7 @@
             "processing_title": "جاري إرسال الطلب…",
             "processing_sub": "يرجى الانتظار",
             "tpe_follow": "اتبع التعليمات على جهاز الدفع",
+            "tpe_stuck_help": "إذا توقّف الشاشة، استخدم « إلغاء الدفع » أدناه أو زر الجهاز.",
             "cancel_payment": "إلغاء الدفع",
             "confirm": "تأكيد — {amount}",
             "tpe_card": "أدخل بطاقتك في جهاز الدفع",
@@ -1271,6 +1287,7 @@
             "confirm_saved_sub": "ستُضاف نقاطك بعد الطلب",
             "continue_payment": "متابعة إلى الدفع",
             "error_not_found": "الرمز أو الرقم غير موجود. تحقق وحاول مرة أخرى.",
+            "request_timeout": "انتهت مهلة الانتظار. تحقق من الاتصال وأعد المحاولة.",
             "toast_discount": "تم تطبيق خصم {amount}!",
             "toast_saved": "تم حفظ الولاء — تُضاف النقاط بعد الطلب",
             "toast_welcome": "مرحباً {name}! تم إنشاء حساب الولاء.",

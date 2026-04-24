@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domain\Order\OrderStateMachine;
 use App\Enums\OrderStatus;
+use App\Events\OrderCanceled;
 use App\Events\OrderStatusChanged;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
@@ -51,6 +52,9 @@ class CleanupStalePendingKioskOrders
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::REJECTED]);
                 SendOrderPush::dispatch(['order_id' => $order->id, 'status' => OrderStatus::REJECTED]);
                 OrderStatusChanged::dispatch($order, $oldStatus, OrderStatus::REJECTED);
+                // [F-01] Auto-rejected stale kiosk orders must release any branch-scoped
+                // counters consumed at OrderCreated time. Idempotent via released_qty.
+                OrderCanceled::dispatch($order);
             });
     }
 }

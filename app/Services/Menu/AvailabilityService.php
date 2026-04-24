@@ -8,6 +8,7 @@ use App\Models\ItemBranchAvailability;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Single entry point for branch-scoped menu availability (rupture / 86).
@@ -210,5 +211,148 @@ final class AvailabilityService
             isAvailable: $available,
             reason: $reason
         ));
+    }
+
+    /**
+     * [F-01 + NEW-05] Compensating release of branch-scoped daily counters when an
+     * order is canceled or refunded (full or partial). Idempotent per line via
+     * the `order_items.released_qty` ledger:
+     *
+     *   delta = min(requestedQty, quantity - released_qty)
+     *
+     * Duplicate event delivery (re-fired, or cancel-then-refund) becomes a safe
+     * no-op once `released_qty` reaches `quantity`. // allow: docblock-only mention
+     * of cancel/refund flow names — no sensitive action performed here.
+     *
+     * Branch isolation: queries are filtered by both `item_id` AND `branch_id`.
+     * After-commit: ItemAvailabilityChanged events emitted on the unavailable→available
+     * flip are queued and dispatched via DB::afterCommit (commit-before-dispatch
+     * invariant — gate C9 / KI-001).
+     *
+     * @param array<int, array{order_item_id:int, item_id:int, branch_id:int, qty:int}> $lineItems
+     */
+    public function releaseForOrderItems(array $lineItems): void
+    {
+        if ($lineItems === []) {
+            return;
+        }
+
+        $eventsToDispatch = [];
+
+        DB::transaction(function () use ($lineItems, &$eventsToDispatch): void {
+            foreach ($lineItems as $lineItem) {
+                $orderItemId  = (int) ($lineItem['order_item_id'] ?? 0);
+                $itemId       = (int) ($lineItem['item_id'] ?? 0);
+                $branchId     = (int) ($lineItem['branch_id'] ?? 0);
+                $requestedQty = max(0, (int) ($lineItem['qty'] ?? 0));
+
+                if ($orderItemId <= 0 || $itemId <= 0 || $branchId <= 0 || $requestedQty <= 0) {
+                    continue;
+                }
+
+                $orderItem = DB::table('order_items')
+                    ->where('id', $orderItemId)
+                    ->lockForUpdate()
+                    ->first(['id', 'item_id', 'branch_id', 'quantity', 'released_qty']);
+
+                if (! $orderItem) {
+                    Log::warning('availability release skipped (order item missing)', [
+                        'order_item_id' => $orderItemId,
+                        'item_id'       => $itemId,
+                        'branch_id'     => $branchId,
+                    ]);
+                    continue;
+                }
+
+                if ((int) $orderItem->item_id !== $itemId
+                    || (int) $orderItem->branch_id !== $branchId) {
+                    Log::warning('availability release skipped (line item mismatch)', [
+                        'order_item_id'      => $orderItemId,
+                        'expected_item_id'   => $itemId,
+                        'actual_item_id'     => (int) $orderItem->item_id,
+                        'expected_branch_id' => $branchId,
+                        'actual_branch_id'   => (int) $orderItem->branch_id,
+                    ]);
+                    continue;
+                }
+
+                $remaining = max(0, (int) $orderItem->quantity - (int) $orderItem->released_qty);
+                $delta = min($requestedQty, $remaining);
+
+                if ($delta <= 0) {
+                    Log::info('availability release skipped (already released)', [
+                        'order_item_id'  => $orderItemId,
+                        'item_id'        => $itemId,
+                        'branch_id'      => $branchId,
+                        'requested_qty'  => $requestedQty,
+                        'released_qty'   => (int) $orderItem->released_qty,
+                        'quantity'       => (int) $orderItem->quantity,
+                    ]);
+                    continue;
+                }
+
+                $availability = DB::table('item_branch_availability')
+                    ->where('item_id', $itemId)
+                    ->where('branch_id', $branchId)
+                    ->lockForUpdate()
+                    ->first([
+                        'item_id',
+                        'branch_id',
+                        'is_available',
+                        'unavailable_reason',
+                        'daily_consumed_qty',
+                        'max_daily_qty',
+                    ]);
+
+                if ($availability) {
+                    $currentConsumed = max(0, (int) $availability->daily_consumed_qty);
+                    $newConsumed     = max(0, $currentConsumed - $delta);
+                    $wasUnavailable  = ! (bool) $availability->is_available;
+                    $shouldFlip      = $wasUnavailable
+                        && $availability->max_daily_qty !== null
+                        && $newConsumed < (int) $availability->max_daily_qty;
+
+                    $update = ['daily_consumed_qty' => $newConsumed];
+
+                    if ($shouldFlip) {
+                        $update['is_available']       = true;
+                        $update['unavailable_reason'] = null;
+                        $update['unavailable_since']  = null;
+
+                        $eventsToDispatch[] = [
+                            'item_id'      => $itemId,
+                            'branch_id'    => $branchId,
+                            'is_available' => true,
+                            'reason'       => 'released_after_cancel_or_refund',
+                        ];
+                    }
+
+                    DB::table('item_branch_availability')
+                        ->where('item_id', $itemId)
+                        ->where('branch_id', $branchId)
+                        ->update($update);
+                }
+
+                DB::table('order_items')
+                    ->where('id', $orderItemId)
+                    ->update([
+                        'released_qty' => (int) $orderItem->released_qty + $delta,
+                        'released_at'  => Carbon::now(),
+                    ]);
+            }
+
+            if ($eventsToDispatch !== []) {
+                DB::afterCommit(function () use ($eventsToDispatch): void {
+                    foreach ($eventsToDispatch as $payload) {
+                        event(ItemAvailabilityChanged::forBranch(
+                            itemId: $payload['item_id'],
+                            branchId: $payload['branch_id'],
+                            isAvailable: $payload['is_available'],
+                            reason: $payload['reason'],
+                        ));
+                    }
+                });
+            }
+        });
     }
 }

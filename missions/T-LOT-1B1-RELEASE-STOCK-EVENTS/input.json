@@ -1,0 +1,85 @@
+{
+  "task_id": "T-LOT-1B1-RELEASE-STOCK-EVENTS",
+  "lot": "1.B.1 (Phase 1, P0) — pure addition of events/listener/service/migration; NO call-site wiring (deferred to 1.B.2 which needs a frozen-zone gate).",
+  "finding_origin": "F-01 (audit) + NEW-05 (second-opinion GPT-5.4-pro): when an order is canceled or refunded, the daily_consumed_qty on ItemBranchAvailability is NEVER released. Repeated cancel/refund cycles accumulate phantom consumption that wrongly 86s items. Must support: (a) full cancel, (b) partial refund (line-item level, with quantity), (c) idempotency under duplicate event delivery (3 identical OrderCanceled events must release exactly once).",
+  "what_already_exists_in_repo": {
+    "AvailabilityService::decrementForOrder(Model $order)": "app/Services/Menu/AvailabilityService.php lines 158-203. Iterates $order->orderItems, decrements daily_consumed_qty on ItemBranchAvailability, sets is_available=false + unavailable_reason='out_of_stock' when daily_consumed_qty >= max_daily_qty. Dispatches ItemAvailabilityChanged::forBranch only on the flip (was available → now 86).",
+    "AvailabilityService::dispatchEvent": "Private method, calls event(ItemAvailabilityChanged::forBranch(itemId, branchId, isAvailable, reason)). You can re-use it (or copy its pattern) in releaseForOrderItems for the reverse flip (was 86 → now available again).",
+    "DecrementItemAvailabilityOnOrder listener": "app/Listeners/DecrementItemAvailabilityOnOrder.php — listens to OrderCreated, calls decrementForOrder. Symmetric pattern to follow.",
+    "FrontendOrderService::changeStatus": "app/Services/FrontendOrderService.php lines 651-700+ contains the cancel path (status === OrderStatus::CANCELED). It calls PaymentService::cashBack and LoyaltyService::refundPoints but NEVER releases stock. DO NOT MODIFY THIS METHOD in 1.B.1. The wiring of OrderCanceled::dispatch will be added in 1.B.2 by the orchestrator (after frozen-zone gate).",
+    "PaymentService::cashBack": "app/Services/PaymentService.php lines 31-72. Creates a Transaction of type cash_back, increments user balance, writes audit log. Does NOT touch stock. DO NOT MODIFY THIS METHOD in 1.B.1.",
+    "ItemBranchAvailability columns": "branch_id, item_id, is_available (bool), unavailable_reason (string), unavailable_since (timestamp), daily_consumed_qty (int), max_daily_qty (int|null), daily_reset_at (date).",
+    "OrderItem columns (relevant)": "id, order_id, item_id, branch_id, quantity, plus snapshot fields. 1.B.1 must ADD: released_qty (int default 0), released_at (timestamp nullable).",
+    "Existing event pattern": "app/Events/OrderCreated.php is a regular Laravel event. After-commit dispatch is enforced repo-wide via DB::afterCommit(fn() => Event::dispatch(...)). See PersistItemAvailabilityChangedToOutbox for the pattern. All NEW events you create MUST be dispatched via DB::afterCommit at every call site (call-site wiring is 1.B.2; for 1.B.1 just create the event class with a clean constructor).",
+    "Migration directory": "database/migrations — naming format YYYY_MM_DD_HHMMSS_*.php — use today's date 2026_04_23.",
+    "Tests directory": "tests/Feature for PHPUnit. Use RefreshDatabase trait. Existing reference: tests/Feature/KioskPaymentStateMachineTest.php is the closest stylistic neighbor."
+  },
+  "scope_files_to_create": [
+    "database/migrations/2026_04_23_100000_add_release_tracking_to_order_items.php",
+    "app/Events/OrderCanceled.php",
+    "app/Events/RefundCreated.php",
+    "app/Listeners/ReleaseAvailabilityOnOrderCanceled.php",
+    "app/Listeners/ReleaseAvailabilityOnRefundCreated.php",
+    "tests/Feature/Availability/StockReleaseFullCancelTest.php",
+    "tests/Feature/Availability/StockReleasePartialRefundTest.php",
+    "tests/Feature/Availability/StockReleaseIdempotencyTest.php"
+  ],
+  "scope_files_to_modify": [
+    "app/Services/Menu/AvailabilityService.php (ADD method releaseForOrderItems(array $lineItems) — DO NOT touch decrementForOrder)",
+    "app/Providers/EventServiceProvider.php (register OrderCanceled => ReleaseAvailabilityOnOrderCanceled, RefundCreated => ReleaseAvailabilityOnRefundCreated)"
+  ],
+  "do_NOT_touch": [
+    "app/Services/FrontendOrderService.php (frozen for 1.B.2)",
+    "app/Services/PaymentService.php (frozen, see tasks/phase9-sync/LOCK_B_POS_9_2_3_PaymentService_2026-04-18.md)",
+    "app/Services/OrderService.php (frozen)",
+    "AvailabilityService::decrementForOrder (working code, do not refactor)",
+    "Any controller (call-site wiring is 1.B.2)"
+  ],
+  "events_contract": {
+    "OrderCanceled": {
+      "constructor_args": "public readonly Model $order (Model = FrontendOrder OR Order; the order must have ->id, ->branch_id, ->orderItems relation accessible).",
+      "no_payload_array_needed": "The full order is passed; the listener loads orderItems and releases all line items.",
+      "broadcasting": "NOT broadcast — internal domain event only."
+    },
+    "RefundCreated": {
+      "constructor_args": "public readonly Model $order, public readonly array $refundedItems where each entry is ['order_item_id' => int, 'qty' => int]. If $refundedItems is empty, listener treats it as 'full refund' and releases ALL line items (same behavior as OrderCanceled).",
+      "broadcasting": "NOT broadcast — internal domain event only."
+    }
+  },
+  "release_method_contract": {
+    "signature": "public function releaseForOrderItems(array $lineItems): void",
+    "lineItem_shape": "['order_item_id' => int, 'item_id' => int, 'branch_id' => int, 'qty' => int] — caller (listener) builds these from $order->orderItems + the requested release qty.",
+    "idempotency_strategy": "For each line item: SELECT order_items.id, quantity, released_qty FOR UPDATE; compute deltaQty = min(requestedQty, quantity - released_qty); if deltaQty <= 0 → log info 'release skipped (already released)' and continue; else: ItemBranchAvailability row → daily_consumed_qty = max(0, daily_consumed_qty - deltaQty); if was unavailable AND now daily_consumed_qty < max_daily_qty → flip is_available=true, unavailable_reason=null, dispatch ItemAvailabilityChanged::forBranch(itemId, branchId, true, 'released_after_cancel_or_refund'); update order_items.released_qty += deltaQty, released_at = now().",
+    "transactions": "Wrap the full operation in DB::transaction.",
+    "after_commit": "ItemAvailabilityChanged dispatch must occur AFTER the transaction commits. Use DB::afterCommit(fn() => event(...)) inside releaseForOrderItems, OR collect events and dispatch them at the end of the listener after the transaction commits — your choice, document it in implementation_steps."
+  },
+  "listener_contract": {
+    "ReleaseAvailabilityOnOrderCanceled": "Receives OrderCanceled. Loads $order->orderItems. Builds the full lineItems array (qty = each line's full quantity). Calls AvailabilityService::releaseForOrderItems.",
+    "ReleaseAvailabilityOnRefundCreated": "Receives RefundCreated. If $refundedItems is empty → load full $order->orderItems and behave like full cancel. Else: filter $order->orderItems by the order_item_id keys and use the qty provided. Call releaseForOrderItems."
+  },
+  "tests_required": [
+    "StockReleaseFullCancelTest — Setup an item with max_daily_qty=10, decrement by 5 (consumed=5, available=true), then dispatch OrderCanceled → assert ItemBranchAvailability.daily_consumed_qty=0 (rebound to 0 because 5-5=0), assert order_items.released_qty=5 each line.",
+    "StockReleaseFullCancelTest 86-flip — Item with max_daily_qty=5, decrement by 5 (consumed=5, available=false). Dispatch OrderCanceled → assert daily_consumed_qty=0, is_available=true, ItemAvailabilityChanged event dispatched (use Event::fake([ItemAvailabilityChanged::class])).",
+    "StockReleasePartialRefundTest — Order with 1 line of qty=5. Dispatch RefundCreated with refundedItems=[['order_item_id'=>X,'qty'=>2]] → assert order_items.released_qty=2 (NOT 5), daily_consumed_qty=consumed-2.",
+    "StockReleaseIdempotencyTest — Dispatch OrderCanceled twice on the same order → assert release happened exactly once: order_items.released_qty equals the original quantity (NOT 2x); daily_consumed_qty correctly decremented once; ItemAvailabilityChanged dispatched at most once on the flip (use Event::fake assertions on count).",
+    "StockReleaseIdempotencyTest — Dispatch OrderCanceled then RefundCreated (full) → second one is a no-op (released_qty already maxed)."
+  ],
+  "non_negotiable_constraints": [
+    "branch_id isolation — releaseForOrderItems queries MUST filter by both item_id AND branch_id (never cross branches).",
+    "After-commit dispatch — ItemAvailabilityChanged from releaseForOrderItems MUST fire AFTER the DB::transaction commits.",
+    "OrderStatus enum — never write magic int statuses; reuse App\\Enums\\OrderStatus.",
+    "Pricing SSOT — N/A (no pricing logic touched).",
+    "Frozen zones — DO NOT touch FrontendOrderService, PaymentService, OrderService.",
+    "Listener idempotency — must be safe to retry / re-deliver. The released_qty column is the truth ledger; never trust the event alone."
+  ],
+  "acceptance_criteria_measurable": [
+    "Full cancel of an order whose item was 86'd → item flips back to available, daily_consumed_qty correctly reduced, ItemAvailabilityChanged dispatched once via after-commit, order_items.released_qty matches each line's quantity.",
+    "Partial refund of 2 units out of 5 → daily_consumed_qty -= 2; order_items.released_qty = 2; remaining 3 units still consumed.",
+    "Duplicate OrderCanceled (or duplicate RefundCreated) → released_qty does NOT exceed quantity; daily_consumed_qty does NOT go below 0; ItemAvailabilityChanged dispatched at most once on the flip.",
+    "Mixed sequence (OrderCanceled then RefundCreated full) → second listener invocation is a no-op (logs 'release skipped').",
+    "All 4 tests above pass via `php artisan test --filter=StockRelease`.",
+    "scripts/check-invariants.sh remains 6/6.",
+    "No existing test regresses (run `php artisan test --filter=Availability` and `php artisan test --filter=Kiosk`)."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. code_blocks must contain FULL file bodies (op='create') for new files and CLEAR patch-style excerpts (op='replace') for the 2 modified files (AvailabilityService.php and EventServiceProvider.php). Orchestrator (Claude Opus) will apply patches manually; do NOT assume auto-application."
+}

@@ -119,9 +119,9 @@
       </div>
     </div>
 
-    <!-- Écran API en cours (commande en création) -->
+    <!-- Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) -->
     <div
-      v-if="submitting"
+      v-if="submitting && !tpeWaiting"
       class="kiosk-pay-processing"
       role="status"
       aria-live="polite"
@@ -158,6 +158,7 @@
         </div>
         <h2 id="kiosk-tpe-title" class="kiosk-tpe-title" aria-live="polite">{{ tpeMessage }}</h2>
         <p class="kiosk-tpe-sub">{{ $t('kiosk.pay_screen.tpe_follow') }}</p>
+        <p class="kiosk-tpe-help" id="kiosk-tpe-stuck-help">{{ $t('kiosk.pay_screen.tpe_stuck_help') }}</p>
         <div class="kiosk-tpe-spinner" aria-hidden="true"></div>
         <button type="button"
           v-if="tpeCanCancel"
@@ -322,8 +323,8 @@ export default {
 
         this._lastOrder = { id: orderId, queue_number: queueNum, total };
 
-        this.submitting = false;
-
+        // [Lot 2.H / F-13] Keep submitting=true through TPE/cash so the confirm
+        // control cannot re-fire; clear only after payment path completes or in catch.
         const navTarget = {
           name:   'kiosk.waiting',
           params: { orderId: String(orderId) },
@@ -454,6 +455,7 @@ export default {
 
       await new Promise(r => setTimeout(r, 800));
       this.tpeWaiting = false;
+      this.submitting = false;
       this.$router.push(navTarget);
     },
 
@@ -517,6 +519,7 @@ export default {
           total_cents: Math.round((this._lastOrder?.total || this.cartTotal) * 100),
         });
       } catch (_) {}
+      this.submitting = false;
       this.$router.push(navTarget);
     },
     _reportDrawerFailure(errorMsg) {
@@ -869,6 +872,14 @@ export default {
 }
 .kiosk-tpe-title {
   font-size: 1.8rem; font-weight: 800; color: var(--kiosk-text-on-red, #fff); margin: 0;
+}
+.kiosk-tpe-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  opacity: 0.95;
+  max-width: 22rem;
+  text-align: center;
 }
 .kiosk-tpe-sub {
   font-size: 1rem; color: rgba(255,255,255,0.5); margin: 0; max-width: 340px;

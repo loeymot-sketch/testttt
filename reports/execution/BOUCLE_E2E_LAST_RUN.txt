@@ -1,0 +1,50 @@
+==========================================
+FoodKing — BOUCLE E2E (simulation pratique)
+REPO: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+date: 2026-04-23T21:29:25Z
+==========================================
+
+>>> [A] Pré-boucle : npm run verify:boucle (0 requête claude / codex en défaut verify)
+
+> verify:boucle
+> bash scripts/verify-orchestration-boucle.sh
+
+=== verify-orchestration-boucle (VERIFY_BILLING_FULL=0) ===
+
+[OK] claude on PATH: /Users/1millnonstop/node_modules/.bin/claude
+     1.0.128 (Claude Code)
+
+[--] claude API non testé (défaut). Pour 1x test API : VERIFY_BILLING_FULL=1 scripts/verify-orchestration-boucle.sh
+
+[--] codex proxy non testé (défaut). Config : .env.codex (CODEX_*) + npm run codex:smoke en VERIFY_BILLING_FULL=1
+
+[OK] run-cycle.md : AUDIT terminal PRIMARY documenté (grep AUDIT_CHANNEL: claude-terminal)
+[OK] CODEX_API_DELEGATION.md : section terminal-first présente
+
+=== RÉSULTAT: boucle gouvernée (terminal-first) — binaire claude=1, claude API smoke=0, codex smoke=0 ===
+CONDITIONAL: binaire OK ; lancer VERIFY_BILLING_FULL=1 pour prouver les deux canaux API.
+>>> [A] OK
+
+>>> [B] Connecteur OpenAI (codex) : npm run codex:smoke
+
+> codex:smoke
+> node agents/codex.smoke.mjs
+
+[codex:smoke] OK | modèle: gpt-5.5 | plafond sortie (requête): 2000000 | extrait: "OK" 
+>>> [B] OK
+
+>>> [C] Mini EXECUTE (api) : CODEX_RAW_PROMPT=1 node agents/codex.runner.mjs BOUCLE-E2E-001
+✅ Codex — terminé
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/missions/BOUCLE-E2E-001/output_codex.json
+>>> [C] OK
+
+>>> Sortie (extrait) :
+boucle
+codex-terminal
+OK...
+>>> octets: 24
+
+==========================================
+RÉSULTAT: boucle démo — prereq + proxy + mission RAW OK
+Journal: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/execution/BOUCLE_E2E_LAST_RUN.txt
+==========================================
