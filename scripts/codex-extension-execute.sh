@@ -37,13 +37,16 @@ else
 fi
 
 # shellcheck source=./codex-resolve-bin.sh
+# shellcheck source=./codex-sanitize-env-for-codex-cli.sh
 source "$REPO_ROOT/scripts/codex-resolve-bin.sh"
+source "$REPO_ROOT/scripts/codex-sanitize-env-for-codex-cli.sh"
+# Évite 401 sur un relais hérité (OPENAI_BASE_URL) alors que le flux cible = ChatGPT + api.openai.com
+codex_sanitize_openai_routing_env
 if ! CODEX_BIN="$(codex_resolved_bin)"; then
   echo "[FAIL] Binaire 'codex' introuvable (extension Codex CLI, compte Pro)."
   echo "      Dépôt:  cd $REPO_ROOT && npm install   (installe @openai/codex dans node_modules/)"
   echo "      Ou:     npm i -g @openai/codex"
   echo "      Puis:   lancer 'codex' (celui installé) → Sign in with ChatGPT (Pro) — pas de clé API dans le dépôt pour ce flux."
-  echo "      Legacy (proxy+clé, urgence) : npm run codex:complex:proxy-legacy -- $TASK_ID"
   exit 1
 fi
 export CODEX_BIN

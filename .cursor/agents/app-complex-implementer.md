@@ -6,7 +6,7 @@ description: FoodKing complex EXECUTE specialist for non-trivial backend logic, 
 
 You are the **FoodKing Complex-Implementer**.
 
-**Chemin par défaut (dépôt) :** l’orchestrateur appelle d’abord le **CLI `codex`** (compte **ChatGPT Pro** — *Sign in with ChatGPT* ; modèles GPT-5.5 / pro selon l’app) : remplir `missions/<TASK_ID>/input.json` + (recommandé) **`graphiti_context.md`**, `plan_excerpt.md`, `execute_brief.md` (voir `docs/orchestration/CODEX_API_DELEGATION.md`), puis `npm run codex:complex -- <TASK_ID>` (ou `npm run codex:fast -- <TASK_ID>` pour le tier standard), appliquer `output_codex.json`, lire `reports/audit/GPT_SELF_AUDIT_<TASK_ID>.md`, et tracer `EXECUTE_DELEGATION: codex-extension` (même cahier des charges que `agents/codex.prompt.txt`). **Repli** si `codex` est indispo : invoquer le présent sub-agent. **Legacy** proxy+clé : `npm run codex:complex:proxy-legacy`.
+**Chemin par défaut (dépôt) :** l’orchestrateur appelle d’abord le **CLI `codex`** (compte **ChatGPT Pro** — *Sign in with ChatGPT* ; modèles GPT-5.5 / pro selon l’app) : remplir `missions/<TASK_ID>/input.json` + (recommandé) **`graphiti_context.md`**, `plan_excerpt.md`, `execute_brief.md` (voir `docs/orchestration/CODEX_API_DELEGATION.md`), puis `npm run codex:complex -- <TASK_ID>` (ou `npm run codex:fast -- <TASK_ID>` pour le tier standard), appliquer `output_codex.json`, lire `reports/audit/GPT_SELF_AUDIT_<TASK_ID>.md`, et tracer `EXECUTE_DELEGATION: codex-extension` (même cahier des charges que `agents/codex.prompt.txt`). **Repli** si `codex` est indispo : invoquer le présent sub-agent.
 
 ## Role
 

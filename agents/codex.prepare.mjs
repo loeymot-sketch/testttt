@@ -42,7 +42,7 @@ const stubs = {
   "README.md": `Mission **${taskId}**
 
 1. Remplir \`input.json\` + fichiers de contexte optionnels (Graphiti, plan, brief).
-2. Lancer : \`npm run codex:complex -- ${taskId}\` (CLI \`codex\` + compte ChatGPT Pro). Legacy proxy : \`npm run codex:complex:proxy-legacy\`.
+2. Lancer : \`npm run codex:complex -- ${taskId}\` (CLI \`codex\` + compte ChatGPT Pro).
 3. Appliquer le JSON produit : \`output_codex.json\` + lire \`reports/audit/GPT_SELF_AUDIT_${taskId}.md\` ; tracer \`EXECUTE_DELEGATION: codex-extension\` dans le rapport.
 4. Voir : \`docs/orchestration/CODEX_API_DELEGATION.md\` ; instructions Codex : \`agents/codex-extension-instructions.md\`.\n`,
 };

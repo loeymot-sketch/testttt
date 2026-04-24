@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FoodKing — Simulation de bout en bout (boucle) : pré-vol + proxy Codex + mini mission.
+# FoodKing — Simulation de bout en bout (boucle) : pré-vol + CLI codex + mini mission.
 # - Étape A : verify:boucle (0 requête API claude / codex en mode défaut) — binaire claude requis.
 # - Étape B (sauf si INCLUDE_FULL_VERIFY) : 1× codex:smoke
 # - Étape A2 (si INCLUDE_FULL_VERIFY=1) : verify:boucle:full — puis sauter B (déjà codex dans full)
@@ -44,7 +44,7 @@ run() {
     if npm run codex:smoke --prefix "$REPO_ROOT" 2>&1; then
       echo ">>> [B] OK"
     else
-      echo ">>> [B] ÉCHEC — configurer .env / .env.codex (CODEX_API_*)"
+      echo ">>> [B] ÉCHEC — auth codex: npm run codex:verify-pro ; doc agents/codex-extension-instructions.md"
       return 2
     fi
     echo
@@ -57,12 +57,11 @@ run() {
     return 3
   fi
 
-  echo ">>> [C] Mini EXECUTE (api) : CODEX_RAW_PROMPT=1 node agents/codex.runner.mjs $MIS"
-  export CODEX_RAW_PROMPT=1
-  if node "$REPO_ROOT/agents/codex.runner.mjs" "$MIS" 2>&1; then
+  echo ">>> [C] Mini EXECUTE (CLI) : npm run codex:complex -- $MIS"
+  if npm run codex:complex --prefix "$REPO_ROOT" -- "$MIS" 2>&1; then
     echo ">>> [C] OK"
   else
-    echo ">>> [C] ÉCHEC"
+    echo ">>> [C] ÉCHEC (codex exec) — auth / scopes: voir agents/codex-extension-instructions.md"
     return 4
   fi
 
@@ -77,7 +76,7 @@ run() {
 
   echo
   echo "=========================================="
-  echo "RÉSULTAT: boucle démo — prereq + proxy + mission RAW OK"
+  echo "RÉSULTAT: boucle démo — prereq + CLI codex + mission OK"
   echo "Journal: $OUT_RE"
   echo "=========================================="
   return 0

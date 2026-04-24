@@ -13,7 +13,21 @@ const bin = process.argv[2] || path.join(repoRoot, "node_modules", ".bin", "code
 const timeoutMs = Number.parseInt(process.argv[3] || "120000", 10);
 const prompt = "Reply with only the word: CTOK_PING_OK";
 
-const child = spawn(bin, ["exec", prompt], { stdio: ["ignore", "pipe", "pipe"] });
+// Même logique que codex-sanitize-env-for-codex-cli.sh (OAuth / Pro : pas de sk-* héritée)
+const strip = [
+  "OPENAI_BASE_URL",
+  "OPENAI_API_URL",
+  "OPENAI_API_BASE",
+  "OPENAI_API_KEY",
+  "CODEX_API_KEY",
+  "CODEX_API_BASE",
+  "AZURE_OPENAI_ENDPOINT",
+  "AZURE_OPENAI_KEY",
+  "AZURE_OPENAI_API_KEY",
+];
+const env = { ...process.env };
+for (const k of strip) delete env[k];
+const child = spawn(bin, ["exec", prompt], { stdio: ["ignore", "pipe", "pipe"], env });
 let out = "";
 let err = "";
 child.stdout?.on("data", (c) => {

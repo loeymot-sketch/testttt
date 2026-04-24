@@ -1,7 +1,7 @@
 # Test réel "tâches complexes" — Codex API delegation
 
 Date : 2026-04-23
-Endpoint : `https://subtp7eu3nc8.tokenclub.top/v1`
+Endpoint : `https://[REDACTED-host-openai-compatible]/v1`
 Runner : `npm run codex:complex` (mode streaming forcé suite aux 504 récurrents en non-stream sur prompts longs)
 
 > **Note 2026-04 (upgrade modèle)** : le **défaut projet** des runners est `**gpt-5.5-high`** (et `**gpt-5.5**` / `**gpt-5.5-pro**` en override). Les mesures ci-dessous concernent des exécutions **historiques** aux identifiants `**gpt-5.4` / `gpt-5.4-pro`** — le comportement (streaming, invariants) reste la référence. Voir `reports/execution/RUN_CODEX_GPT55_DEFAULT_UPGRADE_2026-04-24.md` et `reports/execution/RUN_CODEX_GPT55_HIGH_DEFAULT_2026-04-23.md` pour la validation `gpt-5.5*`.

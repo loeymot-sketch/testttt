@@ -79,7 +79,7 @@ if [[ "$FULL" == "1" ]]; then
   else
     echo "[FAIL] codex:smoke — auth: lancer le binaire codex (voir ci-dessus) puis Sign in with ChatGPT (Pro) ; évent. codex auth logout + reconnect."
     echo
-    echo "=== RÉSULTAT: codex CLI FAIL (exit 2) — EXÉCUTE : fallback foodking-complex-implementer + FALLBACK_REASON:  |  urgence: npm run codex:smoke:proxy-legacy (proxy+clé) ==="
+    echo "=== RÉSULTAT: codex CLI FAIL (exit 2) — EXÉCUTE : fallback foodking-complex-implementer + FALLBACK_REASON: ==="
     exit 2
   fi
 else

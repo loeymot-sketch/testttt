@@ -51,7 +51,7 @@ CLOSE | REMEDIATE (boucle EXECUTE→VALIDATE→AUDIT) | GATE
   - `.cursor/rules/global-operating-principles.md`
   - `docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`
   - `docs/orchestration/CODEX_API_DELEGATION.md` (refresh — naming + fallback contract + audit handoff)
-- Kit portable `dist/codex-portable/` (déjà livré)
+- ~~Kit portable `dist/codex-portable/`~~ — retiré du dépôt (2026) ; seul le **CLI** `codex` est supporté.
 - Test boucle E2E sur une tâche réelle légère (création d'un helper testable + vitest)
 - Rapport `reports/execution/RUN_CODEX_TERMINAL_PRIMARY_LOOP_2026-04-23.md`
 
@@ -63,7 +63,7 @@ CLOSE | REMEDIATE (boucle EXECUTE→VALIDATE→AUDIT) | GATE
 
 ## 4. Subsystems touched
 
-`docs/`, `.cursor/agents/`, `.cursor/rules/`, `.cursor/commands/`, `AGENTS.md`, `dist/codex-portable/` (déjà), `plans/`, `reports/execution/`, `missions/T-LOOP-*` (test).
+`docs/`, `.cursor/agents/`, `.cursor/rules/`, `.cursor/commands/`, `AGENTS.md`, `plans/`, `reports/execution/`, `missions/T-LOOP-*` (test).
 
 ## 5. Hard constraints
 
@@ -103,7 +103,7 @@ Voir critères d'acceptance ci-dessous, écrire `reports/execution/RUN_CODEX_TER
 - [ ] Tous les fichiers de gouvernance citent `codex-terminal` comme primaire (et `foodking-complex-implementer` comme fallback).
 - [ ] La boucle E2E sur `T-LOOP-HELPER-001` se termine avec : sortie API non vide, fichiers créés, vitest vert, ligne `EXECUTE_DELEGATION: codex-terminal` dans le log, brief audit produit côté Claude terminal (ou note "claude indispo" si non installé localement, sans bloquer la démonstration).
 - [ ] Aucune mention "GPT-5.4 = sub-agent Cursor" sans un "via codex-terminal d'abord, sub-agent fallback".
-- [ ] Le kit `dist/codex-portable/` contient runner, prompt, env example, smoke, README — vérifié `ls dist/codex-portable`.
+- [x] (Obsolète) Le kit `dist/codex-portable/` a été supprimé — vérification remplacée par `npm run codex:smoke` + `npm run codex:complex` sur une mission témoin.
 
 ## 8. Risks
 
@@ -125,7 +125,7 @@ Si un fichier de gouvernance casse une boucle existante :
 git diff plans/PLAN_CODEX_TERMINAL_PRIMARY_INTEGRATION_2026-04-23.md
 git checkout HEAD -- AGENTS.md .cursor/rules/ .cursor/agents/ .cursor/commands/run-cycle.md docs/orchestration/
 ```
-Le kit `dist/codex-portable/` reste indépendamment réutilisable.
+(Le dépôt ne fournit plus de *kit portable* HTTP : uniquement `npm run codex:complex`.)
 
 ## 11. Files I will touch in EXECUTE
 

@@ -5,7 +5,10 @@
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=./codex-resolve-bin.sh
+# shellcheck source=./codex-sanitize-env-for-codex-cli.sh
 source "$REPO_ROOT/scripts/codex-resolve-bin.sh"
+source "$REPO_ROOT/scripts/codex-sanitize-env-for-codex-cli.sh"
+codex_sanitize_openai_routing_env
 if ! B="$(codex_resolved_bin)"; then
   echo "[codex:smoke] FAIL: binaire codex introuvable."
   echo "       1) Dans le dépôt : cd $REPO_ROOT && npm install   (@openai/codex en devDependency)"

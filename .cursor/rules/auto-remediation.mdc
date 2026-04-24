@@ -59,7 +59,7 @@ L'orchestrateur exécute, **dans la même session**, sans demander confirmation 
    ```
 3. **Routage** — choix du chemin selon [routing.md](mdc:.cursor/routing.md) :
    - Composer (`foodking-routine-implementer`) si correction routinière
-   - **GPT-5.5 via `codex-extension` (PRIMARY)** si correction complexe — `npm run codex:complex -- {TASK_ID}` (CLI `codex` + Pro) ; fallback subagent `foodking-complex-implementer` si `codex` est HS (cf. `docs/orchestration/CODEX_API_DELEGATION.md` ; **legacy** proxy = `npm run codex:complex:proxy-legacy` — urgence)
+   - **GPT-5.5 via `codex-extension` (PRIMARY)** si correction complexe — `npm run codex:complex -- {TASK_ID}` (CLI `codex` + Pro) ; fallback subagent `foodking-complex-implementer` si `codex` est HS (cf. `docs/orchestration/CODEX_API_DELEGATION.md`)
 4. **Lancement** — pour `codex-extension` : préparer `missions/{TASK_ID}/input.json` + brief minimal (plan + diff + erreur) puis `npm run codex:complex -- {TASK_ID}` ; pour le subagent (fallback) : invocation via `Task` avec contexte minimal
 5. **Re-audit** — **PRIMARY** : même checklist [audit-context.md](mdc:.cursor/context/audit-context.md) sur le nouveau diff, lancée **d’abord** via le terminal : `bash scripts/foodking-claude-orchestrate.sh context` puis `audit-brief` (ou `audit`) ; tracer `AUDIT_CHANNEL: claude-terminal` (+ `TERMINAL_AUDIT_OK: 1` quand c’est vraiment exécuté). **FALLBACK** (session Cursor) **uniquement** si le terminal a échoué — `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:`. (Symétrie : `codex-extension` PRIMARY, sub-agent FALLBACK.)
 

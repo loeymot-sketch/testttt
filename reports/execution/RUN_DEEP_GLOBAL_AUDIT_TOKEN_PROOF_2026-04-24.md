@@ -14,7 +14,7 @@ Valider que le proxy (tokenclub) supporte des **sessions productives** avec **GP
 
 | Paramètre | Valeur retenue |
 |-----------|----------------|
-| `CODEX_API_BASE` | `https://subtp7eu3nc8.tokenclub.top/v1` |
+| `CODEX_API_BASE` | `[REDACTED host — proxy fournisseur / démo]` |
 | `CODEX_MODEL_COMPLEX` | **`gpt-5.5`** (mise à jour de `.env.codex` locale) |
 | `CODEX_REASONING_EFFORT` | **`xhigh`** (mappé en `reasoning: { effort: "high" }` dans le JSON) |
 | Fil génération longue | **`POST /v1/chat/completions`** avec **`stream: true`**, `max_completion_tokens` élevé (ex. 48k) + **undici** (timeouts corps entre morceaux SSE) |

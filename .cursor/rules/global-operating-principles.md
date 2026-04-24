@@ -28,7 +28,7 @@ You are working inside a high-discipline AI-assisted software development workfl
 
 9. **FoodKing — model roles** (see `AGENTS.md` and `.cursor/routing.md`; do not substitute legacy nicknames for these roles):
    - **Claude** — Plan, architect, orchestrate, **audit (PRIMARY: terminal** `claude` via `scripts/foodking-claude-orchestrate.sh` so audit uses the **Anthropic subscription**, not the Cursor model orchestration budget; **FALLBACK:** same checklist in the Cursor session with `AUDIT_FALLBACK_REASON:`). See `AGENTS.md`, `run-cycle.md` Step 5, `global.mdc` "Channel economics".
-   - **GPT-5.5 / GPT-5.5-pro via `codex-extension` (PRIMARY)** — Complex implementation through the **FoodKing Codex Complex Implementer** (`npm run codex:complex` → `codex` CLI + **ChatGPT Pro**, **not** Cursor’s model-usage path; **legacy** = proxy+key: `npm run codex:complex:proxy-legacy`). The Cursor sub-agent `foodking-complex-implementer` is **fallback only** (`codex` unreachable; log `FALLBACK_REASON:`).
+   - **GPT-5.5 / GPT-5.5-pro via `codex-extension` (PRIMARY)** — Complex implementation through the **FoodKing Codex Complex Implementer** (`npm run codex:complex` → `codex` CLI + **ChatGPT Pro**, **not** Cursor’s model-usage path). The Cursor sub-agent `foodking-complex-implementer` is **fallback only** (`codex` unreachable; log `FALLBACK_REASON:`).
    - **Composer** — Routine edits, reports, summaries; routine EXECUTE and validate/report phases when the plan assigns them.
    - **Cursor** — Orchestration environment (main chat, commands, Task tool).
 

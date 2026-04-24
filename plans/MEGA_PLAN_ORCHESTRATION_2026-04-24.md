@@ -39,7 +39,7 @@ Ce document remplace l’idée d’« un seul gros appel GPT » par **10 étapes
 |------|--------|----------------|
 | **Orchestrateur** | Session Cursor (ce fil) | Découpage missions, application patches, tests, rapports, mémoire JSONL. |
 | **Plan / audit indépendant** | `bash scripts/foodking-claude-orchestrate.sh` (`context`, `audit`, `audit-brief`) | Lecture repo complète, pas de troncature proxy ; verdicts structurés. |
-| **Implémentation ciblée** | `node agents/codex.runner.mjs <TASK_ID>` + `missions/<TASK>/input.json` | JSON court & **1 objectif** ; `output_codex.json` vérifié intégrité JSON avant application. |
+| **Implémentation ciblée** | `npm run codex:complex -- <TASK_ID>` + `missions/<TASK>/input.json` | JSON court & **1 objectif** ; `output_codex.json` vérifié intégrité JSON avant application. |
 | **Fallback** | `foodking-complex-implementer` (Cursor) | Si proxy HS ≥3x, JSON vide, ou mission **cross-fichiers** > risque troncature. Tracer `EXECUTE_DELEGATION: foodking-complex-implementer` + `FALLBACK_REASON`. |
 
 **Règle budget token (entrée + sortie)** : viser **< 4k tokens** de prompt mission (instruction + 1 extrait ciblé) + **< 8k** sortie attendue ; si le sujet est plus gros → **découper** (P1a, P1b) plutôt qu’augmenter la plafond (impossible côté fournisseur).
@@ -162,7 +162,7 @@ Chaque étape = **bloc de travail** avec fin claire. Entre les étapes : **audit
 0b. `bash .cursor/hooks/safety-check.sh` (pré-EXECUTE).  
 1. `bash scripts/agent-activity-log.sh start cursor-composer T-<LOT> execute "<fichiers>" "mega-plan P#"`  
 2. `missions/T-<...>/input.json` **court** (objectif unique).  
-3. `node agents/codex.runner.mjs T-<...>` — valider `output_codex.json` = JSON **valide** et **complet**.  
+3. `npm run codex:complex -- T-<...>` — valider `output_codex.json` = JSON **valide** et **complet**.  
 3b. Tracer `EXECUTE_DELEGATION: codex-terminal` (et `FALLBACK_*` si repli) dans `reports/post_execute_latest.log` + `REPORT_FILE` du cycle actif.  
 4. Appliquer / ajuster, lancer tests + `check-invariants.sh`.  
 5. `bash scripts/foodking-claude-orchestrate.sh audit "…lot <id>…"`  
