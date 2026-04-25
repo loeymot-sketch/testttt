@@ -1,5 +1,7 @@
 # FoodKing — Primer système global (agents, sous-agents, Graphiti, tokens)
 
+> **Passation session / handoff (résumé + fichiers utiles + commit ref)** : **`../DOC_EXPO_HER_ANCIEN_AGENT_ALIMENTATION_WORKFLOW_2026-04-22.md`**
+
 > **Fichier d’entrée** pour toute nouvelle conversation, tout nouvel outil d’agent (Cursor, terminal, futur bot), ou tout humain qui reprend le projet.  
 > Objectif : **robustesse** = même avec 100 cycles et des exécuteurs différents, le comportement reste **prévisible**, **traçable**, et la **mémoire** reste **alignée** sur le code.
 
@@ -17,6 +19,8 @@ Lire **dans cet ordre** avant d’écrire du code ou un plan non trivial (voir a
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | 0   | `**.cursor/ACTIVE_CYCLE.md`** (si reprise)                 | Cycle déjà en cours : même `TASK_ID` / mêmes Steps **jusqu’à** `CLOSE` — **ne pas** forker un plan parallèle sans le dire |
 | 1   | `**AGENTS.md`** (dont § *Parcours obligatoire*)            | Contrat global : phases, routing, MCP, terminal, parcours production, non-négociables                                     |
+| 1b  | `**docs/orchestration/SESSION_OPENING_ENFORCEMENT.md**`  | **Bloc unique** (tail log + `verify:boucle` + rappel phases) — réduit la répétition « refais la boucle » en session ; **modèle Cursor = Claude pour PLAN** (Auto/Composer ne remplacent pas `routing.md`) |
+| 1c  | `**reports/audit/SIMULATION_PARCOURS_PROD_CHECKPOINTS_2026-04-25.md**` | **Simulation production** : checkpoints par phase, fichiers SSOT, limite IDE (qui orchestre quoi) — avant de promettre « zéro dérive » |
 | 2   | `**.cursor/routing.md*`*                                   | Qui fait quoi (Claude plan/audit, GPT-5.5 complexe via `codex extension`, Composer routine)                               |
 | 3   | `**.cursor/commands/run-cycle.md**`                        | Déroulé exact d’un cycle `TASK_ID` (incl. Graphiti Step 0.5)                                                              |
 | 4   | `**.cursor/rules/graphiti-memory.mdc**`                    | Mémoire Graphiti : quand lire / quand écrire                                                                              |
@@ -30,6 +34,13 @@ Lire **dans cet ordre** avant d’écrire du code ou un plan non trivial (voir a
 Ensuite, **selon le domaine** : `docs/ORDER_FLOW.md`, `docs/DEVICE_FLOW.md`, `docs/ARCHITECTURE.md`, `project-invariants.mdc`, etc.
 
 Référence roster court : `**docs/orchestration/AGENT_ROLES.md`**.
+
+### 1.1 Décision : Claude orchestre ; Codex implémente (principal) et s’auto-audite
+
+- **Cerveau** (priorité, plan, re-plan, **verdict d’audit de cycle** `PASS` / `REWORK`, gates) : **Claude** (session + terminal `foodking-claude-orchestrate.sh`) — **pas** l’exécutant final sur la *décision* de clôture.
+- **Bras + premier contrôle qualité** : **EXECUTE complexe = Codex (PRIMARY)** : **implémente** *et*, via le wrapper, **auto-audit** de sa livraison — `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md` (à lire en entrée de VALIDATE quand le cycle a passé par `codex-extension`). Ce n’est **pas** l’audit de cycle : c’est la **revue** liée à la livraison Codex (même chaîne d’exécution), pour ratissage **avant** l’audit de cycle Claude.
+- **Routine** : Composer (`foodking-routine-implementer`) — implémente sans le même fil Codex/self-audit sauf si le plan l’impose.
+- **Terminal audit** (2ᵉ filet) : défaut **Opus 4.7** + `effort high` — `AGENTS.md` / `FOODKING_CLAUDE_TERMINAL_*`.
 
 ---
 
@@ -48,7 +59,7 @@ Ce ne sont **pas** des fichiers dans le repo ; ce sont des **profils** invoqués
 **Règles d'or**
 
 1. **Délégation obligatoire** pour toute modification produit en EXECUTE, avec trace `EXECUTE_DELEGATION:` dans le log de validation. Valeurs autorisées : `codex-extension` | `foodking-routine-implementer` | `foodking-complex-implementer (codex-extension-fallback)` | `explicit-prompt-bind`.
-2. **EXECUTE complexe = `codex-extension` PRIMAIRE** (CLI `codex` + Pro, `npm run codex:complex -- {TASK_ID}` ; contexte Graphiti/plan dans `missions/…/graphiti_context.md` etc. ; voir `**docs/orchestration/CODEX_API_DELEGATION.md`**). Le sub-agent `foodking-complex-implementer` est le **fallback** (usage Cursor) — indispo `codex exec` ou tâches ponctuelles. **Proxy legacy** = autre binaire, pas le flux Pro principal.
+2. **EXECUTE complexe = `codex-extension` PRIMAIRE** (CLI `codex` + Pro, `npm run codex:complex -- {TASK_ID}` ; contexte Graphiti/plan dans `missions/…/graphiti_context.md` etc. ; voir `**docs/orchestration/CODEX_API_DELEGATION.md`**). Le sub-agent `foodking-complex-implementer` est le **fallback** (usage Cursor) — indispo `codex exec` ou tâches ponctuelles. Aucun **connecteur HTTP** / proxy n’est maintenu dans le dépôt.
 3. Le sous-agent **ne voit pas toujours** le MCP Graphiti du parent : le plan **doit** contenir `**## PRIOR_CONTEXT`** (faits Graphiti + invariants) — copier ou résumer dans le message de délégation **ou** dans `missions/{TASK_ID}/graphiti_context.md` pour l’appel API.
 4. Aucun sub-agent ne **contourne** un gate humain ni n’édite une frozen zone sans `docs/gates/` approuvé.
 
@@ -61,7 +72,7 @@ Documentés dans `**AGENTS.md` § Terminal allies** :
 
 | Outil                                                                  | Rôle                                                                     | Position + **canal d’abonnement** (SSOT)                                                                                                                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `**claude` +** `foodking-claude-orchestrate.sh`                        | **AUDIT cycle — PRIMARY (Step 5)** : `context` → `audit` / `audit-brief` | Abonnement **Anthropic (CLI sur terminal)** ; n’**emprunte** pas l’orchestrateur de modèles de Cursor. **FALLBACK** = même checklist en session Cursor, avec `AUDIT_FALLBACK_REASON:` (voir `run-cycle.md` Step 5, `AGENTS.md`). |
+| `**claude` +** `foodking-claude-orchestrate.sh`                        | **AUDIT cycle — PRIMARY (Step 5)** : `context` → `audit` / `audit-brief` | Abonnement **Anthropic (CLI sur terminal)** ; n’**emprunte** pas l’orchestrateur de modèles de Cursor. **FALLBACK** (quota / limite / panne après 1 retry) : Task **`foodking-planner-orchestrator`** + même checklist + `AUDIT_CHANNEL: cursor-session` + `AUDIT_FALLBACK_REASON:` — `docs/orchestration/AUDIT_TERMINAL_QUOTA_FALLBACK.md`. |
 | **CLI** `codex` + `npm run codex:complex` (`**codex-extension`**, Pro) | **EXECUTE complexe — PRIMARY** (GPT-5.5)                                 | Compte **ChatGPT Pro** sur le terminal ; ne passe **pas** par l’orchestrateur de modèles **Cursor** ; facturation côté OpenAI ; **FALLBACK** = sub-agent.     |
 | `codex` / REPL interactif (OpenAI)                                     | Tâches ad hoc **hors** cycle, ou côté humain                             | N’enlèvent **pas** VALIDATE + AUDIT du `run-cycle`.                                                                                                                                                                              |
 | `verify-orchestration-boucle.sh`                                       | Preuve binaire + optionnel smoke (API)                                   | `bash scripts/verify-orchestration-boucle.sh` — `VERIFY_BILLING_FULL=1` lance 1× smoke `claude` + 1× `npm run codex:smoke`.                                                                                                      |
