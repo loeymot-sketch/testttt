@@ -225,4 +225,105 @@ class KioskSecurityTest extends TestCase
             'user_id' => $user->id,
         ]);
     }
+
+    public function test_kiosk_order_rejects_token_without_registered_machine(): void
+    {
+        $branch = Branch::forceCreate([
+            'name' => 'Branch No Machine',
+            'city' => 'Paris',
+            'state' => 'IDF',
+            'zip_code' => '75002',
+            'address' => '3 rue No Machine',
+            'status' => 1,
+        ]);
+        $user = User::forceCreate([
+            'name' => 'Test User 004',
+            'email' => 'test004@example.com',
+            'username' => 'testuser004',
+            'password' => bcrypt('password'),
+            'status' => 5,
+            'branch_id' => $branch->id,
+        ]);
+        Sanctum::actingAs($user, ['kiosk:order']);
+
+        $category = ItemCategory::forceCreate([
+            'name' => 'Cat 4',
+            'slug' => 'cat-4',
+            'status' => Status::ACTIVE,
+        ]);
+        $item = Item::forceCreate([
+            'name' => 'Item 4',
+            'slug' => 'item-4',
+            'price' => 5.00,
+            'status' => Status::ACTIVE,
+            'item_category_id' => $category->id,
+        ]);
+
+        $this->postJson('/api/frontend/order', [
+            'branch_id' => $branch->id,
+            'subtotal' => $item->price,
+            'total' => $item->price,
+            'order_type' => OrderType::KIOSK,
+            'is_advance_order' => 0,
+            'source' => Source::WEB,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
+            ]),
+        ])->assertStatus(422);
+    }
+
+    public function test_kiosk_order_rejects_inactive_machine(): void
+    {
+        $branch = Branch::forceCreate([
+            'name' => 'Branch Inactive Machine',
+            'city' => 'Paris',
+            'state' => 'IDF',
+            'zip_code' => '75003',
+            'address' => '4 rue Inactive',
+            'status' => 1,
+        ]);
+        $user = User::forceCreate([
+            'name' => 'Test User 005',
+            'email' => 'test005@example.com',
+            'username' => 'testuser005',
+            'password' => bcrypt('password'),
+            'status' => 5,
+            'branch_id' => $branch->id,
+        ]);
+        KioskMachine::forceCreate([
+            'machine_id' => 'MACHINE_005',
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'username' => 'kiosk_test_005',
+            'password' => bcrypt('password123'),
+            'status' => Status::INACTIVE,
+            'is_login' => Ask::NO,
+        ]);
+        Sanctum::actingAs($user, ['kiosk:order']);
+
+        $category = ItemCategory::forceCreate([
+            'name' => 'Cat 5',
+            'slug' => 'cat-5',
+            'status' => Status::ACTIVE,
+        ]);
+        $item = Item::forceCreate([
+            'name' => 'Item 5',
+            'slug' => 'item-5',
+            'price' => 5.00,
+            'status' => Status::ACTIVE,
+            'item_category_id' => $category->id,
+        ]);
+
+        $this->postJson('/api/frontend/order', [
+            'branch_id' => $branch->id,
+            'subtotal' => $item->price,
+            'total' => $item->price,
+            'order_type' => OrderType::KIOSK,
+            'is_advance_order' => 0,
+            'source' => Source::WEB,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
+            ]),
+        ])->assertStatus(422);
+    }
 }
