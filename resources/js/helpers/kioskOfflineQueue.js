@@ -92,6 +92,27 @@ function _normalizeBranchId(branchId) {
     return Number.isFinite(normalized) ? normalized : null;
 }
 
+function _generatedOfflineKey(savedAt) {
+    return `offline_${savedAt}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function _localKey(candidate, savedAt) {
+    return typeof candidate === 'string' && candidate.trim() !== ''
+        ? candidate
+        : _generatedOfflineKey(savedAt);
+}
+
+function _offlineKey(candidate, localKey, savedAt) {
+    if (typeof candidate === 'string' && candidate.startsWith('offline_')) {
+        return candidate;
+    }
+    if (typeof localKey === 'string' && localKey.startsWith('offline_')) {
+        return localKey;
+    }
+
+    return _generatedOfflineKey(savedAt);
+}
+
 function _entryContainsItem(entry, itemId) {
     const normalizedItemId = parseInt(itemId, 10);
     return _safeParseItems(entry?.payload).some((line) => parseInt(line?.item_id, 10) === normalizedItemId);
@@ -131,8 +152,11 @@ function _normalizeEntry(entry) {
         }
     }
 
+    const localKey = _localKey(entry?.localKey, savedAt);
+
     return {
-        localKey: entry?.localKey || `offline_${savedAt}_${Math.random().toString(36).slice(2, 8)}`,
+        localKey,
+        offlineKey: _offlineKey(entry?.offlineKey, localKey, savedAt),
         payload: entry?.payload || {},
         savedAt,
         attempts,
@@ -327,10 +351,12 @@ async function _reportAbandoned(postFn, count) {
 export function saveOrder(payload, originalKey = null, options = {}) {
     _ensureLoaded();
     const savedAt = now();
-    const localKey = originalKey || `offline_${savedAt}_${Math.random().toString(36).slice(2, 8)}`;
+    const localKey = _localKey(originalKey, savedAt);
+    const offlineKey = _offlineKey(null, localKey, savedAt);
     const branchId = _normalizeBranchId(options?.branchId ?? options?.branch_id ?? null);
     _queueCache = _mergeQueue(_queueCache, [{
         localKey,
+        offlineKey,
         payload,
         savedAt,
         attempts: 1,
@@ -347,7 +373,7 @@ export function saveOrder(payload, originalKey = null, options = {}) {
         queue_size: getPendingCount(),
         backend: isIndexedDbReady() ? 'idb' : 'localStorage-fallback',
     });
-    return localKey;
+    return offlineKey;
 }
 
 export function getPendingCount() {
