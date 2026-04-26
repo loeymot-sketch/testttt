@@ -580,10 +580,7 @@ class OrderService
         $idempotencyKey = $request->header('X-Idempotency-Key');
         if ($idempotencyKey) {
             $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency PROD-2 scoped lookup (not order-create)
-            $existing = Order::query()
-                ->where('idempotency_key', $idempotencyKey)
-                ->when($targetBranchId > 0, fn ($q) => $q->where('branch_id', $targetBranchId))
-                ->first();
+            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
             if ($existing) {
                 return $existing;
             }
@@ -1011,7 +1008,8 @@ class OrderService
             // (both see NULL) but the second INSERT hits the DB-level unique constraint.
             // Return the existing order gracefully instead of a 500 error.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
-                $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+                $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency recovery scope only
+                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
                 if ($existing) {
                     Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -1955,6 +1953,18 @@ class OrderService
         $requestedDirection = strtolower($requestedDirection);
 
         return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+    }
+
+    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId): ?Order
+    {
+        if (blank($idempotencyKey) || $branchId <= 0) {
+            return null;
+        }
+
+        return Order::query()
+            ->where('idempotency_key', $idempotencyKey)
+            ->where('branch_id', $branchId)
+            ->first();
     }
 
     private function escapeLike(string $value): string
