@@ -443,86 +443,12 @@ class FrontendOrderService
                     );
                 }
 
-                // [AUDIT-P47-BUG5] AVERTISSEMENT ARCHITECTURE — Double déduction possible.
-                // Si le kiosk appelle LoyaltyController::redeem() AVANT de soumettre la commande,
-                // ET que la commande arrive ici avec discount > 0 + loyalty_code,
-                // les points sont déduits DEUX FOIS (une fois dans redeem, une fois ici).
-                // RÈGLE : Le kiosk NE DOIT PAS appeler redeem() si la déduction se fait ici.
-                // Le flow kiosk actuel passe par ici uniquement (pas par redeem()).
-                // redeem() est réservé au POS/web qui n'ont pas ce bloc.
-                // [SPLASH LOYALTY] Validate and apply loyalty discount server-side.
-                // The kiosk sends loyalty_code + discount amount. We verify:
-                //   1. The loyalty_code belongs to a real active user
-                //   2. The user has enough points to cover the requested discount
-                //   3. The discount does not exceed the subtotal
-                // If valid, deduct the points atomically and add the discount.
-                $loyaltyUser = null;
-                if ($validatedCoupon && $request->loyalty_code && $request->discount > 0) {
-                    Log::info('[Loyalty] Loyalty discount skipped because coupon takes priority on frontend order.');
-                } elseif ($request->loyalty_code && $request->discount > 0) {
-                    try {
-                        $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
-                        if ($rate <= 0) $rate = 100;
-                        $requestedDiscount = (float) $request->discount;
-                        $maxDiscount = min($requestedDiscount, $realSubtotal);
-                        $pointsRequired = (int) ceil($maxDiscount * $rate);
-                        $minRedeemPoints = (int) Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
-                        if ($minRedeemPoints < 0) {
-                            $minRedeemPoints = 0;
-                        }
-
-                        if ($pointsRequired > 0) {
-                            if ($pointsRequired < $minRedeemPoints) {
-                                Log::warning("[Loyalty] Requested redemption below minimum threshold: {$pointsRequired} < {$minRedeemPoints}");
-                            } else {
-                            // [BUG-11-6 FIX] Use lockForUpdate() to prevent race condition:
-                            // two simultaneous kiosk orders with the same loyalty_code could
-                            // both read the same point balance and both succeed, overdrawing points.
-                            $loyaltyUser = \App\Models\User::where('loyalty_code', $request->loyalty_code)
-                                ->where('status', 1)
-                                ->lockForUpdate()
-                                ->first();
-
-                            if ($loyaltyUser && $loyaltyUser->loyalty_points >= $pointsRequired) {
-                                Log::info('[Loyalty] Lock acquired, deducting points', [
-                                    'user_id' => $loyaltyUser->id,
-                                    'order_id' => $this->frontendOrder->id,
-                                    'requested' => $pointsRequired,
-                                    'available' => $loyaltyUser->loyalty_points,
-                                ]);
-                                $calculatedDiscount += $maxDiscount;
-                                \Illuminate\Support\Facades\DB::table('users')
-                                    ->where('id', $loyaltyUser->id)
-                                    ->decrement('loyalty_points', $pointsRequired);
-                                $this->loyaltyApplied = true;
-                                // [AUDIT-P49-BUG8] Write redemption to loyalty_transactions ledger for complete audit trail.
-                                // This ensures the customer's history shows the redeem event even when inline (not via LoyaltyController).
-                                $balanceAfter = $loyaltyUser->loyalty_points - $pointsRequired;
-                                \App\Models\LoyaltyTransaction::create([
-                                    'user_id'        => $loyaltyUser->id,
-                                    'loyalty_code'   => $loyaltyUser->loyalty_code,
-                                    'order_id'       => $this->frontendOrder->id,
-                                    'type'           => 'redeem',
-                                    'points'         => -$pointsRequired,
-                                    'balance_after'  => $balanceAfter,
-                                    'source_surface' => 'kiosk',
-                                    'description'    => 'Réduction fidélité appliquée sur commande kiosk',
-                                ]);
-                                Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount}€)");
-                            } elseif ($loyaltyUser) {
-                                Log::warning('[Loyalty] Insufficient points after lock', [
-                                    'user_id' => $loyaltyUser->id,
-                                    'order_id' => $this->frontendOrder->id,
-                                    'requested' => $pointsRequired,
-                                    'available' => $loyaltyUser->loyalty_points,
-                                ]);
-                            }
-                            }
-                        }
-                    } catch (\Throwable $e) {
-                        Log::warning("[Loyalty] Discount calculation failed: " . $e->getMessage());
-                    }
-                }
+                $this->applyKioskLoyaltyDiscount(
+                    $request,
+                    $validatedCoupon,
+                    (float) $realSubtotal,
+                    $calculatedDiscount
+                );
 
                 $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                 $this->frontendOrder->queue_number = $queueNumber;
@@ -736,6 +662,144 @@ class FrontendOrderService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Apply kiosk loyalty redemption exactly once inside the order transaction.
+     */
+    private function applyKioskLoyaltyDiscount(
+        OrderRequest $request,
+        ?Coupon $validatedCoupon,
+        float $realSubtotal,
+        float &$calculatedDiscount
+    ): void {
+        $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
+        $requestedDiscount = (float) $request->input('discount', 0);
+
+        if ($loyaltyCode === '' || $requestedDiscount <= 0.0) {
+            return;
+        }
+
+        if ($validatedCoupon instanceof Coupon || (int) $request->input('coupon_id', 0) > 0) {
+            Log::info('[Loyalty] Loyalty discount skipped because coupon takes priority on frontend order.');
+            return;
+        }
+
+        // Lock the customer row before deciding whether to consume a pending kiosk redemption
+        // or create a new ledger entry. This keeps points and ledger in the same DB transaction.
+        $loyaltyUser = \App\Models\User::where('loyalty_code', $loyaltyCode)
+            ->where('status', 1)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$loyaltyUser) {
+            return;
+        }
+
+        $redemption = $this->discountCalculator->kioskLoyaltyRedemption(
+            $validatedCoupon,
+            $loyaltyCode,
+            $requestedDiscount,
+            $realSubtotal,
+            $loyaltyUser
+        );
+        $maxDiscount = (float) $redemption['discount'];
+        $pointsRequired = (int) $redemption['points'];
+
+        if ($pointsRequired <= 0 || $maxDiscount <= 0.0) {
+            Log::warning('[Loyalty] Redemption skipped after locked balance check', [
+                'user_id' => $loyaltyUser->id,
+                'order_id' => $this->frontendOrder->id,
+                'requested_discount' => $requestedDiscount,
+                'available' => $loyaltyUser->loyalty_points,
+            ]);
+            return;
+        }
+
+        $pendingRedeem = \App\Models\LoyaltyTransaction::query()
+            ->where('user_id', $loyaltyUser->id)
+            ->where('loyalty_code', $loyaltyUser->loyalty_code)
+            ->where('type', 'redeem')
+            ->where('source_surface', 'kiosk')
+            ->whereNull('order_id')
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->lockForUpdate()
+            ->latest('id')
+            ->first();
+
+        if ($pendingRedeem) {
+            if (abs((int) $pendingRedeem->points) !== $pointsRequired) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'loyalty_code' => 'A pending loyalty redemption exists for a different discount amount.',
+                ]);
+            }
+
+            $pendingRedeem->order_id = $this->frontendOrder->id;
+            $pendingRedeem->description = 'Reduction fidelite kiosk rattachee a la commande';
+            $pendingRedeem->save();
+
+            $calculatedDiscount += $maxDiscount;
+            $this->loyaltyApplied = true;
+
+            Log::info('[Loyalty] Pending kiosk redeem attached without second deduction', [
+                'user_id' => $loyaltyUser->id,
+                'order_id' => $this->frontendOrder->id,
+                'transaction_id' => $pendingRedeem->id,
+            ]);
+            return;
+        }
+
+        $balanceAfter = (int) $loyaltyUser->loyalty_points - $pointsRequired;
+
+        DB::table('users')
+            ->where('id', $loyaltyUser->id)
+            ->update([
+                'loyalty_points' => $balanceAfter,
+                'updated_at' => now(),
+            ]);
+
+        $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
+
+        $calculatedDiscount += $maxDiscount;
+        $this->loyaltyApplied = true;
+
+        Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount} EUR)");
+    }
+
+    private function createKioskLoyaltyRedeemLedger(
+        \App\Models\User $loyaltyUser,
+        int $pointsRequired,
+        int $balanceAfter
+    ): \App\Models\LoyaltyTransaction {
+        try {
+            return \App\Models\LoyaltyTransaction::create([
+                'user_id'        => $loyaltyUser->id,
+                'loyalty_code'   => $loyaltyUser->loyalty_code,
+                'order_id'       => $this->frontendOrder->id,
+                'type'           => 'redeem',
+                'points'         => -$pointsRequired,
+                'balance_after'  => $balanceAfter,
+                'source_surface' => 'kiosk',
+                'description'    => 'Reduction fidelite appliquee sur commande kiosk',
+            ]);
+        } catch (\Illuminate\Database\QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) !== '23000') {
+                throw $exception;
+            }
+
+            $existing = \App\Models\LoyaltyTransaction::query()
+                ->where('user_id', $loyaltyUser->id)
+                ->where('order_id', $this->frontendOrder->id)
+                ->where('type', 'redeem')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $existing) {
+                throw $exception;
+            }
+
+            return $existing;
         }
     }
 
