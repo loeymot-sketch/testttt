@@ -4,10 +4,13 @@ namespace App\Http\Requests;
 
 use App\Enums\Activity;
 use App\Enums\OrderType;
+use App\Enums\Status;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
+use App\Models\KioskMachine;
 use App\Rules\ValidJsonOrder;
 use Smartisan\Settings\Facades\Settings;
 use Illuminate\Foundation\Http\FormRequest;
+use Laravel\Sanctum\TransientToken;
 
 class OrderRequest extends FormRequest
 {
@@ -21,6 +24,16 @@ class OrderRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $kiosk = $this->kioskMachineForToken();
+        if (! $kiosk) {
+            return;
+        }
+
+        $this->merge(['branch_id' => (int) $kiosk->branch_id]);
     }
 
     /**
@@ -76,8 +89,19 @@ class OrderRequest extends FormRequest
             // [GAP-22-1] Kiosk machine orders (KIOSK=25 or TAKEAWAY=10 from a kiosk token) are always
             // allowed regardless of order_setup_takeaway setting. The kiosk is a physical machine in
             // the restaurant — it must offer "à emporter" independently of the web ordering settings.
-            $user = $this->user('sanctum');
-            $isKioskToken = $user && $user->tokenCan('kiosk:order');
+            $isKioskToken = $this->isKioskOrderToken();
+            if ($isKioskToken) {
+                $kiosk = $this->kioskMachineForToken();
+                if (! $kiosk) {
+                    $validator->errors()->add('branch_id', 'Kiosk machine is not registered for this token.');
+                    return;
+                }
+                if ((int) $kiosk->status !== (int) Status::ACTIVE) {
+                    $validator->errors()->add('branch_id', 'Kiosk machine is inactive.');
+                    return;
+                }
+            }
+
             if ($isKioskToken && in_array((int) $orderType, [OrderType::KIOSK, OrderType::TAKEAWAY], true)) {
                 return; // Kiosk orders bypass order_type setting restrictions
             }
@@ -96,10 +120,34 @@ class OrderRequest extends FormRequest
 
     private function isKioskMachineOrder(): bool
     {
-        $user = $this->user('sanctum');
-
-        return (bool) ($user
-            && $user->tokenCan('kiosk:order')
+        return (bool) ($this->isKioskOrderToken()
             && in_array((int) $this->input('order_type'), [OrderType::KIOSK, OrderType::TAKEAWAY], true));
+    }
+
+    private function kioskMachineForToken(): ?KioskMachine
+    {
+        $user = $this->user('sanctum');
+        if (! $user || ! $this->isKioskOrderToken()) {
+            return null;
+        }
+
+        return KioskMachine::query()
+            ->where('user_id', (int) $user->id)
+            ->first();
+    }
+
+    private function isKioskOrderToken(): bool
+    {
+        $user = $this->user('sanctum');
+        if (! $user) {
+            return false;
+        }
+
+        $token = $user->currentAccessToken();
+        if (! $token || $token instanceof TransientToken) {
+            return false;
+        }
+
+        return (bool) $user->tokenCan('kiosk:order');
     }
 }
