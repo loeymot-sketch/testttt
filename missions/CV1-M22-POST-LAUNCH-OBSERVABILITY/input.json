@@ -1,0 +1,63 @@
+{
+  "task_id": "CV1-M22-POST-LAUNCH-OBSERVABILITY",
+  "mission_id": "M-22",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Deliver Caisse V1 post-launch observability and anomaly readiness after M14/M15 without changing product runtime behavior.",
+  "instruction": "Applique uniquement M-22. Livrer observability/readiness artefacts: KPI inventory, anomaly rules, post-launch cadence J+1/J+7/J+30, and fail-closed checks where safe. Do not add runtime telemetry collectors unless already existing patterns make it trivial and fully tested. JSON unique.",
+  "allowlist": [
+    "docs/observability/CAISSE_V1_POST_LAUNCH_OBSERVABILITY_2026-04-25.md",
+    "reports/runbooks/RUNBOOK_POST_LAUNCH_OBSERVABILITY_2026-04-25.md",
+    "scripts/post-launch-observability-check.sh",
+    "tests/Feature/Observability/PostLaunchObservabilityChecklistTest.php",
+    "memory/episodes/caisse_v1_post_launch_2026-04-25.jsonl"
+  ],
+  "off_limits": [
+    "app/Services/**",
+    "resources/js/**",
+    "routes/**",
+    "database/**",
+    "public/js/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "dependencies_closed": [
+    "CV1-M14-OPS-PREFLIGHT",
+    "CV1-M15-ROLLOUT-CANARY"
+  ],
+  "gate_conditions": [
+    "NO-GATE after M-15",
+    "M14 production GO evidence still required before real launch"
+  ],
+  "invariants_at_risk": [
+    "branch_id",
+    "dispatch_after_commit",
+    "fiscal_NF525",
+    "frozen_zones"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=PostLaunchObservabilityChecklistTest",
+    "bash scripts/post-launch-observability-check.sh --help"
+  ],
+  "self_audit_checklist": [
+    "documents KPI LCP POS/kiosk/KDS and anomaly rules",
+    "covers payment-confirm without ability, branch crossover, no-op double trigger, Z mismatch, invalid seal",
+    "cadence J+1/J+7/J+30 is explicit",
+    "script is read-only and fails closed when evidence files are missing",
+    "no runtime product behavior or schema changed"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 0,
+    "predicates": [
+      "post-launch anomaly evidence missing",
+      "invalid seal or fiscal mismatch",
+      "branch crossover signal"
+    ]
+  },
+  "graphiti_query": "Caisse V1 post launch observability anomaly rules J+1 J+7 J+30",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_post_launch_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

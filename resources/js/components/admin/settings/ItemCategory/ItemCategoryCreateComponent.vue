@@ -15,7 +15,7 @@
                         <div class="form-col-12">
                             <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                                id="name" class="db-field-control">
+                                id="name" class="db-field-control" data-testid="admin-category-form-name">
                             <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                         </div>
 
@@ -23,7 +23,7 @@
                         <div class="form-col-12 sm:form-col-6">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (74px,48px)</label>
                             <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
-                                class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg">
+                                class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-category-form-image">
                             <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                         </div>
 
@@ -141,7 +141,7 @@
                                     <span>{{ $t('button.close') }}</span>
                                 </button>
 
-                                <button type="submit" class="db-btn py-2 text-white bg-primary">
+                                <button type="submit" class="db-btn py-2 text-white bg-primary" data-testid="admin-category-form-save">
                                     <i class="lab lab-save"></i>
                                     <span>{{ $t('button.save') }}</span>
                                 </button>

@@ -6,6 +6,16 @@ alwaysApply: true
 
 # Global Rules – FoodKing
 
+## Caisse V1 — Masterplay loop (active phase)
+
+Pendant la phase de finition Caisse V1, **toute mission `CV1-MXX-…` est gouvernée par** :
+- `plans/masterplay/MASTERPLAY_DISCIPLINE.md` — règles d'or (allowlist, frozen, REWORK max 5, activity-log, mémoire)
+- `plans/masterplay/MASTERPLAY_QUEUE.md` — file d'exécution (statut, dépendances DAG)
+- `plans/masterplay/GO.md` — comment lancer / suivre / pause / stop
+- `scripts/run-masterplay.sh` — runner officiel (boucle codex + audit Claude + audit final + ingest mémoire)
+
+**Lecture obligatoire** avant tout EXECUTE sur un `TASK_ID` `CV1-MXX-…`. Hors Caisse V1 : `run-cycle <TASK_ID>` standard.
+
 ## New or continued session — **mandatory path** (applies to **every** conversation and **every** model)
 
 - **The chat log is not the SSOT.** **This repo** (`AGENTS.md`, `.mdc` rules, `docs/orchestration/`, `run-cycle.md`) is.
@@ -13,22 +23,23 @@ alwaysApply: true
 - Full checklist and French wording: **`AGENTS.md` → section *Parcours obligatoire*.
 
 ## Cycle Structure
-PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
+PLAN Claude → PLAN_REVIEW GPT-5.5-pro/xhigh → EXECUTE GPT → VALIDATE → AUDIT Claude → GPT_FINAL_AUDIT → [HUMAN GATE | CLOSE]
 
 Phases are sequential and non-skippable.
-Audit precedes close on every cycle without exception.
+Dual audit (`AUDIT_VERDICT: PASS` + `GPT_FINAL_AUDIT_VERDICT: PASS`) precedes close on every cycle without exception.
 
 ## Model Discipline
 - Auto/Premium routing is disabled
-- PRIMARY_MODEL is declared in the plan file before execution begins
-- One PRIMARY_MODEL per cycle
+- PRIMARY_EXECUTION_MODEL is declared in the plan file before execution begins
+- One PRIMARY_EXECUTION_MODEL per cycle; review checkpoints are explicit and mandatory
 - Mid-cycle model switch requires Claude confirmation logged under `ESCALATION` in the plan file
 - Full routing policy: `.cursor/routing.md`
 
-## Complex EXECUTE Delegation (PRIMARY = `codex-extension`)
-- The **FoodKing Codex Complex Implementer** (slug `codex-extension`, CLI `codex` + compte ChatGPT Pro) is the **primary** route for all complex EXÉCUTE work — not the Cursor sub-agent.
-- Procedure: prepare `missions/{TASK_ID}/input.json` (+ optional `graphiti_context.md` / `plan_excerpt.md` / `execute_brief.md`), run `npm run codex:complex -- {TASK_ID}` (wrapper `bash scripts/codex-extension-execute.sh`), apply `output_codex.json` + lire l’auto-audit `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md`, log `EXECUTE_DELEGATION: codex-extension`.
+## GPT Checkpoints + EXECUTE Delegation (PRIMARY = `codex-extension`)
+- The **FoodKing Codex Complex Implementer** (slug `codex-extension`, CLI `codex` + compte ChatGPT Pro) is the **primary** route for `PLAN_REVIEW`, all product EXÉCUTE work, GPT self-audit, and `GPT_FINAL_AUDIT`.
+- Procedure: run `npm run codex:plan-review -- {TASK_ID}` before EXECUTE; prepare `missions/{TASK_ID}/input.json` (+ optional `graphiti_context.md` / `plan_excerpt.md` / `execute_brief.md`); run `npm run codex:complex -- {TASK_ID}` (wrapper `bash scripts/codex-extension-execute.sh`, `gpt-5.5-pro`, `xhigh`); apply `output_codex.json` + lire l’auto-audit `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md`; after Claude PASS run `npm run codex:final-audit -- {TASK_ID}`. Product edits require `EXECUTE_DELEGATION: codex-extension`.
 - The Cursor sub-agent `foodking-complex-implementer` is **fallback only** — invoked if `codex` / `exec` échoue (≥2 tentatives documentées) or human-escalation. Trace alors `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:`.
+- Composer / `foodking-routine-implementer` is not an implementation route during finishing cycles. It may summarize or validate; product fixes return to GPT EXECUTE.
 - Reference docs: `docs/orchestration/CODEX_API_DELEGATION.md`, `AGENTS.md` § "EXECUTE delegation".
 
 ## Autonomy Contract
@@ -41,9 +52,9 @@ Full policies: `human-gates.mdc`, `scope.mdc`, `project-invariants.mdc`.
 - When the Graphiti MCP server is loaded for this workspace, **query it first** on any non-trivial task (see `.cursor/rules/graphiti-memory.mdc` and `AGENTS.md` § MCP).
 - If Graphiti is not loaded, continue without blocking; one-line note to enable `~/.cursor/mcp.json` is enough.
 
-## Channel economics — terminal first (SSOT, symmetric with EXECUTE)
-- **Complex implementation (`codex-extension` — CLI `codex` Pro)** is the **default**; Cursor sub-agent `foodking-complex-implementer` is **only** a fallback if the `codex exec` path fails (≥2 attempts or binaire indispo) — `EXECUTE_DELEGATION: …` + `FALLBACK_REASON:`. See `AGENTS.md` and `docs/orchestration/CODEX_API_DELEGATION.md`.
-- **Claude AUDIT after implementation** is **by default the terminal** (`bash scripts/foodking-claude-orchestrate.sh context` then `audit` or `audit-brief` — **Anthropic subscription** via `claude` CLI). The **in-session** Cursor audit is a **FALLBACK** only: `AUDIT_CHANNEL: cursor-session` **plus** a mandatory `AUDIT_FALLBACK_REASON:`. Traces live in the cycle `REPORT_FILE` and/or `post_execute` log. See `run-cycle.md` Step 5; verify env with `bash scripts/verify-orchestration-boucle.sh`.
+## Quality channels — terminal first where defined
+- **GPT route (`codex-extension` — CLI `codex` Pro)** is the **default** for PLAN_REVIEW, all product implementation, self-audit, and GPT_FINAL_AUDIT; Cursor sub-agent `foodking-complex-implementer` is **only** a fallback if the `codex exec` path fails (≥2 attempts or binaire indispo) — `EXECUTE_DELEGATION: …` + `FALLBACK_REASON:`. See `AGENTS.md` and `docs/orchestration/CODEX_API_DELEGATION.md`.
+- **Claude AUDIT after implementation** is **by default the terminal** (`bash scripts/foodking-claude-orchestrate.sh context` then `audit` or `audit-brief` — **Anthropic subscription** via `claude` CLI). If the terminal fails after **1 retry** (**quota / rate limit / session saturated**, missing binary, auth, network), **do not stop the cycle**: use the **FALLBACK** — same `audit-context.md` checklist via Cursor Task **`foodking-planner-orchestrator`** (recommended) or in-session **Claude** — with `AUDIT_CHANNEL: cursor-session` **plus** mandatory `AUDIT_FALLBACK_REASON:` and optional `AUDIT_SUBAGENT_FALLBACK: foodking-planner-orchestrator`. See `docs/orchestration/AUDIT_TERMINAL_QUOTA_FALLBACK.md` and `run-cycle.md` Step 5; verify env with `bash scripts/verify-orchestration-boucle.sh`.
 - Never invert primary/fallback for billing convenience without that trace — that would be indistinguishable from a mistake in production evidence.
 
 ## Token Discipline (quality-first — zero negative optimization)

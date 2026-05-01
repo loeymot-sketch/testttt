@@ -160,6 +160,8 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
             'source' => Source::WEB,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
             'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
+            'quote_token' => '00000000-0000-4000-8000-000000000002',
+            'quote_signature' => str_repeat('b', 64),
             'items' => json_encode([[
                 'item_id' => $this->item->id,
                 'quantity' => 1,

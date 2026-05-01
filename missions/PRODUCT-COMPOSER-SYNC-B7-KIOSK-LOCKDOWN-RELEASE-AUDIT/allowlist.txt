@@ -1,0 +1,13 @@
+routes/web.php
+tools/lint/scan_kiosk_bundles.mjs
+tests/e2e/kiosk-lockdown.spec.js
+tests/Feature/KioskBundleLockdownTest.php
+public/js/kiosk.js
+public/js/kiosk.js.LICENSE.txt
+docs/kiosk/LOCKDOWN_POLICY_2026-04-27.md
+missions/PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT/input.json
+missions/PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT/report.md
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT.md
+reports/post_execute_latest.log

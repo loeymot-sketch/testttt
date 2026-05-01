@@ -6,7 +6,9 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\FrontendOrder;
+use App\Services\Order\OrderQuoteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 
 class ConcurrentOrderTest extends TestCase
 {
@@ -64,19 +66,20 @@ class ConcurrentOrderTest extends TestCase
         [$branch, $user, $kiosk] = $this->setupKiosk();
         $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
         $payload = $this->makeOrderPayload($item->id, $branch->id);
+        $payloadWithQuote = $this->withQuote($user, $payload);
         $idempotencyKey = 'test-idempotency-' . uniqid();
 
         $response1 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', $idempotencyKey)
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $payloadWithQuote);
 
         $this->assertTrue(in_array($response1->status(), [200, 201]));
 
         $response2 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', $idempotencyKey)
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $payloadWithQuote);
 
         $this->assertTrue(in_array($response2->status(), [200, 201]));
 
@@ -99,12 +102,12 @@ class ConcurrentOrderTest extends TestCase
         $response1 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', 'key-a-' . uniqid())
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $this->withQuote($user, $payload));
 
         $response2 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', 'key-b-' . uniqid())
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $this->withQuote($user, $payload));
 
         $this->assertTrue(in_array($response1->status(), [200, 201]));
         $this->assertTrue(in_array($response2->status(), [200, 201]));
@@ -137,17 +140,30 @@ class ConcurrentOrderTest extends TestCase
         $response1 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', 'loyalty-a-' . uniqid())
-            ->postJson('/api/frontend/order', $basePayload);
+            ->postJson('/api/frontend/order', $this->withQuote($user, $basePayload));
 
         $response2 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
             ->withHeader('X-Idempotency-Key', 'loyalty-b-' . uniqid())
-            ->postJson('/api/frontend/order', $basePayload);
+            ->postJson('/api/frontend/order', $this->withQuote($user, $basePayload));
 
         $this->assertTrue(in_array($response1->status(), [200, 201]));
         $this->assertTrue(in_array($response2->status(), [200, 201]));
 
         $customer->refresh();
         $this->assertGreaterThanOrEqual(0, $customer->loyalty_points, 'Points must not go negative');
+    }
+
+    private function withQuote(User $user, array $payload): array
+    {
+        $request = Request::create('/api/frontend/order/quote', 'POST', $payload);
+        $request->setUserResolver(fn (?string $guard = null): User => $user);
+
+        $quote = app(OrderQuoteService::class)->quote($request, 'kiosk');
+
+        return $payload + [
+            'quote_token' => $quote->quote_token,
+            'quote_signature' => $quote->hmac_signature,
+        ];
     }
 }

@@ -39,14 +39,15 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionTableSeeder::class);
         $this->call(RoleTableSeeder::class);
         $this->call(CompanyTableSeeder::class);
+        $this->call(LanguageTableSeeder::class);
         $this->call(SiteTableSeeder::class);
         $this->call(PaymentGatewayTableSeederVersionOne::class);
         $this->call(SmsGatewayTableSeederVersionOne::class);
-        $this->call(LanguageTableSeeder::class);
         $this->call(CurrencyTableSeeder::class);
         $this->call(BranchTableSeeder::class);
         $this->call(UserTableSeeder::class);
         $this->call(RolePermissionTableSeeder::class);
+        $this->call(ComposerPermissionsMinimalSeeder::class);
         $this->call(LeCayenneRoleLandingUrlSeeder::class);
         $this->call(MailTableSeeder::class);
         $this->call(OrderSetupTableSeeder::class);

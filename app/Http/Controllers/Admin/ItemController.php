@@ -26,15 +26,19 @@ class ItemController extends AdminController
     {
         parent::__construct();
         $this->itemService = $itemService;
-        $this->middleware(['permission:items'])->only( 'export', 'changeImage');
+        $this->middleware(['permission:items'])->only('export');
         $this->middleware(['permission:items_create'])->only('store', 'import');
-        $this->middleware(['permission:items_edit'])->only('update');
+        $this->middleware(['permission:items_edit'])->only('update', 'changeImage');
         $this->middleware(['permission:items_delete'])->only('destroy');
-        $this->middleware(['permission:items_show'])->only('show');
+        $this->middleware(['permission:items_show'])->only('index', 'show', 'itemDetails', 'lookupBarcode', 'downloadSample');
     }
 
     public function index(PaginateRequest $request) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        if ($request->filled('branch_id')) {
+            $this->authorizeBranchScope($request, (int) $request->get('branch_id'));
+        }
+
         try {
             return SimpleItemResource::collection($this->itemService->simpleList($request));
         } catch (Exception $exception) {
@@ -45,6 +49,10 @@ class ItemController extends AdminController
 
     public function show(Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        if (request()->filled('branch_id')) {
+            $this->authorizeBranchScope(request(), (int) request()->get('branch_id'));
+        }
+
         try {
             return new ItemResource($this->itemService->show($item));
         } catch (Exception $exception) {
@@ -86,6 +94,9 @@ class ItemController extends AdminController
 
     public function changeImage(ChangeImageRequest $request, Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        $user = $request->user();
+        abort_if(! $user || (! $user->hasRole('Admin') && ! $user->hasRole('Tenant Admin')), 403);
+
         try {
             return new ItemResource($this->itemService->changeImage($request, $item));
         } catch (Exception $exception) {
@@ -123,6 +134,10 @@ class ItemController extends AdminController
 
     public function itemDetails(Item $item)
     {
+        if (request()->filled('branch_id')) {
+            $this->authorizeBranchScope(request(), (int) request()->get('branch_id'));
+        }
+
         try {
            return new NormalItemResource($this->itemService->itemDetails($item));
         } catch (Exception $exception) {

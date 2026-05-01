@@ -3,6 +3,8 @@
  * Authority: plans/MEGA_PLAN_SYNC_HARDENING_v3_2026-04-23.md
  */
 
+import ENV from '../config/env';
+
 export const KDS_SYNC_STATE = {
     IDLE: 'IDLE',
     ACTIVE: 'ACTIVE',
@@ -118,9 +120,7 @@ export class KdsSyncService {
             const response = await this.fetchFn(`/api/admin/kds-order/sync?since=${encodeURIComponent(this._lastSince)}${branchQuery}&include_deleted=true`, {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                },
+                headers: this._authHeaders(),
                 signal,
             });
 
@@ -380,6 +380,29 @@ export class KdsSyncService {
 
     _setState(next) {
         this._state = next;
+    }
+
+    _authHeaders() {
+        const headers = {
+            Accept: 'application/json',
+            'x-api-key': ENV.API_KEY,
+        };
+
+        try {
+            const vuex = JSON.parse(localStorage.getItem('vuex') || '{}');
+            const token = vuex.kioskCart?.kioskToken || vuex.auth?.authToken || '';
+            const language = vuex.globalState?.lists?.language_code || null;
+
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            if (language) {
+                headers['x-localization'] = language;
+                headers['Accept-Language'] = language;
+            }
+        } catch (_) { /* corrupted localStorage falls back to unauthenticated headers */ }
+
+        return headers;
     }
 
     _clearTimers() {

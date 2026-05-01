@@ -3,7 +3,9 @@
 namespace App\Services\Menu;
 
 use App\Events\ItemAvailabilityChanged;
+use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\Item;
 use App\Models\ItemBranchAvailability;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -126,6 +128,36 @@ final class AvailabilityService
         $itemIds = array_values(array_unique(array_filter(array_map(static fn ($id) => (int) $id, $itemIds))));
         if ($branchId < 1 || $itemIds === []) {
             return;
+        }
+
+        $catalogItems = Item::query()
+            ->select('id', 'status', 'is_available')
+            ->whereIn('id', $itemIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($itemIds as $itemId) {
+            $item = $catalogItems->get($itemId);
+            if (! $item) {
+                throw new \InvalidArgumentException(
+                    "Article {$itemId} introuvable. Commande rejetée.",
+                    422
+                );
+            }
+
+            if ((int) $item->status !== Status::ACTIVE) {
+                throw new \InvalidArgumentException(
+                    "Article {$itemId} inactif dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
+
+            if ($item->is_available !== null && ! (bool) $item->is_available) {
+                throw new \InvalidArgumentException(
+                    "Article {$itemId} indisponible dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
         }
 
         $query = ItemBranchAvailability::query()

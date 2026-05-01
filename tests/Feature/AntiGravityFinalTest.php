@@ -10,10 +10,12 @@ use App\Models\Branch;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 class AntiGravityFinalTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected function setUp(): void
     {
@@ -61,6 +63,8 @@ class AntiGravityFinalTest extends TestCase
             ]]),
             'token' => 'test_ag_04'
         ];
+
+        $payload = $this->payloadWithPosQuote($admin, $payload);
 
         $orderResponse = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))

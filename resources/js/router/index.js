@@ -8,6 +8,7 @@ import ExceptionComponent from "../components/frontend/otherPage/ExceptionCompon
 import store from "../store";
 import authRoutes from "./modules/authRoutes";
 import settingRoutes from "./modules/settingRoutes";
+import adminRoutes from "./modules/adminRoutes";
 import offerRoutes from "./modules/offerRoutes";
 import itemRoutes from "./modules/itemRoutes";
 import couponRoutes from "./modules/couponRoutes";
@@ -107,6 +108,7 @@ export const routes = baseRoutes.concat(
     frontendRoutes,
     authRoutes,
     settingRoutes,
+    adminRoutes,
     offerRoutes,
     itemRoutes,
     pushNotificationRoutes,

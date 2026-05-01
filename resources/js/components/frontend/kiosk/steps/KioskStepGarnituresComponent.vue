@@ -164,7 +164,7 @@ export default {
 <style scoped>
 .kiosk-step-garnitures {
   padding: 6px 18px 26px;
-  background: #fff;
+  background: transparent;
   min-height: 100%;
 }
 
@@ -173,7 +173,7 @@ export default {
   font-weight: 600;
   text-align: center;
   margin: 0 0 12px;
-  color: #333;
+  color: var(--kiosk-text, #333);
 }
 
 .kiosk-garnitures-info {
@@ -187,7 +187,7 @@ export default {
 .kiosk-info-badge {
   background: transparent;
   border: none;
-  color: #7d7d7d;
+  color: var(--kiosk-text-muted, #7d7d7d);
   padding: 0;
   border-radius: 50px;
   font-size: 11px;
@@ -196,7 +196,7 @@ export default {
 
 .kiosk-info-text {
   font-size: 11px;
-  color: #999;
+  color: var(--kiosk-text-muted, #999);
 }
 
 .kiosk-garnitures-list {
@@ -217,10 +217,14 @@ export default {
   padding: 10px 10px 14px;
   border-radius: 20px;
   border: 1px solid transparent;
-  background: #fff;
+  background: var(--kiosk-surface, #fff);
   cursor: pointer;
   touch-action: manipulation;
-  transition: all 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
   position: relative;
 }
 
@@ -234,14 +238,14 @@ export default {
 .kiosk-step-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: var(--kiosk-text-muted, #666);
   font-size: 14px;
 }
 
 .kiosk-garniture-row.selected {
-  border-color: rgba(232,0,28,0.14);
-  background: rgba(232,0,28,0.025);
-  box-shadow: 0 0 0 1px rgba(232,0,28,0.06);
+  border-color: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));
+  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(232,0,28,0.06));
 }
 
 .kiosk-garniture-row.kiosk-variation--disabled {
@@ -272,7 +276,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f7f7f8;
+  background: var(--kiosk-product-media-bg, #f7f7f8);
   border-radius: 50%;
 }
 
@@ -280,7 +284,7 @@ export default {
   position: absolute;
   width: 130px;
   height: 2px;
-  background: rgba(199, 62, 79, 0.7);
+  background: var(--kiosk-primary, rgba(199, 62, 79, 0.7));
   transform: rotate(-38deg);
   border-radius: 2px;
 }
@@ -288,7 +292,7 @@ export default {
 .kiosk-garniture-name {
   font-size: 12px;
   font-weight: 700;
-  color: #444;
+  color: var(--kiosk-text, #444);
   text-align: center;
   text-transform: uppercase;
   line-height: 1.2;
@@ -304,13 +308,13 @@ export default {
   padding: 2px 0;
   border-radius: 50px;
   background: transparent;
-  color: #999;
+  color: var(--kiosk-text-muted, #999);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .kiosk-garniture-row.selected .kiosk-garniture-status {
-  color: #d7263d;
+  color: var(--kiosk-primary, #d7263d);
 }
 
 .kiosk-garniture-action {
@@ -320,14 +324,14 @@ export default {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #d7263d;
-  color: white;
+  background: var(--kiosk-primary, #d7263d);
+  color: var(--kiosk-text-on-red, white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   line-height: 1;
-  box-shadow: 0 3px 10px rgba(215,38,61,0.2);
+  box-shadow: var(--kiosk-shadow-card, 0 3px 10px rgba(215,38,61,0.2));
   outline: 2px solid rgba(255,255,255,0.85);
 }
 
@@ -340,7 +344,7 @@ export default {
   text-align: center;
   margin-top: 16px;
   font-size: 13px;
-  color: #999;
+  color: var(--kiosk-text-muted, #999);
   font-weight: 500;
 }
 </style>

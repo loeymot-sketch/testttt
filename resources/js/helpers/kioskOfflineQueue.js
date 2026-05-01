@@ -348,6 +348,50 @@ async function _reportAbandoned(postFn, count) {
     } catch (_) {}
 }
 
+function _needsFreshQuote(payload = {}) {
+    return payload
+        && payload.order_type !== undefined
+        && payload.source !== undefined
+        && payload.payment_method !== undefined
+        && (!payload.quote_token || !payload.quote_signature);
+}
+
+function _stripQuoteFields(payload = {}) {
+    const clean = { ...(payload || {}) };
+    delete clean.quote_token;
+    delete clean.quote_signature;
+    delete clean.subtotal;
+    delete clean.discount;
+    delete clean.delivery_charge;
+    delete clean.total;
+    return clean;
+}
+
+async function _payloadWithFreshQuote(postFn, payload, config) {
+    if (!_needsFreshQuote(payload)) {
+        return payload;
+    }
+
+    const quotePayload = _stripQuoteFields(payload);
+    const response = await postFn('frontend/order/quote', quotePayload, config || {});
+    const quote = response?.data?.data || response?.data || {};
+    if (!quote.quote_token || !quote.signature || quote.total_ttc === undefined) {
+        const error = new Error('KIOSK_OFFLINE_QUOTE_REFRESH_FAILED');
+        error.code = 'KIOSK_OFFLINE_QUOTE_REFRESH_FAILED';
+        throw error;
+    }
+
+    return {
+        ...quotePayload,
+        quote_token: quote.quote_token,
+        quote_signature: quote.signature,
+        subtotal: quote.subtotal,
+        discount: quote.discount,
+        delivery_charge: quote.delivery_charge,
+        total: quote.total_ttc,
+    };
+}
+
 export function saveOrder(payload, originalKey = null, options = {}) {
     _ensureLoaded();
     const savedAt = now();
@@ -507,7 +551,8 @@ export async function syncQueue(postFn) {
                     const config = entry.localKey
                         ? { headers: { 'X-Idempotency-Key': entry.localKey } }
                         : {};
-                    await postFn('frontend/order', entry.payload, config);
+                    const payload = await _payloadWithFreshQuote(postFn, entry.payload, config);
+                    await postFn('frontend/order', payload, config);
                     synced += 1;
                     _track('offline.replayed', {
                         idempotency_key: entry.localKey,

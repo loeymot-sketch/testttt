@@ -28,6 +28,19 @@
 
 - **`BROADCAST_DRIVER`** : défaut possible `null` → **aucun** message WS ; seul le polling reste.
 - **`QUEUE_CONNECTION=sync`** : les jobs partent dans la même requête (latence).
+- **Fallback polling POS** : `config/broadcasting.php` expose
+  `polling_fallback.enabled`, `polling_fallback.interval_ms` et
+  `polling_fallback.hint_when_off`. Le store `posOrder` expose
+  `realtimeFallback` / `realtimeFallbackHint` pour afficher un hint operateur
+  quand le broadcast est off et que l'ecran fonctionne en polling.
+
+Valeurs par defaut du fallback:
+
+```env
+BROADCAST_POLLING_FALLBACK_ENABLED=true
+BROADCAST_POLLING_FALLBACK_MS=30000
+BROADCAST_POLLING_FALLBACK_HINT_WHEN_OFF=true
+```
 
 ## 5. Incohérence documentaire connue
 

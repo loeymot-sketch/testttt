@@ -15,6 +15,8 @@
                 <thead class="db-table-head">
                     <tr class="db-table-head-tr">
                         <th class="db-table-head-th">{{ $t("label.name") }}</th>
+                        <th class="db-table-head-th">Choix</th>
+                        <th class="db-table-head-th">Répétition</th>
                         <th class="db-table-head-th">
                             {{ $t("label.status") }}
                         </th>
@@ -27,6 +29,16 @@
                     <tr class="db-table-body-tr" v-for="itemAttribute in itemAttributes" :key="itemAttribute">
                         <td class="db-table-body-td">
                             {{ itemAttribute.name }}
+                        </td>
+                        <td class="db-table-body-td">
+                            <span class="text-xs font-semibold text-slate-600">
+                                {{ itemAttribute.min_select ?? 0 }} - {{ itemAttribute.max_select ?? 1 }}
+                            </span>
+                        </td>
+                        <td class="db-table-body-td">
+                            <span class="text-xs font-semibold" :class="itemAttribute.allow_repeat ? 'text-green-600' : 'text-slate-500'">
+                                {{ itemAttribute.allow_repeat ? $t("label.yes") : $t("label.no") }}
+                            </span>
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(itemAttribute.status)">
@@ -110,6 +122,9 @@ export default {
             props: {
                 form: {
                     name: "",
+                    min_select: 0,
+                    max_select: 1,
+                    allow_repeat: 0,
                     status: statusEnum.ACTIVE,
                 },
                 search: {
@@ -162,6 +177,9 @@ export default {
             this.$store.dispatch("itemAttribute/edit", itemAttribute.id);
             this.props.form = {
                 name: itemAttribute.name,
+                min_select: itemAttribute.min_select ?? 0,
+                max_select: itemAttribute.max_select ?? 1,
+                allow_repeat: itemAttribute.allow_repeat ? 1 : 0,
                 status: itemAttribute.status,
             };
             this.loading.isActive = false;

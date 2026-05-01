@@ -15,6 +15,7 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class PosUITest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $posOperator;
@@ -129,7 +131,8 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $orderData));
 
         $response->assertCreated();
 
@@ -220,7 +223,8 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $orderData));
 
         $response->assertCreated();
 

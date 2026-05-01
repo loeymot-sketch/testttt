@@ -12,8 +12,34 @@ describe('KdsSyncService version gate', () => {
     });
 
     afterEach(() => {
+        localStorage.clear();
         vi.restoreAllMocks();
         vi.useRealTimers();
+    });
+
+    it('sends the persisted Sanctum bearer token when fallback sync uses fetch', async () => {
+        localStorage.setItem('vuex', JSON.stringify({
+            auth: { authToken: 'staff-token' },
+            globalState: { lists: { language_code: 'fr' } },
+        }));
+
+        const fetchFn = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                server_now: '2026-04-23T10:00:00Z',
+                orders: [],
+                deleted_ids: [],
+            }),
+        });
+
+        const service = new KdsSyncService({ wsService: { state: 'DISCONNECTED', on: () => () => {} }, fetchFn });
+        service.start(1);
+
+        await service.forceSync();
+
+        expect(fetchFn).toHaveBeenCalledTimes(1);
+        expect(fetchFn.mock.calls[0][1].headers.Authorization).toBe('Bearer staff-token');
+        expect(fetchFn.mock.calls[0][1].headers['x-localization']).toBe('fr');
     });
 
     it('gates same version on second sync', async () => {

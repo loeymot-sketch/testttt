@@ -1,0 +1,11 @@
+Tu es l'orchestrateur FoodKing (AGENTS.md). Ne modifie aucun fichier produit ici.
+
+Lis le fichier missions/LIRE_MOI_WAVE2.md (liste humaine des 36 étapes Wave 2 Option B).
+
+Tâche :
+1) Produit en français une CHECKLIST opérateur d'UNE page max (titres courts, numéros 1-36) — le format est libre (table, puces, ou sections D/P/K) : ce que TU juges le plus clair pour enchaîner les tâches une après l'autre.
+2) Rappelle en 2 phrases les 4 numéros bloqués et POURQUOI (sans jargon inutile).
+3) Rappelle qu'Option B exclut M-04A (ledger complet) et que chaque run = un seul CV1-LOT-*.
+4) Donne un VERDICT unique : ORDRE_OK | ORDRE_A_AJUSTER — si ajuste, 3 suggestions max (documentaire, pas code).
+
+Ne propose pas de patch. Pas de promesse "tout est vert en prod".

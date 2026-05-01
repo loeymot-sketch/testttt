@@ -112,10 +112,10 @@
                         @php $total+= $order->total @endphp
                         <tr>
                             <td>{{$order->order_serial_no}}</td>
-                            <td>{{trans('orderType.' . $order->order_type, [], 'en')}}</td>
+                            <td>{{trans('orderType.' . $order->order_type)}}</td>
                             <td>{{$order->user?->name}}</td>
                             <td>{{ App\Libraries\AppLibrary::datetime($order->order_datetime) }}</td>
-                            <td>{{ trans('orderStatus.' . $order->status, [], 'en') }}</td>
+                            <td>{{ trans('orderStatus.' . $order->status) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->total) }}</td>
                         </tr>
                     @endforeach

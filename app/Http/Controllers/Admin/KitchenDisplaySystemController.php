@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Exception;
 use App\Models\Order;
 use Illuminate\Http\Request;
-use App\Http\Requests\OrderStatusRequest;
+use App\Http\Requests\Kds\KdsOrderStatusRequest;
 use App\Http\Resources\KDSOrderItemsResource;
 use App\Http\Resources\KDSOrderDetailsResource;
 use App\Services\KitchenDisplaySystemOrderService;
@@ -25,13 +25,20 @@ class KitchenDisplaySystemController extends AdminController
     public function index(Request $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return KDSOrderDetailsResource::collection($this->kitchenDisplaySystemOrderService->list($request));
+            $orders = $this->kitchenDisplaySystemOrderService->list($request);
+
+            return KDSOrderDetailsResource::collection($orders)->additional([
+                'meta' => [
+                    'overflow' => $this->kitchenDisplaySystemOrderService->lastListOverflow(),
+                    'limit' => 50,
+                ],
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 
-    public function changeStatus(Order $order, OrderStatusRequest $request): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    public function changeStatus(Order $order, KdsOrderStatusRequest $request): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
             $this->kitchenDisplaySystemOrderService->changeStatus($order, $request);

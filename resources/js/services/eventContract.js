@@ -1,19 +1,23 @@
 export const EVENT_TYPES = {
     ORDER_CREATED: 'order.created',
     ORDER_STATUS_CHANGED: 'order.status_changed',
+    ORDER_PAYMENT_CONFIRMED: 'order.payment_confirmed',
     ORDER_ITEM_ADDED: 'order.item_added',
     ORDER_CANCELLED: 'order.cancelled',
     // [F-02] KDS table reassignment fan-out — keep in sync with PHP EventType.
     ORDER_TABLE_CHANGED: 'order.table_changed',
     MENU_ITEM_AVAILABILITY_CHANGED: 'menu.item_availability_changed',
+    CATALOG_CHANGED: 'catalog.changed',
     STOCK_LOW: 'stock.low',
 };
 
 export const BROADCAST_MAP = {
     OrderCreated: EVENT_TYPES.ORDER_CREATED,
     OrderStatusChanged: EVENT_TYPES.ORDER_STATUS_CHANGED,
+    OrderPaidAtCounter: EVENT_TYPES.ORDER_PAYMENT_CONFIRMED,
     OrderTableChanged: EVENT_TYPES.ORDER_TABLE_CHANGED,
     ItemAvailabilityChanged: EVENT_TYPES.MENU_ITEM_AVAILABILITY_CHANGED,
+    CatalogChanged: EVENT_TYPES.CATALOG_CHANGED,
 };
 
 function warnValidation(reason, data) {
@@ -249,17 +253,28 @@ function evictCorrelationCapacity() {
 
 loadCorrelationDedupeFromStorage();
 
-export function isDuplicateCorrelation(correlationId) {
+function correlationDedupeKey(correlationId, eventType = null, branchId = null) {
+    const branchKey = branchId === null || branchId === undefined || branchId === ''
+        ? null
+        : `branch:${branchId}`;
+    if (!eventType || typeof eventType !== 'string') {
+        return branchKey ? `${branchKey}:${correlationId}` : correlationId;
+    }
+    return branchKey ? `${eventType}:${branchKey}:${correlationId}` : `${eventType}:${correlationId}`;
+}
+
+export function isDuplicateCorrelation(correlationId, eventType = null, branchId = null) {
     if (!correlationId || typeof correlationId !== 'string') {
         return false;
     }
+    const dedupeKey = correlationDedupeKey(correlationId, eventType, branchId);
     const now = Date.now();
     evictExpiredCorrelations(now);
-    if (seenCorrelationIds.has(correlationId)) {
+    if (seenCorrelationIds.has(dedupeKey)) {
         return true;
     }
-    seenCorrelationIds.add(correlationId);
-    seenCorrelationOrder.push({ id: correlationId, ts: now });
+    seenCorrelationIds.add(dedupeKey);
+    seenCorrelationOrder.push({ id: dedupeKey, ts: now });
     evictCorrelationCapacity();
     persistCorrelationDedupe();
     return false;
@@ -337,7 +352,7 @@ export function onEvents(branchId, bindings) {
                     });
                 }
 
-                if (isDuplicateCorrelation(parsed.correlationId)) {
+                if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId)) {
                     return;
                 }
 

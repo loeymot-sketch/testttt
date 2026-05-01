@@ -243,11 +243,19 @@ class KioskFullFlowE2ETest extends TestCase
     private function postKioskOrder(User $user, array $payload, string $idempotencyKey)
     {
         Sanctum::actingAs($user, ['kiosk:order']);
+        $quote = $this
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
 
         return $this
             ->withHeader('x-api-key', '123456')
             ->withHeader('X-Idempotency-Key', $idempotencyKey)
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+            ]);
     }
 
     private function expectedTotalFor(int $branchId, int $userId, string $itemsJson): float

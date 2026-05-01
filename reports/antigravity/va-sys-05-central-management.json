@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-04-30T15:18:37.560Z",
+  "verdict": "PASS_RUNTIME_LOCAL",
+  "results": [
+    {
+      "scenario": "central_management_to_runtime_projection_and_order",
+      "pass": true,
+      "item_id": 662,
+      "order_id": 685,
+      "queue_number": "A0001",
+      "total": 13,
+      "stock_on_hand": 7,
+      "composition_lines": 1,
+      "composition_extras": 1,
+      "composition_addons": 1
+    }
+  ]
+}

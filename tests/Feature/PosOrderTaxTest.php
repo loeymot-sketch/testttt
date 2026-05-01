@@ -17,10 +17,12 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 class PosOrderTaxTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected function setUp(): void
     {
@@ -68,22 +70,23 @@ class PosOrderTaxTest extends TestCase
         $admin->assignRole('Admin');
 
         // Passer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $response->assertStatus(201);
         $data = $response->json();
@@ -136,22 +139,23 @@ class PosOrderTaxTest extends TestCase
         $admin->assignRole('Admin');
 
         // Créer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         $response->assertStatus(201);
         $orderId = $response->json('data.id');
 

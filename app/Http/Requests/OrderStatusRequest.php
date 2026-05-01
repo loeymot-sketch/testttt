@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\OrderStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,9 +26,9 @@ class OrderStatusRequest extends FormRequest
             return true;
         }
 
-        // Kiosk machine users can only cancel their OWN orders (status 16 = CANCELED)
+        // Kiosk machine users can only cancel their OWN orders.
         // The service layer enforces ownership + status constraints.
-        if ($user->tokenCan('kiosk:order') && (int) $this->input('status') === 16) {
+        if ($user->tokenCan('kiosk:order') && (int) $this->input('status') === OrderStatus::CANCELED) {
             return true;
         }
 

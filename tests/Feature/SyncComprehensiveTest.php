@@ -12,9 +12,11 @@ use App\Models\KioskMachine;
 use App\Models\DiningTable;
 use App\Models\Tax;
 use App\Enums\Ask;
+use App\Enums\PaymentGateway;
 use App\Enums\TaxType;
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 /**
  * Module 9: Synchronisation Inter-Écrans (6 tests)
@@ -26,6 +28,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class SyncComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected function setUp(): void
     {
@@ -92,22 +95,24 @@ class SyncComprehensiveTest extends TestCase
         ]);
         
         // Créer commande via Kiosk (en PENDING)
+        $payload = [
+            'order_type' => 10, // TAKEAWAY
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 10.00,
+            'delivery_charge' => 0,
+            'is_advance_order' => Ask::NO,
+            'source' => 10, // APP
+            'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 10.00,
+                'quantity' => 1,
+            ]]),
+        ];
         $orderResponse = $this->actingAs($kioskUser)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/frontend/order', [
-                'order_type' => 10, // TAKEAWAY
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 10.00,
-                'delivery_charge' => 0,
-                'is_advance_order' => Ask::NO,
-                'source' => 10, // APP
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 10.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
+            ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
         
         $this->assertTrue(in_array($orderResponse->status(), [200, 201]));
         
@@ -150,24 +155,25 @@ class SyncComprehensiveTest extends TestCase
         ]);
         
         // Créer commande via POS (crée directement en ACCEPT)
+        $payload = [
+            'order_type' => \App\Enums\OrderType::POS,
+            'subtotal' => 15.00,
+            'total' => 15.00,
+            'source' => \App\Enums\Source::POS,
+            'customer_id' => $customer->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => Ask::NO,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            'pos_received_amount' => 999.00,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 15.00,
+                'quantity' => 1,
+            ]]),
+        ];
         $posResponse = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'order_type' => \App\Enums\OrderType::POS,
-                'subtotal' => 15.00,
-                'total' => 15.00,
-                'source' => \App\Enums\Source::POS,
-                'customer_id' => $customer->id,
-                'branch_id' => $branch->id,
-                'is_advance_order' => Ask::NO,
-                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 999.00,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 15.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         
         $posResponse->assertStatus(201);
         $order = Order::first();
@@ -330,22 +336,24 @@ class SyncComprehensiveTest extends TestCase
         ]);
         
         // 1. Créer commande via Kiosk
+        $payload = [
+            'order_type' => 10, // TAKEAWAY
+            'branch_id' => $branch->id,
+            'subtotal' => 20.00,
+            'total' => 20.00,
+            'delivery_charge' => 0,
+            'is_advance_order' => Ask::NO,
+            'source' => 10, // APP
+            'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 20.00,
+                'quantity' => 1,
+            ]]),
+        ];
         $orderResponse = $this->actingAs($kioskUser)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/frontend/order', [
-                'order_type' => 10, // TAKEAWAY
-                'branch_id' => $branch->id,
-                'subtotal' => 20.00,
-                'total' => 20.00,
-                'delivery_charge' => 0,
-                'is_advance_order' => Ask::NO,
-                'source' => 10, // APP
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 20.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
+            ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
         
         $this->assertTrue(in_array($orderResponse->status(), [200, 201]));
         

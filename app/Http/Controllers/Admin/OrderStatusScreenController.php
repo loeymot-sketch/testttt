@@ -6,6 +6,7 @@ use Exception;
 use App\Http\Resources\CDSPopularItemResource;
 use App\Http\Resources\CDSOrderDetailsResource;
 use App\Services\OrderStatusScreenOrderService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderStatusScreenController extends AdminController
 {
@@ -22,6 +23,8 @@ class OrderStatusScreenController extends AdminController
     {
         try {
             return CDSOrderDetailsResource::collection($this->orderStatusScreenOrderService->list());
+        } catch (HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -31,6 +34,8 @@ class OrderStatusScreenController extends AdminController
     {
         try {
             return CDSPopularItemResource::collection($this->orderStatusScreenOrderService->mostPopularItems());
+        } catch (HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

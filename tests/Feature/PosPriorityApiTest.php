@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 /**
  * Tests prioritaires automatisables côté API (coupon / adresse livraison) — alignés local-validation / E2E.
@@ -19,6 +20,7 @@ use Tests\TestCase;
 class PosPriorityApiTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     private function apiKey(): string
     {
@@ -83,9 +85,9 @@ class PosPriorityApiTest extends TestCase
             'coupon_id' => 999_999,
         ]);
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', $payload);
+            ->postJson('/api/admin/pos/quote', $payload);
 
         $response->assertStatus(422);
         $response->assertJsonFragment(['status' => false]);
@@ -137,7 +139,9 @@ class PosPriorityApiTest extends TestCase
             ]]),
         ];
 
-        $response = $this->actingAs($admin)
+        $payload = $this->payloadWithPosQuote($admin, $payload);
+
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/pos', $payload);
 

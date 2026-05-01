@@ -130,24 +130,34 @@ class OrderAllergenSnapshotComposedTest extends TestCase
         $extraPrice = 1.00;
         $total = $base + $extraPrice;
 
+        $payload = [
+            'branch_id' => $branch->id,
+            'subtotal' => $total,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'total' => $total,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => Ask::NO,
+            'source' => Source::APP,
+            'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'quantity' => 1,
+                'item_variations' => [],
+                'item_extras' => [['id' => $extra->id]],
+            ]]),
+        ];
+        $quote = $this
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
         $response = $this
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', [
-                'branch_id' => $branch->id,
-                'subtotal' => $total,
-                'discount' => 0,
-                'delivery_charge' => 0,
-                'total' => $total,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => Ask::NO,
-                'source' => Source::APP,
-                'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'quantity' => 1,
-                    'item_variations' => [],
-                    'item_extras' => [['id' => $extra->id]],
-                ]]),
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
             ]);
 
         $this->assertContains($response->status(), [200, 201], json_encode($response->json()));

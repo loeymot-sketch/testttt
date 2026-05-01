@@ -1,0 +1,54 @@
+{
+  "task_id": "CV1-M05-ORDER-QUOTE",
+  "mission_id": "M-05",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Créer OrderQuoteService autoritaire avec empreinte HMAC-SHA256, TTL 60s, replay idempotent et rejet tamper; exposer endpoint POS quote et tests.",
+  "instruction": "Applique uniquement M-05. Gate schema Option A approuvée. Payment prop Option A approuvée mais limiter les edits UI au strict nécessaire pour consommer quote.total_ttc. REWORK GPT final: relier la quote au commit POS/Kiosk réel, valider TTL/HMAC/intent/branch_id, consommer avec order_id, et garder la symétrie OrderService/FrontendOrderService. JSON unique.",
+  "allowlist": [
+    "database/migrations/",
+    "app/Models/OrderQuote.php",
+    "app/Services/Order/OrderQuoteService.php",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "routes/api.php",
+    "resources/js/store/modules/kioskCart.js",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "tests/Feature/QuoteExpirationTest.php",
+    "tests/Feature/QuoteTamperTest.php",
+    "tests/Feature/QuoteReplayIdempotencyTest.php",
+    "tests/Feature/QuoteCurrencyOriginTest.php",
+    "tests/Feature/QuoteDiscountAuthoritativeTest.php"
+  ],
+  "off_limits": ["app/Services/PricingService.php", "app/Services/Pricing/**", "app/Services/Fiscal/**", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25", "status": "Approved", "decision": "Option A — All migrations with rehearsal + backup", "date": "2026-04-25"},
+    {"gate": "GATE_PAYMENT_PROP_MUTATION_2026-04-26", "status": "Approved", "decision": "Option A — Refactor complet sous gate", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["pricing_ssot", "branch_id", "frozen_zones", "order_service_symmetry"],
+  "gate_conditions": ["schema approved Option A"],
+  "mandatory_tests": [
+    "php artisan test --filter=QuoteExpirationTest",
+    "php artisan test --filter=QuoteTamperTest",
+    "php artisan test --filter=QuoteReplayIdempotencyTest",
+    "php artisan test --filter=QuoteCurrencyOriginTest",
+    "php artisan test --filter=QuoteDiscountAuthoritativeTest"
+  ],
+  "self_audit_checklist": [
+    "quote total comes from backend service only",
+    "commit path verifies and consumes quote in both OrderService and FrontendOrderService",
+    "HMAC canonical payload includes branch actor items modifiers discounts taxes currency fees",
+    "tamper rejects with 401/explicit error and replay is idempotent",
+    "branch_id is in quote scope and cannot cross branches",
+    "migrations are reversible and covered by M-13 safety when relevant"
+  ],
+  "rollback": {"feature_flag": "quote_v1", "max_window_days": 7, "predicates": ["quote tamper accepted", "quote replay non-idempotent"]},
+  "graphiti_query": "Caisse V1 order quote HMAC backend total pricing SSOT",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_order_quote_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

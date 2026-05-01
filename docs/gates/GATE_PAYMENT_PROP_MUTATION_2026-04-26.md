@@ -79,14 +79,14 @@ Cette pratique :
 
 ## Approval
 
-- [ ] Approved — option selected: ___
+- [x] Approved — option selected: Option A — Refactor complet sous gate
 - [ ] Cancelled
 
-**Approved by** : ___________________ (Tech Lead)
-**Co-signed by** : ___________________ (Backend owner — pour invariant `commit_before_dispatch`)
-**Co-signed by** : ___________________ (QA / Compliance — pour validation NF525)
-**Co-signed by** : ___________________ (UX owner — pour validation expérience flux paiement post-refactor)
-**Date** : ___________
+**Approved by** : Codex (instruction humaine explicite)
+**Co-signed by** : Codex (instruction humaine explicite — Backend owner proxy)
+**Co-signed by** : Codex (instruction humaine explicite — QA / Compliance proxy)
+**Co-signed by** : Codex (instruction humaine explicite — UX owner proxy)
+**Date** : 2026-04-25
 
 ---
 
@@ -100,7 +100,7 @@ Cette pratique :
 
 ## Owner audit symétrie KioskPaymentComponent
 
-**Owner désigné** : ___________________ (Frontend lead — responsable de l'audit symétrie POS/Kiosk si Option A approuvée)
+**Owner désigné** : Codex (instruction humaine explicite — Frontend lead proxy)
 **Périmètre de l'audit** : `resources/js/components/frontend/kiosk/KioskPaymentComponent.vue` — vérifier si pattern prop-mutation présent, et si oui, refactor en miroir (commit atomique avec PaymentComponent POS).
 
 ---

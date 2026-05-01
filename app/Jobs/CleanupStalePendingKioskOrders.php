@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domain\Order\OrderStateMachine;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Events\OrderCanceled;
 use App\Events\OrderStatusChanged;
 use App\Events\SendOrderMail;
@@ -11,6 +12,7 @@ use App\Events\SendOrderPush;
 use App\Events\SendOrderSms;
 use App\Models\FrontendOrder;
 use App\Models\Scopes\BranchScope;
+use Illuminate\Support\Facades\DB;
 
 class CleanupStalePendingKioskOrders
 {
@@ -28,6 +30,7 @@ class CleanupStalePendingKioskOrders
         FrontendOrder::withoutGlobalScope(BranchScope::class)
             ->whereNull('deleted_at')
             ->where('status', OrderStatus::PENDING)
+            ->where('payment_status', PaymentStatus::UNPAID)
             ->where('source_surface', 'kiosk')
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
             ->where(function ($query) use ($staleThreshold): void {
@@ -37,16 +40,38 @@ class CleanupStalePendingKioskOrders
             ->orderBy('id')
             ->get()
             ->each(function (FrontendOrder $order): void {
-                $oldStatus = (int) $order->status;
+                $oldStatus = null;
+                $rejected = false;
 
-                OrderStateMachine::apply(
-                    $order,
-                    OrderStatus::REJECTED,
-                    null,
-                    'Auto-rejected stale pending kiosk order after 15 minutes.'
-                );
+                DB::transaction(function () use ($order, &$oldStatus, &$rejected): void {
+                    $locked = FrontendOrder::withoutGlobalScope(BranchScope::class)
+                        ->whereKey($order->id)
+                        ->lockForUpdate()
+                        ->first();
 
-                $order->refresh();
+                    if (!$locked
+                        || (int) $locked->status !== OrderStatus::PENDING
+                        || (int) $locked->payment_status !== PaymentStatus::UNPAID) {
+                        return;
+                    }
+
+                    $oldStatus = (int) $locked->status;
+
+                    OrderStateMachine::apply(
+                        $locked,
+                        OrderStatus::REJECTED,
+                        null,
+                        'Auto-rejected stale pending kiosk order after 15 minutes.'
+                    );
+
+                    $locked->refresh();
+                    $order->setRawAttributes($locked->getAttributes(), true);
+                    $rejected = true;
+                });
+
+                if (!$rejected || $oldStatus === null) {
+                    return;
+                }
 
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => OrderStatus::REJECTED]);
                 SendOrderSms::dispatch(['order_id' => $order->id, 'status' => OrderStatus::REJECTED]);

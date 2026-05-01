@@ -24,6 +24,10 @@ class PersistOrderStatusChangedToOutbox
             'payload' => [
                 'order_id' => $order->id,
                 'queue_number' => $order->queue_number,
+                '_origin' => $this->resolveOrigin($order),
+                'payment_method' => $this->resolvePaymentMethod($order),
+                'payment_status' => $order->payment_status,
+                'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
                 'old_status' => $event->oldStatus,
                 'new_status' => $event->newStatus,
                 'token' => $order->token ?? null,
@@ -56,5 +60,29 @@ class PersistOrderStatusChangedToOutbox
         }
 
         return (string) Str::uuid();
+    }
+
+    private function resolveOrigin(object $order): string
+    {
+        $surface = trim((string) ($order->source_surface ?? ''));
+
+        if ($surface !== '') {
+            return $surface;
+        }
+
+        if (($order->pos_payment_method ?? null) !== null) {
+            return 'pos';
+        }
+
+        return ($order->queue_number ?? null) !== null ? 'kiosk' : 'web';
+    }
+
+    private function resolvePaymentMethod(object $order): int|string|null
+    {
+        if (($order->pos_payment_method ?? null) !== null) {
+            return $order->pos_payment_method;
+        }
+
+        return $order->payment_method ?? null;
     }
 }

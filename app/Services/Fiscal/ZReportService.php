@@ -33,10 +33,14 @@ class ZReportService
     private const LOCK_TTL_SECONDS     = 10;
     private const LOCK_ACQUIRE_SECONDS = 4;
 
+    private FiscalSealingService $sealing;
+
     public function __construct(
-        private ?ConnectionInterface $connection = null
+        private ?ConnectionInterface $connection = null,
+        ?FiscalSealingService $sealing = null
     ) {
         $this->connection = $connection ?? DB::connection();
+        $this->sealing = $sealing ?? app(FiscalSealingService::class);
     }
 
     /**
@@ -231,17 +235,25 @@ class ZReportService
         //     bound will be >$to).
         // When $from is null (first Z ever for this branch), the lower
         // bound is open (we accept the entire history up to $to).
-        $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+        $baseQuery = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('branch_id', $branchId)
             ->whereNotNull('fiscal_sequence_no')
-            ->where('created_at', '<=', $to);
+            ->where('payment_status', '!=', PaymentStatus::UNPAID);
 
+        $windowQuery = (clone $baseQuery)
+            ->where('created_at', '<=', $to);
         if ($from) {
-            $query->where('created_at', '>', $from);
+            $windowQuery->where('created_at', '>', $from);
         }
 
-        $orders = (clone $query)
-            ->where('payment_status', '!=', PaymentStatus::UNPAID)
+        $terminalStatuses = [
+            OrderStatus::CANCELED,
+            OrderStatus::REJECTED,
+            OrderStatus::RETURNED,
+        ];
+
+        $orders = (clone $windowQuery)
+            ->whereNotIn('status', $terminalStatuses)
             ->get();
 
         $totalTtc = 0.0;
@@ -252,17 +264,45 @@ class ZReportService
         $orderCount = 0;
 
         foreach ($orders as $o) {
-            $totalTtc += (float) ($o->total ?? 0);
-            $totalHt  += (float) ($o->total_ht ?? ($o->subtotal ?? 0));
-            $totalTva += (float) ($o->total_tax ?? 0);
+            $this->applyOrderToTotals($o, 1, $totalTtc, $totalHt, $totalTva, $byMethod);
             $orderCount++;
-
-            $method = $o->pos_payment_method ?: ($o->payment_method ?: 'unknown');
-            $byMethod[$method] = ($byMethod[$method] ?? 0.0) + (float) ($o->total ?? 0);
         }
 
-        $cancelCount = (clone $query)->where('status', OrderStatus::CANCELED)->count();
-        $refundCount = (clone $query)->where('status', OrderStatus::RETURNED)->count();
+        // M-08 policy:
+        // - pre-Z refund/void rows are evidence counters only; they do
+        //   not create positive revenue in the closing Z;
+        // - post-Z refund/void rows are negative adjustments in the next
+        //   Z window, keyed by updated_at because status transitions are
+        //   persisted on the same order row.
+        $preZCancelCount = (clone $windowQuery)
+            ->whereIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED])
+            ->count();
+        $preZRefundCount = (clone $windowQuery)
+            ->where('status', OrderStatus::RETURNED)
+            ->count();
+
+        $postZCanceled = collect();
+        $postZReturned = collect();
+        if ($from) {
+            $postZAdjustmentQuery = (clone $baseQuery)
+                ->where('created_at', '<=', $from)
+                ->where('updated_at', '>', $from)
+                ->where('updated_at', '<=', $to);
+
+            $postZCanceled = (clone $postZAdjustmentQuery)
+                ->whereIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED])
+                ->get();
+            $postZReturned = (clone $postZAdjustmentQuery)
+                ->where('status', OrderStatus::RETURNED)
+                ->get();
+
+            foreach ($postZCanceled->concat($postZReturned) as $o) {
+                $this->applyOrderToTotals($o, -1, $totalTtc, $totalHt, $totalTva, $byMethod);
+            }
+        }
+
+        $cancelCount = $preZCancelCount + $postZCanceled->count();
+        $refundCount = $preZRefundCount + $postZReturned->count();
 
         // [POS-9-H.2.8 / F-B6]
         // Populate total_by_tax_rate by summing order_items.tax_amount
@@ -272,25 +312,11 @@ class ZReportService
         // PricingService and guarantees consistency with the individual
         // receipts that are referenced by fiscal_sequence_no.
         $byTaxRate = [];
-        $paidOrderIds = $orders->pluck('id')->all();
-        if ($paidOrderIds !== []) {
-            $rows = DB::table('order_items')
-                ->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')
-                ->whereIn('order_id', $paidOrderIds)
-                ->whereNotNull('tax_rate')
-                ->groupBy('tax_rate')
-                ->get();
-            foreach ($rows as $r) {
-                // Normalize the key — tax_rate is stored as a string with
-                // inconsistent precision ("10", "10.00", "5.5"), so we
-                // cast through float to canonicalise and then back to
-                // string for a stable JSON-encoded signed payload.
-                $key = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
-                $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + (float) $r->total_tax_for_rate;
-            }
-            $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
-            ksort($byTaxRate);
-        }
+        $byTaxRate = $this->taxBreakdownForOrders($orders->pluck('id')->all(), 1, $byTaxRate);
+        $adjustmentOrderIds = $postZCanceled->concat($postZReturned)->pluck('id')->all();
+        $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrderIds, -1, $byTaxRate);
+        $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
+        ksort($byTaxRate);
 
         // Normalise rounding to 2 decimals so the signed aggregates are stable.
         $byMethod = array_map(fn ($v) => round((float) $v, 2), $byMethod);
@@ -447,12 +473,6 @@ class ZReportService
 
     private function sign(int $branchId, string $prevHash, int $sequenceNo, array $aggregates, Carbon $closedAt): string
     {
-        $secret = Config::get('fiscal.z_report_secret');
-        if (!is_string($secret) || $secret === '') {
-            throw new RuntimeException('ZReportService: fiscal.z_report_secret is not configured.');
-        }
-        $secret = $this->assertProductionSafe($secret, 'fiscal.z_report_secret');
-
         // [POS-9-H.2.7 / F-B4]
         // Timezone stability: signatures must be reproducible regardless
         // of the server's local timezone at verification time. We
@@ -460,17 +480,47 @@ class ZReportService
         // Europe/Paris that later migrates to UTC (or vice-versa) can
         // still verify old Z reports.
         ksort($aggregates);
-        $canonical = json_encode(
-            [
-                'branch_id'   => $branchId,
-                'sequence_no' => $sequenceNo,
-                'closed_at'   => $closedAt->copy()->utc()->toIso8601String(),
-                'aggregates'  => $aggregates,
-            ],
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        );
+        return $this->sealing->signZReport($branchId, $prevHash, $sequenceNo, $aggregates, $closedAt);
+    }
 
-        return hash_hmac('sha256', $prevHash . '|' . $canonical, $secret);
+    private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, float &$totalHt, float &$totalTva, array &$byMethod): void
+    {
+        $totalTtc += $sign * (float) ($order->total ?? 0);
+        $totalHt  += $sign * (float) ($order->total_ht ?? ($order->subtotal ?? 0));
+        $totalTva += $sign * (float) ($order->total_tax ?? 0);
+
+        $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));
+        $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * (float) ($order->total ?? 0));
+    }
+
+    /**
+     * @param array<int, int> $orderIds
+     * @param array<string, float> $byTaxRate
+     * @return array<string, float>
+     */
+    private function taxBreakdownForOrders(array $orderIds, int $sign, array $byTaxRate): array
+    {
+        if ($orderIds === []) {
+            return $byTaxRate;
+        }
+
+        $rows = DB::table('order_items')
+            ->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')
+            ->whereIn('order_id', $orderIds)
+            ->whereNotNull('tax_rate')
+            ->groupBy('tax_rate')
+            ->get();
+
+        foreach ($rows as $r) {
+            // Normalize the key — tax_rate is stored as a string with
+            // inconsistent precision ("10", "10.00", "5.5"), so we
+            // cast through float to canonicalise and then back to
+            // string for a stable JSON-encoded signed payload.
+            $key = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
+            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate);
+        }
+
+        return $byTaxRate;
     }
 
     private function computeSignature(ZReport $report, string $prevHash): string

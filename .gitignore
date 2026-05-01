@@ -11,6 +11,9 @@
 .env.backup
 .env.testing
 .env.anthropic.local
+.env.orcai
+opencode.local.json
+.orcai-cache/
 .cursor/mcp/graphiti.json
 .phpunit.result.cache
 npm-debug.log

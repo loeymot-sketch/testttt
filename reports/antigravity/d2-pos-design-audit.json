@@ -1,0 +1,1296 @@
+{
+  "verdict": "PASS_LOCAL_D2_SMOKE",
+  "generated_at": "2026-04-30T23:39:26.608Z",
+  "results": [
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-1-1920x1080.png",
+      "textLength": 2107,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 133,
+      "smallTargetCount": 23,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-1-1920x1080.png",
+      "textLength": 222,
+      "testIds": [],
+      "interactiveCount": 19,
+      "smallTargetCount": 8,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-1-1920x1080.png",
+      "textLength": 259,
+      "testIds": [],
+      "interactiveCount": 16,
+      "smallTargetCount": 6,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 106,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Compte",
+          "width": 124,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        },
+        {
+          "tag": "button",
+          "text": "Anglais",
+          "width": 304,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 304,
+          "height": 32
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-1-2560x1440.png",
+      "textLength": 405,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 71,
+      "smallTargetCount": 22,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-1-2560x1440.png",
+      "textLength": 222,
+      "testIds": [],
+      "interactiveCount": 19,
+      "smallTargetCount": 8,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 0,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-1-2560x1440.png",
+      "textLength": 259,
+      "testIds": [],
+      "interactiveCount": 16,
+      "smallTargetCount": 6,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 106,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Compte",
+          "width": 124,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        },
+        {
+          "tag": "button",
+          "text": "Anglais",
+          "width": 304,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 304,
+          "height": 32
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-2-1920x1080.png",
+      "textLength": 405,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 71,
+      "smallTargetCount": 22,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-2-1920x1080.png",
+      "textLength": 222,
+      "testIds": [],
+      "interactiveCount": 19,
+      "smallTargetCount": 8,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-2-1920x1080.png",
+      "textLength": 259,
+      "testIds": [],
+      "interactiveCount": 16,
+      "smallTargetCount": 6,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 106,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Compte",
+          "width": 124,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        },
+        {
+          "tag": "button",
+          "text": "Anglais",
+          "width": 304,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 304,
+          "height": 32
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-2-2560x1440.png",
+      "textLength": 405,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 71,
+      "smallTargetCount": 22,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-2-2560x1440.png",
+      "textLength": 222,
+      "testIds": [],
+      "interactiveCount": 19,
+      "smallTargetCount": 8,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 1,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-2-2560x1440.png",
+      "textLength": 200,
+      "testIds": [],
+      "interactiveCount": 13,
+      "smallTargetCount": 3,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "Account",
+          "width": 128,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-3-1920x1080.png",
+      "textLength": 420,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 70,
+      "smallTargetCount": 21,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 24
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-3-1920x1080.png",
+      "textLength": 222,
+      "testIds": [],
+      "interactiveCount": 18,
+      "smallTargetCount": 7,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 24
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-3-1920x1080.png",
+      "textLength": 259,
+      "testIds": [],
+      "interactiveCount": 16,
+      "smallTargetCount": 6,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 106,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Compte",
+          "width": 124,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        },
+        {
+          "tag": "button",
+          "text": "Anglais",
+          "width": 304,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 304,
+          "height": 32
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "dashboard",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/pos",
+      "expectedUrl": "/admin/pos",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-dashboard-iter-3-2560x1440.png",
+      "textLength": 2107,
+      "testIds": [
+        "receipt-print-trigger",
+        "receipt-hidden-print-button"
+      ],
+      "interactiveCount": 133,
+      "smallTargetCount": 24,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "button.menu",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "a",
+          "text": "Skip to cart",
+          "width": 1,
+          "height": 1
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 232,
+          "height": 20
+        },
+        {
+          "tag": "div",
+          "text": "Add Customer",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Park",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "Parked orders (0)",
+          "width": 157,
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "width": 12,
+          "height": 12
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "floorplan",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/pos/floorplan",
+      "expectedUrl": "/admin/pos/floorplan",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-floorplan-iter-3-2560x1440.png",
+      "textLength": 203,
+      "testIds": [],
+      "interactiveCount": 19,
+      "smallTargetCount": 8,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 48,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "POS",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Close",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "Hello Caissier Le Cay..",
+          "width": 179,
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "POS & Orders",
+          "width": 112,
+          "height": 16
+        },
+        {
+          "tag": "button",
+          "text": "Search",
+          "width": 78,
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "Back",
+          "width": 67,
+          "height": 38
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "pos",
+      "name": "z-report-route-guard",
+      "iteration": 2,
+      "url": "http://localhost:8000/admin/fiscal/z-report",
+      "expectedUrl": "/admin/fiscal/z-report",
+      "viewport": {
+        "width": 2560,
+        "height": 1440
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/pos/pos-z-report-route-guard-iter-3-2560x1440.png",
+      "textLength": 259,
+      "testIds": [],
+      "interactiveCount": 16,
+      "smallTargetCount": 6,
+      "smallTargets": [
+        {
+          "tag": "a",
+          "text": "",
+          "width": 128,
+          "height": 43
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 106,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Compte",
+          "width": 124,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "width": 20,
+          "height": 28
+        },
+        {
+          "tag": "button",
+          "text": "Anglais",
+          "width": 304,
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "Français",
+          "width": 304,
+          "height": 32
+        }
+      ],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    }
+  ]
+}

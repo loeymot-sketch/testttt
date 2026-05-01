@@ -1,7 +1,11 @@
 import {watch} from "vue";
 import {createI18n} from "vue-i18n";
 
-const SUPPORTED_LOCALES = ['fr', 'en', 'ar'];
+import ar from './languages/ar.json';
+import en from './languages/en.json';
+import fr from './languages/fr.json';
+
+const SUPPORTED_LOCALES = Object.keys({ fr, en, ar });
 const DEFAULT_LOCALE    = 'fr';
 /** Défaut au boot `/kiosk` avant hydratation Vuex ; la langue réelle vient de `kioskSettings` + `setLocale`. */
 const KIOSK_LOCALE      = 'fr';
@@ -39,19 +43,8 @@ function detectLocale() {
 }
 
 function loadMessages() {
-    const context =
-        (typeof require !== 'undefined' && typeof require.context === 'function')
-            ? require.context('./languages', true, /[a-z0-9-_]+\.json$/i)
-            : (typeof globalThis.require?.context === 'function'
-                ? globalThis.require.context('./languages', true, /[a-z0-9-_]+\.json$/i)
-                : null);
-    if (!context) {
-        throw new Error('require.context unavailable (webpack or Vitest polyfill required)');
-    }
-    const messages = context
-        .keys()
-        .map((key) => ({ key, locale: key.match(/[a-z0-9-_]+/i)[0] }))
-        .reduce((acc, { key, locale }) => ({ ...acc, [locale]: context(key) }), {});
+    /** Static imports — avoids webpack `require.context` (can be missing in some built bundles / tests). */
+    const messages = { fr, en, ar };
     return { messages };
 }
 

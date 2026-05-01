@@ -15,7 +15,7 @@ const mdir = path.join(root, "missions", taskId);
 fs.mkdirSync(mdir, { recursive: true });
 
 const input = {
-  instruction: "Décrire ici le périmètre d’implémentation complexe (aligné sur le plan) — sous-systèmes, critères d’acceptation, fichiers cibles.",
+  instruction: "Décrire ici le périmètre d’implémentation produit aligné sur le plan — sous-systèmes, critères d’acceptation, fichiers cibles. Les cycles de finition passent par GPT-5.5-pro avec effort xhigh.",
   plan_file: "plans/PLAN_<TASK_ID>_<date>.md",
   subsystems: [],
   acceptance: [],
@@ -38,13 +38,15 @@ const stubs = {
   "execute_brief.md":
     "Optionnel : contraintes EXECUTE courtes (références à execute-context) si utile au modèle API.\n",
   "cycle_snapshot.md":
-    "Optionnel : extrait de `.cursor/ACTIVE_CYCLE.md` (PHASE, PRIMARY_MODEL, RUNNER_MODE).\n",
+    "Optionnel : extrait de `.cursor/ACTIVE_CYCLE.md` (PHASE, PRIMARY_EXECUTION_MODEL, REASONING_EFFORT, RUNNER_MODE).\n",
   "README.md": `Mission **${taskId}**
 
 1. Remplir \`input.json\` + fichiers de contexte optionnels (Graphiti, plan, brief).
-2. Lancer : \`npm run codex:complex -- ${taskId}\` (CLI \`codex\` + compte ChatGPT Pro).
-3. Appliquer le JSON produit : \`output_codex.json\` + lire \`reports/audit/GPT_SELF_AUDIT_${taskId}.md\` ; tracer \`EXECUTE_DELEGATION: codex-extension\` dans le rapport.
-4. Voir : \`docs/orchestration/CODEX_API_DELEGATION.md\` ; instructions Codex : \`agents/codex-extension-instructions.md\`.\n`,
+2. Lancer d’abord : \`npm run codex:plan-review -- ${taskId}\` et attendre \`PLAN_REVIEW_VERDICT: PASS\`.
+3. Lancer : \`npm run codex:complex -- ${taskId}\` (CLI \`codex\` + compte ChatGPT Pro, GPT-5.5-pro/xhigh par défaut).
+4. Appliquer le JSON produit : \`output_codex.json\` + lire \`reports/audit/GPT_SELF_AUDIT_${taskId}.md\` ; tracer \`EXECUTE_DELEGATION: codex-extension\` dans le rapport.
+5. Après audit Claude PASS, lancer : \`npm run codex:final-audit -- ${taskId}\`.
+6. Voir : \`docs/orchestration/CODEX_API_DELEGATION.md\` ; instructions Codex : \`agents/codex-extension-instructions.md\`.\n`,
 };
 
 for (const [name, body] of Object.entries(stubs)) {
@@ -53,4 +55,4 @@ for (const [name, body] of Object.entries(stubs)) {
 }
 
 console.log(`Dossier mission: ${mdir}`);
-console.log("Ensuite: npm run codex:complex -- " + taskId + "  (binaire 'codex' requis — compte ChatGPT Pro)");
+console.log("Ensuite: npm run codex:plan-review -- " + taskId + " puis npm run codex:complex -- " + taskId + "  (binaire 'codex' requis — compte ChatGPT Pro)");

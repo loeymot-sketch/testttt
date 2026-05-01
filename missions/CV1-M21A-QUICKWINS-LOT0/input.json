@@ -1,0 +1,43 @@
+{
+  "task_id": "CV1-M21A-QUICKWINS-LOT0",
+  "mission_id": "M-21a",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Quickwins POS sans risque ni gate : (1) ajouter v-model='discountReason' au input dans PosComponent.vue (actuellement v-model='discount' L423-425 alors que L1668 lit this.discountReason), (2) corriger Swiper RTL dans KitchenDisplaySystemComponent.vue L130 (dir='ltr' actuellement → dir computed selon locale), (3) supprimer import focustrap mort dans PosComponent.vue L732. 3 changements minimaux, tests Vitest associés.",
+  "instruction": "Modifie UNIQUEMENT les fichiers de l'allowlist. Diff minimal, pas de refactor. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "tests/js/quickwins/discountReasonBindingTest.spec.js",
+    "tests/js/quickwins/kdsSwiperRtlTest.spec.js"
+  ],
+  "off_limits": [
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "app/**", "routes/**", "database/**", "config/**", ".cursor/**", "AGENTS.md"
+  ],
+  "invariants_at_risk": ["pricing-ssot"],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "npx vitest run tests/js/quickwins/",
+    "npx vitest run tests/js/pos/ 2>&1 | tail -20"
+  ],
+  "self_audit_checklist": [
+    "discountReason a maintenant un v-model dans le template + computed/data correspondante intacte (pas de dérive prix backend)",
+    "Aucune logique de prix ajoutée frontend (pricing-ssot)",
+    "Swiper dir computed selon locale (LocaleService ou window.locale ; pas de hardcode)",
+    "Import focustrap supprimé proprement (script + computed dead)",
+    "Diff PosComponent.vue ≤ 30 lignes, KdsComponent.vue ≤ 10 lignes",
+    "2 tests Vitest verts",
+    "Aucun fichier hors allowlist modifié"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 7,
+    "predicates": ["regression test POS / KDS rouge dans la semaine suivant déploiement"]
+  },
+  "graphiti_query": "Caisse V1 quickwins POS discountReason swiper RTL",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_quickwins_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-quickwins"
+}

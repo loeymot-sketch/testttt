@@ -104,3 +104,18 @@ What to inspect:
 - `attempts`: retry counter.
 - `last_error`: final error text after retries.
 - `created_at` / `updated_at`: persistence metadata.
+
+## Order Event Channel Map
+
+The Caisse V1 order realtime map is documented in
+`docs/orchestration/ORDER_EVENT_OUTBOX_CHANNEL_MAP_2026-04-26.md`.
+
+Current order lifecycle mappings:
+
+| Event | Listener | Channel | Broadcast name |
+|---|---|---|---|
+| `App\Events\OrderCreated` | `App\Listeners\PersistOrderCreatedToOutbox` | `private-branch.{branch_id}` | `OrderCreated` |
+| `App\Events\OrderStatusChanged` | `App\Listeners\PersistOrderStatusChangedToOutbox` | `private-branch.{branch_id}` | `OrderStatusChanged` |
+
+Any change to these listeners, channels, or broadcast names must update the map
+and keep `tests/Feature/AfterCommitDispatchTest.php` green.

@@ -10,11 +10,14 @@ function read(rel) {
 }
 
 describe('Perf — chunks lazy loading', () => {
-  it('KioskAdminComponent imported via defineAsyncComponent', () => {
-    const src = read('resources/js/components/frontend/kiosk/KioskAppComponent.vue');
-    expect(src).toMatch(/defineAsyncComponent/);
-    expect(src).toMatch(/import\(.*kiosk-admin.*KioskAdminComponent/);
-    expect(src).not.toMatch(/^import KioskAdminComponent from/m);
+  it('customer kiosk does not load a staff admin component', () => {
+    const appSrc = read('resources/js/components/frontend/kiosk/KioskAppComponent.vue');
+    const routesSrc = read('resources/js/router/modules/kioskRoutes.js');
+
+    expect(appSrc).not.toMatch(/KioskAdminComponent/);
+    expect(appSrc).not.toMatch(/kiosk-admin/);
+    expect(routesSrc).not.toMatch(/KioskAdminComponent/);
+    expect(routesSrc).toMatch(/path:\s*["']admin["'][\s\S]*redirect:\s*{\s*name:\s*["']kiosk\.idle["']\s*}/);
   });
 
   it('Wizard steps imported via defineAsyncComponent', () => {

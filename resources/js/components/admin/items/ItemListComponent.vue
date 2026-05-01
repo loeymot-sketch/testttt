@@ -1,7 +1,58 @@
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12">
-        <div class="db-card">
+        <section class="catalog-control-plane">
+            <div class="catalog-control-plane__summary">
+                <span class="catalog-control-plane__eyebrow">Pilotage catalogue</span>
+                <div class="catalog-control-plane__title-row">
+                    <h2>Produits, catégories, offres et disponibilités</h2>
+                    <span class="catalog-control-plane__sync">
+                        <i class="lab lab-refresh"></i>
+                        POS / borne
+                    </span>
+                </div>
+            </div>
+
+            <div class="catalog-control-plane__metrics" aria-label="Résumé catalogue">
+                <button type="button" class="catalog-control-plane__metric" @click.prevent="clear">
+                    <span>{{ itemsCount }}</span>
+                    <small>produits</small>
+                </button>
+                <router-link class="catalog-control-plane__metric" :to="{ name: 'admin.settings.itemCategory.list' }">
+                    <span>{{ categoriesCount }}</span>
+                    <small>catégories</small>
+                </router-link>
+                <button type="button" class="catalog-control-plane__metric" @click.prevent="filterActiveItems">
+                    <span>{{ activeItemsCount }}</span>
+                    <small>actifs</small>
+                </button>
+                <button type="button" class="catalog-control-plane__metric catalog-control-plane__metric--alert" @click.prevent="focusAvailability">
+                    <span>{{ unavailableItemsCount }}</span>
+                    <small>indisponibles</small>
+                </button>
+            </div>
+
+            <div class="catalog-control-plane__actions" aria-label="Actions catalogue">
+                <router-link class="catalog-control-plane__action" :to="{ name: 'admin.items.list' }">
+                    <i class="lab lab-list"></i>
+                    Produits
+                </router-link>
+                <router-link class="catalog-control-plane__action" :to="{ name: 'admin.settings.itemCategory.list' }">
+                    <i class="lab lab-category"></i>
+                    Catégories
+                </router-link>
+                <router-link class="catalog-control-plane__action" :to="{ name: 'admin.offers.list' }">
+                    <i class="lab lab-discount"></i>
+                    Offres
+                </router-link>
+                <button type="button" class="catalog-control-plane__action" @click.prevent="focusAvailability">
+                    <i class="lab lab-toggle-on"></i>
+                    Disponibilités
+                </button>
+            </div>
+        </section>
+
+        <div class="db-card" data-testid="admin-items-list">
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.items') }}</h3>
                 <div class="db-card-filter">
@@ -24,7 +75,9 @@
                         </div>
                     </div>
                     <ItemUploadComponent v-on:list="list" />
-                    <ItemCreateComponent :props="props" v-if="permissionChecker('items_create')" />
+                    <div data-testid="admin-item-create-open">
+                        <ItemCreateComponent :props="props" v-if="permissionChecker('items_create')" />
+                    </div>
                 </div>
             </div>
 
@@ -118,10 +171,13 @@
                 </form>
             </div>
 
-            <div class="db-table-responsive">
+            <div class="db-table-responsive" ref="availabilityTable">
                 <table class="db-table stripe" id="print" :dir="direction">
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
+                            <th class="db-table-head-th">
+                                {{ $t('label.image') }}
+                            </th>
                             <th class="db-table-head-th">
                                 {{ $t('label.name') }}
                             </th>
@@ -144,7 +200,16 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="items.length > 0">
-                        <tr class="db-table-body-tr" v-for="item in items" :key="item">
+                        <tr class="db-table-body-tr" v-for="item in items" :key="item" :data-testid="`admin-item-row-${item.id}`">
+                            <td class="db-table-body-td">
+                                <div class="w-[54px] h-[42px] rounded-md overflow-hidden border border-slate-200 bg-slate-50">
+                                    <img
+                                        class="w-full h-full object-cover"
+                                        :src="item.thumb"
+                                        :alt="item.name"
+                                    >
+                                </div>
+                            </td>
                             <td class="db-table-body-td">
                                 {{ textShortener(item.name, 40) }}
                             </td>
@@ -155,16 +220,27 @@
                                     {{ enums.statusEnumArray[item.status] }}
                                 </span>
                             </td>
-                            <td class="db-table-body-td" v-if="permissionChecker('items_edit')"><AvailabilityToggleComponent :item-id="item.id" :branch-id="null" :is-available="item.is_available ?? true" :unavailable-reason="item.availability_reason || item.unavailable_reason || null" @availability-changed="list" /></td>
+                            <td class="db-table-body-td" v-if="permissionChecker('items_edit')">
+                                <div :data-testid="`admin-availability-toggle-${item.id}`">
+                                    <AvailabilityToggleComponent :item-id="item.id" :branch-id="null" :is-available="item.is_available ?? true" :unavailable-reason="item.availability_reason || item.unavailable_reason || null" @availability-changed="list" />
+                                </div>
+                                <span class="sr-only" :data-testid="`admin-availability-status-${item.id}`">{{ item.is_available ?? true }}</span>
+                            </td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_delete')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
-                                    <SmIconViewComponent :link="'admin.item.show'" :id="item.id"
-                                        v-if="permissionChecker('items_show')" />
-                                    <SmIconSidebarModalEditComponent @click="edit(item)"
-                                        v-if="permissionChecker('items_edit')" />
-                                    <SmIconDeleteComponent @click="destroy(item.id)"
-                                        v-if="permissionChecker('items_delete')" />
+                                    <span :data-testid="`admin-item-view-${item.id}`">
+                                        <SmIconViewComponent :link="'admin.item.show'" :id="item.id"
+                                            v-if="permissionChecker('items_show')" />
+                                    </span>
+                                    <span :data-testid="`admin-item-edit-${item.id}`">
+                                        <SmIconSidebarModalEditComponent @click="edit(item)"
+                                            v-if="permissionChecker('items_edit')" />
+                                    </span>
+                                    <span :data-testid="`admin-item-delete-${item.id}`">
+                                        <SmIconDeleteComponent @click="destroy(item.id)"
+                                            v-if="permissionChecker('items_delete')" />
+                                    </span>
                                 </div>
                             </td>
                         </tr>
@@ -345,6 +421,27 @@ export default {
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
+        itemsCount: function () {
+            return Array.isArray(this.items) ? this.items.length : 0;
+        },
+        categoriesCount: function () {
+            return Array.isArray(this.itemCategories) ? this.itemCategories.length : 0;
+        },
+        activeItemsCount: function () {
+            if (!Array.isArray(this.items)) {
+                return 0;
+            }
+            return this.items.filter((item) => Number(item.status) === Number(statusEnum.ACTIVE)).length;
+        },
+        unavailableItemsCount: function () {
+            if (!Array.isArray(this.items)) {
+                return 0;
+            }
+            return this.items.filter((item) => {
+                return item.is_available === false || item.is_available === 0 || item.is_available === '0'
+                    || item.availability_reason || item.unavailable_reason;
+            }).length;
+        },
 
     },
     methods: {
@@ -377,6 +474,15 @@ export default {
             this.props.search.item_type = null;
             this.props.search.is_featured = null;
             this.list();
+        },
+        filterActiveItems: function () {
+            this.props.search.status = statusEnum.ACTIVE;
+            this.list();
+        },
+        focusAvailability: function () {
+            this.$nextTick(() => {
+                this.$refs.availabilityTable?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+            });
         },
         list: function (page = 1) {
             this.loading.isActive = true;
@@ -471,6 +577,146 @@ export default {
 @media print {
     .hidden-print {
         display: none !important;
+    }
+}
+
+.catalog-control-plane {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.2fr) minmax(280px, 1fr) minmax(260px, .9fr);
+    gap: 12px;
+    align-items: stretch;
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #e11d48;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.catalog-control-plane__summary {
+    min-width: 0;
+}
+
+.catalog-control-plane__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
+    color: #e11d48;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.catalog-control-plane__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.catalog-control-plane__title-row h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.catalog-control-plane__sync {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.catalog-control-plane__metrics,
+.catalog-control-plane__actions {
+    display: grid;
+    gap: 8px;
+}
+
+.catalog-control-plane__metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.catalog-control-plane__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.catalog-control-plane__metric,
+.catalog-control-plane__action {
+    min-height: 54px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #0f172a;
+    transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.catalog-control-plane__metric {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.catalog-control-plane__metric span {
+    color: #111827;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.catalog-control-plane__metric small {
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.catalog-control-plane__metric--alert span {
+    color: #dc2626;
+}
+
+.catalog-control-plane__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.catalog-control-plane__metric:hover,
+.catalog-control-plane__action:hover {
+    border-color: #e11d48;
+    background: #fff1f2;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 1180px) {
+    .catalog-control-plane {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .catalog-control-plane {
+        padding: 12px;
+    }
+
+    .catalog-control-plane__metrics,
+    .catalog-control-plane__actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 </style>

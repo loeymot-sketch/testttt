@@ -120,10 +120,10 @@ class AdministratorService
                         $administrator->delete();
                     });
                 } else {
-                    throw new Exception(trans('The permission is denied.'), 422);
+                    throw new Exception(trans('all.message.permission_denied'), 422);
                 }
             } else {
-                throw new Exception(trans('The permission is denied.'), 422);
+                throw new Exception(trans('all.message.permission_denied'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -142,7 +142,7 @@ class AdministratorService
             if ($administrator->hasRole(EnumRole::ADMIN)) {
                 return $administrator;
             } else {
-                throw new Exception(trans('The permission is denied.'), 422);
+                throw new Exception(trans('all.message.permission_denied'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -161,7 +161,7 @@ class AdministratorService
                 $administrator->save();
                 return $administrator;
             } else {
-                throw new Exception(trans('The permission is denied.'), 422);
+                throw new Exception(trans('all.message.permission_denied'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -180,7 +180,7 @@ class AdministratorService
                 $administrator->addMediaFromRequest('image')->toMediaCollection('profile');
                 return $administrator;
             } else {
-                throw new Exception(trans('The permission is denied.'), 422);
+                throw new Exception(trans('all.message.permission_denied'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

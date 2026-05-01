@@ -46,6 +46,7 @@ if ($requireForm) {
         ],
         'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
         'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
+        'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
     ];
 }
 
@@ -86,4 +87,5 @@ return [
     ],
     'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
     'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
+    'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
 ];

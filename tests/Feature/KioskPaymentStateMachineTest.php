@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
 use App\Enums\Source;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
@@ -121,6 +122,22 @@ class KioskPaymentStateMachineTest extends TestCase
         ];
     }
 
+    private function kioskPayloadWithQuote(int $paymentMethod): array
+    {
+        $payload = $this->kioskPayload($paymentMethod);
+        $quote = $this
+            ->actingAs($this->kioskUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
+    }
+
     public function test_card_order_stays_pending_until_payment_confirm(): void
     {
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
@@ -128,7 +145,7 @@ class KioskPaymentStateMachineTest extends TestCase
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $this->kioskPayload(PaymentGateway::CARD));
+            ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CARD));
 
         $this->assertContains($response->status(), [200, 201]);
         $orderId = $response->json('data.id');
@@ -183,14 +200,14 @@ class KioskPaymentStateMachineTest extends TestCase
         $this->assertContains($orderId, collect($afterRows)->pluck('id')->all());
     }
 
-    public function test_cash_order_is_immediately_accepted_and_paid(): void
+    public function test_cash_order_is_immediately_sent_to_kds_pending_counter_payment(): void
     {
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
 
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $this->kioskPayload(PaymentGateway::CASH_ON_DELIVERY));
+            ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CASH_ON_DELIVERY));
 
         $this->assertContains($response->status(), [200, 201]);
         $orderId = $response->json('data.id');
@@ -198,12 +215,25 @@ class KioskPaymentStateMachineTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $orderId,
             'status' => OrderStatus::ACCEPT,
-            'payment_status' => PaymentStatus::PAID,
+            'payment_status' => PaymentStatus::PENDING_COUNTER,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+            'fiscal_sequence_no' => null,
         ]);
 
         Event::assertDispatched(OrderCreated::class);
         Event::assertDispatched(OrderStatusChanged::class);
+
+        $kdsAfter = $this
+            ->actingAs($this->chefUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->getJson('/api/admin/kds-order');
+
+        $kdsAfter->assertOk();
+        $row = collect($kdsAfter->json('data') ?? [])->firstWhere('id', $orderId);
+
+        $this->assertNotNull($row, 'Pending counter kiosk cash order must appear on KDS immediately.');
+        $this->assertTrue((bool) ($row['payment_pending_counter'] ?? false));
     }
 
     public function test_payment_confirm_can_finalize_an_already_paid_but_pending_kiosk_order(): void

@@ -115,6 +115,13 @@ OrderStateMachine::apply(Model $order, int $next, ?Authenticatable $actor, ?stri
 - **Qui écrit** : Caissier (POS).
 - **Qui lit** : Admin (Dashboard/Analytics).
 
+#### Contrat API livreur
+
+- Le terminal livreur lit uniquement les commandes dont `delivery_boy_id` correspond à l'utilisateur authentifié et dont `branch_id` correspond à sa branche.
+- Le flux statut livreur autorisé en V1 est `PREPARED → OUT_FOR_DELIVERY → DELIVERED`.
+- La route `POST /api/frontend/delivery-boy-order/change-status/{order}` valide `status`, délègue la transition à `OrderService::deliveryBoyOrderChangeStatus`, puis émet notifications et `OrderStatusChanged` après persistance.
+- Aucun client livreur ne choisit les totaux, le livreur, ou la branche de la commande; ces champs restent côté backend.
+
 ### 6. Terminaux
 - `CANCELED` (16) / `REJECTED` (19) : annulation avant remise, raison obligatoire.
 - `RETURNED` (22) : retour après livraison, raison obligatoire, Admin only pour re-transition.

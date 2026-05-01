@@ -12,6 +12,8 @@ use App\Models\Order;
 use App\Enums\OrderStatus;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
+use App\Models\User;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderStatusScreenOrderService
 {
@@ -35,7 +37,7 @@ class OrderStatusScreenOrderService
     public function list()
     {
         try {
-            $userBranchId = auth()->user()->branch_id ?? 0;
+            $branchScope = $this->resolveBranchScope(request()->query('branch_id'), auth()->user());
 
             // [AUDIT-P0-A] Include kiosk TAKEAWAY orders (order_type=10, token=null) that have a queue_number.
             // Previously only KIOSK (25=sur place) and token-bearing orders were shown.
@@ -62,12 +64,14 @@ class OrderStatusScreenOrderService
                     });
                 });
 
-            // [P3-3 FIX] Branch filter: admin (branch_id=0) sees all, staff sees own branch
-            if ($userBranchId > 0) {
-                $query->where('branch_id', $userBranchId);
+            // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
+            if ($branchScope !== null) {
+                $query->where('branch_id', $branchScope);
             }
 
             return $query->get();
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -82,5 +86,34 @@ class OrderStatusScreenOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function resolveBranchScope($requestedBranchId, ?User $user): ?int
+    {
+        if ($this->isGlobalAdmin($user)) {
+            return $requestedBranchId !== null && (int) $requestedBranchId > 0
+                ? (int) $requestedBranchId
+                : null;
+        }
+
+        $userBranchId = (int) ($user?->branch_id ?? 0);
+        if ($userBranchId <= 0) {
+            abort(403, 'Access denied: invalid OSS branch scope.');
+        }
+
+        if ($requestedBranchId !== null && (int) $requestedBranchId !== $userBranchId) {
+            abort(403, 'Access denied: OSS scope does not belong to your branch.');
+        }
+
+        return $userBranchId;
+    }
+
+    private function isGlobalAdmin(?User $user): bool
+    {
+        return $user !== null
+            && $user->branch_id !== null
+            && (int) $user->branch_id === 0
+            && method_exists($user, 'hasRole')
+            && $user->hasRole('Admin');
     }
 }

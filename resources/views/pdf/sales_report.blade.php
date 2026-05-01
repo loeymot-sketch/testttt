@@ -95,11 +95,11 @@
          function getPaymentMethod($order)
          {
             if($order->order_type === App\Enums\OrderType::POS){
-            return trans('pos_payment_method.' . $order->pos_payment_method, [], 'en') != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method, [], 'en') : "";
+            return trans('pos_payment_method.' . $order->pos_payment_method) != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method) : "";
         }
 
         return trans(
-            'payment_gateway.' . $order->payment_method,[],'en'
+            'payment_gateway.' . $order->payment_method
         );
          }
     @endphp 
@@ -132,7 +132,7 @@
                             <td>{{ App\Libraries\AppLibrary::datetime($order->order_datetime) }}</td>
                             <td>{{  $order->transaction ? strtoupper($order->transaction->payment_method) 
                 : getPaymentMethod($order)}}</td>
-                            <td>{{ trans('payment_status.'. $order->payment_status, [], 'en') }}</td>
+                            <td>{{ trans('payment_status.'. $order->payment_status) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->discount) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->delivery_charge) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->total) }}</td>

@@ -8,11 +8,13 @@ use App\Events\SendOrderDeliveryBoySms;
 use App\Events\CategoryCreated;
 use App\Events\CategoryDeleted;
 use App\Events\CategoryUpdated;
+use App\Events\ComposerProfileChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
 use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
+use App\Events\OrderPaidAtCounter;
 use App\Events\OrderStatusChanged;
 use App\Events\OrderTableChanged;
 use App\Events\RefundCreated;
@@ -24,6 +26,7 @@ use App\Events\SendOrderPush;
 use App\Events\SendOrderSms;
 use App\Events\SendResetPassword;
 use App\Events\SendSmsCode;
+use App\Events\StockLevelChanged;
 use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
@@ -31,11 +34,16 @@ use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
 use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
+use App\Listeners\PersistCatalogChangedToOutbox;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
+use App\Listeners\DecrementStockOnOrderCreated;
 use App\Listeners\ReleaseAvailabilityOnOrderCanceled;
 use App\Listeners\ReleaseAvailabilityOnRefundCreated;
+use App\Listeners\ReleaseStockOnOrderCanceled;
+use App\Listeners\ReleaseStockOnRefundCreated;
 use App\Listeners\PersistOrderCreatedToOutbox;
+use App\Listeners\PersistOrderPaidAtCounterToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\PersistOrderTableChangedToOutbox;
 use App\Listeners\SendFcmOnOrderCreated;
@@ -110,13 +118,19 @@ class EventServiceProvider extends ServiceProvider
             SendFcmOnOrderCreated::class,
             PersistOrderCreatedToOutbox::class,
             DecrementItemAvailabilityOnOrder::class,
+            DecrementStockOnOrderCreated::class,
+        ],
+        OrderPaidAtCounter::class => [
+            PersistOrderPaidAtCounterToOutbox::class,
         ],
         // [F-01 + NEW-05] Compensating release of stock counters on cancel / refund.
         // Idempotent via order_items.released_qty ledger inside AvailabilityService.
         OrderCanceled::class => [
+            ReleaseStockOnOrderCanceled::class,
             ReleaseAvailabilityOnOrderCanceled::class,
         ],
         RefundCreated::class => [
+            ReleaseStockOnRefundCreated::class,
             ReleaseAvailabilityOnRefundCreated::class,
         ],
         // [F-02] Floorplan transfer / occupy → KDS gets a non-disruptive update.
@@ -124,27 +138,41 @@ class EventServiceProvider extends ServiceProvider
             PersistOrderTableChangedToOutbox::class,
         ],
         ItemAvailabilityChanged::class => [
-            PersistItemAvailabilityChangedToOutbox::class,
             BumpMenuSnapshotOnItemAvailabilityChanged::class,
             // Kiosk Phase 9.1.4 — invalidation du cache `kiosk.menu.branch.{id}`
             // pour que les bornes voient un 86 temps réel en < 1 s au lieu
             // d'attendre l'expiration naturelle du TTL (≤ 60 s).
             InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
+            PersistCatalogChangedToOutbox::class,
+            PersistItemAvailabilityChangedToOutbox::class,
         ],
         ItemCreated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
         ],
         ItemDeleted::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
         ],
         CategoryCreated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
         ],
         CategoryUpdated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
         ],
         CategoryDeleted::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
+        ],
+        ComposerProfileChanged::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
+        ],
+        StockLevelChanged::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
         ],
     ];
 

@@ -38,6 +38,11 @@ class PosDiscountPermissionTest extends TestCase
         parent::setUp();
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
+        config([
+            'app.api_key' => 'test-api-key',
+            'broadcasting.default' => 'log',
+            'fiscal.audit_secret' => str_repeat('a', 48),
+        ]);
 
         $this->branch = Branch::factory()->create();
 
@@ -115,6 +120,21 @@ class PosDiscountPermissionTest extends TestCase
         ];
     }
 
+    private function withSealedQuote(User $operator, array $payload): array
+    {
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return array_merge($payload, [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+            'total' => $quote['total_ttc'],
+            'pos_received_amount' => $quote['total_ttc'],
+        ]);
+    }
+
     public function test_discount_without_motif_is_rejected(): void
     {
         $operator = $this->makeOperatorWith(['pos-discount-unlimited']);
@@ -144,8 +164,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-up-to-10']);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.5, 'Geste commercial'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(0.5, 'Geste commercial'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -170,8 +192,10 @@ class PosDiscountPermissionTest extends TestCase
         ]);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(2.5, 'Validé manager'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(2.5, 'Validé manager'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -196,8 +220,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-unlimited']);
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(7.5, 'Validé owner'));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(7.5, 'Validé owner'));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }
@@ -207,8 +233,10 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith([]); // no discount permission
         $this->actingAs($operator, 'sanctum');
 
+        $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.0, null));
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->buildOrderPayload(0.0, null));
+            ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
     }

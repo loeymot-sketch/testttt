@@ -1,0 +1,76 @@
+{
+  "task_id": "CV1-M09-BRANCH-ISOLATION",
+  "mission_id": "M-09",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Eliminer les fuites branch_id LIKE ciblees par M-09, formaliser la policy branch_id=0 admin global only, ajouter un lint statique bloquant, et couvrir par tests Feature sous tests/Feature/Branch/.",
+  "instruction": "Applique uniquement M-09. Gate frozen approuvee Option C: Partial allowlist by method/surface. Rework autorise pour les surfaces branch-guard marquees @fix-mission CV1-M09 dans les sentinels #8, #9 et #11. Ne touche pas fiscal/schema/kds/offline/web/stripe. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/TransactionService.php",
+    "app/Services/OrderStatusScreenOrderService.php",
+    "app/Http/Controllers/Admin/PosOrderController.php",
+    "app/Http/Controllers/Admin/TransactionController.php",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "tests/Feature/Branch/",
+    "scripts/lint-fk-branch-isolation.sh"
+  ],
+  "off_limits": [
+    "database/**",
+    "resources/**",
+    "routes/**",
+    "config/**",
+    "app/Services/PaymentService.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Http/Controllers/Frontend/**",
+    "app/Http/Controllers/Admin/Fiscal/**",
+    "docs/gates/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "human_gate_decisions": [
+    {
+      "gate": "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25",
+      "status": "Approved",
+      "decision": "Option C — Partial allowlist by method/surface",
+      "approved_by": "Codex (instruction humaine explicite)",
+      "date": "2026-04-25"
+    }
+  ],
+  "invariants_at_risk": [
+    "branch_id isolation stricte",
+    "OrderService / FrontendOrderService symmetry",
+    "frozen zones require gate clearance"
+  ],
+  "gate_conditions": [
+    "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25 Approved Option C"
+  ],
+  "mandatory_tests": [
+    "bash scripts/lint-fk-branch-isolation.sh",
+    "php artisan test --filter=Branch",
+    "php artisan test --filter=Sentinel"
+  ],
+  "self_audit_checklist": [
+    "OrderService filters branch_id with strict equality at M-09 target locations while preserving LIKE for textual fields",
+    "FrontendOrderService branch_id filtering is strict equality",
+    "branch_id=0 policy is explicit and covered by tests",
+    "Static lint fails on where('branch_id', 'like') / orWhere('branch_id', 'like') patterns",
+    "Tests cover exact branch matching, no prefix bleed (1 vs 10), admin-global branch_id=0 policy, order show branch guard, transaction branch guard, and OSS branch_id=0 guard",
+    "FiscalZBranchExactnessSentinelTest remains out of M-09 scope because it is @fix-mission CV1-M08-FISCAL-Z-NF525 and requires fiscal gate",
+    "SYMMETRY_NOTE documents OrderService and FrontendOrderService parity"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 0,
+    "predicates": [
+      "lint or branch isolation tests fail",
+      "unexpected behavior change outside branch filter exactness"
+    ]
+  },
+  "graphiti_query": "Caisse V1 branch isolation branch_id LIKE exact policy branch_id 0",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_branch_isolation_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

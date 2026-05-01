@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Coupon;
 use App\Models\Item;
+use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
@@ -161,6 +162,33 @@ class KioskEndpointsTest extends TestCase
         $this->assertSame(['fr', 'en', 'ar'], $r->json('data.branch.available_locales'));
     }
 
+    public function test_menu_projects_branch_availability_and_ui_price_fields(): void
+    {
+        ItemBranchAvailability::create([
+            'item_id' => $this->cayenne->id,
+            'branch_id' => $this->branch->id,
+            'is_available' => false,
+            'unavailable_reason' => 'stock_rupture',
+            'unavailable_since' => now(),
+            'daily_consumed_qty' => 0,
+            'daily_reset_at' => now()->toDateString(),
+            'max_daily_qty' => null,
+        ]);
+
+        $r = $this->authed()->getJson('/api/frontend/menu');
+        $r->assertOk();
+
+        $item = collect($r->json('data.items'))->firstWhere('id', $this->cayenne->id);
+
+        $this->assertFalse($item['is_available']);
+        $this->assertSame('stock_rupture', $item['unavailable_reason']);
+        $this->assertSame($this->cayenne->item_category_id, $item['item_category_id']);
+        $this->assertArrayHasKey('convert_price', $item);
+        $this->assertArrayHasKey('currency_price', $item);
+        $this->assertArrayHasKey('thumb', $item);
+        $this->assertArrayHasKey('image', $item);
+    }
+
     public function test_menu_returns_503_when_no_kiosk_machine(): void
     {
         // Nouvel utilisateur sans KioskMachine
@@ -211,6 +239,32 @@ class KioskEndpointsTest extends TestCase
             round(9.90 + 1.50 + 1.00, 2),
             $lineTotal,
             'Prix recalculé serveur-side depuis la DB, jamais depuis le payload.'
+        );
+    }
+
+    public function test_preview_honors_variation_and_extra_quantities(): void
+    {
+        \DB::table('item_attributes')
+            ->where('id', $this->sizeXL->item_attribute_id)
+            ->update(['max_select' => 3, 'allow_repeat' => true]);
+
+        $r = $this->authed()->postJson('/api/frontend/pricing/preview', [
+            'items' => [
+                [
+                    'item_id' => $this->cayenne->id,
+                    'quantity' => 1,
+                    'item_variations' => [['id' => $this->sizeXL->id, 'quantity' => 2]],
+                    'item_extras' => [['id' => $this->cheddar->id, 'quantity' => 3]],
+                ],
+            ],
+        ]);
+
+        $r->assertStatus(200);
+        $lineTotal = (float) $r->json('data.lines.0.line_subtotal');
+        $this->assertSame(
+            round(9.90 + (1.50 * 2) + (1.00 * 3), 2),
+            $lineTotal,
+            'Preview must preserve the same quantities that submit sends to PricingService.'
         );
     }
 

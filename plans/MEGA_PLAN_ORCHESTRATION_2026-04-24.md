@@ -18,7 +18,7 @@
 
 ## Açık — Ouverture (pourquoi ce plan existe)
 
-L’orchestration FoodKing n’est **pas** une course à la vitesse : c’est un **pipeline reproductible** qui maximise l’intelligence **sans** brûler le budget API ni produire des `output_codex.json` tronqués. Le proxy GPT (`tokenclub` / OpenAI-compatible) applique en pratique un **plafond dur ~8–10k tokens de sortie** par requête, *indépendamment* d’un `max_completion_tokens` élevé. La conséquence : **une mission = un objectif minuscule** (1 fichier, ou 1 paire `service + test`), jamais un mega-prompt multi-écrans.
+L’orchestration FoodKing n’est **pas** une course à la vitesse : c’est un **pipeline reproductible** qui maximise l’intelligence **sans** brûler le budget inutilement. Avec l’**EXÉCUTE** via le **CLI** `codex` (hors *runner* HTTP, retiré du dépôt), le fournisseur peut en pratique plafonner de longues générations côté routeur ; d’où la règle : **une mission = un objectif ciblé** (1 fichier, ou 1 paire `service + test`) plutôt qu’un mega-prompt multi-écrans.
 
 Ce document remplace l’idée d’« un seul gros appel GPT » par **10 étapes (P1..P10)** exécutées sur plusieurs heures ou jours, avec **audit Claude Code en terminal (coût abonnement, pas quota proxy)** à chaque jalons, et **GPT-5.5** uniquement pour les **patchs atomiques** documentés.
 

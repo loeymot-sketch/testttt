@@ -1,0 +1,31 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-03-PROJECTION-RUNTIME",
+  "execution_delegation": "codex-extension",
+  "mode": "execute-after-dashboard-composer",
+  "objective": "Unify composed product runtime projection for POS and kiosk while preserving separate user interfaces.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-02-DASHBOARD-COMPOSER PASS",
+    "Composition schema published",
+    "Catalog event bump strategy approved"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-03-PROJECTION-RUNTIME/allowlist.txt",
+  "forbidden": [
+    "Do not modify order creation services",
+    "Do not implement stock decrement",
+    "Do not redesign POS wizard",
+    "Do not introduce magic order status strings"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "pos-kiosk-business-rule-parity"
+  ],
+  "expected_outputs": [
+    "Projected composer payload",
+    "Version bump event",
+    "POS/kiosk runtime adapters",
+    "Parity tests",
+    "GPT self-audit"
+  ]
+}

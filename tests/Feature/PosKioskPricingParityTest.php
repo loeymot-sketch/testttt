@@ -16,10 +16,12 @@ use App\Models\ItemAttribute;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
+use App\Models\KioskMachine;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -28,6 +30,7 @@ use Tests\TestCase;
 class PosKioskPricingParityTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     private Branch $branch;
     private User $posOperator;
@@ -58,6 +61,12 @@ class PosKioskPricingParityTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
         $this->customer->assignRole('Customer');
+        KioskMachine::factory()->create([
+            'branch_id' => $this->branch->id,
+            'user_id' => $this->customer->id,
+            'status' => Status::ACTIVE,
+            'is_login' => Ask::NO,
+        ]);
 
         $this->tax = Tax::factory()->create([
             'name' => 'TVA 10%',
@@ -163,7 +172,7 @@ class PosKioskPricingParityTest extends TestCase
             'item_extras' => $extras,
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', [
+        $payload = [
             'token' => null,
             'customer_id' => $this->customer->id,
             'branch_id' => $this->branch->id,
@@ -177,7 +186,10 @@ class PosKioskPricingParityTest extends TestCase
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 9999.00,
             'items' => json_encode([$line]),
-        ]);
+        ];
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $payload));
 
         $response->assertCreated();
 
@@ -205,7 +217,7 @@ class PosKioskPricingParityTest extends TestCase
             'item_extras' => $extras,
         ];
 
-        $response = $this->actingAs($this->customer, 'sanctum')->postJson('/api/frontend/order', [
+        $payload = [
             'branch_id' => $this->branch->id,
             'subtotal' => 0,
             'discount' => 0,
@@ -217,7 +229,11 @@ class PosKioskPricingParityTest extends TestCase
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
             'status' => PaymentStatus::UNPAID,
             'items' => json_encode([$line]),
-        ]);
+        ];
+
+        $response = $this->actingAs($this->customer, 'sanctum')
+            ->withHeader('x-api-key', (string) config('app.api_key'))
+            ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($this->customer, $payload));
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());
 

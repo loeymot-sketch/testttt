@@ -61,6 +61,28 @@ function makeHandler() {
     };
 }
 
+function makeCatalogHandler() {
+    return function _onCatalogChanged(event) {
+        const payload = (event && event.payload) ? event.payload : event || {};
+        const eventBranchId = parseInt(
+            event?.branchId ?? payload.branch_id ?? payload.branchId ?? 0,
+            10,
+        );
+        const activeBranchId = this.authBranchId();
+
+        if (
+            Number.isFinite(eventBranchId)
+            && eventBranchId > 0
+            && activeBranchId > 0
+            && eventBranchId !== activeBranchId
+        ) {
+            return;
+        }
+
+        try { this.itemList(); } catch (e) { /* defensive */ }
+    };
+}
+
 describe('POS ItemAvailabilityChanged handler [POS-9.1.10]', () => {
     it('flips is_available=false and stamps reason for the matched item', () => {
         const ctx = {
@@ -183,5 +205,33 @@ describe('POS ItemAvailabilityChanged handler [POS-9.1.10]', () => {
         expect(sync).toHaveBeenCalledWith(7, false, 'out_of_stock');
         expect(dispatch).toHaveBeenCalledWith('posCart/pruneUnavailable', 7);
         expect(toast).toHaveBeenCalledWith(7, 'Burger');
+    });
+
+    it('refreshes POS item list on CatalogChanged for the active branch', () => {
+        const ctx = {
+            authBranchId: () => 7,
+            itemList: vi.fn(),
+        };
+
+        makeCatalogHandler().call(ctx, {
+            branchId: 7,
+            payload: { entity_type: 'composer_profile', branch_id: 7 },
+        });
+
+        expect(ctx.itemList).toHaveBeenCalledOnce();
+    });
+
+    it('ignores CatalogChanged for another branch', () => {
+        const ctx = {
+            authBranchId: () => 7,
+            itemList: vi.fn(),
+        };
+
+        makeCatalogHandler().call(ctx, {
+            branchId: 8,
+            payload: { entity_type: 'composer_profile', branch_id: 8 },
+        });
+
+        expect(ctx.itemList).not.toHaveBeenCalled();
     });
 });

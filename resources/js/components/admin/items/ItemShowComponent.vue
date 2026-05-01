@@ -2,14 +2,14 @@
     <LoadingComponent :props="loading" />
 
     <div class="col-12">
-        <div class="grid grid-cols-1 sm:grid-cols-5 mb-4 sm:mb-0">
+        <div class="grid grid-cols-1 sm:grid-cols-6 mb-4 sm:mb-0">
             <button type="button" @click="handleTab($event, '#information', '.db-tabBtn', '.db-tabDiv', 'active')"
                 class="db-tabBtn !justify-start active">
                 <i class="lab lab-information lab-font-size-16"></i>
                 {{ $t('label.information') }}
             </button>
             <button type="button" @click="handleTab($event, '#image', '.db-tabBtn', '.db-tabDiv', 'active')"
-                class="db-tabBtn !justify-start"><i class="lab lab-image lab-font-size-16"></i>
+                class="db-tabBtn !justify-start" data-testid="admin-item-tab-image"><i class="lab lab-image lab-font-size-16"></i>
                 {{ $t('label.images') }}
             </button>
             <button type="button" class="db-tabBtn !justify-start"
@@ -26,6 +26,11 @@
                 @click="handleTab($event, '#addon', '.db-tabBtn', '.db-tabDiv', 'active')"><i
                     class="lab lab-addon lab-font-size-16"></i>
                 {{ $t('label.addon') }}
+            </button>
+            <button type="button" class="db-tabBtn !justify-start"
+                @click="handleTab($event, '#composition', '.db-tabBtn', '.db-tabDiv', 'active')"><i
+                    class="lab lab-menu lab-font-size-16"></i>
+                Composition
             </button>
         </div>
         <div class="db-tabDiv active" id="information">
@@ -130,10 +135,10 @@
                             }}</span>
                             <input v-if="uploadButton" @change="changePreviewImage" ref="imageProperty"
                                 accept="image/png, image/jpeg, image/jpg" type="file" id="photo"
-                                class="absolute top-0 left-0 w-full h-full -z-10 opacity-0" />
+                                class="absolute top-0 left-0 w-full h-full -z-10 opacity-0" data-testid="admin-item-photo-input" />
                         </label>
                         <button v-if="saveButton" type="submit"
-                            class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(26,_183,_89,_0.24)] text-white bg-[#1AB759]">
+                            class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(26,_183,_89,_0.24)] text-white bg-[#1AB759]" data-testid="admin-item-photo-save">
                             <i class="lab lab-tick-circle-2"></i>
                             <span class="hidden sm:inline-block">{{ $t("button.save") }}</span>
                         </button>
@@ -156,6 +161,9 @@
         <div class="db-tabDiv" id="addon">
             <ItemAddonListComponent :item="parseInt($route.params.id)" />
         </div>
+        <div class="db-tabDiv" id="composition">
+            <ProductComposerSummaryComponent :item="item" />
+        </div>
     </div>
 </template>
 
@@ -169,6 +177,7 @@ import alertService from "../../../services/alertService";
 import ItemVariationListComponent from "./variation/ItemVariationListComponent";
 import ItemExtraListComponent from "./extra/ItemExtraListComponent";
 import ItemAddonListComponent from "./addon/ItemAddonListComponent";
+import ProductComposerSummaryComponent from "./ProductComposerSummaryComponent";
 
 export default {
     name: "ItemShowComponent",
@@ -176,7 +185,8 @@ export default {
         ItemVariationListComponent,
         LoadingComponent,
         ItemExtraListComponent,
-        ItemAddonListComponent
+        ItemAddonListComponent,
+        ProductComposerSummaryComponent
     },
     data() {
         return {

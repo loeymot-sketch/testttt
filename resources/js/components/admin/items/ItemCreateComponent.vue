@@ -13,14 +13,14 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                         <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                            id="name" class="db-field-control">
+                            id="name" class="db-field-control" data-testid="admin-item-form-name">
                         <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
                         <label for="price" class="db-field-title required">{{ $t("label.price") }}</label>
                         <input v-model="props.form.price" v-bind:class="errors.price ? 'invalid' : ''" type="text"
-                            id="price" class="db-field-control">
+                            id="price" class="db-field-control" data-testid="admin-item-form-price">
                         <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                     </div>
 
@@ -30,7 +30,7 @@
                             v-bind:class="errors.item_category_id ? 'invalid' : ''"
                             v-model="props.form.item_category_id" :options="itemCategories" label-by="name"
                             value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                            search-placeholder="--" />
+                            search-placeholder="--" data-testid="admin-item-form-category" />
                         <small class="db-field-alert" v-if="errors.item_category_id">{{
                             errors.item_category_id[0]
                             }}</small>
@@ -49,7 +49,7 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
-                            class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg">
+                            class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-item-form-image">
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                     </div>
 
@@ -163,7 +163,7 @@
 
                     <div class="col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
-                            <button type="submit" class="db-btn py-2 text-white bg-primary">
+                            <button type="submit" class="db-btn py-2 text-white bg-primary" data-testid="admin-item-form-save">
                                 <i class="lab lab-save"></i>
                                 <span>{{ $t("label.save") }}</span>
                             </button>

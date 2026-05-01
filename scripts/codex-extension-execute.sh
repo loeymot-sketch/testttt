@@ -32,9 +32,10 @@ else
   if [[ "${CODEX_EXT_TIER:-complex}" == "standard" ]]; then
     EXT_MODEL="${CODEX_EXT_MODEL_FAST:-gpt-5.5}"
   else
-    EXT_MODEL="${CODEX_EXT_MODEL_PRO:-gpt-5.5-pro}"
+    EXT_MODEL="${CODEX_EXT_MODEL_PRO:-gpt-5.5}"
   fi
 fi
+EXT_REASONING_EFFORT="${CODEX_EXT_REASONING_EFFORT:-xhigh}"
 
 # shellcheck source=./codex-resolve-bin.sh
 # shellcheck source=./codex-sanitize-env-for-codex-cli.sh
@@ -57,22 +58,24 @@ node "$REPO_ROOT/scripts/codex-extension-build-prompt.mjs" "$TASK_ID" > "$PROMPT
 
 RAW_LOG="$MISSION_DIR/output_codex.raw.log"
 {
-  echo "=== Codex extension — mission $TASK_ID — modèle indicatif: $EXT_MODEL (CODEX_EXT_MODEL / CODEX_EXT_TIER) ==="
+  echo "=== Codex extension — mission $TASK_ID — modèle: $EXT_MODEL (CODEX_EXT_MODEL / CODEX_EXT_TIER) ==="
   echo "EXECUTE_DELEGATION: codex-extension"
   echo "EXECUTE_EXT_MODEL: $EXT_MODEL"
+  echo "EXECUTE_EXT_REASONING_EFFORT: $EXT_REASONING_EFFORT"
   echo "=== Prompt (octets): $(wc -c < "$PROMPT_FILE") ==="
 } > "$RAW_LOG"
 
 # Non-interactif: stdin → `codex exec -`
+CODEX_EXEC_ARGS=(-m "$EXT_MODEL" -c "model_reasoning_effort=\"${EXT_REASONING_EFFORT}\"")
 set +e
-{ cat "$PROMPT_FILE" | "$CODEX_BIN" exec - ; } >> "$RAW_LOG" 2>&1
+{ cat "$PROMPT_FILE" | "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" - ; } >> "$RAW_LOG" 2>&1
 EX=$?
 set -e
 if [[ $EX -ne 0 ]]; then
   {
     echo ""
     echo "=== Repli: codex exec \"<prompt>\" (argv unique) ex=$EX ==="
-    "$CODEX_BIN" exec "$(cat "$PROMPT_FILE")" 2>&1
+    "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" "$(cat "$PROMPT_FILE")" 2>&1
   } >> "$RAW_LOG" 2>&1 || true
 fi
 rm -f "$PROMPT_FILE" 2>/dev/null || true
@@ -91,11 +94,11 @@ SELF_P="${TMPDIR:-/tmp}/foodking-codex-audit-$$.txt"
 if node "$REPO_ROOT/scripts/codex-extension-self-audit-prompt.mjs" "$TASK_ID" > "$SELF_P" 2>/dev/null; then
   { echo "=== Auto-audit GPT (2e passe) ===" ; } > "$AUDIT_RAW"
   set +e
-  { cat "$SELF_P" | "$CODEX_BIN" exec - ; } >> "$AUDIT_RAW" 2>&1
+  { cat "$SELF_P" | "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" - ; } >> "$AUDIT_RAW" 2>&1
   AEX=$?
   set -e
   if [[ $AEX -ne 0 ]]; then
-    { echo "" ; "$CODEX_BIN" exec "$(cat "$SELF_P")" 2>&1 ; } >> "$AUDIT_RAW" 2>&1 || true
+    { echo "" ; "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" "$(cat "$SELF_P")" 2>&1 ; } >> "$AUDIT_RAW" 2>&1 || true
   fi
   cp "$AUDIT_RAW" "$AUDIT_PATH" 2>/dev/null || cat "$AUDIT_RAW" > "$AUDIT_PATH"
   rm -f "$SELF_P" 2>/dev/null || true

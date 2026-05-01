@@ -13,6 +13,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
 class PosOrderRequestNullableTotalTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $customer;
@@ -103,9 +105,10 @@ class PosOrderRequestNullableTotalTest extends TestCase
     public function test_payload_without_total_or_subtotal_is_accepted(): void
     {
         $this->actingAs($this->operator, 'sanctum');
+        $payload = $this->basePayload();
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->basePayload());
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
         // Persisted order must reflect the SERVER-computed total (10.00 + 10% TVA = 11.00),
@@ -122,11 +125,12 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         // Client tries to bill 1€ instead of 11€.
+        $payload = $this->basePayload([
+            'subtotal' => 0.10,
+            'total'    => 1.00,
+        ]);
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->basePayload([
-                'subtotal' => 0.10,
-                'total'    => 1.00,
-            ]));
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
         // Server-computed total wins.
@@ -141,10 +145,11 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         // Client omits total, but only hands over 5€ for an 11€ order — server check must trip.
+        $payload = $this->basePayload([
+            'pos_received_amount' => 5.00,
+        ]);
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->basePayload([
-                'pos_received_amount' => 5.00,
-            ]));
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
     }

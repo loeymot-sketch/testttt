@@ -398,9 +398,11 @@ class MenuSeeder extends Seeder
 
         foreach ($this->config['categories'] as $category) {
             // [BUG-4 FIX] Include wizard_template and has_menu from config
+            $slug = $category['slug'] ?? Str::slug($category['name']);
+
             $cat = ItemCategory::create([
                 'name' => $category['name'],
-                'slug' => Str::slug($category['name']),
+                'slug' => $slug,
                 'description' => $category['description'] ?? null,
                 'status' => $this->config['settings']['status_active'],
                 'sort' => $category['sort'],
@@ -409,7 +411,7 @@ class MenuSeeder extends Seeder
                 'default_menu_kiosk' => $category['default_menu_kiosk'] ?? false,
             ]);
 
-            $this->categoryIds[Str::slug($category['name'])] = $cat->id;
+            $this->categoryIds[$slug] = $cat->id;
             echo "  ✓ Created: {$category['name']} (template: {$cat->wizard_template})\n";
         }
 
@@ -506,7 +508,7 @@ class MenuSeeder extends Seeder
         // Create the item
         $item = Item::create([
             'name' => $data['name'],
-            'slug' => Str::slug($data['name']),
+            'slug' => $data['slug'] ?? Str::slug($data['name']),
             'item_category_id' => $categoryId,
             'price' => $data['price'],
             'description' => $data['description'] ?? '',

@@ -1,14 +1,18 @@
 <template>
     <div class="backdrop"></div>
     <header class="db-header">
-        <router-link class="w-32 flex-shrink-0" :to="{ name: 'frontend.home' }" @click="closeFullScreen">
+        <a v-if="isPosV4Shell" class="w-32 flex-shrink-0" href="/admin/pos-v4" @click="closeFullScreen">
+            <img class="w-full" :src="setting.theme_logo" alt="logo">
+        </a>
+        <router-link v-else class="w-32 flex-shrink-0" :to="{ name: 'frontend.home' }" @click="closeFullScreen">
             <img class="w-full" :src="setting.theme_logo" alt="logo">
         </router-link>
         <div class="flex items-center justify-end w-full gap-4">
             <div class="sub-header flex items-center gap-4 transition justify-between xh:top-10 xh:fixed xh:left-0 xh:w-full xh:p-4 xh:border-y xh:border-[#EFF0F6] xh:bg-white">
                 <button v-if="$route.path.includes('order-status-screen')" type="button" @click="fullScreen"
+                    aria-label="Plein écran"
                     class="hidden db-header-toggle lg:flex items-center justify-center w-9 h-9 px-3 rounded-lg bg-[#E0FFED]">
-                    <i class="lab lab-maximize lab-font-size-24 text-[#1AB759]"></i>
+                    <i class="lab lab-maximize lab-font-size-24 text-[#1AB759]" aria-hidden="true"></i>
                 </button>
 
                 <div v-if="authBranch === 0" class="relative dropdown-group">
@@ -41,7 +45,7 @@
                             class="flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]">
                             <i class="lab-font-size-17 text-primary" :class="defaultMenu?.icon"></i>
                             <span
-                                class=" md:block hidden whitespace-nowrap text-xs font-medium capitalize text-heading">{{
+                                class=" md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">{{
                                     $t('menu.' + defaultMenu?.language) }}</span>
                         </router-link>
                     </div>
@@ -65,11 +69,19 @@
                             </ul>
                         </div>
 
-                        <router-link
-                            v-if="pos.permission && !$route.path.includes('kitchen-display-system') && !$route.path.includes('order-status-screen')"
+                        <a
+                            v-if="isPosV4Shell && pos.permission && !$route.path.includes('kitchen-display-system') && !$route.path.includes('order-status-screen')"
                             class="w-9 h-9 rounded-lg flex items-center justify-center bg-[#FFEBD8]"
+                            :aria-label="$t('menu.pos')"
+                            :href="'/admin/' + pos.url">
+                            <i class="lab lab-pos-bold lab-font-size-16 font-fill-pos" aria-hidden="true"></i>
+                        </a>
+                        <router-link
+                            v-else-if="pos.permission && !$route.path.includes('kitchen-display-system') && !$route.path.includes('order-status-screen')"
+                            class="w-9 h-9 rounded-lg flex items-center justify-center bg-[#FFEBD8]"
+                            :aria-label="$t('menu.pos')"
                             :to="{ path: '/admin/' + pos.url }">
-                            <i class="lab lab-pos-bold lab-font-size-16 font-fill-pos"></i>
+                            <i class="lab lab-pos-bold lab-font-size-16 font-fill-pos" aria-hidden="true"></i>
                         </router-link>
                     </div>
                 </div>
@@ -77,13 +89,14 @@
             <button @click.prevent="handleSidebar"
                 v-if="!$route.path.includes('kitchen-display-system') && !$route.path.includes('order-status-screen')"
                 class="fa-solid db-header-nav w-9 h-9 rounded-lg text-primary bg-primary/5"
+                :aria-label="sidebar ? $t('button.close') : $t('button.menu')"
                 :class="sidebar ? 'fa-align-left' : 'fa-bars'"></button>
 
             <div class="dropdown-group">
                 <button class="dropdown-btn flex items-center gap-2">
                     <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
-                    <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
-                            class="block font-semibold">{{ textShortener(authInfo.name, 15) }}</b></h3>
+                        <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
+                            class="block font-semibold text-[#111827]">{{ textShortener(authInfo.name, 15) }}</b></h3>
                     <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i>
                 </button>
                 <div
@@ -99,6 +112,7 @@
                             class="block w-11 h-11 mx-auto -mt-7 mb-3 relative z-10 rounded-full border-2 cursor-pointer bg-heading border-white">
                             <input @change="saveImage" accept="image/png, image/jpeg, image/jpg" ref="imageProperty"
                                 type="file" id="imageProperty"
+                                :aria-label="$t('button.edit_profile')"
                                 class="w-full h-full rounded-full opacity-0 cursor-pointer">
                             <i
                                 class="lab lab-edit-2 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -z-10 lab-font-size-24 lab-font-color-1"></i>
@@ -112,13 +126,23 @@
                         <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ authInfo.currency_balance }}</h3>
                     </div>
                     <nav>
-                        <router-link :to="{ name: 'admin.profile.editProfile' }"
+                        <a v-if="isPosV4Shell" href="/admin/profile/edit-profile"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
+                            <i class="lab lab-edit lab-font-size-17"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
+                        </a>
+                        <router-link v-else :to="{ name: 'admin.profile.editProfile' }"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-edit lab-font-size-17"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
                         </router-link>
 
-                        <router-link :to="{ name: 'admin.profile.changePassword' }"
+                        <a v-if="isPosV4Shell" href="/admin/profile/change-password"
+                            class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
+                            <i class="lab lab-key lab-font-size-17"></i>
+                            <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
+                        </a>
+                        <router-link v-else :to="{ name: 'admin.profile.changePassword' }"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-key lab-font-size-17"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
@@ -156,6 +180,7 @@
 <script>
 
 import activityEnum from "../../../enums/modules/activityEnum";
+import statusEnum from "../../../enums/modules/statusEnum";
 import _ from "lodash";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
@@ -182,7 +207,8 @@ export default {
             branchProps: {
                 paginate: 0,
                 order_column: "id",
-                order_type: "asc"
+                order_type: "asc",
+                status: statusEnum.ACTIVE
             },
             orderNotificationStatus: false,
             orderNotificationMessage: "",
@@ -225,6 +251,9 @@ export default {
         },
         defaultMenu: function () {
             return this.$store.getters.authDefaultMenu;
+        },
+        isPosV4Shell() {
+            return typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/pos-v4');
         },
         sidebar() {
             return this.$store.getters['globalState/lists'].topSidebar;

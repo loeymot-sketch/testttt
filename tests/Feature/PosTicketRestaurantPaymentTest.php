@@ -16,6 +16,7 @@ use App\Models\Order;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class PosTicketRestaurantPaymentTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     private function apiKey(): string
     {
@@ -62,21 +64,23 @@ class PosTicketRestaurantPaymentTest extends TestCase
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
         $cashier->assignRole('Admin');
 
+        $payload = [
+            'customer_id' => $cashier->id,
+            'branch_id' => $branch->id,
+            'total' => 22.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::TICKET_RESTAURANT,
+            'pos_payment_note' => 'TR-998877',
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
+            ]),
+        ];
+
         $response = $this->actingAs($cashier)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $cashier->id,
-                'branch_id' => $branch->id,
-                'total' => 22.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::TICKET_RESTAURANT,
-                'pos_payment_note' => 'TR-998877',
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($cashier, $payload));
 
         $response->assertStatus(201);
         $orderId = (int) ($response->json('data.id') ?? 0);

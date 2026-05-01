@@ -55,4 +55,8 @@ Route::get('/admin/pos-v4/{any?}', [AdminPosV4Controller::class, 'index'])
     ->where(['any' => '.*'])
     ->name('admin.pos.v4');
 
+// Kiosk lockdown: these legacy/admin bundle names must not fall through to the SPA.
+Route::get('/js/{forbiddenKioskAsset}', static fn () => abort(404))
+    ->where('forbiddenKioskAsset', 'kiosk(?:-admin)?\.js(?:\.LICENSE\.txt)?');
+
 Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);

@@ -24,7 +24,17 @@ class ItemCategoryController extends AdminController
     {
         parent::__construct();
         $this->itemCategoryService = $itemCategory;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy', 'show');
+        $this->middleware(['permission:settings'])->only(
+            'store',
+            'update',
+            'destroy',
+            'index',
+            'show',
+            'sortCategory',
+            'export',
+            'downloadSample',
+            'import'
+        );
     }
 
     public function index(

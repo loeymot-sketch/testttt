@@ -27,6 +27,8 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\WaiterController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\ComposerProfileController;
+use App\Http\Controllers\Admin\ComposerStepController;
 use App\Http\Controllers\Admin\CookiesController;
 use App\Http\Controllers\Admin\LicenseController;
 use App\Http\Controllers\Admin\MessageController;
@@ -295,14 +297,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
         Route::prefix('item-category')->name('item-category.')->group(function () {
             Route::get('/', [ItemCategoryController::class, 'index']);
+            Route::get('/export', [ItemCategoryController::class, 'export']);
+            Route::get('/download-sample', [ItemCategoryController::class, 'downloadSample']);
+            Route::post('/import/file', [ItemCategoryController::class, 'import']);
             Route::get('/show/{itemCategory}', [ItemCategoryController::class, 'show']);
             Route::post('/', [ItemCategoryController::class, 'store']);
             Route::match(['post', 'put', 'patch'], '/{itemCategory}', [ItemCategoryController::class, 'update']);
             Route::delete('/{itemCategory}', [ItemCategoryController::class, 'destroy']);
             Route::post('/sort/category', [ItemCategoryController::class, 'sortCategory']);
-            Route::get('/export', [ItemCategoryController::class, 'export']);
-            Route::get('/download-sample', [ItemCategoryController::class, 'downloadSample']);
-            Route::post('/import/file', [ItemCategoryController::class, 'import']);
         });
 
         Route::prefix('item-attribute')->name('item-attribute.')->group(function () {
@@ -630,8 +632,96 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/addon/{item}/{itemAddon}', [ItemAddonController::class, 'destroy']);
     });
 
+    Route::prefix('composer')->name('composer.')->group(function () {
+        Route::middleware('permission:catalog.compose')->group(function () {
+            Route::get('/items/{item}/profile', [ComposerProfileController::class, 'show']);
+            Route::post('/items/{item}/profile', [ComposerProfileController::class, 'store']);
+            Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
+            Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
+            Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
+            Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
+            Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
+        });
+        Route::post('/profiles/{profile}/publish', [ComposerProfileController::class, 'publish'])
+            ->middleware('permission:catalog.publish');
+    });
+
     Route::prefix('pos')->name('pos.')->group(function () {
+        Route::post('/quote', [PosController::class, 'quote'])
+            ->middleware('throttle:pos-order-create')
+            ->name('quote');
         Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
+        Route::get('/counter-collect/pending', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $query = \App\Models\Order::with(['orderItems.orderItem'])
+                ->where('source_surface', 'kiosk')
+                ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
+                ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                ->orderBy('created_at');
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $query->where('branch_id', $branchId);
+            }
+
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(50)->get());
+        })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                $validated = $request->validate([
+                    'mode' => ['required', 'integer'],
+                    'received' => ['nullable', 'numeric', 'min:0'],
+                    'note' => ['nullable', 'string', 'max:255'],
+                ]);
+
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\PaymentService::class)->confirmCounterPayment(
+                    $order,
+                    (int) $validated['mode'],
+                    array_key_exists('received', $validated) ? (float) $validated['received'] : null,
+                    $validated['note'] ?? null
+                ));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $validation) {
+                throw $validation;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('counter-collect.confirm');
+        Route::post('/counter-collect/{order}/cancel', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                $validated = $request->validate([
+                    'reason' => ['nullable', 'string', 'max:255'],
+                ]);
+
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\PaymentService::class)->cancelCounterPayment(
+                    $order,
+                    $validated['reason'] ?? null
+                ));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $validation) {
+                throw $validation;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('counter-collect.cancel');
+        Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\OrderService::class)->collectKioskCash($order));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('collect-kiosk-cash');
         Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
@@ -889,6 +979,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
+        Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
         Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:kiosk-orders');
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id

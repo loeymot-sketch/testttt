@@ -2,7 +2,10 @@
     <aside class="db-sidebar"
         :class="$route.path.includes('kitchen-display-system') || $route.path.includes('order-status-screen') ? 'hidden' : ''">
         <div class="db-sidebar-header">
-            <router-link class="w-24" :to="{ name: 'frontend.home' }">
+            <a v-if="isPosV4Shell" class="w-24" href="/admin/pos-v4">
+                <img :src="setting.theme_logo" alt="logo">
+            </a>
+            <router-link v-else class="w-24" :to="{ name: 'frontend.home' }">
                 <img :src="setting.theme_logo" alt="logo">
             </router-link>
             <button @click.prevent="handleSidebar" class="fa-solid fa-xmark xmark-btn close-db-menu"></button>
@@ -11,13 +14,17 @@
         <nav class="db-sidebar-nav">
             <ul class="db-sidebar-nav-list" v-if="menus.length > 0" v-for="menu in menus" :key="menu">
                 <li class="db-sidebar-nav-item" v-if="menu.url === '#'" @click.prevent="sidebarActive($event)">
-                    <a href="javascript:void(0);" class="db-sidebar-nav-title">
+                    <button type="button" :aria-label="$t('menu.' + menu.language)" class="db-sidebar-nav-title">
                         {{ $t('menu.' + menu.language) }}
-                    </a>
+                    </button>
                 </li>
 
                 <li class="db-sidebar-nav-item" v-else @click.prevent="sidebarActive($event)">
-                    <router-link :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                    <a v-if="isPosV4Shell" :href="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                        <i class="text-sm" :class="menu.icon"></i>
+                        <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
+                    </a>
+                    <router-link v-else :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -25,7 +32,11 @@
 
                 <li class="db-sidebar-nav-item" v-if="menu.children" v-for="children in menu.children"
                     @click.prevent="sidebarActive($event)">
-                    <router-link :to="'/admin/' + children.url" class="db-sidebar-nav-menu">
+                    <a v-if="isPosV4Shell" :href="'/admin/' + children.url" class="db-sidebar-nav-menu">
+                        <i class="text-sm" :class="children.icon"></i>
+                        <span class="text-base flex-auto">{{ $t('menu.' + children.language) }}</span>
+                    </a>
+                    <router-link v-else :to="'/admin/' + children.url" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="children.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + children.language) }}</span>
                     </router-link>
@@ -54,6 +65,9 @@ export default {
         },
         sidebar() {
             return this.$store.getters['globalState/lists'].topSidebar;
+        },
+        isPosV4Shell() {
+            return typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/pos-v4');
         },
     },
     mounted() {

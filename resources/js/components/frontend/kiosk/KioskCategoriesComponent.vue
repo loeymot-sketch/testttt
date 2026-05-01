@@ -167,6 +167,36 @@
                 </p>
               </div>
 
+              <div
+                class="kiosk-category-strip"
+                :aria-label="`${$t('kiosk.catalog.categories_nav_label')} - raccourci`"
+                role="navigation"
+                data-testid="kiosk-categories-quick-strip"
+              >
+                <button
+                  v-for="cat in sidebarCategories"
+                  :key="`quick-${cat.kioskRowKey}`"
+                  type="button"
+                  class="kiosk-category-pill"
+                  :class="{ active: isCategoryActive(cat) }"
+                  :aria-current="isCategoryActive(cat) ? 'page' : undefined"
+                  :aria-label="displayCategoryName(cat)"
+                  :data-testid="`kiosk-categories-quick-item-${cat.id}`"
+                  @click="selectCategory(cat)"
+                >
+                  <span class="kiosk-category-pill-media" aria-hidden="true">
+                    <img
+                      v-if="cat.image_full_path || cat.image"
+                      :src="cat.image_full_path || cat.image"
+                      :alt="''"
+                      loading="lazy"
+                    />
+                    <span v-else>{{ getCategoryEmoji(cat.name) }}</span>
+                  </span>
+                  <span class="kiosk-category-pill-name">{{ displayCategoryName(cat) }}</span>
+                </button>
+              </div>
+
               <!-- Phase 8.4 — Filter chips row (DATA_CONTRACT §9.3) -->
               <div
                 class="kiosk-filter-bar"
@@ -465,6 +495,9 @@ export default {
     },
   },
   async mounted() {
+    if (!this.ensureOrderTypeSelected()) {
+      return;
+    }
     if (!this.hydrated) {
       try { await this.$store.dispatch('kioskFilter/init'); } catch (_) { /* module not registered (legacy host) */ }
     }
@@ -484,13 +517,37 @@ export default {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
     ...mapActions('kioskCart', ['addItem', 'reset']),
 
+    hasExplicitOrderType() {
+      const getter = this.$store?.getters?.['kioskCart/hasExplicitOrderType'];
+      return getter !== false;
+    },
+    ensureOrderTypeSelected() {
+      if (this.hasExplicitOrderType()) return true;
+      try {
+        this.$router.replace({ name: 'kiosk.idle' });
+      } catch (_) {}
+      return false;
+    },
+
     isProductCatalogAllowed(product) {
+      if (this.isProductUnavailable(product)) return false;
       const set = this.allowedProductIdSet;
       if (!set) return true;
       return set.has(product.id);
     },
+    isProductUnavailable(product) {
+      if (!product) return false;
+      if (product.is_available === false || product.is_available === 0 || product.is_available === '0') {
+        return true;
+      }
+      const status = Number(product.status);
+      return status === 0 || status === 2 || status === 10;
+    },
     productFilteredOutTooltip(product) {
       if (this.isProductCatalogAllowed(product)) return '';
+      if (this.isProductUnavailable(product)) {
+        return product.unavailable_reason || this.$t('pos.item_86_d') || 'Épuisé';
+      }
       const names = (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`));
       return names.filter(Boolean).join(', ');
     },
@@ -582,6 +639,7 @@ export default {
     },
 
     async openProduct(product) {
+      if (!this.ensureOrderTypeSelected()) return;
       if (this.loadingItemId) return;
       this.loadingItemId = product.id;
       // Phase 8.8 — Analytics : item_opened (sans PII ; juste ID + contexte
@@ -659,6 +717,7 @@ export default {
     },
 
     goToCart() {
+      if (!this.ensureOrderTypeSelected()) return;
       if (this.cartCount === 0) return;
       this.$router.push({ name: 'kiosk.cart' });
     },
@@ -698,6 +757,7 @@ export default {
     },
 
     getProductBadge(product) {
+      if (this.isProductUnavailable(product)) return this.$t('pos.item_86_d') || 'Épuisé';
       if (product.is_featured == 5) return this.$t('kiosk.catalog.badge_new');
       if (this.hasOptions(product)) return this.$t('kiosk.catalog.badge_customize');
       return '';
@@ -843,20 +903,21 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--kiosk-surface);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   overflow: hidden;
   position: relative;
 }
 
 .kiosk-catalogue-header {
-  height: 82px;
+  height: 96px;
   padding-block: 0;
-  padding-inline: 18px 22px;
+  padding-inline: 24px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   flex-shrink: 0;
 }
 
@@ -868,11 +929,11 @@ export default {
 }
 
 .kiosk-brand-thumb-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   overflow: hidden;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -887,7 +948,7 @@ export default {
 }
 
 .kiosk-brand-thumb-fallback {
-  font-size: 28px;
+  font-size: 34px;
 }
 
 .kiosk-catalogue-breadcrumb {
@@ -899,18 +960,19 @@ export default {
 }
 
 .kiosk-breadcrumb-muted {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--kiosk-text-mute);
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .kiosk-breadcrumb-current {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 900;
   color: var(--kiosk-text);
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -921,15 +983,15 @@ export default {
 }
 
 .kiosk-top-chip {
-  min-height: 48px;
+  min-height: 54px;
   height: auto;
-  padding: 0 14px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 2px solid var(--kiosk-primary);
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 900;
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
@@ -1025,14 +1087,14 @@ export default {
 .kiosk-catalogue-body {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(128px, 17vw) 1fr;
+  grid-template-columns: minmax(172px, 18vw) 1fr;
   min-height: 0;
 }
 
 .kiosk-sidebar {
   background: var(--kiosk-surface);
   border-inline-end: 1px solid var(--kiosk-border);
-  padding: 12px 10px 90px;
+  padding: 14px 12px 128px;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -1041,33 +1103,35 @@ export default {
 
 .kiosk-sidebar-item {
   width: 100%;
-  border: none;
+  border: 2px solid transparent;
   background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 10px 6px 14px;
-  border-bottom: 3px solid transparent;
+  gap: 8px;
+  padding: 12px 8px 14px;
+  border-radius: 22px;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .kiosk-sidebar-item:active {
   background: var(--kiosk-surface-alt);
+  transform: scale(0.98);
 }
 
 .kiosk-sidebar-item.active {
-  border-bottom-color: var(--kiosk-primary);
-  background: linear-gradient(180deg, var(--kiosk-primary-soft), transparent);
+  border-color: var(--kiosk-primary);
+  background: var(--kiosk-primary-soft);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-sidebar-thumb-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 14px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
   overflow: hidden;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1081,13 +1145,13 @@ export default {
 }
 
 .kiosk-sidebar-thumb-fallback {
-  font-size: 36px;
+  font-size: 42px;
 }
 
 .kiosk-sidebar-name {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.15;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--kiosk-text-muted);
   text-align: center;
   text-transform: uppercase;
@@ -1097,13 +1161,13 @@ export default {
 }
 
 .kiosk-sidebar-item.active .kiosk-sidebar-name {
-  color: var(--kiosk-primary-dark);
+  color: var(--kiosk-primary);
 }
 
 .kiosk-product-zone {
-  background: var(--kiosk-surface);
+  background: transparent;
   overflow-y: auto;
-  padding: 12px 18px 110px;
+  padding: 22px 28px 142px;
   scrollbar-width: none;
 }
 
@@ -1128,16 +1192,16 @@ export default {
 }
 
 .kiosk-product-zone-header {
-  padding: 2px 4px 14px;
+  padding: 2px 4px 18px;
 }
 
 .kiosk-zone-title {
   margin: 0;
-  font-size: 30px;
-  font-weight: 800;
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 900;
   color: var(--kiosk-text);
   text-transform: uppercase;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .kiosk-zone-subtitle {
@@ -1146,22 +1210,114 @@ export default {
   color: var(--kiosk-text-mute);
 }
 
+.kiosk-category-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 0 2px 18px;
+  margin: 0 -2px 2px;
+}
+
+.kiosk-category-strip::-webkit-scrollbar { display: none; }
+
+.kiosk-category-pill {
+  flex: 0 0 auto;
+  min-width: 156px;
+  min-height: 74px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--kiosk-border, rgba(255,255,255,0.16));
+  background: var(--kiosk-surface, #fff);
+  color: var(--kiosk-text, #1f1f1f);
+  box-shadow: var(--kiosk-shadow-card, none);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.kiosk-category-pill:active {
+  transform: scale(0.98);
+}
+
+.kiosk-category-pill:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
+}
+
+.kiosk-category-pill.active {
+  border-color: var(--kiosk-primary, #e8001c);
+  background:
+    linear-gradient(135deg, var(--kiosk-primary, #e8001c), var(--kiosk-primary-strong, #b80016));
+  color: var(--kiosk-text-on-red, #fff);
+  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(232,0,28,0.18));
+}
+
+.kiosk-category-pill.active .kiosk-category-pill-media {
+  background: rgba(255,255,255,0.16);
+}
+
+.kiosk-category-pill-media {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
+  box-shadow: inset 0 -6px 14px rgba(0,0,0,0.08);
+  font-size: 28px;
+}
+
+.kiosk-category-pill-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kiosk-category-pill-name {
+  max-width: 92px;
+  min-width: 0;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: start;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
 .kiosk-product-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px 22px;
+  gap: 24px;
 }
 
 .kiosk-product-card {
   position: relative;
-  min-height: 350px;
-  padding: 4px 8px 10px;
+  min-height: 392px;
+  padding: 16px 18px 18px;
+  border-radius: 30px;
+  border: 1.5px solid var(--kiosk-border);
+  background: var(--kiosk-surface);
+  box-shadow: var(--kiosk-shadow-card);
   cursor: pointer;
-  /* Pas d’animation par carte au changement de catégorie : évite l’effet en cascade / livre */
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
 .kiosk-product-card:active {
-  transform: scale(0.985);
+  transform: scale(0.98);
 }
 
 /* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */
@@ -1172,26 +1328,30 @@ export default {
 
 .kiosk-product-media {
   position: relative;
-  height: 250px;
+  height: 234px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 28px;
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
 }
 
 .kiosk-product-image {
-  width: 100%;
-  height: 100%;
+  width: 94%;
+  height: 94%;
   object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.18));
 }
 
 .kiosk-product-image-fallback {
-  width: 100%;
-  height: 100%;
+  width: 176px;
+  height: 176px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--kiosk-surface-alt);
-  border-radius: 16px;
+  background: var(--kiosk-surface);
+  border-radius: 50%;
+  box-shadow: inset 0 -8px 18px rgba(0,0,0,0.08);
 }
 
 .kiosk-product-emoji {
@@ -1203,21 +1363,21 @@ export default {
   top: 10px;
   inset-inline-start: 18px;
   background: var(--kiosk-primary-dark);
-  color: white;
+  color: var(--kiosk-text-on-red, #fff);
   font-size: 11px;
   font-weight: 800;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: 999px;
   transform: rotate(-4deg);
   box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-product-add {
   position: absolute;
-  top: 12px;
-  inset-inline-end: 18px;
-  width: 38px;
-  height: 38px;
+  bottom: -12px;
+  inset-inline-end: 16px;
+  width: 64px;
+  height: 64px;
   border: none;
   border-radius: 50%;
   background: var(--kiosk-primary-dark);
@@ -1225,10 +1385,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 900;
   box-shadow: var(--kiosk-shadow-cta);
-  outline: 2px solid rgba(255,255,255,0.85);
+  outline: 4px solid var(--kiosk-surface);
 }
 
 .kiosk-product-add:disabled {
@@ -1245,44 +1405,46 @@ export default {
 }
 
 .kiosk-product-copy {
-  margin-top: 2px;
-  text-align: center;
+  margin-top: 16px;
+  text-align: start;
 }
 
 .kiosk-product-name {
   margin: 0;
-  font-size: 23px;
-  font-weight: 800;
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 900;
   line-height: 1.15;
-  color: var(--kiosk-primary-dark);
+  color: var(--kiosk-text);
   text-transform: uppercase;
 }
 
 .kiosk-product-desc {
-  margin: 6px auto 0;
-  max-width: 82%;
-  font-size: 12px;
+  margin: 8px 0 0;
+  max-width: calc(100% - 58px);
+  font-size: 14px;
   color: var(--kiosk-text-muted);
   line-height: 1.35;
 }
 
 .kiosk-product-price {
   display: block;
-  margin-top: 6px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--kiosk-text);
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--kiosk-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-bottom-bar {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  height: 96px;
+  height: 118px;
   display: grid;
-  grid-template-rows: 40px 56px;
+  grid-template-rows: 48px 70px;
   background: var(--kiosk-surface);
   border-top: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   z-index: 20;
 }
 
@@ -1309,8 +1471,8 @@ export default {
 .kiosk-bottom-pay {
   border: none;
   background: var(--kiosk-surface);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
   letter-spacing: 0.01em;
 }
 
@@ -1342,11 +1504,12 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 0 18px;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--kiosk-primary-dark);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--kiosk-primary);
   white-space: nowrap;
   background: var(--kiosk-primary-soft);
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-bottom-pay {
@@ -1360,15 +1523,17 @@ export default {
 }
 
 .kiosk-bottom-pay:disabled {
-  background: var(--kiosk-primary-soft);
-  color: var(--kiosk-primary-dark);
+  background: var(--kiosk-surface-alt);
+  color: var(--kiosk-text-mute);
+  border-inline-start: 1px solid var(--kiosk-border);
+  cursor: not-allowed;
 }
 
 .kiosk-wizard-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: var(--kiosk-surface);
-  z-index: 50;
+  z-index: 180;
 }
 
 .slide-up-enter-active,

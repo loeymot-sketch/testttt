@@ -42,6 +42,10 @@ class PricingPreviewRequest extends FormRequest
             'items.*.item_variations.*.quantity'    => ['sometimes', 'nullable', 'integer', 'min:1'],
             'items.*.item_extras'                 => ['nullable', 'array', 'max:30'],
             'items.*.item_extras.*.id'            => ['required_with:items.*.item_extras', 'integer', 'min:1'],
+            'items.*.item_extras.*.quantity'      => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'items.*.item_addons'                 => ['nullable', 'array', 'max:20'],
+            'items.*.item_addons.*.id'            => ['required_with:items.*.item_addons', 'integer', 'min:1'],
+            'items.*.item_addons.*.quantity'      => ['sometimes', 'nullable', 'integer', 'min:1'],
 
             'coupon_code'                         => ['nullable', 'string', 'min:3', 'max:64'],
             'kiosk_promo_code'                    => ['nullable', 'string', 'min:3', 'max:64'],

@@ -47,7 +47,7 @@ Pas besoin de réclamer si l'agent ne **modifie** pas les fichiers du projet (le
 ## Convention de nommage AGENT
 Stable et auto-décrivante. Exemples valides :
 - `cursor-claude` — conv Cursor avec Claude comme PRIMARY
-- `cursor-composer` — sub-agent `foodking-routine-implementer`
+- `cursor-composer` — validation/report only; no product implementation in finishing cycles
 - `codex-extension` — `npm run codex:complex` (CLI `codex`, compte ChatGPT Pro)
 - `claude-terminal` — `bash scripts/foodking-claude-orchestrate.sh audit`
 - `human` — édition manuelle dans IDE

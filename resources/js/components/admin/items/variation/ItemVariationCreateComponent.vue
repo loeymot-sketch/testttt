@@ -15,7 +15,7 @@
                         <div class="form-col-12 sm:form-col-6">
                             <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                                id="name" class="db-field-control" />
+                                id="name" class="db-field-control" data-testid="admin-variation-form-name" />
                             <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                         </div>
 
@@ -25,7 +25,7 @@
                                 }}</label>
                             <input v-on:keypress="numberOnly($event)" v-model="props.form.price"
                                 v-bind:class="errors.price ? 'invalid' : ''" type="text" id="price"
-                                class="db-field-control" />
+                                class="db-field-control" data-testid="admin-variation-form-price" />
                             <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                         </div>
 
@@ -36,7 +36,7 @@
                                 v-bind:class="errors.item_attribute_id ? 'invalid' : ''"
                                 v-model="props.form.item_attribute_id" :options="itemAttributes" label-by="name"
                                 value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
-                                placeholder="--" search-placeholder="--" />
+                                placeholder="--" search-placeholder="--" data-testid="admin-variation-form-attribute" />
                             <small class="db-field-alert" v-if="errors.item_attribute_id">{{
                                 errors.item_attribute_id[0]
                                 }}</small>

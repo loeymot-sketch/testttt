@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { createI18n } from 'vue-i18n';
 import { mount, shallowMount } from '@vue/test-utils';
@@ -45,6 +47,9 @@ const wizardStubNames = [
 
 const stubs = Object.fromEntries(wizardStubNames.map((n) => [n, true]));
 
+const readRepoFile = (relativePath) =>
+  readFileSync(resolve(process.cwd(), relativePath), 'utf8');
+
 const mountWizard = (item) =>
   shallowMount(KioskWizardComponent, {
     props: { item, onAddToCart: vi.fn(), onClose: vi.fn() },
@@ -57,6 +62,19 @@ const mountWizard = (item) =>
       },
     },
   });
+
+describe('[CV1-LOT-K07] POS-kiosk wizard convergence', () => {
+  it('KioskPosWizardComponent reste un wrapper strict vers KioskWizardComponent', () => {
+    const source = readRepoFile('resources/js/components/frontend/kiosk/KioskPosWizardComponent.vue');
+
+    expect(source).toContain('import KioskWizardComponent from "./KioskWizardComponent.vue";');
+    expect(source).toContain('<KioskWizardComponent v-bind="$attrs" />');
+    expect(source).toContain('inheritAttrs: false');
+    expect(source).not.toMatch(/pos-wizard\.js/);
+    expect(source).not.toMatch(/kioskPricing(?:Preview)?/);
+    expect(source).not.toContain('console.info');
+  });
+});
 
 describe('[P-MEGA-04] Wizard navigation — preserves user selections across back/forward', () => {
   const tacosItem = {

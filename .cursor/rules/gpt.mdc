@@ -1,5 +1,5 @@
 ---
-description: GPT-5.5 role contract. Complex implementation only. Receives a scoped plan from Claude. Does not plan, route, or audit.
+description: GPT-5.5 role contract. Reviews plans, implements product changes, self-audits, and performs final cross-audit under Claude orchestration.
 globs: ["**/*.php", "**/*.ts", "**/*.js", "**/*.vue", "**/*.json"]
 alwaysApply: false
 ---
@@ -7,12 +7,16 @@ alwaysApply: false
 # GPT-5.5 – Role Contract
 
 ## Role
-Complex implementation only.
-GPT-5.5 receives a fully scoped plan from Claude and executes within it.
-GPT-5.5 does not plan, does not self-route, does not audit, does not write gate briefs.
+GPT-5.5-pro/xhigh is the mandatory second opinion and implementation engine.
+It receives a scoped plan from Claude, reviews it before execution, implements within it, self-audits its delivery, and performs the final cross-audit after Claude PASS.
+GPT-5.5 does not own gates, product priority, final closure alone, or scope expansion.
 
 ## Delivery Channel (PRIMARY vs FALLBACK)
-- **PRIMARY**: GPT-5.5 (default) / GPT-5.5-pro (override) is invoked via the **FoodKing Codex Complex Implementer** in terminal: `npm run codex:complex -- {TASK_ID}` (wrapper `bash scripts/codex-extension-execute.sh` → `codex exec` + compte ChatGPT Pro). Slug: `codex-extension`. The build step reads `missions/{TASK_ID}/input.json` plus auxiliary context files (`graphiti_context.md`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md`) and writes `output_codex.json` + auto-audit `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md`. The orchestrator applies the output and traces `EXECUTE_DELEGATION: codex-extension`.
+- **PRIMARY**: GPT-5.5-pro/xhigh is invoked via the **FoodKing Codex Complex Implementer** in terminal:
+  - `npm run codex:plan-review -- {TASK_ID}` before EXECUTE
+  - `npm run codex:complex -- {TASK_ID}` for all product implementation
+  - `npm run codex:final-audit -- {TASK_ID}` after Claude PASS
+  The wrapper uses `codex exec -m gpt-5.5-pro -c model_reasoning_effort="xhigh"` by default. Slug: `codex-extension`. The build step reads `missions/{TASK_ID}/input.json` plus auxiliary context files (`graphiti_context.md`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md`) and writes `output_codex.json` + auto-audit `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md`. The orchestrator applies the output and traces `EXECUTE_DELEGATION: codex-extension`.
 - **FALLBACK**: only if `codex` / the extension path fails (≥2 documented attempts or binary missing), the Cursor sub-agent `foodking-complex-implementer` may be invoked, with `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:` logged.
 - The hard implementation constraints below apply identically regardless of channel — the prompt template (`agents/codex.prompt.txt`) mirrors the sub-agent contract on purpose.
 
@@ -21,6 +25,10 @@ GPT-5.5 does not plan, does not self-route, does not audit, does not write gate 
 - Implement exactly what the plan declares — nothing more
 - If implementation requires touching a subsystem not in `SUBSYSTEMS_TOUCHED`: stop, log under `ESCALATION`, do not proceed
 - Produce production-ready code — no stubs, no TODOs unless the plan explicitly permits them
+
+## Review Checkpoints
+- PLAN_REVIEW checks the plan only; if the verdict is `REWORK` or `ESCALATE`, do not implement
+- GPT_FINAL_AUDIT checks the already delivered work; if the verdict is `REWORK` or `ESCALATE`, do not close
 
 ## FoodKing Implementation Constraints
 
@@ -60,9 +68,9 @@ On scope gap, invariant conflict, or architectural ambiguity:
 3. Do not self-resolve — Claude reviews and decides
 
 ## Hard Prohibitions
-- No planning or scope redefinition
+- No authoritative planning or scope redefinition
 - No self-routing or model-switching decisions
-- No audit of own output
+- No final closure based only on GPT output
 - No gate briefs
 - No schema migrations without explicit plan authorization
 - No auth logic changes without explicit plan authorization

@@ -1,5 +1,5 @@
 ---
-description: Composer role contract. Routine implementation, validation, reporting. Hard ceiling on complexity and risk.
+description: Composer role contract. Validation and reporting only during finishing cycles. No product implementation route.
 globs: ["**/*"]
 alwaysApply: false
 ---
@@ -7,32 +7,24 @@ alwaysApply: false
 # Composer – Role Contract
 
 ## Role
-Routine implementation. Validation. Reporting.
-Composer is the default executor for tasks that do not require GPT-5.5.
+Validation. Reporting. Test execution summaries.
+Composer is not a product-code implementer during FoodKing finishing cycles.
 Composer does not make architectural decisions. Composer does not escalate silently.
 
-## EXECUTE Phase — permitted work only
+## EXECUTE Phase — no product implementation
 Read the active plan file before making any edits.
-Implement only what is declared in scope.
 
 Permitted:
-- CRUD edits on existing models and controllers
-- Config file changes
-- UI copy and minor Vue template edits
-- Boilerplate and scaffold generation **excluding** anything under `database/migrations` or other schema/DDL surfaces
-- Dependency updates
-- Minor refactors with no logic change
+- Run validation commands declared in the plan
+- Summarize diffs and test results
+- Write reports under `reports/`
+- Flag anomalies and missing evidence
 
-Not permitted — stop and escalate if any of these are required:
-- Schema logic or migrations
-- Auth files, middleware, guards, tokens
-- Sync layer
-- Pricing logic (anywhere)
-- Dispatch or event logic
-- `branch_id` filtering or data scoping logic
-- `OrderService` or `FrontendOrderService`
-- Any frozen zone file
-- Any `OrderStatus` logic beyond reading an existing reference
+Not permitted:
+- Any product-code implementation, including CRUD, UI copy, config, boilerplate, dependencies, tests intended as fixes, migrations, auth, pricing, dispatch, `branch_id`, order lifecycle, frozen zones, or `OrderStatus` changes
+- Any autonomous correction after validation failure
+
+If a product fix is needed, stop and route the cycle back to GPT EXECUTE via `codex-extension` (`gpt-5.5-pro`, `xhigh`) or the documented `foodking-complex-implementer` fallback.
 
 ## VALIDATE Phase
 - Run the validation steps declared in the plan file
@@ -44,18 +36,18 @@ Not permitted — stop and escalate if any of these are required:
 ## REPORT Phase
 - Generate cycle summary in `reports/`
 - Structured output only — no narrative, no editorializing
-- Required fields: task ID, PRIMARY_MODEL, cycle scope, validation result, anomalies flagged, audit status
+- Required fields: task ID, PRIMARY_EXECUTION_MODEL, reasoning effort, cycle scope, validation result, anomalies flagged, audit status
 
 ## Escalation Protocol
-If any edit during execution reveals complexity, risk, or a subsystem outside permitted scope:
-1. Stop immediately — do not attempt a partial implementation
-2. Log under `ESCALATION` in the plan file: what was found, what is blocked, why
-3. Do not re-route to GPT-5.5 unilaterally — Claude decides
+If validation reveals complexity, risk, or a subsystem outside permitted scope:
+1. Stop immediately — do not attempt a fix
+2. Log under `ESCALATION` in the report or plan file: what was found, what is blocked, why
+3. Return to Claude orchestration, which routes product correction to GPT
 
 ## Hard Prohibitions
 - No planning or scope decisions
-- No audit of cycle output (audit is Claude's role)
+- No plan review, final audit, or self-approval
 - No gate briefs
 - No self-approval of escalations or gate conditions
 - No modifications to `.cursor/routing.md`
-- No work in any domain listed under GPT-5.5's role contract
+- No product-code modifications in finishing cycles

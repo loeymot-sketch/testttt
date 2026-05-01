@@ -4,7 +4,7 @@
         <h3 class="capitalize text-[26px] font-medium leading-[40px] mb-2">{{ $t('message.404_page') }}</h3>
         <p class="text-lg font-normal leading-[34px] mb-8">{{ $t('message.find_looking_for') }}</p>
         <router-link :to="{name : 'frontend.home'}"
-                     class="w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white">
+                     class="w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]">
             {{ $t('button.go_home') }}
         </router-link>
     </section>

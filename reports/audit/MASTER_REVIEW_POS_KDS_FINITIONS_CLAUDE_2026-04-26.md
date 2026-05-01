@@ -1,4 +1,5 @@
 # Master Review POS + KDS — Finitions avant lancement production
+
 **Auteur** : Claude terminal (Anthropic CLI, claude-sonnet-4-6)
 **Date** : 2026-04-26
 **Brief source** : `reports/audit/MASTER_REVIEW_POS_KDS_FINITIONS_BRIEF_2026-04-26.md`
@@ -19,6 +20,7 @@ Deux portes P0 BLOCKER restent ouvertes sans approbation humaine : `GATE_VERIFY_
 ---
 
 ### FIND-01 — P0 BLOCKER
+
 ```
 Surface       : POS-FE
 Description   : Le champ discountReason est déclaré en data() et lu dans applyDiscount()
@@ -47,6 +49,7 @@ Dépendances   : aucun gate humain requis (modification template non-frozen).
 ---
 
 ### FIND-02 — P0 BLOCKER
+
 ```
 Surface       : POS-BE / KDS-BE
 Description   : GATE_VERIFY_P0_FROZEN_CONSOLIDATED_2026-04-20 reste en statut
@@ -74,6 +77,7 @@ Dépendances   : Gate humain strict — ABSOLUTE_PROHIBITION (GATE_LOG.md:82-85)
 ---
 
 ### FIND-03 — P0 BLOCKER
+
 ```
 Surface       : POS-FE
 Description   : GATE_PAYMENT_PROP_MUTATION_2026-04-26 reste en statut PENDING_HUMAN_GATE.
@@ -104,6 +108,7 @@ Dépendances   : GATE_PAYMENT_PROP_MUTATION_2026-04-26 (gate humain). Indépenda
 ---
 
 ### FIND-04 — P1 QUALITY
+
 ```
 Surface       : POS-FE
 Description   : formatKioskPrice() (helpers/kioskFormatPrice.js) code en dur les valeurs
@@ -130,6 +135,7 @@ Dépendances   : aucun gate humain (modification helpers non-frozen).
 ---
 
 ### FIND-05 — P1 QUALITY
+
 ```
 Surface       : KDS-FE
 Description   : resources/js/languages/bn.json contient 0 clés kds_*. Les fichiers
@@ -158,6 +164,7 @@ Dépendances   : aucun gate humain.
 ---
 
 ### FIND-06 — P1 QUALITY
+
 ```
 Surface       : POS-FE
 Description   : focustrap est importé dans PosComponent.vue (import Bootstrap
@@ -188,6 +195,7 @@ Dépendances   : aucun gate humain. Lot 2.I a11y déjà entamé — continuer da
 ---
 
 ### FIND-07 — P1 QUALITY [PARTIELLEMENT VÉRIFIÉ]
+
 ```
 Surface       : POS-BE
 Description   : FrontendOrderService.php (871 lignes) et OrderService.php (1976 lignes)
@@ -218,6 +226,7 @@ Dépendances   : FIND-02 (gate humain GATE_VERIFY_P0_FROZEN_CONSOLIDATED doit ê
 ---
 
 ### FIND-08 — P1 QUALITY
+
 ```
 Surface       : TEST
 Description   : Le répertoire tests/Feature/Pos/ ne contient que 3 fichiers de test
@@ -249,6 +258,7 @@ Dépendances   : aucun gate humain. À lancer après FIND-01 et FIND-03 pour év
 ---
 
 ### FIND-09 — P2 POLISH
+
 ```
 Surface       : KDS-FE
 Description   : Le composant Swiper dans KitchenDisplaySystemComponent.vue est déclaré
@@ -274,6 +284,7 @@ Dépendances   : aucun gate humain. Indépendant des autres findings.
 ---
 
 ### FIND-10 — P2 POLISH
+
 ```
 Surface       : OPS
 Description   : La table sync_metrics (migration 2026_04_23) ne possède ni colonne
@@ -302,6 +313,7 @@ Dépendances   : aucun gate humain. Peut être traité en parallèle avec FIND-1
 ---
 
 ### FIND-11 — P2 POLISH
+
 ```
 Surface       : POS-BE
 Description   : La table pos_parked_orders ne contient pas de colonne expires_at. Il n'existe
@@ -331,6 +343,7 @@ Dépendances   : Gate humain requis pour modification schéma (règle GATE_LOG.m
 ---
 
 ### FIND-12 — P2 POLISH
+
 ```
 Surface       : POS-FE
 Description   : PaymentComponent.vue ne gère pas les réponses HTTP 401 (token expiré
@@ -359,6 +372,7 @@ Dépendances   : FIND-03 — le refactor PaymentComponent (post-gate) est le bon
 ---
 
 ### FIND-13 — P2 POLISH
+
 ```
 Surface       : TEST
 Description   : Le répertoire tests/Feature/KDS/ ne contient que 2 fichiers
@@ -388,6 +402,7 @@ Dépendances   : FIND-02 doit être levé avant de tester les zones OrderService
 ---
 
 ### FIND-14 — P3 BACKLOG
+
 ```
 Surface       : OPS
 Description   : Les trois gates HG-W2-1 (cutover POS V4), HG-W2-2 (vendor split
@@ -414,6 +429,7 @@ Dépendances   : Dépend uniquement de la disponibilité humaine Product + UX + 
 ---
 
 ### FIND-15 — P3 BACKLOG
+
 ```
 Surface       : POS-FE
 Description   : Un bloc @pricing-allowed-block dans PosComponent.vue (affichage du total

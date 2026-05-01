@@ -16,6 +16,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
 class PosPricingSsotProofTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     public function test_pos_order_overwrites_client_forged_pricing_with_ssot(): void
     {
@@ -103,7 +105,7 @@ class PosPricingSsotProofTest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/admin/pos', $payload);
+        $response = $this->postJson('/api/admin/pos', $this->payloadWithPosQuote($posUser, $payload, $serverExpectedTotal));
 
         $this->assertContains(
             $response->status(),

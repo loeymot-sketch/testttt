@@ -51,7 +51,12 @@ class EventContractUnitTest extends TestCase
             'branch_id'      => 1,
             'occurred_at'    => '2026-04-16T10:00:00+00:00',
             'correlation_id' => (string) Str::uuid(),
-            'payload'        => ['order_id' => 10],
+            'payload'        => [
+                'order_id' => 10,
+                'queue_number' => 'A0010',
+                '_origin' => 'kiosk',
+                'payment_method' => 4,
+            ],
         ]);
 
         $this->assertTrue(true);

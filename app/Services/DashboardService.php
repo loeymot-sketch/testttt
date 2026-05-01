@@ -11,19 +11,55 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Illuminate\Http\Request;
 use App\Libraries\AppLibrary;
-use App\Enums\Role as EnumRole;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
 
 class DashboardService
 {
+    private function orderQuery()
+    {
+        $query = Order::query();
+        $branchId = $this->dashboardBranchId();
+
+        if ($branchId !== null) {
+            $query->where('branch_id', $branchId);
+        }
+
+        return $query;
+    }
+
+    private function customerQuery()
+    {
+        $query = User::role('Customer');
+        $branchId = $this->dashboardBranchId();
+
+        if ($branchId !== null) {
+            $query->whereHas('orders', fn ($orders) => $orders->where('branch_id', $branchId));
+        }
+
+        return $query;
+    }
+
+    private function dashboardBranchId(): ?int
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->hasRole('Admin') || $user->hasRole('Tenant Admin')) {
+            return null;
+        }
+
+        $branchId = (int) ($user->branch_id ?? 0);
+
+        return $branchId > 0 ? $branchId : null;
+    }
+
     /**
      * @throws Exception
      */
     public function orderStatistics(Request $request)
     {
         try {
-            $order = new Order;
+            $order = $this->orderQuery();
 
             if ($request->first_date && $request->last_date) {
                 $first_date = Date('Y-m-d', strtotime($request->first_date));
@@ -35,16 +71,16 @@ class DashboardService
 
             $orderStatisticsArray = [];
 
-            $orderStatisticsArray["total_order"] = $order->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["pending_order"] = $order->pending()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["accept_order"] = $order->accept()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["preparing_order"] = $order->preparing()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["prepared_order"] = $order->prepared()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["out_for_delivery_order"] = $order->outForDelivery()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["delivered_order"] = $order->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["canceled_order"] = $order->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["returned_order"] = $order->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["rejected_order"] = $order->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["total_order"] = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["pending_order"] = (clone $order)->pending()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["accept_order"] = (clone $order)->accept()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["preparing_order"] = (clone $order)->preparing()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["prepared_order"] = (clone $order)->prepared()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["out_for_delivery_order"] = (clone $order)->outForDelivery()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["delivered_order"] = (clone $order)->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["canceled_order"] = (clone $order)->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["returned_order"] = (clone $order)->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $orderStatisticsArray["rejected_order"] = (clone $order)->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
 
             return $orderStatisticsArray;
         } catch (Exception $exception) {
@@ -57,7 +93,7 @@ class DashboardService
     public function orderSummary(Request $request)
     {
         try {
-            $order = new Order;
+            $order = $this->orderQuery();
             if ($request->first_date && $request->last_date) {
                 $first_date = Date('Y-m-d', strtotime($request->first_date));
                 $last_date = Date('Y-m-d', strtotime($request->last_date));
@@ -68,11 +104,11 @@ class DashboardService
 
             $orderSummaryArray = [];
 
-            $total_order = $order->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_delivered = $order->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_canceled = $order->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_returned = $order->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_rejected = $order->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $total_order = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $total_delivered = (clone $order)->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $total_canceled = (clone $order)->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $total_returned = (clone $order)->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $total_rejected = (clone $order)->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
 
 
             if ($total_order > 0) {
@@ -96,7 +132,7 @@ class DashboardService
 
     public function salesSummary(Request $request)
     {
-        $order = new Order;
+        $order = $this->orderQuery();
         if ($request->first_date && $request->last_date) {
             $first_date = Date('Y-m-d', strtotime($request->first_date));
             $last_date = Date('Y-m-d', strtotime($request->last_date));
@@ -108,7 +144,7 @@ class DashboardService
         $date = date_diff(date_create($first_date), date_create($last_date), false);
         $date_diff = (int) $date->format("%a");
 
-        $total_sales = AppLibrary::flatAmountFormat($order->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->where('payment_status', PaymentStatus::PAID)->sum('total'));
+        $total_sales = AppLibrary::flatAmountFormat((clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->where('payment_status', PaymentStatus::PAID)->sum('total'));
 
         $dateRangeArray = [];
         for ($currentDate = strtotime($first_date); $currentDate <= strtotime($last_date); $currentDate += (86400)) {
@@ -119,7 +155,7 @@ class DashboardService
 
         $dateRangeValueArray = [];
         for ($i = 0; $i <= count($dateRangeArray) - 1; $i++) {
-            $per_day = AppLibrary::flatAmountFormat($order->whereDate('order_datetime', $dateRangeArray[$i])->where('payment_status', PaymentStatus::PAID)->sum('total'));
+            $per_day = AppLibrary::flatAmountFormat((clone $order)->whereDate('order_datetime', $dateRangeArray[$i])->where('payment_status', PaymentStatus::PAID)->sum('total'));
             $dateRangeValueArray[] = floatval($per_day);
         }
 
@@ -140,7 +176,7 @@ class DashboardService
 
     public function customerStates(Request $request)
     {
-        $order = new Order;
+        $order = $this->orderQuery();
         if ($request->first_date && $request->last_date) {
             $first_date = Date('Y-m-d', strtotime($request->first_date));
             $last_date = Date('Y-m-d', strtotime($request->last_date));
@@ -159,7 +195,7 @@ class DashboardService
             $first_time = date('H:i', strtotime($timeArray[$i]));
             $last_time = date('H:i', strtotime($timeArray[$i] . ' +59 minutes'));
 
-            $total_customer = $order->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->whereTime('order_datetime', '>=', Carbon::parse($first_time))->whereTime('order_datetime', '<=', Carbon::parse($last_time))->get()->count();
+            $total_customer = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->whereTime('order_datetime', '>=', Carbon::parse($first_time))->whereTime('order_datetime', '<=', Carbon::parse($last_time))->get()->count();
             $totalCustomerArray[] = $total_customer;
         }
 
@@ -172,7 +208,17 @@ class DashboardService
     public function topCustomers()
     {
         try {
-            return User::withCount('orders')->orderBy('orders_count', 'desc')->role(EnumRole::CUSTOMER)->limit(8)->get();
+            $branchId = $this->dashboardBranchId();
+
+            return $this->customerQuery()
+                ->withCount(['orders' => function ($query) use ($branchId): void {
+                    if ($branchId !== null) {
+                        $query->where('branch_id', $branchId);
+                    }
+                }])
+                ->orderBy('orders_count', 'desc')
+                ->limit(8)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -182,7 +228,7 @@ class DashboardService
     public function totalSales()
     {
         try {
-            return Order::where('payment_status', PaymentStatus::PAID)->sum('total');
+            return $this->orderQuery()->where('payment_status', PaymentStatus::PAID)->sum('total');
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -192,7 +238,7 @@ class DashboardService
     public function totalOrders()
     {
         try {
-            return Order::where('status', OrderStatus::DELIVERED)->count();
+            return $this->orderQuery()->where('status', OrderStatus::DELIVERED)->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -202,7 +248,7 @@ class DashboardService
     public function totalCustomers()
     {
         try {
-            return User::role(EnumRole::CUSTOMER)->count();
+            return $this->customerQuery()->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -225,12 +271,13 @@ class DashboardService
             $today = Carbon::today()->toDateString();
 
             // Total CA du jour (Commandes payées)
-            $daily_sales = Order::whereDate('order_datetime', $today)
+            $daily_sales = $this->orderQuery()
+                ->whereDate('order_datetime', $today)
                 ->where('payment_status', PaymentStatus::PAID)
                 ->sum('total');
 
             // Nombre de commandes
-            $daily_orders = Order::whereDate('order_datetime', $today)->count();
+            $daily_orders = $this->orderQuery()->whereDate('order_datetime', $today)->count();
 
             // Ticket Moyen
             $average_ticket = $daily_orders > 0 ? ($daily_sales / $daily_orders) : 0;
@@ -251,7 +298,8 @@ class DashboardService
         try {
             // Commandes en PREPARING depuis plus de 15 minutes
             $timeLimit = Carbon::now()->subMinutes(15);
-            $alerts = Order::where('status', OrderStatus::PREPARING)
+            $alerts = $this->orderQuery()
+                ->where('status', OrderStatus::PREPARING)
                 ->where('updated_at', '<', $timeLimit)
                 ->with('user')
                 ->orderBy('updated_at', 'asc')
@@ -276,7 +324,7 @@ class DashboardService
     {
         try {
             $today = Carbon::today()->toDateString();
-            $orders = Order::whereDate('order_datetime', $today)->get();
+            $orders = $this->orderQuery()->whereDate('order_datetime', $today)->get();
             $total = $orders->count();
 
             if ($total === 0) {

@@ -1,0 +1,1428 @@
+{
+  "verdict": "PASS_LOCAL_D1_SMOKE",
+  "generated_at": "2026-04-30T23:38:11.428Z",
+  "results": [
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-1-1080x1920.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-1-1080x1920.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-1-1080x1920.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-1-1080x1920.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-1-1080x1920.png",
+      "textLength": 215,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 2,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-1-1080x1920.png",
+      "textLength": 182,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-1-1080x1920.png",
+      "textLength": 176,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-1-1080x1920.png",
+      "textLength": 188,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-1-1080x1920.png",
+      "textLength": 183,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-1-1920x1080.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-1-1920x1080.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-1-1920x1080.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-1-1920x1080.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-1-1920x1080.png",
+      "textLength": 215,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 2,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-1-1920x1080.png",
+      "textLength": 182,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-1-1920x1080.png",
+      "textLength": 176,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-1-1920x1080.png",
+      "textLength": 188,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 0,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-1-1920x1080.png",
+      "textLength": 183,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-2-1080x1920.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-2-1080x1920.png",
+      "textLength": 141,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-logo",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-2-1080x1920.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-2-1080x1920.png",
+      "textLength": 118,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-2-1080x1920.png",
+      "textLength": 215,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 2,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-2-1080x1920.png",
+      "textLength": 182,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-2-1080x1920.png",
+      "textLength": 176,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-2-1080x1920.png",
+      "textLength": 293,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-2-1080x1920.png",
+      "textLength": 288,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 5,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-2-1920x1080.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-2-1920x1080.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-2-1920x1080.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-2-1920x1080.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-2-1920x1080.png",
+      "textLength": 320,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-2-1920x1080.png",
+      "textLength": 287,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-2-1920x1080.png",
+      "textLength": 281,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-2-1920x1080.png",
+      "textLength": 293,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 1,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-2-1920x1080.png",
+      "textLength": 288,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 5,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-3-1080x1920.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-3-1080x1920.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-3-1080x1920.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-3-1080x1920.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-3-1080x1920.png",
+      "textLength": 320,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-3-1080x1920.png",
+      "textLength": 287,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-3-1080x1920.png",
+      "textLength": 281,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-3-1080x1920.png",
+      "textLength": 293,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-3-1080x1920.png",
+      "textLength": 288,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 5,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "idle",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/idle",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-idle-iter-3-1920x1080.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "categories",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/idle",
+      "expectedUrl": "/kiosk/categories",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-categories-iter-3-1920x1080.png",
+      "textLength": 269,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-idle-root",
+        "kiosk-idle-lang-selector",
+        "kiosk-idle-lang-fr",
+        "kiosk-idle-lang-en",
+        "kiosk-idle-a11y-btn",
+        "kiosk-idle-brand",
+        "kiosk-idle-title",
+        "kiosk-idle-touch-btn",
+        "kiosk-order-type-chooser",
+        "kiosk-order-type-dine-in",
+        "kiosk-order-type-takeaway"
+      ],
+      "interactiveCount": 7,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cart",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/cart",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cart-iter-3-1920x1080.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "payment-empty-guard",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cart",
+      "expectedUrl": "/kiosk/payment",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-payment-empty-guard-iter-3-1920x1080.png",
+      "textLength": 223,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cart-root",
+        "kiosk-cart-back",
+        "kiosk-cart-title",
+        "kiosk-cart-count",
+        "kiosk-cart-empty",
+        "kiosk-cart-empty-cta"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "cash-instruction",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=D1A001&total=8",
+      "expectedUrl": "/kiosk/cash-instruction?number=D1A001&total=8",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-cash-instruction-iter-3-1920x1080.png",
+      "textLength": 320,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-cash-title",
+        "kiosk-cash-order-number",
+        "kiosk-cash-amount",
+        "kiosk-cash-cta-understood"
+      ],
+      "interactiveCount": 3,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-network",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/network",
+      "expectedUrl": "/kiosk/error/network",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-network-iter-3-1920x1080.png",
+      "textLength": 287,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-network-title",
+        "kiosk-error-network-cta-retry",
+        "kiosk-error-network-cta-staff"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-menu-unavailable",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/menu-unavailable",
+      "expectedUrl": "/kiosk/error/menu-unavailable",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-menu-unavailable-iter-3-1920x1080.png",
+      "textLength": 281,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-menu-title",
+        "kiosk-error-menu-cta-retry",
+        "kiosk-error-menu-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-product-removed",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/product-removed",
+      "expectedUrl": "/kiosk/error/product-removed",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-product-removed-iter-3-1920x1080.png",
+      "textLength": 293,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-product-title",
+        "kiosk-error-product-cta-menu",
+        "kiosk-error-product-cta-home"
+      ],
+      "interactiveCount": 4,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    },
+    {
+      "domain": "kiosk",
+      "name": "error-payment-refused",
+      "iteration": 2,
+      "url": "http://localhost:8000/kiosk/error/payment-refused",
+      "expectedUrl": "/kiosk/error/payment-refused",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kiosk/kiosk-error-payment-refused-iter-3-1920x1080.png",
+      "textLength": 288,
+      "testIds": [
+        "kiosk-theme-toggle",
+        "kiosk-error-payment-title",
+        "kiosk-error-payment-cta-retry",
+        "kiosk-error-payment-cta-counter",
+        "kiosk-error-payment-cta-cancel"
+      ],
+      "interactiveCount": 5,
+      "smallTargetCount": 0,
+      "smallTargets": [],
+      "seriousAxeCount": 0,
+      "seriousAxe": []
+    }
+  ]
+}

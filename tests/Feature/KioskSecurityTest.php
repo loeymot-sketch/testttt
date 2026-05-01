@@ -122,7 +122,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->postJson('/api/frontend/order', [
+        $payload = [
             'branch_id' => $branch->id,
             'subtotal' => $item->price,
             'total' => $item->price,
@@ -132,7 +132,9 @@ class KioskSecurityTest extends TestCase
             'items' => json_encode([
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
-        ]);
+        ];
+
+        $response = $this->postJson('/api/frontend/order', $this->withQuote($payload));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('orders', [
@@ -203,7 +205,7 @@ class KioskSecurityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
-        $response = $this->postJson('/api/frontend/order', [
+        $payload = [
             'branch_id' => $branchOther->id,
             'subtotal' => $item->price,
             'total' => $item->price,
@@ -213,7 +215,9 @@ class KioskSecurityTest extends TestCase
             'items' => json_encode([
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
-        ]);
+        ];
+
+        $response = $this->postJson('/api/frontend/order', $this->withQuote($payload));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('orders', [
@@ -325,5 +329,21 @@ class KioskSecurityTest extends TestCase
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []],
             ]),
         ])->assertStatus(422);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function withQuote(array $payload): array
+    {
+        $quote = $this->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
     }
 }

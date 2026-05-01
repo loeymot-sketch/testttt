@@ -113,7 +113,7 @@
                         <tr>
                             <td>{{$item->name}}</td>
                             <td>{{  optional($item->category)->name }}</td>
-                            <td>{{ trans( 'itemType.' . $item->item_type , [] , 'en') }}</td>
+                            <td>{{ trans( 'itemType.' . $item->item_type) }}</td>
                             <td>{{    $item->orders->count() }}</td>
 
                         </tr>

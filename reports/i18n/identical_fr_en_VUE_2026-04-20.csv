@@ -13,3 +13,32 @@ kiosk.wizard.step.viande.fallback_merguez,Merguez,Merguez
 kiosk.wizard.step.viande.fallback_nuggets,Nuggets,Nuggets
 kiosk.wizard.summary.sauces,Sauces,Sauces
 label.action,Action,Action
+label.copyright,Copyright,Copyright
+label.coupon,Coupon,Coupon
+label.description,Description,Description
+label.extras,Extras,Extras
+label.facebook,Facebook,Facebook
+label.images,Images,Images
+label.instagram,Instagram,Instagram
+label.instruction,Instruction,Instruction
+label.kds_volume,Volume,Volume
+label.kiosk_tap_hint_placeholder,Touchez l'écran pour commander,Touchez l'écran pour commander
+label.kiosk_welcome_subtitle_placeholder,Commandez en quelques touches,Commandez en quelques touches
+label.kiosk_welcome_title_placeholder,Bienvenue !,Bienvenue !
+label.latitude,Latitude,Latitude
+label.longitude,Longitude,Longitude
+label.message,Message,Message
+label.messages,Messages,Messages
+label.minute,minutes,minutes
+label.notification,Notification,Notification
+label.paypal,Paypal,Paypal
+label.section,Section,Section
+label.source,Source,Source
+label.twitter,Twitter,Twitter
+label.youtube,Youtube,Youtube
+menu.cookies,Cookies,Cookies
+menu.coupons,Coupons,Coupons
+menu.extras,Extras,Extras
+menu.messages,Messages,Messages
+menu.notification,Notification,Notification
+menu.transactions,Transactions,Transactions

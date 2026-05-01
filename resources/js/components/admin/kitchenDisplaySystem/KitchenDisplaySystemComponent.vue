@@ -2,7 +2,7 @@
   <ConnectionStatusBanner />
   <LoadingComponent :props="loading" />
   <div v-if="!wsConnected" class="ws-reconnect-banner">
-    Connexion temps réel perdue — actualisation automatique toutes les 10s...
+    Connexion temps réel perdue — actualisation automatique toutes les 5s...
   </div>
   <div
     v-if="kdsIsCentralAdmin"
@@ -20,10 +20,11 @@
   </div>
   <div
     v-if="kdsOrderListAtCap"
-    class="kds-hint-banner kds-hint-banner--danger"
+    class="kds-hint-banner kds-hint-banner--danger kds-hint-banner--action"
     role="alert"
   >
-    {{ $t("label.kds_order_list_full_warning", { n: orders.length }) }}
+    <span>{{ $t("label.kds_order_list_full_warning", { n: orders.length }) }}</span>
+    <button type="button" class="kds-hint-link" @click="kdsOverflowSeeMore">Voir plus</button>
   </div>
   <div
     v-if="!kdsHideBumpInfo"
@@ -79,6 +80,15 @@
                     </span>
                   </p>
                 </span>
+                <span class="flex gap-1" v-if="Array.isArray(orderItem.item_addons) && orderItem.item_addons.length > 0">
+                  <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.addons') }}:
+                  </h3>
+                  <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                    <span v-for="(addon, index) in orderItem.item_addons" :key="index" class="text-heading">
+                      {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < orderItem.item_addons.length">,&nbsp;</span>
+                    </span>
+                  </p>
+                </span>
                 <div
                   v-if="orderItem.instruction"
                   :class="[kdsInstructionClass(orderItem.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
@@ -98,8 +108,9 @@
       <div class="ordersTab">
         <div class="db-card px-3 py-3 mb-4 flex flex-col xl:flex-row flex-wrap gap-4 xl:items-center xl:justify-between">
           <div class="flex flex-wrap items-center gap-3">
-            <label class="text-sm font-medium text-heading shrink-0">{{ $t('label.kds_station_filter') }}</label>
-            <select v-model="stationFilter" @change="persistKdsUiPrefs"
+            <label for="kds-station-filter" class="text-sm font-medium text-heading shrink-0">{{ $t('label.kds_station_filter') }}</label>
+            <select id="kds-station-filter" v-model="stationFilter" @change="persistKdsUiPrefs"
+              :aria-label="$t('label.kds_station_filter')"
               class="h-10 rounded-lg border border-[#D9DBE9] px-3 text-xs text-heading min-w-[10rem] bg-white">
               <option value="all">{{ $t('label.kds_all_stations') }}</option>
               <option value="bar">{{ $t('label.kds_bar') }}</option>
@@ -120,6 +131,7 @@
             <label class="flex items-center gap-2 text-xs text-heading">
               <span class="whitespace-nowrap">{{ $t('label.kds_volume') }}</span>
               <input type="range" min="0" max="100" v-model.number="soundVolume" @input="persistKdsUiPrefs"
+                :aria-label="$t('label.kds_volume')"
                 class="w-28 accent-primary" />
             </label>
           </div>
@@ -127,33 +139,33 @@
         </div>
         <div class="db-card px-3 py-2.5 mb-4">
           <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between">
-            <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
+            <Swiper :dir="direction" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
               class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full">
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list()"
-                  class="db-btn text-[#1F1F39] w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white hover:text-primary border border-[#D9DBE9] hover:bg-primary/5"
-                  :class="!props.search.status ? '!bg-primary/5 text-primary' : ''">
+                  class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"
+                  :class="!props.search.status ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''">
                   <span class="capitalize whitespace-nowrap text-sm font-medium">{{ $t("label.all_orders") }}</span>
                 </button>
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.ACCEPT)"
-                  :class="props.search.status === enums.orderStatusEnum.ACCEPT ? '!bg-primary/5 text-primary' : ''"
-                  class="db-btn text-[#1F1F39] w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white hover:text-primary border border-[#D9DBE9] hover:bg-primary/5">
+                  :class="props.search.status === enums.orderStatusEnum.ACCEPT ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
+                  class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="capitalize whitespace-nowrap text-sm font-medium">{{ $t("label.confirmed") }}</span>
                 </button>
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.PREPARING)"
-                  :class="props.search.status === enums.orderStatusEnum.PREPARING ? '!bg-primary/5 text-primary' : ''"
-                  class="db-btn text-[#1F1F39] w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white hover:text-primary border border-[#D9DBE9] hover:bg-primary/5">
+                  :class="props.search.status === enums.orderStatusEnum.PREPARING ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
+                  class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="capitalize whitespace-nowrap text-sm font-medium">{{ $t("label.preparing") }}</span>
                 </button>
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.PREPARED)"
-                  :class="props.search.status === enums.orderStatusEnum.PREPARED ? '!bg-primary/5 text-primary' : ''"
-                  class="db-btn text-[#1F1F39] w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white hover:text-primary border border-[#D9DBE9] hover:bg-primary/5">
+                  :class="props.search.status === enums.orderStatusEnum.PREPARED ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
+                  class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="capitalize whitespace-nowrap text-sm font-medium">{{ $t("label.done") }}</span>
                 </button>
               </SwiperSlide>
@@ -163,8 +175,10 @@
               class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary">
               <i class="lab lab-search-normal lab-font-size-16"></i>
               <input type="text" v-model="props.search.order_serial_no" placeholder="Search Order"
+                :aria-label="$t('button.search')"
                 class="header-search-field w-full h-full text-xs appearance-none placeholder:font-normal placeholder:text-paragraph text-heading" />
               <button type="button" @click.prevent="searchReset"
+                :aria-label="$t('button.close')"
                 class="modal-close lab lab-close-circle-line transition invisible group-focus-within:visible"></button>
             </form>
           </div>
@@ -201,8 +215,8 @@
                     <span class="text-sm font-normal">#{{ dineinOrder.order_serial_no }}</span>
                   </div>
 
-                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white "
-                    :class="dineinOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (dineinOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">{{
+                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
+                    :class="orderStatusBadgeClasses(dineinOrder.status)">{{
                       dineinOrder.status === enums.orderStatusEnum.PREPARED ? $t("label.done") : (dineinOrder.status ===
                         enums.orderStatusEnum.ACCEPT ? $t("label.confirmed") : dineinOrder.status_name)
                     }}</span>
@@ -249,6 +263,14 @@
                             </span>
                           </p>
                         </div>
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_addons) && item.item_addons.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.addons') }}:</span>
+                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                            <span v-for="(addon, index) in item.item_addons" :key="index" class="text-heading">
+                              {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < item.item_addons.length">,&nbsp;</span>
+                            </span>
+                          </p>
+                        </div>
                         <!-- [P3-1 FIX] Show instruction on dine-in cards -->
                         <div
                           v-if="item.instruction && item.instruction !== ''"
@@ -276,12 +298,12 @@
                       Imprimer ticket
                     </button>
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
-                      @click="orderStatus(dineinOrder.id, enums.orderStatusEnum.PREPARING)"
+                      @click="orderStatus(dineinOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.PREPARING" type="button"
-                      @click="orderStatus(dineinOrder.id, enums.orderStatusEnum.PREPARED)"
+                      @click="orderStatus(dineinOrder, enums.orderStatusEnum.PREPARED)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white">
                       {{ $t("label.mark_done") }}
                     </button>
@@ -313,8 +335,8 @@
                     <i class="lab lab-processing lab-font-size-16 text-[#FF8C1A]"></i>
                     <span class="text-sm font-normal">#{{ onlineOrder.order_serial_no }}</span>
                   </div>
-                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white "
-                    :class="onlineOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (onlineOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">{{
+                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
+                    :class="orderStatusBadgeClasses(onlineOrder.status)">{{
                       onlineOrder.status === enums.orderStatusEnum.PREPARED ? $t("label.done") : (onlineOrder.status ===
                         enums.orderStatusEnum.ACCEPT ? $t("label.confirmed") : onlineOrder.status_name)
                     }}</span>
@@ -362,6 +384,14 @@
                             </span>
                           </p>
                         </div>
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_addons) && item.item_addons.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.addons') }}:</span>
+                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                            <span v-for="(addon, index) in item.item_addons" :key="index" class="text-heading">
+                              {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < item.item_addons.length">,&nbsp;</span>
+                            </span>
+                          </p>
+                        </div>
                         <div
                           v-if="item.instruction && item.instruction !== ''"
                           :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
@@ -388,12 +418,12 @@
                       Imprimer ticket
                     </button>
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
-                      @click="orderStatus(onlineOrder.id, enums.orderStatusEnum.PREPARING)"
+                      @click="orderStatus(onlineOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.PREPARING" type="button"
-                      @click="orderStatus(onlineOrder.id, enums.orderStatusEnum.PREPARED)"
+                      @click="orderStatus(onlineOrder, enums.orderStatusEnum.PREPARED)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white">
                       {{ $t("label.mark_done") }}
                     </button>
@@ -420,15 +450,18 @@
                   :aria-label="$t('label.kds_allergens_badge_aria')"
                 >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FAF4FF]">
-                  <div class="flex items-center gap-1 text-[#9837FF]">
-                    <i class="lab lab-processing lab-font-size-16 text-[#9837FF]"></i>
+                  <div class="flex items-center gap-1 text-[#4C1A96]">
+                    <i class="lab lab-processing lab-font-size-16 text-[#4C1A96]"></i>
                     <span class="text-sm font-normal">#{{ takeawayOrder.order_serial_no }}</span>
                     <!-- [AUDIT-P48-BUG6] Badge BORNE for kiosk orders that appear in takeaway column (order_type=10 with queue_number) -->
                     <span v-if="takeawayOrder.queue_number"
                       class="ml-1 text-[9px] font-bold bg-[#9837FF] text-white px-1.5 py-0.5 rounded">BORNE</span>
+                    <span v-if="isPaymentPendingCounter(takeawayOrder)" class="kds-counter-payment-badge">
+                      PAIEMENT COMPTOIR - NON REGLE
+                    </span>
                   </div>
-                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white "
-                    :class="takeawayOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (takeawayOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">{{
+                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
+                    :class="orderStatusBadgeClasses(takeawayOrder.status)">{{
                       takeawayOrder.status === enums.orderStatusEnum.PREPARED ? $t("label.done") :
                         (takeawayOrder.status ===
                           enums.orderStatusEnum.ACCEPT ? $t("label.confirmed") : takeawayOrder.status_name)
@@ -471,6 +504,14 @@
                             </span>
                           </p>
                         </div>
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_addons) && item.item_addons.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.addons') }}:</span>
+                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                            <span v-for="(addon, index) in item.item_addons" :key="index" class="text-heading">
+                              {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < item.item_addons.length">,&nbsp;</span>
+                            </span>
+                          </p>
+                        </div>
                         <!-- [P3-1 FIX] Show instruction on takeaway cards -->
                         <div
                           v-if="item.instruction && item.instruction !== ''"
@@ -498,12 +539,12 @@
                       Imprimer ticket
                     </button>
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
-                      @click="orderStatus(takeawayOrder.id, enums.orderStatusEnum.PREPARING)"
+                      @click="orderStatus(takeawayOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.PREPARING" type="button"
-                      @click="orderStatus(takeawayOrder.id, enums.orderStatusEnum.PREPARED)"
+                      @click="orderStatus(takeawayOrder, enums.orderStatusEnum.PREPARED)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white">
                       {{ $t("label.mark_done") }}
                     </button>
@@ -517,7 +558,7 @@
             <div class="p-3 pb-2 flex items-center gap-2" :class="filteredKioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">🖥️ Borne</h3>
               <span v-if="filteredKioskOrders.length > 0"
-                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#e53935] text-white text-[10px] font-bold">
+                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#991B1B] text-white text-[11px] font-bold">
                 {{ filteredKioskOrders.length }}
               </span>
             </div>
@@ -534,16 +575,19 @@
                   :aria-label="$t('label.kds_allergens_badge_aria')"
                 >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]">
-                  <div class="flex items-center gap-2 text-[#e53935]">
-                    <i class="lab lab-processing lab-font-size-16 text-[#e53935]"></i>
+                  <div class="flex items-center gap-2 text-[#991B1B]">
+                    <i class="lab lab-processing lab-font-size-16 text-[#991B1B]"></i>
                     <span class="text-sm font-normal">#{{ kioskOrder.order_serial_no }}</span>
                     <span v-if="kioskOrder.queue_number"
-                      class="bg-[#e53935] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      class="bg-[#991B1B] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                       N°{{ kioskOrder.queue_number }}
                     </span>
+                    <span v-if="isPaymentPendingCounter(kioskOrder)" class="kds-counter-payment-badge">
+                      PAIEMENT COMPTOIR - NON REGLE
+                    </span>
                   </div>
-                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize text-white"
-                    :class="kioskOrder.status === enums.orderStatusEnum.PREPARED ? 'bg-[#2AC769]' : (kioskOrder.status === enums.orderStatusEnum.ACCEPT ? 'bg-primary' : 'bg-[#F6A609]')">
+                  <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
+                    :class="orderStatusBadgeClasses(kioskOrder.status)">
                     {{ kioskOrder.status === enums.orderStatusEnum.PREPARED ? $t('label.done') :
                       (kioskOrder.status === enums.orderStatusEnum.ACCEPT ? $t('label.confirmed') : kioskOrder.status_name) }}
                   </span>
@@ -576,6 +620,14 @@
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
                               {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                            </span>
+                          </p>
+                        </div>
+                        <div class="flex gap-1" v-if="Array.isArray(item.item_addons) && item.item_addons.length > 0">
+                          <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.addons') }}:</span>
+                          <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
+                            <span v-for="(addon, index) in item.item_addons" :key="index" class="text-heading">
+                              {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < item.item_addons.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -614,12 +666,12 @@
                       Imprimer ticket
                     </button>
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
-                      @click="orderStatus(kioskOrder.id, enums.orderStatusEnum.PREPARING)"
+                      @click="orderStatus(kioskOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
                       {{ $t('label.start_preparing') }}
                     </button>
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.PREPARING" type="button"
-                      @click="orderStatus(kioskOrder.id, enums.orderStatusEnum.PREPARED)"
+                      @click="orderStatus(kioskOrder, enums.orderStatusEnum.PREPARED)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white">
                       {{ $t('label.mark_done') }}
                     </button>
@@ -688,13 +740,16 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import askEnum from "../../../enums/modules/askEnum";
+import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
 import kdsSyncService from "../../../services/KdsSyncService";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
+import { kdsStatusPayload } from "../../../store/modules/kds";
 import {
   filterOrdersByStation,
   getKdsEscalationClass,
@@ -707,7 +762,7 @@ import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSorted
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
-// OrderService ici (GATE plan). Polling 10s si WS down.
+// OrderService ici (GATE plan). Polling 5s si WS down.
 
 export default {
   name: "KitchenDisplaySystemComponent",
@@ -739,6 +794,7 @@ export default {
         statusEnum: statusEnum,
         orderTypeEnum: orderTypeEnum,
         orderStatusEnum: orderStatusEnum,
+        paymentStatusEnum: paymentStatusEnum,
         askEnum: askEnum,
       },
       autoRefreshInterval: null,
@@ -777,20 +833,24 @@ export default {
       allergenModalReturnFocus: null,
       // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
       _kdsLastNewOrderSoundAt: 0,
+      kdsOverflowDetected: false,
     };
   },
   computed: {
+    direction() {
+      return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
     kdsIsCentralAdmin() {
-      return parseInt(this.$store.getters["auth/authBranchId"] || 0, 10) <= 0;
+      return this.authBranchId() <= 0;
     },
     /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */
     kdsOrderApproachingCap() {
       const n = Array.isArray(this.orders) ? this.orders.length : 0;
       return n >= 45 && n < 50;
     },
-    /** Exactement 50 = requête backend limit(50) — d’autres commandes actives peuvent exister */
+    /** Backend probed >50 active rows and returned the capped first page. */
     kdsOrderListAtCap() {
-      return Array.isArray(this.orders) && this.orders.length === 50;
+      return this.kdsOverflowDetected === true;
     },
     // [F-03 / Lot 1.C] Last-sync badge — uses kdsSyncService.lastSyncAt and
     // re-renders every second via syncNowTick.
@@ -927,14 +987,37 @@ export default {
       kdsSyncService.on('error', () => { this.syncNowTick = Date.now(); })
     );
     try {
-      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0, 10);
-      kdsSyncService.start(branchId);
+      kdsSyncService.start(this.authBranchId());
     } catch (e) { /* defensive: never break KDS mount because of poller */ }
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    authBranchId() {
+      const candidates = [
+        this.$store.getters['auth/authBranchId'],
+        this.$store.getters.authBranchId,
+        this.$store.state?.auth?.authBranchId,
+      ];
+
+      for (const candidate of candidates) {
+        if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+          continue;
+        }
+
+        const value = parseInt(candidate, 10);
+        if (Number.isFinite(value)) {
+          return value;
+        }
+      }
+
+      return 0;
+    },
     kdsInstructionClass(text) {
       return kdsInstructionVisualClass(text);
+    },
+    isPaymentPendingCounter(order) {
+      return order?.payment_pending_counter === true
+        || parseInt(order?.payment_status, 10) === paymentStatusEnum.PENDING_COUNTER;
     },
     // [Lot 2.I / G-4] Thin wrappers over pure helpers in kdsAllergens.js so
     // they remain unit-testable in isolation (see tests/js/kdsAllergens.spec.js).
@@ -1012,6 +1095,13 @@ export default {
       const ms = parseOrderCreatedMs(order);
       return getKdsEscalationClass(ms, Date.now());
     },
+    orderStatusBadgeClasses(status) {
+      return status === this.enums.orderStatusEnum.PREPARED
+        ? "bg-[#2AC769] text-[#105F2A]"
+        : status === this.enums.orderStatusEnum.ACCEPT
+          ? "bg-[#E2C7FF] text-[#4C1A96]"
+          : "bg-[#F6A609] text-[#5B3A00]";
+    },
     kdsAuthUserId() {
       const u = this.$store.getters["auth/authInfo"] || {};
       const id = u.id != null ? parseInt(u.id, 10) : 0;
@@ -1081,7 +1171,10 @@ export default {
       this.$nextTick(() => {
         if (this.$store.getters["kds/isReadyOrder"](order)) {
           if (order.status !== this.enums.orderStatusEnum.PREPARED) {
-            this.orderStatus(order.id, this.enums.orderStatusEnum.PREPARED);
+            const nextStatus = order.status === this.enums.orderStatusEnum.ACCEPT
+              ? this.enums.orderStatusEnum.PREPARING
+              : this.enums.orderStatusEnum.PREPARED;
+            this.orderStatus(order, nextStatus);
           }
         }
       });
@@ -1117,7 +1210,7 @@ export default {
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     _pollingInterval() {
-      return this.wsConnected ? 60000 : 10000;
+      return this.wsConnected ? 60000 : 5000;
     },
     _restartPolling() {
       this.stopAutoRefresh();
@@ -1130,11 +1223,11 @@ export default {
         }, this._pollingInterval());
       }
     },
-    // [P4-1] Subscribe to branch Echo channel for real-time order updates
-    // Admin users (branch_id=0) rely on 30s polling; branch staff get sub-second push
+    // [P4-1] Subscribe to branch Echo channel for real-time order updates.
+    // Admin users (branch_id=0) rely on polling; branch staff get sub-second push.
     subscribeEcho() {
       if (!window.Echo) return;
-      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      const branchId = this.authBranchId();
       if (branchId <= 0) return; // Admin: polling fallback is sufficient
       // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
@@ -1142,6 +1235,7 @@ export default {
         this._eventSub = onEvents(branchId, [
           { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
+          { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._debouncedRefresh(); } },
           // [SYNC-001] KDS now also receives ItemAvailabilityChanged so the
           // station can flag in-flight tickets that include a freshly 86'd item
           // (rupture stock cuisine). Cheaper to refresh the active list than
@@ -1162,7 +1256,7 @@ export default {
       }
     },
     unsubscribeEcho() {
-      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      const branchId = this.authBranchId();
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
@@ -1198,9 +1292,10 @@ export default {
           this.kioskOrders = res.data.data.filter(
             (item) => item.order_type === orderTypeEnum.KIOSK
           );
+          this.kdsOverflowDetected = res?.data?.meta?.overflow === true;
           this.loading.isActive = false;
-          this._kdsOrdersHydrated = true;
-        })
+	          this._kdsOrdersHydrated = true;
+	        })
         .catch((err) => {
           this.loading.isActive = false;
           alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
@@ -1241,6 +1336,7 @@ export default {
           this.kioskOrders = res.data.data.filter(
             (item) => item.order_type === orderTypeEnum.KIOSK
           );
+          this.kdsOverflowDetected = res?.data?.meta?.overflow === true;
 
           this.loading.isActive = false;
           this._kdsOrdersHydrated = true;
@@ -1284,6 +1380,11 @@ export default {
       this.props.search.order_serial_no = "";
       this.list();
     },
+    kdsOverflowSeeMore() {
+      this.props.search.order_serial_no = "";
+      this.props.search.status = "";
+      this.list();
+    },
     // [AUDIT-P47-BUG4] Escape HTML to prevent XSS when printing kitchen tickets.
     // Order data comes from DB but could be poisoned if an admin account was compromised.
     escapeHtml(str) {
@@ -1295,8 +1396,14 @@ export default {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     },
+    kdsAddonDisplayName(addon) {
+      if (!addon || typeof addon !== 'object') {
+        return '';
+      }
+      return addon.addon_name || addon.addon_item_name || addon.name || addon.item_name || 'Addon';
+    },
     // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
-    // Opens a minimal print window with order ref, items, variations, extras, and instructions.
+    // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.
     // No external library needed — uses native window.print() on an isolated document.
     // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
     printKitchenTicket(order) {
@@ -1327,6 +1434,14 @@ export default {
         if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
           const extras = item.item_extras.map(ex => e(ex.name)).join(', ');
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${extras}</div>`);
+        }
+        if (Array.isArray(item.item_addons) && item.item_addons.length > 0) {
+          const addons = item.item_addons.map(addon => {
+            const qty = Number(addon.quantity || 1);
+            const name = e(this.kdsAddonDisplayName(addon));
+            return qty > 1 ? `${name} ×${qty}` : name;
+          }).join(', ');
+          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${addons}</div>`);
         }
         if (item.instruction) {
           const vis = kdsInstructionVisualClass(item.instruction);
@@ -1359,12 +1474,12 @@ export default {
       win.print();
       win.close();
     },
-    orderStatus: function (id, status) {
+    orderStatus: function (order, status) {
       try {
         this.loading.isActive = true;
+        const payload = kdsStatusPayload(order, status);
         this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus", {
-          id: id,
-          status: status,
+          ...payload,
         }).then((res) => {
           this.loading.isActive = false;
           alertService.successFlip(
@@ -1376,7 +1491,7 @@ export default {
           this._debouncedRefresh();
           // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
           window.dispatchEvent(new CustomEvent('realtime-order-update', {
-            detail: { type: 'status-change', order_id: id, status: status }
+            detail: { type: 'status-change', order_id: payload.id, status: status }
           }));
         }).catch((err) => {
           this.loading.isActive = false;
@@ -1527,6 +1642,21 @@ export default {
   border-bottom: 1px solid #fecaca;
   font-weight: 600;
 }
+.kds-hint-banner--action {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.kds-hint-link {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: underline;
+}
 /* [F-03 / Lot 1.C] Sync stamp footer — discrete, never blocks the grid. */
 .kds-sync-footer {
   display: flex;
@@ -1537,17 +1667,17 @@ export default {
 }
 .kds-sync-stamp {
   font-size: 0.72rem;
-  color: #6b7280;
+  color: #374151;
   font-weight: 500;
   letter-spacing: 0.01em;
 }
 .kds-sync-stamp--stale {
-  color: #f59e0b;
+  color: #92400e;
   font-weight: 600;
 }
 .ws-reconnect-banner {
-  background: #f59e0b;
-  color: #fff;
+  background: #fef3c7;
+  color: #92400e;
   text-align: center;
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -1561,6 +1691,19 @@ export default {
 }
 .kds-wait-red {
   border-color: rgba(239, 68, 68, 0.85) !important;
+}
+.kds-counter-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: #B91C1C;
+  color: #FFFFFF;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 0.28rem 0.45rem;
+  text-transform: uppercase;
 }
 
 /* [F-02] Visual cue for in-place table reassignment.

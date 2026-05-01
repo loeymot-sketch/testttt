@@ -1,0 +1,55 @@
+{
+  "task_id": "CV1-M06-POS-REVENUE-GUARDS",
+  "mission_id": "M-06",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Durcir les guards revenus POS/kiosk: payment-confirm ability et branch resolver, route POS collect-kiosk-cash dédiée, cleanup-vs-confirm tardif, no-op side effects, discount anti-forge backend.",
+  "instruction": "Applique uniquement M-06. Gates approuvées: frozen Option C, payment_prop Option A. Ne touche pas fiscal/schema/KDS/offline/web-stripe hors allowlist. JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/OrderService.php",
+    "app/Services/PaymentService.php",
+    "routes/api.php",
+    "app/Jobs/CleanupStalePendingKioskOrders.php",
+    "app/Http/Requests/Frontend/PaymentConfirmRequest.php",
+    "app/Http/Requests/PosOrderRequest.php",
+    "tests/Feature/PaymentConfirmAbilityTest.php",
+    "tests/Feature/PaymentConfirmMachineResolverTest.php",
+    "tests/Feature/PaymentConfirmCrossBranchTest.php",
+    "tests/Feature/OrderStatusNoopSideEffectsTest.php",
+    "tests/Feature/PaymentNoopIdempotencyTest.php",
+    "tests/Feature/CleanupVsConfirmRaceTest.php",
+    "tests/Feature/PosCollectKioskCashRouteTest.php",
+    "tests/Feature/PosDiscountForgeryTest.php"
+  ],
+  "off_limits": ["database/**", "resources/**", "app/Services/Fiscal/**", "app/Services/KitchenDisplaySystemOrderService.php", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25", "status": "Approved", "decision": "Option C — Partial allowlist by method/surface", "date": "2026-04-25"},
+    {"gate": "GATE_PAYMENT_PROP_MUTATION_2026-04-26", "status": "Approved", "decision": "Option A — Refactor complet sous gate", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["pricing_ssot", "order_status", "branch_id", "dispatch_after_commit", "order_service_symmetry", "frozen_zones"],
+  "gate_conditions": ["frozen approved Option C", "payment_prop approved Option A"],
+  "mandatory_tests": [
+    "php artisan test --filter=PaymentConfirmAbility",
+    "php artisan test --filter=PaymentConfirmCrossBranch",
+    "php artisan test --filter=OrderStatusNoopSideEffects",
+    "php artisan test --filter=CleanupVsConfirmRace",
+    "php artisan test --filter=PosCollectKioskCashRoute",
+    "php artisan test --filter=PosDiscountForgery"
+  ],
+  "self_audit_checklist": [
+    "paymentConfirm requires kiosk:order ability and machine branch resolver",
+    "paymentConfirm refuses cross-branch and cash-order card confirmations without mutation",
+    "POS collect kiosk cash uses dedicated route, not kds-order/change-status",
+    "repeated no-op status changes do not double cashback/refund/dispatch",
+    "discount permission uses backend subtotal, not forged client subtotal",
+    "SYMMETRY_NOTE covers OrderService and FrontendOrderService"
+  ],
+  "rollback": {"feature_flag": "pos_revenue_guards", "max_window_days": 7, "predicates": ["payment_success_rate < 95% / 5min", "sentinel revenue guard regression"]},
+  "graphiti_query": "Caisse V1 POS revenue guards payment confirm branch id no-op side effects discount anti-forge",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_pos_guards_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

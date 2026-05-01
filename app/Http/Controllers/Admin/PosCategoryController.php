@@ -44,7 +44,12 @@ class PosCategoryController extends AdminController
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
+            })
+                ->where(function ($query) {
+                    $query->whereNull('channels')
+                        ->orWhereJsonContains('channels', 'pos');
+                })
+                ->orderBy($orderColumn, $orderType)->$method(
                 $methodValue
             );
 

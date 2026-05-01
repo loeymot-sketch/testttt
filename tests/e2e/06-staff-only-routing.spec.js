@@ -5,7 +5,18 @@
 // Pré-requis : STAFF_ONLY_MODE=true + KIOSK_REQUIRE_MACHINE_LOGIN=false dans .env
 
 const { test, expect } = require('@playwright/test');
+const { execFileSync } = require('child_process');
 const { login } = require('./helpers/login');
+
+function clearLocalLoginThrottle(baseURL) {
+    const url = String(baseURL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000');
+    if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) return;
+    try {
+        execFileSync('php', ['artisan', 'cache:clear'], { stdio: 'ignore' });
+    } catch (_) {
+        // Remote/CI environments may not expose the Laravel CLI to Playwright.
+    }
+}
 
 test.describe('Staff-only routing — Restructuration V1', () => {
     test('Root / redirige vers /login (anonyme)', async ({ page }) => {
@@ -61,7 +72,8 @@ test.describe('Staff-only routing — Restructuration V1', () => {
         expect(flag).toBe(true);
     });
 
-    test('Login admin → redirige vers admin.dashboard', async ({ page }) => {
+    test('Login admin → redirige vers admin.dashboard', async ({ page, baseURL }) => {
+        clearLocalLoginThrottle(baseURL);
         await login(page, 'admin@lecayenne.fr', '123456');
         // Le staff admin a defaultPermission.url ("dashboard") → /admin/dashboard
         await expect(page).toHaveURL(

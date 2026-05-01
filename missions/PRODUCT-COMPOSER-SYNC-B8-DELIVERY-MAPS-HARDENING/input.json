@@ -1,0 +1,18 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING",
+  "execution_delegation": "codex-extension",
+  "plan_source": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "mission": "B8 Delivery / Maps hardening",
+  "business_decisions": {
+    "D_DELIV_01": "5 EUR minimum, then 5 EUR per started 5 km",
+    "D_DELIV_02": "Geocode failure blocks delivery with GEOCODE_FAILED; no silent fallback"
+  },
+  "invariants": [
+    "Backend remains delivery pricing SSOT",
+    "Frontend may preview only",
+    "No OrderService or FrontendOrderService edits",
+    "No branch_id cross-branch bypass",
+    "No silent fallback to 5 EUR when geocode/coordinates are invalid"
+  ],
+  "status": "PASS"
+}

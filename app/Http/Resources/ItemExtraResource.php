@@ -28,6 +28,8 @@ class ItemExtraResource extends JsonResource
             'visible_on'    => $this->visible_on,   // null = all surfaces
             'group_label'   => $this->group_label,  // e.g. "Sauce", "Supplément", "Garniture"
             'thumb'         => $this->thumb ?? null,
+            'is_available'  => $this->is_available === null ? true : (bool) $this->is_available,
+            'unavailable_reason' => $this->unavailable_reason,
             'is_new'        => (bool) ($this->is_new ?? false),
             'item'          => optional($this->item)->name,
         ];

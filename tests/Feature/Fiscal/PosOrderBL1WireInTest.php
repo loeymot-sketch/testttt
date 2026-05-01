@@ -18,6 +18,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Smartisan\Settings\Facades\Settings;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -33,6 +34,7 @@ use Tests\TestCase;
 class PosOrderBL1WireInTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $admin;
@@ -186,27 +188,29 @@ class PosOrderBL1WireInTest extends TestCase
         $admin  ??= $this->admin;
         $branch ??= $this->branch;
 
+        $payload = [
+            'customer_id'         => $admin->id,
+            'branch_id'           => $branch->id,
+            'subtotal'            => 10.00,
+            'total'               => 11.00,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                [
+                    'item_id'         => $this->item->id,
+                    'quantity'        => 1,
+                    'item_variations' => [],
+                    'item_extras'     => [],
+                ],
+            ]),
+        ];
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $admin->id,
-                'branch_id'           => $branch->id,
-                'subtotal'            => 10.00,
-                'total'               => 11.00,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    [
-                        'item_id'         => $this->item->id,
-                        'quantity'        => 1,
-                        'item_variations' => [],
-                        'item_extras'     => [],
-                    ],
-                ]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $this->assertContains(
             $response->status(),

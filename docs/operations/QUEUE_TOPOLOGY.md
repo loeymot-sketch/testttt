@@ -174,10 +174,10 @@ php artisan queue:retry <failed-job-id>
 php artisan queue:retry all
 
 # Outbox-spécifique : rejoue les DomainEvents avec last_error renseigné
-php artisan outbox:retry-failed
+php artisan foodking:outbox:retry-failed --since=1h
 
 # Outbox-spécifique : rescue les events orphelins (jamais dispatchés)
-php artisan outbox:rescue
+php artisan foodking:outbox:rescue
 
 # Restart workers post-deploy
 php artisan queue:restart

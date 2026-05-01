@@ -13,6 +13,8 @@ use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
 use App\Http\Resources\SimpleOrderResource;
 use App\Http\Resources\OrderDetailsResource;
+use App\Models\Scopes\BranchScope;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 
 class PosOrderController extends AdminController
@@ -47,10 +49,13 @@ class PosOrderController extends AdminController
     }
 
     public function show(
-        Order $order
+        int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
+            $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
             return new OrderDetailsResource($this->orderService->show($order, false));
+        } catch (HttpException $http) {
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -120,26 +125,18 @@ class PosOrderController extends AdminController
     public function reorderItems(Order $order): \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
     {
         try {
-            $order->load(['orderItems.item', 'orderItems.itemVariations', 'orderItems.itemExtras']);
+            $order->load(['orderItems.orderItem']);
 
             $cartItems = $order->orderItems->map(function ($orderItem) {
                 return [
                     'item_id' => $orderItem->item_id,
-                    'item_name' => $orderItem->item?->name,
-                    'item_image' => $orderItem->item?->thumb,
+                    'item_name' => $orderItem->orderItem?->name,
+                    'item_image' => $orderItem->orderItem?->thumb,
                     'quantity' => $orderItem->quantity,
                     'unit_price' => $orderItem->price,
                     'total_price' => $orderItem->total_price,
-                    'variations' => $orderItem->itemVariations->map(fn($v) => [
-                        'id' => $v->item_variation_id,
-                        'name' => $v->name,
-                        'price' => $v->price,
-                    ])->values(),
-                    'extras' => $orderItem->itemExtras->map(fn($e) => [
-                        'id' => $e->item_extra_id,
-                        'name' => $e->name,
-                        'price' => $e->price,
-                    ])->values(),
+                    'variations' => $this->reorderVariations($orderItem),
+                    'extras' => $this->reorderExtras($orderItem),
                     'note' => $orderItem->note ?? '',
                 ];
             });
@@ -154,5 +151,82 @@ class PosOrderController extends AdminController
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    private function reorderVariations(\App\Models\OrderItem $orderItem): array
+    {
+        $snapshot = $this->decodedOrderItemArray($orderItem->composition_snapshot);
+        $lines = isset($snapshot['lines']) && is_array($snapshot['lines']) ? $snapshot['lines'] : [];
+
+        if ($lines !== []) {
+            return collect($lines)
+                ->map(fn($line) => [
+                    'id' => $line['variation_id'] ?? $line['id'] ?? null,
+                    'name' => $line['variation_name'] ?? $line['name'] ?? null,
+                    'attribute_name' => $line['attribute_name'] ?? null,
+                    'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
+                    'price' => (float) ($line['unit_price'] ?? $line['price'] ?? 0),
+                ])
+                ->filter(fn($line) => ! blank($line['id']))
+                ->values()
+                ->all();
+        }
+
+        return collect($this->decodedOrderItemArray($orderItem->item_variations))
+            ->map(fn($line) => [
+                'id' => $line['variation_id'] ?? $line['id'] ?? null,
+                'name' => $line['variation_name'] ?? $line['name'] ?? null,
+                'attribute_name' => $line['attribute_name'] ?? null,
+                'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
+                'price' => (float) ($line['unit_price'] ?? $line['price'] ?? 0),
+            ])
+            ->filter(fn($line) => ! blank($line['id']))
+            ->values()
+            ->all();
+    }
+
+    private function reorderExtras(\App\Models\OrderItem $orderItem): array
+    {
+        $snapshot = $this->decodedOrderItemArray($orderItem->composition_snapshot);
+        $extras = isset($snapshot['extras']) && is_array($snapshot['extras']) ? $snapshot['extras'] : [];
+
+        if ($extras !== []) {
+            return collect($extras)
+                ->map(fn($extra) => [
+                    'id' => $extra['extra_id'] ?? $extra['id'] ?? null,
+                    'name' => $extra['extra_name'] ?? $extra['name'] ?? null,
+                    'quantity' => max(1, (int) ($extra['quantity'] ?? 1)),
+                    'price' => (float) ($extra['unit_price'] ?? $extra['price'] ?? 0),
+                ])
+                ->filter(fn($extra) => ! blank($extra['id']))
+                ->values()
+                ->all();
+        }
+
+        return collect($this->decodedOrderItemArray($orderItem->item_extras))
+            ->map(fn($extra) => [
+                'id' => $extra['extra_id'] ?? $extra['id'] ?? null,
+                'name' => $extra['extra_name'] ?? $extra['name'] ?? null,
+                'quantity' => max(1, (int) ($extra['quantity'] ?? 1)),
+                'price' => (float) ($extra['unit_price'] ?? $extra['price'] ?? 0),
+            ])
+            ->filter(fn($extra) => ! blank($extra['id']))
+            ->values()
+            ->all();
+    }
+
+    private function decodedOrderItemArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

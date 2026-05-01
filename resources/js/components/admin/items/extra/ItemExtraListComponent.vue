@@ -1,5 +1,7 @@
 <template>
-    <ItemExtraCreateComponent :props="extraProps" />
+    <div data-testid="admin-extra-add">
+        <ItemExtraCreateComponent :props="extraProps" />
+    </div>
     <br><br>
     <div class="db-card" v-if="extras.length > 0">
         <div class="db-table-responsive">
@@ -15,7 +17,7 @@
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="extras.length > 0">
-                    <tr class="db-table-body-tr" v-for="extra in extras" :key="extra">
+                    <tr class="db-table-body-tr" v-for="extra in extras" :key="extra" :data-testid="`admin-extra-row-${extra.id}`">
                         <td class="db-table-body-td">{{ extra.name }}</td>
                         <td class="db-table-body-td">
                             <span v-if="extra.group_label" class="inline-block px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">
@@ -34,8 +36,12 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
-                            <SmIconModalEditComponent @click="edit(extra)" />
-                            <SmIconDeleteComponent @click="destroy(extra.id)" />
+                            <span :data-testid="`admin-extra-edit-${extra.id}`">
+                                <SmIconModalEditComponent @click="edit(extra)" />
+                            </span>
+                            <span :data-testid="`admin-extra-delete-${extra.id}`">
+                                <SmIconDeleteComponent @click="destroy(extra.id)" />
+                            </span>
                         </td>
                     </tr>
                 </tbody>

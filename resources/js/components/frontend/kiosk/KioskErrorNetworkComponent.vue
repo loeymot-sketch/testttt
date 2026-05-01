@@ -31,8 +31,8 @@
 </template>
 
 <script>
-import axios from 'axios';
 import KioskErrorLayoutComponent from './KioskErrorLayoutComponent.vue';
+import { trackKioskErrorEvent } from '../../../helpers/kioskAnalytics';
 
 /**
  * KioskErrorNetworkComponent — Kiosk Design V1 Phase 3.2
@@ -48,13 +48,13 @@ export default {
         return { retrying: false };
     },
     mounted() {
-        this.logEvent('error_shown', { subtype: 'network' });
+        this.logEvent('error_shown');
     },
     methods: {
         async retry() {
             this.retrying = true;
             try {
-                this.logEvent('error_retry', { subtype: 'network' });
+                this.logEvent('error_retry');
                 this.$emit('retry');
             } finally {
                 // Laisse 500ms de feedback visuel avant de relâcher.
@@ -62,11 +62,11 @@ export default {
             }
         },
         callStaff() {
-            this.logEvent('error_call_staff', { subtype: 'network' });
+            this.logEvent('error_call_staff');
             this.$emit('call-staff');
         },
         logEvent(type, meta = {}) {
-            axios.post('/frontend/kiosk/event', { type, ...meta }).catch(() => {});
+            trackKioskErrorEvent(type, 'network', meta);
         },
     },
 };

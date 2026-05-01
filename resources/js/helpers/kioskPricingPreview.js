@@ -18,8 +18,9 @@
  *
  * Invariants respectés :
  *   - Aucun prix envoyé côté client : on ne passe QUE (item_id, quantity,
- *     item_variations[].id, item_extras[].id, instruction, coupon_code,
- *     kiosk_promo_code). `branch_id` est résolu serveur-side via `KioskMachine`.
+ *     item_variations[].id/quantity, item_extras[].id/quantity,
+ *     item_addons[].id/quantity, instruction, coupon_code, kiosk_promo_code).
+ *     `branch_id` est résolu serveur-side via `KioskMachine`.
  *   - Debounce 400 ms (`KIOSK_HARDWARE.DEBOUNCE_PRICING_PREVIEW_MS` → 400) pour
  *     éviter la storm de requêtes pendant que le client ajuste ses sélections.
  *   - Abort de la requête précédente dès qu'une nouvelle est émise (axios
@@ -51,8 +52,12 @@ function resolveAxios(override) {
  *   items[].item_id              (int, requis)
  *   items[].quantity             (int, requis)
  *   items[].instruction          (string|null, ≤ 255)
- *   items[].item_variations[].id (int, requis si array)
- *   items[].item_extras[].id     (int, requis si array)
+ *   items[].item_variations[].id       (int, requis si array)
+ *   items[].item_variations[].quantity (int, optionnel)
+ *   items[].item_extras[].id           (int, requis si array)
+ *   items[].item_extras[].quantity     (int, optionnel)
+ *   items[].item_addons[].id           (int, requis si array)
+ *   items[].item_addons[].quantity     (int, optionnel)
  *
  * On REJETTE toute clé de prix (convert_price, price, total, …) — la liste
  * blanche `validated()` côté serveur strip déjà, mais on évite un round-trip
@@ -64,32 +69,42 @@ export function normalizeKioskPricingPreviewItem(raw = {}) {
 
     const quantity = Math.max(1, parseInt(raw.quantity, 10) || 1);
 
-    const rawVariations = Array.isArray(raw.item_variations) ? raw.item_variations : [];
-    const rawExtras = Array.isArray(raw.item_extras) ? raw.item_extras : [];
-
-    const item_variations = rawVariations
-        .map((v) => {
-            const id = parseInt(v?.id ?? v, 10);
-            return Number.isFinite(id) && id > 0 ? { id } : null;
-        })
-        .filter(Boolean);
-
-    const item_extras = rawExtras
-        .map((e) => {
-            const id = parseInt(e?.id ?? e, 10);
-            return Number.isFinite(id) && id > 0 ? { id } : null;
-        })
-        .filter(Boolean);
+    const item_variations = normalizePreviewModifiers(raw.item_variations);
+    const item_extras = normalizePreviewModifiers(raw.item_extras);
+    const item_addons = normalizePreviewModifiers(raw.item_addons);
 
     const instruction = typeof raw.instruction === 'string' ? raw.instruction.slice(0, 255) : '';
 
-    return {
+    const normalized = {
         item_id: itemId,
         quantity,
         instruction,
         item_variations,
         item_extras,
     };
+
+    if (item_addons.length > 0) {
+        normalized.item_addons = item_addons;
+    }
+
+    return normalized;
+}
+
+function normalizePreviewModifiers(rawRows) {
+    return (Array.isArray(rawRows) ? rawRows : [])
+        .map((row) => {
+            const id = parseInt(row?.id ?? row, 10);
+            if (!Number.isFinite(id) || id < 1) return null;
+
+            const normalized = { id };
+            const quantity = parseInt(row?.quantity, 10);
+            if (Number.isFinite(quantity) && quantity > 1) {
+                normalized.quantity = quantity;
+            }
+
+            return normalized;
+        })
+        .filter(Boolean);
 }
 
 /**

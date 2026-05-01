@@ -10,7 +10,16 @@ async function login(page, email, password) {
   await expect(page.locator('#formEmail')).toBeVisible({ timeout: 20_000 });
   await page.locator('#formEmail').fill(email);
   await page.locator('#formPassword').fill(password);
-  await page.getByRole('button', { name: /^(login|connexion)$/i }).click();
+  const submit = page.getByRole('button', { name: /^(login|connexion)$/i });
+  await submit.click();
+
+  // The SPA login submit can occasionally be swallowed while the page is still
+  // hydrating in the local E2E harness. Retry once only if the form is still
+  // visible on /login; invalid credentials still fail in the caller's URL assert.
+  await page.waitForTimeout(750);
+  if (/\/login(?:$|\?)/.test(page.url()) && await submit.isVisible().catch(() => false)) {
+    await submit.click();
+  }
 }
 
 async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kiosk123') {

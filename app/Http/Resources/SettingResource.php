@@ -110,26 +110,10 @@ class SettingResource extends JsonResource
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),
             'kiosk_default_language'               => $this->info['kiosk_default_language'] ?? 'fr',
 
-            // [KIOSK-19-1] Admin PIN — exposed ONLY to authenticated kiosk tokens (kiosk:order ability).
-            // The frontend/setting route is public; returning the PIN to unauthenticated callers
-            // would be a critical security leak. Kiosk machines authenticate first via /auth/kiosk-login
-            // and then call /frontend/setting with their Sanctum token.
-            'kiosk_admin_pin'                      => $this->_kioskAdminPin($request),
+            // Customer kiosk is a locked client surface. Staff/admin intervention
+            // happens from caisse/admin only, so the kiosk never receives a PIN.
+            'kiosk_admin_pin'                      => null,
         ];
-    }
-
-    /**
-     * Return the kiosk admin PIN only to authenticated kiosk machines.
-     * Unauthenticated callers (public frontend/setting) receive null.
-     */
-    private function _kioskAdminPin(\Illuminate\Http\Request $request): ?string
-    {
-        $user = $request->user('sanctum');
-        if ($user && $user->tokenCan('kiosk:order')) {
-            return $this->info['kiosk_admin_pin'] ?? '1234';
-        }
-
-        return null;
     }
 
     /**

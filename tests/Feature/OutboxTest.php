@@ -93,7 +93,7 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 123,
             'branch_id' => 1,
-            'payload' => ['order_id' => 123],
+            'payload' => $this->orderCreatedPayload(123),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'correlation_id' => 'test-uuid-1234',
@@ -112,7 +112,7 @@ class OutboxTest extends TestCase
                     && $data['version'] === 1
                     && $data['type'] === EventType::ORDER_CREATED
                     && $data['aggregate_id'] === 123
-                    && $data['payload'] === ['order_id' => 123];
+                    && $data['payload'] === $this->orderCreatedPayload(123);
             });
 
         $manager = Mockery::mock(BroadcastManager::class);
@@ -141,7 +141,7 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 321,
             'branch_id' => 1,
-            'payload' => ['order_id' => 321],
+            'payload' => $this->orderCreatedPayload(321),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'occurred_at' => now()->subMinutes(3),
@@ -170,7 +170,7 @@ class OutboxTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 654,
             'branch_id' => 1,
-            'payload' => ['order_id' => 654],
+            'payload' => $this->orderCreatedPayload(654),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'occurred_at' => now()->subMinutes(10),
@@ -219,5 +219,18 @@ class OutboxTest extends TestCase
             'order_type' => 1,
             'total' => 19.90,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function orderCreatedPayload(int $orderId): array
+    {
+        return [
+            'order_id' => $orderId,
+            'queue_number' => 'Q-' . $orderId,
+            '_origin' => 'pos',
+            'payment_method' => 'cash',
+        ];
     }
 }

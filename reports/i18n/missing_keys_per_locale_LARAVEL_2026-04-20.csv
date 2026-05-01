@@ -1,37 +1,16 @@
 locale,key,first_seen_in_file
-fr, Active your license code,resources/views/installer/license.blade.php
-fr, Go to iNilabs,resources/views/installer/license.blade.php
-fr, Login to iNilabs,resources/views/installer/license.blade.php
-fr,Step1: ,resources/views/installer/license.blade.php
-fr,Step2: ,resources/views/installer/license.blade.php
-fr,Step3: ,resources/views/installer/license.blade.php
-fr,The permission is denied.,app/Services/AdministratorService.php
-fr,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
-fr,all.item_match,app/Services/ItemAddonService.php
-fr,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
-fr,all.order.status.,app/Services/OrderService.php
-fr,all.user_match,app/Services/UserAddressService.php
-fr,ask.,app/Exports/ItemExport.php
-fr,itemType.,resources/views/pdf/items_report.blade.php
-fr,orderStatus.,resources/views/pdf/online_orders.blade.php
-fr,orderType.,resources/views/pdf/online_orders.blade.php
-fr,payment_gateway.,resources/views/pdf/sales_report.blade.php
-fr,payment_status.,resources/views/pdf/sales_report.blade.php
-fr,pos_payment_method.,resources/views/pdf/sales_report.blade.php
-fr,statuse.,app/Exports/AdministratorExport.php
-en, Active your license code,resources/views/installer/license.blade.php
-en, Go to iNilabs,resources/views/installer/license.blade.php
-en, Login to iNilabs,resources/views/installer/license.blade.php
-en,Step1: ,resources/views/installer/license.blade.php
-en,Step2: ,resources/views/installer/license.blade.php
-en,Step3: ,resources/views/installer/license.blade.php
-en,The permission is denied.,app/Services/AdministratorService.php
-en,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
 en,all.item_match,app/Services/ItemAddonService.php
 en,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
 en,all.order.status.,app/Services/OrderService.php
 en,all.user_match,app/Services/UserAddressService.php
 en,ask.,app/Exports/ItemExport.php
+en,installer.license.activation_help,resources/views/installer/license.blade.php
+en,installer.license.active_license_code,resources/views/installer/license.blade.php
+en,installer.license.go_to_inilabs,resources/views/installer/license.blade.php
+en,installer.license.login_to_inilabs,resources/views/installer/license.blade.php
+en,installer.license.step_1,resources/views/installer/license.blade.php
+en,installer.license.step_2,resources/views/installer/license.blade.php
+en,installer.license.step_3,resources/views/installer/license.blade.php
 en,itemType.,resources/views/pdf/items_report.blade.php
 en,orderStatus.,resources/views/pdf/online_orders.blade.php
 en,orderType.,resources/views/pdf/online_orders.blade.php
@@ -39,14 +18,6 @@ en,payment_gateway.,resources/views/pdf/sales_report.blade.php
 en,payment_status.,resources/views/pdf/sales_report.blade.php
 en,pos_payment_method.,resources/views/pdf/sales_report.blade.php
 en,statuse.,app/Exports/AdministratorExport.php
-ar, Active your license code,resources/views/installer/license.blade.php
-ar, Go to iNilabs,resources/views/installer/license.blade.php
-ar, Login to iNilabs,resources/views/installer/license.blade.php
-ar,Step1: ,resources/views/installer/license.blade.php
-ar,Step2: ,resources/views/installer/license.blade.php
-ar,Step3: ,resources/views/installer/license.blade.php
-ar,The permission is denied.,app/Services/AdministratorService.php
-ar,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
 ar,all.item_match,app/Services/ItemAddonService.php
 ar,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
 ar,all.message.invalid_status_transition,app/Rules/ValidStatusTransition.php
@@ -56,7 +27,14 @@ ar,all.message.kiosk_username_not_email,app/Http/Controllers/Auth/KioskMachineLo
 ar,all.order.status.,app/Services/OrderService.php
 ar,all.user_match,app/Services/UserAddressService.php
 ar,ask.,app/Exports/ItemExport.php
+ar,installer.license.activation_help,resources/views/installer/license.blade.php
+ar,installer.license.active_license_code,resources/views/installer/license.blade.php
+ar,installer.license.go_to_inilabs,resources/views/installer/license.blade.php
 ar,installer.license.label.license_code,resources/views/installer/license.blade.php
+ar,installer.license.login_to_inilabs,resources/views/installer/license.blade.php
+ar,installer.license.step_1,resources/views/installer/license.blade.php
+ar,installer.license.step_2,resources/views/installer/license.blade.php
+ar,installer.license.step_3,resources/views/installer/license.blade.php
 ar,itemType.,resources/views/pdf/items_report.blade.php
 ar,orderStatus.,resources/views/pdf/online_orders.blade.php
 ar,orderType.,resources/views/pdf/online_orders.blade.php
@@ -64,14 +42,6 @@ ar,payment_gateway.,resources/views/pdf/sales_report.blade.php
 ar,payment_status.,resources/views/pdf/sales_report.blade.php
 ar,pos_payment_method.,resources/views/pdf/sales_report.blade.php
 ar,statuse.,app/Exports/AdministratorExport.php
-de, Active your license code,resources/views/installer/license.blade.php
-de, Go to iNilabs,resources/views/installer/license.blade.php
-de, Login to iNilabs,resources/views/installer/license.blade.php
-de,Step1: ,resources/views/installer/license.blade.php
-de,Step2: ,resources/views/installer/license.blade.php
-de,Step3: ,resources/views/installer/license.blade.php
-de,The permission is denied.,app/Services/AdministratorService.php
-de,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
 de,all.item_match,app/Services/ItemAddonService.php
 de,all.message.coupon_not_yet_active,app/Services/CouponService.php
 de,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
@@ -85,9 +55,16 @@ de,all.message.select_your_payment_method,resources/views/payment.blade.php
 de,all.order.status.,app/Services/OrderService.php
 de,all.user_match,app/Services/UserAddressService.php
 de,ask.,app/Exports/ItemExport.php
+de,installer.license.activation_help,resources/views/installer/license.blade.php
+de,installer.license.active_license_code,resources/views/installer/license.blade.php
 de,installer.license.active_process,resources/views/installer/license.blade.php
+de,installer.license.go_to_inilabs,resources/views/installer/license.blade.php
 de,installer.license.label.license_code,resources/views/installer/license.blade.php
+de,installer.license.login_to_inilabs,resources/views/installer/license.blade.php
 de,installer.license.next,resources/views/installer/license.blade.php
+de,installer.license.step_1,resources/views/installer/license.blade.php
+de,installer.license.step_2,resources/views/installer/license.blade.php
+de,installer.license.step_3,resources/views/installer/license.blade.php
 de,installer.license.templateTitle,resources/views/installer/license.blade.php
 de,installer.license.title,resources/views/installer/license.blade.php
 de,itemType.,resources/views/pdf/items_report.blade.php
@@ -100,14 +77,6 @@ de,statuse.,app/Exports/AdministratorExport.php
 de,validation.multi_variation.max,app/Rules/MultiVariationConstraint.php
 de,validation.multi_variation.min,app/Rules/MultiVariationConstraint.php
 de,validation.multi_variation.no_repeat,app/Rules/MultiVariationConstraint.php
-bn, Active your license code,resources/views/installer/license.blade.php
-bn, Go to iNilabs,resources/views/installer/license.blade.php
-bn, Login to iNilabs,resources/views/installer/license.blade.php
-bn,Step1: ,resources/views/installer/license.blade.php
-bn,Step2: ,resources/views/installer/license.blade.php
-bn,Step3: ,resources/views/installer/license.blade.php
-bn,The permission is denied.,app/Services/AdministratorService.php
-bn,You can easily get the activation code and try to install your product by this code.,resources/views/installer/license.blade.php
 bn,all.item_match,app/Services/ItemAddonService.php
 bn,all.message.coupon_not_yet_active,app/Services/CouponService.php
 bn,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
@@ -118,9 +87,16 @@ bn,all.message.kiosk_username_not_email,app/Http/Controllers/Auth/KioskMachineLo
 bn,all.order.status.,app/Services/OrderService.php
 bn,all.user_match,app/Services/UserAddressService.php
 bn,ask.,app/Exports/ItemExport.php
+bn,installer.license.activation_help,resources/views/installer/license.blade.php
+bn,installer.license.active_license_code,resources/views/installer/license.blade.php
 bn,installer.license.active_process,resources/views/installer/license.blade.php
+bn,installer.license.go_to_inilabs,resources/views/installer/license.blade.php
 bn,installer.license.label.license_code,resources/views/installer/license.blade.php
+bn,installer.license.login_to_inilabs,resources/views/installer/license.blade.php
 bn,installer.license.next,resources/views/installer/license.blade.php
+bn,installer.license.step_1,resources/views/installer/license.blade.php
+bn,installer.license.step_2,resources/views/installer/license.blade.php
+bn,installer.license.step_3,resources/views/installer/license.blade.php
 bn,installer.license.templateTitle,resources/views/installer/license.blade.php
 bn,installer.license.title,resources/views/installer/license.blade.php
 bn,itemType.,resources/views/pdf/items_report.blade.php

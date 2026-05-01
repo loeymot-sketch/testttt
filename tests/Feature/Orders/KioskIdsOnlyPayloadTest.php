@@ -142,10 +142,18 @@ class KioskIdsOnlyPayloadTest extends TestCase
 
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        $quote = $this
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
 
         $response = $this
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+            ]);
 
         $this->assertContains($response->status(), [200, 201], json_encode($response->json()));
 

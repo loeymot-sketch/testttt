@@ -211,10 +211,21 @@ class ItemCategoryService
     public function sortCategory(Request $request)
     {
         try {
-            DB::transaction(function () use ($request) {
-                foreach ($request->category_id as $index => $id) {
+            $categoryIds = array_values(array_filter(
+                array_map('intval', (array) $request->category_id),
+                static fn (int $id): bool => $id > 0
+            ));
+
+            DB::transaction(function () use ($categoryIds) {
+                foreach ($categoryIds as $index => $id) {
                     ItemCategory::where('id', $id)->update(['sort' => $index + 1]);
                 }
+
+                DB::afterCommit(function () use ($categoryIds): void {
+                    foreach ($categoryIds as $id) {
+                        event(new CategoryUpdated($id));
+                    }
+                });
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

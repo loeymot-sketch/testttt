@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <button type="button" @click="add" data-modal="#extraModal" class="db-btn h-[37px] text-white bg-primary">
+    <button type="button" @click="add" data-modal="#extraModal" class="db-btn h-[37px] text-white bg-primary" data-testid="admin-extra-add-button">
         <i class="lab lab-add-circle-line"></i>
         <span>{{ addButton.title }}</span>
     </button>
@@ -19,7 +19,7 @@
                         <div class="form-col-12 sm:form-col-6">
                             <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                                id="name" class="db-field-control" />
+                                id="name" class="db-field-control" data-testid="admin-extra-form-name" />
                             <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                         </div>
 
@@ -29,7 +29,7 @@
                             }}</label>
                             <input v-on:keypress="numberOnly($event)" v-model="props.form.price"
                                 v-bind:class="errors.price ? 'invalid' : ''" type="text" id="price"
-                                class="db-field-control" />
+                                class="db-field-control" data-testid="admin-extra-form-price" />
                             <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                         </div>
 

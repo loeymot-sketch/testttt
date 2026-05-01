@@ -1,0 +1,24 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-01A-GATE-BRIEFS",
+  "execution_delegation": "explicit-prompt-bind",
+  "mode": "governance-only",
+  "objective": "Create missing Product Composer and Stock V2 gate briefs without approving them.",
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-01A-GATE-BRIEFS/allowlist.txt",
+  "forbidden": [
+    "Do not approve gates",
+    "Do not edit product code",
+    "Do not add migrations",
+    "Do not edit OrderService or FrontendOrderService"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "frozen-zone-gates",
+    "order-service-frontend-order-service-symmetry"
+  ],
+  "expected_outputs": [
+    "Pending gate briefs",
+    "Self-audit report"
+  ]
+}

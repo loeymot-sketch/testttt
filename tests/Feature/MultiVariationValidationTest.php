@@ -229,6 +229,28 @@ class MultiVariationValidationTest extends TestCase
         $this->assertStringContainsString('répétition', $msg);
     }
 
+    public function test_kiosk_commit_rejects_repeat_when_not_allowed_before_quote_replay(): void
+    {
+        $attr = $this->makeAttribute('Taille', 0, 2, false);
+        $v = $this->makeVariation($this->item, $attr, 'XL', 1.00);
+
+        $this->authedKiosk()->postJson('/api/frontend/order', [
+            'branch_id' => $this->branch->id,
+            'order_type' => \App\Enums\OrderType::KIOSK,
+            'is_advance_order' => Ask::NO,
+            'source' => \App\Enums\Source::WEB,
+            'payment_method' => \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+            'quote_token' => '00000000-0000-4000-8000-000000000123',
+            'quote_signature' => str_repeat('a', 64),
+            'items' => json_encode([[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                'item_variations' => [['id' => $v->id, 'quantity' => 2]],
+            ]]),
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.item_variations']);
+    }
+
     public function test_preview_accepts_valid_multi_attribute_mix(): void
     {
         $sauce = $this->makeAttribute('Sauce', 0, 1, false);

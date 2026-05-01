@@ -1,0 +1,78 @@
+Tu es auditeur externe senior FoodKing. Fais un audit critique indépendant du dernier état local.
+
+Contexte:
+- Claude terminal était bloqué par limite, donc Codex a exécuté les corrections + validations.
+- Tu dois maintenant vérifier si Codex peut être considéré PASS pour passer en Hardware UAT.
+- Ne valide PAS le hardware. Tu valides seulement le code local, les tests, les invariants, la readiness UAT.
+
+Lis obligatoirement:
+1. AGENTS.md
+2. reports/audit/CODEX_GLOBAL_FINISHING_VALIDATION_REPORT_2026-04-28.md
+3. reports/audit/CODEX_SUPER_AUDIT_EXECUTION_STATUS_2026-04-28.md
+4. reports/audit/CODEX_M1_C3_RUNTIME_MULTI_SURFACE_2026-04-28.md
+5. tests/Feature/ProdLike/ProdLikeConcurrencyTest.php
+6. scripts/prodlike-concurrency-worker.php
+7. app/Services/OrderService.php
+8. app/Services/FrontendOrderService.php
+9. database/migrations/2026_03_12_130000_add_performance_indexes.php
+10. tests/e2e/c3-runtime-multi-surface.spec.js
+11. tests/e2e/kiosk-full-process/c1-kiosk-process-audit.spec.js
+12. tests/e2e/pos-full-process/c2-pos-process-audit.spec.js
+13. tests/Feature/Fiscal/FiscalCashAtCounterLifecycleTest.php
+14. tests/Feature/Payment/CounterDeferredPaymentLifecycleTest.php
+15. tests/Feature/Composer/ComposerAuthzMinimalTest.php
+16. tests/Feature/Catalog/PhotoEndToEndKioskInvalidationTest.php
+
+Audit à faire:
+- Vérifie les invariants FoodKing:
+  - backend pricing SSOT, aucune autorité prix frontend.
+  - OrderStatus enum, pas de chaînes magiques dangereuses.
+  - branch_id isolation stricte.
+  - dispatch events/jobs après commit DB.
+  - symétrie OrderService / FrontendOrderService.
+  - zones frozen: vérifier si les modifications sont justifiées par les tests et gates précédents.
+- Vérifie les corrections Codex:
+  - queue lock hardening POS/kiosk: maxAttempts=5, lock TTL 30s, block 15s.
+  - prod-like MySQL/Redis 50 workers stock + 50 workers queue.
+  - migration performance indexes rollback MySQL.
+  - C3 runtime multi-surface.
+  - cash-at-counter NF525 lifecycle.
+  - stock decrement/release/rupture.
+  - composer authz/profile/photo/projection.
+  - delivery/geocode SSOT.
+- Cherche activement des P0/P1:
+  - doublon queue_number possible.
+  - stock négatif ou décrément non atomique.
+  - fiscal_sequence_no alloué trop tôt.
+  - cash-at-counter payé/cancel incohérent.
+  - KDS/OSS non synchronisé ou faux positif Playwright.
+  - fuite cross-branch.
+  - prix client accepté.
+  - migration destructrice.
+  - test qui mocke trop et ne prouve pas le runtime réel.
+
+Si tu peux exécuter, lance au minimum:
+- php -l app/Services/OrderService.php app/Services/FrontendOrderService.php tests/Feature/ProdLike/ProdLikeConcurrencyTest.php scripts/prodlike-concurrency-worker.php
+- php artisan test tests/Feature/Fiscal/FiscalCashAtCounterLifecycleTest.php --stop-on-failure
+- php artisan test tests/Feature/Payment/CounterDeferredPaymentLifecycleTest.php --stop-on-failure
+- php artisan test tests/Feature/Stock --stop-on-failure
+- php artisan test tests/Feature/QueueNumberConcurrencyTest.php --stop-on-failure
+- php artisan test tests/Feature/Composer/ComposerAuthzMinimalTest.php --stop-on-failure
+- php artisan test tests/Feature/Catalog/PhotoEndToEndKioskInvalidationTest.php --stop-on-failure
+- npx playwright test tests/e2e/c3-runtime-multi-surface.spec.js --project=chromium --retries=0
+
+Format de sortie obligatoire:
+1. AUDIT_VERDICT: PASS_PROCEED_HARDWARE_UAT | REWORK_BEFORE_UAT
+2. RELEASE_DECISION: HOLD_FOR_HARDWARE_UAT | REWORK_REQUIRED
+3. Findings P0/P1/P2 avec file:line, cause, risque, correction demandée.
+4. Tableau par domaine: C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, D1, D2, D3.
+5. Verdict sur les modifications OrderService/FrontendOrderService: symétrie PASS/REWORK.
+6. Verdict sur ProdLikeConcurrencyTest: preuve suffisante ou insuffisante.
+7. Liste exacte des tests à relancer si REWORK.
+8. Plan d’implémentation ultra-borné pour Codex si correction nécessaire.
+9. Conclusion courte: est-ce que Codex peut passer au Hardware UAT ou non.
+
+Important:
+- Ne sois pas indulgent. Si un test est faible, dis-le.
+- Ne demande pas de hardware UAT comme correction code: classe-le séparément.
+- Ne marque PASS que si aucun P0/P1 logiciel ne bloque l’UAT.

@@ -1,0 +1,42 @@
+{
+  "task_id": "CV1-M12-LEGACY-GUARDS-CI",
+  "mission_id": "M-12",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Mettre en place des garde-fous CI bloquants pour empêcher la réintroduction de chemins legacy : kiosk_implementation/, borne (Remix)/, pos-wizard.js, anciens endpoints frontend/item-category. Lint AST + bundle scan + workflow GitHub Actions. Aucun changement de code produit.",
+  "instruction": "Crée les scripts shell/lint et le workflow CI. Renvoie strictement un JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "scripts/lint-fk-legacy-imports.sh",
+    "scripts/lint-fk-legacy-routes.sh",
+    "scripts/scan-bundle-legacy.sh",
+    "scripts/lint-fk-archive-banner.sh",
+    ".github/workflows/legacy-guards.yml",
+    "docs/orchestration/LEGACY_QUARANTINE_2026-04-25.md",
+    "kiosk_implementation/ARCHIVE_BANNER.md",
+    "borne (Remix)/ARCHIVE_BANNER.md"
+  ],
+  "off_limits": [
+    "app/**", "resources/**/components/**", "routes/**", "database/**", "tests/**", "config/**",
+    ".cursor/**", "AGENTS.md"
+  ],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [
+    "bash scripts/lint-fk-legacy-imports.sh",
+    "bash scripts/lint-fk-legacy-routes.sh",
+    "bash scripts/lint-fk-archive-banner.sh"
+  ],
+  "self_audit_checklist": [
+    "Les 3 scripts lint + 1 scan exit 0 sur HEAD courant (ou exit 1 documenté dans notes si findings préexistants attendus)",
+    "Workflow GitHub Actions valide (yaml syntaxe + jobs déclarés)",
+    "Banners ARCHIVE en tête des dossiers legacy (md uniquement, pas modification du code Dart/Remix)",
+    "Aucun fichier produit modifié",
+    "Documentation de quarantaine claire (cible, raison, exception process)"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 legacy quarantine guards",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_legacy_guards_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-legacy"
+}

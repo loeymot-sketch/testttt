@@ -6,6 +6,7 @@ use App\Models\Allergen;
 use App\Rules\IniAmount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ItemRequest extends FormRequest
 {
@@ -75,5 +76,43 @@ class ItemRequest extends FormRequest
             'item_category_id' => strtolower(trans('all.label.item_category_id')),
             'tax_id'           => strtolower(trans('all.label.tax_id')),
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateNestedModifierSurfaces($validator, 'variations');
+            $this->validateNestedModifierSurfaces($validator, 'extras');
+        });
+    }
+
+    private function validateNestedModifierSurfaces(Validator $validator, string $field): void
+    {
+        $raw = $this->input($field);
+        if ($raw === null || $raw === '') {
+            return;
+        }
+
+        $rows = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (! is_array($rows)) {
+            return;
+        }
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row) || ! array_key_exists('visible_on', $row) || $row['visible_on'] === null) {
+                continue;
+            }
+
+            if (! is_array($row['visible_on'])) {
+                $validator->errors()->add("{$field}.{$index}.visible_on", 'The visible_on field must be an array.');
+                continue;
+            }
+
+            foreach ($row['visible_on'] as $surfaceIndex => $surface) {
+                if (! in_array((string) $surface, ['kiosk', 'pos', 'web'], true)) {
+                    $validator->errors()->add("{$field}.{$index}.visible_on.{$surfaceIndex}", 'The selected visible_on surface is invalid.');
+                }
+            }
+        }
     }
 }

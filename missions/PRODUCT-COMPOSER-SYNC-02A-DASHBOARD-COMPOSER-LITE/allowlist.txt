@@ -1,0 +1,8 @@
+resources/js/components/admin/items/ItemShowComponent.vue
+resources/js/components/admin/items/ProductComposerSummaryComponent.vue
+tests/js/productComposerSummary.spec.js
+missions/PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE/input.json
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE.md
+reports/post_execute_latest.log

@@ -1,0 +1,20 @@
+{
+  "task_id": "PROD-CHK-PARCOURS-2026-04-25",
+  "role": "production-readiness-auditor",
+  "objective": "Auditer la production FoodKing : (A) démarrage toujours orchestré Claude vs réalité Cursor ; (B) checkpoints du parcours portés par fichiers obligatoires pour tous les agents.",
+  "inputs": [
+    "reports/audit/SIMULATION_PARCOURS_PROD_CHECKPOINTS_2026-04-25.md",
+    "docs/orchestration/SESSION_OPENING_ENFORCEMENT.md",
+    ".cursor/routing.md",
+    ".cursor/commands/run-cycle.md",
+    "AGENTS.md (section Parcours obligatoire)"
+  ],
+  "deliverables": [
+    "Verdict GPT_AUDIT_VERDICT: GO | GO_WITH_CAVEATS | NO_GO",
+    "Liste max 5 caveats si GO_WITH_CAVEATS",
+    "Confirmer ou infirmer : « n'importe quel modèle Cursor commence automatiquement en orchestration Claude »",
+    "Confirmer ou infirmer : « tous les checkpoints sont mécaniquement forcés sans action humaine »",
+    "1 recommandation concrète si NO_GO ou caveats"
+  ],
+  "language": "fr"
+}

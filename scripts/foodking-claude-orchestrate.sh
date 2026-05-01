@@ -30,6 +30,19 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
+# shellcheck source=./_audit-terminal-fallback-hint.sh
+source "$REPO_ROOT/scripts/_audit-terminal-fallback-hint.sh"
+
+# Audit / smoketest non interactif : modèle + effort (surchargeable — voir AGENTS.md § Terminal Claude).
+# Défaut FoodKing = Opus 4.7 + effort high (raisonnement max terminal).
+# Désactiver l'effort explicite : FOODKING_CLAUDE_TERMINAL_EFFORT=  (vide)
+FOODKING_CLAUDE_TERMINAL_MODEL="${FOODKING_CLAUDE_TERMINAL_MODEL:-claude-opus-4-7}"
+FOODKING_CLAUDE_TERMINAL_EFFORT="${FOODKING_CLAUDE_TERMINAL_EFFORT:-high}"
+fk_claude_model_args=()
+fk_claude_model_args+=(--model "$FOODKING_CLAUDE_TERMINAL_MODEL")
+if [[ -n "${FOODKING_CLAUDE_TERMINAL_EFFORT}" ]]; then
+  fk_claude_model_args+=(--effort "$FOODKING_CLAUDE_TERMINAL_EFFORT")
+fi
 
 # Écrit reports/audit/_TERMINAL_CONTEXT_BRIEF.md ; affiche le chemin absolu sur stdout.
 write_terminal_context_brief() {
@@ -65,11 +78,12 @@ usage() {
   echo "  check        — verify that Anthropic 'claude' (Claude Code) is on PATH" >&2
   echo "  smoketest    — one minimal claude -p call; confirms subscription/auth (uses API)" >&2
   echo "  context         — write reports/audit/_TERMINAL_CONTEXT_BRIEF.md (cycle + décisions + index mémoire)" >&2
-  echo "  audit-brief     — claude -p: lit d'abord ce fichier, puis audit orchestration (Graphiti = doc, pas requête live)" >&2
+  echo "  audit-brief     — claude -p: lit d'abord ce fichier, puis audit orchestration (Graphiti = doc, pas requête live). Si échec (quota/limites) : message stderr → repli foodking-planner-orchestrator (voir docs/orchestration/AUDIT_TERMINAL_QUOTA_FALLBACK.md)" >&2
   echo "  post-execute    — after livraison: after-execute-memory (manifest+ingest rappel) + context (pas audit-brief)" >&2
   echo "  audit           — claude -p with default FoodKing prompt, or: audit \"custom prompt\"" >&2
   echo "  repl            — interactive: exec claude (same as typing 'claude' in the repo root)" >&2
   echo "  help         — this message" >&2
+  echo "  Modèle terminal (-p uniquement) : FOODKING_CLAUDE_TERMINAL_MODEL (défaut claude-opus-4-7), FOODKING_CLAUDE_TERMINAL_EFFORT (défaut high). Vider EFFORT pour omettre --effort." >&2
   exit 2
 }
 
@@ -111,6 +125,7 @@ case "$cmd" in
     path_line=$(command -v claude)
     echo "[foodking-claude-orchestrate] OK: ${ver_line}"
     echo "[foodking-claude-orchestrate] path: ${path_line}"
+    echo "[foodking-claude-orchestrate] terminal -p model: ${FOODKING_CLAUDE_TERMINAL_MODEL} effort: ${FOODKING_CLAUDE_TERMINAL_EFFORT:-∅}"
     echo "[foodking-claude-orchestrate] Next:  bash $0 repl   (session interactive)"
     echo "[foodking-claude-orchestrate]   ou:  bash $0 smoketest  (test abonnement API)"
     echo "[foodking-claude-orchestrate]   ou:  bash $0 context  (fichier + audit-brief = intelligence sans gaspiller tokens)"
@@ -124,8 +139,19 @@ case "$cmd" in
     ;;
   audit-brief|audit-with-context)
     write_terminal_context_brief >/dev/null
+    tmp=$(mktemp "${TMPDIR:-/tmp}/fk-claude-audit-brief.XXXXXX")
     # Chemin relatif = résolvable par Claude via --add-dir
-    exec claude -p "Tu es l'orchestrateur FoodKing (rôle AGENTS.md). Lis EN PREMIER le fichier reports/audit/_TERMINAL_CONTEXT_BRIEF.md (cycle, dernières décisions JSONL, index mémoire). Neo4j/Graphiti n'est pas requêtable ici : traite ce fichier comme alimentation mémoire. Ensuite, si utile, ouvre AGENTS.md et .cursor/ACTIVE_CYCLE.md. Tâche : audit court en français, puces : cycle actif, 5 prochaines priorités parmi la méga-checklist [ ], rappel EXECUTE_DELEGATION sur les RUN, ce qui devrait devenir une ligne 12_decisions + ingest. Pas de code dans les frozen zones." --add-dir "$REPO_ROOT" </dev/null
+    set +e
+    claude -p "Tu es l'orchestrateur FoodKing (rôle AGENTS.md). Lis EN PREMIER le fichier reports/audit/_TERMINAL_CONTEXT_BRIEF.md (cycle, dernières décisions JSONL, index mémoire). Neo4j/Graphiti n'est pas requêtable ici : traite ce fichier comme alimentation mémoire. Ensuite, si utile, ouvre AGENTS.md et .cursor/ACTIVE_CYCLE.md. Tâche : audit court en français, puces : cycle actif, 5 prochaines priorités parmi la méga-checklist [ ], rappel EXECUTE_DELEGATION sur les RUN, ce qui devrait devenir une ligne 12_decisions + ingest. Pas de code dans les frozen zones." "${fk_claude_model_args[@]}" --add-dir "$REPO_ROOT" </dev/null >"$tmp" 2>&1
+    ex=$?
+    set -e
+    cat "$tmp"
+    if [[ "$ex" -ne 0 ]]; then
+      audit_terminal_fallback_hint_stderr "$tmp"
+      rm -f "$tmp"
+      exit "$ex"
+    fi
+    rm -f "$tmp"
     ;;
   post-execute|after-delivery|after-execute)
     if [[ -f "$REPO_ROOT/scripts/after-execute-memory.sh" ]]; then
@@ -159,7 +185,7 @@ case "$cmd" in
     }
     _claude_run_smoketest_once() {
       local prompt_text="$1"
-      claude -p "$prompt_text" --add-dir "$REPO_ROOT" </dev/null 2>&1
+      claude -p "$prompt_text" "${fk_claude_model_args[@]}" --add-dir "$REPO_ROOT" </dev/null 2>&1
     }
     SMOKE_P1="Reply with exactly the single word: TERMINAL_OK and nothing else."
     SMOKE_P2="Output the single line TERMINAL_OK. No other words."
@@ -172,7 +198,7 @@ case "$cmd" in
         ex=$?
         set -e
         if [[ $ex -ne 0 ]]; then
-          if [[ -n "$FOODKING_CLAUDE_SMOKE_DEBUG" ]]; then
+          if [[ -n "${FOODKING_CLAUDE_SMOKE_DEBUG:-}" ]]; then
             echo "[foodking-claude-orchestrate] DEBUG: try=$try ex=$ex prompt=${PMT:0:40}..." >&2
             echo "$out" >&2
           fi
@@ -182,7 +208,7 @@ case "$cmd" in
           ok=1
           break 2
         fi
-        if [[ -n "$FOODKING_CLAUDE_SMOKE_DEBUG" ]]; then
+        if [[ -n "${FOODKING_CLAUDE_SMOKE_DEBUG:-}" ]]; then
           echo "[foodking-claude-orchestrate] DEBUG: no match, try=$try" >&2
           printf '%s' "$out" | head -c 2000 >&2; echo >&2
         fi
@@ -223,7 +249,18 @@ Ne propose pas de patch code dans les frozen zones (OrderService, etc.) : orches
 FOODKING_ORCH_EOF
     fi
     # -p: print mode. Prompt doit suivre -p (sinon claude: « Input must be provided »). </dev/null = agent non TTY.
-    exec claude -p "$PROMPT" --add-dir "$REPO_ROOT" </dev/null
+    tmp=$(mktemp "${TMPDIR:-/tmp}/fk-claude-audit.XXXXXX")
+    set +e
+    claude -p "$PROMPT" "${fk_claude_model_args[@]}" --add-dir "$REPO_ROOT" </dev/null >"$tmp" 2>&1
+    ex=$?
+    set -e
+    cat "$tmp"
+    if [[ "$ex" -ne 0 ]]; then
+      audit_terminal_fallback_hint_stderr "$tmp"
+      rm -f "$tmp"
+      exit "$ex"
+    fi
+    rm -f "$tmp"
     ;;
   repl|shell|i)
     exec claude

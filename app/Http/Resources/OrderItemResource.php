@@ -32,6 +32,7 @@ class OrderItemResource extends JsonResource
             // legacy rows (composition_snapshot=null) fall back to raw item_variations / item_extras JSON.
             'item_variations'                  => $this->resolveVariationsForApi(),
             'item_extras'                      => $this->resolveExtrasForApi(),
+            'item_addons'                      => $this->resolveAddonsForApi(),
             'composition_snapshot'             => $this->safeJsonDecode($this->composition_snapshot),
             'allergens_snapshot'               => $this->safeJsonDecode($this->allergens_snapshot),
             'item_variation_currency_total'    => AppLibrary::currencyAmountFormat($this->item_variation_total),
@@ -80,6 +81,19 @@ class OrderItemResource extends JsonResource
             return array_values($snapshot['extras']);
         }
         return $this->safeJsonDecode($this->item_extras);
+    }
+
+    /**
+     * Composer addons only exist in the immutable composition snapshot.
+     */
+    private function resolveAddonsForApi(): array
+    {
+        $snapshot = $this->safeJsonDecode($this->composition_snapshot);
+        if (is_array($snapshot) && isset($snapshot['addons']) && is_array($snapshot['addons']) && $snapshot['addons'] !== []) {
+            return array_values($snapshot['addons']);
+        }
+
+        return [];
     }
 
     /**

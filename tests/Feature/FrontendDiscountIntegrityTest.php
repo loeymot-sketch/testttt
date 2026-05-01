@@ -162,6 +162,48 @@ class FrontendDiscountIntegrityTest extends TestCase
         ]);
     }
 
+    public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
+    {
+        $coupon = Coupon::forceCreate([
+            'name' => 'FRONT10_FORGED',
+            'description' => '10 percent',
+            'code' => 'FRONT10-FORGED',
+            'discount' => 10,
+            'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+            'minimum_order' => 10,
+            'maximum_discount' => 100,
+            'limit_per_user' => 2,
+        ]);
+
+        $response = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'coupon_id' => $coupon->id,
+                'subtotal' => 999.00,
+                'total' => 999.00,
+                'discount' => 900.00,
+            ]));
+
+        $response->assertStatus(201);
+        $orderId = $response->json('data.id');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'subtotal' => 20.00,
+            'discount' => 2.00,
+            'total' => 18.00,
+        ]);
+
+        $this->assertDatabaseHas('order_coupons', [
+            'order_id' => $orderId,
+            'coupon_id' => $coupon->id,
+            'discount' => 2.00,
+        ]);
+    }
+
     public function test_coupon_takes_priority_over_loyalty_discount_on_frontend_order(): void
     {
         $coupon = Coupon::forceCreate([

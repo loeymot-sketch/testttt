@@ -42,21 +42,21 @@
       <div class="kiosk-step-visuals">
         <div
           v-for="(step, index) in activeSteps"
-          :key="step.type"
+          :key="stepKey(step, index)"
           class="kiosk-step-visual"
           :class="{ active: index === currentStepIndex, done: index < currentStepIndex }"
         >
           <div class="kiosk-step-visual-icon">
             <img
-              v-if="getStepVisualImage(step.type)"
-              :src="getStepVisualImage(step.type)"
-              :alt="getStepLabel(step.type)"
+              v-if="getStepVisualImage(step)"
+              :src="getStepVisualImage(step)"
+              :alt="getStepLabel(step)"
               class="kiosk-step-visual-img"
             />
-            <span v-else class="kiosk-step-visual-fallback">{{ getStepIcon(step.type) }}</span>
+            <span v-else class="kiosk-step-visual-fallback">{{ getStepIcon(step) }}</span>
             <span class="kiosk-step-visual-index">{{ index + 1 }}</span>
           </div>
-          <span class="kiosk-step-visual-label">{{ getStepLabel(step.type) }}</span>
+          <span class="kiosk-step-visual-label">{{ getStepLabel(step) }}</span>
         </div>
       </div>
 
@@ -72,7 +72,7 @@
         <div class="kiosk-progress-track">
           <div
             v-for="(step, index) in activeSteps"
-            :key="step.type"
+            :key="stepKey(step, index)"
             class="kiosk-step-dot"
             :class="{ active: index === currentStepIndex, done: index < currentStepIndex }"
           >
@@ -90,21 +90,21 @@
       </div>
 
       <div class="kiosk-step-question">
-        {{ currentStep.type === 'recap' ? $t('kiosk.wizard.recap_order_title') : getQuestionLabel(currentStep.type) }}
+        {{ currentStep.type === 'recap' ? $t('kiosk.wizard.recap_order_title') : getQuestionLabel(currentStep) }}
       </div>
 
       <div class="kiosk-step-content">
         <transition name="step-slide" mode="out-in">
           <component
             :is="currentStepComponent"
-            :key="currentStep.type"
+            :key="currentStepKey"
             v-bind="wizardStepBindings"
             @update="updateSelection"
           />
         </transition>
       </div>
 
-      <div class="kiosk-nav">
+      <div class="kiosk-nav" :class="{ 'kiosk-nav--recap': currentStep?.type === 'recap' }">
         <div class="kiosk-nav-actions">
           <button type="button" class="kiosk-btn-abandon" @click="onAbandonClick">
             {{ $t('kiosk.wizard.abandon_item') }}
@@ -119,7 +119,9 @@
           <button type="button"
             @click="currentStepIndex < activeSteps.length - 1 ? nextStep() : addToCart()"
             class="kiosk-btn-next"
+            :class="{ 'kiosk-btn-next--cart': currentStepIndex >= activeSteps.length - 1 }"
             :disabled="!canAdvance"
+            :aria-label="currentStepIndex < activeSteps.length - 1 ? $t('kiosk.wizard.nav_next') : $t('kiosk.wizard.add_to_cart')"
           >
             <span>{{
               currentStepIndex < activeSteps.length - 1
@@ -178,9 +180,17 @@ import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 import { createKioskPricingPreview } from '../../../helpers/kioskPricingPreview';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../helpers/kioskMedia';
-import { kioskDrinkAddonRowsFromItem } from '../../../helpers/kioskDrinkAddons';
+import {
+  kioskDrinkAddonRowsFromItem,
+  kioskIsDrinkAddonName,
+  kioskIsGenericDrinkOptionName,
+} from '../../../helpers/kioskDrinkAddons';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
-import { calculateKioskRunningTotal, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
+import {
+  calculateKioskRunningTotal,
+  getKioskMenuAddonPrice,
+  normalizeKioskSelectionCount,
+} from '../../../helpers/kioskPricing';
 import { kioskSauceVariationRowsForItem } from '../../../helpers/kioskSauceCatalog';
 import { partitionKioskExtras } from '../../../helpers/kioskExtrasPartition';
 import { kioskViandeCatalogForItem } from '../../../helpers/kioskViandeCatalog';
@@ -217,6 +227,9 @@ const KioskStepSupplements = defineAsyncComponent(() =>
 const KioskStepMenu = defineAsyncComponent(() =>
   import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepMenuComponent.vue')
 );
+const KioskStepGenericChoices = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepGenericChoicesComponent.vue')
+);
 
 export default {
   name: 'KioskWizardComponent',
@@ -229,6 +242,7 @@ export default {
     KioskStepGarnitures,
     KioskStepSupplements,
     KioskStepMenu,
+    KioskStepGenericChoices,
     KioskOrderSummary,
     KsAllergenBadge,
   },
@@ -263,6 +277,7 @@ export default {
         boissonChoice: null,
         fritesSauce: null,
         fritesSauceOrder: [],
+        composerChoices: {},
         quantity: 1,
         instruction: ''
       },
@@ -343,7 +358,7 @@ export default {
           }
         });
         Object.keys(selections.supplements || {}).forEach((id) => {
-          if (selections.supplements[id]) {
+          if (normalizeKioskSelectionCount(selections.supplements[id]) > 0) {
             const ex = item.extras.find((e) => e.id === parseInt(id, 10));
             if (ex) extras.push(ex);
           }
@@ -356,6 +371,19 @@ export default {
         const ex = item.extras?.find((e) => e.id === v.id);
         if (!ex) return;
         for (let i = 0; i < count; i++) extras.push(ex);
+      });
+
+      this.composerChoiceEntries().forEach((entry) => {
+        const count = parseInt(entry.count || 0, 10) || 0;
+        if (count <= 0) return;
+        if (entry.source_type === 'variation') {
+          const variation = this.findItemVariationById(item, entry.id);
+          if (variation) variations.push(variation);
+        }
+        if (entry.source_type === 'extra') {
+          const extra = this.findItemExtraById(item, entry.id);
+          if (extra) extras.push(extra);
+        }
       });
 
       return { variations, extras };
@@ -373,6 +401,9 @@ export default {
     },
     activeSteps() {
       if (!this.resolvedItem) return [];
+      const composerSteps = this.composerActiveSteps();
+      if (composerSteps.length > 0) return composerSteps;
+
       const template = this.effectiveWizardTemplate();
       const hasViandes = this.detectViandeCount() > 0;
       
@@ -447,6 +478,9 @@ export default {
     currentStep() {
       return this.activeSteps[this.currentStepIndex];
     },
+    currentStepKey() {
+      return this.stepKey(this.currentStep, this.currentStepIndex);
+    },
     currentStepComponent() {
       return this.currentStep?.component;
     },
@@ -456,23 +490,23 @@ export default {
     runningTotalLocal() {
       return calculateKioskRunningTotal(this.resolvedItem, this.selections);
     },
-    // Total affiché dans le footer du wizard : priorité au total serveur dès
-    // qu'il est arrivé, sinon fallback synchrone local. Aucun flicker "0,00 €"
-    // possible car `runningTotalLocal` renvoie toujours au moins le prix de
-    // base de l'item.
+    // Total affiché dans le footer du wizard : instantané côté tactile.
+    // À chaque modification, `serverPreviewTotal` est vidé avant le debounce,
+    // donc l'utilisateur voit immédiatement le calcul local. Le preview serveur
+    // peut confirmer un total supérieur, mais ne doit jamais masquer les deltas
+    // d'options explicites du wizard (sauces multiples, formule, viandes extras)
+    // que le payload preview ne représente pas intégralement.
     runningTotal() {
+      const local = this.runningTotalLocal;
       return this.serverPreviewTotal != null
-        ? this.serverPreviewTotal
-        : this.runningTotalLocal;
+        ? Math.max(this.serverPreviewTotal, local)
+        : local;
     },
-    /** « + Boisson » (formule boisson seule) : pertinent catégorie boissons, pas à côté de Menu complet / Frites sur sandwich-burger-tacos. */
+    /** « Boisson seule » doit être disponible dès que l'article expose l'étape menu. */
     kioskShowBoissonOnlyMenuCard() {
       const item = this.resolvedItem;
-      if (!item) return true;
-      const t = this.effectiveWizardTemplate();
-      if (['sandwich', 'burger', 'tacos'].includes(t)) return false;
-      if (t === 'assiette' && item.has_menu) return false;
-      return true;
+      if (!item) return false;
+      return item.has_menu === true || kioskDrinkAddonRowsFromItem(item).length > 0;
     },
     /** Évite de passer des props inconnues aux autres étapes du wizard. */
     kioskMenuStepExtraProps() {
@@ -497,19 +531,25 @@ export default {
       const step = this.currentStep;
       if (!step) return false;
       
-      if (step.type === 'viande') return this.selections.totalViandes >= this.detectViandeCount();
+      if (step.type === 'viande') {
+        const required = this.detectViandeCount();
+        if (!this.hasIncludedViandeOptions()) {
+          return (this.selections.totalViandes || 0) >= required;
+        }
+        return this.includedViandeSelectionCount() >= required;
+      }
       if (step.type === 'sauce') return this.selections.sauceOrder.length > 0;
       if (step.type === 'pain') return this.selections.pain !== null;
       // [AUDIT-P2] Taille step requires an explicit choice before proceeding
       if (step.type === 'taille') return this.selections.taille !== null;
+      if (step.type === 'generic_choices') return this.canAdvanceComposerChoiceStep(step);
       // [P0] Menu : choix explicite obligatoire (full / frites / boisson / none) — pas de passage « vide »
       if (step.type === 'menu') {
         const mc = this.selections.menuChoice;
         if (mc === null || mc === undefined || mc === '') return false;
         // [P1] Si des addons boisson existent et que la formule inclut une boisson → choix obligatoire
         const wantsDrink = mc === 'full' || mc === 'boisson';
-        const drinkRows = kioskDrinkAddonRowsFromItem(this.resolvedItem);
-        if (wantsDrink && drinkRows.length > 0) {
+        if (wantsDrink && this.kioskMenuDrinkChoiceAvailable()) {
           const bc = this.selections.boissonChoice;
           if (bc === null || bc === undefined || bc === '') return false;
         }
@@ -529,21 +569,145 @@ export default {
     }
   },
   methods: {
+    publishedComposerProfile() {
+      const profile = this.resolvedItem?.composer_profile || null;
+      if (!profile || profile.is_published === false) return null;
+      const steps = Array.isArray(profile.steps) ? profile.steps.filter((step) => step?.is_active !== false) : [];
+      return steps.length > 0 ? { ...profile, steps } : null;
+    },
+    composerActiveSteps() {
+      const profile = this.publishedComposerProfile();
+      if (!profile) return [];
+
+      const mapped = profile.steps
+        .map((step) => {
+          const type = this.composerStepType(step);
+          return type ? { type, label: step.label || type, component: this.componentForStepType(type), composer_step: step } : null;
+        })
+        .filter((step) => step && this.shouldShowComposerStep(step));
+
+      if (!mapped.some((step) => step.type === 'recap')) {
+        mapped.push({ type: 'recap', label: 'Récap', component: 'KioskOrderSummary' });
+      }
+
+      return mapped;
+    },
+    hasGenericComposerChoices(step) {
+      const choices = Array.isArray(step?.choices) ? step.choices : [];
+      if (choices.length === 0) return false;
+      return ['item_attribute', 'extra_group', 'addon'].includes(step?.source_type);
+    },
+    composerStepType(step) {
+      const haystack = [
+        step?.step_key,
+        step?.label,
+        step?.source_type,
+        step?.source_ref,
+        step?.addon_role,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      if (haystack.includes('recap')) return 'recap';
+      if (haystack.includes('taille') || haystack.includes('size')) return 'taille';
+      if (haystack.includes('pain') || haystack.includes('galette')) return 'pain';
+      if (haystack.includes('viande') || haystack.includes('meat')) return 'viande';
+      if (haystack.includes('sauce')) return 'sauce';
+      if (haystack.includes('crudite') || haystack.includes('crudité') || haystack.includes('garniture')) return 'garnitures';
+      if (haystack.includes('supplement') || haystack.includes('supplément')) return 'supplements';
+      if (
+        haystack.includes('menu') ||
+        haystack.includes('boisson') ||
+        haystack.includes('drink') ||
+        haystack.includes('frites') ||
+        ['drink', 'side', 'dessert', 'menu_component'].includes(step?.addon_role)
+      ) {
+        return 'menu';
+      }
+
+      return this.hasGenericComposerChoices(step) ? 'generic_choices' : null;
+    },
+    componentForStepType(type) {
+      const map = {
+        pain: 'KioskStepPain',
+        taille: 'KioskStepTaille',
+        viande: 'KioskStepViande',
+        sauce: 'KioskStepSauce',
+        garnitures: 'KioskStepGarnitures',
+        supplements: 'KioskStepSupplements',
+        menu: 'KioskStepMenu',
+        generic_choices: 'KioskStepGenericChoices',
+        recap: 'KioskOrderSummary',
+      };
+      return map[type] || 'KioskOrderSummary';
+    },
+    shouldShowComposerStep(step) {
+      if (!step || step.type === 'recap') return true;
+      const choices = Array.isArray(step.composer_step?.choices) ? step.composer_step.choices : [];
+      if (step.type === 'generic_choices') return choices.length > 0;
+      if (choices.length > 0) return true;
+      if (step.type === 'taille') return true;
+      if (step.type === 'menu' && (step.composer_step?.source_type === 'addon' || step.composer_step?.addon_role)) return true;
+      return this.shouldShowStep(step.type);
+    },
+    stepKey(step, index = 0) {
+      if (!step) return `step-${index}`;
+      const composerId = step.composer_step?.id || step.id || null;
+      if (composerId) return `composer-${composerId}-${step.type || 'step'}`;
+      return `${step.type || 'step'}-${index}`;
+    },
+    composerChoiceStepId(step) {
+      const source = step?.composer_step || step || {};
+      return String(source.id || source.step_key || source.label || 'generic');
+    },
+    composerChoiceGroup(step) {
+      const all = this.selections.composerChoices || {};
+      return all[this.composerChoiceStepId(step)] || null;
+    },
+    composerChoiceStepCount(step) {
+      const group = this.composerChoiceGroup(step);
+      const choices = group?.choices || {};
+      const allowedKeys = this.composerStepAllowedChoiceKeys(step);
+      return Object.entries(choices).reduce((sum, [key, choice]) => {
+        if (!allowedKeys.has(key)) return sum;
+        return sum + (parseInt(choice?.count || 0, 10) || 0);
+      }, 0);
+    },
+    canAdvanceComposerChoiceStep(step) {
+      const composerStep = step?.composer_step || {};
+      const min = parseInt(composerStep.min_select ?? 0, 10) || 0;
+      const max = parseInt(composerStep.max_select ?? 0, 10) || 0;
+      const count = this.composerChoiceStepCount(step);
+      if (count < min) return false;
+      if (max > 0 && count > max) return false;
+      return true;
+    },
     /**
-     * Catégories en base ont souvent wizard_template = 'simple' (défaut migration).
-     * Comme le POS : ne pas traiter « simple » comme un verrou — appliquer l’heuristique nom/catégorie.
-     * Les valeurs explicites (tacos, burger, …) restent prioritaires.
+     * Composer-first contract.
+     * - Published composer profile: template comes from the profile.
+     * - Backend resource with `composer_profile: null` + `wizard_template: simple`:
+     *   explicit no-wizard/simple product, no name heuristic.
+     * - Legacy payload with no composer_profile key: keep heuristic fallback.
      */
     effectiveWizardTemplate() {
       const item = this.resolvedItem;
       if (!item) return 'simple';
+      const composerProfile = this.publishedComposerProfile();
+      if (composerProfile?.template) return composerProfile.template;
+
       // Priority 1: item-level wizard_template (from API, derived from category)
       const raw = item.wizard_template;
+      if (raw === 'simple' && Object.prototype.hasOwnProperty.call(item, 'composer_profile')) {
+        return 'simple';
+      }
       if (raw && raw !== 'simple') return raw;
       // Priority 2: nested category object (present on ItemResource, absent on NormalItemResource)
       const catTemplate = item.category?.wizard_template;
       if (catTemplate && catTemplate !== 'simple') return catTemplate;
       // Priority 3: name/category heuristic fallback
+      kioskAnalytics?.trackHeuristicFallback?.({
+        item_id: item.id,
+        item_name: item.name,
+        reason: 'missing_published_composer_profile',
+      });
       return this.detectTemplateFromName();
     },
     detectTemplateFromName() {
@@ -682,7 +846,48 @@ export default {
     hasViandeVariations() {
       return kioskViandeCatalogForItem(this.resolvedItem).length > 0;
     },
+    hasIncludedViandeOptions() {
+      return kioskViandeCatalogForItem(this.resolvedItem).some((row) => row.source !== 'extra');
+    },
+    kioskMenuDrinkChoiceAvailable() {
+      if (kioskDrinkAddonRowsFromItem(this.resolvedItem).length > 0) return true;
+
+      const items = this.$store?.getters?.['kioskMenu/allItems']
+        || this.$store?.state?.kioskMenu?.items
+        || [];
+      if (!Array.isArray(items) || items.length === 0) return false;
+
+      const categories = this.$store?.getters?.['kioskMenu/categories']
+        || this.$store?.state?.kioskMenu?.categories
+        || [];
+      const drinkCategoryIds = new Set((Array.isArray(categories) ? categories : [])
+        .filter((cat) => {
+          const haystack = `${cat?.name || ''} ${cat?.slug || ''}`.toLowerCase();
+          return /\b(boisson|boissons|drink|drinks|soda|sodas|beverage|beverages)\b/i.test(haystack);
+        })
+        .map((cat) => String(cat.id)));
+
+      return items.some((row) => {
+        if (!row || row.id === this.resolvedItem?.id) return false;
+        if (row.is_available === false) return false;
+        const status = Number(row.status);
+        if (status === 0 || status === 2 || status === 10) return false;
+        const catId = String(row.item_category_id ?? row.category_id ?? '');
+        const name = row.name || row.item_name || '';
+        if (kioskIsGenericDrinkOptionName(name)) return false;
+        return (catId !== '' && drinkCategoryIds.has(catId))
+          || kioskIsDrinkAddonName(name);
+      });
+    },
+    includedViandeSelectionCount() {
+      const meta = Array.isArray(this.selections._viandeMeta) ? this.selections._viandeMeta : [];
+      if (meta.length === 0) return this.selections.totalViandes || 0;
+      return meta
+        .filter((row) => row && row.source !== 'extra')
+        .reduce((sum, row) => sum + (parseInt(row.count || 0, 10) || 0), 0);
+    },
     updateSelection(key, value, meta) {
+      this.serverPreviewTotal = null;
       this.selections[key] = value;
       if (key === 'pain' && meta) {
         this.selections._painMeta = meta;
@@ -727,6 +932,80 @@ export default {
       if (key === '_viandeMeta') {
         this.selections._viandeMeta = value;
       }
+      if (key === 'composerChoices') {
+        this.selections.composerChoices = value && typeof value === 'object' ? value : {};
+      }
+    },
+    allItemVariationRows(item) {
+      const raw = item?.variations || {};
+      if (Array.isArray(raw)) return raw;
+      return Object.values(raw).flatMap((rows) => {
+        if (Array.isArray(rows)) return rows;
+        if (rows && typeof rows === 'object') return Object.values(rows);
+        return [];
+      });
+    },
+    findItemVariationById(item, id) {
+      return this.allItemVariationRows(item).find((row) => String(row?.id) === String(id)) || null;
+    },
+    findItemExtraById(item, id) {
+      return (item?.extras || []).find((row) => String(row?.id) === String(id)) || null;
+    },
+    composerProjectedChoiceAvailable(choice) {
+      if (!choice) return false;
+      if (Object.prototype.hasOwnProperty.call(choice, 'is_available') && choice.is_available === false) return false;
+      const status = Number(choice.status);
+      return status !== 0 && status !== 2 && status !== 10;
+    },
+    composerStepAllowedChoiceKeys(step) {
+      const composerStep = step?.composer_step || step || {};
+      return new Set((Array.isArray(composerStep.choices) ? composerStep.choices : [])
+        .filter((choice) => this.composerProjectedChoiceAvailable(choice))
+        .map((choice) => `${choice.source_type || composerStep.source_type || 'choice'}:${choice.id}`));
+    },
+    currentComposerAllowedChoiceKeys() {
+      return new Set(this.composerActiveSteps()
+        .flatMap((step) => Array.isArray(step?.composer_step?.choices) ? step.composer_step.choices : [])
+        .filter((choice) => this.composerProjectedChoiceAvailable(choice))
+        .map((choice) => `${choice.source_type || 'choice'}:${choice.id}`));
+    },
+    sanitizeComposerChoicesForCurrentProfile(groups) {
+      const allowedKeys = this.currentComposerAllowedChoiceKeys();
+      const sanitized = {};
+      Object.entries(groups || {}).forEach(([groupKey, group]) => {
+        const nextChoices = {};
+        Object.entries(group?.choices || {}).forEach(([choiceKey, choice]) => {
+          if (allowedKeys.has(choiceKey)) {
+            nextChoices[choiceKey] = choice;
+          }
+        });
+        sanitized[groupKey] = { ...group, choices: nextChoices };
+      });
+      return sanitized;
+    },
+    attributeNameForVariation(item, variation) {
+      const attrId = variation?.item_attribute_id;
+      if (attrId == null) return '';
+      const attrs = Array.isArray(item?.itemAttributes)
+        ? item.itemAttributes
+        : Object.values(item?.itemAttributes || {});
+      return attrs.find((attr) => String(attr?.id) === String(attrId))?.name || '';
+    },
+    composerChoiceEntries() {
+      const groups = this.selections.composerChoices || {};
+      const allowedKeys = this.currentComposerAllowedChoiceKeys();
+      return Object.values(groups).flatMap((group) => {
+        const choices = group?.choices || {};
+        return Object.entries(choices)
+          .filter(([choiceKey]) => allowedKeys.has(choiceKey))
+          .map(([, choice]) => choice)
+          .map((choice) => ({
+            ...choice,
+            step_label: group.label || group.step_key || '',
+            count: parseInt(choice?.count || 0, 10) || 0,
+          }))
+          .filter((choice) => choice.count > 0);
+      });
     },
     kioskNormalizeItemAttributes(attrs) {
       if (attrs == null) return [];
@@ -812,7 +1091,14 @@ export default {
         this.currentStepIndex--;
       }
     },
-    getStepIcon(type) {
+    normalizeStepArg(stepOrType) {
+      if (stepOrType && typeof stepOrType === 'object') return stepOrType;
+      return { type: stepOrType };
+    },
+    getStepIcon(stepOrType) {
+      const step = this.normalizeStepArg(stepOrType);
+      const type = step.type;
+      if (type === 'generic_choices') return '＋';
       const map = {
         pain: '🥖',
         taille: '📏',
@@ -825,7 +1111,9 @@ export default {
       };
       return map[type] || '•';
     },
-    getStepVisualImage(type) {
+    getStepVisualImage(stepOrType) {
+      const step = this.normalizeStepArg(stepOrType);
+      const type = step.type;
       const item = this.resolvedItem;
       if (!item) return null;
 
@@ -886,7 +1174,10 @@ export default {
 
       return null;
     },
-    getStepLabel(type) {
+    getStepLabel(stepOrType) {
+      const step = this.normalizeStepArg(stepOrType);
+      const type = step.type;
+      if (type === 'generic_choices') return step.label || step.composer_step?.label || this.$t('kiosk.wizard.generic.step_fallback');
       if (type === 'recap') return this.$t('kiosk.wizard.recap_strip') || 'RÉCAP';
       const k = `kiosk.wizard.prompt.${type}`;
       const t = this.$t(k);
@@ -902,9 +1193,12 @@ export default {
         menu: 'MENU',
         recap: 'RECAP'
       };
-      return fallbacks[type] || type;
+      return fallbacks[type] || step.label || type;
     },
-    getQuestionLabel(type) {
+    getQuestionLabel(stepOrType) {
+      const step = this.normalizeStepArg(stepOrType);
+      const type = step.type;
+      if (type === 'generic_choices') return step.label || step.composer_step?.label || this.$t('kiosk.wizard.generic.step_fallback');
       const k = `kiosk.wizard.prompt.${type}`;
       const t = this.$t(k);
       // Locale-agnostic fallback if a translation key is missing
@@ -919,7 +1213,7 @@ export default {
         menu: 'CHOOSE MENU?',
         recap: 'SUMMARY'
       };
-      return fallbacks[type] || type;
+      return fallbacks[type] || step.label || type;
     },
     onAbandonClick() {
       this.showAbandonConfirm = true;
@@ -976,6 +1270,7 @@ export default {
         boissonChoice: null,
         fritesSauce: null,
         fritesSauceOrder: [],
+        composerChoices: {},
         quantity: 1,
         instruction: ''
       };
@@ -1030,8 +1325,18 @@ export default {
             item_id: cartItem.item_id,
             quantity: cartItem.quantity,
             instruction: cartItem.instruction || '',
-            item_variations: (cartItem.item_variations || []).map((v) => ({ id: v.id })),
-            item_extras: (cartItem.item_extras || []).map((e) => ({ id: e.id })),
+            item_variations: (cartItem.item_variations || []).map((v) => ({
+              id: v.id,
+              ...(v.quantity ? { quantity: v.quantity } : {}),
+            })),
+            item_extras: (cartItem.item_extras || []).map((e) => ({
+              id: e.id,
+              ...(e.quantity ? { quantity: e.quantity } : {}),
+            })),
+            item_addons: (cartItem.item_addons || []).map((a) => ({
+              id: a.id,
+              ...(a.quantity ? { quantity: a.quantity } : {}),
+            })),
           }],
         })
         .then((res) => {
@@ -1105,7 +1410,10 @@ export default {
       // Build normalized item_extras array directly in server format:
       // [{ id: extraId, name: extraName }]
       const normalizedExtras = [];
+      const normalizedAddons = [];
       let itemExtraTotal = 0;
+      let composerVariationTotal = 0;
+      let composerExtraTotal = 0;
 
       Object.keys(this.selections.garnitures).forEach(id => {
         if (this.selections.garnitures[id]) {
@@ -1115,13 +1423,22 @@ export default {
       });
 
       Object.keys(this.selections.supplements).forEach(id => {
-        if (this.selections.supplements[id]) {
-          const extra = item.extras?.find(e => e.id === parseInt(id));
+        const count = normalizeKioskSelectionCount(this.selections.supplements[id]);
+        if (count <= 0) return;
+
+        const extra = item.extras?.find(e => e.id === parseInt(id));
+        if (!extra) return;
+
+        // @pricing-allowed-block start
+        // [C0/C1] UI cart subtotal uses precomputed additive surcharge for client display/print.
+        // Backend remains SSOT: totals are recomputed/sealed server-side at submit and quote preview.
+        // signed-off: Tech Lead / Backend owner — date: 2026-04-28
+        const price = parseFloat(extra.convert_price || extra.price || 0);
+        for (let i = 0; i < count; i++) {
           normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
-          if (extra) {
-            itemExtraTotal += parseFloat(extra.convert_price || extra.price || 0);
-          }
         }
+        itemExtraTotal += price * count;
+        // @pricing-allowed-block end
       });
 
       // [AUDIT 2026-04-17 C3] Viandes payantes (source='extra') : ajoutées
@@ -1132,12 +1449,67 @@ export default {
       viandeMeta.forEach(v => {
         if (v.source !== 'extra' || typeof v.id !== 'number') return;
         const count = parseInt(v.count || 0, 10) || 0;
+        // @pricing-allowed-block start
+        // [C1] Viandes payantes: UI keeps surcharge preview from composer profile metadata.
+        // Backend is authoritative for order quote/pricing persistence.
+        // signed-off: Tech Lead / Backend owner — date: 2026-04-28
         const price = parseFloat(v.price || 0) || 0;
         for (let i = 0; i < count; i++) {
           normalizedExtras.push({ id: v.id, name: v.name || '' });
           itemExtraTotal += price;
         }
+        // @pricing-allowed-block end
       });
+
+      this.composerChoiceEntries().forEach((entry) => {
+        const count = Math.max(1, parseInt(entry.count || 1, 10) || 1);
+        if (entry.source_type === 'variation') {
+          const variation = this.findItemVariationById(item, entry.id);
+          if (!variation) return;
+          const attrName = this.attributeNameForVariation(item, variation) || entry.attribute_name || entry.item_attribute_name || '';
+          normalizedVariations.push({
+            id: parseInt(entry.id, 10),
+            variation_name: attrName,
+            name: variation.name || entry.name || '',
+            ...(count > 1 ? { quantity: count } : {}),
+          });
+          composerVariationTotal += (parseFloat(variation.convert_price || variation.price || 0) || 0) * count;
+        }
+        if (entry.source_type === 'extra') {
+          const extra = this.findItemExtraById(item, entry.id);
+          if (!extra) return;
+          normalizedExtras.push({
+            id: parseInt(entry.id, 10),
+            name: extra.name || entry.name || '',
+            ...(count > 1 ? { quantity: count } : {}),
+          });
+          composerExtraTotal += (parseFloat(extra.convert_price || extra.price || 0) || 0) * count;
+        }
+        if (entry.source_type === 'addon') {
+          normalizedAddons.push({
+            id: parseInt(entry.id, 10),
+            name: entry.name || '',
+            addon_item_id: entry.addon_item_id || null,
+            role: entry.role || null,
+            ...(count > 1 ? { quantity: count } : {}),
+          });
+        }
+      });
+
+      const boissonMeta = this.selections._boissonMeta || null;
+      if (
+        (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'boisson') &&
+        boissonMeta?.addonId
+      ) {
+        normalizedAddons.push({
+          id: parseInt(boissonMeta.addonId, 10),
+          name: boissonMeta.boissonName || '',
+          addon_item_id: boissonMeta.boissonId || null,
+          role: 'drink',
+        });
+      }
+
+      itemExtraTotal += composerExtraTotal;
 
       // Sauce extra price — read from DB variations, fallback 0.50€
       const extraSauceCount = Math.max(0, this.selections.sauceOrder.length - 1);
@@ -1151,7 +1523,7 @@ export default {
       // Menu addon price — handle all choices (full / frites / boisson)
       const menuAddonPrice = getKioskMenuAddonPrice(item, this.selections.menuChoice);
 
-      const itemVariationTotal = sauceVariationSurcharge + fritesSauceSurcharge + menuAddonPrice;
+      const itemVariationTotal = sauceVariationSurcharge + fritesSauceSurcharge + menuAddonPrice + composerVariationTotal;
 
       const basePrice  = parseFloat(item.convert_price) || 0;
       const qty        = this.selections.quantity || 1;
@@ -1170,6 +1542,7 @@ export default {
         // No further normalization needed in kioskCart.submitOrder.
         item_variations: normalizedVariations,
         item_extras: normalizedExtras,
+        ...(normalizedAddons.length > 0 ? { item_addons: normalizedAddons } : {}),
         item_variation_total: parseFloat(itemVariationTotal.toFixed(2)),
         item_extra_total: parseFloat(itemExtraTotal.toFixed(2)),
         // [KIOSK-17] Pre-computed line total so KioskCartComponent and KioskConfirmationComponent
@@ -1250,6 +1623,16 @@ export default {
         parts.push(ti('frites_sauce', { list: labels.join(', ') }));
       }
 
+      const composerGroups = {};
+      this.composerChoiceEntries().forEach((entry) => {
+        const label = entry.step_label || this.$t('kiosk.wizard.generic.step_fallback');
+        if (!composerGroups[label]) composerGroups[label] = [];
+        composerGroups[label].push(`${entry.name || entry.id}${entry.count > 1 ? ` x${entry.count}` : ''}`);
+      });
+      Object.entries(composerGroups).forEach(([label, values]) => {
+        parts.push(`${label}: ${values.join(', ')}`);
+      });
+
       const joined = parts.join('. ');
       if (!joined) return null;
       return sanitizeKioskCustomerFacingText(joined);
@@ -1285,6 +1668,7 @@ export default {
       if (!item || Number(snap.item_id) !== Number(item.id)) return;
       if (snap._wizardSelections && typeof snap._wizardSelections === 'object') {
         this.selections = JSON.parse(JSON.stringify(snap._wizardSelections));
+        this.selections.composerChoices = this.sanitizeComposerChoicesForCurrentProfile(this.selections.composerChoices);
       } else {
         if (typeof snap.quantity === 'number') this.selections.quantity = snap.quantity;
         if (typeof snap.instruction === 'string') this.selections.instruction = snap.instruction;
@@ -1397,7 +1781,10 @@ export default {
     // nécessaire car selections.viandes/sauces/supplements sont des objets.
     selections: {
       deep: true,
-      handler() { this.refreshServerPreviewTotal(); },
+      handler() {
+        this.serverPreviewTotal = null;
+        this.refreshServerPreviewTotal();
+      },
     },
     // Changement d'item (edit mode, fetch par id) → reset du total serveur
     // pour éviter d'afficher un ancien total pendant que la nouvelle requête
@@ -1439,11 +1826,31 @@ export default {
 
 <style scoped>
 .kiosk-wizard {
+  --kiosk-bg: #FFFBF5;
+  --kiosk-bg-2: #FFFFFF;
+  --kiosk-bg-3: #FFF0F2;
+  --kiosk-surface: #FFFFFF;
+  --kiosk-surface-alt: #F7F3EC;
+  --kiosk-surface-strong: #FFFFFF;
+  --kiosk-border: #EEE6D9;
+  --kiosk-border-strong: #D9C9B8;
+  --kiosk-text: #1A1A1A;
+  --kiosk-text-2: #3F3435;
+  --kiosk-text-muted: #5A5A5A;
+  --kiosk-text-mute: #7D7374;
+  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);
+  --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);
+  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);
+  --kiosk-focus-ring: #2563EB;
+
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 252, 247, 1) 48%, rgba(255, 248, 241, 1) 100%);
+  color: var(--kiosk-text, #1a1a1a);
   overflow: hidden;
 }
 
@@ -1455,15 +1862,16 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  color: #777;
+  background: var(--kiosk-page-bg, var(--kiosk-bg, #070304));
+  color: var(--kiosk-text-muted, #777);
   font-size: 1.05rem;
 }
 
 .kiosk-wizard-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #e8001c;
+  border: 4px solid var(--kiosk-border, #e0e0e0);
+  border-top-color: var(--kiosk-primary, #e8001c);
   border-radius: 50%;
   animation: kiosk-spin 0.9s linear infinite;
 }
@@ -1475,11 +1883,24 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 84px;
-  padding: 16px 56px 12px;
-  background: #fff;
-  border-bottom: 1px solid #ececec;
+  min-height: 76px;
+  padding: 18px 76px 10px;
+  background: var(--kiosk-surface, #fff);
+  border-bottom: 1px solid rgba(238, 230, 217, 0.92);
+  box-shadow: 0 10px 28px rgba(20, 20, 20, 0.05);
   flex-shrink: 0;
+}
+
+.kiosk-wizard-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 28px;
+  right: 28px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--kiosk-primary, #e8001c);
+  opacity: 0.9;
 }
 
 .kiosk-item-info {
@@ -1490,6 +1911,15 @@ export default {
   gap: 6px;
 }
 
+.kiosk-item-info::before {
+  content: 'Vous composez';
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kiosk-text-muted, #8a807a);
+}
+
 /* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */
 .kiosk-wizard-header-allergens {
   margin-top: 2px;
@@ -1497,13 +1927,13 @@ export default {
 
 .kiosk-item-name {
   margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #222;
+  font-size: clamp(22px, 2.35vw, 32px);
+  font-weight: 900;
+  color: var(--kiosk-text, #1a1a1a);
   text-transform: uppercase;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   max-width: 780px;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 .kiosk-wizard-sr-only {
@@ -1523,12 +1953,12 @@ export default {
   inset-inline-end: 18px;
   top: 50%;
   transform: translateY(-50%);
-  min-width: 48px;
-  min-height: 48px;
-  border: 1.5px solid #dadada;
+  min-width: 52px;
+  min-height: 52px;
+  border: 2px solid var(--kiosk-border, #eee6d9);
   border-radius: 50%;
   background: #fff;
-  color: #666;
+  color: var(--kiosk-text-muted, #5a5a5a);
   font-size: 26px;
   line-height: 1;
   display: inline-flex;
@@ -1545,25 +1975,25 @@ export default {
 
 .kiosk-step-visuals {
   display: flex;
-  gap: 18px;
+  gap: 14px;
   justify-content: center;
   align-items: flex-start;
-  padding: 14px 18px 8px;
+  padding: 16px 20px 10px;
   overflow-x: auto;
-  background: #fff;
+  background: var(--kiosk-surface, #fff);
   scrollbar-width: none;
 }
 
 .kiosk-step-visuals::-webkit-scrollbar { display: none; }
 
 .kiosk-step-visual {
-  min-width: 92px;
+  min-width: 104px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  opacity: 0.68;
-  transition: opacity 0.18s ease;
+  opacity: 0.72;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .kiosk-step-visual.active,
@@ -1571,28 +2001,33 @@ export default {
   opacity: 1;
 }
 
+.kiosk-step-visual.active {
+  transform: translateY(-1px);
+}
+
 .kiosk-step-visual-icon {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
-  border: 2px solid #dbdbdb;
+  border: 3px solid var(--kiosk-border, #eee6d9);
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 30px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);
 }
 
 .kiosk-step-visual.active .kiosk-step-visual-icon {
-  border-color: #e8001c;
-  box-shadow: 0 0 0 4px rgba(232,0,28,0.08), 0 3px 12px rgba(232,0,28,0.08);
+  border-color: var(--kiosk-primary, #e8001c);
+  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);
 }
 
 .kiosk-step-visual.done .kiosk-step-visual-icon {
-  border-color: #e8001c;
+  border-color: var(--kiosk-primary, #e8001c);
+  opacity: 0.78;
 }
 
 .kiosk-step-visual-img {
@@ -1607,62 +2042,77 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
-  background: #f7f7f8;
+  font-size: 34px;
+  background: var(--kiosk-product-media-bg, #f7f7f8);
 }
 
 .kiosk-step-visual-index {
   position: absolute;
   inset-inline-end: -2px;
   bottom: -2px;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #fff;
-  border: 1.5px solid #d7d7d7;
-  color: #777;
-  font-size: 11px;
+  background: var(--kiosk-primary, #e8001c);
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 0;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.kiosk-step-visual-index::before {
+  content: '✓';
+  font-size: 10px;
+}
+
+.kiosk-step-visual:not(.done) .kiosk-step-visual-index {
+  display: none;
+}
+
 .kiosk-step-visual.active .kiosk-step-visual-index,
 .kiosk-step-visual.done .kiosk-step-visual-index {
-  border-color: #e8001c;
-  color: #e8001c;
+  border-color: var(--kiosk-primary, #e8001c);
+  color: #fff;
 }
 
 .kiosk-step-visual-label {
   text-align: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: #777;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--kiosk-text-muted, #8a807a);
   text-transform: uppercase;
   line-height: 1.2;
-  max-width: 88px;
+  max-width: 98px;
+  letter-spacing: 0.04em;
+}
+
+.kiosk-step-visual.active .kiosk-step-visual-label {
+  color: var(--kiosk-primary, #e8001c);
 }
 
 .kiosk-progress-bar {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
-  gap: 8px;
-  padding: 0 18px 10px;
-  background: #fff;
-  border-bottom: 1px solid #efefef;
+  gap: 14px;
+  padding: 0 22px 14px;
+  background: var(--kiosk-surface, #fff);
+  border-bottom: 1px solid rgba(238, 230, 217, 0.92);
 }
 
 .kiosk-progress-arrow {
-  min-width: 48px;
-  min-height: 48px;
-  width: 48px;
-  height: 48px;
-  border: none;
-  background: transparent;
-  color: #999;
-  font-size: 30px;
+  min-width: 46px;
+  min-height: 46px;
+  width: 46px;
+  height: 46px;
+  border: 2px solid var(--kiosk-border, #eee6d9);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--kiosk-text, #1a1a1a);
+  font-size: 28px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -1684,64 +2134,64 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 8px;
+  min-width: 0;
+  max-width: 620px;
+  justify-self: center;
+  width: 100%;
 }
 
 .kiosk-step-dot {
   display: flex;
   align-items: center;
+  flex: 1 1 0;
+  min-width: 18px;
 }
 
 .kiosk-step-dot:not(:last-child)::after {
-  content: '';
-  width: 46px;
-  height: 2px;
-  background: #e0e0e0;
+  display: none;
 }
 
 .kiosk-step-dot.done:not(:last-child)::after {
-  background: #e8001c;
+  display: none;
 }
 
 .kiosk-step-number {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid #dcdcdc;
-  color: #999;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  border: 0;
+  color: transparent;
+  background: var(--kiosk-border, #eee6d9);
+  display: block;
+  font-size: 0;
+  font-weight: 800;
 }
 
 .kiosk-step-dot.active .kiosk-step-number {
-  border-color: #e8001c;
-  color: #e8001c;
+  background: var(--kiosk-primary, #e8001c);
+  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);
 }
 
 .kiosk-step-dot.done .kiosk-step-number {
-  background: #fff3f5;
-  border-color: #e8001c;
-  color: #e8001c;
+  background: var(--kiosk-primary, #e8001c);
+  opacity: 0.85;
 }
 
 .kiosk-step-question {
-  padding: 14px 24px 2px;
+  padding: 18px 24px 4px;
   text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: clamp(20px, 2.1vw, 30px);
+  font-weight: 900;
+  color: var(--kiosk-text, #1a1a1a);
   text-transform: uppercase;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .kiosk-step-content {
   flex: 1;
   overflow-y: auto;
-  background: #fff;
+  background: transparent;
   scrollbar-width: none;
   padding: 0 8px 8px;
 }
@@ -1754,8 +2204,9 @@ export default {
   align-items: center;
   gap: 12px;
   min-height: 84px;
-  border-top: 1px solid #e7e7e7;
-  background: #f7f7f7;
+  border-top: 1px solid var(--kiosk-border, #e7e7e7);
+  background: var(--kiosk-surface, #f7f7f7);
+  box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));
   flex-shrink: 0;
   padding: 10px 12px;
 }
@@ -1767,37 +2218,57 @@ export default {
   align-items: stretch;
 }
 
+.kiosk-nav--recap .kiosk-nav-actions {
+  grid-template-columns: 1fr 0.78fr 1.55fr;
+}
+
 .kiosk-btn-abandon,
 .kiosk-btn-back,
 .kiosk-btn-next {
-  border: 1.5px solid #e0b0b7;
-  background: #fff;
+  border: 1.5px solid var(--kiosk-border-strong, #e0b0b7);
+  background: var(--kiosk-surface-alt, #fff);
   font-size: 12px;
   font-weight: 800;
-  color: #c33345;
-  letter-spacing: 0.03em;
-  border-radius: 10px;
+  color: var(--kiosk-primary, #c33345);
+  letter-spacing: 0;
+  border-radius: var(--kiosk-btn-radius, 12px);
   min-height: 52px;
   padding: 0 14px;
 }
 
 .kiosk-btn-back {
-  color: #b54d5c;
-  border-color: #e3c2c7;
+  color: var(--kiosk-text-muted, #b54d5c);
+  border-color: var(--kiosk-border, #e3c2c7);
 }
 
 .kiosk-btn-next {
-  background: #e8001c;
-  color: #fff;
-  border-color: #e8001c;
+  background: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-text-on-red, #fff);
+  border-color: var(--kiosk-primary, #e8001c);
+  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));
+}
+
+.kiosk-btn-next--cart {
+  min-height: 58px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 18px 38px rgba(232,0,28,0.34);
+}
+
+.kiosk-btn-abandon:focus-visible,
+.kiosk-btn-back:focus-visible,
+.kiosk-btn-next:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
 }
 
 .kiosk-btn-next:disabled,
 .kiosk-btn-back:disabled {
   opacity: 1;
-  color: #aa7d84;
-  background: #f4e3e6;
-  border-color: #ecd4d8;
+  color: var(--kiosk-text-mute, #aa7d84);
+  background: var(--kiosk-surface-alt, #f4e3e6);
+  border-color: var(--kiosk-border, #ecd4d8);
+  box-shadow: none;
 }
 
 .kiosk-nav-total {
@@ -1810,10 +2281,10 @@ export default {
   white-space: nowrap;
   font-size: 15px;
   font-weight: 700;
-  color: #6a4047;
-  background: #f7e5e8;
-  border-radius: 10px;
-  border: 1px solid #efd2d7;
+  color: var(--kiosk-text, #6a4047);
+  background: var(--kiosk-primary-soft, #f7e5e8);
+  border-radius: var(--kiosk-btn-radius, 12px);
+  border: 1px solid var(--kiosk-border, #efd2d7);
 }
 
 :deep(.kiosk-step-title) {
@@ -1822,7 +2293,9 @@ export default {
 
 .step-slide-enter-active,
 .step-slide-leave-active {
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .step-slide-enter-from {
@@ -1872,7 +2345,7 @@ export default {
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--kiosk-overlay-modal, rgba(0, 0, 0, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1880,27 +2353,27 @@ export default {
 }
 
 .kiosk-wizard-abandon-modal {
-  background: #fff;
+  background: var(--kiosk-surface, #fff);
   border-radius: 20px;
   padding: 1.75rem 1.5rem;
   max-width: 400px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-  border: 1px solid #ececec;
+  box-shadow: var(--kiosk-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--kiosk-border, #ececec);
 }
 
 .kiosk-wizard-abandon-title {
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--kiosk-text, #1a1a1a);
 }
 
 .kiosk-wizard-abandon-sub {
   margin: 0 0 1.35rem;
   font-size: 0.95rem;
-  color: #777;
+  color: var(--kiosk-text-muted, #777);
   line-height: 1.4;
 }
 
@@ -1915,8 +2388,8 @@ export default {
   min-height: 50px;
   border: none;
   border-radius: 12px;
-  background: #e8001c;
-  color: #fff;
+  background: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-text-on-red, #fff);
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
@@ -1925,10 +2398,10 @@ export default {
 .kiosk-wizard-abandon-no {
   width: 100%;
   min-height: 50px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--kiosk-border, #e0e0e0);
   border-radius: 12px;
-  background: #f7f7f8;
-  color: #444;
+  background: var(--kiosk-surface-alt, #f7f7f8);
+  color: var(--kiosk-text, #444);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;

@@ -246,6 +246,31 @@ export const kioskMenu = {
             const branchParam = resolvedBranchId ? `&branch_id=${resolvedBranchId}` : '';
 
             try {
+                try {
+                    const menuRes = await axios.get('frontend/menu');
+                    const data = menuRes?.data?.data || {};
+                    const categories = Array.isArray(data.categories) ? data.categories : [];
+                    const items = Array.isArray(data.items) ? data.items : [];
+
+                    commit('SET_CATEGORIES', categories);
+                    commit('SET_ITEMS', items);
+                    commit('SET_PROMOS', data.promos || []);
+                    commit('SET_BRANCH_FLAGS', data.branch || {});
+
+                    saveSnapshot(state.categories, state.items).catch(() => {});
+
+                    if (categories.length > 0 && !state.selectedCategoryId) {
+                        const first = categories.find(c => c.id && c.id !== 0) || categories[0];
+                        if (first) commit('SET_SELECTED_CATEGORY', first.id);
+                    }
+
+                    return;
+                } catch (_) {
+                    // Legacy fallback for unauthenticated web/table contexts. Kiosk machines
+                    // should normally use /frontend/menu because it resolves branch_id from
+                    // KioskMachine and includes item_branch_availability.
+                }
+
                 const [catRes, itemRes] = await Promise.all([
                     axios.get(
                         `frontend/item-category?paginate=0&status=5&surface=kiosk&order_column=sort&order_type=asc${branchParam}`

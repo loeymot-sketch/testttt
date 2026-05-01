@@ -67,6 +67,15 @@ export function getKioskMenuAddonPrice(item, menuChoice) {
   return Math.round(result * 100) / 100;
 }
 
+export function normalizeKioskSelectionCount(value) {
+  if (value === true) return 1;
+
+  const count = parseInt(value, 10);
+  if (!Number.isFinite(count) || count <= 0) return 0;
+
+  return count;
+}
+
 export function calculateKioskRunningTotal(item, selections = {}) {
   if (!item) {
     return 0;
@@ -87,7 +96,8 @@ export function calculateKioskRunningTotal(item, selections = {}) {
 
   if (Array.isArray(item.extras)) {
     item.extras.forEach((extra) => {
-      if (!selections.supplements?.[extra.id]) return;
+      const count = normalizeKioskSelectionCount(selections.supplements?.[extra.id]);
+      if (count <= 0) return;
 
       const price = parseFloat(extra.convert_price || extra.price || 0);
       const groupLabel = (extra.group_label || '').toLowerCase();
@@ -95,7 +105,7 @@ export function calculateKioskRunningTotal(item, selections = {}) {
       const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
 
       if (price > 0 && !isSauce) {
-        total += price;
+        total += price * count;
       }
     });
   }

@@ -14,7 +14,8 @@ Claude **does** write **governance artifacts**: plan files under `plans/`, gate 
 ## PLAN Phase — required outputs before any execution begins
 - Read the task file in full
 - Declare `SUBSYSTEMS_TOUCHED` and `SUBSYSTEMS_OFF_LIMITS`
-- Declare `PRIMARY_MODEL` per `.cursor/routing.md`
+- Declare `PRIMARY_EXECUTION_MODEL: gpt-5.5-pro` and `REASONING_EFFORT: xhigh` per `.cursor/routing.md`
+- Initialize the `PLAN_REVIEW` block; execution is blocked until GPT returns `PLAN_REVIEW_VERDICT: PASS`
 - List every domain invariant at risk for this cycle
 - List every gate condition that may be triggered
 - Write the plan file to `plans/` before handing off to the implementation model
@@ -25,11 +26,13 @@ Claude **does** write **governance artifacts**: plan files under `plans/`, gate 
 - Confirm plan was followed step by step
 - Confirm every declared invariant was respected
 - Check for undeclared scope expansion
+- Confirm `PLAN_REVIEW_VERDICT: PASS` happened before EXECUTE
 - Check `SCOPE_PRESSURE` and `ESCALATION` sections of the plan file
 - If `OrderService` or `FrontendOrderService` was touched: confirm `SYMMETRY_NOTE` is present and resolved
 - If dispatch logic was touched: confirm post-commit constraint was respected
 - If any data query was touched: confirm `branch_id` isolation was maintained
 - If drift, violation, or unresolved escalation is found: open a gate — do not self-resolve
+- After Claude audit `PASS`, require the GPT final audit step before close; Claude `PASS` alone is not enough to close
 
 ## GATE Phase — triggered by audit finding or mid-cycle escalation
 - Write gate brief to `docs/gates/GATE_[TASK_ID]_[DATE].md`

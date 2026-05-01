@@ -32,7 +32,43 @@
     h5,
     h6 { @apply text-heading; font-style: initial; }
 
-    body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-white }
+body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-white }
+}
+
+.Vue-Toastification__toast {
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(17, 24, 39, 0.22);
+}
+
+.Vue-Toastification__toast-body {
+    color: #111827;
+    font-weight: 600;
+}
+
+.Vue-Toastification__toast--default,
+.Vue-Toastification__toast--info {
+    background: #E5EEF9;
+    color: #111827;
+}
+
+.Vue-Toastification__toast--success {
+    background: #166534;
+    color: #FFFFFF;
+}
+
+.Vue-Toastification__toast--warning {
+    background: #F59E0B;
+    color: #1F2937;
+}
+
+.Vue-Toastification__toast--error {
+    background: #B91C1C;
+    color: #FFFFFF;
+}
+
+.Vue-Toastification__toast--success .Vue-Toastification__toast-body,
+.Vue-Toastification__toast--error .Vue-Toastification__toast-body {
+    color: #FFFFFF;
 }
 
 @layer components {
@@ -108,7 +144,7 @@
     .db-sidebar.active { @apply ltr:translate-x-0 rtl:-translate-x-0 ltr:lg:-translate-x-[100%] rtl:lg:translate-x-full shadow-sidebar lg:shadow-none }
     .db-sidebar-header { @apply flex lg:hidden items-center justify-between mb-8 }
     .db-sidebar-nav { @apply mb-6 last:mb-0 }
-    .db-sidebar-nav-title { @apply uppercase text-xs mb-3 font-medium tracking-[2px] text-gray-400 }
+.db-sidebar-nav-title { @apply uppercase text-xs mb-3 font-medium tracking-[2px] text-[#111827] }
     .db-sidebar-nav-item.active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-item.router-link-active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-menu.router-link-active { @apply text-primary bg-primary/5 }

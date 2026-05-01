@@ -1,0 +1,39 @@
+{
+  "task_id": "GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27",
+  "phase": "EXECUTE",
+  "mode": "quote_subsystem_persistence_and_hmac_hardening",
+  "execute_delegation": "codex-extension",
+  "preconditions": [
+    "A.1 GOV-PERSIST-SENTINELS-2026-04-27 CLOSED"
+  ],
+  "human_authorization": {
+    "source": "GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26",
+    "summary": "Fail closed if APP_KEY is empty, with automated validation."
+  },
+  "files_to_modify_allowlist": [
+    "app/Services/Order/OrderQuoteService.php",
+    "app/Models/OrderQuote.php",
+    "database/migrations/2026_04_25_190000_create_order_quotes_table.php",
+    "tests/Feature/OrderQuoteHmacKeyRequiredTest.php"
+  ],
+  "required_change": "Remove known-string HMAC fallback; throw LogicException when APP_KEY/config app.key is empty.",
+  "hard_prohibitions": [
+    "No resources/** edits",
+    "No non-quote order flow edits",
+    "No D-M13 changes",
+    "No payment gateway cleanup",
+    "No git add -A"
+  ],
+  "validation_commands": [
+    "php -l app/Services/Order/OrderQuoteService.php",
+    "php artisan test --filter='Quote|KioskQuote|OrderQuote|Pos\\\\QuoteBinding'",
+    "php artisan test"
+  ],
+  "expected_result": "Quote tests pass and full PHPUnit has exactly one known D-M13 failure.",
+  "invariants_considered": [
+    "pricing_ssot",
+    "quote_hmac_pinning",
+    "branch_isolation",
+    "no_frontend_price_logic"
+  ]
+}

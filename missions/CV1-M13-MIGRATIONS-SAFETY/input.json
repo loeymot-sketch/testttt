@@ -1,0 +1,39 @@
+{
+  "task_id": "CV1-M13-MIGRATIONS-SAFETY",
+  "mission_id": "M-13",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Créer la sécurité migrations Caisse V1: dry-run, rehearsal staging, backup, Up/Down testés, runbook par migration.",
+  "instruction": "Applique uniquement M-13. Gate schema Option A approuvée. Mission safety/outillage: ne crée pas de migration produit nouvelle hors runbook/test de sécurité. JSON unique.",
+  "allowlist": [
+    "docs/runbooks/",
+    "scripts/db/dry-run.sh",
+    "scripts/db/rehearsal.sh",
+    "scripts/db/backup.sh",
+    "tests/Feature/Migrations/MigrationDryRunTest.php",
+    "tests/Feature/Migrations/MigrationRollbackTest.php"
+  ],
+  "off_limits": ["app/Services/**", "resources/**", "routes/**", "database/migrations/**", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25", "status": "Approved", "decision": "Option A — All migrations with rehearsal + backup", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["frozen_zones", "branch_id"],
+  "gate_conditions": ["schema approved Option A"],
+  "mandatory_tests": [
+    "php artisan test --filter=MigrationDryRunTest",
+    "php artisan test --filter=MigrationRollbackTest",
+    "bash scripts/db/dry-run.sh --help",
+    "bash scripts/db/backup.sh --help"
+  ],
+  "self_audit_checklist": [
+    "scripts fail closed and are non-destructive by default",
+    "runbooks document backup, rehearsal, up/down and rollback",
+    "no product migration added by this safety mission"
+  ],
+  "rollback": {"feature_flag": null, "max_window_days": 0, "predicates": ["dry-run unsafe", "rollback rehearsal missing"]},
+  "graphiti_query": "Caisse V1 migrations safety dry-run rehearsal backup rollback",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_migrations_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

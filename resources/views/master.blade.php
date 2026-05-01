@@ -84,7 +84,11 @@
     @endif
 
     <div id="app">
-        <default-component />
+        @if (request()->is('kiosk*'))
+            <router-view />
+        @else
+            <default-component />
+        @endif
     </div>
 
     @if (!blank($analytics))
@@ -118,6 +122,7 @@
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
+            kioskConfirmationAutoReturnSeconds: @json((int) config('kiosk.confirmation_auto_return_seconds', 30)),
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),

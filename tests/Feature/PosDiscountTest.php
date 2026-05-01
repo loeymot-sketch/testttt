@@ -16,6 +16,7 @@ use App\Enums\DiscountType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 /**
  * Tests discount application in POS orders (Sprint 15 - BUG-3 FIX)
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class PosDiscountTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $posOperator;
@@ -123,6 +125,8 @@ class PosDiscountTest extends TestCase
             ]),
         ];
 
+        $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
+
         $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 
         $response->assertStatus(201);
@@ -136,15 +140,14 @@ class PosDiscountTest extends TestCase
     }
 
     /**
-     * DISCOUNT-02: Manual discount > subtotal is ignored (rejected)
+     * DISCOUNT-02: Manual discount > subtotal is rejected explicitly
      */
-    public function test_manual_discount_is_ignored_when_greater_than_subtotal(): void
+    public function test_manual_discount_is_rejected_when_greater_than_subtotal(): void
     {
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
         $invalidDiscount = 15.00; // More than subtotal - should be rejected
-        $expectedDiscount = 0; // Should be ignored
         $expectedTotal = $subtotal + ($subtotal * 0.10); // +tax, no discount
 
         $orderData = [
@@ -173,16 +176,12 @@ class PosDiscountTest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $response = $this
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos/quote', $orderData);
 
-        $response->assertStatus(201);
-
-        // Verify order was created with discount = 0 (invalid discount rejected)
-        $this->assertDatabaseHas('orders', [
-            'user_id' => $this->customer->id,
-            'subtotal' => $subtotal,
-            'discount' => $expectedDiscount, // BUG-3 FIX: Invalid discount should be 0
-        ]);
+        $response->assertStatus(422);
+        $this->assertEquals(0, \App\Models\Order::count());
     }
 
     /**
@@ -234,6 +233,8 @@ class PosDiscountTest extends TestCase
                 ]
             ]),
         ];
+
+        $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
 

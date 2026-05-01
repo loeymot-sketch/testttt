@@ -19,10 +19,10 @@
                 <h4 class="text-[11px] font-rubik font-medium text-primary">
                     {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
                 </h4>
-                <button type="button" tabindex="-1" aria-hidden="true" @click.stop.prevent="onProductTileClick(item)" data-modal="#item-variation-modal"
+                <span aria-hidden="true"
                     class="flex items-center justify-center w-6 h-6 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition">
-                    <i class="lab lab-bag-2 font-fill-primary lab-font-size-10 group-hover:text-white" style="font-size:11px;"></i>
-                </button>
+                    <i class="lab lab-bag-2 font-fill-primary lab-font-size-10" style="font-size:11px;"></i>
+                </span>
             </div>
         </div>
     </div>
@@ -105,10 +105,14 @@
                             <div class="space-y-2">
                                 <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
                                     <label v-if="!isMultiAttribute(itemAttribute)"
+                                        :title="modifierUnavailableReason(variation)"
+                                        :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
                                         :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFEDF4]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
-                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition">
+                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
+                                        :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <div class="custom-radio sm flex-shrink-0">
                                             <input :checked="getVariationQuantity(variation.id) > 0"
+                                                :disabled="isModifierUnavailable(variation)"
                                                 @change="selectLegacyVariation(itemAttribute, variation)"
                                                 type="radio"
                                                 :id="variation.item_attribute_id + '-' + variation.name"
@@ -122,10 +126,15 @@
                                             <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
                                                 +{{ variation.currency_price }}
                                             </h4>
+                                            <span v-if="isModifierUnavailable(variation)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
                                         </div>
                                     </label>
 
-                                    <div v-else class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3">
+                                    <div v-else class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
+                                        :title="modifierUnavailableReason(variation)"
+                                        :style="isModifierUnavailable(variation) ? 'opacity:.5;' : ''">
                                         <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
                                         <div class="flex-1 min-w-0">
                                             <h3 class="block capitalize text-xs text-heading">
@@ -134,6 +143,9 @@
                                             <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
                                                 +{{ variation.currency_price }}
                                             </h4>
+                                            <span v-if="isModifierUnavailable(variation)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
                                         </div>
                                         <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
                                             <button @click.prevent="decrementVariation(itemAttribute, variation)"
@@ -143,7 +155,7 @@
                                                 {{ getVariationQuantity(variation.id) }}
                                             </span>
                                             <button @click.prevent="incrementVariation(itemAttribute, variation)"
-                                                :disabled="isAttributeAtMax(itemAttribute)"
+                                                :disabled="isAttributeAtMax(itemAttribute) || isModifierUnavailable(variation)"
                                                 class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus disabled:opacity-40 disabled:cursor-not-allowed"></button>
                                         </div>
                                     </div>
@@ -156,12 +168,17 @@
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.extras') }}</h3>
                     <div class="space-y-2">
                         <div v-for="extra in item.extras" :key="extra.id"
-                            class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3">
+                            class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
+                            :title="modifierUnavailableReason(extra)"
+                            :style="isModifierUnavailable(extra) ? 'opacity:.5;' : ''">
                             <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
                             <div class="flex-1 min-w-0">
                                 <h3 class="block capitalize mb-1 text-xs text-heading">
                                     {{ textShortener(extra.name, 18) }}</h3>
                                 <h4 class="block text-xs font-medium text-heading">+{{ extra.currency_price }}</h4>
+                                <span v-if="isModifierUnavailable(extra)" class="block text-[10px] font-semibold text-danger">
+                                    {{ $t('pos.item_86_d') }}
+                                </span>
                             </div>
                             <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-white">
                                 <button @click.prevent="decrementExtra(extra)"
@@ -171,6 +188,7 @@
                                     {{ getExtraQuantity(extra.id) }}
                                 </span>
                                 <button @click.prevent="incrementExtra(extra)"
+                                    :disabled="isModifierUnavailable(extra)"
                                     class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                             </div>
                         </div>
@@ -187,7 +205,9 @@
                                         :data-addon-id="addon.id"
                                         :data-addon-name="addon.addon_item_name"
                                         :data-addon-active="addons[addon.id] ? '1' : '0'"
-                                        class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]">
+                                        :title="modifierUnavailableReason(addon)"
+                                        class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]"
+                                        :style="isAddonUnavailable(addon) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <img class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
                                             :src="addon.thumb" alt="thumbnail">
                                         <div class="ltr:rounded-r-lg rtl:rounded-l-lg w-full py-1 px-2">
@@ -207,6 +227,9 @@
                                                 class="block text-xs font-semibold text-heading ltr:text-left rtl:text-right">
                                                 {{ addon.total_currency_price }}
                                             </span>
+                                            <span v-if="isAddonUnavailable(addon)" class="block text-[10px] font-semibold text-danger">
+                                                {{ $t('pos.item_86_d') }}
+                                            </span>
                                         </div>
                                     </div>
                                     <div
@@ -222,9 +245,11 @@
                                                 class="fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
                                             <input v-on:keypress="onlyNumber($event)"
                                                 v-on:keyup="addonQuantityUp(addon.id)" v-model="addonQuantity[addon.id]"
+                                                :disabled="isAddonUnavailable(addon)"
                                                 type="number"
                                                 class="text-center w-5 text-xs font-semibold text-heading indec-value">
                                             <button @click.prevent="addonQuantityIncrement(addon.id)"
+                                                :disabled="isAddonUnavailable(addon)"
                                                 class="fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
                                         </div>
                                     </div>
@@ -388,6 +413,60 @@ export default {
                 ? this.item.variations[attribute.id]
                 : [];
         },
+        findVariationById: function (variationId) {
+            if (!this.item || !this.item.variations) return null;
+            const normalizedVariationId = normalizeId(variationId);
+            if (normalizedVariationId === null) return null;
+            return Object.values(this.item.variations)
+                .flatMap((rows) => Array.isArray(rows) ? rows : [])
+                .find((variation) => normalizeId(variation && variation.id) === normalizedVariationId) || null;
+        },
+        findExtraById: function (extraId) {
+            if (!this.item || !Array.isArray(this.item.extras)) return null;
+            const normalizedExtraId = normalizeId(extraId);
+            if (normalizedExtraId === null) return null;
+            return this.item.extras.find((extra) => normalizeId(extra && extra.id) === normalizedExtraId) || null;
+        },
+        isModifierUnavailable: function (modifier) {
+            if (!modifier) return false;
+            const availability = modifier.is_available;
+            if (availability === false || availability === 0 || availability === '0') {
+                return true;
+            }
+            const status = Number(modifier.status);
+            return status === 0 || status === 2 || status === 10;
+        },
+        isAddonUnavailable: function (addon) {
+            return this.isModifierUnavailable(addon);
+        },
+        getAddonById: function (id) {
+            if (!this.item || !Array.isArray(this.item.addons)) return null;
+            const normalizedId = normalizeId(id);
+            if (normalizedId === null) return null;
+            return this.item.addons.find((addon) => normalizeId(addon && addon.id) === normalizedId) || null;
+        },
+        modifierUnavailableReason: function (modifier) {
+            return modifier && modifier.unavailable_reason ? modifier.unavailable_reason : '';
+        },
+        pruneUnavailableRestoredSelections: function () {
+            this.temp.item_variations = normalizeVariationEntries(this.temp.item_variations)
+                .filter((entry) => {
+                    const variation = this.findVariationById(entry.id);
+                    return variation && !this.isModifierUnavailable(variation);
+                });
+            this.temp.item_extras = normalizeExtraEntries(this.temp.item_extras)
+                .filter((entry) => {
+                    const extra = this.findExtraById(entry.id);
+                    return extra && !this.isModifierUnavailable(extra);
+                });
+            Object.keys(this.addons || {}).forEach((addonId) => {
+                const addon = this.getAddonById(addonId);
+                if (!addon || this.isAddonUnavailable(addon)) {
+                    delete this.addons[addonId];
+                    this.addonQuantity[addonId] = 1;
+                }
+            });
+        },
         getVariationEntriesByAttribute: function (attributeId) {
             const normalizedAttributeId = normalizeId(attributeId);
             return normalizeVariationEntries(this.temp.item_variations)
@@ -424,6 +503,7 @@ export default {
             const variationId = normalizeId(variation && variation.id);
 
             if (attributeId === null || variationId === null) return;
+            if (this.isModifierUnavailable(variation) && quantity > this.getVariationQuantity(variationId)) return;
 
             const config = this.getAttributeConfig(attribute);
             const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
@@ -471,6 +551,7 @@ export default {
             const extraId = normalizeId(extra && extra.id);
 
             if (extraId === null) return;
+            if (this.isModifierUnavailable(extra) && quantity > this.getExtraQuantity(extraId)) return;
 
             const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
             const next = normalizeExtraEntries(this.temp.item_extras)
@@ -500,8 +581,10 @@ export default {
                 const config = this.getAttributeConfig(attribute);
                 const variations = this.getAttributeVariations(attribute);
 
-                if (!config.isMulti && variations.length > 0) {
-                    this.setVariationQuantity(attribute, variations[0], 1);
+                const firstAvailable = variations.find((variation) => !this.isModifierUnavailable(variation));
+
+                if (!config.isMulti && firstAvailable) {
+                    this.setVariationQuantity(attribute, firstAvailable, 1);
                 }
             });
         },
@@ -653,6 +736,7 @@ export default {
                             }
                         });
                     }
+                    this.pruneUnavailableRestoredSelections();
                     this.totalPriceSetup();
                     // Conserver la base déjà enregistrée en panier (pont wizard / ajustements), pas le prix catalogue brut
                     this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
@@ -794,6 +878,11 @@ export default {
         },
         addonQuantityUp: function (id) {
             this.bumpPricingToCatalog();
+            const addon = this.getAddonById(id);
+            if (this.isAddonUnavailable(addon) && typeof this.addons[id] === "undefined") {
+                this.addonQuantity[id] = 1;
+                return;
+            }
             if (typeof this.addonQuantity[id] !== "undefined") {
                 if (this.addonQuantity[id] === 0) {
                     this.addonQuantity[id] = 1;
@@ -807,6 +896,10 @@ export default {
         },
         addonQuantityIncrement: function (id) {
             this.bumpPricingToCatalog();
+            const addon = this.getAddonById(id);
+            if (this.isAddonUnavailable(addon)) {
+                return;
+            }
             if (typeof this.addonQuantity[id] !== "undefined") {
                 this.addonQuantity[id]++;
                 if (this.addonQuantity[id] <= 0) {
@@ -833,6 +926,9 @@ export default {
         },
         changeAddon: function (addon) {
             this.bumpPricingToCatalog();
+            if (this.isAddonUnavailable(addon) && typeof this.addons[addon.id] === "undefined") {
+                return;
+            }
             if (typeof this.addons[addon.id] === "undefined") {
                 this.addons[addon.id] = {
                     name: addon.addon_item_name,
@@ -1109,10 +1205,14 @@ export default {
                 });
             // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"
             } else if (this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
-                _.forEach(this.addons, (addon) => {
+                _.forEach(this.addons, (addon, parentKey) => {
+                    const catalogAddon = this.getAddonById(parentKey);
+                    if (!catalogAddon || this.isAddonUnavailable(catalogAddon)) return;
                     addonTotal += (parseFloat(addon.total_price) || 0) * (parseInt(addon.quantity) || 1);
                 });
                 _.forEach(this.addons, (addon, parentKey) => {
+                    const catalogAddon = this.getAddonById(parentKey);
+                    if (!catalogAddon || this.isAddonUnavailable(catalogAddon)) return;
                     pos_line_addons.push({
                         parent_addon_id: parentKey,
                         name: addon.name,
@@ -1148,8 +1248,16 @@ export default {
                 discount: this.temp.discount,
                 currency_price: this.temp.currency_price,
                 convert_price: adjustedBaseConvertPrice,
-                item_variations: normalizeVariationEntries(this.temp.item_variations),
-                item_extras: normalizeExtraEntries(this.temp.item_extras),
+                item_variations: normalizeVariationEntries(this.temp.item_variations)
+                    .filter((entry) => {
+                        const variation = this.findVariationById(entry.id);
+                        return variation && !this.isModifierUnavailable(variation);
+                    }),
+                item_extras: normalizeExtraEntries(this.temp.item_extras)
+                    .filter((entry) => {
+                        const extra = this.findExtraById(entry.id);
+                        return extra && !this.isModifierUnavailable(extra);
+                    }),
                 item_variation_total: this.temp.item_variation_total,
                 item_extra_total: this.temp.item_extra_total,
                 instruction: this.temp.instruction,

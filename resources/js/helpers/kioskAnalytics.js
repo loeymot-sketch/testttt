@@ -24,9 +24,34 @@
  *    explicite. Jamais lu depuis une URL.
  */
 
+import axios from 'axios';
+
 const ENDPOINT = '/api/frontend/kiosk-event';
+const KIOSK_EVENT_ENDPOINT = '/frontend/kiosk/event';
 const ANALYTICS_TYPE = 'analytics';
 const MAX_QUEUE = 200;
+
+export const KIOSK_ERROR_CODES = Object.freeze({
+    NETWORK: 'network',
+    MENU_UNAVAILABLE: 'menu_unavailable',
+    PRODUCT_REMOVED: 'product_removed',
+    PAYMENT_REFUSED: 'payment_refused',
+});
+
+const KIOSK_ERROR_ALIASES = new Map([
+    ['network', KIOSK_ERROR_CODES.NETWORK],
+    ['network_lost', KIOSK_ERROR_CODES.NETWORK],
+    ['offline', KIOSK_ERROR_CODES.NETWORK],
+    ['menu', KIOSK_ERROR_CODES.MENU_UNAVAILABLE],
+    ['menu-unavailable', KIOSK_ERROR_CODES.MENU_UNAVAILABLE],
+    ['menu_unavailable', KIOSK_ERROR_CODES.MENU_UNAVAILABLE],
+    ['product', KIOSK_ERROR_CODES.PRODUCT_REMOVED],
+    ['product-removed', KIOSK_ERROR_CODES.PRODUCT_REMOVED],
+    ['product_removed', KIOSK_ERROR_CODES.PRODUCT_REMOVED],
+    ['payment', KIOSK_ERROR_CODES.PAYMENT_REFUSED],
+    ['payment-refused', KIOSK_ERROR_CODES.PAYMENT_REFUSED],
+    ['payment_refused', KIOSK_ERROR_CODES.PAYMENT_REFUSED],
+]);
 
 const FORBIDDEN_KEYS = new Set([
     'email', 'phone', 'telephone', 'first_name', 'last_name', 'name',
@@ -73,6 +98,7 @@ const ALLOWED_EVENTS = new Set([
     'offline.replayed',
     'offline.abandoned',
     'offline.recovered',
+    'wizard.composer_heuristic_fallback',
 ]);
 
 /* ------------------------------------------------------------------ */
@@ -157,6 +183,15 @@ function safePayload(payload) {
     if (containsForbidden(payload)) return null;
     // Copie shallow pour éviter les mutations externes.
     return { ...payload };
+}
+
+function compactPayload(payload) {
+    const cleaned = {};
+    Object.entries(payload || {}).forEach(([key, value]) => {
+        if (key === 'router' || key === '$router') return;
+        if (value !== undefined) cleaned[key] = value;
+    });
+    return cleaned;
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,6 +279,55 @@ export function track(eventName, payload = {}) {
     return sendNow(envelope);
 }
 
+export function normalizeKioskErrorCode(code) {
+    const key = String(code || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[.\s]+/g, '_');
+
+    return KIOSK_ERROR_ALIASES.get(key)
+        || KIOSK_ERROR_ALIASES.get(key.replace(/_/g, '-'))
+        || KIOSK_ERROR_CODES.NETWORK;
+}
+
+export function trackKioskErrorEvent(type, code, payload = {}) {
+    const subtype = normalizeKioskErrorCode(code);
+    const cleaned = safePayload(compactPayload(payload));
+    if (cleaned === null) return false;
+
+    const client = (typeof window !== 'undefined' && window.axios?.post)
+        ? window.axios
+        : axios;
+
+    client.post(KIOSK_EVENT_ENDPOINT, {
+        type,
+        ...cleaned,
+        subtype,
+    }).catch(() => {});
+
+    return true;
+}
+
+export function trackHeuristicFallback(payload = {}) {
+    return track('wizard.composer_heuristic_fallback', compactPayload(payload));
+}
+
+export function trackLegacyRouteHit(payload = {}) {
+    if (!state.consent) return false;
+    const cleaned = safePayload(payload);
+    if (cleaned === null) return false;
+
+    return sendNow({
+        type: 'idle_event',
+        event_name: 'legacy_route_hit',
+        subtype: 'legacy_route_hit',
+        session_id: ensureSession(),
+        branch_id: state.branchId || undefined,
+        details: 'legacy_route_hit',
+        payload: cleaned,
+    });
+}
+
 /**
  * Flush forcé (ex: avant window.beforeunload). Respecte le consent.
  */
@@ -270,10 +354,14 @@ export const KIOSK_ANALYTICS_MAX_QUEUE = MAX_QUEUE;
 
 export default {
     track,
+    trackHeuristicFallback,
+    trackKioskErrorEvent,
     ensureSession,
     resetSession,
     setConsent,
     setBranchId,
     hasConsent,
+    trackLegacyRouteHit,
+    normalizeKioskErrorCode,
     flush,
 };

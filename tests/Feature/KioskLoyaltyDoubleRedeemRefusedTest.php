@@ -164,6 +164,8 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
             'is_advance_order' => Ask::NO,
             'source' => Source::WEB,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'quote_token' => '00000000-0000-4000-8000-000000000001',
+            'quote_signature' => str_repeat('a', 64),
             'items' => json_encode([[
                 'item_id' => $this->item->id,
                 'quantity' => 1,

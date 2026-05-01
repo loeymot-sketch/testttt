@@ -9,10 +9,11 @@
   - **`PLAYWRIGHT_BASE_URL`** — URL de l’app (défaut `http://localhost:8000`, voir `playwright.config.js` à la racine du dépôt).
   - **`E2E_POS_USER`** / **`E2E_POS_PASS`** — compte opérateur POS (défaut alignés sur `tests/e2e/02-pos-cash.spec.js` : `pos@lecayenne.fr` / `123456`).
   - **Sélecteurs catalogue** (regex, sans délimiteurs `/`) :
-    - `E2E_POS_TACOS_ITEM_RE` — libellé item tacos au catalogue (défaut `tacos`).
-    - `E2E_POS_MEAT_A_RE` — viande « A » pour 3 clics `+` (défaut `steak|bœuf|boeuf`).
-    - `E2E_POS_MEAT_B_RE` — viande « B » pour 1 clic `+` (défaut `poulet|chicken`).
-    - `E2E_POS_EXTRA_RE` — extra type cheddar (défaut `cheddar`).
+    - `E2E_POS_TACOS_ITEM_RE` — libellé item tacos au catalogue (défaut `tacos\s*l|tacos.*2`, aligné sur le seed local `Tacos L (2 Viandes)`).
+    - `E2E_POS_MEAT_A_RE` — sélection « A » (défaut `merguez|jambon|dinde|steak|bœuf|boeuf`).
+    - `E2E_POS_MEAT_B_RE` — sélection « B » (défaut `kefta|poulet|chicken|fromage`).
+    - `E2E_POS_MEAT_A_QTY` / `E2E_POS_MEAT_B_QTY` — quantités à cliquer (défaut `1` / `1`; mettre `3` / `1` sur un seed 4 viandes).
+    - `E2E_POS_EXTRA_RE` — extra/sauce (défaut `ketchup|sauce supplément|cheddar|fromage`).
 
 ## Dépendances npm
 
@@ -24,7 +25,7 @@ npm install
 
 (en cas d’absence totale : `npm i -D @playwright/test playwright` — **gate dépendance** côté ops.)
 
-## Lancer le scénario T22 partiel (tacos 4 viandes → espèces)
+## Lancer le scénario T22 partiel (tacos seed-adapted → espèces)
 
 ```bash
 export PLAYWRIGHT_BASE_URL=http://localhost:8000

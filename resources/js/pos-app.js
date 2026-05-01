@@ -13,7 +13,7 @@
  *
  * Skipped vs `app.js` (saves ~80 KB gz):
  *   - vue3-apexcharts + apexcharts (admin reports only)
- *   - vue-next-select (admin forms only)
+ *   - admin-only form widgets not used by POS
  *   - vue3-simple-alert (admin confirmations only)
  *   - KioskDesignSystem atoms + tokens CSS (kiosk only)
  *   - Full router with 30 modules (only POS routes here)
@@ -33,6 +33,8 @@ import store from './store';
 import i18n from './i18n';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
+import VueNextSelect from 'vue-next-select';
+import 'vue-next-select/dist/index.css';
 
 // [POS-V4 W2 #1 FIX D.3] Shared request interceptor + token reader.
 // Pre-fix this block was duplicated in app.js L52-L146 and labeled "frozen
@@ -87,6 +89,15 @@ const router = createRouter({
             name: 'admin.pos.v4.floorplan',
             meta: { isFrontend: false, auth: true, permissionUrl: 'pos', breadcrumb: 'floorplan' },
         },
+        // Compatibility names used by the shared backend layout. These prevent
+        // Vue Router resolve errors in the slim POS entry without pulling the
+        // full admin/frontend route graph into pos-app.js.
+        { path: '/', name: 'frontend.home', redirect: { name: 'admin.pos.v4' } },
+        { path: '/admin/dashboard', name: 'admin.dashboard', redirect: { name: 'admin.pos.v4' } },
+        { path: '/admin/pos', name: 'admin.pos', redirect: { name: 'admin.pos.v4' } },
+        { path: '/admin/pos/floorplan', name: 'admin.pos.floorplan', redirect: { name: 'admin.pos.v4.floorplan' } },
+        { path: '/admin/profile/edit-profile', name: 'admin.profile.editProfile', redirect: { name: 'admin.pos.v4' } },
+        { path: '/admin/profile/change-password', name: 'admin.profile.changePassword', redirect: { name: 'admin.pos.v4' } },
         // Fallback — anything under /admin/pos-v4/* goes to POS.
         {
             path: '/admin/pos-v4/:pathMatch(.*)*',
@@ -107,6 +118,7 @@ router.beforeEach((to, from, next) => {
 
 const app = createApp({});
 app.component('default-component', DefaultComponent);
+app.component('vue-select', VueNextSelect);
 app.use(router);
 app.use(store);
 app.use(i18n);

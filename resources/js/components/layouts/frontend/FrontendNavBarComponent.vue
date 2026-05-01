@@ -55,7 +55,7 @@
                     </ul>
                 </div>
                 <button v-if="!staffOnlyMode" @click.prevent="openCanvas('cart')" type="button"
-                    class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-heading">
+                    class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-heading bg-heading">
                     <i class="lab lab-bag-2 lab-font-size-17"></i>
                     <span class="whitespace-nowrap">{{
                         currencyFormat(subtotal, setting.site_digit_after_decimal_point,
@@ -63,7 +63,7 @@
                     }}</span>
                 </button>
                 <router-link v-if="!logged"
-                    class="hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary"
+                    class="hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-[#B0004D] hover:bg-[#8E003E]"
                     :to="{ name: 'auth.login' }">
                     <i class="lab lab-profile-circle"></i>
                     <span class="whitespace-nowrap">{{ $t('label.login') }}</span>
@@ -71,7 +71,7 @@
 
                 <div v-else class="dropdown-group">
                     <button
-                        class="dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary">
+                        class="dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-[#B0004D] hover:bg-[#8E003E]">
                         <i class="lab lab-profile-circle"></i>
                         <span class="whitespace-nowrap">{{ $t('label.account') }}</span>
                         <i class="lab lab-arrow-down-2 text-xs ml-1.5 lab-font-size-15"></i>
@@ -190,7 +190,7 @@
                 <span class="block">{{ $t('message.please_check_your_order_list') }}</span>
             </h3>
             <router-link :to="{ path: '/admin/' + orderNotification.url }"
-                class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(255,_0,_107,_0.24)] bg-primary text-white">
+                class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(176,_0,_77,_0.24)] bg-[#B0004D] text-white hover:bg-[#8E003E]">
                 {{ $t('button.let_me_check') }}
             </router-link>
         </div>

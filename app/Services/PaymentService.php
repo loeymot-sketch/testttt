@@ -2,18 +2,35 @@
 
 namespace App\Services;
 
+use App\Domain\Order\PaymentStateMachine;
+use App\Domain\Order\OrderStateMachine;
+use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
+use App\Events\OrderCanceled;
+use App\Events\OrderPaidAtCounter;
+use App\Events\OrderStatusChanged;
+use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
+use App\Services\Fiscal\FiscalSequenceService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PaymentService
 {
     public function payment($order, $gatewaySlug, $transactionNo)
     {
+        $this->assertPilotPaymentMethodAllowed($order, (string) $gatewaySlug, 'payment');
+
         $transaction = Transaction::where(['order_id' => $order->id])->first();
         if (!$transaction) {
+            $this->assertTransactionReferenceAvailable($order, (string) $transactionNo);
+
             $transaction = Transaction::create([
                 'order_id'       => $order->id,
                 'transaction_no' => $transactionNo,
@@ -28,9 +45,41 @@ class PaymentService
         return $transaction;
     }
 
+    private function assertTransactionReferenceAvailable($order, string $transactionNo): void
+    {
+        $transactionNo = trim($transactionNo);
+        if ($transactionNo === '') {
+            return;
+        }
+
+        $duplicate = Transaction::query()
+            ->where('transaction_no', $transactionNo)
+            ->where('type', 'payment')
+            ->where('order_id', '!=', (int) $order->id)
+            ->exists();
+
+        if (! $duplicate) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'transaction_no' => 'This payment transaction reference is already attached to another order.',
+        ]);
+    }
+
     public function cashBack($order, $gatewaySlug, $transactionNo)
     {
-        $transaction = Transaction::where(['order_id' => $order->id])->first();
+        $existingCashBack = Transaction::where(['order_id' => $order->id])
+            ->where('type', 'cash_back')
+            ->first();
+
+        if ($existingCashBack) {
+            return $existingCashBack;
+        }
+
+        $transaction = Transaction::where(['order_id' => $order->id])
+            ->where('type', 'payment')
+            ->first();
         if ($transaction) {
             $transaction = Transaction::create([
                 'order_id'       => $order->id,
@@ -69,5 +118,255 @@ class PaymentService
         }
 
         return $transaction;
+    }
+
+    public function confirmCounterPayment(Order $order, int $mode, ?float $received = null, ?string $note = null): Order
+    {
+        $allowedModes = [
+            PosPaymentMethod::CASH,
+            PosPaymentMethod::CARD,
+            PosPaymentMethod::MOBILE_BANKING,
+            PosPaymentMethod::OTHER,
+            PosPaymentMethod::TICKET_RESTAURANT,
+        ];
+
+        if (! in_array($mode, $allowedModes, true)) {
+            throw ValidationException::withMessages([
+                'mode' => 'Mode de paiement comptoir invalide.',
+            ]);
+        }
+
+        $paid = false;
+
+        DB::transaction(function () use ($order, $mode, $received, $note, &$paid): void {
+            $locked = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertCounterOrderVisible($locked);
+
+            if ((int) $locked->payment_status === PaymentStatus::PAID) {
+                $order->setRawAttributes($locked->getAttributes(), true);
+                return;
+            }
+
+            $this->assertCounterDeferredOrder($locked);
+            PaymentStateMachine::assertCanTransition((int) $locked->payment_status, PaymentStatus::PAID);
+
+            if ($mode === PosPaymentMethod::CASH && $received !== null && (float) $received < (float) $locked->total) {
+                throw ValidationException::withMessages([
+                    'received' => 'Le montant recu est inferieur au total a encaisser.',
+                ]);
+            }
+
+            if ($locked->fiscal_sequence_no === null) {
+                $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+            }
+
+            $locked->payment_status = PaymentStatus::PAID;
+            $locked->pos_payment_method = $mode;
+            $locked->pos_received_amount = $mode === PosPaymentMethod::CASH
+                ? ($received ?? (float) $locked->total)
+                : null;
+            $locked->pos_payment_note = $note;
+            $locked->save();
+
+            Transaction::query()->firstOrCreate(
+                [
+                    'order_id' => $locked->id,
+                    'type' => 'payment',
+                ],
+                [
+                    'transaction_no' => 'COUNTER-' . $locked->id . '-' . now()->format('YmdHis'),
+                    'amount' => $locked->total,
+                    'payment_method' => $this->counterPaymentMethodLabel($mode),
+                    'sign' => '+',
+                ]
+            );
+
+            app(AuditLogService::class)->write([
+                'branch_id' => (int) $locked->branch_id,
+                'user_id' => Auth::check() ? (int) Auth::id() : null,
+                'action' => 'order.counter_payment_confirmed',
+                'resource' => 'order',
+                'resource_id' => (int) $locked->id,
+                'payload' => [
+                    'payment_method' => $mode,
+                    'payment_status' => PaymentStatus::PAID,
+                    'received' => $received,
+                    'fiscal_sequence_no' => $locked->fiscal_sequence_no,
+                ],
+            ]);
+
+            $locked->refresh();
+            $order->setRawAttributes($locked->getAttributes(), true);
+            $paid = true;
+        });
+
+        if ($paid) {
+            OrderPaidAtCounter::dispatch($order, $mode);
+        }
+
+        return $order;
+    }
+
+    public function cancelCounterPayment(Order $order, ?string $reason = null): Order
+    {
+        $oldStatus = null;
+        $canceled = false;
+
+        DB::transaction(function () use ($order, $reason, &$oldStatus, &$canceled): void {
+            $locked = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertCounterOrderVisible($locked);
+
+            if ((int) $locked->payment_status === PaymentStatus::REFUNDED) {
+                $order->setRawAttributes($locked->getAttributes(), true);
+                return;
+            }
+
+            $this->assertCounterDeferredOrder($locked);
+            PaymentStateMachine::assertCanTransition((int) $locked->payment_status, PaymentStatus::REFUNDED);
+
+            $oldStatus = (int) $locked->status;
+            $locked->payment_status = PaymentStatus::REFUNDED;
+            $locked->status = OrderStatus::CANCELED;
+            $locked->pos_payment_note = $reason;
+            $locked->save();
+
+            OrderStateMachine::recordTransition(
+                Order::class,
+                (int) $locked->id,
+                $oldStatus,
+                OrderStatus::CANCELED,
+                Auth::check() ? (int) Auth::id() : null,
+                $reason
+            );
+
+            app(AuditLogService::class)->write([
+                'branch_id' => (int) $locked->branch_id,
+                'user_id' => Auth::check() ? (int) Auth::id() : null,
+                'action' => 'order.counter_payment_canceled',
+                'resource' => 'order',
+                'resource_id' => (int) $locked->id,
+                'payload' => [
+                    'payment_status' => PaymentStatus::REFUNDED,
+                    'reason' => $reason,
+                    'fiscal_sequence_no' => $locked->fiscal_sequence_no,
+                ],
+            ]);
+
+            $locked->refresh();
+            $order->setRawAttributes($locked->getAttributes(), true);
+            $canceled = true;
+        });
+
+        if ($canceled) {
+            OrderCanceled::dispatch($order);
+            OrderStatusChanged::dispatch($order, $oldStatus, OrderStatus::CANCELED);
+        }
+
+        return $order;
+    }
+
+    private function assertCounterOrderVisible(Order $order): void
+    {
+        $actorBranchId = Auth::check() ? (int) (Auth::user()?->branch_id ?? 0) : 0;
+        if ($actorBranchId > 0 && (int) $order->branch_id !== $actorBranchId) {
+            throw new HttpException(403, 'Commande hors branche.');
+        }
+    }
+
+    private function assertCounterDeferredOrder(Order $order): void
+    {
+        $isKioskCash = (string) ($order->source_surface ?? '') === 'kiosk'
+            && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+            && (int) $order->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED;
+
+        if (! $isKioskCash) {
+            throw new \InvalidArgumentException('This order is not a pending kiosk counter payment.', 422);
+        }
+    }
+
+    private function counterPaymentMethodLabel(int $mode): string
+    {
+        return match ($mode) {
+            PosPaymentMethod::CASH => 'counter_cash',
+            PosPaymentMethod::CARD => 'counter_card',
+            PosPaymentMethod::MOBILE_BANKING => 'counter_mobile_banking',
+            PosPaymentMethod::TICKET_RESTAURANT => 'counter_ticket_restaurant',
+            default => 'counter_other',
+        };
+    }
+
+    public function isPilotPaymentMethodAllowed(string $gatewaySlug): bool
+    {
+        if (! (bool) config('payment.pilot_restrict.enabled', true)) {
+            return true;
+        }
+
+        $method = $this->normalizePaymentMethod($gatewaySlug);
+        $allowed = array_map(
+            fn ($value) => $this->normalizePaymentMethod((string) $value),
+            (array) config('payment.pilot_restrict.allowed_methods', ['credit'])
+        );
+
+        return in_array($method, array_values(array_unique($allowed)), true);
+    }
+
+    public function assertPilotPaymentMethodAllowed($order, string $gatewaySlug, string $attemptType = 'payment'): void
+    {
+        if ($this->isPilotPaymentMethodAllowed($gatewaySlug)) {
+            return;
+        }
+
+        $method = $this->normalizePaymentMethod($gatewaySlug);
+        $this->auditRestrictedAttempt($order, $method, $attemptType);
+
+        throw ValidationException::withMessages([
+            'payment_method' => sprintf(
+                'Payment method "%s" is not available in the restricted payment pilot.',
+                $method
+            ),
+        ]);
+    }
+
+    private function auditRestrictedAttempt($order, string $method, string $attemptType): void
+    {
+        try {
+            app(AuditLogService::class)->write([
+                'branch_id' => (int) ($order->branch_id ?? 0),
+                'user_id' => Auth::check() ? (int) Auth::id() : null,
+                'action' => (string) config('payment.pilot_restrict.audit_action', 'payment.method_restricted'),
+                'resource' => 'order',
+                'resource_id' => (int) ($order->id ?? 0),
+                'payload' => [
+                    'attempt_type' => $attemptType,
+                    'blocked_method' => $method,
+                    'reason' => 'restricted_payment_pilot',
+                    'allowed_methods' => array_values((array) config('payment.pilot_restrict.allowed_methods', ['credit'])),
+                    'actor_id' => Auth::check() ? (int) Auth::id() : null,
+                    'actor_branch_id' => Auth::check() ? (int) (Auth::user()?->branch_id ?? 0) : null,
+                    'order_branch_id' => (int) ($order->branch_id ?? 0),
+                ],
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('payment.method_restricted_audit_failed', [
+                'order_id' => (int) ($order->id ?? 0),
+                'branch_id' => (int) ($order->branch_id ?? 0),
+                'method' => $method,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function normalizePaymentMethod(string $gatewaySlug): string
+    {
+        return strtolower(trim($gatewaySlug));
     }
 }

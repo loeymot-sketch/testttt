@@ -22,14 +22,16 @@ describe('kioskPricingPreview — payload normalization (SSOT)', () => {
         expect(c.quantity).toBe(3);
     });
 
-    it('projette variations/extras en { id: int } uniquement (strip prix)', () => {
+    it('projette variations/extras/addons en id/quantity uniquement (strip prix)', () => {
         const n = normalizeKioskPricingPreviewItem({
             item_id: 42,
-            item_variations: [{ id: 10, price: 99 }, { id: 11 }, { id: 'bad' }, null],
-            item_extras: [{ id: 20, convert_price: 0.5 }, { id: 'x' }],
+            item_variations: [{ id: 10, price: 99, quantity: 2 }, { id: 11 }, { id: 'bad' }, null],
+            item_extras: [{ id: 20, convert_price: 0.5, quantity: 3 }, { id: 'x' }],
+            item_addons: [{ id: 30, price: 2.5, role: 'drink', quantity: 2 }, { id: 'bad' }],
         });
-        expect(n.item_variations).toEqual([{ id: 10 }, { id: 11 }]);
-        expect(n.item_extras).toEqual([{ id: 20 }]);
+        expect(n.item_variations).toEqual([{ id: 10, quantity: 2 }, { id: 11 }]);
+        expect(n.item_extras).toEqual([{ id: 20, quantity: 3 }]);
+        expect(n.item_addons).toEqual([{ id: 30, quantity: 2 }]);
     });
 
     it('instruction cappée à 255 chars', () => {

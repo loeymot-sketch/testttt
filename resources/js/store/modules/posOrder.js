@@ -1,6 +1,108 @@
 import axios from 'axios'
 import appService from "../../services/appService";
 
+const DEFAULT_REALTIME_POLLING_INTERVAL_MS = 30000;
+const POS_SELF_ORDER_TYPES = [15, 20];
+
+function normalizeBoolean(value, defaultValue = false) {
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    if (value === 1 || value === '1') {
+        return true;
+    }
+    if (value === 0 || value === '0') {
+        return false;
+    }
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', 'yes', 'on'].includes(normalized)) {
+            return true;
+        }
+        if (['false', 'no', 'off', 'null', 'none'].includes(normalized)) {
+            return false;
+        }
+    }
+    return defaultValue;
+}
+
+function normalizePositiveInteger(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? Math.round(number) : fallback;
+}
+
+function readProcessEnv(key) {
+    return typeof process !== 'undefined' && process?.env ? process.env[key] : undefined;
+}
+
+export function resolveRealtimeFallbackConfig(runtime = {}) {
+    const windowConfig = typeof window !== 'undefined' ? (window.foodkingConfig || {}) : {};
+    const realtimeConfig = windowConfig.realtime || {};
+    const broadcastDriver = String(
+        runtime.broadcastDriver
+        ?? runtime.driver
+        ?? realtimeConfig.broadcastDriver
+        ?? readProcessEnv('MIX_BROADCAST_DRIVER')
+        ?? readProcessEnv('BROADCAST_DRIVER')
+        ?? ''
+    ).trim().toLowerCase();
+    const normalizedDriver = broadcastDriver || 'null';
+    const pusherKey = runtime.pusherKey
+        ?? realtimeConfig.pusherAppKey
+        ?? readProcessEnv('MIX_PUSHER_APP_KEY')
+        ?? '';
+    const hintWhenOff = normalizeBoolean(
+        runtime.hintWhenOff ?? realtimeConfig.hintWhenOff,
+        true
+    );
+    const pollingIntervalMs = normalizePositiveInteger(
+        runtime.pollingIntervalMs
+        ?? realtimeConfig.pollingFallbackMs
+        ?? readProcessEnv('MIX_BROADCAST_POLLING_FALLBACK_MS'),
+        DEFAULT_REALTIME_POLLING_INTERVAL_MS
+    );
+    const websocketEnabled = normalizedDriver === 'pusher' && String(pusherKey || '').length > 0;
+    const pollingOnly = !websocketEnabled;
+
+    return {
+        driver: normalizedDriver,
+        websocketEnabled,
+        pollingOnly,
+        pollingIntervalMs,
+        hint: pollingOnly && hintWhenOff
+            ? `Temps reel indisponible: rafraichissement automatique toutes les ${Math.round(pollingIntervalMs / 1000)}s.`
+            : null,
+    };
+}
+
+export function normalizeRealtimeOrderEvent(event = {}) {
+    const payload = event && event.payload ? event.payload : event || {};
+
+    return {
+        orderId: payload.order_id || payload.id || null,
+        queueNumber: payload.queue_number || null,
+        origin: payload._origin || payload.source_surface || null,
+        paymentMethod: payload.payment_method ?? payload.pos_payment_method ?? null,
+        orderType: payload.order_type ?? null,
+        payload,
+    };
+}
+
+export function shouldNotifyPosRealtimeOrder(event = {}) {
+    const normalized = normalizeRealtimeOrderEvent(event);
+    const origin = String(normalized.origin || '').trim().toLowerCase();
+
+    if (origin === 'pos') {
+        return false;
+    }
+
+    const orderType = parseInt(normalized.orderType, 10);
+    if (!Number.isNaN(orderType) && POS_SELF_ORDER_TYPES.includes(orderType)) {
+        return false;
+    }
+
+    return true;
+}
 
 export const posOrder = {
     namespaced: true,
@@ -17,6 +119,7 @@ export const posOrder = {
             temp_id: null,
             isEditing: false,
         },
+        realtimeFallback: resolveRealtimeFallbackConfig(),
     },
     getters: {
         lists: function (state) {
@@ -46,9 +149,20 @@ export const posOrder = {
         },
         temp: function (state) {
             return state.temp;
+        },
+        realtimeFallback: function (state) {
+            return state.realtimeFallback;
+        },
+        realtimeFallbackHint: function (state) {
+            return state.realtimeFallback?.hint || null;
         }
     },
     actions: {
+        refreshRealtimeFallback: function (context, payload = {}) {
+            const config = resolveRealtimeFallbackConfig(payload);
+            context.commit('realtimeFallback', config);
+            return config;
+        },
         lists: function (context, payload) {
             return new Promise((resolve, reject) => {
                 let url = 'admin/pos-order';
@@ -197,6 +311,9 @@ export const posOrder = {
         reset: function (state) {
             state.temp.temp_id = null;
             state.temp.isEditing = false;
+        },
+        realtimeFallback: function (state, payload) {
+            state.realtimeFallback = resolveRealtimeFallbackConfig(payload);
         }
     },
 }

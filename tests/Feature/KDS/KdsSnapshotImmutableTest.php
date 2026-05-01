@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\KDS;
 
+use App\Enums\Ask;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
@@ -13,6 +14,9 @@ use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Http\Resources\KDSOrderItemsResource;
+use App\Http\Resources\OrderItemResource;
+use App\Services\KitchenDisplaySystemOrderService;
 use App\Services\Menu\AvailabilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -201,5 +205,135 @@ class KdsSnapshotImmutableTest extends TestCase
             'id' => $orderItem->id,
             'item_id' => $item->id,
         ]);
+    }
+
+    public function test_kds_order_item_resource_exposes_composer_addons_from_snapshot(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $category = ItemCategory::firstOrCreate(
+            ['slug' => 'kds-addon-cat'],
+            ['name' => 'KDS addon cat', 'status' => 5]
+        );
+        $item = Item::forceCreate([
+            'name' => 'Tacos Addon KDS',
+            'slug' => 'tacos-addon-kds',
+            'price' => 12,
+            'status' => 5,
+            'item_category_id' => $category->id,
+        ]);
+        $order = Order::create([
+            'order_serial_no' => '20260430-KDS-ADDON',
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'status' => OrderStatus::PREPARING,
+            'payment_status' => PaymentStatus::PAID,
+            'subtotal' => 12.0,
+            'total' => 12.0,
+            'order_type' => OrderType::KIOSK,
+            'order_datetime' => now(),
+            'is_advance_order' => 0,
+            'source' => 5,
+        ]);
+        $orderItem = OrderItem::create([
+            'order_id' => $order->id,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'price' => 12,
+            'discount' => 0,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => 12,
+            'item_variations' => '[]',
+            'item_extras' => '[]',
+            'composition_snapshot' => [
+                'schema_version' => 1,
+                'addons' => [
+                    [
+                        'addon_id' => 77,
+                        'addon_item_id' => 990,
+                        'addon_name' => 'Coca 33cl',
+                        'role' => 'drink',
+                        'quantity' => 2,
+                    ],
+                ],
+            ],
+            'instruction' => '',
+        ]);
+
+        $payload = (new KDSOrderItemsResource($orderItem->fresh()))->toArray(request());
+        $detailsPayload = (new OrderItemResource($orderItem->fresh()))->toArray(request());
+
+        $this->assertSame('Coca 33cl', $payload['item_addons'][0]['addon_name']);
+        $this->assertSame(2, $payload['item_addons'][0]['quantity']);
+        $this->assertSame('Coca 33cl', $detailsPayload['item_addons'][0]['addon_name']);
+        $this->assertSame(2, $detailsPayload['item_addons'][0]['quantity']);
+    }
+
+    public function test_kds_items_board_keeps_distinct_addon_choices_unmerged(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $category = ItemCategory::firstOrCreate(
+            ['slug' => 'kds-addon-merge-cat'],
+            ['name' => 'KDS addon merge cat', 'status' => 5]
+        );
+        $item = Item::forceCreate([
+            'name' => 'Tacos Addon Merge KDS',
+            'slug' => 'tacos-addon-merge-kds',
+            'price' => 12,
+            'status' => 5,
+            'item_category_id' => $category->id,
+        ]);
+        $order = Order::create([
+            'order_serial_no' => '20260430-KDS-ADDON-MERGE',
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'status' => OrderStatus::PREPARING,
+            'payment_status' => PaymentStatus::PAID,
+            'subtotal' => 24.0,
+            'total' => 24.0,
+            'order_type' => OrderType::KIOSK,
+            'order_datetime' => now(),
+            'is_advance_order' => Ask::NO,
+            'source' => 5,
+        ]);
+
+        foreach ([['Coca 33cl', 77], ['Fanta 33cl', 78]] as [$addonName, $addonId]) {
+            OrderItem::create([
+                'order_id' => $order->id,
+                'branch_id' => $branch->id,
+                'item_id' => $item->id,
+                'quantity' => 1,
+                'price' => 12,
+                'discount' => 0,
+                'item_variation_total' => 0,
+                'item_extra_total' => 0,
+                'total_price' => 12,
+                'item_variations' => '[]',
+                'item_extras' => '[]',
+                'composition_snapshot' => [
+                    'schema_version' => 1,
+                    'addons' => [
+                        [
+                            'addon_id' => $addonId,
+                            'addon_item_id' => 900 + $addonId,
+                            'addon_name' => $addonName,
+                            'role' => 'drink',
+                            'quantity' => 1,
+                        ],
+                    ],
+                ],
+                'instruction' => '',
+            ]);
+        }
+
+        $this->actingAs($user);
+
+        $items = app(KitchenDisplaySystemOrderService::class)->orderItems();
+        $matched = $items->where('item_id', $item->id)->values();
+
+        $this->assertCount(2, $matched);
     }
 }

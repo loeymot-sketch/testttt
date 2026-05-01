@@ -1,0 +1,47 @@
+{
+  "task_id": "CV1-M08-FISCAL-Z-NF525",
+  "mission_id": "M-08",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Implémenter fiscal Z NF525 selon gate fiscal Option B: POS finalize porte la finalisation fiscale, Z aggregation exacte, refunds/void pré/post-Z, HMAC chain et tests.",
+  "instruction": "Applique uniquement M-08. Gates: fiscal Option B, schema Option A. Ne fiscalise pas directement le kiosk; POS finalize est la politique retenue. JSON unique.",
+  "allowlist": [
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/FiscalSealingService.php",
+    "database/migrations/",
+    "app/Services/FrontendOrderService.php",
+    "tests/Feature/Fiscal/ZAggregationKioskRoutingTest.php",
+    "tests/Feature/Fiscal/RefundPreZTest.php",
+    "tests/Feature/Fiscal/RefundPostZTest.php",
+    "tests/Feature/Fiscal/VoidPreZTest.php",
+    "tests/Feature/Fiscal/FiscalSealingHmacTest.php",
+    "tests/Feature/Fiscal/FiscalArchiveTtlTest.php",
+    "tests/Feature/Sentinels/FiscalZBranchExactnessSentinelTest.php"
+  ],
+  "off_limits": ["resources/**", "routes/**", "app/Services/KitchenDisplaySystemOrderService.php", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_FISCAL_KIOSK_SCOPE_V1_2026-04-25", "status": "Approved", "decision": "Option B — POS finalize", "date": "2026-04-25"},
+    {"gate": "GATE_SCHEMA_MIGRATIONS_CAISSE_V1_2026-04-25", "status": "Approved", "decision": "Option A — All migrations with rehearsal + backup", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["pricing_ssot", "branch_id", "dispatch_after_commit", "frozen_zones"],
+  "gate_conditions": ["fiscal approved Option B", "schema approved Option A"],
+  "mandatory_tests": [
+    "php artisan test --filter=FiscalZBranchExactnessSentinelTest",
+    "php artisan test --filter=ZAggregationKioskRoutingTest",
+    "php artisan test --filter=RefundPreZTest",
+    "php artisan test --filter=RefundPostZTest",
+    "php artisan test --filter=FiscalSealingHmacTest"
+  ],
+  "self_audit_checklist": [
+    "kiosk direct Z finalization is not introduced under Option B",
+    "Z aggregate counts only requested branch and paid fiscal events",
+    "refund/void pre/post-Z policy is explicit and tested",
+    "HMAC sealing is deterministic and branch-scoped"
+  ],
+  "rollback": {"feature_flag": "fiscal_z_v1", "max_window_days": 1, "predicates": ["fiscal anomaly > 0", "invalid HMAC seal"]},
+  "graphiti_query": "Caisse V1 fiscal Z NF525 POS finalize kiosk branch aggregation HMAC",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_fiscal_z_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

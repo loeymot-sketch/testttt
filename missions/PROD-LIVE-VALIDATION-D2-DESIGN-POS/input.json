@@ -1,0 +1,8 @@
+{
+  "task_id": "PROD-LIVE-VALIDATION-D2-DESIGN-POS",
+  "date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_ORDERS_TO_CODEX_MEGA_TEST_ORCHESTRATION_2026-04-27.md",
+  "scope": "POS design smoke harness",
+  "strict_d2_status": "not_claimed_until_full_5x_modal_keyboard_latency_print_suite"
+}

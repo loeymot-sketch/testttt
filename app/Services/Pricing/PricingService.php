@@ -3,14 +3,20 @@
 namespace App\Services\Pricing;
 
 use App\Enums\TaxType;
+use App\Enums\Status;
 use App\Libraries\AppLibrary;
 use App\Models\Item;
+use App\Models\ItemAddon;
 use App\Models\ItemAttribute;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
 use App\Models\Tax;
+use App\Services\Composer\ComposerProfileProjection;
 use App\Services\CouponService;
 use App\Services\Menu\AvailabilityService;
+use App\Services\Stock\ChoiceAvailabilityResolver;
+use Illuminate\Support\Collection;
 
 final class PricingService
 {
@@ -19,6 +25,8 @@ final class PricingService
         private readonly DiscountCalculator $discountCalculator = new DiscountCalculator,
         private readonly ?AvailabilityService $availabilityService = null,
         private readonly CompositionSnapshotBuilder $snapshotBuilder = new CompositionSnapshotBuilder,
+        private readonly ?ComposerProfileProjection $composerProfileProjection = null,
+        private readonly ?ChoiceAvailabilityResolver $choiceAvailabilityResolver = null,
     ) {}
 
     /**
@@ -70,6 +78,14 @@ final class PricingService
             ->unique()
             ->values()
             ->all();
+        $addonIds = collect($requestItems)
+            ->pluck('item_addons')
+            ->flatten(1)
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
         $dbVariations = $variationIds !== []
             ? ItemVariation::query()->whereIn('id', $variationIds)->get()->keyBy('id')
@@ -77,6 +93,21 @@ final class PricingService
         $dbExtras = $extraIds !== []
             ? ItemExtra::query()->whereIn('id', $extraIds)->get()->keyBy('id')
             : collect();
+        $dbAddons = $addonIds !== []
+            ? ItemAddon::query()->with('addonItem')->whereIn('id', $addonIds)->get()->keyBy('id')
+            : collect();
+
+        if ($req->branchId > 0 && $dbAddons->isNotEmpty()) {
+            $availability = $this->availabilityService ?? app(AvailabilityService::class);
+            $availability->assertItemsOrderableForBranch(
+                $req->branchId,
+                $dbAddons->pluck('addon_item_id')->filter()->unique()->values()->all(),
+                $req->orderId > 0
+            );
+        }
+
+        $this->assertOptionsOrderable($req, $variationIds, $extraIds, $addonIds, $dbVariations, $dbExtras, $dbAddons);
+        $this->assertComposerStepConstraints($req);
 
         // [T07 SSOT] Preload all involved attributes once for the snapshot builder
         // (avoids N+1 inside the per-item loop).
@@ -159,8 +190,33 @@ final class PricingService
                     }
                 }
 
+                $addonTotal = 0.0;
+                if (isset($item->item_addons) && is_array($item->item_addons)) {
+                    foreach ($item->item_addons as $addon) {
+                        $addonId = $addon->id ?? null;
+                        if (! $addonId) {
+                            continue;
+                        }
+                        $dbAddon = $dbAddons[$addonId] ?? null;
+                        if (! $dbAddon) {
+                            throw new \InvalidArgumentException(
+                                "Addon ID {$addonId} introuvable pour l'article {$item->item_id}.",
+                                422
+                            );
+                        }
+                        if ($req->enforceCrossItemGuards && (int) $dbAddon->item_id !== (int) $item->item_id) {
+                            throw new \InvalidArgumentException(
+                                "Addon ID {$addonId} n'appartient pas à l'article {$item->item_id}.",
+                                422
+                            );
+                        }
+                        $addonQuantity = max(1, (int) ($addon->quantity ?? 1));
+                        $addonTotal += (float) ($dbAddon->addonItem?->price ?? 0) * $addonQuantity;
+                    }
+                }
+
                 $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
-                $unitSum = $itemPrice + $variationTotal + $extraTotal;
+                $unitSum = $itemPrice + $variationTotal + $extraTotal + $addonTotal;
                 $verifiedTotalPrice = $unitSum * $verifiedQuantity;
                 if ($req->roundLineTotals) {
                     $verifiedTotalPrice = round($verifiedTotalPrice, 2);
@@ -190,6 +246,7 @@ final class PricingService
                     $dbVariations,
                     $dbExtras,
                     $dbAttributes,
+                    $dbAddons,
                 );
 
                 $itemsArray[$i] = [
@@ -228,6 +285,7 @@ final class PricingService
                     $itemsArray[$i]['item_variations'],
                     $itemsArray[$i]['item_extras'],
                     $itemsArray[$i]['instruction'],
+                    $addonTotal,
                 );
 
                 $totalTax += $taxPrice;
@@ -356,5 +414,319 @@ final class PricingService
                 }
             }
         }
+    }
+
+    private function assertOptionsOrderable(
+        PricingRequest $req,
+        array $variationIds,
+        array $extraIds,
+        array $addonIds,
+        $dbVariations,
+        $dbExtras,
+        $dbAddons
+    ): void {
+        $surface = in_array($req->context, ['pos', 'kiosk', 'web'], true)
+            ? $req->context
+            : 'web';
+
+        foreach ($variationIds as $variationId) {
+            $variation = $dbVariations[$variationId] ?? null;
+            if (! $variation) {
+                throw new \InvalidArgumentException(
+                    "Variation ID {$variationId} introuvable. Commande rejetée.",
+                    422
+                );
+            }
+            if ((int) $variation->status !== Status::ACTIVE) {
+                throw new \InvalidArgumentException(
+                    "Variation ID {$variationId} inactive dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
+            if (! $variation->isVisibleOn($surface)) {
+                throw new \InvalidArgumentException(
+                    "Variation ID {$variationId} indisponible sur {$surface}. Commande rejetée.",
+                    422
+                );
+            }
+        }
+
+        foreach ($extraIds as $extraId) {
+            $extra = $dbExtras[$extraId] ?? null;
+            if (! $extra) {
+                throw new \InvalidArgumentException(
+                    "Supplément ID {$extraId} introuvable. Commande rejetée.",
+                    422
+                );
+            }
+            if ((int) $extra->status !== Status::ACTIVE) {
+                throw new \InvalidArgumentException(
+                    "Supplément ID {$extraId} inactif dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
+            if (! $extra->isVisibleOn($surface)) {
+                throw new \InvalidArgumentException(
+                    "Supplément ID {$extraId} indisponible sur {$surface}. Commande rejetée.",
+                    422
+                );
+            }
+        }
+
+        foreach ($addonIds as $addonId) {
+            $addon = $dbAddons[$addonId] ?? null;
+            if (! $addon) {
+                throw new \InvalidArgumentException(
+                    "Addon ID {$addonId} introuvable. Commande rejetée.",
+                    422
+                );
+            }
+
+            $addonItem = $addon->addonItem;
+            if (! $addonItem) {
+                throw new \InvalidArgumentException(
+                    "Addon ID {$addonId} sans article associé. Commande rejetée.",
+                    422
+                );
+            }
+            if ((int) $addonItem->status !== Status::ACTIVE) {
+                throw new \InvalidArgumentException(
+                    "Addon ID {$addonId} inactif dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
+            if (! (bool) ($addonItem->is_available ?? true)) {
+                throw new \InvalidArgumentException(
+                    "Addon ID {$addonId} indisponible dans le catalogue. Commande rejetée.",
+                    422
+                );
+            }
+            if (! $addonItem->isVisibleOn($surface)) {
+                throw new \InvalidArgumentException(
+                    "Addon ID {$addonId} indisponible sur {$surface}. Commande rejetée.",
+                    422
+                );
+            }
+        }
+
+        if ($req->branchId > 0) {
+            $this->choiceAvailabilityResolver()->assertSelectionsOrderable(
+                $req->branchId,
+                $dbVariations->values(),
+                $dbExtras->values(),
+                $dbAddons->values(),
+                $surface,
+                $req->orderId > 0
+            );
+        }
+    }
+
+    private function assertComposerStepConstraints(PricingRequest $req): void
+    {
+        $itemIds = collect($req->requestItems)->pluck('item_id')->filter()->unique()->values();
+        if ($itemIds->isEmpty()) {
+            return;
+        }
+
+        $profiles = ItemWizardProfile::query()
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+            ->whereIn('item_id', $itemIds->all())
+            ->where('is_published', true)
+            ->where(function ($query) use ($req): void {
+                $query->whereNull('branch_id_scope')
+                    ->when($req->branchId > 0, fn ($q) => $q->orWhere('branch_id_scope', $req->branchId));
+            })
+            ->get()
+            ->groupBy('item_id')
+            ->map(fn (Collection $profiles): ItemWizardProfile => $profiles
+                ->sort(fn (ItemWizardProfile $a, ItemWizardProfile $b): int => $this->compareComposerProfiles($a, $b))
+                ->first());
+
+        if ($profiles->isEmpty()) {
+            return;
+        }
+
+        $items = Item::query()
+            ->with([
+                'variations.itemAttribute',
+                'extras',
+                'addons.addonItem',
+            ])
+            ->whereIn('id', $profiles->keys()->all())
+            ->get()
+            ->keyBy('id');
+
+        $surface = in_array($req->context, ['pos', 'kiosk', 'web'], true) ? $req->context : 'pos';
+
+        foreach ($req->requestItems as $line) {
+            $itemId = (int) ($this->payloadValue($line, 'item_id') ?? 0);
+            $profile = $profiles->get($itemId);
+            $item = $items->get($itemId);
+            if (! $profile || ! $item) {
+                continue;
+            }
+
+            $projected = $this->composerProfileProjection()->project($profile, $item, $surface);
+            $this->assertComposerSelectionsBelongToPublishedProfile($line, $projected);
+            foreach (($projected['steps'] ?? []) as $step) {
+                if (! in_array($step['source_type'] ?? '', ['item_attribute', 'extra_group', 'addon'], true)) {
+                    throw new \InvalidArgumentException(
+                        'Composition : type de source non supporté dans le profil publié.',
+                        422
+                    );
+                }
+
+                $counts = $this->composerSelectedCountsForStep($line, $step);
+                $total = array_sum($counts);
+                $min = (int) ($step['min_select'] ?? 0);
+                $max = (int) ($step['max_select'] ?? 0);
+                $label = (string) ($step['label'] ?? $step['step_key'] ?? 'Composer');
+
+                if ($total < $min) {
+                    throw new \InvalidArgumentException(
+                        "Composition {$label} : minimum {$min} sélection(s) requise(s), reçu {$total}.",
+                        422
+                    );
+                }
+
+                if ($max > 0 && $total > $max) {
+                    throw new \InvalidArgumentException(
+                        "Composition {$label} : maximum {$max} sélection(s), reçu {$total}.",
+                        422
+                    );
+                }
+
+                if (! (bool) ($step['allow_repeat'] ?? false)) {
+                    foreach ($counts as $choiceId => $count) {
+                        if ($count > 1) {
+                            throw new \InvalidArgumentException(
+                                "Composition {$label} : le choix #{$choiceId} ne peut être sélectionné qu'une seule fois.",
+                                422
+                            );
+                        }
+                    }
+                }
+
+                $choicesById = collect($step['choices'] ?? [])->keyBy(fn (array $choice): string => (string) ($choice['id'] ?? ''));
+                foreach (array_keys($counts) as $choiceId) {
+                    $choice = $choicesById->get((string) $choiceId);
+                    if (is_array($choice) && array_key_exists('is_available', $choice) && ! (bool) $choice['is_available']) {
+                        $reason = $choice['unavailable_reason'] ?? 'stock_rupture';
+                        throw new \InvalidArgumentException(
+                            "Composition {$label} : le choix #{$choiceId} est indisponible ({$reason}).",
+                            422
+                        );
+                    }
+                }
+
+            }
+        }
+    }
+
+    private function assertComposerSelectionsBelongToPublishedProfile(object $line, array $projected): void
+    {
+        $allowedByPayload = [
+            'item_variations' => [],
+            'item_extras' => [],
+            'item_addons' => [],
+        ];
+
+        foreach (($projected['steps'] ?? []) as $step) {
+            $payloadKey = match ($step['source_type'] ?? '') {
+                'item_attribute' => 'item_variations',
+                'extra_group' => 'item_extras',
+                'addon' => 'item_addons',
+                default => null,
+            };
+            if ($payloadKey === null) {
+                continue;
+            }
+            foreach (($step['choices'] ?? []) as $choice) {
+                $id = $choice['id'] ?? null;
+                if ($id !== null) {
+                    $allowedByPayload[$payloadKey][(string) $id] = true;
+                }
+            }
+        }
+
+        foreach ($allowedByPayload as $payloadKey => $allowedIds) {
+            foreach ((array) ($this->payloadValue($line, $payloadKey) ?? []) as $selected) {
+                $id = $this->payloadValue($selected, 'id');
+                if ($id === null) {
+                    continue;
+                }
+                if (! isset($allowedIds[(string) $id])) {
+                    throw new \InvalidArgumentException(
+                        "Composition : le choix #{$id} n'appartient pas au profil publié.",
+                        422
+                    );
+                }
+            }
+        }
+    }
+
+    private function composerSelectedCountsForStep(object $line, array $step): array
+    {
+        $payloadKey = match ($step['source_type'] ?? '') {
+            'item_attribute' => 'item_variations',
+            'extra_group' => 'item_extras',
+            'addon' => 'item_addons',
+            default => null,
+        };
+        if ($payloadKey === null) {
+            return [];
+        }
+
+        $choiceIds = collect($step['choices'] ?? [])
+            ->pluck('id')
+            ->map(fn ($id): string => (string) $id)
+            ->flip();
+
+        if ($choiceIds->isEmpty()) {
+            return [];
+        }
+
+        $counts = [];
+        foreach ((array) ($this->payloadValue($line, $payloadKey) ?? []) as $selected) {
+            $id = $this->payloadValue($selected, 'id');
+            if ($id === null || ! $choiceIds->has((string) $id)) {
+                continue;
+            }
+            $quantity = max(1, (int) ($this->payloadValue($selected, 'quantity') ?? 1));
+            $counts[(string) $id] = ($counts[(string) $id] ?? 0) + $quantity;
+        }
+
+        return $counts;
+    }
+
+    private function payloadValue($payload, string $key)
+    {
+        if (is_array($payload)) {
+            return $payload[$key] ?? null;
+        }
+
+        if (is_object($payload)) {
+            return $payload->{$key} ?? null;
+        }
+
+        return null;
+    }
+
+    private function compareComposerProfiles(ItemWizardProfile $a, ItemWizardProfile $b): int
+    {
+        $aScope = $a->branch_id_scope === null ? 0 : 1;
+        $bScope = $b->branch_id_scope === null ? 0 : 1;
+
+        return [$bScope, (int) $b->version, (int) $b->id] <=> [$aScope, (int) $a->version, (int) $a->id];
+    }
+
+    private function composerProfileProjection(): ComposerProfileProjection
+    {
+        return $this->composerProfileProjection ?? app(ComposerProfileProjection::class);
+    }
+
+    private function choiceAvailabilityResolver(): ChoiceAvailabilityResolver
+    {
+        return $this->choiceAvailabilityResolver ?? app(ChoiceAvailabilityResolver::class);
     }
 }

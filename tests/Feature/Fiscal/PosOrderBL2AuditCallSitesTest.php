@@ -19,6 +19,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Smartisan\Settings\Facades\Settings;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
 /**
@@ -33,6 +34,7 @@ use Tests\TestCase;
 class PosOrderBL2AuditCallSitesTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected Branch $branch;
     protected User $admin;
@@ -96,25 +98,28 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
     public function test_pos_order_with_manual_discount_writes_discount_applied_audit(): void
     {
+        $payload = [
+            'customer_id'         => $this->admin->id,
+            'branch_id'           => $this->branch->id,
+            'subtotal'            => 10.00,
+            'discount'            => 2.50,
+            'discount_reason'     => 'Geste commercial — BL2 test',
+            'total'               => 8.50,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 10.00,
+            'items' => json_encode([[
+                'item_id' => $this->item->id, 'quantity' => 1,
+                'item_variations' => [], 'item_extras' => [],
+            ]]),
+        ];
+
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $this->admin->id,
-                'branch_id'           => $this->branch->id,
-                'subtotal'            => 10.00,
-                'discount'            => 2.50,
-                'discount_reason'     => 'Geste commercial — BL2 test',
-                'total'               => 8.50,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 10.00,
-                'items' => json_encode([[
-                    'item_id' => $this->item->id, 'quantity' => 1,
-                    'item_variations' => [], 'item_extras' => [],
-                ]]),
-            ])->assertStatus(201);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload))
+            ->assertStatus(201);
 
         $audit = AuditLog::where('action', 'order.discount_applied')
             ->where('branch_id', $this->branch->id)
@@ -275,23 +280,25 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
     private function createPaidOrder(): Order
     {
+        $payload = [
+            'customer_id'         => $this->admin->id,
+            'branch_id'           => $this->branch->id,
+            'subtotal'            => 10.00,
+            'total'               => 11.00,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([[
+                'item_id' => $this->item->id, 'quantity' => 1,
+                'item_variations' => [], 'item_extras' => [],
+            ]]),
+        ];
+
         $resp = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $this->admin->id,
-                'branch_id'           => $this->branch->id,
-                'subtotal'            => 10.00,
-                'total'               => 11.00,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([[
-                    'item_id' => $this->item->id, 'quantity' => 1,
-                    'item_variations' => [], 'item_extras' => [],
-                ]]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload));
         $resp->assertStatus(201);
         return Order::findOrFail((int) $resp->json('data.id'));
     }

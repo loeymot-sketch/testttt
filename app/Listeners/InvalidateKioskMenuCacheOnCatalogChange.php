@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\Branch;
+use App\Services\Menu\MenuSnapshot;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -10,6 +11,11 @@ class InvalidateKioskMenuCacheOnCatalogChange
 {
     private const CACHE_KEY_PREFIX = 'kiosk.menu.branch.';
     private const SYNC_WARNING_THRESHOLD = 100;
+
+    public function __construct(
+        private readonly MenuSnapshot $snapshot,
+    ) {
+    }
 
     public function handle(object $event): void
     {
@@ -44,10 +50,12 @@ class InvalidateKioskMenuCacheOnCatalogChange
     {
         $cacheKey = self::CACHE_KEY_PREFIX . $branchId;
         Cache::forget($cacheKey);
+        $snapshotVersion = $this->snapshot->bump($branchId);
 
         Log::info('[KioskMenu] catalog cache invalidated', [
             'branch_id' => $branchId,
             'cache_key' => $cacheKey,
+            'snapshot_version' => $snapshotVersion,
             'event' => $event::class,
         ]);
     }

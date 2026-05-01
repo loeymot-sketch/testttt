@@ -13,6 +13,10 @@ alwaysApply: false
 
 # Playwright & E2E — règles Cursor
 
+## Complément : OpenCLI (hors E2E officiel)
+
+**OpenCLI** (`.cursor/skills/opencli-browser-automation/SKILL.md`) sert l’**exploration / repro** via **Chrome** réel et `opencli browser` — **pas** le remplacement des E2E déclarés `playwright-mcp` / `playwright-critical-flow` dans le plan. Ne pas mélanger les preuves E2E du cycle avec un scénario OpenCLI ad hoc.
+
 ## Politique de test (AGENTS.md §8)
 
 Chaque tâche reçoit un niveau de test décidé par Claude (architecte) :

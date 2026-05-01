@@ -1,0 +1,6 @@
+.cursor/ACTIVE_CYCLE.md
+memory/INDEX.md
+.gitignore
+docs/PHASE_A_CLOSED.md
+docs/gates/GATE_LOG.md
+docs/gates/GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26.md

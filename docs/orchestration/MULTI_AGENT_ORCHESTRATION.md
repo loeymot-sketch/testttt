@@ -11,7 +11,7 @@
 |--------|------|-----------------|
 | **Mémoire longue durée (décisions)** | Faits stables, invariants, ADR, `group_id: foodking` | **Store B** : Graphiti MCP + `memory/episodes/*.jsonl` — voir `MEMORY_MATRIX.md` |
 | **Coordination concurrente (qui touche quoi)** | Réservation de chemins, pas de double édition surprise | **Store D** : `reports/AGENT_ACTIVITY_LOG.md` + `bash scripts/agent-activity-log.sh` — voir `cross-agent-sync.mdc` |
-| **État du cycle (une tâche à la fois par TASK_ID)** | Phase, plan, verdict audit | **Store D** : `.cursor/ACTIVE_CYCLE.md` + `plans/PLAN_*.md` + `AUDIT_VERDICT` / `REMEDIATION_AUDIT_CYCLE` |
+| **État du cycle (une tâche à la fois par TASK_ID)** | Phase, plan, plan review GPT, verdicts audit | **Store D** : `.cursor/ACTIVE_CYCLE.md` + `plans/PLAN_*.md` + `PLAN_REVIEW_VERDICT` + `AUDIT_VERDICT` + `GPT_FINAL_AUDIT_VERDICT` / `REMEDIATION_AUDIT_CYCLE` |
 
 Aucun agent n’a besoin d’un “chat partagé” : il lit **B + D** avant d’agir, et **écrit** seulement là où sa phase le permet (voir `MEMORY_MATRIX.md`).
 
@@ -50,12 +50,14 @@ Refus (exit 2) = **stop** : autre agent sur le même périmètre — attendre, r
 | Rôle | Canal typique | Décide |
 |------|---------------|--------|
 | **Plan + arbitrage invariants** | Session Cursor (Claude) + option terminal `context` | Contenu de `plans/PLAN_*.md`, `SUBSYSTEMS_TOUCHED` |
-| **Exécution lourde / diff large** | **`codex-extension`** (CLI `codex` + Pro) + missions `input.json` | Patch selon le plan, JSON `output_codex.json` |
+| **Challenge du plan** | **`codex-extension`** (`npm run codex:plan-review`) | `reports/audit/GPT_PLAN_REVIEW_*.md`, `PLAN_REVIEW_VERDICT: PASS | REWORK | ESCALATE` |
+| **Exécution produit** | **`codex-extension`** (CLI `codex` + Pro) + missions `input.json` | Toute implémentation produit, même petite, avec `gpt-5.5-pro` + `xhigh` par défaut |
 | **Auto-contrôle pré-audit** | Même exécution (wrapper) | `reports/audit/GPT_SELF_AUDIT_*.md` (outil, pas remplacement de l’audit Claude) |
-| **Acceptation / refus de livraison** | **Claude en terminal** (`foodking-claude-orchestrate.sh` audit) PRIMARY | `AUDIT_VERDICT: PASS` ou `REWORK` ; clôture **jamais** sans `PASS` |
-| **Routine** | `foodking-routine-implementer` | Tâches bornées, hors frozen |
+| **Acceptation / refus de livraison 1** | **Claude en terminal** (`foodking-claude-orchestrate.sh` audit) PRIMARY | `AUDIT_VERDICT: PASS` ou `REWORK`; fallback Cursor Claude si quota/rate-limit/terminal HS |
+| **Acceptation / refus de livraison 2** | **`codex-extension`** (`npm run codex:final-audit`) | `GPT_FINAL_AUDIT_VERDICT: PASS | REWORK | ESCALATE`; clôture **jamais** sans double `PASS` |
+| **Validation / rapport** | Composer / local tooling | Tests, diff summary, anomalies; aucune correction produit |
 
-“Maximum intelligence” ne veut **pas** dire mélanger les rôles : le **décideur d’acceptation** reste l’**audit terminal** (sauf `AUDIT_FALLBACK_REASON:` documenté).
+“Maximum intelligence” ne veut **pas** dire mélanger les rôles : Claude garde le scope et le premier audit, GPT challenge le plan, exécute, puis donne le second avis final. Le close demande le double `PASS`.
 
 ---
 
@@ -70,7 +72,7 @@ Refus (exit 2) = **stop** : autre agent sur le même périmètre — attendre, r
 
 - Réserver `app/` entier “au cas où” → bloque tout le monde (`cross-agent-sync.mdc`).
 - S’appuyer sur le thread de chat pour l’“état du projet” → **dérive** ; l’état = **D** + **B**.
-- Fermer un cycle **sans** `AUDIT_VERDICT: PASS` parce que les tests sont verts → **interdit** (`run-cycle` Step 5).
+- Fermer un cycle **sans** `AUDIT_VERDICT: PASS` **et** `GPT_FINAL_AUDIT_VERDICT: PASS` parce que les tests sont verts → **interdit** (`run-cycle` Step 5).
 - Cinq `REWORK` sur le même `TASK_ID` sans progrès → `HUMAN_GATE` (débloquer scope ou stratégie) — `auto-remediation.mdc`.
 
 ---

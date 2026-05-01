@@ -137,6 +137,7 @@ final class PricingPreviewService
             'unit_price'       => (float) $line->unitItemPrice,
             'variations_total' => (float) $line->variationTotal,
             'extras_total'     => (float) $line->extraTotal,
+            'addons_total'     => (float) $line->addonTotal,
             'line_subtotal'    => (float) $line->lineSubtotalExTax,
             'tax'              => (float) $line->taxAmount,
             'line_total'       => round((float) $line->lineSubtotalExTax + (float) $line->taxAmount, 2),
@@ -150,12 +151,25 @@ final class PricingPreviewService
             'quantity'        => max(1, (int) ($line['quantity'] ?? 1)),
             'instruction'     => $line['instruction'] ?? null,
             'item_variations' => array_map(
-                fn ($v) => (object) ['id' => (int) ($v['id'] ?? 0)],
+                fn ($v) => (object) [
+                    'id' => (int) ($v['id'] ?? 0),
+                    'quantity' => max(1, (int) ($v['quantity'] ?? 1)),
+                ],
                 (array) ($line['item_variations'] ?? [])
             ),
             'item_extras'     => array_map(
-                fn ($e) => (object) ['id' => (int) ($e['id'] ?? 0)],
+                fn ($e) => (object) [
+                    'id' => (int) ($e['id'] ?? 0),
+                    'quantity' => max(1, (int) ($e['quantity'] ?? 1)),
+                ],
                 (array) ($line['item_extras'] ?? [])
+            ),
+            'item_addons'     => array_map(
+                fn ($a) => (object) [
+                    'id' => (int) ($a['id'] ?? 0),
+                    'quantity' => max(1, (int) ($a['quantity'] ?? 1)),
+                ],
+                (array) ($line['item_addons'] ?? [])
             ),
         ];
         return $obj;

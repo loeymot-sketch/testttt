@@ -238,7 +238,7 @@ class OutboxConcurrentWorkerDedupeTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 123,
             'branch_id' => 1,
-            'payload' => ['order_id' => 123],
+            'payload' => $this->orderCreatedPayload(123),
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'correlation_id' => 'corr-' . uniqid('', true),
@@ -249,6 +249,19 @@ class OutboxConcurrentWorkerDedupeTest extends TestCase
         ];
 
         return DomainEvent::query()->create(array_merge($defaults, $overrides));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function orderCreatedPayload(int $orderId): array
+    {
+        return [
+            'order_id' => $orderId,
+            'queue_number' => 'Q-' . $orderId,
+            '_origin' => 'pos',
+            'payment_method' => 'cash',
+        ];
     }
 
     private function mockBroadcastManager(Broadcaster $broadcaster): void

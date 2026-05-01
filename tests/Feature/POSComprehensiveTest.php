@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
 
 /**
  * Module 3: POS / Caisse (8 tests)
@@ -20,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class POSComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
 
     protected function setUp(): void
     {
@@ -61,24 +63,26 @@ class POSComprehensiveTest extends TestCase
             'price' => 10.00,
         ]);
         
-        $response = $this->actingAs($admin)
+        $payload = [
+            'order_type' => \App\Enums\OrderType::POS,
+            'subtotal' => 10.00,
+            'total' => 10.00,
+            'source' => \App\Enums\Source::POS,
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => 0,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            'pos_received_amount' => 15.00,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 10.00,
+                'quantity' => 1,
+            ]]),
+        ];
+
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'order_type' => \App\Enums\OrderType::POS,
-                'subtotal' => 10.00,
-                'total' => 10.00,
-                'source' => \App\Enums\Source::POS,
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'is_advance_order' => 0,
-                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 15.00,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 10.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         
         $response->assertStatus(201);
         

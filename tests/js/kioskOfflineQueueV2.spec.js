@@ -85,6 +85,7 @@ function makeKioskAppMethodContext(overrides = {}) {
   ctx._flushStaleToast = KioskAppComponent.methods._flushStaleToast.bind(ctx);
   ctx._scheduleStaleToast = KioskAppComponent.methods._scheduleStaleToast.bind(ctx);
   ctx._handleItemAvailabilityChanged = KioskAppComponent.methods._handleItemAvailabilityChanged.bind(ctx);
+  ctx._handleCatalogChanged = KioskAppComponent.methods._handleCatalogChanged.bind(ctx);
 
   return ctx;
 }
@@ -177,6 +178,52 @@ describe('kioskOfflineQueue v2', () => {
     expect(result.synced).toBe(1);
     expect(result.failed).toBe(0);
     expect(postFn).toHaveBeenCalledTimes(1);
+    expect(queue.getPendingCount()).toBe(0);
+  });
+
+  it('refreshes a kiosk cash quote before offline order replay', async () => {
+    const { queue } = await loadQueueModule('fresh-quote-replay');
+
+    queue.saveOrder({
+      order_type: 25,
+      source: 5,
+      payment_method: 1,
+      is_advance_order: 10,
+      items: JSON.stringify([{ item_id: 90, quantity: 1 }]),
+    }, 'fresh-quote-key');
+
+    const postFn = vi.fn(async (url, payload) => {
+      if (url === 'frontend/order/quote') {
+        expect(payload).not.toHaveProperty('quote_token');
+        expect(payload).not.toHaveProperty('quote_signature');
+        expect(payload).not.toHaveProperty('total');
+        return {
+          data: {
+            data: {
+              quote_token: '00000000-0000-4000-8000-000000000123',
+              signature: 'a'.repeat(64),
+              subtotal: 10,
+              discount: 0,
+              delivery_charge: 0,
+              total_ttc: 11,
+            },
+          },
+        };
+      }
+
+      expect(url).toBe('frontend/order');
+      expect(payload.quote_token).toBe('00000000-0000-4000-8000-000000000123');
+      expect(payload.quote_signature).toBe('a'.repeat(64));
+      expect(payload.total).toBe(11);
+      return { status: 201 };
+    });
+
+    const result = await queue.syncQueue(postFn);
+
+    expect(result.synced).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(postFn).toHaveBeenCalledTimes(2);
+    expect(postFn.mock.calls.map(([url]) => url)).toEqual(['frontend/order/quote', 'frontend/order']);
     expect(queue.getPendingCount()).toBe(0);
   });
 
@@ -336,6 +383,46 @@ describe('kioskOfflineQueue v2', () => {
     expect(ctx.$store.commit).not.toHaveBeenCalled();
     expect(ctx.pruneOfflineQueueOnAvailabilityChanged).not.toHaveBeenCalled();
     expect(ctx._showToast).not.toHaveBeenCalled();
+  });
+
+  it('refreshes kiosk menu on CatalogChanged for the active branch', async () => {
+    const dispatch = vi.fn(() => Promise.resolve());
+    const ctx = makeKioskAppMethodContext({
+      $store: {
+        commit: vi.fn(),
+        dispatch,
+        getters: { 'kioskCart/branchId': 7 },
+        state: { kioskCart: { branchId: 7 } },
+      },
+    });
+
+    const result = await ctx._handleCatalogChanged({
+      branchId: 7,
+      payload: { entity_type: 'composer_profile', branch_id: 7 },
+    }, 7);
+
+    expect(result).toEqual({ refreshed: true, entityType: 'composer_profile' });
+    expect(dispatch).toHaveBeenCalledWith('kioskMenu/fetchMenu', { force: true, branchId: 7 });
+  });
+
+  it('ignores CatalogChanged events from another branch', async () => {
+    const dispatch = vi.fn(() => Promise.resolve());
+    const ctx = makeKioskAppMethodContext({
+      $store: {
+        commit: vi.fn(),
+        dispatch,
+        getters: { 'kioskCart/branchId': 7 },
+        state: { kioskCart: { branchId: 7 } },
+      },
+    });
+
+    const result = await ctx._handleCatalogChanged({
+      branchId: 8,
+      payload: { entity_type: 'composer_profile', branch_id: 8 },
+    }, 7);
+
+    expect(result).toEqual({ ignored: true, reason: 'branch_mismatch' });
+    expect(dispatch).not.toHaveBeenCalled();
   });
 
   it('debounces stale-item toasts into a single aggregated warning', async () => {

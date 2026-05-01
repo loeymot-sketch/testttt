@@ -1,0 +1,36 @@
+[
+  {
+    "name": "mock-borne-foodking-http",
+    "url": "http://127.0.0.1:8010/Borne%20FoodKing.html",
+    "shot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-foodking-http.png",
+    "errors": [],
+    "consoleErrors": [
+      "warning: You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/"
+    ],
+    "textLength": 331,
+    "sample": "IDLE\nMENU\nWIZARD\nPANIER\nUPSELL\nPAIEMENT\nTPE\nESPÈCES\nWAITING\nCONFIRM\nERREUR\n⏱ INACTIVITY\n🔧 ADMIN\n⚙ TWEAKS\n🍔\n🌯\n🍟\n🥤\n🍗\n🥖\nFOODKING\nBienvenue\nchez\nFoodKing.\nCommandez en quelques secondes.\nRetirez votre commande au comptoir.\n🍔\n▼ TOUCHEZ L'ÉCRAN ▼\nCOMMANDER ICI\nFR\nEN\nAR\n■ TPE\n■ IMPRIMANTE\n■ QR\nFOODKING KIOSK · 1080 × 1920 · IDLE"
+  },
+  {
+    "name": "mock-borne-grillhouse-http",
+    "url": "http://127.0.0.1:8010/Borne%20Grill%20House.html",
+    "shot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-grillhouse-http.png",
+    "errors": [],
+    "consoleErrors": [
+      "warning: You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/"
+    ],
+    "textLength": 589,
+    "sample": "FOODKING SAAS · SPRINT 5\nBorne libre-service — Grill House\nFlow complet : accueil → choix commande → catalogue → wizard → panier → upsell → paiement → confirmation. Deux directions visuelles contrastées, même flow. Ouvrez Tweaks pour changer la couleur d'accent et sauter à n'importe quel écran.\nDIRECTION A\nDark · Premium\nGH\nGRILL HOUSE\nBURGER · GRILL · SMOKE\n🍔\nDouble Beef\n10,50 €\n👆\nTouchez l'écran pour commander\nGRILL HOUSE · KIOSK v1\nDIRECTION B\nWarm · Appétissant\nGH\nGRILL HOUSE\nBURGER · GRILL · SMOKE\n🍔\nDouble Beef\n10,50 €\n👆\nTouchez l'écran pour commander\nGRILL HOUSE · KIOSK v1"
+  },
+  {
+    "name": "mock-borne-http",
+    "url": "http://127.0.0.1:8010/Borne.html",
+    "shot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/mock-borne-http.png",
+    "errors": [],
+    "consoleErrors": [
+      "error: Failed to load resource: the server responded with a status of 404 (File not found)",
+      "error: Failed to load resource: the server responded with a status of 404 (File not found)"
+    ],
+    "textLength": 0,
+    "sample": ""
+  }
+]

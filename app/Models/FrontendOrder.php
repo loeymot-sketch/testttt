@@ -25,6 +25,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
     protected $fillable = [
         'order_serial_no',
         'queue_number',
+        'business_date',
         'token',
         'user_id',
         'branch_id',
@@ -41,6 +42,9 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'address',
         'payment_method',
         'payment_status',
+        'pos_payment_method',
+        'pos_payment_note',
+        'pos_received_amount',
         'status',
         'dining_table_id',
         'source',
@@ -56,6 +60,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
     protected $casts = [
         'id'               => 'integer',
         'order_serial_no'  => 'string',
+        'business_date'    => 'date:Y-m-d',
         'token'            => 'string',
         'user_id'          => 'integer',
         'branch_id'        => 'integer',
@@ -70,6 +75,9 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'is_advance_order' => 'integer',
         'payment_method'   => 'integer',
         'payment_status'   => 'integer',
+        'pos_payment_method' => 'integer',
+        'pos_payment_note' => 'string',
+        'pos_received_amount' => 'decimal:6',
         'status'           => 'integer',
         'dining_table_id'  => 'integer',
         'source'           => 'integer'

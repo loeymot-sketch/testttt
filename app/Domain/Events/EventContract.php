@@ -34,11 +34,13 @@ final class EventContract
     public const BROADCAST_MAP = [
         'OrderCreated'              => EventType::ORDER_CREATED,
         'OrderStatusChanged'        => EventType::ORDER_STATUS_CHANGED,
+        'OrderPaidAtCounter'        => EventType::ORDER_PAYMENT_CONFIRMED,
         'OrderItemAdded'            => EventType::ORDER_ITEM_ADDED,
         'OrderCancelled'            => EventType::ORDER_CANCELLED,
         // [F-02] KDS table reassignment fan-out.
         'OrderTableChanged'         => EventType::ORDER_TABLE_CHANGED,
         'ItemAvailabilityChanged'   => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+        'CatalogChanged'            => EventType::CATALOG_CHANGED,
         'StockLow'                  => EventType::STOCK_LOW,
     ];
 
@@ -46,14 +48,16 @@ final class EventContract
      * Required payload keys for each canonical event type.
      * Enforced by assertPayloadValid() before a row reaches the outbox.
      */
-    private const REQUIRED_PAYLOAD_KEYS = [
-        EventType::ORDER_CREATED                  => ['order_id'],
-        EventType::ORDER_STATUS_CHANGED           => ['order_id', 'old_status', 'new_status'],
+    public const REQUIRED_PAYLOAD_KEYS = [
+        EventType::ORDER_CREATED                  => ['order_id', 'queue_number', '_origin', 'payment_method'],
+        EventType::ORDER_STATUS_CHANGED           => ['order_id', 'queue_number', '_origin', 'payment_method', 'old_status', 'new_status'],
+        EventType::ORDER_PAYMENT_CONFIRMED        => ['order_id', 'queue_number', '_origin', 'payment_method', 'payment_status', 'fiscal_sequence_no'],
         EventType::ORDER_ITEM_ADDED               => ['order_id', 'item_id'],
         EventType::ORDER_CANCELLED                => ['order_id'],
         // [F-02] OrderTableChanged minimum payload — see PersistOrderTableChangedToOutbox.
         EventType::ORDER_TABLE_CHANGED            => ['order_id', 'new_table_id'],
         EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status'],
+        EventType::CATALOG_CHANGED                => ['entity_type', 'entity_id', 'change_type', 'snapshot_version'],
         EventType::STOCK_LOW                      => ['item_id'],
     ];
 

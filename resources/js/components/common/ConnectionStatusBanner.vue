@@ -34,6 +34,16 @@ import { wsService, WS_STATE } from "../../services/WebSocketService";
 
 export default {
   name: "ConnectionStatusBanner",
+  props: {
+    suppressTransient: {
+      type: Boolean,
+      default: false,
+    },
+    suppressSessionInvalid: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       wsState: WS_STATE.INITIALIZED,
@@ -60,7 +70,8 @@ export default {
     },
     visible() {
       // [F-12] session_invalid takes precedence and ignores the dismissal flag.
-      if (this.isSessionInvalid) return true;
+      if (this.isSessionInvalid) return !this.suppressSessionInvalid;
+      if (this.suppressTransient) return false;
       return this.showTransientBanner && !this.dismissed;
     },
     bannerClass() {

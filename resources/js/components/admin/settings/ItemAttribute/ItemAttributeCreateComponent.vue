@@ -45,6 +45,57 @@
                             </div>
                         </div>
 
+                        <div class="form-col-12 sm:form-col-4">
+                            <label for="min_select" class="db-field-title">Minimum de choix</label>
+                            <input
+                                v-model.number="props.form.min_select"
+                                v-bind:class="errors.min_select ? 'invalid' : ''"
+                                type="number"
+                                min="0"
+                                max="99"
+                                id="min_select"
+                                class="db-field-control"
+                            />
+                            <small class="db-field-alert" v-if="errors.min_select">{{ errors.min_select[0] }}</small>
+                            <small class="text-slate-400 text-xs mt-1 block">0 = optionnel.</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-4">
+                            <label for="max_select" class="db-field-title">Maximum de choix</label>
+                            <input
+                                v-model.number="props.form.max_select"
+                                v-bind:class="errors.max_select ? 'invalid' : ''"
+                                type="number"
+                                min="0"
+                                max="99"
+                                id="max_select"
+                                class="db-field-control"
+                            />
+                            <small class="db-field-alert" v-if="errors.max_select">{{ errors.max_select[0] }}</small>
+                            <small class="text-slate-400 text-xs mt-1 block">Ex: 1 viande, 2 viandes, 4 viandes.</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-4">
+                            <label class="db-field-title">Autoriser le meme choix plusieurs fois</label>
+                            <div class="db-field-radio-group">
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="1" v-model="props.form.allow_repeat" type="radio" id="allow_repeat_yes" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="allow_repeat_yes" class="db-field-label">{{ $t("label.yes") }}</label>
+                                </div>
+                                <div class="db-field-radio">
+                                    <div class="custom-radio">
+                                        <input :value="0" v-model="props.form.allow_repeat" type="radio" id="allow_repeat_no" class="custom-radio-field">
+                                        <span class="custom-radio-span"></span>
+                                    </div>
+                                    <label for="allow_repeat_no" class="db-field-label">{{ $t("label.no") }}</label>
+                                </div>
+                            </div>
+                            <small class="text-slate-400 text-xs mt-1 block">Utile pour "4 viandes" avec steak x2.</small>
+                        </div>
+
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -102,6 +153,9 @@ export default {
             this.errors = {};
             this.$props.props.form = {
                 name: "",
+                min_select: 0,
+                max_select: 1,
+                allow_repeat: 0,
                 status: statusEnum.ACTIVE,
             };
         },
@@ -119,6 +173,9 @@ export default {
                     );
                     this.props.form = {
                         name: "",
+                        min_select: 0,
+                        max_select: 1,
+                        allow_repeat: 0,
                         status: statusEnum.ACTIVE,
                     };
                     this.errors = {};

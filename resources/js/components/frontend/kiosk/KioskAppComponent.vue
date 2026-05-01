@@ -1,7 +1,25 @@
 <template>
-  <div class="kiosk-app" @touchstart="resetIdleTimer" @click="resetIdleTimer" @keydown="resetIdleTimer">
+  <div
+    class="kiosk-app"
+    :class="`kiosk-theme--${themeMode}`"
+    :data-kiosk-theme="themeMode"
+    @touchstart="resetIdleTimer"
+    @click="resetIdleTimer"
+    @keydown="resetIdleTimer"
+  >
 
-    <ConnectionStatusBanner />
+    <ConnectionStatusBanner suppress-transient suppress-session-invalid />
+
+    <button
+      type="button"
+      class="kiosk-theme-toggle"
+      data-testid="kiosk-theme-toggle"
+      :aria-label="themeToggleAriaLabel"
+      :aria-pressed="String(themeMode === 'dark')"
+      @click.stop="toggleTheme"
+    >
+      <span aria-hidden="true">{{ themeMode === 'dark' ? '☀' : '☾' }}</span>
+    </button>
 
     <!-- Initialisation : overlay pendant le chargement de la branche -->
     <transition name="fade">
@@ -114,19 +132,6 @@
       @leave="onInactivityLeave"
     />
 
-    <!-- Admin panel (accessible via 5 taps rapides sur la zone secrète) -->
-    <div
-      class="kiosk-admin-trigger"
-      @click="handleAdminTap"
-      :title="$t('kiosk.app.admin_trigger_title')"
-    />
-    <transition name="fade">
-      <KioskAdminComponent
-        v-if="showAdmin"
-        @close="showAdmin = false"
-      />
-    </transition>
-
     <KioskOfflineConflictModalComponent
       v-model="offlineConflictModalOpen"
       :entries="offlineConflictEntries"
@@ -141,7 +146,6 @@
 </template>
 
 <script>
-import { defineAsyncComponent } from 'vue';
 import { mapGetters, mapActions } from 'vuex';
 import {
   cancelStaleEntry,
@@ -153,16 +157,13 @@ import {
   stopAutoSync,
 } from '../../../helpers/kioskOfflineQueue';
 
-const KioskAdminComponent = defineAsyncComponent(
-  () => import(/* webpackChunkName: "kiosk-admin" */ './KioskAdminComponent.vue')
-);
 import KioskToastComponent from './KioskToastComponent.vue';
 import KioskOfflineConflictModalComponent from './KioskOfflineConflictModalComponent.vue';
 import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
-import { onEvent } from '../../../services/eventContract';
+import { onEvents } from '../../../services/eventContract';
 // [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
 import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
 import { setLocale } from '../../../i18n';
@@ -193,7 +194,6 @@ export default {
   mixins: [kioskPriceMixin],
   components: {
     ConnectionStatusBanner,
-    KioskAdminComponent,
     KioskToastComponent,
     KioskOfflineConflictModalComponent,
     KioskInactivityOverlayComponent,
@@ -221,10 +221,6 @@ export default {
       offlinePending: 0,
       offlineAbandoned: 0,
       offlineCheckTimer: null,
-      // Admin panel — accessible via 5 taps rapides sur la zone secrète
-      showAdmin: false,
-      _adminTapCount: 0,
-      _adminTapTimer: null,
       _eventSub: null,
       offlineConflictEntries: [],
       offlineConflictModalOpen: false,
@@ -235,6 +231,7 @@ export default {
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
+      themeMode: 'dark',
     };
   },
   computed: {
@@ -276,6 +273,11 @@ export default {
       const raw = Number.isFinite(s?.confirmMs) ? s.confirmMs : 15000;
       return Math.min(60000, Math.max(3000, raw));
     },
+    themeToggleAriaLabel() {
+      return this.themeMode === 'dark'
+        ? 'Passer en mode clair'
+        : 'Passer en mode sombre';
+    },
   },
   watch: {
     $route(to, from) {
@@ -293,6 +295,7 @@ export default {
     },
   },
   mounted() {
+    this.loadKioskTheme();
     this.startIdleTimer();
     this.loadBranch();
     this._loadSettingsIntoGlobalState();
@@ -332,7 +335,6 @@ export default {
   },
   beforeUnmount() {
     this.clearIdleTimer();
-    clearTimeout(this._adminTapTimer);
     clearTimeout(this.rippleTimer);
     clearInterval(this.offlineCheckTimer);
     stopAutoSync();
@@ -361,6 +363,27 @@ export default {
     ...mapActions('kioskCart', ['reset', 'setBranch', 'pruneOfflineQueueOnAvailabilityChanged']),
     ...mapActions('frontendBranch', { loadBranchList: 'lists' }),
     ...mapActions('globalState', { _setGlobalState: 'set' }),
+
+    loadKioskTheme() {
+      let stored = null;
+      try { stored = window.localStorage?.getItem('foodking:kiosk-theme'); } catch (_) {}
+      const next = ['dark', 'light'].includes(stored) ? stored : 'dark';
+      this.themeMode = next;
+      this.applyKioskTheme(next);
+    },
+
+    applyKioskTheme(mode) {
+      try {
+        document.documentElement.setAttribute('data-kiosk-visual-theme', mode);
+      } catch (_) {}
+    },
+
+    toggleTheme() {
+      const next = this.themeMode === 'dark' ? 'light' : 'dark';
+      this.themeMode = next;
+      try { window.localStorage?.setItem('foodking:kiosk-theme', next); } catch (_) {}
+      this.applyKioskTheme(next);
+    },
 
     /**
      * [PHASE-4.4] Wire des watchers Vuex → attributs <html>.
@@ -392,19 +415,8 @@ export default {
       ];
     },
 
-    // 5 taps rapides sur la zone secrète (coin bas-gauche) ouvre le panel admin
-    handleAdminTap() {
-      this._adminTapCount++;
-      clearTimeout(this._adminTapTimer);
-      this._adminTapTimer = setTimeout(() => { this._adminTapCount = 0; }, 2000);
-      if (this._adminTapCount >= 5) {
-        this._adminTapCount = 0;
-        this.showAdmin = true;
-      }
-    },
-
-    // [KIOSK-16/17] Load all settings into globalState so kiosk components can read
-    // company_name, kiosk_admin_pin, loyalty rates, etc. without individual axios calls.
+    // [KIOSK-16/17] Load public settings into globalState so kiosk components can read
+    // company_name, loyalty rates, etc. without individual axios calls.
     // Uses globalState/set (not init) to ensure values are always overwritten — init
     // skips keys that already exist, which would leave stale defaults in place.
     async _loadSettingsIntoGlobalState() {
@@ -452,9 +464,20 @@ export default {
       if (!window.Echo || !branchId) return;
       this._leaveEchoChannel();
       try {
-        this._eventSub = onEvent(branchId, 'ItemAvailabilityChanged', (event) => {
-          this._handleItemAvailabilityChanged(event, branchId);
-        });
+        this._eventSub = onEvents(branchId, [
+          {
+            broadcastAs: 'ItemAvailabilityChanged',
+            handler: (event) => {
+              this._handleItemAvailabilityChanged(event, branchId);
+            },
+          },
+          {
+            broadcastAs: 'CatalogChanged',
+            handler: (event) => {
+              this._handleCatalogChanged(event, branchId);
+            },
+          },
+        ]);
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
       }
@@ -564,6 +587,33 @@ export default {
 
         return result;
       }).catch(() => ({ ignored: true, reason: 'queue_update_failed' }));
+    },
+
+    _handleCatalogChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return Promise.resolve({ ignored: true, reason: 'branch_mismatch' });
+      }
+
+      const branchId = activeBranchId ?? eventBranchId ?? subscribedBranchId;
+
+      return this.$store.dispatch('kioskMenu/fetchMenu', {
+        force: true,
+        branchId,
+      }).then(() => ({ refreshed: true, entityType: payload.entity_type || null }))
+        .catch(() => ({ ignored: true, reason: 'menu_refresh_failed' }));
     },
 
     _leaveEchoChannel() {
@@ -700,8 +750,11 @@ export default {
       this.rippleTimer = setTimeout(() => { this.ripple.show = false; }, 400);
     },
 
-    startOrder() {
+    startOrder(orderType = null) {
       this.reset();
+      if (orderType !== null && orderType !== undefined) {
+        this.$store.dispatch('kioskCart/setOrderType', orderType);
+      }
       this.$router.push({ name: 'kiosk.categories' });
     },
 
@@ -812,35 +865,64 @@ export default {
 </script>
 
 <style>
-/* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend */
-/* ═══════════════════════════════════════════════════════════════
-   SPLASH / GUR THEME — Fond BLANC, accent ROUGE, aéré, retail
-   ═══════════════════════════════════════════════════════════════ */
+/* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend. */
 .kiosk-app {
-  --kiosk-primary:     #E8001C;
-  --kiosk-primary-dark:#C0001A;
-  --kiosk-primary-light: rgba(232,0,28,0.08);
-  --kiosk-accent:      #E8001C;
-  --kiosk-success:     #2ECC71;
-  --kiosk-warn:        #F39C12;
+  --kiosk-primary:       #E8001C;
+  --kiosk-primary-dark:  #B8000F;
+  --kiosk-primary-soft:  rgba(232, 0, 28, 0.16);
+  --kiosk-primary-light: rgba(232, 0, 28, 0.10);
+  --kiosk-accent:        #E8001C;
+  --kiosk-success:       #22C55E;
+  --kiosk-error:         #FF4961;
+  --kiosk-warning:       #F59E0B;
+  --kiosk-warn:          var(--kiosk-warning);
+  --kiosk-info:          #60A5FA;
 
-  /* Fond CLAIR — style Splash/GUR */
-  --kiosk-bg:          #FFFFFF;
-  --kiosk-bg-2:        #F7F7F8;
-  --kiosk-bg-3:        #EFEFEF;
+  --kiosk-bg:            #070304;
+  --kiosk-bg-2:          #12080A;
+  --kiosk-bg-3:          #1F0A0F;
+  --kiosk-surface:       #130B0E;
+  --kiosk-surface-alt:   #211317;
+  --kiosk-surface-strong:#2D151B;
+  --kiosk-border:        rgba(255, 255, 255, 0.13);
+  --kiosk-border-strong: rgba(255, 255, 255, 0.26);
 
-  /* Compat: ancien nom → nouveau fond */
-  --kiosk-dark:        #FFFFFF;
-  --kiosk-dark-2:      #F7F7F8;
-  --kiosk-dark-3:      #EFEFEF;
+  --kiosk-dark:          var(--kiosk-bg);
+  --kiosk-dark-2:        var(--kiosk-bg-2);
+  --kiosk-dark-3:        var(--kiosk-bg-3);
 
-  --kiosk-text:        #1A1A1A;
-  --kiosk-text-2:      #555555;
-  --kiosk-text-muted:  #999999;
-  --kiosk-border:      #E0E0E0;
-  --kiosk-border-light:rgba(0,0,0,0.06);
-  --kiosk-shadow:      0 2px 8px rgba(0,0,0,0.06);
-  --kiosk-shadow-lg:   0 4px 20px rgba(0,0,0,0.10);
+  --kiosk-text:          #FFFFFF;
+  --kiosk-text-2:        rgba(255, 255, 255, 0.82);
+  --kiosk-text-muted:    rgba(255, 255, 255, 0.70);
+  --kiosk-text-mute:     rgba(255, 255, 255, 0.55);
+  --kiosk-text-on-red:   #FFFFFF;
+  --kiosk-border-light:  rgba(255, 255, 255, 0.08);
+
+  --kiosk-page-bg:
+    radial-gradient(circle at 20% 0%, rgba(232, 0, 28, 0.22), transparent 32%),
+    linear-gradient(160deg, #050102 0%, #120407 42%, #2A070E 100%);
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #180205 0%, #E8001C 55%, #74000B 100%);
+  --kiosk-idle-text: #FFFFFF;
+  --kiosk-idle-muted: rgba(255, 255, 255, 0.88);
+  --kiosk-idle-card-bg: rgba(255, 255, 255, 0.94);
+  --kiosk-idle-card-text: #9E0014;
+  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 62%);
+  --kiosk-theme-control-bg: rgba(19, 11, 14, 0.82);
+
+  --kiosk-shadow:        0 10px 30px rgba(0, 0, 0, 0.24);
+  --kiosk-shadow-card:   0 18px 48px rgba(0, 0, 0, 0.28);
+  --kiosk-shadow-lift:   0 24px 64px rgba(0, 0, 0, 0.34);
+  --kiosk-shadow-cta:    0 18px 46px rgba(232, 0, 28, 0.34);
+  --kiosk-shadow-modal:  0 28px 74px rgba(0, 0, 0, 0.42);
+  --kiosk-shadow-sticky: 0 -14px 34px rgba(0, 0, 0, 0.24);
+  --kiosk-overlay-modal: rgba(0, 0, 0, 0.72);
+  --kiosk-focus-ring:    #FFFFFF;
+  --kiosk-focus-width:   4px;
+  --kiosk-focus-offset:  2px;
+  --kiosk-status-bg:     rgba(33, 19, 23, 0.92);
+  --kiosk-status-border: rgba(255, 255, 255, 0.20);
+  --kiosk-status-offline:#FFB020;
 
   /* Typography */
   --kiosk-title:       28px;
@@ -862,9 +944,119 @@ export default {
   font-family: var(--kiosk-font);
   color: var(--kiosk-text);
 }
+
+.kiosk-app.kiosk-theme--light {
+  --kiosk-primary:       #E8001C;
+  --kiosk-primary-dark:  #A90014;
+  --kiosk-primary-soft:  #FFF0F2;
+  --kiosk-primary-light: rgba(232, 0, 28, 0.08);
+  --kiosk-success:       #1B8A3A;
+  --kiosk-error:         #C21E2F;
+  --kiosk-warning:       #B8730B;
+  --kiosk-info:          #2563EB;
+
+  --kiosk-bg:            #FFFBF5;
+  --kiosk-bg-2:          #FFFFFF;
+  --kiosk-bg-3:          #F7F3EC;
+  --kiosk-surface:       #FFFFFF;
+  --kiosk-surface-alt:   #F7F3EC;
+  --kiosk-surface-strong:#FFFFFF;
+  --kiosk-border:        #EEE6D9;
+  --kiosk-border-strong: #D9C9B8;
+
+  --kiosk-dark:          var(--kiosk-bg);
+  --kiosk-dark-2:        var(--kiosk-bg-2);
+  --kiosk-dark-3:        var(--kiosk-bg-3);
+
+  --kiosk-text:          #1A1A1A;
+  --kiosk-text-2:        #3F3435;
+  --kiosk-text-muted:    #5A5A5A;
+  --kiosk-text-mute:     #7D7374;
+  --kiosk-text-on-red:   #FFFFFF;
+  --kiosk-border-light:  rgba(0, 0, 0, 0.06);
+
+  --kiosk-page-bg:
+    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #E8001C 100%);
+  --kiosk-idle-text: #210006;
+  --kiosk-idle-muted: #4A2A2F;
+  --kiosk-idle-card-bg: #111111;
+  --kiosk-idle-card-text: #FFFFFF;
+  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%);
+  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90);
+
+  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
+  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
+  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
+  --kiosk-shadow-cta:    0 14px 30px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
+  --kiosk-overlay-modal: rgba(26, 26, 26, 0.55);
+  --kiosk-focus-ring:    #2563EB;
+  --kiosk-status-bg:     rgba(255, 255, 255, 0.94);
+  --kiosk-status-border: rgba(232, 0, 28, 0.18);
+  --kiosk-status-offline:#A94700;
+}
 .kiosk-app *, .kiosk-app *::before, .kiosk-app *::after {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+}
+
+.kiosk-app .connection-status-banner {
+  top: 14px;
+  left: 50%;
+  right: auto;
+  width: auto;
+  max-width: min(620px, calc(100vw - 160px));
+  min-height: 42px;
+  padding: 8px 44px 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--kiosk-status-border);
+  background: var(--kiosk-status-bg);
+  color: var(--kiosk-text);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.26);
+  transform: translateX(-50%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.kiosk-app .connection-status-banner--reconnecting,
+.kiosk-app .connection-status-banner--offline {
+  background: var(--kiosk-status-bg);
+}
+
+.kiosk-app .connection-status-banner--offline .connection-status-banner__text,
+.kiosk-app .connection-status-banner--reconnecting .connection-status-banner__text {
+  color: var(--kiosk-status-offline);
+}
+
+.kiosk-app .connection-status-banner__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 900;
+}
+
+.kiosk-app .connection-status-banner__close {
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.kiosk-app.kiosk-theme--light .connection-status-banner__close {
+  background: rgba(232, 0, 28, 0.08);
+  color: var(--kiosk-primary);
+}
+
+.kiosk-app:has(.kiosk-wizard) .connection-status-banner {
+  top: 20px;
+  left: 100px;
+  max-width: min(310px, calc(100vw - 220px));
+  transform: none;
 }
 </style>
 
@@ -880,6 +1072,43 @@ export default {
   flex-direction: column;
   user-select: none;
   touch-action: pan-y;
+}
+
+.kiosk-theme-toggle {
+  position: absolute;
+  top: 24px;
+  inset-inline-start: 24px;
+  z-index: 230;
+  width: 60px;
+  height: 60px;
+  min-width: var(--kiosk-touch-comfortable, 60px);
+  min-height: var(--kiosk-touch-comfortable, 60px);
+  border: 1.5px solid var(--kiosk-border-strong, rgba(255,255,255,0.26));
+  border-radius: 50%;
+  background: var(--kiosk-theme-control-bg);
+  color: var(--kiosk-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 900;
+  box-shadow: var(--kiosk-shadow-card);
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.kiosk-theme-toggle:active {
+  transform: scale(0.94);
+}
+
+.kiosk-theme-toggle:focus-visible {
+  outline: var(--kiosk-focus-width, 4px) solid var(--kiosk-focus-ring, #fff);
+  outline-offset: var(--kiosk-focus-offset, 2px);
+}
+
+[dir="rtl"] .kiosk-theme-toggle {
+  inset-inline-start: auto;
+  inset-inline-end: 24px;
 }
 
 /* Offline sync indicator */
@@ -1163,7 +1392,7 @@ export default {
 .kiosk-init-error { background: #fff5f5; }
 .kiosk-init-error-icon { font-size: 3.5rem; }
 .kiosk-init-error-title { font-size: 1.4rem; font-weight: 700; margin: 0; color: #1A1A1A; }
-.kiosk-init-error-sub { font-size: 0.95rem; color: #999; margin: 0; text-align: center; max-width: 400px; }
+.kiosk-init-error-sub { font-size: 0.95rem; color: #555; margin: 0; text-align: center; max-width: 400px; }
 .kiosk-init-retry-btn {
   background: #E8001C; color: #fff;
   border: none; border-radius: 50px;
@@ -1172,16 +1401,4 @@ export default {
 }
 .kiosk-init-retry-btn:hover { background: #c0001a; }
 
-/* Zone secrète admin — coin bas-inline-start, invisible */
-.kiosk-admin-trigger {
-  position: fixed;
-  bottom: 0;
-  inset-inline-start: 0;
-  width: 60px;
-  height: 60px;
-  z-index: 9990;
-  cursor: default;
-  /* Invisible but tappable */
-  background: transparent;
-}
 </style>

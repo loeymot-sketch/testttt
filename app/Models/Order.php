@@ -20,6 +20,7 @@ class Order extends Model implements BroadcastableOrder
     protected $fillable = [
         'order_serial_no',
         'queue_number',
+        'business_date',
         'token',
         'user_id',
         'branch_id',
@@ -53,6 +54,7 @@ class Order extends Model implements BroadcastableOrder
     protected $casts = [
         'id' => 'integer',
         'order_serial_no' => 'string',
+        'business_date' => 'date:Y-m-d',
         'token' => 'string',
         'user_id' => 'integer',
         'branch_id' => 'integer',

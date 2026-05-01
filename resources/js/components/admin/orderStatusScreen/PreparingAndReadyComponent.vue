@@ -1,19 +1,19 @@
 <template>
   <LoadingContentComponent :props="loading" />
   <div v-if="!wsConnected" class="ws-reconnect-banner">
-    Connexion temps réel perdue — actualisation automatique toutes les 10s...
+    Connexion temps réel perdue — actualisation automatique toutes les 5s...
   </div>
 
   <!-- Colonne EN PRÉPARATION -->
   <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden">
-    <h3 class="text-lg font-semibold text-white p-3 pb-2 bg-primary mb-2 rounded-t-[10px] text-center">
+    <h3 class="text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center">
       {{ $t("label.preparing") }}
     </h3>
     <div class="content-wrapper p-3 overflow-auto thin-scrolling h-full">
       <transition-group name="oss-slide" tag="ul"
         class="[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20">
         <li v-for="item in preparingItems" :key="item.id"
-          :class="item.queue_number ? 'text-[#e53935]' : 'text-[#1F1F39]'">
+          :class="item.queue_number ? 'text-[#991B1B]' : 'text-[#1F1F39]'">
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
@@ -24,7 +24,7 @@
   <!-- Colonne PRÊT -->
   <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
     :class="newReadyFlash ? 'oss-ready-flash' : ''">
-    <h3 class="text-lg font-semibold text-white p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center">
+    <h3 class="text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center">
       {{ $t("label.ready") }}
     </h3>
     <div class="content-wrapper p-3 overflow-auto thin-scrolling h-full">
@@ -81,6 +81,26 @@ export default {
     if (this._flashTimer) clearTimeout(this._flashTimer);
   },
   methods: {
+    authBranchId() {
+      const candidates = [
+        this.$store.getters['auth/authBranchId'],
+        this.$store.getters.authBranchId,
+        this.$store.state?.auth?.authBranchId,
+      ];
+
+      for (const candidate of candidates) {
+        if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+          continue;
+        }
+
+        const value = parseInt(candidate, 10);
+        if (Number.isFinite(value)) {
+          return value;
+        }
+      }
+
+      return 0;
+    },
     _bindWsService() {
       const ws = window._wsService;
       if (!ws) return;
@@ -103,7 +123,7 @@ export default {
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     _pollingInterval() {
-      return this.wsConnected ? 60000 : 10000;
+      return this.wsConnected ? 60000 : 5000;
     },
     _restartPolling() {
       this.stopAutoRefresh();
@@ -122,7 +142,7 @@ export default {
     },
     subscribeEcho() {
       if (!window.Echo) return;
-      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      const branchId = this.authBranchId();
       if (branchId <= 0) return;
       // [AUDIT-52-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
@@ -155,7 +175,7 @@ export default {
       }
     },
     unsubscribeEcho() {
-      const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+      const branchId = this.authBranchId();
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
@@ -234,8 +254,8 @@ export default {
 
 <style scoped>
 .ws-reconnect-banner {
-  background: #f59e0b;
-  color: #fff;
+  background: #fef3c7;
+  color: #92400e;
   text-align: center;
   padding: 6px 12px;
   font-size: 0.85rem;

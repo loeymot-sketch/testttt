@@ -1,0 +1,38 @@
+{
+  "task_id": "CV1-M17-WEB-STRIPE-SCOPE",
+  "mission_id": "M-17",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Appliquer gates WEB=B et STRIPE=B: web payment public off V1, Stripe confirmé inactif avec garde empêchant activation hors gate.",
+  "instruction": "Applique uniquement M-17. Ne crée pas PaymentIntent actif car WEB=B. Ne corrige pas Stripe cents actif car STRIPE=B; ajoute garde d'activation. JSON unique.",
+  "allowlist": [
+    "routes/web.php",
+    "app/Http/Controllers/Frontend/PaymentController.php",
+    "config/payment.php",
+    "tests/Feature/Payment/WebPaymentDisabledTest.php",
+    "tests/Feature/Payment/StripeActivationGuardTest.php"
+  ],
+  "off_limits": ["database/**", "resources/**", "app/Services/Fiscal/**", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_WEB_PAYMENT_SCOPE_V1_2026-04-25", "status": "Approved", "decision": "Option B — Web payment off V1", "date": "2026-04-25"},
+    {"gate": "GATE_STRIPE_CENTS_ACTIVE_2026-04-25", "status": "Approved", "decision": "Option B — Stripe inactif prod V1, fix reporté", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["pricing_ssot", "branch_id", "frozen_zones"],
+  "gate_conditions": ["web approved Option B", "stripe approved Option B"],
+  "mandatory_tests": [
+    "php artisan test --filter=WebPaymentDisabledTest",
+    "php artisan test --filter=StripeActivationGuardTest"
+  ],
+  "self_audit_checklist": [
+    "public /payment/{order}/pay is disabled or guarded as V1 off",
+    "Stripe cannot be activated without explicit gate/config guard",
+    "no PaymentIntent active flow added under WEB=B",
+    "no cents conversion change unless guarding inactive Stripe"
+  ],
+  "rollback": {"feature_flag": "web_payment_v1", "max_window_days": 7, "predicates": ["web payment route exposed unexpectedly"]},
+  "graphiti_query": "Caisse V1 web payment off Stripe inactive guard",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_web_stripe_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

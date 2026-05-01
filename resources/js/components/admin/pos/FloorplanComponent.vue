@@ -7,15 +7,15 @@
                     {{ tables.length }} tables
                 </p>
             </div>
-            <div class="flex items-center gap-2">
-                <button
-                    type="button"
-                    class="db-btn py-2 px-4 text-sm text-white bg-primary rounded-lg"
-                    :disabled="loading"
-                    @click="fetchState"
-                >
-                    {{ loading ? '...' : $t('button.search') }}
-                </button>
+        <div class="flex items-center gap-2">
+            <button
+                type="button"
+                class="db-btn py-2 px-4 text-sm text-white bg-[#B0004D] rounded-lg hover:bg-[#8E003E] hover:text-white"
+                :disabled="loading"
+                @click="fetchState"
+            >
+                {{ loading ? '...' : $t('button.search') }}
+            </button>
                 <router-link
                     :to="{ name: 'admin.pos' }"
                     class="db-btn py-2 px-4 text-sm rounded-lg border border-[#D9DBE9] text-heading"
@@ -25,7 +25,7 @@
             </div>
         </div>
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
             {{ errorMessage }}
         </div>
 

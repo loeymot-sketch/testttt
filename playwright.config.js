@@ -5,7 +5,11 @@
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
+  testMatch: [
+    'e2e/**/*.spec.{js,ts}',
+    'Playwright/**/*.spec.{js,ts}',
+  ],
   // Un seul worker : les specs déclenchent POST /api/auth/login en rafale ; en parallèle
   // (défaut ~5 workers) on déclenche throttle:login-lockout / collisions côté IP (429 → SPA reste sur /login).
   workers: 1,

@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Events\EventContract;
 use App\Enums\EventType;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentGateway;
+use App\Enums\PosPaymentMethod;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Exceptions\PayloadMismatchException;
@@ -28,10 +31,12 @@ class EventContractTest extends TestCase
         $expected = [
             'order.created',
             'order.status_changed',
+            'order.payment_confirmed',
             'order.item_added',
             'order.cancelled',
             'order.table_changed',
             'menu.item_availability_changed',
+            'catalog.changed',
             'stock.low',
         ];
         $actual = EventType::all();
@@ -80,7 +85,12 @@ class EventContractTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 123,
             'branch_id' => 1,
-            'payload' => ['order_id' => 123],
+            'payload' => [
+                'order_id' => 123,
+                'queue_number' => 'A0123',
+                '_origin' => 'kiosk',
+                'payment_method' => PaymentGateway::CARD,
+            ],
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderCreated',
             'correlation_id' => $correlationId,
@@ -98,7 +108,12 @@ class EventContractTest extends TestCase
                 $this->assertSame(1, $data['branch_id']);
                 $this->assertSame($occurredAt->toIso8601String(), $data['occurred_at']);
                 $this->assertSame($correlationId, $data['correlation_id']);
-                $this->assertSame(['order_id' => 123], $data['payload']);
+                $this->assertSame([
+                    'order_id' => 123,
+                    'queue_number' => 'A0123',
+                    '_origin' => 'kiosk',
+                    'payment_method' => PaymentGateway::CARD,
+                ], $data['payload']);
 
                 return array_keys($data) === [
                     'version',
@@ -137,6 +152,56 @@ class EventContractTest extends TestCase
         $this->assertTrue(Str::isUuid($domainEvent->correlation_id));
     }
 
+    public function test_order_realtime_payload_contract_requires_origin_payment_method_and_queue(): void
+    {
+        $this->assertContains('_origin', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_CREATED]);
+        $this->assertContains('payment_method', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_CREATED]);
+        $this->assertContains('queue_number', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_CREATED]);
+
+        $this->assertContains('_origin', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_STATUS_CHANGED]);
+        $this->assertContains('payment_method', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_STATUS_CHANGED]);
+        $this->assertContains('queue_number', EventContract::REQUIRED_PAYLOAD_KEYS[EventType::ORDER_STATUS_CHANGED]);
+    }
+
+    public function test_order_created_listener_persists_realtime_identity_payload(): void
+    {
+        Queue::fake();
+
+        $order = $this->createOrder([
+            'source_surface' => 'kiosk',
+            'payment_method' => PaymentGateway::CARD,
+            'queue_number' => 'A0009',
+        ]);
+
+        OrderCreated::dispatch($order);
+
+        $payload = DomainEvent::query()->latest('id')->firstOrFail()->payload;
+
+        $this->assertSame('A0009', $payload['queue_number']);
+        $this->assertSame('kiosk', $payload['_origin']);
+        $this->assertSame(PaymentGateway::CARD, $payload['payment_method']);
+    }
+
+    public function test_order_status_changed_listener_persists_realtime_identity_payload(): void
+    {
+        Queue::fake();
+
+        $order = $this->createOrder([
+            'source_surface' => 'pos',
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'queue_number' => 'A0010',
+            'status' => OrderStatus::ACCEPT,
+        ]);
+
+        OrderStatusChanged::dispatch($order, OrderStatus::ACCEPT, OrderStatus::PREPARING);
+
+        $payload = DomainEvent::query()->latest('id')->firstOrFail()->payload;
+
+        $this->assertSame('A0010', $payload['queue_number']);
+        $this->assertSame('pos', $payload['_origin']);
+        $this->assertSame(PosPaymentMethod::CASH, $payload['payment_method']);
+    }
+
     public function test_dispatch_job_rejects_envelope_that_violates_contract(): void
     {
         // Build a corrupt row: ORDER_STATUS_CHANGED without the required new_status key.
@@ -145,7 +210,13 @@ class EventContractTest extends TestCase
             'aggregate_type' => Order::class,
             'aggregate_id' => 999,
             'branch_id' => 1,
-            'payload' => ['order_id' => 999, 'old_status' => 2],
+            'payload' => [
+                'order_id' => 999,
+                'queue_number' => 'A0999',
+                '_origin' => 'kiosk',
+                'payment_method' => PaymentGateway::CARD,
+                'old_status' => 2,
+            ],
             'channel' => json_encode(['private-branch.1']),
             'broadcast_as' => 'OrderStatusChanged',
             'correlation_id' => (string) Str::uuid(),

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use Carbon\Carbon;
 use Exception;
 use App\Models\Tax;
 use App\Models\Item;
@@ -27,6 +28,9 @@ use App\Events\OrderCanceled; // allow: domain event class import — release li
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
 use App\Enums\PaymentGateway;
+use App\Enums\PosPaymentMethod;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\OrderRequest;
@@ -42,6 +46,8 @@ use App\Services\Pricing\DiscountCalculator;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingService;
 use App\Services\Menu\AvailabilityService;
+use App\Services\Order\OrderQuoteService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class FrontendOrderService
 {
@@ -95,6 +101,8 @@ class FrontendOrderService
                     if (in_array($key, $this->frontendOrderFilter)) {
                         if ($key === "status") {
                             $query->where($key, (int) $request);
+                        } elseif ($key === 'branch_id') {
+                            $query->where('branch_id', '=', (int) $request);
                         } else {
                             $query->where($key, 'like', '%' . $request . '%');
                         }
@@ -179,10 +187,10 @@ class FrontendOrderService
                     [OrderType::KIOSK, OrderType::TAKEAWAY],
                     true
                 );
-                $isImmediatePaidKioskCash = $isKioskOrderType
+                $isCounterDeferredKioskCash = $isKioskOrderType
                     && (int) ($validatedRequest['payment_method'] ?? 0) === PaymentGateway::CASH_ON_DELIVERY;
-                $shouldAutoAcceptAfterCreate = $isImmediatePaidKioskCash;
-                $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isImmediatePaidKioskCash || !$isKioskPaymentMethod;
+                $shouldAutoAcceptAfterCreate = $isCounterDeferredKioskCash;
+                $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod;
 
                 // Attach idempotency key if provided by client
                 if ($idempotencyKey) {
@@ -200,7 +208,8 @@ class FrontendOrderService
                         'status'           => OrderStatus::PENDING,
                         'order_datetime'   => date('Y-m-d H:i:s'),
                         'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
-                        'payment_status'   => $isImmediatePaidKioskCash ? PaymentStatus::PAID : PaymentStatus::UNPAID,
+                        'payment_status'   => $isCounterDeferredKioskCash ? PaymentStatus::PENDING_COUNTER : PaymentStatus::UNPAID,
+                        'pos_payment_method' => $isCounterDeferredKioskCash ? PosPaymentMethod::COUNTER_DEFERRED : null,
                         'total'            => 0,
                         'subtotal'         => 0,
                         'discount'         => 0,
@@ -374,6 +383,8 @@ class FrontendOrderService
                                 'item_variation_total' => $calcVariationTotal,
                                 'item_extra_total' => $calcExtraTotal,
                                 'total_price' => $verifiedTotalPrice,
+                                'created_at' => now(),
+                                'updated_at' => now(),
                             ];
                             $totalTax = $totalTax + $taxPrice;
                             $i++;
@@ -385,39 +396,6 @@ class FrontendOrderService
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
-                }
-
-                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
-                // lockForUpdate() is weak when no rows exist yet (first order of the day) — two concurrent
-                // transactions both read NULL and both compute A001. Cache::lock() provides a named mutex
-                // that serializes the allocation even on empty result sets.
-                $today = date('Y-m-d');
-                $lockKey = 'queue_lock_' . $this->frontendOrder->branch_id . '_' . $today;
-                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10); // 10s max hold
-
-                try {
-                    $lock->block(5); // wait up to 5s to acquire
-
-                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
-                    // Both models use the same 'orders' table — use direct DB query with MAX() for true atomicity
-                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
-                        ->where('branch_id', $this->frontendOrder->branch_id)
-                        ->whereDate('created_at', $today)
-                        ->whereNotNull('queue_number')
-                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
-                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
-                        ->value('max_num');
-
-                    $nextQueueNum = $maxQueueNum + 1;
-                    // [AUDIT-P2-F] 4 digits = up to A9999 (was 3 digits limited to 999)
-                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT);
-
-                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
-                    // Fallback: use timestamp-based suffix to avoid collision if lock times out
-                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
-                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->frontendOrder->branch_id . ' — fallback queue number used.');
-                } finally {
-                    $lock->release();
                 }
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT (legacy path recalc; SSOT keeps totals from PricingService)
@@ -450,24 +428,35 @@ class FrontendOrderService
                     $calculatedDiscount
                 );
 
-                $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
-                $this->frontendOrder->queue_number = $queueNumber;
-                $this->frontendOrder->total_tax = round($totalTax, 2);
-                $this->frontendOrder->subtotal = round($realSubtotal, 2);
-                $this->frontendOrder->discount = $calculatedDiscount;
-                $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
-                // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
-                // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
-                if ($request->loyalty_code) {
-                    $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
-                }
-                // Track which surface generated this order for loyalty analytics
-                if (!$this->frontendOrder->source_surface) {
-                    $orderType = (int) ($this->frontendOrder->order_type ?? 0);
-                    $isKiosk = in_array($orderType, [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY], true);
-                    $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
-                }
-                $this->frontendOrder->save();
+                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
+                    $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
+                    $this->frontendOrder->total_tax = round($totalTax, 2);
+                    $this->frontendOrder->subtotal = round($realSubtotal, 2);
+                    $this->frontendOrder->discount = $calculatedDiscount;
+                    $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    if ($isKioskMachineOrder) {
+                        app(OrderQuoteService::class)->sealForCommit(
+                            $request,
+                            'kiosk',
+                            (int) $this->frontendOrder->id,
+                            (float) $this->frontendOrder->total
+                        );
+                    }
+
+                    app(\App\Services\Stock\StockService::class)->decrementForOrder($this->frontendOrder, $idempotencyKey);
+
+                    // [SPLASH LOYALTY] Store the loyalty customer code so the AwardLoyaltyPointsOnDelivery
+                    // listener can credit the right customer even on kiosk orders (user_id = machine, not customer)
+                    if ($request->loyalty_code) {
+                        $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
+                    }
+                    // Track which surface generated this order for loyalty analytics
+                    if (!$this->frontendOrder->source_surface) {
+                        $orderType = (int) ($this->frontendOrder->order_type ?? 0);
+                        $isKiosk = in_array($orderType, [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY], true);
+                        $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
+                    }
+                }, $isKioskMachineOrder ? 'kiosk' : 'frontend');
 
                 if ($request->address_id) {
                     // [SECURITY-IDOR] Ensure the address belongs to the authenticated user.
@@ -533,6 +522,8 @@ class FrontendOrderService
             }
 
             return $this->frontendOrder;
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (\Illuminate\Database\QueryException $qe) {
             // [FIX-54-6] Catch MySQL duplicate key on idempotency_key UNIQUE constraint.
             // Same recovery logic as OrderService::posOrderStore() for consistency.
@@ -595,11 +586,17 @@ class FrontendOrderService
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
             if ((int) $frontendOrder->user_id === (int) Auth::id()) {
-                if ((int) $request->status !== (int) OrderStatus::CANCELED) {
+                $targetStatus = (int) $request->status;
+
+                if ((int) $frontendOrder->status === $targetStatus) {
+                    return $frontendOrder;
+                }
+
+                if ($targetStatus !== (int) OrderStatus::CANCELED) {
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
-                if ((int) $request->status === (int) OrderStatus::CANCELED) {
+                if ($targetStatus === (int) OrderStatus::CANCELED) {
                     // [FIX] Both KIOSK (25) and TAKEAWAY (10) from kiosk machine follow the same
                     // cancel threshold: allow cancel until PREPARING starts.
                     $isKioskOrder = in_array(
@@ -830,6 +827,113 @@ class FrontendOrderService
         return \App\Services\Orders\OrderItemAllergenSnapshot::hydrate($itemsArray);
     }
 
+    private function saveFrontendOrderWithQueueNumber(callable $applyFields, string $context): void
+    {
+        $maxAttempts = 5;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $businessDate = $this->resolveBusinessDate($this->frontendOrder->order_datetime ?? null);
+            $this->frontendOrder->business_date = $businessDate;
+            $this->frontendOrder->queue_number = $this->allocateQueueNumber(
+                (int) $this->frontendOrder->branch_id,
+                $businessDate,
+                $context
+            );
+            $applyFields();
+            $this->frontendOrder->business_date = $businessDate;
+
+            try {
+                $this->frontendOrder->save();
+                return;
+            } catch (QueryException $exception) {
+                if (!$this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                    throw $exception;
+                }
+
+                Log::warning(sprintf(
+                    '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
+                    (string) $this->frontendOrder->queue_number,
+                    (string) $this->frontendOrder->branch_id,
+                    (string) $this->frontendOrder->business_date,
+                    $context
+                ));
+            }
+        }
+    }
+
+    private function allocateQueueNumber(int $branchId, string $businessDate, string $context): string
+    {
+        $lockKey = 'queue_lock_' . $branchId . '_' . $businessDate;
+        $lock = Cache::lock($lockKey, 30);
+        $acquired = false;
+
+        try {
+            $lock->block(15);
+            $acquired = true;
+
+            $queueNumbers = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->where('business_date', $businessDate)
+                ->whereNotNull('queue_number')
+                ->where('queue_number', 'like', 'A%')
+                ->pluck('queue_number');
+
+            $maxQueueNum = (int) $queueNumbers
+                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
+                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
+                ->max();
+
+            return 'A' . str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT);
+        } catch (LockTimeoutException $exception) {
+            Log::warning(sprintf(
+                '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
+                $branchId,
+                $businessDate,
+                $context
+            ));
+
+            throw new HttpException(409, 'Queue number allocation is busy. Please retry.', $exception);
+        } finally {
+            if ($acquired) {
+                $lock->release();
+            }
+        }
+    }
+
+    private function resolveBusinessDate(mixed $orderDatetime): string
+    {
+        if ($orderDatetime instanceof \DateTimeInterface) {
+            return Carbon::instance($orderDatetime)->toDateString();
+        }
+
+        if (blank($orderDatetime)) {
+            return Carbon::now()->toDateString();
+        }
+
+        return Carbon::parse((string) $orderDatetime)->toDateString();
+    }
+
+    private function isQueueNumberUniqueViolation(QueryException $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return ($exception->getCode() === '23000' || str_contains($message, 'UNIQUE constraint failed'))
+            && (
+                str_contains($message, 'orders_branch_business_date_queue_unique')
+                || str_contains($message, 'orders_branch_queue_number_unique')
+                || (
+                    str_contains($message, 'orders.branch_id')
+                    && str_contains($message, 'orders.business_date')
+                    && str_contains($message, 'orders.queue_number')
+                )
+                || (
+                    str_contains($message, 'branch_id')
+                    && str_contains($message, 'business_date')
+                    && str_contains($message, 'queue_number')
+                )
+            );
+    }
+
     /**
      * @return array<int, string>
      */
@@ -900,6 +1004,10 @@ class FrontendOrderService
                 return;
             }
 
+            // M-08 fiscal gate Option B: kiosk payment confirmation may
+            // release the order operationally, but it must not allocate a
+            // fiscal_sequence_no or close/seal a Z. Fiscal finalization is
+            // delegated to the POS path.
             $locked->status = OrderStatus::ACCEPT;
             $locked->save();
             $promoted = true;

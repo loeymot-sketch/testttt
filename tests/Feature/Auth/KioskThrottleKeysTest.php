@@ -15,7 +15,9 @@ use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\Tax;
 use App\Models\User;
+use App\Services\Order\OrderQuoteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
@@ -244,7 +246,7 @@ class KioskThrottleKeysTest extends TestCase
                 'REMOTE_ADDR' => '127.0.0.1',
                 'HTTP_ACCEPT' => 'application/json',
             ])
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $this->withQuote($user, $payload));
     }
 
     private function postLogin(array $payload)
@@ -260,5 +262,22 @@ class KioskThrottleKeysTest extends TestCase
     private function clearKioskKey(User $user): void
     {
         RateLimiter::clear(sprintf('kiosk:%s|127.0.0.1', $user->id));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function withQuote(User $user, array $payload): array
+    {
+        $request = Request::create('/api/frontend/order/quote', 'POST', $payload);
+        $request->setUserResolver(fn (?string $guard = null): User => $user);
+
+        $quote = app(OrderQuoteService::class)->quote($request, 'kiosk');
+
+        return $payload + [
+            'quote_token' => $quote->quote_token,
+            'quote_signature' => $quote->hmac_signature,
+        ];
     }
 }

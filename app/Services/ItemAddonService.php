@@ -4,6 +4,7 @@ namespace App\Services;
 
 
 use Exception;
+use App\Events\ItemAvailabilityChanged;
 use App\Models\Item;
 use App\Models\ItemAddon;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,8 @@ class ItemAddonService
         'item_id',
         'name',
         'price',
-        'status'
+        'status',
+        'role'
     ];
 
     /**
@@ -54,7 +56,10 @@ class ItemAddonService
     public function store(ItemAddonRequest $request, Item $item)
     {
         try {
-            return ItemAddon::create($request->validated() + ['item_id' => $item->id]);
+            $addon = ItemAddon::create($request->validated() + ['item_id' => $item->id]);
+            $this->dispatchItemCatalogRefresh($item);
+
+            return $addon;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -69,12 +74,31 @@ class ItemAddonService
         try {
             if ($item->id == $itemExtra->item_id) {
                 $itemExtra->delete();
+                $this->dispatchItemCatalogRefresh($item);
             } else {
                 throw new Exception(trans('all.item_match'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    private function dispatchItemCatalogRefresh(Item $item): void
+    {
+        try {
+            $refreshed = $item->refresh();
+            ItemAvailabilityChanged::dispatch(
+                (int) $refreshed->id,
+                (int) $refreshed->status,
+                (float) $refreshed->price,
+                'full'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[CatalogSync] item addon refresh dispatch failed', [
+                'item_id' => $item->id,
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 }

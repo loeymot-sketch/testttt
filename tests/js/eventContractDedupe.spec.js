@@ -21,6 +21,20 @@ describe('eventContract — correlation dedupe (SYNC-002)', () => {
         expect(isDuplicateCorrelation('corr-1')).toBe(true);
     });
 
+    it('dedupes by correlation id plus event type so sibling broadcasts both run', () => {
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed')).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'menu.item_availability_changed')).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed')).toBe(true);
+        expect(isDuplicateCorrelation('corr-1', 'menu.item_availability_changed')).toBe(true);
+    });
+
+    it('dedupes by branch too so central multi-branch catalog events both run', () => {
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 7)).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 8)).toBe(false);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 7)).toBe(true);
+        expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 8)).toBe(true);
+    });
+
     it('treats null/undefined correlation ids as never-duplicate (defensive)', () => {
         expect(isDuplicateCorrelation(null)).toBe(false);
         expect(isDuplicateCorrelation(undefined)).toBe(false);
@@ -64,9 +78,11 @@ describe('eventContract — envelope validation', () => {
         expect(validateEnvelope({ version: 1, type: 'x' })).toBe(false);
     });
 
-    it('BROADCAST_MAP covers the 3 V1 events POS/Kiosk/KDS rely on', () => {
+    it('BROADCAST_MAP covers the V1 events POS/Kiosk/KDS rely on', () => {
         expect(BROADCAST_MAP.OrderCreated).toBeDefined();
         expect(BROADCAST_MAP.OrderStatusChanged).toBeDefined();
+        expect(BROADCAST_MAP.OrderPaidAtCounter).toBeDefined();
         expect(BROADCAST_MAP.ItemAvailabilityChanged).toBeDefined();
+        expect(BROADCAST_MAP.CatalogChanged).toBeDefined();
     });
 });

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -52,6 +53,7 @@ class PreflightProductionCommand extends Command
         $this->checkSessionDriver();
         $this->checkLogLevel();
         $this->checkLogChannel();
+        $this->checkOpsCommandAvailability();
         $this->checkFiscalSecrets();
         $this->checkFiscalVerifyChain();
         $this->checkDatabaseReachable();
@@ -141,12 +143,32 @@ class PreflightProductionCommand extends Command
 
     private function checkLogLevel(): void
     {
-        $level = env('LOG_LEVEL', 'debug');
+        $level = $this->configuredLogLevel();
         if (in_array($level, ['debug', 'info'], true)) {
             $this->addFinding('WARNING', 'LOG_LEVEL', "LOG_LEVEL='{$level}' may emit PII at scale. Use 'warning' or 'notice' in prod.");
         } else {
             $this->ok('LOG_LEVEL', $level);
         }
+    }
+
+    private function configuredLogLevel(): string
+    {
+        $channel = (string) config('logging.default', 'stack');
+        $channels = (array) config('logging.channels', []);
+        $channelConfig = $channels[$channel] ?? [];
+
+        if (($channelConfig['driver'] ?? null) === 'stack') {
+            foreach ((array) ($channelConfig['channels'] ?? []) as $stackedChannel) {
+                $level = $channels[$stackedChannel]['level'] ?? null;
+                if (is_string($level) && $level !== '') {
+                    return $level;
+                }
+            }
+        }
+
+        $level = $channelConfig['level'] ?? null;
+
+        return is_string($level) && $level !== '' ? $level : 'debug';
     }
 
     private function checkLogChannel(): void
@@ -156,6 +178,33 @@ class PreflightProductionCommand extends Command
             $this->addFinding('WARNING', 'LOG_CHANNEL', "LOG_CHANNEL='{$channel}' uses unstructured text logs. Use 'production_json' for SIEM ingestion.");
         } else {
             $this->ok('LOG_CHANNEL', $channel);
+        }
+    }
+
+    private function checkOpsCommandAvailability(): void
+    {
+        $commands = array_keys(Artisan::all());
+        $required = [
+            'foodking:outbox:rescue' => 'outbox rescue',
+            'foodking:outbox:retry-failed' => 'outbox retry failed',
+            'foodking:fiscal:archive' => 'NF525 fiscal archive',
+            'queue:work' => 'queue worker',
+            'schedule:list' => 'scheduler visibility',
+        ];
+
+        foreach ($required as $signature => $label) {
+            if (! in_array($signature, $commands, true)) {
+                $this->addFinding('CRITICAL', strtoupper(str_replace([':', '-'], '_', $signature)), "Missing {$label} command: {$signature}.");
+                continue;
+            }
+
+            $this->ok($label . ' command', $signature);
+        }
+
+        if (! file_exists(config_path('horizon.php'))) {
+            $this->addFinding('WARNING', 'HORIZON_CONFIG', 'config/horizon.php missing; use supervised queue:work or add Horizon config before scale-out.');
+        } else {
+            $this->ok('Horizon config', 'present');
         }
     }
 

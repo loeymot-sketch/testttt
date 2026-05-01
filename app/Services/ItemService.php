@@ -10,7 +10,9 @@ use App\Enums\Status;
 use Illuminate\Support\Str;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+use App\Models\ItemBranchAvailability;
 use App\Models\ItemVariation;
+use App\Models\ItemExtra;
 use App\Http\Requests\ItemRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -112,7 +114,10 @@ class ItemService
             // behaviour. NULL `channels` = visible on every surface (V1 default).
             $this->applyChannelsFilter($query, $request->get('surface'));
 
-            return $query->orderBy($orderColumn, $orderType)->$method($methodValue);
+            $result = $query->orderBy($orderColumn, $orderType)->$method($methodValue);
+            $this->applyBranchAvailabilityOverlay($result, $request->get('branch_id'));
+
+            return $result;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -141,6 +146,40 @@ class ItemService
         $query->where(function ($q) use ($surface) {
             $q->whereNull('channels')
                 ->orWhereJsonContains('channels', $surface);
+        });
+    }
+
+    private function applyBranchAvailabilityOverlay($result, mixed $branchId): void
+    {
+        $branchId = (int) $branchId;
+        if ($branchId < 1) {
+            return;
+        }
+
+        $items = method_exists($result, 'getCollection') ? $result->getCollection() : $result;
+        if (! $items || ! method_exists($items, 'pluck')) {
+            return;
+        }
+
+        $ids = $items->pluck('id')->filter()->unique()->values()->all();
+        if ($ids === []) {
+            return;
+        }
+
+        $availability = ItemBranchAvailability::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $ids)
+            ->get()
+            ->keyBy('item_id');
+
+        $items->each(function (Item $item) use ($availability): void {
+            $row = $availability->get($item->id);
+            $branchAvailable = $row ? (bool) $row->is_available : true;
+            $globalAvailable = $item->is_available === null ? true : (bool) $item->is_available;
+
+            $item->setAttribute('branch_is_available', $branchAvailable);
+            $item->setAttribute('availability_reason', $row && ! $branchAvailable ? $row->unavailable_reason : null);
+            $item->setAttribute('effective_is_available', $branchAvailable && $globalAvailable);
         });
     }
 
@@ -211,11 +250,15 @@ class ItemService
                     }
                     foreach ($decodedVariations as $variation) {
                         if (isset($variation['id'])) {
-                            $variationIdsArray[] = $variation['id'];
-                            ItemVariation::where('id', $variation['id'])->update([
+                            $variationId = (int) $variation['id'];
+                            $variationIdsArray[] = $variationId;
+                            $updated = $item->variations()->whereKey($variationId)->update([
                                 'name' => $variation['name'],
                                 'price' => $variation['price'],
                             ]);
+                            if ($updated === 0) {
+                                throw new Exception(trans('all.item_match'), 422);
+                            }
                         } else {
                             $item->variations()->create($variation);
                         }
@@ -241,16 +284,19 @@ class ItemService
                         $extraIdsToKeep = [];
                         foreach ($decodedExtras as $extra) {
                             if (isset($extra['id'])) {
-                                // Mettre à jour l'extra existant
-                                \App\Models\ItemExtra::where('id', $extra['id'])->update([
+                                $extraId = (int) $extra['id'];
+                                $updated = $item->extras()->whereKey($extraId)->update([
                                     'name'   => $extra['name'],
                                     'price'  => $extra['price'] ?? 0,
                                     'status' => $extra['status'] ?? \App\Enums\Status::ACTIVE,
                                 ]);
-                                $extraIdsToKeep[] = $extra['id'];
+                                if ($updated === 0) {
+                                    throw new Exception(trans('all.item_match'), 422);
+                                }
+                                $extraIdsToKeep[] = $extraId;
                             } else {
                                 // Créer un nouvel extra
-                                $newExtra = \App\Models\ItemExtra::create([
+                                $newExtra = ItemExtra::create([
                                     'item_id' => $item->id,
                                     'name'    => $extra['name'],
                                     'price'   => $extra['price'] ?? 0,
@@ -260,7 +306,7 @@ class ItemService
                             }
                         }
                         // Supprimer les extras qui ne sont plus dans la liste
-                        \App\Models\ItemExtra::where('item_id', $item->id)
+                        ItemExtra::where('item_id', $item->id)
                             ->whereNotIn('id', $extraIdsToKeep)
                             ->delete();
                     }
@@ -276,7 +322,12 @@ class ItemService
                 $type = 'full';
             }
             try {
-                event(ItemAvailabilityChanged::fromItem($refreshed, $type));
+                ItemAvailabilityChanged::dispatch(
+                    (int) $refreshed->id,
+                    (int) $refreshed->status,
+                    (float) $refreshed->price,
+                    $type
+                );
             } catch (\Throwable $e) {
                 // Non-blocking: broadcast failure must not break the admin save
                 Log::warning('[C3] ItemAvailabilityChanged broadcast failed: ' . $e->getMessage());
@@ -336,7 +387,20 @@ class ItemService
                 $item->clearMediaCollection('item');
                 $item->addMedia($request->image)->toMediaCollection('item');
             }
-            return $item;
+            $refreshed = $item->refresh();
+
+            try {
+                ItemAvailabilityChanged::dispatch(
+                    (int) $refreshed->id,
+                    (int) $refreshed->status,
+                    (float) $refreshed->price,
+                    'full'
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[C3] ItemAvailabilityChanged broadcast failed after image change: ' . $e->getMessage());
+            }
+
+            return $refreshed;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

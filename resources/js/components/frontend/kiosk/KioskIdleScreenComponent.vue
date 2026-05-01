@@ -1,14 +1,7 @@
 <template>
   <div
     class="kiosk-idle"
-    role="button"
-    tabindex="0"
-    :aria-label="$t('kiosk.idle_screen.default_tap_hint', tapHint)"
     data-testid="kiosk-idle-root"
-    @touchstart.prevent="handleIdleTouch"
-    @click="handleIdleClick"
-    @keydown.enter.prevent="startOrder"
-    @keydown.space.prevent="startOrder"
   >
     <!-- [PHASE-37] Language selector — only if multiple languages enabled -->
     <div
@@ -90,7 +83,35 @@
         </div>
       </div>
 
-      <p class="kiosk-idle-tap-hint">{{ tapHint }}</p>
+      <div
+        class="kiosk-order-type-chooser"
+        role="group"
+        :aria-label="text('kiosk.order_type.choose_label', 'Choisir le mode de commande')"
+        data-testid="kiosk-order-type-chooser"
+      >
+        <button
+          type="button"
+          class="kiosk-order-type-card"
+          data-testid="kiosk-order-type-dine-in"
+          @click.stop="selectOrderTypeAndStart(orderTypes.KIOSK)"
+          @touchstart.stop
+        >
+          <span class="kiosk-order-type-title">{{ text('kiosk.order_type.dine_in', 'Sur place') }}</span>
+          <span class="kiosk-order-type-subtitle">{{ text('kiosk.order_type.dine_in_hint', 'Je mange ici') }}</span>
+        </button>
+        <button
+          type="button"
+          class="kiosk-order-type-card kiosk-order-type-card--takeaway"
+          data-testid="kiosk-order-type-takeaway"
+          @click.stop="selectOrderTypeAndStart(orderTypes.TAKEAWAY)"
+          @touchstart.stop
+        >
+          <span class="kiosk-order-type-title">{{ text('kiosk.order_type.takeaway', 'À emporter') }}</span>
+          <span class="kiosk-order-type-subtitle">{{ text('kiosk.order_type.takeaway_hint', 'Je récupère ma commande') }}</span>
+        </button>
+      </div>
+
+      <p class="kiosk-idle-tap-hint">{{ text('kiosk.order_type.required_hint', 'Choisissez une option pour commencer') }}</p>
     </div>
 
     <!-- Bas de page -->
@@ -105,6 +126,7 @@
 import { setLocale, getCurrentLocale } from '../../../i18n';
 // [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
 import KsA11ySettings from './ds/KsA11ySettings.vue';
+import { KIOSK_ORDER_TYPES } from '../../../store/modules/kioskCart';
 
 export default {
   name: 'KioskIdleScreenComponent',
@@ -121,6 +143,7 @@ export default {
       welcomeSubtitle: '',
       tapHint: '',
       settingsOpen: false,
+      orderTypes: KIOSK_ORDER_TYPES,
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
         fr: 'FR',
@@ -161,20 +184,13 @@ export default {
       this.welcomeSubtitle = this.$t('kiosk.idle_screen.default_subtitle');
       this.tapHint = this.$t('kiosk.idle_screen.default_tap_hint');
     },
-    handleIdleTouch() {
-      // touchstart fires before the synthetic click — set a flag so handleIdleClick ignores it.
-      this._touchActivated = true;
-      this.startOrder();
-      // Clear flag after the synthetic click window (300ms is the classic delay on most browsers)
-      setTimeout(() => { this._touchActivated = false; }, 400);
+    text(key, fallback) {
+      const value = this.$t(key);
+      return value && value !== key ? value : fallback;
     },
-    handleIdleClick() {
-      // Ignore the synthetic click that follows a touchstart (already handled above)
-      if (this._touchActivated) return;
-      this.startOrder();
-    },
-    startOrder() {
-      this.$emit('start-order');
+    selectOrderTypeAndStart(orderType) {
+      this.$store.dispatch('kioskCart/setOrderType', orderType);
+      this.$emit('start-order', orderType);
       this.$router.push({ name: 'kiosk.categories' });
     },
     changeLanguage(lang) {
@@ -234,6 +250,8 @@ export default {
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
+  background: var(--kiosk-idle-bg);
+  color: var(--kiosk-text);
 }
 
 /* Vidéo de fond */
@@ -246,28 +264,47 @@ export default {
   z-index: 0;
 }
 
-/* Fallback Splash DNA — fond très sombre + lueur radiale rouge subtile */
 .kiosk-idle-fallback {
   position: absolute;
   inset: 0;
-  background: #0C0C14;
+  background: var(--kiosk-idle-bg);
   z-index: 0;
 }
 
-/* Lueur radiale centrale style Splash */
+.kiosk-idle-fallback::before {
+  content: '🍔  🌯  🍟  🥤  🍗';
+  position: absolute;
+  inset-inline: -12%;
+  top: 38%;
+  color: rgba(255,255,255,0.10);
+  font-size: clamp(72px, 13vw, 160px);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  transform: rotate(-12deg);
+  animation: fkIdleDrift 14s ease-in-out infinite alternate;
+}
+
 .kiosk-idle-fallback::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 65%, rgba(232,0,28,0.15), transparent 70%);
+  background:
+    linear-gradient(115deg, rgba(0,0,0,0.38) 0%, transparent 42%),
+    radial-gradient(ellipse 70% 58% at 50% 70%, rgba(0,0,0,0.26), transparent 70%);
   pointer-events: none;
+}
+
+@keyframes fkIdleDrift {
+  from { transform: translateX(-3%) rotate(-12deg); }
+  to   { transform: translateX(3%) rotate(-12deg); }
 }
 
 /* Overlay */
 .kiosk-idle-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.8) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.22) 46%, rgba(0,0,0,0.68) 100%);
   z-index: 1;
 }
 
@@ -277,10 +314,13 @@ export default {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 32px;
-  padding: 0 40px;
-  text-align: center;
+  align-items: flex-start;
+  gap: 26px;
+  width: min(900px, calc(100vw - 80px));
+  min-height: 76vh;
+  justify-content: center;
+  padding: 48px 40px 120px;
+  text-align: start;
 }
 
 .kiosk-idle-logo-wrap {
@@ -302,10 +342,11 @@ export default {
 .kiosk-idle-brand {
   font-size: calc(var(--kiosk-font-size-hero, 64px) * var(--kiosk-text-scale, 1));
   font-weight: var(--kiosk-font-weight-black, 900);
-  color: white;
+  color: var(--kiosk-idle-text, white);
   margin: 0;
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  letter-spacing: var(--kiosk-letter-spacing-tight, -1px);
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .kiosk-idle-headline {
@@ -315,18 +356,21 @@ export default {
 }
 
 .kiosk-idle-title {
-  font-size: calc(var(--kiosk-font-size-display, 48px) * var(--kiosk-text-scale, 1));
+  font-size: clamp(54px, 8.4vw, 96px);
   font-weight: var(--kiosk-font-weight-black, 900);
-  color: white;
+  color: var(--kiosk-idle-text, white);
   margin: 0;
+  line-height: 0.98;
   text-shadow: 0 2px 16px rgba(0,0,0,0.4);
-  letter-spacing: var(--kiosk-letter-spacing-tight, -0.5px);
+  letter-spacing: 0;
   animation: fadeInUp 0.8s ease;
 }
 
 .kiosk-idle-subtitle {
-  font-size: calc(var(--kiosk-font-size-subtitle, 22px) * var(--kiosk-text-scale, 1));
-  color: rgba(255,255,255,0.75);
+  max-width: 680px;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.28;
+  color: var(--kiosk-idle-muted, rgba(255,255,255,0.88));
   margin: 0;
   animation: fadeInUp 0.8s ease 0.2s both;
 }
@@ -334,12 +378,12 @@ export default {
 /* CTA pulse Splash-style */
 .kiosk-idle-cta {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 108px;
+  height: 108px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 16px 0;
+  margin: 4px 0 2px;
 }
 
 .kiosk-idle-pulse-ring {
@@ -388,10 +432,64 @@ export default {
   animation: fadeInUp 0.8s ease 0.4s both;
 }
 
-/* A11y focus ring on the root interactive zone */
-.kiosk-idle:focus-visible {
-  outline: var(--kiosk-focus-width, 4px) solid var(--kiosk-focus-ring, #2563EB);
-  outline-offset: -8px;
+.kiosk-order-type-chooser {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 20px;
+  width: min(820px, calc(100vw - 48px));
+  animation: fadeInUp 0.8s ease 0.35s both;
+}
+
+.kiosk-order-type-card {
+  min-height: 132px;
+  min-width: var(--kiosk-tap-min, 56px);
+  padding: 26px 28px;
+  border: 3px solid rgba(255,255,255,0.50);
+  border-radius: 32px;
+  background: var(--kiosk-idle-card-bg);
+  color: var(--kiosk-idle-card-text);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.28);
+  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.kiosk-order-type-card:hover,
+.kiosk-order-type-card:focus-visible {
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
+  border-color: rgba(255,255,255,0.86);
+  box-shadow: 0 26px 70px rgba(232,0,28,0.42);
+  outline: 4px solid rgba(255,255,255,0.78);
+  outline-offset: 4px;
+  transform: translateY(-3px);
+}
+
+.kiosk-order-type-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.kiosk-order-type-card--takeaway:hover,
+.kiosk-order-type-card--takeaway:focus-visible {
+  background: #0F8A62;
+  color: #FFFFFF;
+  box-shadow: 0 26px 70px rgba(15,138,98,0.36);
+}
+
+.kiosk-order-type-title {
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: var(--kiosk-font-weight-black, 900);
+  line-height: 1;
+}
+
+.kiosk-order-type-subtitle {
+  font-size: calc(17px * var(--kiosk-text-scale, 1));
+  color: currentColor;
+  opacity: 0.76;
 }
 
 /* Footer dots */
@@ -410,7 +508,10 @@ export default {
   height: 8px;
   border-radius: 50%;
   background: rgba(255,255,255,0.3);
-  transition: all 0.3s ease;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease,
+    border-radius 0.3s ease;
 }
 
 .kiosk-idle-footer-dot.active {
@@ -422,6 +523,18 @@ export default {
 @keyframes fadeInUp {
   from { transform: translateY(20px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  .kiosk-order-type-chooser {
+    grid-template-columns: 1fr;
+    width: min(420px, calc(100vw - 36px));
+  }
+
+  .kiosk-order-type-card {
+    min-height: 94px;
+    padding: 18px;
+  }
 }
 
 /* [PHASE-37] Language selector */
@@ -441,8 +554,10 @@ export default {
 }
 
 .kiosk-lang-btn {
+  min-height: var(--kiosk-touch-min, 48px);
+  min-width: var(--kiosk-touch-min, 48px);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 999px;
   border: 1.5px solid rgba(255,255,255,0.3);
   background: rgba(0,0,0,0.4);
   color: rgba(255,255,255,0.9);
@@ -451,7 +566,12 @@ export default {
   cursor: pointer;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   min-width: 44px;
 }
 
@@ -480,8 +600,8 @@ export default {
   bottom: 24px;
   left: 24px;
   z-index: 10;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   min-width: var(--kiosk-tap-min, 56px);
   min-height: var(--kiosk-tap-min, 56px);
   border-radius: 50%;

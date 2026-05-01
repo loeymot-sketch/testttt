@@ -1,11 +1,18 @@
 # Configuration Temps Réel — FoodKing / Soketi
 
+> VA-SYS-09 note: this is legacy setup documentation for the broadcaster.
+> The canonical runtime sync contract is now `docs/sync/CATALOG_COMPOSER_DATA_FLOW.md`
+> and `docs/sync/CENTRAL_MANAGEMENT_RUNBOOK.md`.
+> Core order/catalog events are persisted in `domain_events` and dispatched by
+> `DispatchDomainEventsJob`; do not reintroduce direct `ShouldBroadcastNow` for
+> core FoodKing sync events.
+
 ## Architecture
 
 ```
 [Vue Frontend] ←→ [Soketi WebSocket :6001] ←→ [Laravel Backend]
      ↑                                               ↑
-  Echo.private()                          ShouldBroadcastNow
+  Echo.private()                          domain_events outbox + DispatchDomainEventsJob
   authEndpoint: /api/broadcasting/auth    OrderCreated / OrderStatusChanged
 ```
 
@@ -76,6 +83,30 @@ echo json_encode(\$p->trigger('test', 'test', ['ok' => true]));
 
 Tous ont un **fallback polling 30s** si Echo n'est pas disponible.
 
+## Fallback polling explicite
+
+Quand `BROADCAST_DRIVER` est absent, `null`, `log`, ou que la cle Pusher front
+`MIX_PUSHER_APP_KEY` n'est pas exposee, le temps reel est considere indisponible.
+Les surfaces POS/KDS/OSS doivent alors rester correctes via REST polling, sans
+supposer qu'un evenement WebSocket arrivera.
+
+Configuration serveur:
+
+```env
+BROADCAST_POLLING_FALLBACK_ENABLED=true
+BROADCAST_POLLING_FALLBACK_MS=30000
+BROADCAST_POLLING_FALLBACK_HINT_WHEN_OFF=true
+```
+
+Contrat front:
+
+- `resources/js/store/modules/posOrder.js` expose `realtimeFallback` et
+  `realtimeFallbackHint`.
+- Si le broadcast est off, le hint operateur indique que l'ecran fonctionne en
+  rafraichissement automatique.
+- Le polling ne change pas les invariants: `branch_id` reste cote API, et le
+  backend demeure la source de verite.
+
 ## Auth canaux privés
 
 - Route : `POST /api/broadcasting/auth`
@@ -85,8 +116,9 @@ Tous ont un **fallback polling 30s** si Echo n'est pas disponible.
 
 ## Queue
 
-`QUEUE_CONNECTION=sync` est suffisant car tous les events broadcast utilisent `ShouldBroadcastNow`
-(exécution synchrone dans la requête HTTP, pas de worker nécessaire).
+Core FoodKing events do not rely on direct `ShouldBroadcastNow`; they use the
+durable outbox pattern documented in `docs/OUTBOX_PATTERN.md`. A queue worker
+must process `DispatchDomainEventsJob` outside the request path.
 
 Pour les notifications FCM (futures), passer à `QUEUE_CONNECTION=database` :
 ```bash

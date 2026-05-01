@@ -2,6 +2,7 @@
 
 namespace App\Services\Pricing;
 
+use App\Models\ItemAddon;
 use App\Models\ItemAttribute;
 use Illuminate\Support\Collection;
 
@@ -18,16 +19,24 @@ final class CompositionSnapshotBuilder
     public const SCHEMA_VERSION = 1;
 
     /**
-     * @param  object  $item  Decoded payload line (stdClass) with item_variations / item_extras.
+     * @param  object  $item  Decoded payload line (stdClass) with item_variations / item_extras / item_addons.
      * @param  Collection  $dbVariations  Keyed by id (ItemVariation models).
      * @param  Collection  $dbExtras  Keyed by id (ItemExtra models).
      * @param  Collection|null  $dbAttributes  Keyed by id (ItemAttribute models). If null, will be loaded.
+     * @param  Collection|null  $dbAddons  Keyed by id (ItemAddon models). If null, will be loaded.
      * @return array snapshot ready to be JSON-encoded for mass insert
      */
-    public function build(object $item, Collection $dbVariations, Collection $dbExtras, ?Collection $dbAttributes = null): array
+    public function build(
+        object $item,
+        Collection $dbVariations,
+        Collection $dbExtras,
+        ?Collection $dbAttributes = null,
+        ?Collection $dbAddons = null
+    ): array
     {
         $lines = [];
         $extras = [];
+        $addons = [];
 
         if (isset($item->item_variations) && is_array($item->item_variations)) {
             $attrIds = [];
@@ -93,11 +102,48 @@ final class CompositionSnapshotBuilder
             }
         }
 
+        if (isset($item->item_addons) && is_array($item->item_addons)) {
+            $addonIds = [];
+            foreach ($item->item_addons as $addon) {
+                $addonId = $addon->id ?? null;
+                if ($addonId) {
+                    $addonIds[] = (int) $addonId;
+                }
+            }
+
+            $resolvedAddons = $dbAddons ?? ($addonIds !== []
+                ? ItemAddon::query()->with('addonItem')->whereIn('id', array_values(array_unique($addonIds)))->get()->keyBy('id')
+                : collect());
+
+            foreach ($item->item_addons as $addon) {
+                $addonId = $addon->id ?? null;
+                if (! $addonId) {
+                    continue;
+                }
+                $dbAddon = $resolvedAddons[$addonId] ?? null;
+                if (! $dbAddon) {
+                    continue;
+                }
+                $qty = max(1, (int) ($addon->quantity ?? 1));
+                $unitPrice = (float) ($dbAddon->addonItem?->price ?? 0);
+                $addons[] = [
+                    'addon_id'      => (int) $dbAddon->id,
+                    'addon_item_id' => (int) $dbAddon->addon_item_id,
+                    'addon_name'    => (string) ($dbAddon->addonItem?->name ?? ''),
+                    'role'          => $dbAddon->role,
+                    'quantity'      => $qty,
+                    'unit_price'    => round($unitPrice, 6),
+                    'line_total'    => round($unitPrice * $qty, 6),
+                ];
+            }
+        }
+
         return [
             'schema_version' => self::SCHEMA_VERSION,
             'captured_at'    => now()->toIso8601String(),
             'lines'          => $lines,
             'extras'         => $extras,
+            'addons'         => $addons,
         ];
     }
 }

@@ -125,6 +125,7 @@ class KioskEventController extends Controller
         'offline.replayed',
         'offline.abandoned',
         'offline.recovered',
+        'wizard.composer_heuristic_fallback',
     ];
 
     private const HARDWARE_TYPES = [

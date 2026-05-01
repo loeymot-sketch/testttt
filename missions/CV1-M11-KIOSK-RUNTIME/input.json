@@ -1,0 +1,71 @@
+{
+  "task_id": "CV1-M11-KIOSK-RUNTIME",
+  "mission_id": "M-11",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Livrer M-11 kiosk runtime: enum status cancellation, offline ID prefix strict, offline Option A CB/TR refused, and fiscal kiosk Option B POS-finalize boundaries.",
+  "instruction": "Applique uniquement M-11. Ne touche pas aux services OrderService/FrontendOrderService sauf escalation explicite; ne modifie pas les prix frontend; ne lance pas de vrai paiement offline. Option offline signee = A: read-only menu / CB+TR refused offline. Option fiscal kiosk signee = B: POS finalizes; kiosk must not self-fiscalize. JSON unique.",
+  "allowlist": [
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+    "resources/js/store/modules/kioskCart.js",
+    "resources/js/helpers/kioskOfflineQueue.js",
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "tests/js/sentinels/kioskOfflineIdPrefix.spec.js",
+    "tests/js/kioskCartOfflinePaymentScope.spec.js",
+    "tests/js/KioskPaymentRestyle.spec.js",
+    "tests/Playwright/sentinels/kioskCbTrOfflineRefused.spec.js",
+    "tests/Feature/KioskOfflinePaymentScopeTest.php"
+  ],
+  "off_limits": [
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "database/**",
+    "routes/**",
+    ".cursor/**",
+    "AGENTS.md",
+    "public/js/**"
+  ],
+  "dependencies_closed": [
+    "CV1-M03-GATES-DRAFT",
+    "CV1-M08-FISCAL-Z-NF525"
+  ],
+  "gate_conditions": [
+    "GATE_OFFLINE_SCOPE_V1_2026-04-25 Approved - Option A - Read-only menu, paiement desactive / CB+TR refused offline",
+    "GATE_FISCAL_KIOSK_SCOPE_V1_2026-04-25 Approved - Option B - POS finalize"
+  ],
+  "invariants_at_risk": [
+    "pricing_ssot",
+    "order_status_enum",
+    "branch_id",
+    "dispatch_after_commit",
+    "frozen_zones"
+  ],
+  "mandatory_tests": [
+    "npm test -- tests/js/sentinels/kioskOfflineIdPrefix.spec.js tests/js/kioskCartOfflinePaymentScope.spec.js tests/js/KioskPaymentRestyle.spec.js",
+    "php artisan test --filter=KioskOfflinePaymentScopeTest",
+    "npx playwright test tests/Playwright/sentinels/kioskCbTrOfflineRefused.spec.js"
+  ],
+  "self_audit_checklist": [
+    "KioskWaitingComponent no longer posts literal status: 16 and uses orderStatusEnum.CANCELED",
+    "offline queued order ids always start with offline_ even when an original key is supplied",
+    "CB/TR cannot proceed from an offline synthetic order and do not invoke TPE or backend payment-confirm",
+    "server-side paymentConfirm refuses offline/local order identifiers and never mutates or fiscalizes them",
+    "kiosk cart payload remains backend-pricing SSOT and does not send totals as authority",
+    "SYMMETRY_NOTE: N/A unless OrderService or FrontendOrderService is changed"
+  ],
+  "rollback": {
+    "feature_flag": "kiosk_offline_scope_v1",
+    "max_window_days": 2,
+    "predicates": [
+      "CB/TR offline affordance is visible or clickable",
+      "offline_ order id reaches payment-confirm",
+      "kiosk finalizes fiscal flow without POS"
+    ]
+  },
+  "graphiti_query": "Caisse V1 kiosk runtime offline CB TR refused status enum POS finalizes fiscal",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_kiosk_runtime_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

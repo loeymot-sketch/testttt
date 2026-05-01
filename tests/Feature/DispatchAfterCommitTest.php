@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusChanged;
+use App\Events\OrderTableChanged;
 use App\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,15 @@ class DispatchAfterCommitTest extends TestCase
             'ItemAvailabilityChanged' => [
                 ItemAvailabilityChanged::class,
                 static fn (): array => [999999, 1, 9.99],
+            ],
+            'OrderTableChanged' => [
+                OrderTableChanged::class,
+                static fn (): array => [
+                    (new Order())->fill(['id' => 999999, 'branch_id' => 1]),
+                    1,
+                    2,
+                    'transfer',
+                ],
             ],
         ];
     }

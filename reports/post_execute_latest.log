@@ -1849,3 +1849,659 @@ EXECUTE_DELEGATION: cursor-composer (direct)
 2.E: KioskLoyalty axios timeout 25s + i18n request_timeout
 2.J: DiningTableService::tryReleaseTableAfterPosOrderPaid + OrderService after pos store
 PHPFeat: DiningTableReleaseAfterPosOrderTest; vitest +1; check-invariants 6/6
+
+--- CV1-M05-ORDER-QUOTE REWORK 2026-04-25 ---
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+SYMMETRY_NOTE: OrderService::posOrderStore and FrontendOrderService::myOrderStore both call OrderQuoteService::sealForCommit before save/dispatch.
+IMPLEMENTATION: quote token/signature replay is validated for TTL, HMAC, intent and branch; commit consumes quote with consumed_order_id. Legacy clients without quote get a backend commit quote.
+SCOPE_PROOF: reports/audit/M05_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php -l app/Services/Order/OrderQuoteService.php app/Services/OrderService.php app/Services/FrontendOrderService.php app/Http/Controllers/Admin/PosController.php app/Http/Controllers/Frontend/OrderController.php tests/Feature/QuoteReplayIdempotencyTest.php tests/Feature/QuoteTamperTest.php tests/Feature/QuoteExpirationTest.php => PASS
+- php artisan test --filter=Quote => 11 passed
+- php artisan test --filter='Quote|PosDiscountPermissionTest|PosDiscountForgeryTest|KioskPaymentStateMachineTest|PaymentConfirmCrossBranchTest|PaymentConfirmAbilityTest|PaymentConfirmMachineResolverTest|OrderStatusNoopSideEffectsTest|PaymentNoopIdempotencyTest|CleanupVsConfirmRaceTest|PosCollectKioskCashRouteTest|PosCashEndpointSentinelTest' => 37 passed
+- npm run test -- tests/js/kioskCartSendPayload.spec.js tests/js/kioskWizardEditRoundtrip.spec.js => 12 passed
+- git diff --check scoped files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+--- CV1-FIX-KIOSK-QUOTE-TOKEN-REQUIRED 2026-04-26 ---
+TASK_ID: CV1-FIX-KIOSK-QUOTE-TOKEN-REQUIRED
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: Kiosk commit now requires quote_token and quote_signature in OrderRequest and OrderQuoteService; existing kiosk commit tests now submit signed quotes; expired quote remains 410.
+VALIDATION:
+- php artisan test tests/Feature/KioskQuoteTokenRequiredOnCommitTest.php => 4 passed
+- php artisan test --filter='Order|Frontend|Kiosk|Quote' => 561 passed, 7 skipped, 1 failed (QueueNumberUniquenessSentinelTest; M-13 gate)
+- npx vitest run tests/js/kiosk*.spec.js => 398 passed
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-KIOSK-QUOTE-TOKEN-REQUIRED.md
+REPORT: missions/CV1-FIX-KIOSK-QUOTE-TOKEN-REQUIRED/report.md
+EXECUTION_VERDICT: PASS_WITH_EXTERNAL_GATE
+
+--- CV1-FIX-R1-POS-QUOTE-BINDING-TESTS 2026-04-26 ---
+TASK_ID: CV1-FIX-R1-POS-QUOTE-BINDING-TESTS
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: Migrated legacy POS tests to shared quote-binding helper while preserving SSOT forged-total assertions.
+VALIDATION:
+- php artisan test --filter='AntiGravityTest|POSComprehensiveTest|PosKioskPricingParityTest|PosOrderRequestNullableTotalTest|PosOrderTaxTest|PosPricingSsotProofTest|PosTicketRestaurantPaymentTest|PosUITest|SyncComprehensiveTest|PosOrderBL1WireInTest|PosOrderBL2AuditCallSitesTest|PosOrderBL3DestroyAfterZTest|QuoteBindingTest' => 68 passed
+- php artisan test --filter='Order|Frontend|Kiosk|Quote' => 561 passed, 7 skipped, 1 failed (QueueNumberUniquenessSentinelTest; M-13 gate)
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-R1-POS-QUOTE-BINDING-TESTS.md
+REPORT: missions/CV1-FIX-R1-POS-QUOTE-BINDING-TESTS/report.md
+EXECUTION_VERDICT: PASS
+
+--- CV1-FIX-R2-OUTBOX-FIXTURES-K09B 2026-04-26 ---
+TASK_ID: CV1-FIX-R2-OUTBOX-FIXTURES-K09B
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: Updated legacy outbox fixtures to include K-09B required payload keys without weakening EventContract or listeners.
+VALIDATION:
+- php artisan test --filter='OutboxTest|OutboxConcurrentWorkerDedupeTest|EventContractTest|KioskRealtimeBroadcastTest' => 26 passed
+- php artisan test --filter='Order|Frontend|Kiosk|Quote' => 561 passed, 7 skipped, 1 failed (QueueNumberUniquenessSentinelTest; M-13 gate)
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-R2-OUTBOX-FIXTURES-K09B.md
+REPORT: missions/CV1-FIX-R2-OUTBOX-FIXTURES-K09B/report.md
+EXECUTION_VERDICT: PASS
+
+--- CV1-FIX-KIOSK-LOYALTY-DOUBLE-REDEEM 2026-04-26 ---
+TASK_ID: CV1-FIX-KIOSK-LOYALTY-DOUBLE-REDEEM
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: FrontendOrderService now attaches an existing pending kiosk redeem transaction instead of decrementing loyalty points twice; mismatched pending redeem amount is rejected.
+VALIDATION:
+- php -l app/Services/FrontendOrderService.php => PASS
+- php -l tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php => PASS
+- php artisan test tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php => 3 passed
+- php artisan test --filter='KioskLoyalty|Loyalty|Frontend|Kiosk' => 245 passed, 7 skipped, 5 failed external planned POS/KDS lots
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-KIOSK-LOYALTY-DOUBLE-REDEEM.md
+REPORT: missions/CV1-FIX-KIOSK-LOYALTY-DOUBLE-REDEEM/report.md
+AUDIT_VERDICT: PASS_WITH_EXTERNAL_FAILURES
+
+--- CV1-FIX-ORDERQUOTE-BRANCH-FORGED-IGNORE 2026-04-26 ---
+TASK_ID: CV1-FIX-ORDERQUOTE-BRANCH-FORGED-IGNORE
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: Kiosk order quotes now ignore client branch_id and sign the quote for KioskMachine.branch_id; POS branch validation remains unchanged.
+VALIDATION:
+- php -l app/Services/Order/OrderQuoteService.php => PASS
+- php -l tests/Feature/KioskQuoteForgesBranchIdSilentlyOverriddenTest.php => PASS
+- php -l tests/Feature/QuoteCurrencyOriginTest.php => PASS
+- php artisan test --filter='KioskQuoteIntegrityTest|KioskSecurityTest|KioskScopeIsolationTest|KioskQuoteForgesBranchIdSilentlyOverriddenTest|QuoteCurrencyOriginTest' => 15 passed
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-ORDERQUOTE-BRANCH-FORGED-IGNORE.md
+REPORT: missions/CV1-FIX-ORDERQUOTE-BRANCH-FORGED-IGNORE/report.md
+AUDIT_VERDICT: PASS
+
+--- CV1-FIX-KIOSK-LOYALTY-LEDGER-ATOMIC 2026-04-26 ---
+TASK_ID: CV1-FIX-KIOSK-LOYALTY-LEDGER-ATOMIC
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION: Kiosk loyalty points update and ledger write are now atomic; duplicate same-order ledger insert recovers the existing row.
+VALIDATION:
+- php -l app/Services/FrontendOrderService.php => PASS
+- php -l tests/Feature/KioskLoyaltyLedgerAtomicTest.php => PASS
+- php artisan test tests/Feature/KioskLoyaltyLedgerAtomicTest.php => 3 passed
+- php artisan test --filter='KioskLoyalty|Loyalty|Frontend|Kiosk' => 245 passed, 7 skipped, 5 failed external planned POS/KDS lots
+SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-KIOSK-LOYALTY-LEDGER-ATOMIC.md
+REPORT: missions/CV1-FIX-KIOSK-LOYALTY-LEDGER-ATOMIC/report.md
+AUDIT_VERDICT: PASS_WITH_EXTERNAL_FAILURES
+
+--- CV1-FIX-R4-KIOSK-OFFLINE-QUEUE-IDEMPOTENCY 2026-04-26 ---
+TASK_ID: CV1-FIX-R4-KIOSK-OFFLINE-QUEUE-IDEMPOTENCY
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8 - proceed to P0 product fixes despite Phase A still STARTED_NOT_CLOSED.
+BRANCH: cycle/CV1-FIX-R4-KIOSK-OFFLINE-QUEUE-IDEMPOTENCY
+SCOPE: resources/js/helpers/kioskOfflineQueue.js plus kiosk offline queue Vitest suites and mission audit artifacts only.
+IMPLEMENTATION: Separated durable queue localKey from UI offlineKey. Replay/backoff/stale/cancel now preserve and target the stored localKey while saveOrder still returns an offline_* reference for waiting-screen compatibility.
+VALIDATION:
+- npx vitest run tests/js/kioskOfflineQueue.spec.js tests/js/kioskOfflineQueueMigration.spec.js tests/js/kioskOfflineQueueV2.spec.js => 3 files passed, 34 tests passed
+- npx vitest run tests/js/sentinels/kioskOfflineIdPrefix.spec.js => 1 file passed, 3 tests passed
+- npx vitest run tests/js/kiosk*.spec.js => 55 files passed, 398 tests passed
+GPT_SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-R4-KIOSK-OFFLINE-QUEUE-IDEMPOTENCY.md
+SELF_AUDIT_VERDICT: PASS
+COMMIT: 72d0dfbc3 fix(kiosk/offline-queue): preserve original X-Idempotency-Key on replay
+
+--- CV1-FIX-R6-KIOSK-MACHINE-FORCED-BRANCH 2026-04-26 ---
+TASK_ID: CV1-FIX-R6-KIOSK-MACHINE-FORCED-BRANCH
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+BRANCH: cycle/CV1-FIX-R6-KIOSK-MACHINE-FORCED-BRANCH
+SCOPE: Kiosk machine branch forcing, allowlist-constrained.
+IMPLEMENTATION: OrderRequest normalizes kiosk branch_id from the authenticated KioskMachine before validation, limits kiosk detection to non-transient Sanctum access tokens, then rejects kiosk tokens with no registered machine or inactive machine.
+VALIDATION:
+- php artisan test tests/Feature/KioskSecurityTest.php --filter=kiosk_branch_id_is_forced_from_machine => before patch failed, expected 201 got 403
+- php artisan test tests/Feature/KioskSecurityTest.php => 6 passed
+- php artisan test --filter='KioskSecurityTest|KioskAuthTest|KioskScopeIsolationTest|KioskFrontendComprehensiveTest|KioskFullFlowE2ETest' => 21 passed
+- php artisan test tests/Feature/OrderFlowTest.php and tests/Feature/OrderRequestNegativeTotalTest.php => 6 passed total
+- php artisan test --filter='Kiosk*|KioskFullFlowE2ETest' => 213 passed, 4 skipped, 5 failed external to R6 (PosKioskPricingParity quote-binding, SyncComprehensive KDS visibility)
+- php artisan test --filter='BranchIsolation*' => 17 passed, 1 failed external to R6 (KDS own-branch visibility)
+- git diff --check scoped R6 files => PASS
+GPT_SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-R6-KIOSK-MACHINE-FORCED-BRANCH.md
+SELF_AUDIT_VERDICT: PASS_WITH_EXTERNAL_FAILURES
+COMMIT: e12aed7ae fix(kiosk/security): force machine branch in order request
+
+--- CV1-FIX-IDEMPOTENCY-RECOVERY-BRANCH-SCOPE 2026-04-26 ---
+TASK_ID: CV1-FIX-IDEMPOTENCY-RECOVERY-BRANCH-SCOPE
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+BRANCH: cycle/CV1-FIX-IDEMPOTENCY-RECOVERY-BRANCH-SCOPE
+SCOPE: POS/Kiosk idempotency duplicate-key recovery branch scoping only.
+IMPLEMENTATION: OrderService and FrontendOrderService recovery lookups now use branch_id + idempotency_key via dedicated helpers; new sentinel prevents cross-branch recovery leaks.
+VALIDATION:
+- php artisan test tests/Feature/Sentinels/IdempotencyRecoveryBranchScopedTest.php => 4 passed
+- php artisan test --filter='OrderService|FrontendOrderService|Idempotency|IdempotencyRecoveryBranchScopedTest' => 27 passed
+- php -l scoped files => PASS
+GPT_SELF_AUDIT: reports/audit/GPT_SELF_AUDIT_CV1-FIX-IDEMPOTENCY-RECOVERY-BRANCH-SCOPE.md
+SELF_AUDIT_VERDICT: PASS
+COMMIT: 096aaab7d fix(order/idempotency): scope recovery lookup by branch
+
+--- CV1-M21B-PAYMENT-REFACTOR 2026-04-25 ---
+TASK_ID: CV1-M21B-PAYMENT-REFACTOR
+EXECUTE_DELEGATION: codex-extension
+FOODKING_GPT_ONLY: 1
+SYMMETRY_NOTE: N/A; OrderService and FrontendOrderService were not modified by M21B.
+IMPLEMENTATION: PaymentComponent now emits payment-form:patch/payment-form:reset instead of mutating parent form props directly; PosComponent owns checkoutProps.form patch/reset; POS payment confirm has a one-shot 401 authcheck retry and fails closed on a second 401.
+SCOPE_PROOF: reports/audit/M21B_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- npm test -- tests/js/paymentComponentPropMutation.spec.js tests/js/paymentComponent401Retry.spec.js tests/js/posPaymentComponentContract.spec.js => 3 files, 9 tests passed
+- npm test -- tests/js/sentinels/paymentComponentPropMutation.spec.js => 1 file, 1 test passed
+- git diff --check scoped M21B files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_REWORK_CAUSE: missing M21B trace block in reports/post_execute_latest.log before first final audit; product code/invariants were accepted by GPT final audit.
+GPT_FINAL_AUDIT_REWORK_FIX: added M21B report block, mandatory validation evidence, scope proof, and corrected stale output note about verify:boucle.
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_payment_refactor_2026-04-25.jsonl
+
+--- CV1-M22-POST-LAUNCH-OBSERVABILITY 2026-04-25 ---
+TASK_ID: CV1-M22-POST-LAUNCH-OBSERVABILITY
+EXECUTE_DELEGATION: codex-extension
+FOODKING_GPT_ONLY: 1
+SYMMETRY_NOTE: N/A; OrderService and FrontendOrderService were not modified by M22.
+IMPLEMENTATION: Added post-launch observability document, post-launch runbook, read-only fail-closed evidence checker, and PHPUnit checklist coverage. The checker requires M14 preflight, M15 canary, POS/kiosk/KDS LCP evidence, anomaly evidence, and J+1/J+7/J+30 cadence evidence; it blocks P0 anomalies and missing packets.
+SCOPE_PROOF: reports/audit/M22_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php artisan test --filter=PostLaunchObservabilityChecklistTest => 4 passed
+- bash scripts/post-launch-observability-check.sh --help => PASS
+- bash scripts/post-launch-observability-check.sh with no evidence => expected fail-closed exit 1; missing M14/M15/LCP/anomaly/cadence evidence reported
+- bash -n scripts/post-launch-observability-check.sh => PASS
+- git diff --check scoped M22 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_REWORK_CAUSE: missing M22 trace block in reports/post_execute_latest.log before first final audit; implementation was accepted as conforming to plan and allowlist.
+GPT_FINAL_AUDIT_REWORK_FIX: added M22 report block, validation evidence, fail-closed evidence, and scope proof.
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_post_launch_2026-04-25.jsonl
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+
+--- CV1-M08-FISCAL-Z-NF525 SCOPE REWORK 2026-04-25 ---
+FOODKING_GPT_ONLY: 1
+FINAL_AUDIT_REWORK_CAUSE: mandatory sentinel edited but absent from M08 allowlist.
+SCOPE_FIX: added `tests/Feature/Sentinels/FiscalZBranchExactnessSentinelTest.php` to `missions/CV1-M08-FISCAL-Z-NF525/input.json.allowlist` and the M08 allowlist in `plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md`.
+VALIDATION:
+- php artisan test --filter='FiscalSealingHmacTest|FiscalZBranchExactnessSentinelTest' => 4 passed
+- final-audit rerun required
+
+--- CV1-M08-FISCAL-Z-NF525 REWORK 2026-04-25 ---
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+SYMMETRY_NOTE: FrontendOrderService was touched only to document/enforce kiosk fiscal Option B; kiosk payment confirmation does not allocate fiscal_sequence_no or close/seal Z. OrderService remains the fiscal POS path and was reviewed for M08 symmetry.
+IMPLEMENTATION: Fiscal Z aggregation remains branch-scoped and sequence-scoped; FiscalZBranchExactnessSentinelTest fixture now uses fiscal_sequence_no so it validates branch isolation without violating NF525 sequence filtering. FiscalSealingService::signZReport preserves the historical ZReportService top-level HMAC payload order.
+SCOPE_PROOF: reports/audit/M08_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php -l app/Services/Fiscal/FiscalSealingService.php tests/Feature/Fiscal/FiscalSealingHmacTest.php tests/Feature/Sentinels/FiscalZBranchExactnessSentinelTest.php => PASS
+- php artisan test --filter=FiscalSealingHmacTest => 3 passed
+- php artisan test --filter=FiscalZBranchExactnessSentinelTest => 1 passed
+- php artisan test --filter='ZAggregationKioskRoutingTest|RefundPreZTest|RefundPostZTest|VoidPreZTest|FiscalSealingHmacTest|FiscalArchiveTtlTest|ZReportTaxBreakdownTest|ZReportCloseTest|ZReportAggregateFilterTest|FiscalZBranchExactnessSentinelTest' => 21 passed
+- git diff --check scoped M08 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_fiscal_z_2026-04-25.jsonl
+
+--- CV1-M07-KDS-RELEASE REWORK 2026-04-25 ---
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+IMPLEMENTATION: Added OrderStateMachine::isReleasedToKitchen(status, payment_status, order_type, pos_payment_method) per M07 plan: status >= ACCEPT plus PAID, with POS cash immediate-release exception. KDS list now mirrors that policy in SQL while retaining the KDS-visible status set.
+VALIDATION:
+- php -l app/Domain/Order/OrderStateMachine.php app/Services/KitchenDisplaySystemOrderService.php tests/Feature/KitchenReleaseRuleTest.php tests/Feature/KdsPaginationOverflowTest.php => PASS
+- php artisan test --filter=KitchenReleaseRuleTest => 4 passed
+- php artisan test --filter=KdsPaginationOverflowTest => 2 passed
+- php artisan test --filter='KdsTransitionWhitelistSentinelTest|KdsExpectedStatusConflictSentinelTest|KdsTransitionWhitelistTest|KdsExpectedStatusConflictTest|KitchenReleaseRuleTest|KdsPaginationOverflowTest|KdsChangeStatusConcurrencyTest|KDSFlowTest' => 15 passed
+- npx playwright test -c tests/Playwright KdsMultiScreenPlaywrightTest.spec.js => 1 passed
+- bash scripts/lint-fk-branch-isolation.sh => PASS
+- git diff --check scoped M07 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_kds_release_2026-04-25.jsonl
+
+--- CV1-M17-WEB-STRIPE-SCOPE REWORK 2026-04-25 ---
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+IMPLEMENTATION: WEB Option B keeps public web payment V1 disabled by default; STRIPE Option B keeps Stripe inactive unless activation_gate_cleared is explicitly flipped after gate clearance. PaymentController guards public web payment entrypoints and Stripe activation. No PaymentIntent flow or Stripe cents conversion was added.
+SCOPE_PROOF: reports/audit/M17_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php artisan test --filter=WebPaymentDisabledTest => 2 passed
+- php artisan test --filter=StripeActivationGuardTest => 1 passed
+- php artisan test tests/Feature/Payment => 7 passed
+- git diff --check scoped M17 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_web_stripe_2026-04-25.jsonl
+
+--- CV1-M13-MIGRATIONS-SAFETY REWORK 2026-04-25 ---
+TASK_ID: CV1-M13-MIGRATIONS-SAFETY
+EXECUTE_DELEGATION: codex-extension
+FOODKING_GPT_ONLY: 1
+IMPLEMENTATION: Created migration safety runbooks, fail-closed dry-run/backup/rehearsal wrappers, and migration safety PHPUnit coverage. No product migration or runtime product code was added.
+SCOPE_PROOF: reports/audit/M13_SCOPE_PROOF_2026-04-25.md
+RISK_REGISTER: reports/audit/M13_REHEARSAL_RISK_DEFERRED_2026-04-25.md
+VALIDATION:
+- php artisan test --filter=MigrationDryRunTest => 2 passed
+- php artisan test --filter=MigrationRollbackTest => 3 passed
+- bash scripts/db/dry-run.sh --help => PASS
+- bash scripts/db/backup.sh --help => PASS
+- bash scripts/db/rehearsal.sh --env=staging --connection=sqlite --backup-manifest=<temp> --step=1 --print-command => PASS; prints dry-run, migrate, rollback, migrate
+- git diff --check scoped M13 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_migrations_2026-04-25.jsonl
+
+--- CV1-M14-OPS-PREFLIGHT REWORK 2026-04-25 ---
+TASK_ID: CV1-M14-OPS-PREFLIGHT
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+IMPLEMENTATION: Added read-only fail-closed ops preflight wrapper, extended app:preflight-production ops command/log-level checks, added conservative Horizon config, and added M14 tests for preflight evidence, dispatch-after-commit, and outbox rescue.
+SCOPE_PROOF: reports/audit/M14_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php -l app/Console/Commands/PreflightProductionCommand.php tests/Feature/OpsPreflightCaisseV1Test.php tests/Feature/AfterCommitDispatchTest.php tests/Feature/OutboxRescueTest.php => PASS
+- bash -n scripts/ops-preflight-caisse-v1.sh => PASS
+- php artisan test --filter=OpsPreflightCaisseV1Test => 3 passed
+- php artisan test --filter=AfterCommitDispatchTest => 4 passed
+- php artisan test --filter=OutboxRescueTest => 2 passed
+- bash scripts/ops-preflight-caisse-v1.sh --help => PASS
+- php artisan app:preflight-production --help => PASS
+- git diff --check scoped M14 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_ops_preflight_2026-04-25.jsonl
+
+--- CV1-M15-ROLLOUT-CANARY 2026-04-25 ---
+TASK_ID: CV1-M15-ROLLOUT-CANARY
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged GPT-only; no Claude, no sub-agent)
+FOODKING_GPT_ONLY: 1
+IMPLEMENTATION: Added Caisse V1 rollout flag config, read-only fail-closed canary drill script, runbook links to real flag/drill locations, and RolloutCanaryDrillTest coverage.
+SCOPE_PROOF: reports/audit/M15_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php -l config/caisse_v1_rollout.php => PASS
+- php -l tests/Feature/RolloutCanaryDrillTest.php => PASS
+- bash -n scripts/rollout-canary-drill.sh => PASS
+- php artisan test --filter=RolloutCanaryDrillTest => 4 passed
+- bash scripts/rollout-canary-drill.sh --help => PASS
+- git diff --check scoped M15 files => PASS
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: codex-extension
+GPT_FINAL_AUDIT_MODEL: gpt-5.5
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+CLOSE_STATUS: CLOSED
+MEMORY_EPISODE: memory/episodes/caisse_v1_rollout_canary_2026-04-25.jsonl
+
+--- CV1-M11-KIOSK-RUNTIME 2026-04-25 ---
+TASK_ID: CV1-M11-KIOSK-RUNTIME
+EXECUTE_DELEGATION: codex-extension (manual recovery after stale runner died before JSON extraction)
+FOODKING_GPT_ONLY: 1
+SYMMETRY_NOTE: N/A; OrderService and FrontendOrderService were not modified by M11.
+IMPLEMENTATION: Kiosk offline queue now keeps strict offline_ local ids; kiosk cart refuses CB/TR network failures without local queue writes; kiosk payment UI disables/refuses CB/TR while offline; kiosk cancellation posts use OrderStatus enum constants instead of literal status 16.
+SCOPE_PROOF: reports/audit/M11_SCOPE_PROOF_2026-04-25.md
+VALIDATION:
+- php -l tests/Feature/KioskOfflinePaymentScopeTest.php && php -l app/Http/Controllers/Frontend/OrderController.php => PASS
+- git diff --check scoped M11 files => PASS
+- npm test -- tests/js/sentinels/kioskOfflineIdPrefix.spec.js tests/js/kioskCartOfflinePaymentScope.spec.js tests/js/KioskPaymentRestyle.spec.js => 3 files, 9 tests passed
+- php artisan test --filter=KioskOfflinePaymentScopeTest => 2 passed
+- PLAYWRIGHT_BASE_URL=http://localhost:8000 npx playwright test -c tests/Playwright sentinels/kioskCbTrOfflineRefused.spec.js --browser=chromium --reporter=list --workers=1 => 1 passed
+AUDIT_CHANNEL: gpt-codex
+AUDIT_VERDICT: PASS
+
+--- POS_KIOSK_PLAN_COMPLETION_STATUS 2026-04-26 ---
+TASK_ID: POS_KIOSK_PLAN_COMPLETION_STATUS
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION:
+- Kiosk chain R4/R6/#3/#4/#5/#6/#7 implemented in current worktree.
+- POS test migration #9 and outbox fixture migration #10 implemented in current worktree.
+- M-13 queue-number uniqueness remains blocked by required human schema gate.
+VALIDATION:
+- php artisan test => 1075 passed, 8 skipped, 1 failed: Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest (expected M-13 gate).
+- npx vitest run => 126 files, 853 tests passed.
+- npx vitest run tests/js/kiosk*.spec.js => 55 files, 398 tests passed.
+- npx playwright test => 34 passed, 1 flaky passed on retry.
+- bash scripts/lint-fk-bundle-legacy.sh strict => exit 0; legacy kiosk bundle references remain warnings.
+- git diff --check scoped POS/Kiosk changed tracked files => PASS.
+REPORT: reports/audit/POS_KIOSK_PLAN_COMPLETION_STATUS_2026-04-26.md
+STATUS: TECHNICAL_PASS_WITH_M13_GATE_AND_PHASE_A_GOVERNANCE_OPEN
+
+--- MASSIVE_AUDIT_POS_KIOSK_GLOBAL_POST_ORCHESTRATION 2026-04-26 ---
+TASK_ID: MASSIVE_AUDIT_POS_KIOSK_GLOBAL_POST_ORCHESTRATION
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+AUDIT_SCOPE: POS, Kiosk, KDS, outbox K-09B, payment, pricing SSOT, branch isolation, quote HMAC, idempotency, loyalty, frontend tests, release gates, memory/governance.
+VALIDATION:
+- php artisan test => 1075 passed, 8 skipped, 1 failed: Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest (expected M-13 schema gate).
+- npx vitest run => 126 files, 853 tests passed.
+- npx vitest run tests/js/kiosk*.spec.js => 55 files, 398 tests passed.
+- npx playwright test => 35 passed.
+- bash scripts/lint-fk-bundle-legacy.sh strict => exit 0; release warning remains for public/js/kiosk.js and public/js/kiosk-wizard.js.
+- git diff --check scoped POS/Kiosk/audit surfaces => PASS.
+REPORT: reports/audit/MASSIVE_AUDIT_POS_KIOSK_GLOBAL_POST_ORCHESTRATION_2026-04-26.md
+GLOBAL_AUDIT_VERDICT: HOLD_NOT_RELEASE_READY
+TECHNICAL_VERDICT: PASS_WITH_M13_SCHEMA_GATE
+GOVERNANCE_VERDICT: FAIL_OPEN_PHASE_A_AND_DIRTY_WORKTREE
+
+--- ORCHESTRATOR_PLAN_V1_POS_KIOSK_FINALIZATION 2026-04-26 ---
+TASK_ID: ORCHESTRATOR_PLAN_V1_POS_KIOSK_FINALIZATION
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+PLAN: reports/audit/ORCHESTRATOR_PLAN_V1_POS_KIOSK_FINALIZATION_2026-04-26.md
+SELF_AUDIT: reports/audit/ORCHESTRATOR_PLAN_V1_SELF_AUDIT_2026-04-26.md
+IMPLEMENTATION:
+- Hardened kiosk quote auth/active-machine enforcement.
+- Wrapped quote/replay/consume in DB transaction boundary.
+- Restored kiosk commit item-variation validation before kiosk early return.
+- Added generic payment transaction_no cross-order guard.
+VALIDATION:
+- PHP syntax scoped files => PASS.
+- Targeted backend suite => 46 passed.
+- php artisan test => 1079 passed, 8 skipped, 1 failed: Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest (expected D-M13 gate).
+- git diff --check scoped files/reports => PASS.
+REPORT: reports/audit/ORCHESTRATOR_PLAN_V1_EXECUTION_RESULT_2026-04-26.md
+FINAL_VERDICT: TECHNICAL_REWORK_REDUCED_M13_STILL_BLOCKING
+RELEASE_VERDICT: HOLD_NOT_RELEASE_READY
+
+--- ORCHESTRATOR_NO_D13_FOLLOWUP_EXECUTION 2026-04-26 ---
+TASK_ID: ORCHESTRATOR_NO_D13_FOLLOWUP_EXECUTION
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+D13_SCOPE: NOT_TOUCHED_BY_USER_REQUEST
+IMPLEMENTATION:
+- Fixed POS reorder endpoint to use real orderItems.orderItem relation and snapshot/legacy JSON variation-extra payloads.
+- Added sentinel proving historical reorder prices are display/re-import data only; POS commit still re-quotes and persists backend SSOT current price.
+VALIDATION:
+- php -l PosOrderController.php and PosReorderHistoricalPricingSentinelTest.php => PASS.
+- POS reorder targeted tests => PASS.
+- POS quote/pricing/reorder filter => 12 passed.
+- php artisan test => 1080 passed, 8 skipped, 1 failed: Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest (expected D-M13 gate, untouched).
+- git diff --check scoped files/reports => PASS.
+REPORT: reports/audit/ORCHESTRATOR_NO_D13_FOLLOWUP_EXECUTION_2026-04-26.md
+FINAL_VERDICT: NO_D13_PLAN_APPLIED_TECHNICAL_PASS_WITH_EXPECTED_D13_SENTINEL
+
+--- ORCHESTRATOR_RESPONSIBLE_DECISION_POS_KIOSK 2026-04-26 ---
+TASK_ID: ORCHESTRATOR_RESPONSIBLE_DECISION_POS_KIOSK
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+DECISION:
+- Stop random no-gate patching; latest audit chain shows no proven remaining no-gate product bug.
+- Best responsible next path is D13 queue-number DB uniqueness, then governance/persistence, then final release validation.
+- Do not weaken QueueNumberUniquenessSentinelTest and do not declare release-ready while it remains red.
+REPORT: reports/audit/ORCHESTRATOR_RESPONSIBLE_DECISION_POS_KIOSK_2026-04-26.md
+DECISION_VERDICT: STOP_RANDOM_PATCHING_AND_LOCK_THE_RELEASE_PATH
+
+--- CODEX_TO_CLAUDE_HANDOFF_POS_KIOSK_D13 2026-04-26 ---
+TASK_ID: CODEX_TO_CLAUDE_HANDOFF_POS_KIOSK_D13
+EXECUTE_DELEGATION: codex-extension
+AUDIT_OVERRIDE_PHASE_A: 1
+OVERRIDE_REASON: human_authorization_2026-04-26 by user kossayelbenna8
+IMPLEMENTATION:
+- Created Claude handoff report summarizing all recent Codex POS/Kiosk implementations, validations, dirty-worktree caveats, and D-M13 remaining blocker.
+- Created copy-ready Claude prompt for independent audit/orchestration.
+FILES:
+- reports/audit/CODEX_TO_CLAUDE_HANDOFF_POS_KIOSK_D13_2026-04-26.md
+- reports/audit/_CLAUDE_PROMPT_CODEX_HANDOFF_POS_KIOSK_D13_2026-04-26.txt
+VALIDATION:
+- git diff --check on the two new handoff artifacts => PASS.
+HANDOFF_VERDICT: READY_FOR_CLAUDE_ORCHESTRATION
+
+--- PHASE2_GLOBALE_CENTRALISATION_SYNC_AUDIT_PLAN 2026-04-26 ---
+TASK_ID: PHASE2_GLOBALE_CENTRALISATION_SYNC_AUDIT_PLAN
+EXECUTE_DELEGATION: codex-extension
+MODE: AUDIT_PLAN_ONLY_NO_PRODUCT_PATCH
+GRAPHITI: search_memory_facts group=foodking completed; memory/INDEX.md read as fallback index.
+PROMPT_SOURCE: reports/audit/CLAUDE_PROMPT_PHASE2_GLOBALE_CENTRALISATION_SYNC_2026-04-27.md
+IMPLEMENTATION:
+- Created Phase 2 global centralisation/sync audit, 18-row intersection matrix, duplicate/legacy policy, ultra plan and Codex task queue with allowlists.
+- Created double-audit/self-critique report for P0 intersections and gate discipline.
+FILES:
+- reports/audit/PHASE2_GLOBALE_CENTRALISATION_SYNC_ULTRA_PLAN_2026-04-27.md
+- reports/audit/PHASE2_GLOBALE_CENTRALISATION_SYNC_DOUBLE_AUDIT_2026-04-27.md
+VALIDATION:
+- .cursor/hooks/safety-check.sh => PASS before report edits.
+- No product file edits; no deletion; no archive move.
+FINAL_VERDICT: PHASE2_STRATEGIE_PRET_POUR_PLANIFICATION_EXECUTION_SEQUENTIELLE_APRES_GATES_P0
+
+--- PHASE2_PLAN_REWORK_TRAINS_2026-04-27 ---
+TASK_ID: PHASE2_PLAN_REWORK_TRAINS_2026-04-27
+EXECUTE_DELEGATION: codex-extension
+MODE: AUDIT_PLAN_ONLY_NO_PRODUCT_PATCH
+GRAPHITI: search_memory_facts group=foodking completed for V1 release / D-M13 / quote HMAC context.
+IMPLEMENTATION:
+- Reworked Phase 2 plan into two exclusive trains: TRAIN A V1 RELEASE and TRAIN B CV2-PH2 enhancement.
+- Front-loaded Phase A persistence, quote subsystem persistence/HMAC fix, cycle/memory gates, and D-M13.
+- Added explicit D-M13 microtime fallback sites and retry/DB uniqueness strategy.
+- Kept Train B blocked until Train A closed; renamed PH2 missions to CV2-PH2 namespace.
+- Exposed A.2 allowlist contradiction: APP_KEY-empty automated test requires a test-file allowlist amendment.
+FILES:
+- reports/audit/PHASE2_PLAN_TRAINS_REWORKED_2026-04-27.md
+- reports/audit/PHASE2_PLAN_DOUBLE_AUDIT_TRAINS_2026-04-27.md
+VALIDATION:
+- .cursor/hooks/safety-check.sh => PASS before report edits.
+- No product file edits; no deletion; no archive move; D-M13 not attacked.
+FINAL_VERDICT: PHASE2_TRAINS_VERDICT_PRET_POUR_TRAIN_A_APRES_GATES_HUMAINS
+## 2026-04-26 — MASSIVE_SYSTEM_VALIDATION_GLOBAL
+
+EXECUTE_DELEGATION: codex-extension
+MODE: AUDIT_VALIDATION_ONLY
+PRODUCT_PATCHES: none
+GRAPHITI_CONTEXT: queried group foodking; fallback memory/INDEX.md available
+
+Validation logs written under:
+- reports/validation/massive-system-2026-04-26/
+
+Reports written:
+- reports/audit/MASSIVE_SYSTEM_VALIDATION_GLOBAL_2026-04-26.md
+- reports/audit/MASSIVE_SYSTEM_VALIDATION_BACKEND_POS_KIOSK_2026-04-26.md
+- reports/audit/MASSIVE_SYSTEM_VALIDATION_SYNC_KDS_OSS_OUTBOX_2026-04-26.md
+- reports/audit/MASSIVE_SYSTEM_VALIDATION_FRONTEND_E2E_2026-04-26.md
+- reports/audit/MASSIVE_SYSTEM_VALIDATION_GOVERNANCE_RELEASE_GATES_2026-04-26.md
+
+Results:
+- safety-check: PASS
+- verify:boucle: PASS/conditional
+- php artisan test: 1080 passed, 8 skipped, 1 failed (QueueNumberUniquenessSentinelTest / D-M13)
+- npx vitest run: 126 files passed, 853 tests passed
+- npx playwright test: 35 passed
+- /api/health/live: 200 OK
+- legacy bundle strict lint: PASS with POS wizard cutover warning
+- POS pricing/status/enum/branch/legacy-import lints: PASS
+- i18n audit: FAIL (missing locale keys)
+- bundle budget: FAIL (kiosk-shell.js 431KB > 350KB)
+- route:list: FAIL (missing App\Http\PaymentGateways\Gateways\Senangpay)
+
+AUDIT_VERDICT: NOT_RELEASE_READY_BUT_CORE_FUNCTIONAL
+
+## 2026-04-26 — PHASE2_TRAIN_A_HUMAN_GATES_AND_BOOTSTRAP
+
+EXECUTE_DELEGATION: codex-extension
+MODE: GOVERNANCE_SCAFFOLDING_ONLY
+PRODUCT_PATCHES: none
+
+Human gate decisions documented:
+- docs/gates/GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26.md
+- docs/gates/GATE_LOG.md
+
+Train A mission scaffolds created:
+- missions/GOV-PERSIST-SENTINELS-2026-04-27/input.json
+- missions/GOV-PERSIST-SENTINELS-2026-04-27/execute_brief.md
+- missions/GOV-PERSIST-SENTINELS-2026-04-27/allowlist.txt
+- missions/GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27/input.json
+- missions/GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27/execute_brief.md
+- missions/GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27/allowlist.txt
+- missions/GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27/input.json
+- missions/GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27/execute_brief.md
+- missions/GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27/allowlist.txt
+- missions/D-M13-QUEUE-NUMBER-DB-UNIQUE-2026-04-28/input.json
+- missions/D-M13-QUEUE-NUMBER-DB-UNIQUE-2026-04-28/execute_brief.md
+- missions/D-M13-QUEUE-NUMBER-DB-UNIQUE-2026-04-28/allowlist.txt
+
+Audit:
+- reports/audit/PHASE2_TRAIN_A_MISSIONS_BOOTSTRAP_AUDIT_2026-04-26.md
+- JSON validation: PASS for all 4 input.json files
+- mission file count: PASS, 3 files per mission
+- git diff --check: PASS
+
+Important decisions:
+- A.2 allowlist amended with tests/Feature/OrderQuoteHmacKeyRequiredTest.php.
+- D-M13 remains BLOCKED_PRE_EXECUTE until A.1+A.2+A.3 close and migration gates are signed.
+- Payment V1 policy is manual/simulated external terminal confirmation until live gateway setup.
+- Senangpay is treated as likely legacy/non-France route requiring cleanup mission, not enabled now.
+
+BOOTSTRAP_VERDICT: PASS
+
+## 2026-04-26 — GOV-PERSIST-SENTINELS-2026-04-27
+
+EXECUTE_DELEGATION: codex-extension
+MODE: EXECUTE
+PRODUCT_PATCHES: none
+
+Actions:
+- Staged 35 files explicitly, no `git add -A`.
+- Staged paths are restricted to A.1 allowlist: test sentinels, quote/payment tests, and `HasPosQuoteBinding`.
+- No `app/**`, `database/**`, or `resources/**` files staged.
+
+Validation:
+- safety-check: PASS
+- cached allowlist check: PASS
+- git diff --check --cached: PASS
+- php artisan test: 1080 passed, 8 skipped, 1 failed
+- only failure: Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest (expected D-M13 gate)
+
+Artifacts:
+- missions/GOV-PERSIST-SENTINELS-2026-04-27/report.md
+- reports/audit/GPT_SELF_AUDIT_GOV-PERSIST-SENTINELS-2026-04-27.md
+- reports/validation/train-a-a1-2026-04-26/phpunit-full.log
+
+Notes:
+- Menu seeder emitted French integrity warnings for visible English labels; defer to FR/i18n audit mission.
+
+A1_STATUS: CLOSED
+2026-04-26 GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27 EXECUTE_DELEGATION: codex-extension AUDIT_OVERRIDE_PHASE_A: 1 RESULT: PASS_WITH_EXPECTED_D13_FAILURE_AND_BRANCH_DISCIPLINE_WARNING TARGETED_QUOTE: 30_PASS FULL_PHP: 1082_PASS_8_SKIP_1_FAIL_EXPECTED_D13 HMAC_FALLBACK_REMOVED: 1
+2026-04-26 GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27 EXECUTE_DELEGATION: codex-extension AUDIT_OVERRIDE_PHASE_A: 1 RESULT: PASS_WITH_BRANCH_DISCIPLINE_WARNING ACTIVE_PRIMARY: CAISSE_V1_MASTERPLAY W10: READ_ONLY_SECONDARY D13: NOT_ATTACKED
+2026-04-26 PHASE2_TRAIN_A_VALIDATION EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_D13_BLOCKER PHP_FULL: 1082_PASS_8_SKIP_1_FAIL_EXPECTED_D13 VITEST: 853_PASS PLAYWRIGHT_WITH_SERVER: 35_PASS LEGACY_LINT: EXIT_0_WITH_KIOSK_BUNDLE_WARNING
+2026-04-26 D-M13-QUEUE-NUMBER-DB-UNIQUE-2026-04-28 EXECUTE_DELEGATION: codex-extension AUDIT_OVERRIDE_PHASE_A: 1 RESULT: PASS_LOCAL_TEST_IMPLEMENTATION PROD_ROLLOUT_PENDING: 1 PHP_TARGETED: 4_PASS BROAD_QUEUE_KIOSK_POS_ORDER: 634_PASS_4_SKIP PHP_FULL: 1086_PASS_8_SKIP VITEST: 853_PASS PLAYWRIGHT: EXIT_0_34_PASS_1_FLAKY_RETRY LEGACY_LINT: EXIT_0_WITH_KIOSK_BUNDLE_WARNING
+2026-04-26 PHASE2_TRAIN_A_FINAL_VALIDATION EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_RELEASE_GATES_PENDING PHP_FULL: GREEN VITEST: GREEN PLAYWRIGHT: GREEN_WITH_1_FLAKY_RETRY RELEASE_PENDING: PROD_DM13_ROLLOUT,HARDWARE_UAT,LIVE_PAYMENT_CONFIG,I18N_CLEANUP,W2_LEGACY_KIOSK_BUNDLE_DECISION
+2026-04-26 PHASE2_UI_I18N_W2_SIMULATION_AUDIT EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_SCOPED_REMAINDERS FR_I18N: VUE_0_MISSING_LARAVEL_0_MISSING POS_BROWSER: NO_NON_WS_ERRORS_NO_ENGLISH_PROBES KIOSK_START: CATEGORIES_OK_NO_ERRORS VITEST_TARGETED: 63_PASS PLAYWRIGHT_POS_CASH_CARD: 6_PASS PHP_PAYMENT_TARGETED: 12_PASS W2_DECISION: NO_ARCHIVE_NO_DELETE KIOSK_DESIGN: LIVE_FUNCTIONAL_PROTOTYPE_PORT_PENDING REPORT: reports/ux/PRE_RELEASE_UI_I18N_W2_AUDIT_2026-04-26.md
+2026-04-27 KIOSK-DESIGN-PORT-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_RESERVES DESIGN_PORT: PROTOTYPE_TO_ACTIVE_VUE DARK_LIGHT_THEME: 1 BUILD: npm_run_production_PASS VITEST_TARGETED: 103_PASS VITEST_KIOSK_PATTERN: 546_PASS PLAYWRIGHT_VISUAL: 16_SCREENSHOTS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/ux/KIOSK_FOODKING_DESIGN_PORT_2026-04-27.md
+2026-04-27 KIOSK-WIZARD-DESIGN-UX-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_RESERVE WIZARD_LIVE_TOTAL: FIXED VIANDE_INCLUDED_PLUS_PAID_EXTRA: FIXED BOISSON_SEULE: ENABLED DRINKS_SOURCE: ADDONS_THEN_KIOSK_CENTRAL_CATALOG DESIGN_TOKENS: DARK_LIGHT BUILD: npm_run_production_PASS VITEST_TARGETED: 115_PASS VITEST_KIOSK_PATTERN: 555_PASS PLAYWRIGHT_TRACE: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/ux/KIOSK_WIZARD_DESIGN_UX_FIX_2026-04-27.md
+2026-04-27 KIOSK-WIZARD-REWORK-ULTRA-AUDIT-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_EXTERNAL_SAFETY_BLOCKER SUPPLEMENTS_QUANTITY: FIXED LIVE_TOTAL: SAUCE_7_SUPP_X2_9_BOISSON_10_20 RECAP: SUPP_X2_AND_CENTRAL_DRINK_NAME CTA_CART: IMPROVED DARK_THEME_BROWSER: PASS BUILD: npm_run_production_PASS VITEST_TARGETED: 117_PASS VITEST_KIOSK_PATTERN: 557_PASS DIFF_CHECK: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/ux/KIOSK_WIZARD_USER_REMARKS_REWORK_2026-04-27.md
+2026-04-27 KIOSK-ORDER-FLOW-UX-MAX-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_EXTERNAL_SAFETY_BLOCKER CATEGORY_QUICK_STRIP: ADDED CARD_FIRST_VIANDE: PASS CARD_FIRST_SUPPLEMENTS: PASS PLUS_AFTER_SELECTION_ONLY: PASS A11Y_LANDMARK: FIXED LIVE_BROWSER_ADD_TO_CART: 1_ITEM_14_00 BUILD: npm_run_production_PASS VITEST_TARGETED: 109_PASS VITEST_KIOSK_PATTERN: 560_PASS DIFF_CHECK: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/ux/KIOSK_ORDER_FLOW_UX_MAX_AUDIT_2026-04-27.md
+2026-04-27 KIOSK-CLAUDE-DESIGN-DEEP-POLISH-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_KNOWN_EXTERNAL_RISKS CLAUDE_PROTOTYPE_COMPARED: 1 CARD_FIRST_VIANDE: PASS QUOTA_INSTRUCTIONS: PASS MEAT_BADGES_INCLUDED_SUPPLEMENT: PASS SAUCE_LIVE_TOTAL: 10_00 SUPPLEMENTS_REPEAT_TOTAL: 12_00 BOISSON_SEULE_CENTRAL_LIST_TOTAL: 13_20 RECAP_ADD_TO_CART: 1_ITEM_13_20 VITEST_KIOSK_PATTERN: 560_PASS BUILD: npm_run_production_PASS DIFF_CHECK: PASS REPORT: reports/ux/KIOSK_CLAUDE_DESIGN_DEEP_POLISH_2026-04-27.md
+2026-04-27 KIOSK-GLOBAL-UX-POLISH-ORDER-VALIDATION-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: UX_PASS_WITH_P0_FUNCTIONAL_FINDING NETWORK_BANNER: COMPACT_AND_WIZARD_NON_OVERLAP IDLE_FOCUS: FIXED CATALOG_DISABLED_PAY: FIXED RECAP_CONTRAST: IMPROVED BUILD: npm_run_production_PASS VITEST_TARGETED: 133_PASS PHP_QUOTE_KIOSK_TARGETED: 7_PASS PLAYWRIGHT_FLOW: IDLE_TO_WAITING_CASH_PASS FINAL_QUEUE: A0012 P0_FINDING: PAYMENT_11_70_WAITING_QUERY_9_5 REPORT: reports/ux/KIOSK_GLOBAL_UX_MASTER_AUDIT_AND_POLISH_2026-04-27.md
+2026-04-27 CATALOG-STOCK-SYNC-ULTRA-AUDIT-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_RESIDUAL_GATES BACKEND_GUARD: ITEM_STATUS_IS_AVAILABLE_BRANCH_86_OPTIONS_STATUS_VISIBLE_ON POS_PROJECTION: SURFACE_POS_BRANCH_ID_EFFECTIVE_AVAILABILITY KIOSK_PROJECTION: FRONTEND_MENU_PRIMARY_MACHINE_SCOPED PHP_TARGETED: 64_PASS JS_TARGETED: 148_PASS BUILD: npm_run_production_PASS DIFF_CHECK: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/audit/CATALOG_STOCK_SYNC_ULTRA_AUDIT_2026-04-27.md
+2026-04-27 CATALOG-STOCK-SYNC-REVERIFY-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS CENTRAL_TO_KIOSK_POS_QUOTE_SENTINEL: 1_PASS PHP_SYNC_TARGETED: 32_PASS JS_AVAILABILITY_TARGETED: 41_PASS PHP_LINT_NEW_SENTINEL: PASS DIFF_CHECK_SCOPED: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/audit/CATALOG_STOCK_SYNC_REVERIFY_2026-04-27.md
+2026-04-27 POS-CLAUDE-DESIGN-INTEGRATION-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_LOCAL_RECONNECT_RESERVE POS_SHELL_V4: APPLIED PAYMENT_MODAL_V4: APPLIED POS_WIZARD_LOGIC_TOUCHED: 0 DESKTOP_PLAYWRIGHT_CARD_SIM: PASS CART_LINE: LE_TERMINATOR_MERGUEZ_KEFTA_9_00 VITEST_POS_TARGETED: 19_PASS PLAYWRIGHT_POS_CASH_CARD: 6_PASS PHP_POS_QUOTE_COMMIT: 1_PASS BUILD: npm_run_production_PASS DIFF_CHECK: PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/ux/POS_CLAUDE_DESIGN_INTEGRATION_AUDIT_2026-04-27.md
+2026-04-27 POS-CATALOG-CENTRAL-SYNC-ULTRA-AUDIT-2026-04-27 EXECUTE_DELEGATION: codex-extension RESULT: PASS_WITH_RESIDUAL_REWORK PRODUCT_PATCHES: none POS_WIZARD_TOUCHED: 0 PHP_CATALOG_SYNC: 39_PASS PHP_CRUD_STOCK: 37_PASS_8_SKIP PHP_POS_QUOTE: 28_PASS_1_LEGACY_FIXTURE_FAIL VITEST_POS_SYNC: 36_PASS VITEST_POS_CART_HARDWARE: 57_PASS SAFETY_CHECK: HALT_PRE_EXISTING_STAGED_FROZEN_OrderService REPORT: reports/audit/POS_CATALOG_CENTRAL_SYNC_ULTRA_AUDIT_2026-04-27.md
+2026-04-27T03:12:00+02:00 EXECUTE_DELEGATION: codex-extension AUDIT_ONLY TASK_ID=PRODUCT-WIZARD-CATALOG-AUDIT-2026-04-27 REPORT=reports/audit/PRODUCT_WIZARD_CATALOG_CONFIGURATION_MASTER_AUDIT_2026-04-27.md VERDICT=PASS_WITH_RELEASE_REWORK_REQUIRED TESTS="php artisan targeted 36 pass 7 skip; vitest wizard/catalog 130 pass" NOTE="no product code changes; POS/kiosk/browser/admin config audit"
+2026-04-27T03:18:01+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-WIZARD-COMPOSER-FOUNDATION-2026-04-27 STATUS: PASS_FOUNDATION_DELIVERED files=ItemAttributeRequest,ItemAttributeResource,ItemResource,NormalItemResource,ItemAttribute admin Vue,ItemAttribute composer tests validations="PHP targeted PASS; PHP regression 29 PASS 6 SKIPPED; Vitest wizard/POS 118 PASS; npm run production PASS; git diff --check PASS" note="D-M13 not touched; global safety-check still blocked by pre-existing staged frozen OrderService outside scope"
+2026-04-27T03:20:52+02:00 AUDIT_DELEGATION: codex-extension TASK_ID: PRODUCT-WIZARD-COMPOSER-DELIVERY-AUDIT-2026-04-27 VERDICT: PASS_FOR_FOUNDATION__NOT_COMPLETE_FOR_FULL_SHOPIFY_COMPOSER validations="PHP 33 PASS 6 SKIPPED; Vitest 121 PASS; npm run production PASS; git diff --check PASS" risk="global safety-check still blocked by pre-existing staged frozen app/Services/OrderService.php outside composer scope" report="reports/audit/PRODUCT_WIZARD_COMPOSER_DELIVERY_AUDIT_2026-04-27.md"
+2026-04-27T03:23:56+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: ITEM-IMAGE-CATALOG-REFRESH-2026-04-27 STATUS: PASS_TARGETED_FIX files="ItemController,ItemService changeImage,ItemList thumbnail,ItemImageCatalogRefreshTest,compiled assets" validations="ItemImageCatalogRefreshTest 1 PASS; PHP cache/composer filter 9 PASS 6 SKIPPED; Vitest wizard/parity 110 PASS; npm run production PASS; git diff --check PASS" note="changeImage now requires items_edit and dispatches global full catalog refresh; safety-check global still blocked by pre-existing staged frozen OrderService"
+2026-04-27T03:33:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: KIOSK-WIZARD-CLAUDE-DESIGN-HEADER-2026-04-27 STATUS: PASS_WITH_EXTERNAL_SAFETY_BLOCKER files="KioskWizardComponent visual CSS, compiled kiosk assets, UX report" validations="Vitest kiosk wizard/categories 113 PASS; npm run production PASS; git diff --check PASS; Playwright wizard screenshots PASS" note="wizard scoped to Claude Design warm light palette; selection logic/buttons/payload unchanged; global safety-check still blocked by pre-existing staged frozen app/Services/OrderService.php"
+2026-04-27T03:36:00+02:00 AUDIT_DELEGATION: codex-extension TASK_ID: SYNC-GLOBAL-POS-KIOSK-KDS-DASHBOARD-SECOND-BRAIN-2026-04-27 STATUS: PLAN_READY_NO_PRODUCT_PATCH report="reports/audit/ULTRA_PLAN_SYNC_GLOBAL_POS_KIOSK_KDS_DASHBOARD_2026-04-27.md" validations="PHP catalog/stock/queue targeted 43 PASS; JS POS/Kiosk availability targeted 56 PASS; report diff-check PASS" verdict="SYNC_V1_FOUNDATION_PASS__SYNC_V2_REQUIRES_SEQUENCED_MISSIONS_AND_SCHEMA_GATES" note="do not run stock_levels V2 before HG-STOCK-V2-SOURCE-OF-TRUTH; global safety-check still blocked by pre-existing staged frozen app/Services/OrderService.php"
+2026-04-27T10:58:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: PRODUCT-COMPOSER-SYNC-02A-DASHBOARD-COMPOSER-LITE STATUS: PASS_WITH_SCOPE_LIMIT files="ItemShowComponent Composition tab,ProductComposerSummaryComponent,productComposerSummary.spec,02A mission brief,self-audit" note="safe dashboard composition summary only; full Product Composer schema/stock/runtime remains gated"
+2026-04-27T11:08:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE STATUS: PASS_WITH_SCOPE_LIMIT files="KioskMenuService itemAttributes,MenuProjectionService itemAttributes,MenuProjectionParitySentinelTest,03A mission brief,self-audit" validations="menu projection parity 4 PASS; item attribute composer resource 2 PASS; safety PASS; diff-check PASS" note="projection constraints exposed; full runtime composer remains gated"
+2026-04-27T11:13:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: PRODUCT-COMPOSER-SYNC-01A-GATE-BRIEFS STATUS: PASS_PENDING_HUMAN_DECISION files="5 pending gate briefs,01A mission brief,self-audit" note="no gate self-approved; no product code"
+2026-04-27T14:15:39+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B0-P0-HOTFIX STATUS: PASS files="OrderRequest delivery SSOT,deliveryCharge preview helper,kiosk-admin bundle/source delete,forbidden bundle guard,B0 tests,mission report,self-audit" validations="OrderRequestDeliveryFeeAuthority 4 PASS; KioskBundleLockdown 1 PASS; PosWalkInAndDeliveryFee 1 PASS; DeliveryFeeService 1 PASS; MenuProjectionParity 4 PASS; ItemAttributeComposerResource 2 PASS; Vitest targeted 17 PASS; npm run production PASS; forbidden_bundles PASS; scoped diff-check PASS" note="B7 owns full public bundle scan for stale non-manifest kiosk.js signatures"
+2026-04-27T14:20:49+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT STATUS: PASS files="routes/web.php,scan_kiosk_bundles,kiosk-lockdown e2e,KioskBundleLockdownTest,delete public/js/kiosk.js and license,lockdown policy,mission report,self-audit" validations="PHP lint PASS; KioskBundleLockdown 3 PASS; scan_kiosk_bundles PASS; forbidden_bundles PASS; curl forbidden assets 4x404; Playwright kiosk-lockdown 4 PASS; npm run production PASS; post-build scans PASS; scoped diff-check PASS" note="scanner blocks runtime kiosk admin signatures/default PIN fallback; bare staff i18n kiosk_admin_pin intentionally not blocked"
+2026-04-27T14:30:39+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B8-DELIVERY-MAPS-HARDENING STATUS: PASS files="DeliveryQuoteService,GeocodeUnavailableException,OrderRequest,OrderController,CheckoutComponent,PosComponent,Delivery tests,checkoutGeocodeError spec,delivery policy,mission brief,self-audit" validations="Delivery feature 3 PASS; OrderRequestDeliveryFeeAuthority 4 PASS; PosWalkInAndDeliveryFee 1 PASS; DeliveryFeeService 1 PASS; MenuProjectionParity 4 PASS; ItemAttributeComposerResource 2 PASS; Vitest targeted 18 PASS; npm run production PASS; kiosk bundle scans PASS; scoped diff-check PASS" note="web delivery fee now recomputed from saved address coordinates when distance is supplied; missing delivery_distance_km still 422; POS UI blocks un-geocoded address text"
+2026-04-27T14:35:19+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B2-SCHEMA-ADR STATUS: PASS files="composer migrations,stock migrations,item_addon role migration,composer/stock models,factories,ComposerSeeder,ADR,B2 tests,mission brief,self-audit" validations="PHP lint PASS; migrate:fresh testing PASS; Catalog tests 4 PASS; Stock tests 6 PASS; scoped diff-check PASS" note="approved gates cited: HG-COMPOSER-SCHEMA-ADR, HG-STOCK-STOCKABLE-SCOPE; no order/pricing/runtime UI edits"
+2026-04-27T14:45:55+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B3-DASHBOARD-COMPOSER-WRITE STATUS: PASS files="composer API/controllers/requests/resources/services,after-commit publish event,minimal permissions seeder,composer editor components,router exposure,summary entrypoint,B3 tests,mission brief,self-audit" validations="PHP lint PASS; Composer feature 7 PASS; productComposerEditor Vitest 4 PASS; Catalog regression 4 PASS; Stock regression 6 PASS; npm run production PASS; kiosk bundle scans PASS; scoped diff-check PASS" note="B3 self-audit expanded route exposure to router/index and composition summary entrypoint; pricing payload remains forbidden; no OrderService/FrontendOrderService edits"
+2026-04-27T14:55:31+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B4-RUNTIME-WIZARD-MIGRATION STATUS: PASS files="MenuProjectionService,KioskMenuService,ItemResource,NormalItemResource,KioskWizardComponent,kioskAnalytics,KioskEventController,B4 projection/js/event tests,mission brief,self-audit" validations="safety-check PASS; PHP lint PASS; composer projection 3 PASS; parity 5 PASS; item attribute resource 2 PASS; kiosk event 4 PASS; kiosk phase5 whitelist 13 PASS; Vitest B4/B3 10 PASS; npm run production PASS; kiosk bundle scans PASS; scoped diff-check PASS" note="published composer_profile is now runtime priority; heuristic fallback tracked only without profile; no OrderService/FrontendOrderService edits"
+2026-04-27T15:12:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B5A-STOCK-V2-CORE STATUS: PASS files="StockService,StockUnavailableException,StockLevelChanged,stock listeners,EventServiceProvider,symmetric OrderService/FrontendOrderService stock decrement,stock sentinels,symmetry script,mission brief,self-audit" validations="PHP lint PASS; symmetry script PASS; Stock feature 17 PASS; catalog stock sync 1 PASS; unavailable guard 3 PASS; PosWalkInAndDeliveryFee 1 PASS; menu parity 5 PASS; dispatch-after-commit 19 PASS; Vitest availability 21 PASS; npm run production PASS; kiosk bundle scans PASS; scoped diff-check PASS" note="stock zero now projects to item_branch_availability reason stock_rupture through existing ItemAvailabilityChanged read-plane; quote sealing runs before decrement so last-unit order does not reject itself"
+2026-04-27T15:32:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B5B-CASH-AT-COUNTER-LIFECYCLE STATUS: PASS files="PaymentStateMachine,OrderPaidAtCounter,PaymentService counter confirm/cancel,POS counter collect UI,Kiosk cash instruction route,KDS pending payment badge,event contract/outbox,B5b tests,mission report,self-audit" validations="PHP lint PASS; Payment suite 14 PASS; CounterDeferredPaymentLifecycle 5 PASS; PosCollectKioskCashRoute 1 PASS; KioskPaymentStateMachine 5 PASS; AfterCommitDispatch 14 PASS; EventContract 9 PASS; Unit EventContract 12 PASS; DispatchAfterCommit 8 PASS; Stock 17 PASS; PaymentConfirm regressions 9 PASS; KDS/Kiosk/Sync regressions PASS; Vitest targeted 17 PASS; npm run production PASS; bundle scans PASS; git diff --check PASS" note="kiosk cash creates ACCEPT/PENDING_COUNTER with fiscal_sequence_no NULL; POS confirm allocates fiscal sequence; POS cancel does not allocate and dispatches OrderCanceled for stock release"
+2026-04-27 PRODUCT-COMPOSER-SYNC-B6-CATALOG-EVENTING-PHOTO-E2E EXECUTE_DELEGATION=codex-extension REPORT_VERDICT=PASS validation="catalog feature tests, menu sync tests, event contract tests, vitest event/catalog specs, npm run production, bundle scans, git diff --check"
+2026-04-27T16:15:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF STATUS: LOCAL_PASS_HARDWARE_PENDING files="composer-mega-flow Playwright,UAT hardware checklist,B9 mission report,self-audit,final Codex audit" validations="Playwright composer-mega-flow 1 PASS; Playwright B9 full pack 24 PASS" note="local .env fiscal secrets added for NF525 E2E; audit_logs remain append-only; commercial release remains HOLD until human hardware UAT signature"
+2026-04-27T16:55:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF STATUS: LOCAL_FULL_GREEN_HARDWARE_PENDING files="composer-mega-flow closes POS/KDS pages,rate-limit E2E helper,tacos POS v4 E2E hardening,B9 reports updated" validations="Playwright full 40 PASS; PHP full 1167 PASS 8 SKIP; Vitest full 899 PASS; git diff --check PASS; B9 DB cleanup 0 residual" note="release remains HOLD until human hardware UAT signature"
+2026-04-27T18:35:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PROD-LIVE-VALIDATION-D0-PREFLIGHT STATUS: PASS_DOCS_ONLY files="D0 surface inventory,D0 coverage matrix,D0 bug backlog,D0 mission folder,self-audit" validations="source inventory from routes/components/events/migrations/enums/tests; 50 coverage gaps; 32 backlog entries" note="php artisan route:list blocked by missing App\\Http\\PaymentGateways\\Gateways\\Senangpay; documented as D0-BUG-002; no product code edits"
+2026-04-27T19:10:00+02:00 EXECUTE_DELEGATION: codex-extension TASK_ID: PROD-LIVE-VALIDATION-D1-D2-D3-DESIGN STATUS: PASS_LOCAL_CRITICAL_A11Y_5X_WITH_SERIOUS_REWORK files="design harness D1/D2/D3, screenshots, design docs, a11y labels in admin header/POS/KDS, compiled assets" validations="node --check PASS; npm run production PASS; Playwright D1+D2+D3 repeat-each=5 retries=0 => 15 PASS" note="critical axe fixed to 0; D2/D3 serious contrast/list/nested-interactive findings remain before strict full Claude PASS"
+2026-04-29T16:32:42Z EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-06 STATUS: PASS_LOCAL files="ChoiceAvailabilityResolver,composer/menu/kiosk projections,item resources,PricingService,StockService,stock listeners,EventServiceProvider,kiosk generic choices,POS item modal,feature/vitest tests,mission report" validations="Menu projection 23 PASS; ItemAttributeComposerResource 5 PASS; ComposerStepConstraint 11 PASS; Stock 21 PASS; Composer 15 PASS; Vitest POS/Kiosk rupture/wizard 12 PASS; PHP lint PASS; npm run production PASS" note="hardware deferred; stockable product/choice rupture implemented with backend pricing SSOT and branch-scoped availability"
+2026-04-29T16:46:00Z EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-06-ADVERSARIAL-REWORK STATUS: PASS_LOCAL files="PricingService,KioskWizardComponent,POS ItemComponent,pricing/JS tests,VA-SYS-06 report" validations="ComposerStepConstraint 12 PASS; Vitest POS/Kiosk rupture/wizard 9 PASS; full targeted rerun covered under VA-SYS-07 line" note="closed P1 stale published profile choice acceptance and P1 restored unavailable choice resubmission"
+2026-04-29T16:50:00Z EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-07 STATUS: PASS_LOCAL_PARTIAL files="ItemController,ItemCategoryController,ItemVariationController,ItemExtraController,ItemAddonController,routes/api.php,CentralManagementAuthzMatrixTest,AddonRolePersistenceTest,VA-SYS-07 report" validations="Catalog 13 PASS; Composer 15 PASS; Menu services 23 PASS; Pricing composer 12 PASS; ItemAttributeComposerResource 5 PASS; Stock 21 PASS; Vitest POS/Kiosk targeted 13 PASS; npm run production PASS" note="central catalog read/write middleware and branch overlay guards hardened; dashboard/photo/seeder extended matrix remains"
+2026-04-30T00:00:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-07B STATUS: PASS_LOCAL_STRONG files="DashboardService,ComposerProfileController,ComposerProfileService,ItemController,DatabaseSeeder,DashboardBranchScopeMatrixTest,AvailabilityToggleAuthzMatrixTest,ProductPhotoAuthzTest,ComposerAuthzMinimalTest,ComposerPermissionSeederProductionTest,AdminItemBranchAvailabilityProjectionTest,VA tasklist/report" validations="Dashboard 3 PASS; Catalog 14 PASS; Composer 17 PASS; Menu 23 PASS 6 SKIP(mysql-json); Seeders 2 PASS; Stock 21 PASS; Menu services 23 PASS; Pricing composer 12 PASS; Photo E2E 1 PASS; git diff --check PASS; npm run production PASS" note="dashboard branch-scoped runtime aggregates; composer show cannot leak foreign latest; availability null fanout is scoped; product photo reserved to global roles; composer permissions wired into DatabaseSeeder"
+2026-04-30T02:00:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-08 STATUS: PASS_RUNTIME_LOCAL_STRONG files="OutboxProductionLikeSimulationTest,c3 runtime report,VA tasklist/report" validations="OutboxProductionLike 5 PASS plus 3-run loop PASS; Outbox dir 14 PASS; OutboxRescue 2 PASS; OutboxTest 6 PASS; CatalogChanged 2 PASS; CatalogOutboxIdempotency 1 PASS; Menu catalog mutation 3 PASS; CatalogStockCentralSync 1 PASS; EventContract 9 PASS; EventContractUnit 12 PASS; AfterCommit 14 PASS; DispatchAfterCommit 8 PASS; KioskRealtimeBroadcast 2 PASS; SyncComprehensive 6 PASS; Vitest realtime 29 PASS; Playwright C3 2 PASS plus repeat-each=2 4 PASS; git diff --check PASS" note="provider/hardware UAT still deferred; local runtime multi-surface no manual reload proved; KDS local timing ~5.88s kept as staging perf watch"
+2026-04-30T02:20:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-09 STATUS: PASS_DOCS_MEMORY files="5 canonical docs/sync plan deliverables plus 3 synthesis docs,legacy doc contradiction notes,memory episodes,VA tasklist/report" validations="adversarial read-only REWORK closed; git diff --check PASS; JSONL parse PASS" note="runtime protocol documented as API+outbox/realtime, not MCP; hardware/provider remains UAT; VA-SYS-10 final massive validation next"
+2026-04-30T02:05:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-10 STATUS: PASS_CORE_SYNC_VALIDATION_WITH_REMAINING_SYSTEM_GATES files="VA-SYS-10 final report,VA tasklist,C3 runtime artifact,production assets" validations="PHP critical 175 PASS 6 SKIP(mysql-json); Vitest critical 42 PASS; Playwright C3 repeat-each=2 4 PASS; npm run production PASS; JSONL parse PASS; git diff --check PASS" note="core sync/data layer local strong pass; Version A final close still requires VA-SYS-01..05 especially full dashboard-to-kiosk/POS/KDS E2E; hardware/provider UAT deferred"
+2026-04-30T02:35:00+02:00 AUDIT_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-CLAUDE-API-ORCHESTRATION-REINFORCEMENT STATUS: PASS_WITH_CORRECTIONS files="Claude API audit prompt,run-messages-api-audit,validate-master-audit-closeout,ORCAI docs,supplemental orchestration audit" validations="node --check scripts PASS; strict closeout positive/negative temp tests PASS; scoped git diff --check PASS; existing Claude API report correctly FAILS strict validator because closeout is not final three lines" note="canonical SOFTWARE_DECISION is READY_FOR_VA_SYS_00_05_EXECUTION; next mission remains VA-SYS-00 before VA-SYS-01..05"
+2026-04-30T03:00:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-00 STATUS: PASS_SCOPE_LOCK files="GATE_VERSION_A_SOFTWARE_SCOPE_2026-04-30,VA-SYS-00 report,tasklist,audit API scripts/prompt/docs" validations="node --check scripts PASS; strict closeout positive/negative temp tests PASS; scoped git diff --check PASS" note="software-only scope locked; hardware/provider UAT deferred; next mission VA-SYS-01 discovery"
+2026-04-30T03:15:00+02:00 EXECUTE_DELEGATION: explicit-prompt-bind TASK_ID: CENTRAL-SYNC-VA-SYS-FINISHING/VA-SYS-01 STATUS: PASS_DISCOVERY_WITH_SELECTOR_REWORK_FOR_VA_SYS_04 files="VA-SYS-01 discovery report,central-management-selectors helper,tasklist" validations="static route/store/component inspection; node --check helper PASS; scoped git diff --check PASS" note="admin surfaces lack stable data-testid hooks; VA-SYS-05 must wait for VA-SYS-04 hooks/UX hardening"
+2026-04-30T15:33:30+02:00 | TASK=VA-SYS-02 | EXECUTE_DELEGATION=explicit-prompt-bind (human-acknowledged) | STATUS=PASS_LOCAL_STRONG_PENDING_ADVERSARIAL_AUDIT | Composer fixed source rejected; service/request/publish/pricing guards added; targeted tests pass
+2026-04-30T16:32:00+02:00 | TASK=VA-SYS-02 | AUDIT_CHANNEL=cursor-session | AUDIT_FALLBACK_REASON=subagent_quota_limit | AUDIT_VERDICT=PASS | STATUS=PASS_LOCAL_STRONG | Composer contract hardening validated; VA-SYS-03 can start
+2026-04-30T16:34:00+02:00 | TASK=VA-SYS-03 | EXECUTE_DELEGATION=explicit-prompt-bind (human-acknowledged) | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_LOCAL | Wizard runtime contract locked: composer profile wins, simple+null profile no-wizard, legacy fallback preserved
+2026-04-30T16:40:00+02:00 | TASK=VA-SYS-04 | EXECUTE_DELEGATION=explicit-prompt-bind (human-acknowledged) | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_LOCAL | Dashboard management hooks added for product/category/photo/modifiers/availability/composer; npm run production PASS; VA-SYS-05 can start
+2026-04-30T16:58:00+02:00 | TASK=VA-SYS-05 | EXECUTE_DELEGATION=explicit-prompt-bind (human-acknowledged) | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_RUNTIME_LOCAL_STRONG | Central management E2E 3/3 PASS; C3 multi-surface 4/4 PASS; Composer/Menu/Pricing/Vitest regressions PASS
+2026-04-30T17:10:00+02:00 | TASK=VA-SYS-FINAL-CLOSE | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=VERSION_A_SYSTEM_SOFTWARE_PASS_READY_FOR_HARDWARE_INDUSTRIAL_UAT | VA-SYS-00..10 closed; software sync/data/management runtime PASS; hardware/provider UAT remains deferred
+2026-04-30T17:25:00+02:00 | TASK=VA-SYS-FINAL-CLOSE-REWORK | EXECUTE_DELEGATION=cursor-session | ADVERSARIAL_AUDIT=REWORK_CLOSED | AUDIT_VERDICT=PASS | STATUS=PASS_FINAL_SOFTWARE_CLOSE_POST_VA_SYS_05_RERUN | Reran VA-SYS-10 after VA-SYS-05: PHP core 160 PASS; MySQL surface filtering isolated DB 6 PASS; Vitest 49 PASS; Playwright VA-SYS-05 3 PASS; Playwright C3 4 PASS; immutable runtime artifacts copied
+2026-04-30T17:45:00+02:00 | TASK=VA-SYS-ULTRA-REVIEW | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS_WITH_P2_WATCH_ITEMS | STATUS=PASS | No P0/P1 found; P2 browser-submitted dashboard CRUD gap documented; P3 stale MenuProjectionService comment documented; final close wording tightened
+2026-04-30T21:58:00+02:00 | TASK=DASHBOARD-CRUD-P2-P3 | EXECUTE_DELEGATION=codex-extension | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_LOCAL_STRONG | P3 MenuProjectionService stale comment fixed; P2 browser-submitted dashboard CRUD E2E added and repeat-each=2 PASS; PHP composer/menu/pricing/authz targeted PASS; Vitest composer/wizard targeted PASS
+2026-04-30 FINAL-SYNC-SECURITY-AUDIT-2026-04-30 EXECUTE_DELEGATION: codex-extension
+2026-04-30 FINAL-SYNC-SECURITY-AUDIT-2026-04-30 AUDIT_VERDICT: PASS_SOFTWARE_READY_FOR_HARDWARE_UAT
+2026-04-30 FINAL-SYNC-SECURITY-AUDIT-2026-04-30 REPORT: reports/audit/CODEX_FINAL_SYNC_SECURITY_SOFTWARE_AUDIT_BEFORE_HARDWARE_UAT_2026-04-30.md
+2026-04-30 FINAL-SYNC-SECURITY-AUDIT-2026-04-30 VALIDATION: PHP targeted 68 passed; Vitest targeted 56 passed; Playwright central dashboard CRUD repeat-each=2 passed; git diff --check PASS; safety-check PASS.
+2026-05-01T01:24:00+02:00 | TASK=GLOBAL-POS-KIOSK-ORDER-TRACE-AUDIT-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_GLOBAL_SOFTWARE_SYNC_READY_FOR_HARDWARE_UAT | Global POS+kiosk order trace repeat-each=3 PASS; dashboard CRUD browser PASS; C3 multi-surface PASS; PHP targeted 26 PASS; Vitest targeted 23 PASS; KDS addon bundle rebuilt; report=reports/audit/CODEX_GLOBAL_POS_KIOSK_ORDER_TRACE_AUDIT_2026-05-01.md
+2026-05-01T01:40:00+02:00 | TASK=GLOBAL-POS-KIOSK-SECOND-REVIEW-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_READY_FOR_MANUAL_CHECK | Second review reran global trace 3/3, dashboard CRUD 1/1, C3 2/2, design D1/D2/D3 3/3, PHP targeted 26 PASS, Vitest targeted 29 PASS, DB fixture cleanup 0 residual; report=reports/audit/CODEX_GLOBAL_POS_KIOSK_SECOND_REVIEW_2026-05-01.md
+2026-05-01T02:05:00+02:00 | TASK=FINAL-ULTRA-ORDER-SECURITY-REVIEW-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_READY_FOR_CLAUDE_EXTERNAL_ATTACK_REVIEW | Final adversarial pass: safety PASS; PHP targeted 159 PASS incl MySQL/Redis ProdLike on temp DB; Playwright global POS+kiosk+KDS 1 PASS; fixture cleanup 0 residual; reports/audit/CODEX_FINAL_ULTRA_ORDER_SECURITY_AND_SYNC_REVIEW_2026-05-01.md; Claude prompt=reports/audit/_CLAUDE_FINAL_ULTRA_REVIEW_PROMPT_2026-05-01.txt

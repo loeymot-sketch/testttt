@@ -31,7 +31,10 @@ class ItemAttributeRequest extends FormRequest
                 'max:190',
                 Rule::unique("item_attributes", "name")->ignore($this->route('itemAttribute.id'))
             ],
-            'status'      => ['required', 'numeric', 'max:24']
+            'min_select'   => ['nullable', 'integer', 'min:0', 'max:99'],
+            'max_select'   => ['nullable', 'integer', 'min:0', 'max:99', 'gte:min_select'],
+            'allow_repeat' => ['nullable', 'boolean'],
+            'status'       => ['required', 'numeric', 'max:24']
         ];
     }
 }

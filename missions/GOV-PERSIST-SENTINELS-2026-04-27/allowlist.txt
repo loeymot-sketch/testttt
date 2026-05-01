@@ -1,0 +1,7 @@
+tests/Feature/Sentinels/*.php
+tests/Feature/Concerns/HasPosQuoteBinding.php
+tests/Feature/KioskQuote*Test.php
+tests/Feature/PaymentConfirm*Test.php
+tests/Feature/Payment/*.php
+tests/Feature/Quote*Test.php
+tests/Feature/Pos/QuoteBindingTest.php

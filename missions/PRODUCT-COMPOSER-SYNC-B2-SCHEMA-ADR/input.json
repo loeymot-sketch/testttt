@@ -1,0 +1,20 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B2-SCHEMA-ADR",
+  "execution_delegation": "codex-extension",
+  "plan_source": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "mission": "B2 Schema ADR (Composer + Stock V2 + Addon roles)",
+  "approved_gates": [
+    "HG-COMPOSER-SCHEMA-ADR",
+    "HG-STOCK-STOCKABLE-SCOPE"
+  ],
+  "business_decisions": {
+    "D-COMPOSER-01": "addon role enum: drink|side|dessert|menu_component|upsell"
+  },
+  "invariants": [
+    "No price duplicated into composer profile or addon role",
+    "Stock is branch-scoped",
+    "Stock movements are append-only",
+    "No OrderService / FrontendOrderService / PricingService edits"
+  ],
+  "status": "PASS"
+}

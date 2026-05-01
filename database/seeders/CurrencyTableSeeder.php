@@ -20,9 +20,9 @@ class CurrencyTableSeeder extends Seeder
     {
         Currency::insert([
             [
-                'name' => 'Dollars',
-                'symbol' => '$',
-                'code' => 'USD',
+                'name' => 'Euro',
+                'symbol' => '€',
+                'code' => 'EUR',
                 'is_cryptocurrency' => Ask::NO,
                 'exchange_rate' => 1
             ],
@@ -32,30 +32,9 @@ class CurrencyTableSeeder extends Seeder
         if ($envService->getValue('DEMO')) {
             Currency::insert([
                 [
-                    'name' => 'Rupee',
-                    'symbol' => '₹',
-                    'code' => 'INR',
-                    'is_cryptocurrency' => Ask::NO,
-                    'exchange_rate' => 1
-                ],
-                [
-                    'name' => 'Taka',
-                    'symbol' => '৳',
-                    'code' => 'BDT',
-                    'is_cryptocurrency' => Ask::NO,
-                    'exchange_rate' => 1
-                ],
-                [
-                    'name' => 'Naira',
-                    'symbol' => '₦',
-                    'code' => 'NGN',
-                    'is_cryptocurrency' => Ask::NO,
-                    'exchange_rate' => 1
-                ],
-                [
-                    'name' => 'Peso',
-                    'symbol' => '₱',
-                    'code' => 'ARS',
+                    'name' => 'Dollar US',
+                    'symbol' => '$',
+                    'code' => 'USD',
                     'is_cryptocurrency' => Ask::NO,
                     'exchange_rate' => 1
                 ],

@@ -1,0 +1,46 @@
+Tu es l’architecte data + synchronisation FoodKing. Tu n’écris AUCUN patch de code. Tu produis UN document Markdown en français, **complémentaire** aux plans existants (parcours UI POS, parcours UI Kiosk, orchestration fullstack) — ce document cible le **cœur technique** : où vivent les données, qui écrit, qui lit, comment elles se synchronisent, sans redire les écrans bouton par bouton (référence-les seulement).
+
+## Lecture obligatoire (outils) avant de rédiger
+- `docs/ORDER_FLOW.md` — parties prenantes, transitions, invariants, `order_status_transitions`
+- `docs/DEVICE_FLOW.md` — SOT local vs serveur
+- `docs/OUTBOX_PATTERN.md` — commit-before-dispatch, `domain_events`
+- `docs/EVENT_CONTRACT.md` — enveloppe V1, types
+- `docs/REALTIME_SETUP.md` si présent ; sinon `docs/HANDOFF_NEW_CURSOR/03_SYNCHRONISATION_TEMPS_REEL.md`
+- `docs/orchestration/OS_FOS_SYMMETRY_MATRIX_2026-04-25.md` — OS/FOS
+- `reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md` (FK P0 data/sync)
+- `app/Models/Order.php`, `FrontendOrder.php` (aperçu : même table `orders` ou non)
+- `resources/js/store/modules/posCart.js` et `kioskCart` (noms) — SOT local panier
+- Aperçu `routes/channels.php`, `routes/api.php` (groupes pos, frontend, admin orders, delivery)
+
+## Périmètre fonctionnel à couvrir (tous canaux)
+- Caisse POS, Borne (kiosk), **caddies / paniers** (store JS vs commande serveur)
+- KDS, OSS, **delivery** (commandes livraison), **commandes en attente** (PENDING, file, waiting screen), file d’attente client
+- Chemins **directs** (API REST, réponse immédiate) et **indirects** (events, jobs, FCM, polling, reconnexion WS)
+- **Annulation**, void, remboursement, cleanup jobs (ex. pending kiosk), races (payment vs cleanup)
+- **Surprises** : double écran, onglet multiple, mode offline, queue `sync`, broadcast null, cross-branch
+- **Centralisation** : le backend est SSOT — documenter chaque endroit où le front pourrait **croire** être autorisé à imposer totaux, `branch_id`, statut, et l’invariant de correction
+
+## Anti-duplication
+Explicite en tête de doc : complète `CLAUDE_POS_ORDER_FLOW_MASTER_PLAN_2026-04-26.md`, `CLAUDE_KIOSK_ORDER_FLOW_MASTER_PLAN_2026-04-26.md`, `CLAUDE_CAISS_V1_FULLSTACK_ORCHESTRATION_PLAN_2026-04-26.md` — ne pas recopier les lots P-XX/K-XX ; les **citer** et ajouter la couche **data plane**.
+
+## Structure EXACTE des titres
+
+# AUDIT & PLAN MAÎTRE — CENTRALISATION DES DONNÉES & SYNCHRONISATION (POS · KIOSK · PANIERS · KDS · LIVRAISON · ATTENTES)
+
+## 0. Métadonnées
+## 1. Carte d’autorité des données (qui est SSOT pour quoi)
+## 2. Modèle de stockage (tables, agrégats, clés) — commande, lignes, paiement, file, livraison
+## 3. Caddies : POS vs Kiosk vs table web — local state vs server snapshot — risques de dérive
+## 4. Matrice de synchronisation technique (comme le fullstack, mais **couche data/events**)
+Producteur (service/job) | Consommateur | Mécanisme (REST/WS/FCM/Job) | Garantie après commit | Preuve (fichier ou table)
+## 5. Canaux de commande : entrant (POS, kiosk, web, livraison) et convergence vers `orders`
+## 6. File d’attente & statuts PENDING/ACCEPT — visibility POS, KDS, OSS, borne waiting
+## 7. Livraison (delivery) : entités, statuts, sync avec cuisine et caisse
+## 8. Annulation, rejet, void, refund — propager les effets côté data (ledger, KDS, OSS, fiscal)
+## 9. Pannes & dégradation (WS down, `BROADCAST_DRIVER=null`, queue sync, offline borne)
+## 10. Scénarios « surprise » et tests de non-régression (tableau)
+## 11. Lots techniques pour Codex (D-01…) avec EASY/MEDIUM/HARD, allowlist indicative, dépendances, FK matrice
+## 12. Exigences d’audit en cascade (identique esprit aux autres plans)
+## 13. Prochaines 5 actions immédiates
+
+Règles : pas de ` ``` ` autour du doc ; **À CONFIRMER** si le repo ne montre pas un chemin. Inspiration marché = systèmes POS/kiosk matures (cohérence stricte serveur, pas d’ingénierie exotique).

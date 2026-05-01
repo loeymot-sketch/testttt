@@ -3,9 +3,11 @@
 use App\Enums\PosPaymentMethod;
 
 return [
-    PosPaymentMethod::CARD => 'Card',
-    PosPaymentMethod::CASH => 'Cash',
-    PosPaymentMethod::OTHER => 'Other',
-    PosPaymentMethod::MOBILE_BANKING => 'MFS',
+    PosPaymentMethod::CARD => 'Carte',
+    PosPaymentMethod::CASH => 'Espèces',
+    PosPaymentMethod::OTHER => 'Autre',
+    PosPaymentMethod::MOBILE_BANKING => 'Paiement mobile',
     PosPaymentMethod::TICKET_RESTAURANT => 'Titre-restaurant',
+    PosPaymentMethod::COUNTER_DEFERRED => 'Comptoir différé',
+    '' => '',
 ];

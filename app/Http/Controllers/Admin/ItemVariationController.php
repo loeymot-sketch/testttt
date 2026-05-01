@@ -19,7 +19,8 @@ class ItemVariationController extends AdminController
     {
         parent::__construct();
         $this->itemVariationService = $itemVariationService;
-        $this->middleware(['permission:items_show'])->only('index', 'listGroupByAttribute', 'show', 'store', 'update', 'destroy');
+        $this->middleware(['permission:items_show'])->only('index', 'listGroupByAttribute', 'show');
+        $this->middleware(['permission:items_edit'])->only('store', 'update', 'destroy');
     }
 
     public function index(PaginateRequest $request, Item $item) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

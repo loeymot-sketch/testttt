@@ -135,6 +135,15 @@ cmd_start() {
   local note="${5:-}"
   scope="$(normalize_csv "$scope")"
 
+  # Verrou atomique cross-process : évite que deux `start` simultanés (Cursor convs,
+  # codex-extension, claude-terminal) lisent l'état avant que l'un n'écrive.
+  # Sans flock (BSD/macOS sans util-linux), retombe sur exécution séquentielle.
+  local lockfile="$REPO_ROOT/reports/.agent-activity-log.lock"
+  if command -v flock >/dev/null 2>&1; then
+    exec 9>"$lockfile"
+    flock -x 9
+  fi
+
   # Détecte collisions
   local hit=0
   while IFS= read -r line; do

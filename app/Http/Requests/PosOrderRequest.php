@@ -3,16 +3,32 @@
 namespace App\Http\Requests;
 
 use App\Enums\Activity;
+use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Rules\ValidJsonOrder;
+use App\Services\Delivery\DeliveryFeeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
     use ValidatesOrderItemVariations;
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_advance_order') && (int) $this->input('is_advance_order') === 0) {
+            $this->merge(['is_advance_order' => Ask::NO]);
+        }
+
+        if ($this->filled('delivery_distance_km')) {
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)
+                    ->fromDistanceKm($this->input('delivery_distance_km')),
+            ]);
+        }
+    }
 
     /**
      * Determine if the user is authorized to make this request.
@@ -21,16 +37,6 @@ class PosOrderRequest extends FormRequest
     {
         return true;
     }
-
-    /**
-     * [POS-9.1.1] Discount permission thresholds (% of subtotal).
-     * - cashier (pos-discount-up-to-10) : 0-10%
-     * - manager (pos-discount-over-10-requires-manager) : 10-50%
-     * - owner   (pos-discount-unlimited) : 50-100%
-     */
-    private const DISCOUNT_CASHIER_MAX_PCT = 10.0;
-
-    private const DISCOUNT_MANAGER_MAX_PCT = 50.0;
 
     /**
      * Get the validation rules that apply to the request.
@@ -47,7 +53,7 @@ class PosOrderRequest extends FormRequest
         return [
             // Numeric daily counter OR delivery call-out name (prénom) — must not be digits-only
             'token' => ['nullable', 'string', 'max:191'],
-            'customer_id' => ['required', 'numeric'],
+            'customer_id' => ['nullable', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
             // [P7] Reject negative client-sent amounts if present.
@@ -59,20 +65,23 @@ class PosOrderRequest extends FormRequest
                 'required',
                 'numeric',
             ] : ['nullable'],
-            'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
+            'delivery_charge' => $orderTypeInt === OrderType::DELIVERY ? [
                 'required',
                 'numeric',
                 'min:0',
             ] : ['nullable', 'numeric', 'min:0'],
+            'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
             // payload value is only used as a UX cross-check for cash payments
             // (see withValidator below). nullable so a desynced UI cannot bypass
             // server logic by spoofing total. (POS-GA-F-47)
             // [AUDIT-P50-BUG4] kept min:0 — server allows total=0 for 100% loyalty redemption.
             'total' => ['nullable', 'numeric', 'min:0'],
+            'quote_token' => ['nullable', 'string', 'uuid'],
+            'quote_signature' => ['nullable', 'string', 'size:64'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
-            'address_id' => request('order_type') === OrderType::DELIVERY ? [
+            'address_id' => $orderTypeInt === OrderType::DELIVERY ? [
                 'required',
                 'numeric',
             ] : ['nullable'],
@@ -123,43 +132,16 @@ class PosOrderRequest extends FormRequest
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
             }
 
-            // [POS-9.1.1] Discount permission gate:
-            //  - every non-zero discount requires a written motif (≥ 3 chars)
-            //  - discount_pct = discount / subtotal * 100
-            //  - cashier  (pos-discount-up-to-10)                    ≤ 10%
-            //  - manager  (pos-discount-over-10-requires-manager)    ≤ 50%
-            //  - owner    (pos-discount-unlimited)                   > 50%
+            // M-06: this request only performs shape/UX checks. Discount permission
+            // and percentage authority are enforced against the backend subtotal in
+            // OrderService::posOrderStore, never against the client-sent subtotal.
             $discount = (float) request('discount', 0);
-            $subtotal = (float) request('subtotal', 0);
             if ($discount > 0) {
                 $reason = trim((string) request('discount_reason', ''));
                 if (strlen($reason) < 3) {
                     $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
 
                     return;
-                }
-
-                if ($subtotal <= 0) {
-                    $validator->errors()->add('discount', 'Cannot apply discount without a valid subtotal.');
-
-                    return;
-                }
-
-                $pct = ($discount / $subtotal) * 100.0;
-                $user = auth()->user();
-
-                if (! $user) {
-                    $validator->errors()->add('discount', 'Authentication required to apply a discount.');
-
-                    return;
-                }
-
-                if ($pct > self::DISCOUNT_MANAGER_MAX_PCT && ! $user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Only an owner can apply a discount above '.self::DISCOUNT_MANAGER_MAX_PCT.'%.');
-                } elseif ($pct > self::DISCOUNT_CASHIER_MAX_PCT && ! $user->can('pos-discount-over-10-requires-manager') && ! $user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Discount above '.self::DISCOUNT_CASHIER_MAX_PCT.'% requires manager approval.');
-                } elseif (! $user->can('pos-discount-up-to-10') && ! $user->can('pos-discount-over-10-requires-manager') && ! $user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'You do not have permission to apply POS discounts.');
                 }
             }
 

@@ -1,5 +1,13 @@
 const STORAGE_BUMPED = 'kds.bumped_items_v1';
 
+export function kdsStatusPayload(order, status) {
+    return {
+        id: order.id,
+        status,
+        expected_status: order.status,
+    };
+}
+
 function loadMap() {
     if (typeof localStorage === 'undefined') {
         return {};

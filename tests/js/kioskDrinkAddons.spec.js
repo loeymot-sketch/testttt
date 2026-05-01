@@ -23,4 +23,18 @@ describe('kioskDrinkAddons', () => {
     expect(kioskIsDrinkAddonName('Jus d’orange')).toBe(true);
     expect(kioskIsDrinkAddonName('Nuggets')).toBe(false);
   });
+
+  it('excludes generic "boisson seule" option labels from the real drink list', () => {
+    const item = {
+      addons: [
+        { addon_item_name: 'Boisson seule', group_label: 'boisson', addon_item_id: 10 },
+        { addon_item_name: '+ Boisson', group_label: 'boisson', addon_item_id: 11 },
+        { addon_item_name: 'Coca-Cola 33cl', group_label: 'boisson', addon_item_id: 12 },
+      ],
+    };
+
+    const rows = kioskDrinkAddonRowsFromItem(item);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].addon_item_name).toBe('Coca-Cola 33cl');
+  });
 });

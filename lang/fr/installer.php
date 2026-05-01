@@ -2,73 +2,80 @@
 
 
 return [
-    'title' => 'Food King Installer',
-    'next'  => 'Next Step',
+    'title' => 'Installateur FoodKing',
+    'next'  => 'Étape suivante',
     'welcome' => [
-        'templateTitle' => 'Welcome',
-        'title'         => 'Food King Installer',
-        'message'       => 'Easy Installation and Setup Wizard.',
-        'next'          => 'Check Requirements',
+        'templateTitle' => 'Bienvenue',
+        'title'         => 'Installateur FoodKing',
+        'message'       => 'Assistant d’installation et de configuration.',
+        'next'          => 'Vérifier les prérequis',
     ],
     'requirement' => [
-        'templateTitle' => 'Step 1 | Server Requirements',
-        'title'         => 'Server Requirements',
-        'next'          => 'Check Permissions',
+        'templateTitle' => 'Étape 1 | Prérequis serveur',
+        'title'         => 'Prérequis serveur',
+        'next'          => 'Vérifier les permissions',
         'version'       => 'version',
-        'required'      => 'required'
+        'required'      => 'requis'
     ],
     'permission' => [
-        'templateTitle'       => 'Step 2 | Permissions',
+        'templateTitle'       => 'Étape 2 | Permissions',
         'title'               => 'Permissions',
-        'next'                => 'License Setup',
-        'permission_checking' => 'Permission Checking'
+        'next'                => 'Configurer la licence',
+        'permission_checking' => 'Vérification des permissions'
     ],
     'license' => [
-        'templateTitle'       => 'Step 3 | License',
-        'title'               => 'License Setup',
-        'next'                => 'Site Setup',
-        'active_process'      => 'Active Process',
+        'templateTitle'       => 'Étape 3 | Licence',
+        'title'               => 'Configuration de la licence',
+        'next'                => 'Configurer le site',
+        'active_process'      => 'Procédure d’activation',
+        'step_1'              => 'Étape 1 :',
+        'step_2'              => 'Étape 2 :',
+        'step_3'              => 'Étape 3 :',
+        'go_to_inilabs'       => 'Aller sur iNilabs',
+        'login_to_inilabs'    => 'Se connecter à iNilabs',
+        'active_license_code' => 'Activer le code de licence',
+        'activation_help'     => 'Vous pouvez récupérer le code d’activation et l’utiliser pour installer le produit.',
         'label'               => [
-            'license_key' => 'License Key',
-            'license_code' => 'License Code'
+            'license_key' => 'Clé de licence',
+            'license_code' => 'Code de licence'
         ]
     ],
     'site'     => [
-        'templateTitle' => 'Step 4 | Site Setup',
-        'title'         => 'Site Setup',
-        'next'          => 'Database Setup',
+        'templateTitle' => 'Étape 4 | Configuration du site',
+        'title'         => 'Configuration du site',
+        'next'          => 'Configurer la base de données',
         'label'         => [
-            'app_name' => 'App Name',
-            'app_url'  => 'App Url',
+            'app_name' => 'Nom de l’application',
+            'app_url'  => 'URL de l’application',
         ]
     ],
     'database' => [
-        'templateTitle' => 'Step 5 | Database Setup',
-        'title'         => 'Database Setup',
-        'next'          => 'Final Setup',
-        'fail_message'  => 'Could not connect to the database.',
+        'templateTitle' => 'Étape 5 | Base de données',
+        'title'         => 'Configuration de la base de données',
+        'next'          => 'Configuration finale',
+        'fail_message'  => 'Impossible de se connecter à la base de données.',
         'label'         => [
-            'database_connection' => 'Database Connection',
-            'database_host'       => 'Database Host',
-            'database_port'       => 'Database Port',
-            'database_name'       => 'Database Name',
-            'database_username'   => 'Database Username',
-            'database_password'   => 'Database Password',
+            'database_connection' => 'Connexion base de données',
+            'database_host'       => 'Hôte base de données',
+            'database_port'       => 'Port base de données',
+            'database_name'       => 'Nom de la base',
+            'database_username'   => 'Utilisateur base de données',
+            'database_password'   => 'Mot de passe base de données',
         ]
     ],
     'final'    => [
-        'templateTitle'   => 'Step 6 | Final Setup',
-        'title'           => 'Final Setup',
-        'success_message' => 'Application has been successfully installed.',
-        'login_info'      => 'Login Information',
+        'templateTitle'   => 'Étape 6 | Finalisation',
+        'title'           => 'Configuration finale',
+        'success_message' => 'L’application a été installée avec succès.',
+        'login_info'      => 'Informations de connexion',
         'email'           => 'Email',
-        'password'        => 'Password',
+        'password'        => 'Mot de passe',
         'email_info'      => 'admin@example.com',
         'password_info'   => '123456',
-        'next'            => 'Finish',
+        'next'            => 'Terminer',
     ],
     'installed' => [
-        'success_log_message' => 'Food King installer successfully INSTALLED on ',
-        'update_log_message'  => 'Food King Installer successfully UPDATED on ',
+        'success_log_message' => 'Installateur FoodKing installé avec succès le ',
+        'update_log_message'  => 'Installateur FoodKing mis à jour avec succès le ',
     ],
 ];

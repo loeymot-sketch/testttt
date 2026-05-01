@@ -20,6 +20,7 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
+            '_origin' => $this->source_surface,
             'user_id' => $this->user_id,
             'branch_id' => $this->branch_id,
             'branch_name' => optional($this->branch)->name,

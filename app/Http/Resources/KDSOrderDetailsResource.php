@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\Ask;
+use App\Enums\PaymentStatus;
 use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,8 @@ class KDSOrderDetailsResource extends JsonResource
             'preparation_time'                    => $this->preparation_time,
             'status'                              => $this->status,
             'status_name'                         => trans('orderStatus.' . $this->status),
+            'payment_status'                      => $this->payment_status,
+            'payment_pending_counter'             => (int) $this->payment_status === PaymentStatus::PENDING_COUNTER,
             'queue_number'                        => $this->queue_number,
             'order_items'                         => OrderItemResource::collection($this->orderItems->loadMissing('orderItem')),
             'table_name'                          => $this->diningTable?->name,

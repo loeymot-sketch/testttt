@@ -1,7 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
 
-    <button type="button" @click="add" data-modal="#addonModal" class="db-btn h-[37px] text-white bg-primary">
+    <button type="button" @click="add" data-modal="#addonModal" class="db-btn h-[37px] text-white bg-primary" data-testid="admin-addon-add-button">
         <i class="lab lab-add-circle-line"></i>
         <span>{{ addButton.title }}</span>
     </button>
@@ -24,7 +24,7 @@
                                 @update:modelValue="variation" v-bind:class="errors.addon_item_id ? 'invalid' : ''"
                                 v-model="props.form.addon_item_id" :options="items" label-by="name" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                                search-placeholder="--" />
+                                search-placeholder="--" data-testid="admin-addon-form-name" />
                             <small class="db-field-alert" v-if="errors.addon_item_id">
                                 {{ errors.addon_item_id[0] }}
                             </small>
@@ -37,7 +37,8 @@
 
                             <select class="db-field-control f-b-custom-select"
                                 :id="'addon_item_id_' + variation.item_attribute_id"
-                                v-model="props.form.addon_item_variation[variation.item_attribute_id]">
+                                v-model="props.form.addon_item_variation[variation.item_attribute_id]"
+                                data-testid="admin-addon-form-price">
                                 <option value="0">--</option>
                                 <option v-for="child in variation.children" :value="child.id">{{ child.name }}
                                 </option>

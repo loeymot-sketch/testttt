@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'item_match' => "L'article ne correspond pas.",
+    'user_match' => 'Utilisateur non trouvé.',
+    'order' => [
+        'status' => [
+            '' => '',
+        ],
+    ],
     'label' => [
         'name' => 'Nom',
         'email' => 'Email',
@@ -76,6 +83,7 @@ return [
         'you_can_reset_your_password' => 'Vous pouvez maintenant réinitialiser votre mot de passe.',
         'check_your_email_for_code' => 'Veuillez vérifier votre email pour le code.',
         'check_your_phone_for_code' => 'Veuillez vérifier votre téléphone pour le code.',
+        'email_send' => 'Email envoyé avec succès.',
         'token_created_fail' => 'Échec de création du token.',
         'email_does_not_exist' => "Cet email n'existe pas.",
         'phone_exist' => 'Ce numéro de téléphone existe déjà.',
