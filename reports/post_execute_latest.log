@@ -5488,3 +5488,20 @@ SENTINEL_RESULTS:
   - CatalogWarningServiceExtraCodes: 5/5 passed
   - Catalog filter (no regression): 48/48 passed
 NOTES: Item media collection name is `item` (not items). i18n under warning.catalog.* matching ComposerProfileWarningBadge.vue.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.5 ===
+DATE: 2026-05-02T17:11+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+SCOPE_COMPLIANCE: PASS — only CatalogWarningService.php (+45/-8) + 5 lang JSONs (+15 each) + new sentinel (+130) + log appendix; no off-limits services touched.
+SENTINEL_RESULTS: CatalogWarningServiceExtraCodes 5/5 PASS; full Catalog filter 48/48 PASS (no regression on ChannelsNullWarningTest).
+INVARIANT_CHECKS:
+  - branch_id (#3): PASS — every IBA query filters branch_id + item_id explicitly when branchId is passed, and the warnings remain branch-scoped.
+  - pricing SSOT / OrderStatus / DispatchAfterCommit / Frozen zones: untouched.
+  - OrderService symmetry: untouched.
+NOTE: i18n keys live at `warning.catalog.*` (matches existing ComposerProfileWarningBadge.vue), not `admin.item_warnings.*` as drafted in the brief — Composer correctly aligned with reality. Plan-drift acceptable.
+COMMIT: 28f579651
+NEXT: M2 1.6 (Help inline) — Composer routine.
