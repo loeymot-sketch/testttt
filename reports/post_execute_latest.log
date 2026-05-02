@@ -2819,3 +2819,13 @@ EXECUTE_DELEGATION: generalPurpose (routine sub)
 SENTINEL: routerPermissionRequired 9/9; vitest 1001/2 (no regression).
 GAP_FERMÉ: A.3 #5 — message clair permission catalog.compose + redirect contextuel.
 COMMIT: 27514adb2
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-MENU-CATALOG-01 ===
+DATE: 2026-05-02T23:32+02:00
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+SCOPE_COMPLIANCE: PASS — 7 fichiers (BackendMenu, store/index, 5 lang JSON).
+SENTINEL: vitest 1001/2 (no regression); v1HiddenMenuModules 4/4 toujours green.
+GAP_FERMÉ: A.3 #1+#2 (Catégories+Attributs accessibles depuis Items via VIRTUAL_CHILDREN_BY_URL) + A.1 §5 (composer Vuex registered).
+NOTES: Reconstitution sous-section Catalogue 100% côté Vue (pas migration DB seeder). Cleanup zombies pid23675+pid47838.
+COMMIT: 6c1b739c6
