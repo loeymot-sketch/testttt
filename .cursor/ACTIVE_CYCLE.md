@@ -6,10 +6,10 @@
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
 | **PHASE** | `EXECUTE` (Cycle 1 DS-XSS-CLEANUP, puis Cycle 2 CENTRAL-TREE) |
-| **TASK_ID** | `CV1-DS-XSS-CLEANUP-001` (priorité immédiate: 3 régressions actives PaymentComponent×2 + KsThemeToggle v-html). Suivant: `CV1-CENTRAL-TREE-ARCHITECTURE-001`. |
-| **PLAN_FILE** | (pas de plan dédié — fix ciblés routine, suivis du cycle CENTRAL-TREE plus large) |
-| **EXECUTION_TIER** | routine (3 fixes ciblés) → puis Cycle 2 mixed (audits + cleanup) |
-| **EXECUTE_DELEGATION** | `generalPurpose (routine sub)` (foodking-routine-implementer subagent type unavailable in this session) |
+| **TASK_ID** | `CV1-CENTRAL-TREE-ARCHITECTURE-001` (Cycle 1 DS-XSS-CLEANUP CLOSED commit 36695d24f, vitest 1030/0/2). |
+| **PLAN_FILE** | `plans/PLAN_CV1-CENTRAL-TREE-ARCHITECTURE-001_2026-05-03.md` |
+| **EXECUTION_TIER** | mixed (4 audits parallèles `explore` + 1 Playwright MCP + cleanup ciblé routine) |
+| **EXECUTE_DELEGATION** | déterminé par phase (audits explore + Claude in-session synthèse + routine sub-agents cleanup) |
 | **REPORT_FILE** | `reports/post_execute_latest.log` (append — preuve `EXECUTE_DELEGATION` / `AUDIT_*`) |
 | **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
 | **PARENT_CYCLE** | `CV1-WIZARD-COMPOSABLE-001` CLOSED (9 PASS, 1 deferred, 16 gaps fermés). User a autorisé les 2 followups (DS XSS + CENTRAL-TREE) un par un avec MAX intelligence + double audit + double vérification + Playwright captures. |
