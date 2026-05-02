@@ -194,7 +194,7 @@
                                 {{ $t('label.availability') }}
                             </th>
                             <th class="db-table-head-th hidden-print"
-                                v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_delete')">
+                                v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
                                 {{ $t('label.action') }}
                             </th>
                         </tr>
@@ -227,7 +227,7 @@
                                 <span class="sr-only" :data-testid="`admin-availability-status-${item.id}`">{{ item.is_available ?? true }}</span>
                             </td>
                             <td class="db-table-body-td hidden-print"
-                                v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_delete')">
+                                v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
                                     <span :data-testid="`admin-item-view-${item.id}`">
                                         <SmIconViewComponent :link="'admin.item.show'" :id="item.id"
@@ -236,6 +236,19 @@
                                     <span :data-testid="`admin-item-edit-${item.id}`">
                                         <SmIconSidebarModalEditComponent @click="edit(item)"
                                             v-if="permissionChecker('items_edit')" />
+                                    </span>
+                                    <span :data-testid="`admin-item-duplicate-${item.id}`">
+                                        <button
+                                            type="button"
+                                            class="db-table-action view"
+                                            :title="$t('label.duplicate')"
+                                            :aria-label="$t('label.duplicate')"
+                                            @click.prevent="duplicate(item)"
+                                            v-if="permissionChecker('items_create')"
+                                        >
+                                            <i class="lab lab-copy"></i>
+                                            <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
+                                        </button>
                                     </span>
                                     <span :data-testid="`admin-item-delete-${item.id}`">
                                         <SmIconDeleteComponent @click="destroy(item.id)"
@@ -274,6 +287,7 @@
     </div>
 </template>
 <script>
+import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent";
 import ItemCreateComponent from "./ItemCreateComponent";
 import alertService from "../../../services/alertService";
@@ -531,6 +545,22 @@ export default {
             }).catch((err) => {
                 this.loading.isActive = false;
             })
+        },
+        duplicate: function (item) {
+            const confirmed = window.confirm(`${this.$t('label.duplicate')} ${item.name}?`);
+            if (!confirmed) {
+                return;
+            }
+
+            this.loading.isActive = true;
+            axios.post(`/admin/item/${item.id}/duplicate`).then(() => {
+                this.loading.isActive = false;
+                alertService.successInfo(null, this.$t('message.item_duplicated'));
+                this.list(this.paginationPage?.current_page || this.props.search.page || 1);
+            }).catch((err) => {
+                this.loading.isActive = false;
+                alertService.error(err.response?.data?.message || err.message);
+            });
         },
         xls: function () {
             this.loading.isActive = true;

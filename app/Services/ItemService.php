@@ -14,6 +14,7 @@ use App\Models\ItemBranchAvailability;
 use App\Models\ItemVariation;
 use App\Models\ItemExtra;
 use App\Models\ItemAddon;
+use App\Models\ItemWizardProfile;
 use App\Models\OrderItem;
 use App\Http\Requests\ItemRequest;
 use Illuminate\Support\Facades\DB;
@@ -421,6 +422,52 @@ class ItemService
     /**
      * @throws Exception
      */
+    public function duplicate(Item $item): Item
+    {
+        try {
+            $copy = DB::transaction(function () use ($item): Item {
+                $copy = $item->replicate();
+                $copy->name = $item->name . ' (copie)';
+                $copy->slug = Str::slug($copy->name);
+                $copy->status = Status::INACTIVE;
+                $copy->is_featured = Ask::NO;
+                $copy->save();
+
+                $this->duplicateItemChildren($item, $copy);
+                $this->duplicateItemMedia($item, $copy);
+                $this->duplicateComposerProfile($item, $copy);
+
+                $fresh = $copy->fresh([
+                    'media',
+                    'category',
+                    'tax',
+                    'offer',
+                    'variations.itemAttribute',
+                    'extras',
+                    'addons.addonItem',
+                ]);
+
+                if (! $fresh) {
+                    throw new Exception('Duplicated item could not be reloaded.', 422);
+                }
+
+                $this->prepareAddonsForItemResource($fresh);
+
+                return $fresh;
+            });
+
+            ItemCreated::dispatch((int) $copy->id);
+
+            return $copy;
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
     public function show(Item $item): Item
     {
         try {
@@ -523,6 +570,87 @@ class ItemService
     public function itemDetails(Item $item)
     {
         return $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras');
+    }
+
+    private function duplicateItemChildren(Item $item, Item $copy): void
+    {
+        ItemVariation::query()->where('item_id', $item->id)->get()->each(function (ItemVariation $variation) use ($copy): void {
+            $clone = $variation->replicate();
+            $clone->item_id = $copy->id;
+            $clone->save();
+        });
+
+        ItemExtra::query()->where('item_id', $item->id)->get()->each(function (ItemExtra $extra) use ($copy): void {
+            $clone = $extra->replicate();
+            $clone->item_id = $copy->id;
+            $clone->save();
+        });
+
+        ItemAddon::query()->where('item_id', $item->id)->get()->each(function (ItemAddon $addon) use ($copy): void {
+            $clone = $addon->replicate();
+            $clone->item_id = $copy->id;
+            $clone->save();
+        });
+    }
+
+    private function duplicateItemMedia(Item $item, Item $copy): void
+    {
+        $media = $item->getFirstMedia('item');
+        if (! $media) {
+            return;
+        }
+
+        if (method_exists($media, 'copy')) {
+            $media->copy($copy, 'item');
+            return;
+        }
+
+        $path = $media->getPath();
+        if ($path && is_file($path)) {
+            $copy
+                ->addMediaFromString((string) file_get_contents($path))
+                ->usingFileName($media->file_name)
+                ->toMediaCollection('item');
+        }
+    }
+
+    private function duplicateComposerProfile(Item $item, Item $copy): void
+    {
+        $profile = ItemWizardProfile::query()
+            ->with('steps')
+            ->where('item_id', $item->id)
+            ->where('is_published', true)
+            ->latest('version')
+            ->latest('id')
+            ->first();
+
+        if (! $profile) {
+            return;
+        }
+
+        $clone = $profile->replicate();
+        $clone->item_id = $copy->id;
+        $clone->is_published = false;
+        $clone->published_at = null;
+        $clone->version = ((int) $profile->version) + 1;
+        $clone->save();
+
+        $profile->steps->each(function ($step) use ($clone): void {
+            $stepClone = $step->replicate();
+            $stepClone->profile_id = $clone->id;
+            $stepClone->save();
+        });
+    }
+
+    private function prepareAddonsForItemResource(Item $item): void
+    {
+        if (! $item->relationLoaded('addons')) {
+            return;
+        }
+
+        $item->addons->each(function (ItemAddon $addon): void {
+            $addon->mergeCasts(['addon_item_variation' => 'string']);
+        });
     }
 
     /**

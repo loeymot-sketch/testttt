@@ -29,7 +29,7 @@ class ItemController extends AdminController
         parent::__construct();
         $this->itemService = $itemService;
         $this->middleware(['permission:items'])->only('export');
-        $this->middleware(['permission:items_create'])->only('store', 'import');
+        $this->middleware(['permission:items_create'])->only('store', 'import', 'duplicate');
         $this->middleware(['permission:items_edit'])->only('update', 'changeImage');
         $this->middleware(['permission:items_delete'])->only('destroy');
         $this->middleware(['permission:items_show'])->only('show', 'downloadSample');
@@ -104,6 +104,16 @@ class ItemController extends AdminController
     {
         try {
             return new ItemResource($this->itemService->update($request, $item));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function duplicate(Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $copy = $this->itemService->duplicate($item);
+            return new ItemResource($copy);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

@@ -605,6 +605,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/lookup-barcode/{code}', [ItemController::class, 'lookupBarcode'])->where('code', '[^/]+');
         Route::get('/show/{item}', [ItemController::class, 'show']);
         Route::post('/', [ItemController::class, 'store']);
+        Route::post('/{item}/duplicate', [ItemController::class, 'duplicate'])->name('duplicate');
         Route::match(['post', 'put', 'patch'], '/{item}', [ItemController::class, 'update']);
         Route::delete('/{item}', [ItemController::class, 'destroy']);
         Route::post('/change-image/{item}', [ItemController::class, 'changeImage']);
