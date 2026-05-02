@@ -63,6 +63,14 @@ return [
         'interval_ms_when_disconnected' => env('FK_CATALOG_POS_FALLBACK_INTERVAL_MS', 30_000),
     ],
 
+    'pos_wizard_composer_aware' => [
+        // [T-WC-POS-RUNTIME-01] When true, public/js/pos-wizard.js builds wizard
+        // pages from the published composer profile (item.composer_profile.steps)
+        // instead of the legacy heuristic buildSteps(data). Default false ensures
+        // production-safe rollout via env flip.
+        'enabled' => env('FK_POS_WIZARD_COMPOSER_AWARE_ENABLED', false),
+    ],
+
     'channels_filter' => [
         // When true, ItemRequest validation requires `channels` to be a
         // non-empty array. Migration backfill (Vague 3) runs first.

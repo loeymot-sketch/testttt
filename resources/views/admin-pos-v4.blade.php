@@ -106,6 +106,9 @@
                 enabled: @json((bool) config('catalog_v15.pos_fallback_polling.enabled', false)),
                 intervalMsWhenDisconnected: @json((int) config('catalog_v15.pos_fallback_polling.interval_ms_when_disconnected', 30000)),
             },
+            posWizardComposerAware: {
+                enabled: @json((bool) config('catalog_v15.pos_wizard_composer_aware.enabled', false)),
+            },
             posV4Entry: true,
         };
     </script>

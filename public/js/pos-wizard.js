@@ -418,13 +418,102 @@
     }
 
     /* ==============================
+       COMPOSER-AWARE PATH (T-WC-POS-RUNTIME-01)
+       ============================== */
+    function isComposerAwareEnabled() {
+        return !!(window && window.foodkingConfig
+            && window.foodkingConfig.posWizardComposerAware
+            && window.foodkingConfig.posWizardComposerAware.enabled);
+    }
+
+    function getComposerProfileFromData(data) {
+        if (!data) return null;
+        var profile = data.composer_profile;
+        if (!profile || !Array.isArray(profile.steps) || profile.steps.length === 0) return null;
+        return profile;
+    }
+
+    var COMPOSER_STEP_KEY_MAP = {
+        pain: 'pain', galette: 'pain', bun: 'pain',
+        viande: 'viande', meat: 'viande', proteine: 'viande',
+        sauce: 'sauce', sauces: 'sauce',
+        garnitures: 'garnitures', garniture: 'garnitures', crudites: 'garnitures',
+        supplements: 'supplements', supplement: 'supplements', extras: 'supplements',
+        menu: 'menu', formule: 'menu', boisson: 'menu', drink: 'menu',
+        frites: 'menu', side: 'menu', dessert: 'menu',
+        taille: 'taille', size: 'taille'
+    };
+
+    var COMPOSER_ADDON_ROLE_MAP = {
+        drink: 'menu', side: 'menu', dessert: 'menu', menu_component: 'menu'
+    };
+
+    function buildStepsFromComposerProfile(profile, data) {
+        var result = [];
+        profile.steps.forEach(function (step) {
+            // Filter visible_on (skip if 'pos' not in array — empty array = all surfaces)
+            if (Array.isArray(step.visible_on) && step.visible_on.length > 0
+                && step.visible_on.indexOf('pos') === -1) {
+                return;
+            }
+            // Resolve internal type: addon_role priority, then step_key, then generic_choices fallback
+            var internalType = null;
+            var addonRole = String(step.addon_role || '').toLowerCase().trim();
+            if (addonRole && COMPOSER_ADDON_ROLE_MAP[addonRole]) {
+                internalType = COMPOSER_ADDON_ROLE_MAP[addonRole];
+            } else {
+                var stepKey = String(step.step_key || '').toLowerCase().trim();
+                if (stepKey && COMPOSER_STEP_KEY_MAP[stepKey]) {
+                    internalType = COMPOSER_STEP_KEY_MAP[stepKey];
+                }
+            }
+            if (!internalType) {
+                if (Array.isArray(step.choices) && step.choices.length > 0) {
+                    internalType = 'generic_choices';
+                } else {
+                    if (typeof console !== 'undefined' && console.warn) {
+                        console.warn('[pos-wizard.composer] step skipped (unsupported)', {
+                            step_key: step.step_key, label: step.label
+                        });
+                    }
+                    return;
+                }
+            }
+            result.push({
+                type: internalType,
+                key: step.step_key,
+                label: step.label || step.step_key,
+                min: Number(step.min_select) || 0,
+                max: Number(step.max_select) || 1,
+                options: Array.isArray(step.choices) ? step.choices : [],
+                allow_repeat: !!step.allow_repeat,
+                composer_step: step
+            });
+        });
+        // Always append recap step for consistency with legacy buildSteps
+        result.push({ type: 'recap', label: 'Récap', subtitle: 'Vérifiez votre commande' });
+        return result;
+    }
+
+    /* ==============================
        BUILD STEPS FROM ITEM DATA
        ============================== */
     /**
      * [REFACTORED SPRINT 4] Build wizard steps based on item data.
      * NEW: Combined steps for faster POS workflow.
+     * [T-WC-POS-RUNTIME-01] When flag pos_wizard_composer_aware.enabled=true and
+     * data.composer_profile.steps is present, delegate to buildStepsFromComposerProfile
+     * (admin-defined wizard) instead of legacy heuristic. Default OFF preserves legacy.
      */
     function buildSteps(data) {
+        // [T-WC-POS-RUNTIME-01] Composer-aware early-return (gated by flag).
+        if (isComposerAwareEnabled()) {
+            var composerProfile = getComposerProfileFromData(data);
+            if (composerProfile) {
+                return buildStepsFromComposerProfile(composerProfile, data);
+            }
+        }
+
         var s = [];
         selections = {};
 
