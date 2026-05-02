@@ -329,12 +329,14 @@ final class AvailabilityService
 
     private function dispatchEvent(int $itemId, int $branchId, bool $available, ?string $reason): void
     {
-        event(ItemAvailabilityChanged::forBranch(
-            itemId: $itemId,
-            branchId: $branchId,
-            isAvailable: $available,
-            reason: $reason
-        ));
+        DB::afterCommit(function () use ($itemId, $branchId, $available, $reason): void {
+            event(ItemAvailabilityChanged::forBranch(
+                itemId: $itemId,
+                branchId: $branchId,
+                isAvailable: $available,
+                reason: $reason
+            ));
+        });
     }
 
     /**

@@ -2714,3 +2714,13 @@ EXECUTE_DELEGATION: foodking-routine-implementer
 SCOPE_COMPLIANCE: PASS — sentinel only.
 SENTINEL_RESULTS: CategoryRenameSyncTest 3/3.
 COMMIT: 924eeedfe
+
+=== EXECUTE — CV1-V1-CLOSEOUT-001 / T-CENT-AVAIL-DISPATCH-01 ===
+DATE: 2026-05-02T20:02:42Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_FILES_TOUCHED: app/Services/Menu/AvailabilityService.php (1 method dispatchEvent wrappée DB::afterCommit), tests/Feature/Menu/AvailabilityDispatchAfterCommitTest.php (NEW)
+SENTINEL_RESULTS: AvailabilityDispatchAfterCommitTest 3/3 PASS (outside_tx | committed_outer_tx | rollbacked_outer_tx)
+INVARIANT_FIXED: #4 dispatch-after-commit dans AvailabilityService::dispatchEvent (toggle/setMaxDailyQty/decrementForOrder désormais conformes)
+NOTES: PHP -l OK sur les 2 fichiers. Régression filter='Availability|Stock|Menu' = 155 passed, 26 skipped (skips pré-existants Pending plan task 2.6 — unrelated). Méthode dispatchEvent à lignes 330-340 (vs 252-260 dans la mission, légère dérive de numérotation, fix appliqué au bon endroit). releaseForOrderItems inchangé : il n'appelle pas dispatchEvent() (utilise son propre DB::afterCommit + event() inline) — nesting safe.
