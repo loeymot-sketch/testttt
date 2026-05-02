@@ -5513,3 +5513,17 @@ EXECUTE_DELEGATION: foodking-routine-implementer
 SCOPE_FILES_TOUCHED: resources/js/components/admin/items/CatalogConceptHelpComponent.vue; resources/js/components/admin/items/variation/ItemVariationCreateComponent.vue; resources/js/components/admin/items/extra/ItemExtraCreateComponent.vue; resources/js/components/admin/items/addon/ItemAddonCreateComponent.vue; resources/js/components/admin/settings/ItemAttribute/ItemAttributeCreateComponent.vue; resources/js/languages/fr.json; resources/js/languages/en.json; resources/js/languages/de.json; resources/js/languages/ar.json; resources/js/languages/bn.json
 SENTINEL_RESULTS: vitest 971 passed (14 skipped, 985 total tests)
 NOTES: No db-help-panel in repo; reused cv1-warning-badge data-severity=info tokens. Help panel collapsed toggle a11y; learn_more+i18n for optional prop learnMoreHref.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.6 ===
+DATE: 2026-05-02T17:13+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+SCOPE_COMPLIANCE: PASS — only new CatalogConceptHelpComponent.vue (+85) + 4×CreateComponents (+4 each, surgical insertion) + 5 lang JSONs (+23 each) + log appendix.
+SENTINEL_RESULTS: vitest 971/14 (no regression vs M2 1.5 baseline 971/14).
+INVARIANT_CHECKS: untouched (UI-only, no backend, no API call).
+NOTE: composant utilise tokens CV1 (cv1-warning-badge) au lieu d'un nouveau "db-help-panel" — discipline exemplaire.
+COMMIT: 82556218
+NEXT: M2 1.2 (Aperçu Kiosk+POS tab) — Composer routine.
