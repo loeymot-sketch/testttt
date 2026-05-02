@@ -76,6 +76,84 @@ final class AvailabilityService
     }
 
     /**
+     * Update the daily quota cap and re-evaluate is_available immediately.
+     *
+     * Symmetrical to toggle() but driven by a quota change instead of a manual
+     * rupture. Plan task 2.5 — eliminates the "wait until next order" delay
+     * that was visible in admin UX.
+     *
+     * Idempotent: setting the same max twice does not emit a duplicate event.
+     *
+     * @param  int|null  $maxDailyQty  null = unlimited (always available from quota perspective)
+     */
+    public function setMaxDailyQty(int $itemId, int $branchId, ?int $maxDailyQty): ItemBranchAvailability
+    {
+        return DB::transaction(function () use ($itemId, $branchId, $maxDailyQty): ItemBranchAvailability {
+            $row = ItemBranchAvailability::query()
+                ->where('item_id', $itemId)
+                ->where('branch_id', $branchId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $row) {
+                $row = new ItemBranchAvailability([
+                    'item_id' => $itemId,
+                    'branch_id' => $branchId,
+                    'is_available' => true,
+                    'daily_consumed_qty' => 0,
+                    'daily_reset_at' => Carbon::today()->toDateString(),
+                    'max_daily_qty' => $maxDailyQty,
+                ]);
+                $row->save();
+
+                return $row;
+            }
+
+            $previousMax = $row->max_daily_qty === null ? null : (int) $row->max_daily_qty;
+            $newMax = $maxDailyQty;
+            $consumed = (int) $row->daily_consumed_qty;
+            $wasAvailable = (bool) $row->is_available;
+            $previousReason = $row->unavailable_reason;
+
+            if ($previousMax === $newMax) {
+                return $row;
+            }
+
+            $row->max_daily_qty = $newMax;
+
+            $shouldBeAvailableFromQuota = ($newMax === null) || ($consumed < $newMax);
+
+            // Auto-86: cap lowered below current consumption
+            if ($wasAvailable && ! $shouldBeAvailableFromQuota) {
+                $row->is_available = false;
+                $row->unavailable_reason = 'out_of_stock';
+                $row->unavailable_since = now();
+                $row->save();
+                $this->dispatchEvent($itemId, $branchId, false, 'out_of_stock');
+
+                return $row;
+            }
+
+            // Auto-restore: cap raised above current consumption AND was unavailable due to quota
+            if (! $wasAvailable && $previousReason === 'out_of_stock' && $shouldBeAvailableFromQuota) {
+                $row->is_available = true;
+                $row->unavailable_reason = null;
+                $row->unavailable_since = null;
+                $row->save();
+                $this->dispatchEvent($itemId, $branchId, true, null);
+
+                return $row;
+            }
+
+            // Quota changed but no flip needed (e.g. raised cap while still available, or
+            // unavailable for a different reason like manual rupture).
+            $row->save();
+
+            return $row;
+        });
+    }
+
+    /**
      * Toggle the item across every active branch. Returns the count of rows
      * actually touched (excluding idempotent no-ops).
      */

@@ -5637,3 +5637,11 @@ GATE_TRIGGERS_DETECTED: 0
 SCOPE_PRESSURE_EVENTS: 0
 ESCALATIONS: 1 (M2 1.9 round 1 → architectural option chosen by user → resolved in round 2 prior to this session)
 NEXT: M2 Vague 1 fully closed. Next cycle = M2 Vague 2 (auto-86 cron, profile_version check FROZEN GATE, wizard guidé multi-step) — defer to user instruction (gate cleared required for 2.2).
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 2.5 ===
+DATE: 2026-05-02T16:17:30Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: app/Services/Menu/AvailabilityService.php, tests/Feature/Menu/MaxDailyQtyChangeReEvaluationTest.php
+SENTINEL_RESULTS: MaxDailyQtyChangeReEvaluation 4/4; Availability+Stock no regression (70 passed)
+NOTES: setMaxDailyQty + Event::fake([ItemAvailabilityChanged::class]); ItemBranchAvailability max_daily_qty already fillable
