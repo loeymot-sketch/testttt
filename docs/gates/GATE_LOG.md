@@ -108,3 +108,6 @@ Fichiers sous `tasks/phase9-sync/` :
 Rappel des **Absolute Prohibitions** : pas de remplissage du champ d’approbation par le modèle ; pas de reprise de boucle parce qu’un gate « paraît » résolu ; pas de traitement silencieux d’un soft gate comme absence de gate ; **pas d’édition frozen sans gate approuvé et trace ici** ; pas de migration sans approbation humaine écrite ; pas de changement d’isolation `branch_id` sans revue d’isolation enregistrée.
 
 La **reprise de boucle** reste conditionnée par le protocole §Resumption Protocol du même fichier (approbation humaine dans le brief, décision dans ce log, relecture du brief levé, plan à jour).
+
+| 2026-05-02 | `GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK_2026-05-02` | docs/gates/GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK_2026-05-02.md | app/Services/Pricing/PricingService.php | `PENDING_HUMAN_GATE` | (à approuver) | CV1-LIFECYCLE-UX-001 task 2.2 |
+| 2026-05-02 | `GATE_SCHEMA_STOCK_MOVEMENT_IDEMPOTENCY_KEY_UNIQUE_2026-05-02` | docs/gates/GATE_SCHEMA_STOCK_MOVEMENT_IDEMPOTENCY_KEY_UNIQUE_2026-05-02.md | database/migrations (DDL) + app/Services/Stock/StockService.php (small) | `PENDING_HUMAN_GATE` | (à approuver) | CV1-LIFECYCLE-UX-001 task 2.6 |
