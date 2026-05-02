@@ -5224,3 +5224,24 @@ SCOPE: docs-only
 SENTINEL: N/A (docs only)
 LINT: N/A (docs only)
 HALT: none
+
+=== AUDIT — CV1-CATALOG-CONVERGENCE-001 / task 1.5 ===
+DATE: 2026-05-02T10:48+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS_WITH_NOTE
+ROUND: 1 / 5
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine (docs-only)
+SCOPE_COMPLIANCE: PASS — only docs/sync/CENTRAL_MANAGEMENT_RUNBOOK.md (+56) + trace; no PHP/Vue/JS/JSON/config/test touched
+SENTINEL: N/A (docs only) — runbook is human-ops material, not test-coverable
+INVARIANT_CHECKS: untouched (PASS)
+DISCOVERY (operational accuracy, valuable):
+  - Composer corrected the plan §1.5's reference: KioskMenuService lives at App\Services\Kiosk\KioskMenuService (not App\Services\KioskMenuService). The runbook now uses the correct FQCN — at 03:00 ops-time this prevents a broken artisan tinker call.
+  - Composer further verified that CatalogChanged is NOT registered as a standalone listened event in this codebase; the actual ops recovery paths are event(new CategoryUpdated(...)) and peers, plus MenuSnapshot::bump + Cache::forget('kiosk.menu.branch.{id}'). The runbook documents these workable paths instead of the misleading CatalogChanged::dispatch($branchId)-only instruction from the plan brief.
+  - This is exactly the right Composer reflex: probe reality before transcribing plan instructions verbatim into an ops runbook.
+PROCESS_NOTE (for log integrity):
+  - Composer's first commit accidentally staged uncommitted lines from reports/post_execute_latest.log (my prior AUDIT M1 1.4 + EXECUTE/AUDIT M1 1.1 traces). It then amended to drop them. The dropped lines were preserved in orphan 98b7d0bcc and restored to the in-tree log just above this block to maintain the audit trail. No data loss; trail re-stitched.
+  - Going forward: Composer should `git stash --include-untracked` or check `git status` before its first commit to avoid sweeping orchestrator-staged-but-not-yet-committed changes.
+COMMIT: 15f36553d (Composer) + restoration commit (Claude orchestrator, this turn)
+NEXT_TASK: M1 1.3 sentinel JS parité menu POS↔Kiosk -> EXECUTION_TIER=routine (TEST-ONLY, vitest fixtures + spec)
