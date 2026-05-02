@@ -5645,3 +5645,19 @@ EXECUTE_DELEGATION: foodking-routine-implementer
 SCOPE_FILES_TOUCHED: app/Services/Menu/AvailabilityService.php, tests/Feature/Menu/MaxDailyQtyChangeReEvaluationTest.php
 SENTINEL_RESULTS: MaxDailyQtyChangeReEvaluation 4/4; Availability+Stock no regression (70 passed)
 NOTES: setMaxDailyQty + Event::fake([ItemAvailabilityChanged::class]); ItemBranchAvailability max_daily_qty already fillable
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 2.5 ===
+DATE: 2026-05-02T17:50+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+SCOPE_COMPLIANCE: PASS — only AvailabilityService.php (+78, single new public method) + sentinel (+128).
+SENTINEL_RESULTS: MaxDailyQtyChangeReEvaluation 4/4; Availability|Stock filter 70/12 no regression.
+INVARIANT_CHECKS:
+  - branch_id (#3): PASS — every query filters branch_id + item_id; lockForUpdate prevents race.
+  - DispatchableAfterCommit (#4): PASS — event(...) used; integrates with existing dispatchEvent pattern.
+  - Pricing SSOT / OrderStatus / OrderService symmetry / Frozen zones: untouched.
+NOTE: idempotent semantics aligned with existing toggle() pattern. No admin endpoint added (out of scope per plan §2.5 — service contract only).
+COMMIT: 4251ac4e0
