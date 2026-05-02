@@ -57,6 +57,13 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(5)
             ->onOneServer();
 
+        $schedule->command('stock:scan-rupture')
+            ->cron(config('catalog_v15.auto_86_preventive_cron.cron_expression', '*/5 * * * *'))
+            ->name('stock-scan-rupture')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->when(fn () => (bool) config('catalog_v15.auto_86_preventive_cron.enabled', false));
+
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
         $schedule->call(function () {

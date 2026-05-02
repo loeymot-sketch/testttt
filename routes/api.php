@@ -90,6 +90,7 @@ use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Auth\KioskMachineLoginController;
 use App\Http\Controllers\Admin\NotificationAlertController;
 use App\Http\Controllers\Admin\OrderStatusScreenController;
+use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\DeliveryBoyAddressController;
 use App\Http\Controllers\Admin\CreditBalanceReportController;
 use App\Http\Controllers\Admin\AdministratorAddressController;
@@ -247,6 +248,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu-projection.show');
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
+    Route::get('/stock/scan-rupture/last-summary', [StockRuptureDashboardController::class, 'lastSummary'])
+        ->name('stock.scan-rupture.last-summary');
+    Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])
+        ->name('stock.low-alerts');
+    Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
+        ->name('stock.scan-rupture.run');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
