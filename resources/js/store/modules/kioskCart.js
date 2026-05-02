@@ -208,6 +208,7 @@ export const kioskCart = {
     },
     getters: {
         items: (state) => state.items,
+        snapshot: (state) => state.items.map((line) => ({ ...line })),
         count: (state) => state.items.reduce((sum, i) => sum + i.quantity, 0),
         kioskToken: (state) => state.kioskToken,
         isAuthenticated: (state) => !!state.kioskToken,

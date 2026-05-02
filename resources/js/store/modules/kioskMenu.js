@@ -48,6 +48,11 @@ export const kioskMenu = {
     getters: {
         categories:         (s) => s.categories,
         allItems:           (s) => s.items,
+        forBranch:          (s) => (branchId) => ({
+            branch_id: branchId ?? s.branchId,
+            categories: s.categories,
+            items: s.items,
+        }),
         selectedCategoryId: (s) => s.selectedCategoryId,
         kioskSandwichSubcolumn: (s) => s.kioskSandwichSubcolumn,
         loading:            (s) => s.loading,

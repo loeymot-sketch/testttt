@@ -148,6 +148,7 @@
         "create": "Erstellen",
         "update": "Aktualisieren",
         "delete": "Löschen",
+        "duplicate": "Duplizieren",
         "view": "Sicht",
         "profile": "Profil",
         "security": "Sicherheit",
@@ -786,6 +787,7 @@
         "have_account": "Sie haben kein Konto?",
         "add_note": "Notiz hinzufügen (zusätzliche Mayonnaise, Käse usw.)",
         "add_to_cart": "Erfolgreich in den Warenkorb gelegt",
+        "item_duplicated": "Artikel als Entwurf dupliziert.",
         "empty_cart": "Gutes Essen kocht immer! Bestellen Sie ein paar leckere Sachen von der Speisekarte.",
         "delivery_and_takeaway": "Liefern und Mitnehmen ist jetzt deaktiviert. bitte warte mal",
         "get_discount": "Erhalten Sie Rabatt bei Ihrer Bestellung",
@@ -980,7 +982,11 @@
             "open_cart_label": "Ouvrir le panier — {n} articles",
             "badge_chef_pick": "Coup de cœur du chef",
             "filters_label": "Filtres diététiques",
-            "filters_reset": "Tout effacer"
+            "filters_reset": "Tout effacer",
+            "menu_refreshed_toast": "Die Speisekarte wurde aktualisiert",
+            "cart_lines_removed": "Einige Positionen wurden aus Ihrem Warenkorb entfernt ({count})",
+            "menu_refreshed_recheck_selection": "Bitte prüfen Sie Ihre Auswahl.",
+            "review_cart": "Warenkorb prüfen"
         },
         "filters": {
             "halal": "Halal",
@@ -1487,6 +1493,12 @@
         "waiting": {
             "ready_visual_fallback": "Ihre Bestellung ist fertig!"
         }
+    },
+    "catalog": {
+        "menu_refreshed_toast": "Die Speisekarte wurde aktualisiert",
+        "cart_lines_removed": "Einige Positionen wurden aus Ihrem Warenkorb entfernt ({count})",
+        "menu_refreshed_recheck_selection": "Bitte prüfen Sie Ihre Auswahl.",
+        "review_cart": "Warenkorb prüfen"
     },
     "warning": {
         "catalog": {

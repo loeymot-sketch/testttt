@@ -312,6 +312,7 @@
         "create": "Create",
         "update": "Update",
         "delete": "Delete",
+        "duplicate": "Duplicate",
         "view": "View",
         "profile": "Profile",
         "security": "Security",
@@ -1016,6 +1017,7 @@
         "have_account": "Don’t have an account?",
         "add_note": "Add note (extra mayo, cheese, etc.)",
         "add_to_cart": "Successfully add to cart",
+        "item_duplicated": "Item duplicated as a draft.",
         "empty_cart": "Good food is always cooking! Go ahead, order some yummy items from the menu.",
         "delivery_and_takeaway": "Delivery and takeaway is disable now. please wait sometime",
         "get_discount": "Get discount with your order",
@@ -1213,7 +1215,11 @@
             "open_cart_label": "Open cart — {n} items",
             "badge_chef_pick": "Chef's pick",
             "filters_label": "Dietary filters",
-            "filters_reset": "Clear all"
+            "filters_reset": "Clear all",
+            "menu_refreshed_toast": "The menu has been updated",
+            "cart_lines_removed": "Some lines were removed from your cart ({count})",
+            "menu_refreshed_recheck_selection": "Please check your choices.",
+            "review_cart": "Review my cart"
         },
         "filters": {
             "halal": "Halal",
@@ -1725,6 +1731,12 @@
         "waiting": {
             "ready_visual_fallback": "Your order is ready!"
         }
+    },
+    "catalog": {
+        "menu_refreshed_toast": "The menu has been updated",
+        "cart_lines_removed": "Some lines were removed from your cart ({count})",
+        "menu_refreshed_recheck_selection": "Please check your choices.",
+        "review_cart": "Review my cart"
     },
     "warning": {
         "catalog": {

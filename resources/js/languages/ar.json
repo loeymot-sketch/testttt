@@ -226,6 +226,7 @@
         "create": "إنشاء",
         "update": "تحديث",
         "delete": "حذف",
+        "duplicate": "تكرار",
         "view": "عرض",
         "profile": "الملف الشخصي",
         "security": "الأمان",
@@ -902,6 +903,7 @@
         "have_account": "ليس لديك حساب؟",
         "add_note": "إضافة مذكرة (مايونيز إضافي، جبنة، إلخ.)",
         "add_to_cart": "تمت الإضافة بنجاح إلى السلة",
+        "item_duplicated": "تم تكرار الصنف كمسودة.",
         "empty_cart": "الطعام اللذيذ دائماً جاهز! تفضل بطلب بعض العناصر اللذيذة من القائمة.",
         "delivery_and_takeaway": "تم تعطيل خيارات التوصيل والتناول الآن. يرجى الانتظار قليلاً.",
         "get_discount": "احصل على خصم مع طلبك",
@@ -1099,7 +1101,11 @@
             "open_cart_label": "فتح السلة — {n} عنصر",
             "badge_chef_pick": "اختيار الشيف",
             "filters_label": "عوامل تصفية غذائية",
-            "filters_reset": "مسح الكل"
+            "filters_reset": "مسح الكل",
+            "menu_refreshed_toast": "تم تحديث القائمة",
+            "cart_lines_removed": "تمت إزالة بعض العناصر من سلتك ({count})",
+            "menu_refreshed_recheck_selection": "يرجى التحقق من اختياراتك.",
+            "review_cart": "مراجعة سلتي"
         },
         "filters": {
             "halal": "حلال",
@@ -1607,6 +1613,12 @@
         "waiting": {
             "ready_visual_fallback": "طلبك جاهز!"
         }
+    },
+    "catalog": {
+        "menu_refreshed_toast": "تم تحديث القائمة",
+        "cart_lines_removed": "تمت إزالة بعض العناصر من سلتك ({count})",
+        "menu_refreshed_recheck_selection": "يرجى التحقق من اختياراتك.",
+        "review_cart": "مراجعة سلتي"
     },
     "warning": {
         "catalog": {

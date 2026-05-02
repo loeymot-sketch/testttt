@@ -10,6 +10,15 @@
 
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
 
+    <CatalogChangeToastComponent
+      :visible="catalogChangeToastVisible"
+      :message="catalogChangeToastMessage"
+      :removed-selections="catalogChangeRemovedSelections"
+      :severity="catalogChangeSeverity"
+      @review="reviewCatalogChangedCart"
+      @dismiss="dismissCatalogChangeToast"
+    />
+
     <button
       type="button"
       class="kiosk-theme-toggle"
@@ -158,12 +167,14 @@ import {
 } from '../../../helpers/kioskOfflineQueue';
 
 import KioskToastComponent from './KioskToastComponent.vue';
+import CatalogChangeToastComponent from './CatalogChangeToastComponent.vue';
 import KioskOfflineConflictModalComponent from './KioskOfflineConflictModalComponent.vue';
 import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { onEvents } from '../../../services/eventContract';
+import { useCatalogChangeNotifier } from '../../../composables/useCatalogChangeNotifier';
 // [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
 import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
 import { setLocale } from '../../../i18n';
@@ -195,6 +206,7 @@ export default {
   components: {
     ConnectionStatusBanner,
     KioskToastComponent,
+    CatalogChangeToastComponent,
     KioskOfflineConflictModalComponent,
     KioskInactivityOverlayComponent,
   },
@@ -228,6 +240,7 @@ export default {
       _offlineQuotaListener: null,
       _staleToastDebounceTimer: null,
       _pendingStaleItemIds: new Set(),
+      _catalogChangeNotifier: null,
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
@@ -277,6 +290,18 @@ export default {
       return this.themeMode === 'dark'
         ? 'Passer en mode clair'
         : 'Passer en mode sombre';
+    },
+    catalogChangeToastVisible() {
+      return !!this._catalogChangeNotifier?.toastVisible?.value;
+    },
+    catalogChangeToastMessage() {
+      return this._catalogChangeNotifier?.toastMessage?.value || '';
+    },
+    catalogChangeRemovedSelections() {
+      return this._catalogChangeNotifier?.removedSelectionsByStep?.value || {};
+    },
+    catalogChangeSeverity() {
+      return this._catalogChangeNotifier?.toastSeverity?.value || 'info';
     },
   },
   watch: {
@@ -357,6 +382,8 @@ export default {
       clearTimeout(this._staleToastDebounceTimer);
       this._staleToastDebounceTimer = null;
     }
+    this._catalogChangeNotifier?.stop?.();
+    this._catalogChangeNotifier = null;
     this._pendingStaleItemIds.clear();
   },
   methods: {
@@ -443,6 +470,7 @@ export default {
           this.branchLoading = false;
           // Pre-warm menu cache in background so Categories screen is instant
           this.$store.dispatch('kioskMenu/fetchMenu', { branchId: branch.id }).catch(() => {});
+          this._startCatalogChangeNotifier(branch.id);
           // [C3] Subscribe to item availability updates for this branch
           this._subscribeEchoChannel(branch.id);
         } else {
@@ -475,12 +503,58 @@ export default {
             broadcastAs: 'CatalogChanged',
             handler: (event) => {
               this._handleCatalogChanged(event, branchId);
+              this._handleCatalogChangeMidSession(event);
+            },
+          },
+          {
+            broadcastAs: 'ComposerProfileChanged',
+            handler: (event) => {
+              this._handleCatalogChangeMidSession(event);
             },
           },
         ]);
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
       }
+    },
+
+    _startCatalogChangeNotifier(branchId) {
+      this._catalogChangeNotifier?.stop?.();
+      this._catalogChangeNotifier = useCatalogChangeNotifier({
+        store: this.$store,
+        eventContract: { onEvents },
+        branchId,
+        i18n: { t: this.$t.bind(this) },
+        analytics: kioskAnalytics,
+        hasOpenWizard: () => this.$route?.name === 'kiosk.wizard',
+        autoSubscribe: false,
+      });
+    },
+
+    _handleCatalogChangeMidSession(event) {
+      return this._catalogChangeNotifier?.__onCatalogChanged?.(event)
+        ?.catch?.(() => ({ ignored: true, reason: 'catalog_change_notifier_failed' }));
+    },
+
+    dismissCatalogChangeToast() {
+      this._catalogChangeNotifier?.dismiss?.();
+    },
+
+    reviewCatalogChangedCart() {
+      this.dismissCatalogChangeToast();
+      this.goToCart();
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const panel = document.querySelector('[data-testid="kiosk-cart-root"], .kiosk-cart');
+          if (!panel || typeof panel.focus !== 'function') {
+            return;
+          }
+          if (!panel.hasAttribute('tabindex')) {
+            panel.setAttribute('tabindex', '-1');
+          }
+          panel.focus({ preventScroll: true });
+        }, 0);
+      });
     },
 
     _normalizeBranchId(value) {

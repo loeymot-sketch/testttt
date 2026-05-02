@@ -287,6 +287,7 @@
         "create": "Créer",
         "update": "Modifier",
         "delete": "Supprimer",
+        "duplicate": "Dupliquer",
         "save": "Enregistrer",
         "cancel": "Annuler",
         "amount": "Montant",
@@ -842,6 +843,7 @@
         "subscribe": "Merci pour votre abonnement !",
         "add_note": "Ajouter une note (extra mayo, fromage...)",
         "add_to_cart": "Article ajouté au panier",
+        "item_duplicated": "Produit dupliqué en brouillon.",
         "empty_cart": "Votre panier est vide. Commandez quelque chose de délicieux !",
         "delivery_and_takeaway": "Livraison et emport temporairement désactivés.",
         "get_discount": "Obtenez une remise",
@@ -1054,7 +1056,11 @@
             "open_cart_label": "Ouvrir le panier — {n} articles",
             "badge_chef_pick": "Coup de cœur du chef",
             "filters_label": "Filtres diététiques",
-            "filters_reset": "Tout effacer"
+            "filters_reset": "Tout effacer",
+            "menu_refreshed_toast": "Le menu a été mis à jour",
+            "cart_lines_removed": "Certaines lignes ont été retirées de votre panier ({count})",
+            "menu_refreshed_recheck_selection": "Vérifiez vos choix.",
+            "review_cart": "Vérifier mon panier"
         },
         "filters": {
             "halal": "Halal",
@@ -1570,6 +1576,12 @@
             "ready_visual_fallback": "Votre commande est prête !"
         },
         "max_quantity_reached": "Quantité maximale atteinte"
+    },
+    "catalog": {
+        "menu_refreshed_toast": "Le menu a été mis à jour",
+        "cart_lines_removed": "Certaines lignes ont été retirées de votre panier ({count})",
+        "menu_refreshed_recheck_selection": "Vérifiez vos choix.",
+        "review_cart": "Vérifier mon panier"
     },
     "warning": {
         "catalog": {

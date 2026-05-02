@@ -148,6 +148,7 @@
         "create": "তৈরি করুন",
         "update": "আপডেট",
         "delete": "মুছুন",
+        "duplicate": "ডুপ্লিকেট",
         "view": "দেখুন",
         "profile": "প্রোফাইল",
         "security": "নিরাপত্তা",
@@ -786,6 +787,7 @@
         "have_account": "একটি অ্যাকাউন্ট নেই?",
         "add_note": "নোট যোগ করুন (অতিরিক্ত মায়ো, পনির, ইত্যাদি)",
         "add_to_cart": "সফলভাবে কার্টে যোগ করা হয়েছে",
+        "item_duplicated": "আইটেমটি খসড়া হিসেবে ডুপ্লিকেট করা হয়েছে।",
         "empty_cart": "ভালো খাবার সবসময় রান্না হয়! এগিয়ে যান, মেনু থেকে কিছু মুখরোচক পন্য অর্ডার করুন।",
         "delivery_and_takeaway": "ডেলিভারি এবং টেকঅওয়ে এখন অক্ষম। অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন",
         "get_discount": "আপনার অর্ডারের সাথে ডিসকাউন্ট পান",
@@ -980,7 +982,11 @@
             "open_cart_label": "Ouvrir le panier — {n} articles",
             "badge_chef_pick": "Coup de cœur du chef",
             "filters_label": "Filtres diététiques",
-            "filters_reset": "Tout effacer"
+            "filters_reset": "Tout effacer",
+            "menu_refreshed_toast": "মেনু আপডেট করা হয়েছে",
+            "cart_lines_removed": "আপনার কার্ট থেকে কিছু লাইন সরানো হয়েছে ({count})",
+            "menu_refreshed_recheck_selection": "আপনার পছন্দগুলো যাচাই করুন।",
+            "review_cart": "আমার কার্ট যাচাই করুন"
         },
         "filters": {
             "halal": "Halal",
@@ -1487,6 +1493,12 @@
         "waiting": {
             "ready_visual_fallback": "আপনার অর্ডার প্রস্তুত!"
         }
+    },
+    "catalog": {
+        "menu_refreshed_toast": "মেনু আপডেট করা হয়েছে",
+        "cart_lines_removed": "আপনার কার্ট থেকে কিছু লাইন সরানো হয়েছে ({count})",
+        "menu_refreshed_recheck_selection": "আপনার পছন্দগুলো যাচাই করুন।",
+        "review_cart": "আমার কার্ট যাচাই করুন"
     },
     "warning": {
         "catalog": {
