@@ -5316,3 +5316,22 @@ COMMIT: 957f59c65
 NEXT_TASK: continue Sprint 1 — remaining items in plan PLAN_CV1-CATALOG-CONVERGENCE-001 §1 (Mission 1). Check §1.3 / §1.5 / §1.7 / §1.8 status next.
 
 === END OUT-OF-ORDER RECOVERY APPENDIX ===
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.3 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine (TEST-ONLY)
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.3
+DATE: 2026-05-02
+FILES_CREATED:
+  - tests/js/posComponentMenuFiltering.spec.js
+  - tests/js/__fixtures__/menu-parity.json
+PRODUCT_FILES_TOUCHED: 0 (per task contract)
+LOCAL_VALIDATE: npx vitest run tests/js/posComponentMenuFiltering.spec.js -> PASS (4 tests); npx vitest run (full suite) -> PASS (147 files, 966 tests)
+LINT: N/A for this sentinel (no eslint run on spec; Vitest COLLECT/load OK after appService stub)
+HALT: none
+PROBED_GETTERS:
+  - POS: resources/js/store/modules/item.js::lists (Vuex getter key item/lists); channel slicing is server-side (ItemService/simpleList surface=pos), not applied in Vuex
+  - Kiosk: resources/js/store/modules/kioskMenu.js::allItems (getter key kioskMenu/allItems); API pre-filters with surface=kiosk; category/sandwich getters do not encode channels metadata
+CHANNEL_SENTINEL: catalogItemVisibleOnSurface() inlined in spec — mirrors PHP App\Models\Item::isVisibleOn (NULL=>all surfaces, non-null array lists allowed surfaces, empty array=>visibility nowhere)
+IMPORT_NOTE: importing store/modules/item.js loads appService which bootstraps production root store; Vitest hoists vi.mock('../../resources/js/services/appService', ...) so the module can be tested in isolation
+NOTES: No client-side shared filter export in resources/js; parity locked by applying Item::isVisibleOn semantics to the same fixture blob committed to both item/lists and kioskMenu/SET_ITEMS for this sentinel
