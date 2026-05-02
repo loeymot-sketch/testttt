@@ -5,10 +5,13 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `IN_PROGRESS` (détail = section `CAISSE_V1_MASTERPLAY` ci-dessous) |
-| **TASK_ID** | `PHASE2_TRAIN_A_V1_RELEASE_PREP_2026-04-27` |
-| **PLAN_FILE** | `reports/audit/PHASE2_PLAN_TRAINS_REWORKED_2026-04-27.md` |
+| **PHASE** | `EXECUTE` |
+| **TASK_ID** | `CV1-LIFECYCLE-UX-001` (Vague 2 — task 2.1 Auto-86 cron + dashboard) |
+| **PLAN_FILE** | `plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md` |
+| **EXECUTION_TIER** | `complex` (multi-file: command body + Kernel schedule + 3 admin endpoints + Vue dashboard + 6 sentinel cases) |
+| **EXECUTE_DELEGATION** | `foodking-complex-implementer (codex-extension-fallback)` — `FALLBACK_REASON: codex-extension Pro usage limit reached at 18:27 Europe/Paris (until 22:21)` |
 | **REPORT_FILE** | `reports/post_execute_latest.log` (append — preuve `EXECUTE_DELEGATION` / `AUDIT_*`) |
+| **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
 > Cycles plus anciens en lecture seule = **archive** déplacée dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** (lecture humaine / forensique uniquement, **non requise** par le parcours obligatoire).

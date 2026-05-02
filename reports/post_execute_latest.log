@@ -5729,3 +5729,20 @@ SYMMETRIC_METHODS: [myOrderStore, show, changeStatus]; arity check via getNumber
 DRIFT THRESHOLD: 20 (current delta=15, OrderService=20 / FrontendOrderService=5).
 INVARIANT_CHECKS: untouched (sentinel only).
 COMMIT: a056ae95c
+
+=== PLAN_REVIEW — CV1-LIFECYCLE-UX-001 / task 2.1 ===
+DATE: 2026-05-02T18:50+02:00
+PLAN_REVIEW_VERDICT: PASS
+PLAN_REVIEW_REVIEWER: Claude (in-session orchestrator) — codex-extension Pro indispo (rate limit until 22:21 Europe/Paris), in-session plan-review fallback per .cursor/routing.md token-discipline.
+PLAN_REVIEW_NOTES:
+  - Scope strictly bounded to files in missions/CV1-LIFECYCLE-UX-001-task-2.1/input.json subsystems list.
+  - Frozen zones (Pricing, Payments) explicitly excluded.
+  - branch_id isolation invariant covered (every query filters branch_id; dashboard endpoints scoped).
+  - Dispatch-after-commit invariant honored (all flips via AvailabilityService::toggle which already integrates the after-commit pattern).
+  - Sentinel coverage: 6 cases mapped to plan §2.1 acceptance.
+  - Halt conditions explicit; NEEDS_CLAUDE_M2_2_1.md path documented.
+  - Implementation guidance keeps complexity bounded (fallback algorithm if ChoiceAvailabilityResolver too heavy).
+PLAN_REVIEW_INVARIANTS_AT_RISK:
+  - #3 branch_id (#3): MITIGATED — all queries filter branch_id; sub-agent must verify.
+  - #4 dispatch-after-commit: MITIGATED — passes through AvailabilityService::toggle.
+  - #6 frozen zones: NO RISK — explicit allowlist + off-limits.
