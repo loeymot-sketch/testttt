@@ -5426,3 +5426,55 @@ NEXT_TASK_OPTIONS:
   (a) Vague 2 (Mission 1) — convergence: requires staging shadow_compare activation (2.1) + projection migrations (2.2-2.7). Several tasks need human gate before staging.
   (b) Resume CV1-LIFECYCLE-UX-001 (Mission 2) — only 1.9 escalated remains; potentially other Sprint 1 items in that plan to scan.
   (c) Surface the M2 1.9 ESCALATED architectural decision to user (3 options pending).
+
+
+=== CV1-LIFECYCLE-UX-001 / task 1.9 (round 2, atomic UPDATE) ===
+EXECUTE_DELEGATION: codex-extension
+EXECUTION_TIER: complex
+TASK_ID: CV1-LIFECYCLE-UX-001-task-1.9-v2
+DATE: 2026-05-02
+SUPERSEDES: task 1.9 round 1 (escalated due to lockForUpdate impossibility)
+FILES_TOUCHED:
+  - app/Services/Menu/AvailabilityService.php (decrementForOrder body replaced)
+  - tests/Feature/Stock/AvailabilityDecrementConcurrencyTest.php (new, 4 cases)
+INDUSTRY_REFERENCE: Square / Toast / Foodics / Lightspeed pattern per reports/audit/M2_1_9_INDUSTRY_COMPARATIVE_ANALYSIS_2026-05-02.md
+LOCAL_VALIDATE:
+  - php -l app/Services/Menu/AvailabilityService.php -> PASS
+  - php -l tests/Feature/Stock/AvailabilityDecrementConcurrencyTest.php -> PASS
+  - php artisan test --filter=AvailabilityDecrementConcurrency -> PASS, 4 passed
+  - php artisan test tests/Feature/Menu/AvailabilityServiceTest.php -> PASS, 7 passed
+  - php artisan test --filter=Availability -> PASS, 47 passed, 3 skipped
+  - php artisan test --filter=Stock -> PASS, 34 passed, 11 skipped
+  - php artisan test -> PASS, 1272 passed, 40 skipped
+GOVERNANCE_CHECKS:
+  - Graphiti MCP search attempted; MCP call was canceled by host, fallback memory/INDEX.md read.
+  - npm run verify:boucle -> WARN, exits 1 because claude --version attempts to write /Users/1millnonstop/.claude.json and sandbox denies it.
+  - bash scripts/preflight-execute.sh CV1-LIFECYCLE-UX-001-task-1.9-v2 --scope=app/Services/Menu/AvailabilityService.php,tests/Feature/Stock/AvailabilityDecrementConcurrencyTest.php -> PASS; existing cursor-claude reservation covers scope.
+HALT: none
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.9 (round 2, atomic UPDATE) ===
+DATE: 2026-05-02T11:51+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+ROUND: 2 / 5 (round 1 was ESCALATED due to lockForUpdate impossibility)
+EXECUTE_DELEGATION: codex-extension (gpt-5.5-pro xhigh)
+EXECUTION_TIER: complex
+SCOPE_COMPLIANCE: PASS — only AvailabilityService.php (+38/-24, just decrementForOrder body) + new AvailabilityDecrementConcurrencyTest.php (158 lines, 4 cases); no off-limits services, no migration, no event class
+SENTINEL_RESULTS: AvailabilityDecrementConcurrencyTest -> 4/4 passed (under cap / threshold flip / over-shoot / serialized concurrent)
+SUITE_REGRESSION: full php artisan test -> 1272 passed, 40 skipped (was 1263 passed / 46 skipped pre-1.9 -> +9 passed, -6 skipped: net positive movement)
+INVARIANT_CHECKS:
+  - branch_id data isolation (#3): PASS — every UPDATE filters item_id + branch_id; no cross-branch leak.
+  - DispatchableAfterCommit (#4): PASS — no DB::transaction() introduced; service called from after-commit listener as before.
+  - OrderService / FrontendOrderService symmetry: PASS — public signature unchanged, both services unaffected.
+  - Pricing / OrderStatus / Schema: untouched (PASS)
+  - Frozen zones: respected (PASS)
+INDUSTRY_ALIGNMENT: implementation matches Square / Toast / Foodics / Lightspeed cloud-POS atomic UPDATE pattern documented in M2_1_9_INDUSTRY_COMPARATIVE_ANALYSIS_2026-05-02.md.
+ATOMICITY_CHECK: 3 separate UPDATE statements (reset / increment / flip), each atomic at the SGBD layer. The CAS flip (Step 3 with where('is_available', true) AND whereRaw('daily_consumed_qty >= max_daily_qty')) ensures exactly one caller per concurrent batch transitions the row and dispatches the ItemAvailabilityChanged event. Other concurrent callers see flipRows=0 and silently no-op the dispatch — exactly the desired behavior for duplicate-event suppression.
+RISKS_FROM_CODEX_OUTPUT:
+  - $qty interpolated into raw CASE expression — safe per int cast on line 202 ($qty = (int) $line->quantity), but flagged for future linter rule that prohibits raw SQL string interp even with int casts.
+  - Sandbox could not write .git/index.lock — orchestrator committed manually.
+  - npm run verify:boucle blocked by sandbox EPERM on /Users/1millnonstop/.claude.json — env-only, not a code regression.
+ESCALATION_RESOLVED: M2 1.9 round 1 escalation (lockForUpdate plan drift) is now CLOSED via this round 2 with the atomic UPDATE pattern.
+COMMIT: pending manual commit by orchestrator
+NEXT: massive Claude sub-agent audit (foodking-planner-orchestrator) covering the 9 product commits + functional verification.
