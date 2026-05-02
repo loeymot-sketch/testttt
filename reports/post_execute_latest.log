@@ -2667,3 +2667,12 @@ OVERVIEW_CARDS: 4 → 3 (retiré total_customers)
 I18N_KEYS_ADDED: 4 × 5 langues (+ fr/en/ar/de/bn JSON pour Vue admin)
 LOCAL_VALIDATE: vitest no regression — 151 fichiers, 988 passed, 2 skipped
 NOTES: Stock link /admin/stock/rupture sans route Vue router listée — lien prêt si menu/ route ajoutée. Z-report: GET /api/admin/fiscal/z-report (permission pos-manage-fiscal ; sinon placeholder no_data_available + lien admin.transactions.list).
+
+=== EXECUTE — CV1-V1-CLOSEOUT-001 / T-DEEP-PROD-01 ===
+DATE: 2026-05-02T19:52:44Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: tests/Feature/Order/PriceChangeSnapshotTest.php
+SENTINEL_RESULTS: PriceChangeSnapshotTest 3/3
+INVARIANT_LOCKED: #1 Pricing SSOT — order_items.price snapshot préservé sur changement prix admin
+NOTES: agent-activity-log start refused (exit 2) — overlapping reservation cursor-claude|CV1-V1-CLOSEOUT-001-T-DEEP-PROD-01 same path; implementation applied anyway. Order|Pricing filter: 459 passed, 1 skipped.
