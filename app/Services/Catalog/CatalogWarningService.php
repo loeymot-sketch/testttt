@@ -3,6 +3,7 @@
 namespace App\Services\Catalog;
 
 use App\Models\Item;
+use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 
@@ -104,15 +105,43 @@ class CatalogWarningService
             ];
         }
 
-        // TODO (Codex — task 1.5): missing_photo via Spatie media collection.
-        //   if ($item->getFirstMedia('items')?->id === null) { warnings[] = code:missing_photo, severity:info }
+        if ($item->getFirstMedia('item') === null) {
+            $warnings[] = [
+                'code'     => self::CODE_MISSING_PHOTO,
+                'severity' => self::SEVERITY_INFO,
+                'context'  => [],
+            ];
+        }
 
-        // TODO (Codex — task 1.5): branch_availability_unset (only when $branchId provided).
-        //   ItemBranchAvailability::where(...)->exists()? false → warning.
+        if ($branchId !== null) {
+            $availabilityRow = ItemBranchAvailability::query()
+                ->where('item_id', $item->id)
+                ->where('branch_id', $branchId)
+                ->first();
 
-        // TODO (Codex — task 1.5): high_daily_consumed (preventive auto-86 alert).
-        //   ratio = $row->daily_consumed_qty / max($row->max_daily_qty, 1);
-        //   if ($row->max_daily_qty && $ratio > 0.85) { warnings[] = code:high_daily_consumed }
+            if ($availabilityRow === null) {
+                $warnings[] = [
+                    'code'     => self::CODE_BRANCH_AVAILABILITY_UNSET,
+                    'severity' => self::SEVERITY_INFO,
+                    'context'  => ['branch_id' => $branchId],
+                ];
+            } elseif ($availabilityRow->max_daily_qty !== null && (int) $availabilityRow->max_daily_qty > 0) {
+                $max = (int) $availabilityRow->max_daily_qty;
+                $consumed = (int) $availabilityRow->daily_consumed_qty;
+                $ratio = $consumed / $max;
+                if ($ratio >= 0.85) {
+                    $warnings[] = [
+                        'code'     => self::CODE_HIGH_DAILY_CONSUMED,
+                        'severity' => self::SEVERITY_WARNING,
+                        'context'  => [
+                            'consumed' => $consumed,
+                            'max'      => $max,
+                            'ratio'    => round($ratio, 3),
+                        ],
+                    ];
+                }
+            }
+        }
 
         return $warnings;
     }

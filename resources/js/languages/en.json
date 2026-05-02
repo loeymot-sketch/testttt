@@ -1705,6 +1705,21 @@
                 "title": "Channels not narrowed",
                 "message": "Channels are empty (inherited defaults): this product may appear on every surface until you constrain channels explicitly.",
                 "action": "Edit channels"
+            },
+            "missing_photo": {
+                "title": "No photo",
+                "message": "There is no photo — the kiosk will show a placeholder.",
+                "action": "Add a photo"
+            },
+            "branch_availability_unset": {
+                "title": "Branch stock not configured",
+                "message": "No stock settings for this branch — default behavior applies.",
+                "action": "Configure availability"
+            },
+            "high_daily_consumed": {
+                "title": "Daily quota nearly reached",
+                "message": "Daily stock is close to the limit (>85%).",
+                "action": "Review branch stock"
             }
         }
     }

@@ -1468,6 +1468,21 @@
                 "title": "Kanäle nicht eingeschränkt",
                 "message": "Kanäle sind leer (übernommene Standards): dieser Artikel kann auf allen Oberflächen erscheinen, bis Kanäle explizit eingeschränkt werden.",
                 "action": "Kanäle bearbeiten"
+            },
+            "missing_photo": {
+                "title": "Kein Foto",
+                "message": "Es gibt kein Foto — der Kiosk zeigt einen Platzhalter.",
+                "action": "Foto hinzufügen"
+            },
+            "branch_availability_unset": {
+                "title": "Filialbestand nicht konfiguriert",
+                "message": "Keine Bestandeinstellungen für diese Filiale — Standardverhalten gilt.",
+                "action": "Verfügbarkeit konfigurieren"
+            },
+            "high_daily_consumed": {
+                "title": "Tageskontingent fast erreicht",
+                "message": "Der Tagesbestand liegt nahe am Limit (>85%).",
+                "action": "Filialbestand prüfen"
             }
         }
     }

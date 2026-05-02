@@ -5478,3 +5478,13 @@ RISKS_FROM_CODEX_OUTPUT:
 ESCALATION_RESOLVED: M2 1.9 round 1 escalation (lockForUpdate plan drift) is now CLOSED via this round 2 with the atomic UPDATE pattern.
 COMMIT: pending manual commit by orchestrator
 NEXT: massive Claude sub-agent audit (foodking-planner-orchestrator) covering the 9 product commits + functional verification.
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 1.5 ===
+DATE: 2026-05-02T15:09:30Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: app/Services/Catalog/CatalogWarningService.php, tests/Feature/Catalog/CatalogWarningServiceExtraCodesTest.php, resources/js/languages/fr.json, resources/js/languages/en.json, resources/js/languages/de.json, resources/js/languages/ar.json, resources/js/languages/bn.json
+SENTINEL_RESULTS:
+  - CatalogWarningServiceExtraCodes: 5/5 passed
+  - Catalog filter (no regression): 48/48 passed
+NOTES: Item media collection name is `item` (not items). i18n under warning.catalog.* matching ComposerProfileWarningBadge.vue.

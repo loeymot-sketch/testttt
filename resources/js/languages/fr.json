@@ -1550,6 +1550,21 @@
                 "title": "Canaux non restreints",
                 "message": "Les canaux sont vides (valeur héritée) : ce produit peut être visible sur toutes les surfaces tant qu'aucun filtre canal n'est défini.",
                 "action": "Configurer les canaux"
+            },
+            "missing_photo": {
+                "title": "Photo manquante",
+                "message": "Aucune photo — la borne affichera un placeholder.",
+                "action": "Ajouter une photo"
+            },
+            "branch_availability_unset": {
+                "title": "Stock borne non configuré",
+                "message": "Pas de réglage stock pour cette borne — comportement par défaut.",
+                "action": "Configurer la disponibilité"
+            },
+            "high_daily_consumed": {
+                "title": "Quota journalier élevé",
+                "message": "Stock journalier proche de la limite (>85%).",
+                "action": "Voir le stock borne"
             }
         }
     },
