@@ -2794,3 +2794,20 @@ PLAN_REVIEW_NOTES:
   - Response shape preservation = halt condition explicite.
   - Default behavior unchanged (flag-driven).
   - Sentinel coverage 4-5 cas couvre legacy/kill-switch/unified/shadow-aligned/shadow-misaligned.
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / T-CENT-DEDUP-AVAIL-01 ===
+DATE: 2026-05-02T22:28+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+SCOPE_COMPLIANCE: PASS — controller refactor + sentinel.
+SENTINEL_RESULTS: AvailabilityControllerDelegationTest 3/3; Availability|Stock|Menu|Catalog 204/29 (no regression).
+GAP_FERMÉ: P1 Axe 3 cas 4 — duplication controller/service éliminée.
+RESPONSE_SHAPE_PRESERVED: YES (assertExactJson + CatalogStockCentralSyncEndToEndTest PASS).
+COMMIT: 35c9d1e13
+
+=== A.1 + A.2 audit reports — Wizard Composable Admin V1 ===
+DATE: 2026-05-02T22:28+02:00
+A.1 verdict: PARTIEL — composer UI orienté dev (3/10 user-friendly), pas de drag&drop/preview/picker; ProductCreateWizardComponent = SKELETON; module composer.js Vuex non enregistré.
+A.2 verdict: PARTIEL — source_ref non FK, stock_levels polymorphe sans FK, propagation kiosk inégale entre item/variation/extra/addon; fixed enum mort.
+NEXT: attendre A.3 + A.4 puis synthèse Phase B.
