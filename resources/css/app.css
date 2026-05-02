@@ -124,7 +124,13 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
               LAYOUT PART START
     ====================================*/
     /* HEADER */
-    .db-header { @apply fixed top-0 left-0 z-30 w-full p-4 flex items-center justify-between lg:gap-36 bg-white transition }
+    /* [POS-V4-DENSITY 2026-05-02] Padding tightened (was p-4 = 16px → py-2 = 8px).
+       The fixed header had ~72-76px effective height, leaving the POS shell with
+       a cramped product grid below. Vertical squeeze: 8-10px reclaimed for the
+       grid without changing logo size or operator avatar density. KDS / OSS
+       surfaces also benefit from a lighter top bar — confirmed visually with
+       the 64px max-line still leaving room for the language pill / branch pill. */
+    .db-header { @apply fixed top-0 left-0 z-30 w-full py-2 px-4 flex items-center justify-between lg:gap-12 bg-white transition }
     .db-header-left { @apply flex items-center w-full md:gap-36 }
     .db-header-right { @apply flex-shrink-0 w-fit flex items-center gap-2.5 sm:gap-4 }
     .db-header-logo { @apply flex-auto w-28 flex-shrink-0 }
@@ -470,6 +476,69 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .modal-btn-fill { @apply inline-flex items-center gap-1.5 capitalize !text-sm py-1.5 px-3 rounded-md border border-primary text-white bg-primary }
     .modal-btn-outline { @apply inline-flex items-center gap-1.5 capitalize !text-sm py-1.5 px-3 rounded-md border border-gray-200 !text-gray-600 bg-white }
     .modal-close { @apply leading-none text-xl text-[#FB4E4E]  }
+
+    /*
+     * POS V4 — item wizard modal only (#item-variation-modal in admin pos ItemComponent).
+     * Overrides global .ff-modal offsets (lg:top-[74px], lg:mb-32) that shrink the dialog and bury the footer,
+     * AND the wizard CSS rule "#item-variation-modal .modal-dialog { max-height: 92vh }" which beat us on specificity.
+     * Selector keyed on the modal id => wins on specificity.
+     */
+    #item-variation-modal.pos-v4-item-wizard-modal {
+        @apply left-0 translate-x-0 overflow-hidden flex items-stretch justify-center p-0;
+        top: 0 !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog,
+    #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog.pos-v4-item-wizard-dialog {
+        @apply my-0 mx-auto flex flex-col w-full overflow-hidden;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        max-width: min(1100px, 100vw) !important;
+        border-radius: 0 !important;
+    }
+    @media (min-width: 1024px) {
+        #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog,
+        #item-variation-modal.pos-v4-item-wizard-modal.active .modal-dialog.pos-v4-item-wizard-dialog {
+            height: min(96dvh, 1000px) !important;
+            max-height: min(96dvh, 1000px) !important;
+            margin-top: 2dvh !important;
+            margin-bottom: 2dvh !important;
+            border-radius: 18px !important;
+        }
+    }
+    /*
+     * Single scroll context inside the wizard:
+     * dialog (no scroll) → #pos-wizard-root (no scroll, flex column) → .pos-wizard.single-page (the ONLY scroller)
+     * The sticky bar lives inside .pos-wizard.single-page so it pins to bottom of the visible area.
+     */
+    #item-variation-modal.pos-v4-item-wizard-modal #pos-wizard-root {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal #pos-wizard-root .pos-wizard.single-page {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-sticky-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: #fff;
+        box-shadow: 0 -8px 22px rgba(20, 24, 33, 0.10);
+    }
+    /* Tighter section spacing so the wizard fits a 21" viewport without overflow */
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-section {
+        margin-bottom: 14px !important;
+        padding-bottom: 12px !important;
+    }
+    #item-variation-modal.pos-v4-item-wizard-modal .pos-wizard.single-page .wizard-item-header {
+        padding-bottom: 8px;
+    }
 
 
     /* PAGINATION */

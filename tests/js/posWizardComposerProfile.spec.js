@@ -22,7 +22,9 @@ describe('POS wizard composer profile runtime contract', () => {
     it('keeps POS item grids consuming the item payload without a separate heuristic layer', () => {
         const source = read('resources/js/components/admin/pos/PosComponent.vue');
 
-        expect(source).toContain(':items="bestSellerItems"');
+        // [POS-V4-UNIFIED-CATEGORY-VIEW-2026-05-02] La vue landing/best-sellers a été supprimée
+        // au profit d'un seul rail catégories + grille produits unifié. La grille consomme
+        // donc uniquement `items` (catalogue branch_id-scoped via posCategory + item stores).
         expect(source).toContain(':items="items"');
         expect(source).not.toContain('detectTemplateFromName');
     });

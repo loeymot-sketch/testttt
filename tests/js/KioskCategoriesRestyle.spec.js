@@ -136,7 +136,7 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         expect(item2.attributes('aria-current')).toBeFalsy();
     });
 
-    it('renders the top quick category strip with the same active state as the sidebar', () => {
+    it('does not duplicate category navigation or render catalogue filters above products', () => {
         const categories = [
             { id: 1, name: 'Tacos', kioskRowKey: 't', kioskSandwichSub: null },
             { id: 2, name: 'Burgers', kioskRowKey: 'b', kioskSandwichSub: null },
@@ -147,14 +147,10 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
             selectedCategoryId: 2,
         });
         const wrapper = mount(KioskCategoriesComponent, mountOpts(store));
-        const strip = wrapper.find('[data-testid="kiosk-categories-quick-strip"]');
-        const item1 = wrapper.find('[data-testid="kiosk-categories-quick-item-1"]');
-        const item2 = wrapper.find('[data-testid="kiosk-categories-quick-item-2"]');
-        expect(strip.exists()).toBe(true);
-        expect(strip.attributes('role')).toBe('navigation');
-        expect(item1.attributes('aria-current')).toBeFalsy();
-        expect(item2.attributes('aria-current')).toBe('page');
-        expect(item2.classes()).toContain('active');
+        expect(wrapper.find('[data-testid="kiosk-categories-quick-strip"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="kiosk-filter-bar"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="kiosk-active-filter-banner"]').exists()).toBe(false);
+        expect(wrapper.findAll('[data-testid^="kiosk-categories-sidebar-item-"]')).toHaveLength(2);
     });
 
     it('product cards expose role=button + aria-label + testid', () => {

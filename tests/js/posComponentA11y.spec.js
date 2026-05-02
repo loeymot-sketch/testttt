@@ -127,7 +127,7 @@ describe('POS operator a11y (T18)', () => {
         expect(cart.attributes('aria-label')).toBe('a11y.cart_region');
     });
 
-    it('ItemComponent tile has role=button, tabindex=0, and aria-label', () => {
+    it('ItemComponent tile is a native button with an aria-label', () => {
         const tileAvailable = {
             id: 42,
             name: 'Dispo',
@@ -163,8 +163,8 @@ describe('POS operator a11y (T18)', () => {
         });
 
         const tile = wrapper.find('.pos-item-tile');
-        expect(tile.attributes('role')).toBe('button');
-        expect(tile.attributes('tabindex')).toBe('0');
+        expect(tile.element.tagName).toBe('BUTTON');
+        expect(tile.attributes('type')).toBe('button');
         expect(tile.attributes('aria-label')).toContain('Dispo');
         expect(tile.attributes('aria-label')).toContain('5 EUR');
     });

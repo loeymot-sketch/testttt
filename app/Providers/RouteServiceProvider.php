@@ -75,6 +75,10 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('admin-mutation', function (Request $request) {
+            if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+                return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
+            }
+
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 

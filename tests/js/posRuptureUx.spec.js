@@ -67,7 +67,7 @@ describe('POS rupture UX (P2-C)', () => {
     const badge = wrapper.find('.pos-item-86-badge');
     expect(tile.classes()).toContain('is-unavailable');
     expect(tile.attributes('aria-disabled')).toBe('true');
-    expect(tile.attributes('tabindex')).toBe('-1');
+    expect(tile.attributes('disabled')).toBeDefined();
     expect(badge.exists()).toBe(true);
     expect(badge.text()).toBe('Épuisé');
 

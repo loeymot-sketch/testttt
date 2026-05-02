@@ -26,6 +26,7 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
     public function test_central_stock_toggle_syncs_to_kiosk_pos_and_order_guard(): void
     {
         $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
         config(['app.api_key' => '123456']);
 
         $branch = Branch::forceCreate([
@@ -67,6 +68,11 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
             'username' => 'sync_kiosk_' . uniqid(),
             'branch_id' => $branch->id,
         ]);
+        $posOperator = User::factory()->create([
+            'username' => 'sync_pos_' . uniqid(),
+            'branch_id' => $branch->id,
+        ]);
+        $posOperator->assignRole('POS Operator');
 
         KioskMachine::create([
             'machine_id' => 'sync-kiosk-' . uniqid(),
@@ -113,11 +119,11 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
         $this->assertSame('stock_rupture', $kioskRow['unavailable_reason']);
 
         $posRows = $this
+            ->actingAs($posOperator, 'sanctum')
             ->withHeader('x-api-key', '123456')
-            // Local SQLite cannot evaluate the JSON_CONTAINS surface filter used
-            // by MySQL in production/CI. This sentinel verifies the branch stock
-            // overlay; surface filtering remains covered by the MySQL contract.
-            ->getJson('/api/admin/item?paginate=0&status=' . Status::ACTIVE . '&branch_id=' . $branch->id)
+            // Keep the real POS surface in the contract. ItemService provides
+            // the SQLite fallback for JSON channels; MySQL still uses JSON_CONTAINS.
+            ->getJson('/api/admin/item?paginate=0&status=' . Status::ACTIVE . '&surface=pos&branch_id=' . $branch->id)
             ->assertOk()
             ->json('data');
 
@@ -140,6 +146,7 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
         ];
 
         $this
+            ->actingAs($kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order/quote', $payload)
             ->assertStatus(422);

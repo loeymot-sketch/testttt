@@ -8,7 +8,7 @@ globs:
 
 # FoodKing — continuité (lecture ciblée)
 
-**Avant toute** planification produit (nouvelle session **ou** reprise) : lire d’**abord** **`AGENTS.md` § *Parcours obligatoire*** (nouvelle conversation + continuation) et, si reprise, **`.cursor/ACTIVE_CYCLE.md`**.
+**Avant toute** planification produit (nouvelle session **ou** reprise) : le rappel racine **`BOUCLE.md`** + **`AGENTS.md` § *Parcours obligatoire*** (nouvelle conversation + continuation) et, si reprise, **`.cursor/ACTIVE_CYCLE.md`**. Ne pas attendre qu’un humain dise explicitement « lis AGENTS » — la boucle **`run-cycle`** est la routine par défaut pour le code produit.
 
 **`docs/PROJECT_CONTINUITY_AND_VISION.md`** — à lire surtout lors d’une **planification** dans un **domaine nouveau ou peu familier** (vision, surfaces, correctifs, reste à faire).
 

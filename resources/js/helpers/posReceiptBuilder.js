@@ -2,6 +2,21 @@
  * Pure helpers for POS receipt HTML (and future ESC/POS bridging).
  */
 
+/**
+ * Branch block for printed receipt header.
+ * Prefer nested `order.branch` from OrderDetailsResource (fresh DB values)
+ * over Vuex `backendGlobalState/branchShow`, which can stay stale after
+ * settings are updated until a full refetch.
+ */
+export function receiptBranchHeader(order, storeBranch) {
+    const s = storeBranch && typeof storeBranch === 'object' ? storeBranch : {};
+    const ob = order?.branch;
+    if (!ob || typeof ob !== 'object') {
+        return s;
+    }
+    return { ...s, ...ob };
+}
+
 function normalizeMethod(m) {
     if (m === null || m === undefined || m === '') {
         return '';
@@ -138,4 +153,74 @@ export function normalizeReceiptExtras(rawExtras) {
             };
         })
         .filter((line) => line.name !== '');
+}
+
+/**
+ * When item_variations / item_extras already list the composition, the
+ * long `instruction` field often duplicates the same narrative (meat, sauce,
+ * menu). Hiding that duplicate keeps 58/80mm tickets readable. Free-text
+ * or short add-ons are kept.
+ */
+export function receiptInstructionForPrint(item) {
+    let raw = item && item.instruction ? String(item.instruction).trim() : '';
+    if (!raw) {
+        return '';
+    }
+
+    const name = (item.item_name || '').trim();
+    if (name && raw.toLowerCase().startsWith(name.toLowerCase())) {
+        raw = raw.slice(name.length).replace(/^[\s:–—-]+/u, '').trim();
+    }
+    if (!raw) {
+        return '';
+    }
+
+    const vars = normalizeReceiptVariations(item.item_variations);
+    const extras = normalizeReceiptExtras(item.item_extras);
+    if (vars.length === 0 && extras.length === 0) {
+        return raw;
+    }
+
+    const blob = [
+        ...vars.map((v) => `${v.label} ${v.name}`),
+        ...extras.map((e) => `${e.quantity > 1 ? `${e.quantity}× ` : ''}${e.name}`),
+        name,
+    ]
+        .join(' ')
+        .toLowerCase();
+
+    const words = raw.toLowerCase().match(/[a-zàâäéèêëïîôùûçœ0-9]+/gi) || [];
+    const meaningful = words.filter((w) => w.length > 2);
+    if (meaningful.length < 8) {
+        return raw;
+    }
+
+    const wordMatchesBlob = (w) => {
+        if (blob.includes(w)) {
+            return true;
+        }
+        if (w.length <= 3) {
+            return false;
+        }
+        const stem = w.replace(/(s|es|x)$/i, '');
+        return stem.length > 2 && blob.includes(stem);
+    };
+
+    let hits = 0;
+    for (const w of meaningful) {
+        if (wordMatchesBlob(w)) {
+            hits += 1;
+        }
+    }
+    const ratio = meaningful.length ? hits / meaningful.length : 0;
+    // Strong duplicate: narration repeats the same tokens already printed as variations.
+    if (ratio >= 0.72) {
+        return '';
+    }
+    // Long kiosk wizard snapshot: mostly repeats structured picks (FR plural/stem drift).
+    const wizardish = /(?:viandes|viande)\s*:|menu\s*\(|↳|\+\s*menu/i.test(raw);
+    if (wizardish && meaningful.length >= 14 && ratio >= 0.46) {
+        return '';
+    }
+    return raw;
 }

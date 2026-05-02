@@ -49,6 +49,7 @@ try {
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { wsService, WS_STATE } from './services/WebSocketService';
+import { selectSurfaceBearerToken } from './shared/axios-setup';
 window.Pusher = Pusher;
 
 // [V5-BUGFIX] Laravel Mix (webpack) expose env via process.env.MIX_* — PAS import.meta.env.VITE_*
@@ -68,7 +69,10 @@ if (_MIX_PUSHER_APP_KEY) {
     function _getEchoBearerToken() {
         try {
             const vuex = JSON.parse(localStorage.getItem('vuex') || '{}');
-            return vuex.kioskCart?.kioskToken || vuex.auth?.authToken || '';
+            return selectSurfaceBearerToken({
+                kioskToken: vuex.kioskCart?.kioskToken || null,
+                userToken: vuex.auth?.authToken || null,
+            }) || '';
         } catch (_) {
             return '';
         }

@@ -58,8 +58,12 @@
 
         <span class="kiosk-viande-name">{{ viande.name }}</span>
         <span
+          v-if="viandeCardMetaLabel(viande)"
           class="kiosk-viande-meta"
-          :class="{ 'is-paid': viande.price > 0 }"
+          :class="{
+            'is-paid': viande.price > 0,
+            'is-selected': (localSelections[viande.key] || 0) > 0 && viande.price <= 0,
+          }"
         >
           {{ viandeCardMetaLabel(viande) }}
         </span>
@@ -265,7 +269,10 @@ export default {
       if (viande.price > 0) {
         return this.$t('kiosk.wizard.step.viande.meta_paid', { price: this.formatPrice(viande.price) });
       }
-      return this.$t('kiosk.wizard.step.viande.meta_included');
+      if ((this.localSelections[viande.key] || 0) > 0) {
+        return this.$t('kiosk.wizard.step.viande.meta_selected');
+      }
+      return '';
     },
     selectFromCard(viande) {
       if (!this.canSelectFromCard(viande)) return;
@@ -364,21 +371,25 @@ export default {
 .kiosk-viande-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 22px 18px;
-  max-width: 820px;
+  gap: 14px 18px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .kiosk-viande-card {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   align-items: center;
-  justify-content: space-between;
-  min-height: 234px;
-  padding: 14px 14px 16px;
-  border-radius: 20px;
+  justify-content: initial;
+  column-gap: 16px;
+  row-gap: 8px;
+  min-height: 138px;
+  padding: 14px 18px;
+  border-radius: 22px;
   border: 1px solid var(--kiosk-border, #efefef);
-  background: var(--kiosk-surface, #fff);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,245,0.98));
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease,
@@ -424,7 +435,8 @@ export default {
 
 .kiosk-viande-card.active {
   border-color: var(--kiosk-primary, #E8001C);
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.02));
+  background:
+    linear-gradient(180deg, rgba(255,255,255,1), rgba(255,245,247,0.98));
   box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);
 }
 
@@ -438,54 +450,73 @@ export default {
 }
 
 .kiosk-viande-visual {
-  width: 122px;
-  height: 122px;
+  grid-row: 1 / 4;
+  width: 110px;
+  height: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--kiosk-product-media-bg, #f7f7f8);
 }
 
 .kiosk-viande-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .kiosk-viande-emoji {
-  width: 122px;
-  height: 122px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
   background: var(--kiosk-product-media-bg, #f7f7f8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 56px;
+  font-size: 44px;
   line-height: 1;
 }
 
 .kiosk-viande-name {
-  font-size: 13px;
-  font-weight: 700;
+  justify-self: start;
+  align-self: end;
+  font-size: 16px;
+  font-weight: 950;
   color: var(--kiosk-text, #444);
-  text-align: center;
-  margin-bottom: 4px;
-  line-height: 1.2;
+  text-align: start;
+  margin: 0;
+  line-height: 1.12;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .kiosk-viande-card.active .kiosk-viande-name { color: var(--kiosk-primary, #E8001C); }
 
 .kiosk-viande-meta {
+  justify-self: start;
   min-height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
+  background: rgba(232,0,28,0.09);
+  color: var(--kiosk-primary, #e8001c);
+  border: 1px solid rgba(232,0,28,0.12);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.kiosk-viande-meta.is-selected {
   background: rgba(34,197,94,0.12);
   color: var(--kiosk-success, #27ae60);
+  border-color: rgba(34,197,94,0.16);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -504,6 +535,7 @@ export default {
 }
 
 .kiosk-viande-controls {
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 0;
@@ -511,16 +543,17 @@ export default {
   border: 1.5px solid var(--kiosk-border, #E0E0E0);
   border-radius: 14px;
   overflow: hidden;
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .kiosk-viande-select-hint {
+  justify-self: start;
   min-height: 44px;
   min-width: 132px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: auto;
+  margin-top: 0;
   padding: 0 16px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
@@ -596,5 +629,20 @@ export default {
   padding: 10px 20px;
   background: var(--kiosk-primary-light, rgba(232,0,28,0.06));
   border-radius: 10px;
+}
+
+@media (max-width: 760px) {
+  .kiosk-viande-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kiosk-viande-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .kiosk-viande-visual {
+    width: 92px;
+    height: 82px;
+  }
 }
 </style>

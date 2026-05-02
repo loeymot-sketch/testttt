@@ -1143,6 +1143,38 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
     expect(wrapper.vm.runningTotal).toBe(11);
   });
 
+  it('renders a compact live composition summary as choices are made', async () => {
+    const wrapper = mountRealWizard(wizardItem());
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-testid="kiosk-wizard-live-composition"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-product"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-taille"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-viande"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-empty"]').exists()).toBe(true);
+
+    wrapper.vm.updateSelection('viandes', { 11: 1 });
+    wrapper.vm.updateSelection('totalViandes', 1);
+    wrapper.vm.updateSelection('_viandeMeta', [
+      { id: 11, key: '11', name: 'Poulet', price: 0, source: 'variation', count: 1 },
+    ]);
+    wrapper.vm.updateSelection('sauceOrder', [21]);
+    wrapper.vm.updateSelection('menuChoice', 'boisson');
+    wrapper.vm.updateSelection('boissonChoice', 778, { boissonName: 'Coca-Cola', boissonId: 778, addonId: 778 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-testid="kiosk-composition-empty"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-viande"]').text()).toContain('Poulet');
+
+    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'sauce');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-sauce"]').text()).toContain('Algérienne');
+
+    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="kiosk-composition-chip-menu"]').text()).toContain('Coca-Cola');
+  });
+
   it('KioskStepViande keeps the plus button usable for paid meat after included quota is complete', async () => {
     const wrapper = mount(KioskStepViandeComponent, {
       global: { plugins: [kioskWizardTestI18n] },
@@ -1186,14 +1218,15 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
       },
     });
 
-    expect(wrapper.text()).toContain('2 portions incluses');
-    expect(wrapper.text()).toContain('Inclus');
+    expect(wrapper.text()).toContain('Votre tacos comprend 2 portions');
+    expect(wrapper.text()).not.toContain('Inclus');
     expect(wrapper.text()).toContain('Supplément');
 
     const card = wrapper.find('.kiosk-viande-card');
     await card.trigger('click');
     expect(wrapper.vm.localSelections).toMatchObject({ 11: 1 });
     expect(wrapper.text()).toContain('Encore 1 portion');
+    expect(wrapper.text()).toContain('Choisi');
 
     await card.trigger('click');
     expect(wrapper.vm.localSelections).toMatchObject({ 11: 1 });
@@ -1202,7 +1235,7 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
     expect(plus.exists()).toBe(true);
     await plus.trigger('click');
     expect(wrapper.vm.localSelections).toMatchObject({ 11: 2 });
-    expect(wrapper.text()).toContain('Viandes complètes');
+    expect(wrapper.text()).toContain('Choix validé');
     expect(wrapper.emitted('update').filter((e) => e[0] === 'totalViandes').at(-1)).toEqual(['totalViandes', 2]);
   });
 

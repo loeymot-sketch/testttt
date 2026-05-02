@@ -1,0 +1,74 @@
+J'ai assez de matière. Je rédige l'audit.
+
+---
+
+# AUDIT GLOBAL — Système d'orchestration FoodKing (2026-05-01)
+
+## 1. Cartographie réelle du cycle (PLAN → CLOSE) — selon les fichiers
+
+- **Step 0 (pré-flight)** : `.cursor/commands/run-cycle.md` exige `RUNNER_MODE`, `ACTIVE_CYCLE.md`, `search_memory_facts(group_ids=["foodking"])` (si MCP), `MEMORY_MATRIX` rappel, `agent-activity-log.sh tail 50`, `npm run verify:boucle` — réellement codé : items 1–8 ligne par ligne ✅.
+- **Step 1 PLAN** : ambiguïté **réelle** dans le dépôt — `run-cycle.md:42` et `global.mdc:26` (« PLAN Claude → PLAN_REVIEW GPT… ») contredisent `AGENTS.md:104` (« PLAN GPT codex → … ») et `.cursor/routing.md:12` (« PLAN | GPT-5.5/xhigh via codex-extension »). Aucun script ne tranche : un agent peut justifier n'importe quel modèle.
+- **Step 1bis PLAN_REVIEW** : `npm run codex:plan-review` (script présent), trace obligatoire `PLAN_REVIEW_VERDICT: PASS|REWORK|ESCALATE` — opérationnel.
+- **Step 2 EXECUTE (PRIMARY = `codex-extension`)** : `npm run codex:complex` → `scripts/codex-extension-execute.sh` (existe), output `missions/{TASK}/output_codex.json`, auto-audit `GPT_SELF_AUDIT_*.md`. Réservation **obligatoire** via `agent-activity-log.sh start` (collisions = exit 2) puis `preflight-execute.sh` — opérationnel.
+- **Step 2 fallback** : sub-agent Cursor `foodking-complex-implementer` avec trace `EXECUTE_DELEGATION: … (codex-extension-fallback) + FALLBACK_REASON:` — discipline **textuelle** uniquement, aucun garde-fou outillé.
+- **Step 3 hook** : `.cursor/hooks/post-execute.sh` → log `reports/post_execute_latest.log` (référencé partout, pas vérifié dans cet audit).
+- **Step 4 VALIDATE** : tests + `post-execute-guard.sh` qui **refuse** la transition si `EXECUTE_DELEGATION:` absent OU si diff hors scope réservé (exit 1/4) — **gate dur réel**.
+- **Step 5 AUDIT** : PRIMARY = Claude terminal (`foodking-claude-orchestrate.sh context|audit|audit-brief`) → `AUDIT_VERDICT: PASS|REWORK` + `AUDIT_CHANNEL: claude-terminal` + `TERMINAL_AUDIT_OK: 1`. Fallback : sub-agent `foodking-planner-orchestrator` ou session Cursor avec `AUDIT_FALLBACK_REASON:`. 1 retry autorisé. **Contradiction avec routing.md** qui inverse ce rôle.
+- **Step 5bis GPT_FINAL_AUDIT** : `codex-final-audit.sh` → `GPT_FINAL_AUDIT_VERDICT`. **Pas de CLOSE sans double PASS**.
+- **Boucle remédiation** : `REMEDIATION_AUDIT_CYCLE 1..5` → 5e échec = `HUMAN_GATE`.
+- **Caisse V1 fast-path** : tout `CV1-MXX-…` court-circuite ce flux et passe par `scripts/run-masterplay.sh` (`plans/masterplay/MASTERPLAY_DISCIPLINE.md`).
+- **Mémoire post-cycle** : JSONL dans `memory/episodes/*.jsonl` + `bash scripts/after-execute-memory.sh` + (option) `bin/graphiti-ingest.sh`. Vérif périodique : `python3 memory/verify.py` (count d'épisodes, queries domaine).
+
+## 2. Tableau sous-systèmes
+
+| Sous-système | État | Preuve | Risque principal |
+|---|---|---|---|
+| Mémoire Graphiti (store B) | **PARTIAL** | `.cursor/rules/graphiti-memory.mdc`, `memory/INDEX.md` (14 domaines), `memory/verify.py`, `bin/graphiti-ingest.sh` | MCP **non chargé en local par dépôt** (humain doit enregistrer dans `~/.cursor/mcp.json`) ; aucune trace forçant l'écriture après AUDIT |
+| JSONL miroir (`memory/episodes/*.jsonl`) | **PASS** | 14 fichiers indexés, count = 182 (vérif 2026-04-22) | Pas de contrôle automatique de duplication ; politique « tracking sélectif Train A » dépend du jugement humain |
+| Missions (store C) | **PASS** | `missions/{TASK}/{input.json,output_codex.json,…}`, `codex-extension-execute.sh` | Pas de schéma JSON validé ; `output_codex.json` peut être appliqué sans diff review formel |
+| Rapports / cycle (store D) | **PASS** | `ACTIVE_CYCLE.md`, `reports/post_execute_latest.log`, `reports/audit/*.md`, `reports/AGENT_ACTIVITY_LOG.md` (393 lignes) | `PHASE: IN_PROGRESS` actuel **n'est pas** une valeur canonique de `run-cycle.md` (PLAN/EXECUTE/VALIDATE/AUDIT/CLOSED/GATE) |
+| `agent-activity-log.sh` (cross-agent sync) | **PASS** | 209 lignes, lock `flock`, exit 2 sur collision, scopes `start|done|active|collisions` | Pairing AGENT+TASK uniquement → un agent qui change de TASK_ID peut éditer le même fichier sans collision déclarée |
+| `verify:boucle` | **PASS** | 115 lignes ; vérifie binaire `claude` (exit 1) + smoke `codex` (FULL) | Ne valide **pas** que le compte ChatGPT est Pro (un compte Plus passerait `codex:smoke`) |
+| `preflight-execute.sh` + `post-execute-guard.sh` | **PASS** | 173 + 141 lignes, exit codes documentés, vérifient EXECUTE_DELEGATION + scope réservé | Skip silencieux si `git status` propre — un EXECUTE qui ne crée que des fichiers `reports/` passe sans délégation |
+| Routing modèles (`.cursor/routing.md`) | **NOT_OPERATIONAL** (incohérent) | Voir contradictions §4 ci-dessous | PLAN et AUDIT primaires divergent de `global.mdc` / `run-cycle.md` / `GLOBAL_SYSTEM_PRIMER §1.1` |
+| Gates humaines | **PARTIAL** | `docs/gates/`, `human-gates.mdc`, plafond 5 dans run-cycle.md Step 5 | Aucun script d'enforcement automatique : un agent peut écrire `REMEDIATION_AUDIT_CYCLE: 5/5` et ignorer le HUMAN_GATE |
+| Caisse V1 Masterplay | **PASS** (procédural) | `plans/masterplay/*`, `scripts/run-masterplay.sh`, `reports/masterplay/status.json` | Court-circuite `run-cycle.md` standard pour `CV1-MXX-…` — discipline déléguée à un autre runner non audité ici |
+| `_TERMINAL_CONTEXT_BRIEF.md` | **PASS** | Présent (généré 2026-04-27 17:34) — 60 lignes ACTIVE_CYCLE + 5 dernières JSONL + INDEX | Snapshot vieux de 4 jours (cycle Train A en cours) ; régénération non automatisée |
+
+## 3. Points forts (avec preuve)
+
+1. **Double audit obligatoire avant CLOSE** : `AUDIT_VERDICT: PASS` (Claude) + `GPT_FINAL_AUDIT_VERDICT: PASS` (GPT) — `run-cycle.md:157`. Tests verts seuls n'ouvrent **jamais** la fermeture. Vraie défense contre l'illusion « CI green = correct ».
+2. **Coordination cross-agent codée**, pas seulement écrite : `agent-activity-log.sh start` refuse mécaniquement (exit 2 + flock) le chevauchement de scope, et `post-execute-guard.sh` refuse `VALIDATE` si la diff sort de la réservation. Combo réel, pas un vœu pieux.
+3. **Matrice mémoire à 4 stores fermés** (`MEMORY_MATRIX.md`) : règle « pas de 5e store sans gate » ; OpenSpace et claude-mem **explicitement rejetés** avec justifications. Antidote net contre le sprawl mémoire.
+4. **Discipline `EXECUTE_DELEGATION:`** observable, gardée par `post-execute-guard.sh` (exit 1 si manquant). L'audit peut **prouver a posteriori** quel canal a écrit chaque ligne de code.
+5. **Plafond 5 + HUMAN_GATE** sur la boucle de remédiation (`run-cycle.md:165`, `auto-remediation.mdc`) — empêche les boucles healing infinies décrites dans `CLAUDE.md §8`.
+
+## 4. Faiblesses / trous où un agent peut dériver sans être bloqué
+
+1. **Contradiction PLAN / AUDIT entre routing.md et le reste** :
+   - `routing.md:12` : « PLAN | GPT-5.5/xhigh via codex-extension », `routing.md:18` : « AUDIT PRIMARY | GPT-5.5/xhigh via codex-extension », Claude → escalade critique.
+   - `global.mdc:26` + `GLOBAL_SYSTEM_PRIMER §1.1` + `run-cycle.md Step 5` : Claude PRIMARY pour PLAN et AUDIT.
+   - Aucun script ne tranche. Un agent peut citer l'un ou l'autre selon ce qui l'arrange. **Drift gouvernance majeur**, contraire à `CLAUDE.md §10`.
+2. **`PHASE: IN_PROGRESS` non canonique** dans `ACTIVE_CYCLE.md` ligne 8 : run-cycle.md ne reconnaît que `PLAN/EXECUTE/VALIDATE/AUDIT/CLOSED/GATE`. Step 0 item 2 dit « halt si RUNNER_MODE manquant » mais ne valide pas la valeur de `PHASE`. Un cycle peut donc rester « IN_PROGRESS » indéfiniment, hors machine d'état.
+3. **Graphiti = facultatif silencieux**. `run-cycle.md Step 0 item 5` : « si MCP non chargé : note 1 ligne, ne pas bloquer ». L'écriture post-AUDIT (`add_memory`) n'a aucun garde-fou : un cycle peut clôturer sans ingérer la décision durable. La règle (§4.2 Primer) « update sous 48 h » n'est ni testée ni rappelée par script.
+4. **`post-execute-guard.sh` aveugle si la diff est vide** (ligne 61 : `aucun changement détecté → OK`). Un EXECUTE qui n'écrit que dans `reports/` ou `missions/` passe sans `EXECUTE_DELEGATION:`. Couplé à un agent qui « rédige juste un rapport », c'est une porte de service.
+5. **`verify-orchestration-boucle.sh` ne valide pas le tier** ChatGPT (Plus/Pro). Le contrat exige Pro (gpt-5.5-pro xhigh) ; Plus passe le smoke. La distinction qualité/quota n'est pas mécanisée.
+6. **Plafond 5 / HUMAN_GATE non enforcé par script** : c'est une instruction prose. Aucun outil ne lit `REMEDIATION_AUDIT_CYCLE` ni ne refuse un 6e tour. Si l'orchestrateur « oublie », rien ne le rattrape.
+7. **Cycle Caisse V1 Masterplay** by-passe `run-cycle.md` standard (Step 0 item 0). Toute la discipline `EXECUTE_DELEGATION` / `agent-activity-log` / double audit est rejouée par un autre runner (`run-masterplay.sh`) non audité ici — angle mort de cet audit, mais aussi du système : le contrat de SSOT décrit dans `MEMORY_MATRIX.md` est délégué à un script externe.
+
+## 5. Recommandations prioritaires (TOP 5)
+
+1. **Trancher PLAN et AUDIT primaires** : éditer `routing.md` pour aligner sur `global.mdc` (Claude PLAN/AUDIT) **ou** rendre `routing.md` autoritaire et corriger `global.mdc` + `run-cycle.md Step 5` + `GLOBAL_SYSTEM_PRIMER §1.1` au même endroit. Une seule version. Sinon ouvrir un gate `docs/gates/GATE_ROUTING_*` figeant la décision.
+2. **Validateur de `PHASE`** : ajouter dans `verify:boucle` (ou un nouveau `scripts/validate-active-cycle.sh`) un check qui refuse toute valeur hors `{PLAN, EXECUTE, VALIDATE, AUDIT, CLOSED, GATE}`. État courant `IN_PROGRESS` à corriger immédiatement.
+3. **Enforcer le plafond 5** : `post-execute-guard.sh` ou un nouveau `audit-guard.sh` doit lire `REMEDIATION_AUDIT_CYCLE` dans le `REPORT_FILE` et exit non-zéro si > 5 sans gate ouvert dans `docs/gates/`.
+4. **Combler le trou diff-vide** : `post-execute-guard.sh` doit aussi exiger `EXECUTE_DELEGATION:` quand `missions/{TASK}/output_codex.json` ou `reports/audit/GPT_SELF_AUDIT_*` ont été modifiés, pas seulement le code produit.
+5. **Forcer la mise à jour Graphiti post-AUDIT** : sur `AUDIT_VERDICT: PASS`, `after-execute-memory.sh` doit refuser exit 0 si aucune ligne JSONL n'a été ajoutée **et** que le rapport contient un mot-clé décision (`ADR|invariant|gate|rollout`). Sinon la dérive « décision écrite seulement dans le rapport » continuera.
+
+## 6. Verdict
+
+```
+GLOBAL_SYSTEM_AUDIT_VERDICT: REWORK
+CONFIDENCE_IN_OPERABILITY: MEDIUM
+```
+
+Justification d'une ligne : la machinerie est **réellement** outillée (scripts existent, gates dur sur EXECUTE_DELEGATION et collisions, double audit obligatoire), mais la **gouvernance des modèles** est contradictoire entre `routing.md` et le reste, et **trois portes de service** (PHASE non validée, diff-vide, plafond 5 non enforcé) permettent à un agent de dériver sans être bloqué — ce qui viole `CLAUDE.md §10` (anti-drift) et `§3.6` (« Blocked is better than silently dangerous »).

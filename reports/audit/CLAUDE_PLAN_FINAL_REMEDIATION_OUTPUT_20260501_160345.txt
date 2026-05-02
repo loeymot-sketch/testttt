@@ -1,0 +1,139 @@
+# Plan final de remédiation — FoodKing orchestration
+
+Lecture obligatoire faite (8/8). Audit REWORK déjà tranché par le run précédent (`CLAUDE_SYSTEME_GLOBAL_AUDIT_OUTPUT_AGENT_RUN_20260501_155238.txt`). Je n'ouvre pas de nouvelle hypothèse — je tranche.
+
+---
+
+## A — Pile canonique unique (autorité = `CLAUDE.md` + `global.mdc` + `run-cycle.md`)
+
+Décision : `CLAUDE.md` §4 + `global.mdc:26` + `run-cycle.md` Step 5 + `GLOBAL_SYSTEM_PRIMER §1.1` font **3 contre 1** vs `routing.md`. Le constitutionnel l'emporte. **`routing.md` est l'outlier** et doit être réaligné — pas l'inverse.
+
+| Phase | Modèle | Canal exécution | Trace obligatoire |
+|---|---|---|---|
+| **PLAN** | **Claude** (session Cursor) | `plans/PLAN_<TASK>_<DATE>.md`, optionnel `foodking-claude-orchestrate.sh context` | `## PRIOR_CONTEXT` rempli |
+| **PLAN_REVIEW** | **GPT-5.5-pro / xhigh** | `npm run codex:plan-review -- {TASK_ID}` | `PLAN_REVIEW_VERDICT: PASS\|REWORK\|ESCALATE` |
+| **EXECUTE** | **GPT-5.5-pro / xhigh** (`codex-extension`, CLI `codex` Pro) | `npm run codex:complex -- {TASK_ID}` ; fallback sub-agent `foodking-complex-implementer` | `EXECUTE_DELEGATION:` + `output_codex.json` + `GPT_SELF_AUDIT_*.md` |
+| **VALIDATE** | Tooling local (tests, hooks) | `post-execute-guard.sh` | `EXECUTE_DELEGATION:` confirmé |
+| **AUDIT** | **Claude** terminal PRIMARY (Anthropic) | `foodking-claude-orchestrate.sh context` puis `audit\|audit-brief` ; fallback `foodking-planner-orchestrator` | `AUDIT_VERDICT` + `AUDIT_CHANNEL` + `TERMINAL_AUDIT_OK: 1` |
+| **GPT_FINAL_AUDIT** | **GPT-5.5-pro / xhigh** | `npm run codex:final-audit -- {TASK_ID}` | `GPT_FINAL_AUDIT_VERDICT: PASS\|REWORK\|ESCALATE` |
+
+**Fichiers à éditer pour éliminer la contradiction :**
+1. `.cursor/routing.md:12` — remplacer « PLAN | GPT-5.5/xhigh via codex-extension » par « PLAN | Claude (session) ».
+2. `.cursor/routing.md:18` — remplacer « AUDIT (PRIMARY) | GPT-5.5/xhigh » par « AUDIT (PRIMARY) | Claude terminal ; GPT en GPT_FINAL_AUDIT seulement ».
+3. `.cursor/routing.md:1-4` — supprimer la phrase « Claude is reserved for critical escalation only » (contradit `CLAUDE.md §4` et `global.mdc`).
+4. Ajouter en tête de `routing.md` : « SSOT contradiction : si conflit avec `global.mdc` ou `CLAUDE.md`, le constitutionnel gagne. »
+
+---
+
+## B — Politique Graphiti à trois niveaux
+
+**Niveau 1 — MCP chargé (obligatoire, gate dur) :**
+- Avant tout `plans/PLAN_*.md` non trivial **ou** tout EXECUTE qui touche {fiscal, sync, branch_id, pricing, OrderStatus, dispatch} : **un appel** `search_memory_facts(query="<TASK_ID + sous-système>", group_ids=["foodking"])` minimum, fold dans `## PRIOR_CONTEXT`.
+- Après `AUDIT_VERDICT: PASS` portant une décision durable (mots-clés `ADR|invariant|gate|rollout|frozen`) : **une ligne JSONL obligatoire** dans `memory/episodes/*.jsonl` + `bash scripts/after-execute-memory.sh`. **`after-execute-memory.sh` doit refuser exit 0** sinon (gap §5 audit).
+
+**Niveau 2 — MCP absent (secours ciblé, pas relecture du repo) :**
+- Lecture **strictement** : `memory/INDEX.md` (carte) + **1 à 2** fichiers `memory/episodes/*.jsonl` du domaine (ex. `02_architecture_invariants.jsonl` pour invariants, `03_domain_events_sync.jsonl` pour sync, `12_decisions_log.jsonl` pour ADR).
+- **Limite dure** : ≤ 3 JSONL ouverts par phase. Au-delà → ouvrir `docs/gates/GATE_MEMORY_*` car la requête n'est pas ciblée.
+
+**Niveau 3 — interdits :**
+- Paraphraser ≥ 10 fichiers `reports/audit/*.md` antérieurs à 30 j sans `search_memory_facts` préalable (anti-pattern §5 `MEMORY_MATRIX.md`).
+- Écrire dans Graphiti pendant PLAN/EXECUTE (Graphiti = phase AUDIT/CLOSE uniquement).
+- Stocker une décision dans un commit message ou un rapport unique sans miroir JSONL.
+- Coller un résumé de chat dans `reports/` « pour mémoire » (= 5e store fantôme).
+
+---
+
+## C — Politique double audit par classe de risque
+
+| Classe | Exemples | Niveau d'audit | Justification (coût/risque) |
+|---|---|---|---|
+| **P0 fiscal / branch_id / pricing / OrderStatus / dispatch** | NF525 Z, isolation tenant, prix backend, transitions de commande | **FULL double audit** (Claude terminal + GPT_FINAL xhigh) | Régression silencieuse = perte fiscale ou data leak. Coût audit < risque prod. |
+| **P1 sync / authz / migrations DDL / frozen zones** | events ↔ jobs, tokens session, schema | **FULL double audit** | Même logique que P0 : audit triple ne ralentit pas vraiment, frozen = incident garanti. |
+| **P2 UX / KDS / kiosk non-fiscal** | écrans, flows visibles | **Audit simple** (Claude terminal seul) | GPT_FINAL est cher pour un changement UI ; `post-execute-guard` + tests + Claude couvrent. |
+| **P3 doc-only (.md hors `.cursor/rules/`, hors `docs/orchestration/`)** | runbooks, FAQ, READMEs | **Audit simple** (verify diff scope, pas de checklist complète) | Risque ≈ 0. Double audit serait pur gaspillage. |
+| **P4 typo / commentaire / rename interne** | corrections cosmétiques | **Skip audit** (PLAN micro + EXECUTE + tests verts suffisent) | Le coût d'un audit dépasse 10× le bénéfice. Toujours réversible. |
+| **Edits sur `.cursor/rules/*.mdc` ou `docs/orchestration/*`** | règles, doctrine | **FULL double audit + GATE** | Modifie le contrat → un drift ici contamine tous les cycles suivants. |
+
+---
+
+## D — DROP_OR_SIMPLIFY (sans toucher à la sécurité)
+
+| # | Cible | Action | Justification |
+|---|---|---|---|
+| 1 | `routing.md` lignes « PLAN GPT » et « AUDIT PRIMARY GPT » | **DROP** (réaligner sur Claude) | Outlier doctrinal — source unique de la triple contradiction. |
+| 2 | `routing.md` ligne « Claude is reserved for critical escalation only » | **DROP** | Contredit `CLAUDE.md §4`. |
+| 3 | `GLOBAL_SYSTEM_PRIMER` §3 ligne « Cursor sub-agent (FALLBACK) » dupliquée dans §2 | **MERGE** (1 paragraphe, pas 2) | Doublon textuel qui invite l'agent à rouvrir 2 fois. |
+| 4 | `MEMORY_MATRIX.md` §1 + §2 + §3 répètent les 4 stores 3 fois | **MERGE** §2+§3 en une seule matrice « write \| read » | 90 lignes lues pour 4 stores. Un agent zappera. |
+| 5 | `reports/audit/CLAUDE_TERMINAL_AUDIT_INTELLIGENCE_*` + `CLAUDE_TERMINAL_AUDIT_SYSTEME_GLOBAL_*` (mêmes thèmes même date) | **MERGE** en un seul rapport canonique | Deux rapports ≠ deux audits ; c'est deux rédactions du même audit. |
+| 6 | `run-cycle.md` Step 0 item 6 (rappel `MEMORY_MATRIX`) + item 5 (Graphiti) | Garder séparés | **PAS de drop** — gate cognitif utile. |
+| 7 | `verify:boucle` smoke `codex` (compte Plus passe le test) | **SIMPLIFY** : ajouter check tier Pro **uniquement** sur cycles P0/P1 | Sur typo P4 : check inutile. |
+| 8 | Caisse V1 Masterplay fast-path (`run-cycle.md` Step 0 item 0) | **GARDER** mais auditer le runner externe | Bypass légitime (queue dédiée), mais zone aveugle dans l'audit système. À couvrir prochain cycle. |
+
+---
+
+## E — Plan de correction ordonné (8 actions, ordre dépendances)
+
+| Ordre | Action | Fichiers | DONE si | Risque sinon |
+|---|---|---|---|---|
+| 1 | Aligner `routing.md` PLAN/AUDIT sur Claude | `.cursor/routing.md` | `grep -E "PLAN.*Claude\|AUDIT.*Claude.*PRIMARY"` matche, mention « SSOT » en tête | Drift gouvernance majeur, agents citent la version qui les arrange. |
+| 2 | Validateur de `PHASE` canonique | nouveau `scripts/validate-active-cycle.sh` + appel dans `verify:boucle` | exit 1 sur `PHASE: IN_PROGRESS` ou hors `{PLAN,EXECUTE,VALIDATE,AUDIT,CLOSED,GATE}` | Cycle bloqué en `IN_PROGRESS` indéfini (état actuel observé). |
+| 3 | Combler le trou diff-vide | `scripts/post-execute-guard.sh` | exit 1 si `missions/{TASK}/output_codex.json` ou `reports/audit/GPT_SELF_AUDIT_*` modifié sans `EXECUTE_DELEGATION:` | EXECUTE « rapport-only » contourne la délégation. |
+| 4 | Enforcer plafond 5 boucles remédiation | nouveau `scripts/audit-guard.sh` ou extension de `post-execute-guard.sh` | exit 1 si `REMEDIATION_AUDIT_CYCLE > 5` sans gate ouvert | Healing infini contraire à `CLAUDE.md §8`. |
+| 5 | Forcer écriture mémoire post-AUDIT | `scripts/after-execute-memory.sh` | exit 1 si `AUDIT_VERDICT: PASS` + mots-clés `ADR\|invariant\|gate\|rollout` détectés mais aucun JSONL ajouté | Décision durable perdue, prochain agent aveugle. |
+| 6 | Réécrire `MEMORY_MATRIX.md` (merge §2+§3) | `docs/orchestration/MEMORY_MATRIX.md` | matrice unique « write \| read » ≤ 40 lignes | Lecture coûteuse → agents zappent → drift mémoire. |
+| 7 | Ajouter check tier Pro conditionnel | `scripts/verify-orchestration-boucle.sh` | flag `--require-pro` testé sur P0/P1 uniquement | Compte Plus exécute des audits xhigh → qualité dégradée silencieusement. |
+| 8 | Audit du runner Masterplay | nouveau `reports/audit/CLAUDE_AUDIT_MASTERPLAY_RUNNER_*` | les mêmes gates (`EXECUTE_DELEGATION`, double audit) sont-ils enforcés dans `run-masterplay.sh` ? | Zone aveugle pour la moitié des cycles Caisse V1. |
+
+---
+
+## Livrables finaux
+
+### `REMEDIATION_STACK_DECISION`
+**Claude PLAN + AUDIT (terminal PRIMARY) ; GPT-5.5-pro/xhigh PLAN_REVIEW + EXECUTE + GPT_FINAL_AUDIT ; `routing.md` est l'outlier doctrinal et doit être réécrit pour s'aligner sur `CLAUDE.md` + `global.mdc` + `run-cycle.md`, pas l'inverse.**
+
+### `KEEP`
+- Double audit obligatoire avant CLOSE (`AUDIT_VERDICT: PASS` + `GPT_FINAL_AUDIT_VERDICT: PASS`) — garde-fou réel contre l'illusion « CI green ».
+- Coordination cross-agent codée : `agent-activity-log.sh start` (flock + exit 2) + `post-execute-guard.sh` exit 4 si diff hors scope.
+- Matrice mémoire à 4 stores fermés (`MEMORY_MATRIX.md`) avec rejet explicite d'OpenSpace et claude-mem.
+- Plafond 5 + HUMAN_GATE en doctrine (à enforcer par script — voir CHANGE).
+- `EXECUTE_DELEGATION` traçable, gardé par `post-execute-guard.sh` exit 1.
+- Caisse V1 fast-path (queue dédiée légitime).
+- `context-hygiene.mdc` per-phase load boundaries — antidote net contre la « relecture du repo ».
+
+### `CHANGE`
+- `.cursor/routing.md` : réécrire PLAN (Claude) + AUDIT PRIMARY (Claude terminal) ; supprimer la phrase « Claude reserved for critical escalation only » ; ajouter règle SSOT en tête.
+- `scripts/post-execute-guard.sh` : couvrir le cas diff-vide quand `missions/` ou `reports/audit/GPT_SELF_AUDIT_*` ont changé.
+- `scripts/after-execute-memory.sh` : exit 1 sur AUDIT PASS + mot-clé décision sans JSONL.
+- `scripts/verify-orchestration-boucle.sh` : flag `--require-pro` conditionnel P0/P1.
+- Nouveau `scripts/validate-active-cycle.sh` (PHASE canonique) + nouveau `scripts/audit-guard.sh` (plafond 5).
+- `docs/orchestration/MEMORY_MATRIX.md` : merge §2+§3.
+
+### `DROP_OR_SIMPLIFY`
+- Drop les 3 lignes contradictoires de `routing.md` (PLAN GPT, AUDIT PRIMARY GPT, « Claude reserved »).
+- Merge le doublon `GLOBAL_SYSTEM_PRIMER §2 / §3` sur le sub-agent fallback.
+- Merge les rapports `CLAUDE_TERMINAL_AUDIT_INTELLIGENCE_*` + `CLAUDE_TERMINAL_AUDIT_SYSTEME_GLOBAL_*` du 2026-05-02.
+- Simplifier le check tier Pro en optionnel (P0/P1 only).
+- Caisse V1 fast-path : conserver, **mais** auditer son runner ≤ 1 cycle.
+
+### `GRAPHITI_POLICY_FINAL`
+- **L1 (MCP chargé)** : 1× `search_memory_facts` minimum avant tout PLAN non trivial ou EXECUTE P0/P1, group `foodking`. Fold dans `## PRIOR_CONTEXT`.
+- **L1 post-AUDIT** : 1 ligne JSONL si décision durable (gate dur via `after-execute-memory.sh`).
+- **L2 (MCP absent)** : `memory/INDEX.md` + ≤ 3 JSONL ciblés par domaine. Pas de relecture en masse de `reports/audit/`.
+- **L3 interdits** : pas d'écriture Graphiti en PLAN/EXECUTE ; pas de pseudo-store dans `reports/` ; pas de paraphrase de ≥ 10 fichiers historiques sans requête ciblée préalable.
+- **Sanction** : si une décision durable est ratée 2× → ouvrir `docs/gates/GATE_MEMORY_*`, halt humain.
+
+### `DOUBLE_AUDIT_POLICY_FINAL`
+| Classe | Niveau |
+|---|---|
+| P0 (fiscal, pricing, branch_id, OrderStatus, dispatch) | FULL double audit |
+| P1 (sync, authz, DDL, frozen zones) | FULL double audit |
+| Edits `.cursor/rules/*` ou `docs/orchestration/*` | FULL double audit + gate |
+| P2 (UX kiosk/POS/KDS non-fiscal) | Audit simple (Claude seul) |
+| P3 (doc-only hors zones doctrinales) | Audit simple (diff scope) |
+| P4 (typo, rename interne, commentaire) | Skip audit |
+
+---
+
+`PLAN_FINAL_VERDICT: NEEDS_HUMAN_GATE`
+
+Justification : actions 1 et 8 du plan (réécriture `routing.md` + audit du runner Masterplay) modifient des **fichiers doctrinaux** et ont besoin d'une approbation humaine explicite avant application — `CLAUDE.md §10` interdit l'override silencieux des décisions stables. Les actions 2–7 sont applicables sans gate dès l'autorisation humaine de l'action 1.

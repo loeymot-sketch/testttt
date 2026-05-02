@@ -132,7 +132,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* Phase 8.4 — Filter bar */\n/* P-MEGA-09 — bandeau filtres persistés */\n.kiosk-active-filter-banner[data-v-9a1bc680] {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: 10px 16px;\n  padding: 10px 20px;\n  background: rgba(232, 0, 28, 0.06);\n  border-bottom: 1px solid rgba(232, 0, 28, 0.2);\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--kiosk-primary-dark, #a41020);\n}\n.kiosk-active-filter-banner__summary[data-v-9a1bc680] { flex-shrink: 0;\n}\n.kiosk-active-filter-banner__list[data-v-9a1bc680] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px 14px;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n  flex: 1;\n  min-width: 0;\n}\n.kiosk-active-filter-banner__list li[data-v-9a1bc680] {\n  padding: 4px 10px;\n  border-radius: 999px;\n  background: rgba(255, 255, 255, 0.85);\n  border: 1px solid rgba(232, 0, 28, 0.22);\n  font-size: 13px;\n}\n.kiosk-active-filter-banner__clear[data-v-9a1bc680] {\n  margin-inline-start: auto;\n  background: transparent;\n  border: none;\n  color: var(--kiosk-primary, #e8001c);\n  text-decoration: underline;\n  cursor: pointer;\n  font-weight: 700;\n  font-size: calc(13px * var(--kiosk-text-scale, 1));\n  padding: 8px 12px;\n}\n.kiosk-active-filter-banner__clear[data-v-9a1bc680]:hover,\n.kiosk-active-filter-banner__clear[data-v-9a1bc680]:focus-visible {\n  color: var(--kiosk-primary-dark, #a41020);\n  outline: none;\n  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);\n}\n.kiosk-product-card--filtered-out[data-v-9a1bc680] {\n  opacity: 0.42;\n  filter: grayscale(0.35);\n  cursor: not-allowed;\n}\n.kiosk-product-card--filtered-out[data-v-9a1bc680]:active {\n  transform: none;\n}\n.kiosk-filter-bar[data-v-9a1bc680] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--kiosk-space-2, 8px);\n  padding: var(--kiosk-space-3, 12px) 0 var(--kiosk-space-4, 16px);\n  align-items: center;\n}\n.kiosk-filter-reset[data-v-9a1bc680] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  text-decoration: underline;\n  cursor: pointer;\n  padding: 8px 12px;\n  font-size: calc(13px * var(--kiosk-text-scale, 1));\n}\n.kiosk-filter-reset[data-v-9a1bc680]:hover { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-filter-reset[data-v-9a1bc680]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-product-flag-row[data-v-9a1bc680] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n  margin-bottom: 4px;\n}\n.kiosk-catalogue[data-v-9a1bc680] {\n  width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  overflow: hidden;\n  position: relative;\n}\n.kiosk-catalogue-header[data-v-9a1bc680] {\n  height: 96px;\n  padding-block: 0;\n  padding-inline: 24px 30px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-catalogue-brand[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  min-width: 0;\n}\n.kiosk-brand-thumb-wrap[data-v-9a1bc680] {\n  width: 64px;\n  height: 64px;\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  box-shadow: var(--kiosk-shadow-card);\n  flex-shrink: 0;\n}\n.kiosk-brand-thumb[data-v-9a1bc680] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-brand-thumb-fallback[data-v-9a1bc680] {\n  font-size: 34px;\n}\n.kiosk-catalogue-breadcrumb[data-v-9a1bc680] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 2px;\n  min-width: 0;\n}\n.kiosk-breadcrumb-muted[data-v-9a1bc680] {\n  font-size: 14px;\n  font-weight: 800;\n  color: var(--kiosk-text-mute);\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n.kiosk-breadcrumb-current[data-v-9a1bc680] {\n  font-size: clamp(28px, 3.2vw, 38px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  white-space: nowrap;\n}\n.kiosk-catalogue-top-actions[data-v-9a1bc680] {\n  display: flex;\n  gap: 10px;\n  flex-shrink: 0;\n}\n.kiosk-top-chip[data-v-9a1bc680] {\n  min-height: 54px;\n  height: auto;\n  padding: 0 20px;\n  border-radius: 999px;\n  border: 2px solid var(--kiosk-primary);\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  font-size: 14px;\n  font-weight: 900;\n  letter-spacing: 0.02em;\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  opacity: 0.92;\n  cursor: pointer;\n  transition: transform 0.1s ease, opacity 0.15s ease;\n}\n/* Kiosk Phase 9.1.13 — état interactif du chip \"Mon compte\". */\n.kiosk-top-chip--active[data-v-9a1bc680]:hover,\n.kiosk-top-chip--active[data-v-9a1bc680]:focus-visible {\n  opacity: 1;\n  outline: none;\n  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);\n}\n.kiosk-top-chip--active[data-v-9a1bc680]:active {\n  transform: scale(0.97);\n}\n.kiosk-top-chip-icon[data-v-9a1bc680] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 18px;\n  height: 18px;\n  border-radius: 50%;\n  border: 1.5px solid rgba(255,255,255,0.65);\n  font-size: 10px;\n}\n\n/* [C2] Offline snapshot banner */\n.kiosk-cache-banner[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 8px 20px;\n  background: rgba(243, 156, 18, 0.12);\n  border-bottom: 1px solid rgba(243, 156, 18, 0.35);\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-warning);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cache-banner-icon[data-v-9a1bc680] { flex-shrink: 0;\n}\n.kiosk-catalogue-loading[data-v-9a1bc680],\n.kiosk-catalogue-empty[data-v-9a1bc680] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-catalogue-loading[data-v-9a1bc680] {\n  flex-direction: column;\n  gap: 18px;\n}\n.kiosk-spinner[data-v-9a1bc680] {\n  width: 42px;\n  height: 42px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-9a1bc680 0.8s linear infinite;\n}\n@keyframes spin-9a1bc680 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-catalogue-error[data-v-9a1bc680] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 16px;\n}\n.kiosk-catalogue-error-icon[data-v-9a1bc680] { font-size: 42px;\n}\n.kiosk-catalogue-retry-btn[data-v-9a1bc680] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 999px;\n  padding: 12px 24px;\n  font-size: 15px;\n  font-weight: 700;\n}\n.kiosk-catalogue-body[data-v-9a1bc680] {\n  flex: 1;\n  display: grid;\n  grid-template-columns: minmax(172px, 18vw) 1fr;\n  min-height: 0;\n}\n.kiosk-sidebar[data-v-9a1bc680] {\n  background: var(--kiosk-surface);\n  border-inline-end: 1px solid var(--kiosk-border);\n  padding: 14px 12px 128px;\n  overflow-y: auto;\n  scrollbar-width: none;\n}\n.kiosk-sidebar[data-v-9a1bc680]::-webkit-scrollbar { display: none;\n}\n.kiosk-sidebar-item[data-v-9a1bc680] {\n  width: 100%;\n  border: 2px solid transparent;\n  background: transparent;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 8px;\n  padding: 12px 8px 14px;\n  border-radius: 22px;\n  cursor: pointer;\n  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;\n}\n.kiosk-sidebar-item[data-v-9a1bc680]:active {\n  background: var(--kiosk-surface-alt);\n  transform: scale(0.98);\n}\n.kiosk-sidebar-item.active[data-v-9a1bc680] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-primary-soft);\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-sidebar-thumb-wrap[data-v-9a1bc680] {\n  width: 86px;\n  height: 86px;\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-sidebar-thumb[data-v-9a1bc680] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-sidebar-thumb-fallback[data-v-9a1bc680] {\n  font-size: 42px;\n}\n.kiosk-sidebar-name[data-v-9a1bc680] {\n  font-size: 13px;\n  line-height: 1.15;\n  font-weight: 900;\n  color: var(--kiosk-text-muted);\n  text-align: center;\n  text-transform: uppercase;\n  min-height: 26px;\n  display: flex;\n  align-items: end;\n}\n.kiosk-sidebar-item.active .kiosk-sidebar-name[data-v-9a1bc680] {\n  color: var(--kiosk-primary);\n}\n.kiosk-product-zone[data-v-9a1bc680] {\n  background: transparent;\n  overflow-y: auto;\n  padding: 22px 28px 142px;\n  scrollbar-width: none;\n}\n.kiosk-product-zone[data-v-9a1bc680]::-webkit-scrollbar { display: none;\n}\n.kiosk-product-zone-transition[data-v-9a1bc680] {\n  min-height: 0;\n}\n\n/* Changement de catégorie : fondu doux local, sans glissement plein écran. */\n.kiosk-cat-pane-enter-active[data-v-9a1bc680],\n.kiosk-cat-pane-leave-active[data-v-9a1bc680] {\n  transition:\n    opacity 0.18s ease-out,\n    filter 0.18s ease-out;\n}\n.kiosk-cat-pane-enter-from[data-v-9a1bc680],\n.kiosk-cat-pane-leave-to[data-v-9a1bc680] {\n  opacity: 0;\n  filter: blur(4px);\n}\n.kiosk-product-zone-header[data-v-9a1bc680] {\n  padding: 2px 4px 18px;\n}\n.kiosk-zone-title[data-v-9a1bc680] {\n  margin: 0;\n  font-size: clamp(34px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-zone-subtitle[data-v-9a1bc680] {\n  margin: 4px 0 0;\n  font-size: 14px;\n  color: var(--kiosk-text-mute);\n}\n.kiosk-category-strip[data-v-9a1bc680] {\n  display: flex;\n  gap: 12px;\n  overflow-x: auto;\n  overscroll-behavior-x: contain;\n  scrollbar-width: none;\n  padding: 0 2px 18px;\n  margin: 0 -2px 2px;\n}\n.kiosk-category-strip[data-v-9a1bc680]::-webkit-scrollbar { display: none;\n}\n.kiosk-category-pill[data-v-9a1bc680] {\n  flex: 0 0 auto;\n  min-width: 156px;\n  min-height: 74px;\n  display: inline-flex;\n  align-items: center;\n  gap: 10px;\n  padding: 8px 14px 8px 8px;\n  border-radius: 999px;\n  border: 1.5px solid var(--kiosk-border, rgba(255,255,255,0.16));\n  background: var(--kiosk-surface, #fff);\n  color: var(--kiosk-text, #1f1f1f);\n  box-shadow: var(--kiosk-shadow-card, none);\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.16s ease,\n    border-color 0.16s ease,\n    background-color 0.16s ease,\n    box-shadow 0.16s ease;\n}\n.kiosk-category-pill[data-v-9a1bc680]:active {\n  transform: scale(0.98);\n}\n.kiosk-category-pill[data-v-9a1bc680]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-category-pill.active[data-v-9a1bc680] {\n  border-color: var(--kiosk-primary, #e8001c);\n  background:\n    linear-gradient(135deg, var(--kiosk-primary, #e8001c), var(--kiosk-primary-strong, #b80016));\n  color: var(--kiosk-text-on-red, #fff);\n  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(232,0,28,0.18));\n}\n.kiosk-category-pill.active .kiosk-category-pill-media[data-v-9a1bc680] {\n  background: rgba(255,255,255,0.16);\n}\n.kiosk-category-pill-media[data-v-9a1bc680] {\n  width: 54px;\n  height: 54px;\n  border-radius: 50%;\n  overflow: hidden;\n  flex-shrink: 0;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n  box-shadow: inset 0 -6px 14px rgba(0,0,0,0.08);\n  font-size: 28px;\n}\n.kiosk-category-pill-media img[data-v-9a1bc680] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-category-pill-name[data-v-9a1bc680] {\n  max-width: 92px;\n  min-width: 0;\n  color: inherit;\n  font-size: 12px;\n  font-weight: 900;\n  line-height: 1.1;\n  text-align: start;\n  text-transform: uppercase;\n  overflow-wrap: anywhere;\n}\n.kiosk-product-grid[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 24px;\n}\n.kiosk-product-card[data-v-9a1bc680] {\n  position: relative;\n  min-height: 392px;\n  padding: 16px 18px 18px;\n  border-radius: 30px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  box-shadow: var(--kiosk-shadow-card);\n  cursor: pointer;\n  overflow: hidden;\n  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;\n}\n.kiosk-product-card[data-v-9a1bc680]:active {\n  transform: scale(0.98);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */\n.kiosk-product-card[data-v-9a1bc680]:focus-visible {\n  outline: var(--kiosk-focus-width) solid var(--kiosk-focus-ring);\n  outline-offset: 3px;\n}\n.kiosk-product-media[data-v-9a1bc680] {\n  position: relative;\n  height: 234px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 28px;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n}\n.kiosk-product-image[data-v-9a1bc680] {\n  width: 94%;\n  height: 94%;\n  -o-object-fit: contain;\n     object-fit: contain;\n  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.18));\n}\n.kiosk-product-image-fallback[data-v-9a1bc680] {\n  width: 176px;\n  height: 176px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-surface);\n  border-radius: 50%;\n  box-shadow: inset 0 -8px 18px rgba(0,0,0,0.08);\n}\n.kiosk-product-emoji[data-v-9a1bc680] {\n  font-size: 72px;\n}\n.kiosk-product-badge[data-v-9a1bc680] {\n  position: absolute;\n  top: 10px;\n  inset-inline-start: 18px;\n  background: var(--kiosk-primary-dark);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 11px;\n  font-weight: 800;\n  padding: 5px 8px;\n  border-radius: 999px;\n  transform: rotate(-4deg);\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-product-add[data-v-9a1bc680] {\n  position: absolute;\n  bottom: -12px;\n  inset-inline-end: 16px;\n  width: 64px;\n  height: 64px;\n  border: none;\n  border-radius: 50%;\n  background: var(--kiosk-primary-dark);\n  color: var(--kiosk-text-on-red);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 36px;\n  font-weight: 900;\n  box-shadow: var(--kiosk-shadow-cta);\n  outline: 4px solid var(--kiosk-surface);\n}\n.kiosk-product-add[data-v-9a1bc680]:disabled {\n  opacity: 0.7;\n}\n.kiosk-product-add-spinner[data-v-9a1bc680] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid rgba(255,255,255,0.35);\n  border-top-color: var(--kiosk-text-on-red);\n  border-radius: 50%;\n  animation: spin-9a1bc680 0.7s linear infinite;\n}\n.kiosk-product-copy[data-v-9a1bc680] {\n  margin-top: 16px;\n  text-align: start;\n}\n.kiosk-product-name[data-v-9a1bc680] {\n  margin: 0;\n  font-size: clamp(22px, 2.6vw, 30px);\n  font-weight: 900;\n  line-height: 1.15;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n}\n.kiosk-product-desc[data-v-9a1bc680] {\n  margin: 8px 0 0;\n  max-width: calc(100% - 58px);\n  font-size: 14px;\n  color: var(--kiosk-text-muted);\n  line-height: 1.35;\n}\n.kiosk-product-price[data-v-9a1bc680] {\n  display: block;\n  margin-top: 10px;\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-bottom-bar[data-v-9a1bc680] {\n  position: absolute;\n  inset-inline: 0;\n  bottom: 0;\n  height: 118px;\n  display: grid;\n  grid-template-rows: 48px 70px;\n  background: var(--kiosk-surface);\n  border-top: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  z-index: 20;\n}\n.kiosk-bottom-summary[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  border-bottom: 1px solid var(--kiosk-border);\n}\n.kiosk-bottom-actions[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: 1.5fr 1fr;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680],\n.kiosk-bottom-cart[data-v-9a1bc680],\n.kiosk-bottom-pay[data-v-9a1bc680],\n.kiosk-bottom-total[data-v-9a1bc680] {\n  height: 100%;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680],\n.kiosk-bottom-cart[data-v-9a1bc680],\n.kiosk-bottom-pay[data-v-9a1bc680] {\n  border: none;\n  background: var(--kiosk-surface);\n  font-size: 17px;\n  font-weight: 900;\n  letter-spacing: 0.01em;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680] {\n  color: var(--kiosk-primary-dark);\n  border-inline-end: 1px solid var(--kiosk-border);\n}\n.kiosk-bottom-cart[data-v-9a1bc680] {\n  color: var(--kiosk-text-muted);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n}\n.kiosk-bottom-cart[data-v-9a1bc680]:disabled {\n  opacity: 0.55;\n}\n.kiosk-bottom-cart-icon[data-v-9a1bc680] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-bottom-total[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 0 18px;\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  white-space: nowrap;\n  background: var(--kiosk-primary-soft);\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-bottom-pay[data-v-9a1bc680] {\n  background: var(--kiosk-primary-soft);\n  color: var(--kiosk-primary-dark);\n}\n.kiosk-bottom-pay[data-v-9a1bc680]:not(:disabled) {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n}\n.kiosk-bottom-pay[data-v-9a1bc680]:disabled {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-mute);\n  border-inline-start: 1px solid var(--kiosk-border);\n  cursor: not-allowed;\n}\n.kiosk-wizard-overlay[data-v-9a1bc680] {\n  position: fixed;\n  inset: 0;\n  background: var(--kiosk-surface);\n  z-index: 180;\n}\n.slide-up-enter-active[data-v-9a1bc680],\n.slide-up-leave-active[data-v-9a1bc680] {\n  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.slide-up-enter-from[data-v-9a1bc680],\n.slide-up-leave-to[data-v-9a1bc680] {\n  transform: translateY(100%);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-product-card--filtered-out[data-v-9a1bc680] {\n  opacity: 0.42;\n  filter: grayscale(0.35);\n  cursor: not-allowed;\n}\n.kiosk-product-card--filtered-out[data-v-9a1bc680]:active {\n  transform: none;\n}\n.kiosk-product-flag-row[data-v-9a1bc680] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n  margin-bottom: 4px;\n}\n.kiosk-catalogue[data-v-9a1bc680] {\n  width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  overflow: hidden;\n  position: relative;\n}\n.kiosk-catalogue-header[data-v-9a1bc680] {\n  height: 96px;\n  padding-block: 0;\n  padding-inline: 24px 30px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-catalogue-brand[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  min-width: 0;\n}\n.kiosk-brand-thumb-wrap[data-v-9a1bc680] {\n  width: 64px;\n  height: 64px;\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  box-shadow: var(--kiosk-shadow-card);\n  flex-shrink: 0;\n}\n.kiosk-brand-thumb[data-v-9a1bc680] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-brand-thumb-fallback[data-v-9a1bc680] {\n  font-size: 34px;\n}\n.kiosk-catalogue-breadcrumb[data-v-9a1bc680] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 2px;\n  min-width: 0;\n}\n.kiosk-breadcrumb-muted[data-v-9a1bc680] {\n  font-size: 14px;\n  font-weight: 800;\n  color: var(--kiosk-text-mute);\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n.kiosk-breadcrumb-current[data-v-9a1bc680] {\n  font-size: clamp(28px, 3.2vw, 38px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  white-space: nowrap;\n}\n.kiosk-catalogue-top-actions[data-v-9a1bc680] {\n  display: flex;\n  gap: 10px;\n  flex-shrink: 0;\n}\n.kiosk-top-chip[data-v-9a1bc680] {\n  min-height: 54px;\n  height: auto;\n  padding: 0 20px;\n  border-radius: 999px;\n  border: 2px solid var(--kiosk-primary);\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  font-size: 14px;\n  font-weight: 900;\n  letter-spacing: 0.02em;\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  opacity: 0.92;\n  cursor: pointer;\n  transition: transform 0.1s ease, opacity 0.15s ease;\n}\n/* Kiosk Phase 9.1.13 — état interactif du chip \"Mon compte\". */\n.kiosk-top-chip--active[data-v-9a1bc680]:hover,\n.kiosk-top-chip--active[data-v-9a1bc680]:focus-visible {\n  opacity: 1;\n  outline: none;\n  box-shadow: 0 0 0 3px var(--kiosk-focus-ring, #2563eb);\n}\n.kiosk-top-chip--active[data-v-9a1bc680]:active {\n  transform: scale(0.97);\n}\n.kiosk-top-chip-icon[data-v-9a1bc680] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 18px;\n  height: 18px;\n  border-radius: 50%;\n  border: 1.5px solid rgba(255,255,255,0.65);\n  font-size: 10px;\n}\n\n/* [C2] Offline snapshot banner */\n.kiosk-cache-banner[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 8px 20px;\n  background: rgba(243, 156, 18, 0.12);\n  border-bottom: 1px solid rgba(243, 156, 18, 0.35);\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-warning);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cache-banner-icon[data-v-9a1bc680] { flex-shrink: 0;\n}\n.kiosk-catalogue-loading[data-v-9a1bc680],\n.kiosk-catalogue-empty[data-v-9a1bc680] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-catalogue-loading[data-v-9a1bc680] {\n  flex-direction: column;\n  gap: 18px;\n}\n.kiosk-spinner[data-v-9a1bc680] {\n  width: 42px;\n  height: 42px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-9a1bc680 0.8s linear infinite;\n}\n@keyframes spin-9a1bc680 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-catalogue-error[data-v-9a1bc680] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 16px;\n}\n.kiosk-catalogue-error-icon[data-v-9a1bc680] { font-size: 42px;\n}\n.kiosk-catalogue-retry-btn[data-v-9a1bc680] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 999px;\n  padding: 12px 24px;\n  font-size: 15px;\n  font-weight: 700;\n}\n.kiosk-catalogue-body[data-v-9a1bc680] {\n  flex: 1;\n  display: grid;\n  grid-template-columns: clamp(124px, 12vw, 156px) 1fr;\n  min-height: 0;\n}\n.kiosk-sidebar[data-v-9a1bc680] {\n  background: var(--kiosk-surface);\n  border-inline-end: 1px solid var(--kiosk-border);\n  padding: 10px 8px 128px;\n  overflow-y: auto;\n  overscroll-behavior-y: contain;\n  scrollbar-width: thin;\n  scrollbar-color: rgba(255,255,255,0.24) transparent;\n}\n.kiosk-sidebar[data-v-9a1bc680]::-webkit-scrollbar { width: 6px;\n}\n.kiosk-sidebar[data-v-9a1bc680]::-webkit-scrollbar-track { background: transparent;\n}\n.kiosk-sidebar[data-v-9a1bc680]::-webkit-scrollbar-thumb {\n  background: rgba(255,255,255,0.24);\n  border-radius: 999px;\n}\n.kiosk-sidebar-item[data-v-9a1bc680] {\n  width: 100%;\n  border: 2px solid transparent;\n  background: transparent;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n  padding: 9px 6px 10px;\n  border-radius: 18px;\n  cursor: pointer;\n  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;\n}\n.kiosk-sidebar-item[data-v-9a1bc680]:active {\n  background: var(--kiosk-surface-alt);\n  transform: scale(0.98);\n}\n.kiosk-sidebar-item.active[data-v-9a1bc680] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-primary-soft);\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-sidebar-thumb-wrap[data-v-9a1bc680] {\n  width: clamp(58px, 6.4vw, 74px);\n  height: clamp(58px, 6.4vw, 74px);\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-sidebar-thumb[data-v-9a1bc680] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-sidebar-thumb-fallback[data-v-9a1bc680] {\n  font-size: 32px;\n}\n.kiosk-sidebar-name[data-v-9a1bc680] {\n  width: 100%;\n  font-size: clamp(10px, 0.92vw, 12px);\n  line-height: 1.08;\n  font-weight: 900;\n  color: var(--kiosk-text-muted);\n  text-align: center;\n  text-transform: uppercase;\n  min-height: 24px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n  overflow-wrap: anywhere;\n}\n.kiosk-sidebar-item.active .kiosk-sidebar-name[data-v-9a1bc680] {\n  color: var(--kiosk-primary);\n}\n.kiosk-product-zone[data-v-9a1bc680] {\n  background: transparent;\n  overflow-y: auto;\n  padding: 22px 28px 142px;\n  scrollbar-width: none;\n}\n.kiosk-product-zone[data-v-9a1bc680]::-webkit-scrollbar { display: none;\n}\n.kiosk-product-zone-transition[data-v-9a1bc680] {\n  min-height: 0;\n}\n\n/* Changement de catégorie : fondu doux local, sans glissement plein écran. */\n.kiosk-cat-pane-enter-active[data-v-9a1bc680],\n.kiosk-cat-pane-leave-active[data-v-9a1bc680] {\n  transition:\n    opacity 0.18s ease-out,\n    filter 0.18s ease-out;\n}\n.kiosk-cat-pane-enter-from[data-v-9a1bc680],\n.kiosk-cat-pane-leave-to[data-v-9a1bc680] {\n  opacity: 0;\n  filter: blur(4px);\n}\n.kiosk-product-zone-header[data-v-9a1bc680] {\n  padding: 2px 4px 18px;\n}\n.kiosk-zone-title[data-v-9a1bc680] {\n  margin: 0;\n  font-size: clamp(34px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-zone-subtitle[data-v-9a1bc680] {\n  margin: 4px 0 0;\n  font-size: 14px;\n  color: var(--kiosk-text-mute);\n}\n.kiosk-product-grid[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 24px;\n}\n.kiosk-product-card[data-v-9a1bc680] {\n  position: relative;\n  min-height: 392px;\n  padding: 16px 18px 18px;\n  border-radius: 30px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  box-shadow: var(--kiosk-shadow-card);\n  cursor: pointer;\n  overflow: hidden;\n  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;\n}\n.kiosk-product-card[data-v-9a1bc680]:active {\n  transform: scale(0.98);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — card is now role=button. */\n.kiosk-product-card[data-v-9a1bc680]:focus-visible {\n  outline: var(--kiosk-focus-width) solid var(--kiosk-focus-ring);\n  outline-offset: 3px;\n}\n.kiosk-product-media[data-v-9a1bc680] {\n  position: relative;\n  height: 234px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 28px;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n}\n.kiosk-product-image[data-v-9a1bc680] {\n  width: 94%;\n  height: 94%;\n  -o-object-fit: contain;\n     object-fit: contain;\n  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.18));\n}\n.kiosk-product-image-fallback[data-v-9a1bc680] {\n  width: 176px;\n  height: 176px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-surface);\n  border-radius: 50%;\n  box-shadow: inset 0 -8px 18px rgba(0,0,0,0.08);\n}\n.kiosk-product-emoji[data-v-9a1bc680] {\n  font-size: 72px;\n}\n.kiosk-product-badge[data-v-9a1bc680] {\n  position: absolute;\n  top: 10px;\n  inset-inline-start: 18px;\n  background: var(--kiosk-primary-dark);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 11px;\n  font-weight: 800;\n  padding: 5px 8px;\n  border-radius: 999px;\n  transform: rotate(-4deg);\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-product-add[data-v-9a1bc680] {\n  position: absolute;\n  bottom: -12px;\n  inset-inline-end: 16px;\n  width: 64px;\n  height: 64px;\n  border: none;\n  border-radius: 50%;\n  background: var(--kiosk-primary-dark);\n  color: var(--kiosk-text-on-red);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 36px;\n  font-weight: 900;\n  box-shadow: var(--kiosk-shadow-cta);\n  outline: 4px solid var(--kiosk-surface);\n}\n.kiosk-product-add[data-v-9a1bc680]:disabled {\n  opacity: 0.7;\n}\n.kiosk-product-add-spinner[data-v-9a1bc680] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid rgba(255,255,255,0.35);\n  border-top-color: var(--kiosk-text-on-red);\n  border-radius: 50%;\n  animation: spin-9a1bc680 0.7s linear infinite;\n}\n.kiosk-product-copy[data-v-9a1bc680] {\n  margin-top: 16px;\n  text-align: start;\n}\n.kiosk-product-name[data-v-9a1bc680] {\n  margin: 0;\n  font-size: clamp(22px, 2.6vw, 30px);\n  font-weight: 900;\n  line-height: 1.15;\n  color: var(--kiosk-text);\n  text-transform: uppercase;\n}\n.kiosk-product-desc[data-v-9a1bc680] {\n  margin: 8px 0 0;\n  max-width: calc(100% - 58px);\n  font-size: 14px;\n  color: var(--kiosk-text-muted);\n  line-height: 1.35;\n}\n.kiosk-product-price[data-v-9a1bc680] {\n  display: block;\n  margin-top: 10px;\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-bottom-bar[data-v-9a1bc680] {\n  position: absolute;\n  inset-inline: 0;\n  bottom: 0;\n  height: 118px;\n  display: grid;\n  grid-template-rows: 48px 70px;\n  background: var(--kiosk-surface);\n  border-top: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  z-index: 20;\n}\n.kiosk-bottom-summary[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  border-bottom: 1px solid var(--kiosk-border);\n}\n.kiosk-bottom-actions[data-v-9a1bc680] {\n  display: grid;\n  grid-template-columns: 1.5fr 1fr;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680],\n.kiosk-bottom-cart[data-v-9a1bc680],\n.kiosk-bottom-pay[data-v-9a1bc680],\n.kiosk-bottom-total[data-v-9a1bc680] {\n  height: 100%;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680],\n.kiosk-bottom-cart[data-v-9a1bc680],\n.kiosk-bottom-pay[data-v-9a1bc680] {\n  border: none;\n  background: var(--kiosk-surface);\n  font-size: 17px;\n  font-weight: 900;\n  letter-spacing: 0.01em;\n}\n.kiosk-bottom-abandon[data-v-9a1bc680] {\n  color: var(--kiosk-primary-dark);\n  border-inline-end: 1px solid var(--kiosk-border);\n}\n.kiosk-bottom-cart[data-v-9a1bc680] {\n  color: var(--kiosk-text-muted);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n}\n.kiosk-bottom-cart[data-v-9a1bc680]:disabled {\n  opacity: 0.55;\n}\n.kiosk-bottom-cart-icon[data-v-9a1bc680] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-bottom-total[data-v-9a1bc680] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 0 18px;\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  white-space: nowrap;\n  background: var(--kiosk-primary-soft);\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-bottom-pay[data-v-9a1bc680] {\n  background: var(--kiosk-primary-soft);\n  color: var(--kiosk-primary-dark);\n}\n.kiosk-bottom-pay[data-v-9a1bc680]:not(:disabled) {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n}\n.kiosk-bottom-pay[data-v-9a1bc680]:disabled {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-mute);\n  border-inline-start: 1px solid var(--kiosk-border);\n  cursor: not-allowed;\n}\n.kiosk-wizard-overlay[data-v-9a1bc680] {\n  position: fixed;\n  inset: 0;\n  background: var(--kiosk-surface);\n  z-index: 180;\n}\n.slide-up-enter-active[data-v-9a1bc680],\n.slide-up-leave-active[data-v-9a1bc680] {\n  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.slide-up-enter-from[data-v-9a1bc680],\n.slide-up-leave-to[data-v-9a1bc680] {\n  transform: translateY(100%);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -431,7 +431,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-wizard[data-v-ccf7fd5e] {\n  --kiosk-bg: #FFFBF5;\n  --kiosk-bg-2: #FFFFFF;\n  --kiosk-bg-3: #FFF0F2;\n  --kiosk-surface: #FFFFFF;\n  --kiosk-surface-alt: #F7F3EC;\n  --kiosk-surface-strong: #FFFFFF;\n  --kiosk-border: #EEE6D9;\n  --kiosk-border-strong: #D9C9B8;\n  --kiosk-text: #1A1A1A;\n  --kiosk-text-2: #3F3435;\n  --kiosk-text-muted: #5A5A5A;\n  --kiosk-text-mute: #7D7374;\n  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);\n  --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);\n  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);\n  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);\n  --kiosk-focus-ring: #2563EB;\n\n  display: flex;\n  flex-direction: column;\n  height: 100vh;\n  width: 100vw;\n  background:\n    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 252, 247, 1) 48%, rgba(255, 248, 241, 1) 100%);\n  color: var(--kiosk-text, #1a1a1a);\n  overflow: hidden;\n}\n.kiosk-wizard-loading[data-v-ccf7fd5e],\n.kiosk-wizard-error[data-v-ccf7fd5e] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: var(--kiosk-page-bg, var(--kiosk-bg, #070304));\n  color: var(--kiosk-text-muted, #777);\n  font-size: 1.05rem;\n}\n.kiosk-wizard-spinner[data-v-ccf7fd5e] {\n  width: 48px;\n  height: 48px;\n  border: 4px solid var(--kiosk-border, #e0e0e0);\n  border-top-color: var(--kiosk-primary, #e8001c);\n  border-radius: 50%;\n  animation: kiosk-spin-ccf7fd5e 0.9s linear infinite;\n}\n@keyframes kiosk-spin-ccf7fd5e {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-wizard-header[data-v-ccf7fd5e] {\n  position: relative;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 76px;\n  padding: 18px 76px 10px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n  box-shadow: 0 10px 28px rgba(20, 20, 20, 0.05);\n  flex-shrink: 0;\n}\n.kiosk-wizard-header[data-v-ccf7fd5e]::before {\n  content: '';\n  position: absolute;\n  top: 8px;\n  left: 28px;\n  right: 28px;\n  height: 3px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.9;\n}\n.kiosk-item-info[data-v-ccf7fd5e] {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n}\n.kiosk-item-info[data-v-ccf7fd5e]::before {\n  content: 'Vous composez';\n  font-size: 11px;\n  font-weight: 900;\n  letter-spacing: 0.16em;\n  text-transform: uppercase;\n  color: var(--kiosk-text-muted, #8a807a);\n}\n\n/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */\n.kiosk-wizard-header-allergens[data-v-ccf7fd5e] {\n  margin-top: 2px;\n}\n.kiosk-item-name[data-v-ccf7fd5e] {\n  margin: 0;\n  font-size: clamp(22px, 2.35vw, 32px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  max-width: 780px;\n  line-height: 1.05;\n}\n.kiosk-wizard-sr-only[data-v-ccf7fd5e] {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: 18px;\n  top: 50%;\n  transform: translateY(-50%);\n  min-width: 52px;\n  min-height: 52px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text-muted, #5a5a5a);\n  font-size: 26px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e] {\n  display: flex;\n  gap: 14px;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 16px 20px 10px;\n  overflow-x: auto;\n  background: var(--kiosk-surface, #fff);\n  scrollbar-width: none;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-step-visual[data-v-ccf7fd5e] {\n  min-width: 104px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 7px;\n  opacity: 0.72;\n  transition: opacity 0.18s ease, transform 0.18s ease;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e],\n.kiosk-step-visual.done[data-v-ccf7fd5e] {\n  opacity: 1;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e] {\n  transform: translateY(-1px);\n}\n.kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  position: relative;\n  width: 78px;\n  height: 78px;\n  border-radius: 50%;\n  border: 3px solid var(--kiosk-border, #eee6d9);\n  background: #fff;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 30px;\n  overflow: hidden;\n  box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);\n}\n.kiosk-step-visual.active .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);\n}\n.kiosk-step-visual.done .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  opacity: 0.78;\n}\n.kiosk-step-visual-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-step-visual-fallback[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 34px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: -2px;\n  bottom: -2px;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #e8001c);\n  border: 2px solid #fff;\n  color: #fff;\n  font-size: 0;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e]::before {\n  content: '✓';\n  font-size: 10px;\n}\n.kiosk-step-visual:not(.done) .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  display: none;\n}\n.kiosk-step-visual.active .kiosk-step-visual-index[data-v-ccf7fd5e],\n.kiosk-step-visual.done .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  color: #fff;\n}\n.kiosk-step-visual-label[data-v-ccf7fd5e] {\n  text-align: center;\n  font-size: 11px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted, #8a807a);\n  text-transform: uppercase;\n  line-height: 1.2;\n  max-width: 98px;\n  letter-spacing: 0.04em;\n}\n.kiosk-step-visual.active .kiosk-step-visual-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-primary, #e8001c);\n}\n.kiosk-progress-bar[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 48px 1fr 48px;\n  align-items: center;\n  gap: 14px;\n  padding: 0 22px 14px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e] {\n  min-width: 46px;\n  min-height: 46px;\n  width: 46px;\n  height: 46px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 28px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:disabled {\n  opacity: 0.55;\n}\n.kiosk-progress-track[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  min-width: 0;\n  max-width: 620px;\n  justify-self: center;\n  width: 100%;\n}\n.kiosk-step-dot[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  flex: 1 1 0;\n  min-width: 18px;\n}\n.kiosk-step-dot[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-dot.done[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-number[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 8px;\n  border-radius: 999px;\n  border: 0;\n  color: transparent;\n  background: var(--kiosk-border, #eee6d9);\n  display: block;\n  font-size: 0;\n  font-weight: 800;\n}\n.kiosk-step-dot.active .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);\n}\n.kiosk-step-dot.done .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.85;\n}\n.kiosk-step-question[data-v-ccf7fd5e] {\n  padding: 18px 24px 4px;\n  text-align: center;\n  font-size: clamp(20px, 2.1vw, 30px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-step-content[data-v-ccf7fd5e] {\n  flex: 1;\n  overflow-y: auto;\n  background: transparent;\n  scrollbar-width: none;\n  padding: 0 8px 8px;\n}\n.kiosk-step-content[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-nav[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  align-items: center;\n  gap: 12px;\n  min-height: 84px;\n  border-top: 1px solid var(--kiosk-border, #e7e7e7);\n  background: var(--kiosk-surface, #f7f7f7);\n  box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));\n  flex-shrink: 0;\n  padding: 10px 12px;\n}\n.kiosk-nav-actions[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1.25fr 0.8fr 1fr;\n  gap: 8px;\n  align-items: stretch;\n}\n.kiosk-nav--recap .kiosk-nav-actions[data-v-ccf7fd5e] {\n  grid-template-columns: 1fr 0.78fr 1.55fr;\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e],\n.kiosk-btn-back[data-v-ccf7fd5e],\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  border: 1.5px solid var(--kiosk-border-strong, #e0b0b7);\n  background: var(--kiosk-surface-alt, #fff);\n  font-size: 12px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #c33345);\n  letter-spacing: 0;\n  border-radius: var(--kiosk-btn-radius, 12px);\n  min-height: 52px;\n  padding: 0 14px;\n}\n.kiosk-btn-back[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #b54d5c);\n  border-color: var(--kiosk-border, #e3c2c7);\n}\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));\n}\n.kiosk-btn-next--cart[data-v-ccf7fd5e] {\n  min-height: 58px;\n  font-size: 14px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 18px 38px rgba(232,0,28,0.34);\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-back[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-next[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-btn-next[data-v-ccf7fd5e]:disabled,\n.kiosk-btn-back[data-v-ccf7fd5e]:disabled {\n  opacity: 1;\n  color: var(--kiosk-text-mute, #aa7d84);\n  background: var(--kiosk-surface-alt, #f4e3e6);\n  border-color: var(--kiosk-border, #ecd4d8);\n  box-shadow: none;\n}\n.kiosk-nav-total[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 160px;\n  min-height: 52px;\n  padding: 0 14px;\n  white-space: nowrap;\n  font-size: 15px;\n  font-weight: 700;\n  color: var(--kiosk-text, #6a4047);\n  background: var(--kiosk-primary-soft, #f7e5e8);\n  border-radius: var(--kiosk-btn-radius, 12px);\n  border: 1px solid var(--kiosk-border, #efd2d7);\n}\n[data-v-ccf7fd5e] .kiosk-step-title {\n  display: none;\n}\n.step-slide-enter-active[data-v-ccf7fd5e],\n.step-slide-leave-active[data-v-ccf7fd5e] {\n  transition:\n    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),\n    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n.step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n@media (prefers-reduced-motion: reduce) {\n.step-slide-enter-active[data-v-ccf7fd5e],\n  .step-slide-leave-active[data-v-ccf7fd5e] {\n    transition: none !important;\n}\n.step-slide-enter-from[data-v-ccf7fd5e],\n  .step-slide-leave-to[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n    opacity: 1 !important;\n    transform: none !important;\n}\n}\n.fade-enter-active[data-v-ccf7fd5e],\n.fade-leave-active[data-v-ccf7fd5e] {\n  transition: opacity 0.2s ease;\n}\n.fade-enter-from[data-v-ccf7fd5e],\n.fade-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n}\n.kiosk-wizard-abandon-overlay[data-v-ccf7fd5e] {\n  position: fixed;\n  inset: 0;\n  z-index: 120;\n  background: var(--kiosk-overlay-modal, rgba(0, 0, 0, 0.45));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 20px;\n}\n.kiosk-wizard-abandon-modal[data-v-ccf7fd5e] {\n  background: var(--kiosk-surface, #fff);\n  border-radius: 20px;\n  padding: 1.75rem 1.5rem;\n  max-width: 400px;\n  width: 100%;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.2));\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-wizard-abandon-title[data-v-ccf7fd5e] {\n  margin: 0 0 0.5rem;\n  font-size: 1.25rem;\n  font-weight: 800;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-wizard-abandon-sub[data-v-ccf7fd5e] {\n  margin: 0 0 1.35rem;\n  font-size: 0.95rem;\n  color: var(--kiosk-text-muted, #777);\n  line-height: 1.4;\n}\n.kiosk-wizard-abandon-actions[data-v-ccf7fd5e] {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-wizard-abandon-yes[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: none;\n  border-radius: 12px;\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 1rem;\n  font-weight: 800;\n  cursor: pointer;\n}\n.kiosk-wizard-abandon-no[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: 1.5px solid var(--kiosk-border, #e0e0e0);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt, #f7f7f8);\n  color: var(--kiosk-text, #444);\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-wizard[data-v-ccf7fd5e] {\n  --kiosk-bg: #FFFBF5;\n  --kiosk-bg-2: #FFFFFF;\n  --kiosk-bg-3: #FFF0F2;\n  --kiosk-surface: #FFFFFF;\n  --kiosk-surface-alt: #F7F3EC;\n  --kiosk-surface-strong: #FFFFFF;\n  --kiosk-border: #EEE6D9;\n  --kiosk-border-strong: #D9C9B8;\n  --kiosk-text: #1A1A1A;\n  --kiosk-text-2: #3F3435;\n  --kiosk-text-muted: #5A5A5A;\n  --kiosk-text-mute: #7D7374;\n  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);\n  --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);\n  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);\n  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);\n  --kiosk-focus-ring: #2563EB;\n\n  display: flex;\n  flex-direction: column;\n  height: 100vh;\n  width: 100vw;\n  background:\n    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 252, 247, 1) 48%, rgba(255, 248, 241, 1) 100%);\n  color: var(--kiosk-text, #1a1a1a);\n  overflow: hidden;\n}\n.kiosk-wizard-loading[data-v-ccf7fd5e],\n.kiosk-wizard-error[data-v-ccf7fd5e] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: var(--kiosk-page-bg, var(--kiosk-bg, #070304));\n  color: var(--kiosk-text-muted, #777);\n  font-size: 1.05rem;\n}\n.kiosk-wizard-spinner[data-v-ccf7fd5e] {\n  width: 48px;\n  height: 48px;\n  border: 4px solid var(--kiosk-border, #e0e0e0);\n  border-top-color: var(--kiosk-primary, #e8001c);\n  border-radius: 50%;\n  animation: kiosk-spin-ccf7fd5e 0.9s linear infinite;\n}\n@keyframes kiosk-spin-ccf7fd5e {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-wizard-header[data-v-ccf7fd5e] {\n  position: relative;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 76px;\n  padding: 18px 76px 10px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n  box-shadow: 0 10px 28px rgba(20, 20, 20, 0.05);\n  flex-shrink: 0;\n}\n.kiosk-wizard-header[data-v-ccf7fd5e]::before {\n  content: '';\n  position: absolute;\n  top: 8px;\n  left: 28px;\n  right: 28px;\n  height: 3px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.9;\n}\n.kiosk-item-info[data-v-ccf7fd5e] {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n}\n.kiosk-item-info[data-v-ccf7fd5e]::before {\n  content: 'Vous composez';\n  font-size: 11px;\n  font-weight: 900;\n  letter-spacing: 0.16em;\n  text-transform: uppercase;\n  color: var(--kiosk-text-muted, #8a807a);\n}\n\n/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */\n.kiosk-wizard-header-allergens[data-v-ccf7fd5e] {\n  margin-top: 2px;\n}\n.kiosk-item-name[data-v-ccf7fd5e] {\n  margin: 0;\n  font-size: clamp(22px, 2.35vw, 32px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  max-width: 780px;\n  line-height: 1.05;\n}\n.kiosk-wizard-sr-only[data-v-ccf7fd5e] {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: 18px;\n  top: 50%;\n  transform: translateY(-50%);\n  min-width: 52px;\n  min-height: 52px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text-muted, #5a5a5a);\n  font-size: 26px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e] {\n  display: flex;\n  gap: 14px;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 16px 20px 10px;\n  overflow-x: auto;\n  background: var(--kiosk-surface, #fff);\n  scrollbar-width: none;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-step-visual[data-v-ccf7fd5e] {\n  min-width: 104px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 7px;\n  opacity: 0.72;\n  transition: opacity 0.18s ease, transform 0.18s ease;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e],\n.kiosk-step-visual.done[data-v-ccf7fd5e] {\n  opacity: 1;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e] {\n  transform: translateY(-1px);\n}\n.kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  position: relative;\n  width: 78px;\n  height: 78px;\n  border-radius: 50%;\n  border: 3px solid var(--kiosk-border, #eee6d9);\n  background: #fff;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 30px;\n  overflow: hidden;\n  box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);\n}\n.kiosk-step-visual.active .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);\n}\n.kiosk-step-visual.done .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  opacity: 0.78;\n}\n.kiosk-step-visual-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-step-visual-fallback[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 34px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: -2px;\n  bottom: -2px;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #e8001c);\n  border: 2px solid #fff;\n  color: #fff;\n  font-size: 0;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e]::before {\n  content: '✓';\n  font-size: 10px;\n}\n.kiosk-step-visual:not(.done) .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  display: none;\n}\n.kiosk-step-visual.active .kiosk-step-visual-index[data-v-ccf7fd5e],\n.kiosk-step-visual.done .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  color: #fff;\n}\n.kiosk-step-visual-label[data-v-ccf7fd5e] {\n  text-align: center;\n  font-size: 11px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted, #8a807a);\n  text-transform: uppercase;\n  line-height: 1.2;\n  max-width: 98px;\n  letter-spacing: 0.04em;\n}\n.kiosk-step-visual.active .kiosk-step-visual-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-primary, #e8001c);\n}\n.kiosk-progress-bar[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 48px 1fr 48px;\n  align-items: center;\n  gap: 14px;\n  padding: 0 22px 14px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e] {\n  min-width: 46px;\n  min-height: 46px;\n  width: 46px;\n  height: 46px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 28px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:disabled {\n  opacity: 0.55;\n}\n.kiosk-progress-track[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  min-width: 0;\n  max-width: 620px;\n  justify-self: center;\n  width: 100%;\n}\n.kiosk-step-dot[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  flex: 1 1 0;\n  min-width: 18px;\n}\n.kiosk-step-dot[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-dot.done[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-number[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 8px;\n  border-radius: 999px;\n  border: 0;\n  color: transparent;\n  background: var(--kiosk-border, #eee6d9);\n  display: block;\n  font-size: 0;\n  font-weight: 800;\n}\n.kiosk-step-dot.active .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);\n}\n.kiosk-step-dot.done .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.85;\n}\n.kiosk-live-composition[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr);\n  align-items: center;\n  gap: 12px;\n  min-height: 58px;\n  padding: 8px 24px 10px;\n  background: rgba(255, 255, 255, 0.94);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.86);\n  box-shadow: 0 8px 22px rgba(20, 20, 20, 0.035);\n  flex-shrink: 0;\n}\n.kiosk-live-composition-title[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #6f6762);\n  font-size: 11px;\n  font-weight: 950;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  white-space: nowrap;\n}\n.kiosk-live-composition-list[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  overflow-x: auto;\n  scrollbar-width: none;\n  -webkit-overflow-scrolling: touch;\n}\n.kiosk-live-composition-list[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-live-composition-chip[data-v-ccf7fd5e] {\n  flex: 0 0 auto;\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  max-width: 210px;\n  min-height: 42px;\n  padding: 5px 10px 5px 6px;\n  border: 1px solid rgba(238, 230, 217, 0.95);\n  border-radius: 999px;\n  background: linear-gradient(180deg, #fff, #fffaf4);\n  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.045);\n}\n.kiosk-live-composition-chip.is-product[data-v-ccf7fd5e] {\n  max-width: 250px;\n  border-color: rgba(232, 0, 28, 0.18);\n  background: linear-gradient(180deg, #fff, #fff5f6);\n}\n.kiosk-live-composition-thumb[data-v-ccf7fd5e] {\n  width: 32px;\n  height: 32px;\n  flex: 0 0 32px;\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, #f7f3ec);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-live-composition-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-live-composition-icon[data-v-ccf7fd5e] {\n  font-size: 17px;\n  line-height: 1;\n}\n.kiosk-live-composition-copy[data-v-ccf7fd5e] {\n  min-width: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n}\n.kiosk-live-composition-chip-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-mute, #837a75);\n  font-size: 9px;\n  font-weight: 950;\n  line-height: 1;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  white-space: nowrap;\n}\n.kiosk-live-composition-chip-value[data-v-ccf7fd5e] {\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 12px;\n  font-weight: 900;\n  line-height: 1.12;\n  max-width: 156px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-live-composition-empty[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-mute, #837a75);\n  font-size: 12px;\n  font-weight: 800;\n  white-space: nowrap;\n}\n.kiosk-step-question[data-v-ccf7fd5e] {\n  padding: 18px 24px 4px;\n  text-align: center;\n  font-size: clamp(20px, 2.1vw, 30px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-step-content[data-v-ccf7fd5e] {\n  flex: 1;\n  overflow-y: auto;\n  background: transparent;\n  scrollbar-width: none;\n  padding: 0 8px 8px;\n}\n.kiosk-step-content[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-nav[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  align-items: center;\n  gap: 12px;\n  min-height: 84px;\n  border-top: 1px solid var(--kiosk-border, #e7e7e7);\n  background: var(--kiosk-surface, #f7f7f7);\n  box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));\n  flex-shrink: 0;\n  padding: 10px 12px;\n}\n.kiosk-nav-actions[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1.25fr 0.8fr 1fr;\n  gap: 8px;\n  align-items: stretch;\n}\n.kiosk-nav--recap .kiosk-nav-actions[data-v-ccf7fd5e] {\n  grid-template-columns: 1fr 0.78fr 1.55fr;\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e],\n.kiosk-btn-back[data-v-ccf7fd5e],\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  border: 1.5px solid var(--kiosk-border-strong, #e0b0b7);\n  background: var(--kiosk-surface-alt, #fff);\n  font-size: 12px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #c33345);\n  letter-spacing: 0;\n  border-radius: var(--kiosk-btn-radius, 12px);\n  min-height: 52px;\n  padding: 0 14px;\n}\n.kiosk-btn-back[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #b54d5c);\n  border-color: var(--kiosk-border, #e3c2c7);\n}\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));\n}\n.kiosk-btn-next--cart[data-v-ccf7fd5e] {\n  min-height: 58px;\n  font-size: 14px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 18px 38px rgba(232,0,28,0.34);\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-back[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-next[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-btn-next[data-v-ccf7fd5e]:disabled,\n.kiosk-btn-back[data-v-ccf7fd5e]:disabled {\n  opacity: 1;\n  color: var(--kiosk-text-mute, #aa7d84);\n  background: var(--kiosk-surface-alt, #f4e3e6);\n  border-color: var(--kiosk-border, #ecd4d8);\n  box-shadow: none;\n}\n.kiosk-nav-total[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 160px;\n  min-height: 52px;\n  padding: 0 14px;\n  white-space: nowrap;\n  font-size: 15px;\n  font-weight: 700;\n  color: var(--kiosk-text, #6a4047);\n  background: var(--kiosk-primary-soft, #f7e5e8);\n  border-radius: var(--kiosk-btn-radius, 12px);\n  border: 1px solid var(--kiosk-border, #efd2d7);\n}\n[data-v-ccf7fd5e] .kiosk-step-title {\n  display: none;\n}\n.step-slide-enter-active[data-v-ccf7fd5e],\n.step-slide-leave-active[data-v-ccf7fd5e] {\n  transition:\n    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),\n    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n.step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n@media (prefers-reduced-motion: reduce) {\n.step-slide-enter-active[data-v-ccf7fd5e],\n  .step-slide-leave-active[data-v-ccf7fd5e] {\n    transition: none !important;\n}\n.step-slide-enter-from[data-v-ccf7fd5e],\n  .step-slide-leave-to[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n    opacity: 1 !important;\n    transform: none !important;\n}\n}\n.fade-enter-active[data-v-ccf7fd5e],\n.fade-leave-active[data-v-ccf7fd5e] {\n  transition: opacity 0.2s ease;\n}\n.fade-enter-from[data-v-ccf7fd5e],\n.fade-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n}\n.kiosk-wizard-abandon-overlay[data-v-ccf7fd5e] {\n  position: fixed;\n  inset: 0;\n  z-index: 120;\n  background: var(--kiosk-overlay-modal, rgba(0, 0, 0, 0.45));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 20px;\n}\n.kiosk-wizard-abandon-modal[data-v-ccf7fd5e] {\n  background: var(--kiosk-surface, #fff);\n  border-radius: 20px;\n  padding: 1.75rem 1.5rem;\n  max-width: 400px;\n  width: 100%;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.2));\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-wizard-abandon-title[data-v-ccf7fd5e] {\n  margin: 0 0 0.5rem;\n  font-size: 1.25rem;\n  font-weight: 800;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-wizard-abandon-sub[data-v-ccf7fd5e] {\n  margin: 0 0 1.35rem;\n  font-size: 0.95rem;\n  color: var(--kiosk-text-muted, #777);\n  line-height: 1.4;\n}\n.kiosk-wizard-abandon-actions[data-v-ccf7fd5e] {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-wizard-abandon-yes[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: none;\n  border-radius: 12px;\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 1rem;\n  font-weight: 800;\n  cursor: pointer;\n}\n.kiosk-wizard-abandon-no[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: 1.5px solid var(--kiosk-border, #e0e0e0);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt, #f7f7f8);\n  color: var(--kiosk-text, #444);\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1967,10 +1967,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kioskDisplayText */ "./resources/js/helpers/kioskDisplayText.js");
 /* harmony import */ var _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kioskAnalytics */ "./resources/js/helpers/kioskAnalytics.js");
 /* harmony import */ var _helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kioskFilters */ "./resources/js/helpers/kioskFilters.js");
-/* harmony import */ var _ds_KsFilterChip_vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./ds/KsFilterChip.vue */ "./resources/js/components/frontend/kiosk/ds/KsFilterChip.vue");
-/* harmony import */ var _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./ds/KsAllergenBadge.vue */ "./resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue");
-/* harmony import */ var _ds_KsBadge_vue__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./ds/KsBadge.vue */ "./resources/js/components/frontend/kiosk/ds/KsBadge.vue");
-/* harmony import */ var _KioskPromoCarouselComponent_vue__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./KioskPromoCarouselComponent.vue */ "./resources/js/components/frontend/kiosk/KioskPromoCarouselComponent.vue");
+/* harmony import */ var _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./ds/KsAllergenBadge.vue */ "./resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue");
+/* harmony import */ var _ds_KsBadge_vue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./ds/KsBadge.vue */ "./resources/js/components/frontend/kiosk/ds/KsBadge.vue");
+/* harmony import */ var _KioskPromoCarouselComponent_vue__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./KioskPromoCarouselComponent.vue */ "./resources/js/components/frontend/kiosk/KioskPromoCarouselComponent.vue");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -1992,8 +1991,6 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 // [PHASE-6.4] Analytics — event `menu_viewed` au mount, `category_selected` sur clic.
-// [PHASE-8.4/8.8] Ajouts filtres produits + events item_opened.
-
 
 
 
@@ -2021,10 +2018,9 @@ var EMOJI_MAP = {
   name: 'KioskCategoriesComponent',
   components: {
     KioskWizardComponent: _KioskWizardComponent_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
-    KsFilterChip: _ds_KsFilterChip_vue__WEBPACK_IMPORTED_MODULE_6__["default"],
-    KsAllergenBadge: _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_7__["default"],
-    KsBadge: _ds_KsBadge_vue__WEBPACK_IMPORTED_MODULE_8__["default"],
-    KioskPromoCarouselComponent: _KioskPromoCarouselComponent_vue__WEBPACK_IMPORTED_MODULE_9__["default"]
+    KsAllergenBadge: _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_6__["default"],
+    KsBadge: _ds_KsBadge_vue__WEBPACK_IMPORTED_MODULE_7__["default"],
+    KioskPromoCarouselComponent: _KioskPromoCarouselComponent_vue__WEBPACK_IMPORTED_MODULE_8__["default"]
   },
   mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_2__.kioskPriceMixin],
   inject: {
@@ -2038,56 +2034,13 @@ var EMOJI_MAP = {
     return {
       loadError: false,
       activeItem: null,
-      loadingItemId: null,
-      kioskFilterDefs: [{
-        key: 'halal',
-        icon: '🕌',
-        i18n: 'kiosk.filters.halal'
-      }, {
-        key: 'vegetarian',
-        icon: '🥗',
-        i18n: 'kiosk.filters.vegetarian'
-      }, {
-        key: 'pork_free',
-        icon: '🚫🥓',
-        i18n: 'kiosk.filters.pork_free'
-      }, {
-        key: 'gluten_free',
-        icon: '🌾',
-        i18n: 'kiosk.filters.gluten_free'
-      }, {
-        key: 'spicy',
-        icon: '🌶️',
-        i18n: 'kiosk.filters.spicy'
-      }, {
-        key: 'under_10',
-        icon: '💶',
-        i18n: 'kiosk.filters.under_10'
-      }]
+      loadingItemId: null
     };
   },
   computed: _objectSpread(_objectSpread(_objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapState)('kioskMenu', ['kioskSandwichSubcolumn'])), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskMenu', ['categories', 'allItems', 'selectedCategoryId', 'loading', 'isStale', 'fromCache', 'sidebarCategories', 'kioskCatalogItems'])), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskCart', {
     cartCount: 'count',
     cartTotal: 'total'
   })), {}, {
-    // [P-MEGA-09 defensive] Read kioskFilter via getters with module-absent fallback,
-    // so legacy specs (and hosts not registering the module) don't crash on .length / .includes.
-    activeFilters: function activeFilters() {
-      try {
-        var _this$$store;
-        return ((_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.getters) === null || _this$$store === void 0 ? void 0 : _this$$store['kioskFilter/activeFilters']) || [];
-      } catch (_) {
-        return [];
-      }
-    },
-    hydrated: function hydrated() {
-      try {
-        var _this$$store2;
-        return !!((_this$$store2 = this.$store) !== null && _this$$store2 !== void 0 && (_this$$store2 = _this$$store2.getters) !== null && _this$$store2 !== void 0 && _this$$store2['kioskFilter/hydrated']);
-      } catch (_) {
-        return false;
-      }
-    },
     selectedSidebarRow: function selectedSidebarRow() {
       var sid = parseInt(this.selectedCategoryId, 10);
       var sub = this.kioskSandwichSubcolumn;
@@ -2119,18 +2072,8 @@ var EMOJI_MAP = {
     /** Liste complète (jamais masquée par v-if — greyout uniquement). */catalogProducts: function catalogProducts() {
       return this.selectedCategoryId ? this.kioskCatalogItems : this.allItems || [];
     },
-    /** IDs passant applyKioskFilters ; null si aucun filtre → tout autorisé. */allowedProductIdSet: function allowedProductIdSet() {
-      var _this$activeFilters;
-      if (!((_this$activeFilters = this.activeFilters) !== null && _this$activeFilters !== void 0 && _this$activeFilters.length)) return null;
-      var allowed = (0,_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_5__.applyKioskFilters)(this.catalogProducts, this.activeFilters);
-      return new Set(allowed.map(function (i) {
-        return i.id;
-      }));
-    },
     filteredProductCount: function filteredProductCount() {
-      var _this$activeFilters2;
-      if (!((_this$activeFilters2 = this.activeFilters) !== null && _this$activeFilters2 !== void 0 && _this$activeFilters2.length)) return this.catalogProducts.length;
-      return (0,_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_5__.applyKioskFilters)(this.catalogProducts, this.activeFilters).length;
+      return this.catalogProducts.length;
     },
     customerAllergenCodes: function customerAllergenCodes() {
       var _this$$store$state$ki;
@@ -2153,9 +2096,8 @@ var EMOJI_MAP = {
   mounted: function mounted() {
     var _this = this;
     return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-      var _t;
       return _regenerator().w(function (_context) {
-        while (1) switch (_context.p = _context.n) {
+        while (1) switch (_context.n) {
           case 0:
             if (_this.ensureOrderTypeSelected()) {
               _context.n = 1;
@@ -2163,23 +2105,9 @@ var EMOJI_MAP = {
             }
             return _context.a(2);
           case 1:
-            if (_this.hydrated) {
-              _context.n = 5;
-              break;
-            }
-            _context.p = 2;
-            _context.n = 3;
-            return _this.$store.dispatch('kioskFilter/init');
-          case 3:
-            _context.n = 5;
-            break;
-          case 4:
-            _context.p = 4;
-            _t = _context.v;
-          case 5:
-            _context.n = 6;
+            _context.n = 2;
             return _this.loadCatalogue();
-          case 6:
+          case 2:
             if (!_this.$route.query.cat && _this.selectedCategoryId) {
               _this.replaceCategoryQuery(_this.selectedCategoryId, _this.kioskSandwichSubcolumn === 'cold');
             }
@@ -2190,16 +2118,16 @@ var EMOJI_MAP = {
                 categories_count: Array.isArray(_this.categories) ? _this.categories.length : 0
               });
             } catch (_) {}
-          case 7:
+          case 3:
             return _context.a(2);
         }
-      }, _callee, null, [[2, 4]]);
+      }, _callee);
     }))();
   },
   methods: _objectSpread(_objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskMenu', ['fetchMenu', 'selectKioskCategory'])), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['addItem', 'reset'])), {}, {
     hasExplicitOrderType: function hasExplicitOrderType() {
-      var _this$$store3;
-      var getter = (_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3 = _this$$store3.getters) === null || _this$$store3 === void 0 ? void 0 : _this$$store3['kioskCart/hasExplicitOrderType'];
+      var _this$$store;
+      var getter = (_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.getters) === null || _this$$store === void 0 ? void 0 : _this$$store['kioskCart/hasExplicitOrderType'];
       return getter !== false;
     },
     ensureOrderTypeSelected: function ensureOrderTypeSelected() {
@@ -2213,9 +2141,7 @@ var EMOJI_MAP = {
     },
     isProductCatalogAllowed: function isProductCatalogAllowed(product) {
       if (this.isProductUnavailable(product)) return false;
-      var set = this.allowedProductIdSet;
-      if (!set) return true;
-      return set.has(product.id);
+      return true;
     },
     isProductUnavailable: function isProductUnavailable(product) {
       if (!product) return false;
@@ -2226,15 +2152,11 @@ var EMOJI_MAP = {
       return status === 0 || status === 2 || status === 10;
     },
     productFilteredOutTooltip: function productFilteredOutTooltip(product) {
-      var _this2 = this;
       if (this.isProductCatalogAllowed(product)) return '';
       if (this.isProductUnavailable(product)) {
         return product.unavailable_reason || this.$t('pos.item_86_d') || 'Épuisé';
       }
-      var names = (this.activeFilters || []).map(function (f) {
-        return _this2.$t("kiosk.filters.".concat(f));
-      });
-      return names.filter(Boolean).join(', ');
+      return '';
     },
     onProductCardActivate: function onProductCardActivate(product, evt) {
       if (!this.isProductCatalogAllowed(product)) {
@@ -2255,31 +2177,31 @@ var EMOJI_MAP = {
       } catch (_) {/* navigation garde indisponible (tests) → no-op */}
     },
     loadCatalogue: function loadCatalogue() {
-      var _this3 = this;
+      var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var _this3$$store$state$k, branchId, _t2;
+        var _this2$$store$state$k, branchId, _t;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
-              _this3.loadError = false;
+              _this2.loadError = false;
               _context2.p = 1;
-              branchId = (_this3$$store$state$k = _this3.$store.state.kioskCart) === null || _this3$$store$state$k === void 0 ? void 0 : _this3$$store$state$k.branchId;
+              branchId = (_this2$$store$state$k = _this2.$store.state.kioskCart) === null || _this2$$store$state$k === void 0 ? void 0 : _this2$$store$state$k.branchId;
               _context2.n = 2;
-              return _this3.fetchMenu({
+              return _this2.fetchMenu({
                 branchId: branchId
               });
             case 2:
-              if (_this3.$route.query.cat) {
-                _this3.syncCategoryFromRoute(_this3.$route.query.cat, _this3.$route.query.sf);
-              } else if (_this3.categories.length > 0 && _this3.selectedCategoryId) {
-                _this3.replaceCategoryQuery(_this3.selectedCategoryId, _this3.kioskSandwichSubcolumn === 'cold');
+              if (_this2.$route.query.cat) {
+                _this2.syncCategoryFromRoute(_this2.$route.query.cat, _this2.$route.query.sf);
+              } else if (_this2.categories.length > 0 && _this2.selectedCategoryId) {
+                _this2.replaceCategoryQuery(_this2.selectedCategoryId, _this2.kioskSandwichSubcolumn === 'cold');
               }
               _context2.n = 4;
               break;
             case 3:
               _context2.p = 3;
-              _t2 = _context2.v;
-              _this3.loadError = true;
+              _t = _context2.v;
+              _this2.loadError = true;
             case 4:
               return _context2.a(2);
           }
@@ -2287,9 +2209,9 @@ var EMOJI_MAP = {
       }))();
     },
     scrollProductZoneTop: function scrollProductZoneTop() {
-      var _this4 = this;
+      var _this3 = this;
       this.$nextTick(function () {
-        var el = _this4.$refs.productZone;
+        var el = _this3.$refs.productZone;
         if (el && typeof el.scrollTop === 'number') el.scrollTop = 0;
       });
     },
@@ -2340,63 +2262,62 @@ var EMOJI_MAP = {
       return parseInt(cat.id, 10) === parseInt(this.selectedCategoryId, 10) && ((_cat$kioskSandwichSub = cat.kioskSandwichSub) !== null && _cat$kioskSandwichSub !== void 0 ? _cat$kioskSandwichSub : null) === ((_this$kioskSandwichSu = this.kioskSandwichSubcolumn) !== null && _this$kioskSandwichSu !== void 0 ? _this$kioskSandwichSu : null);
     },
     openProduct: function openProduct(product) {
-      var _this5 = this;
+      var _this4 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
-        var _product$item_categor, _res$data, res, detail, _t3;
+        var _product$item_categor, _res$data, res, detail, _t2;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.p = _context3.n) {
             case 0:
-              if (_this5.ensureOrderTypeSelected()) {
+              if (_this4.ensureOrderTypeSelected()) {
                 _context3.n = 1;
                 break;
               }
               return _context3.a(2);
             case 1:
-              if (!_this5.loadingItemId) {
+              if (!_this4.loadingItemId) {
                 _context3.n = 2;
                 break;
               }
               return _context3.a(2);
             case 2:
-              _this5.loadingItemId = product.id;
+              _this4.loadingItemId = product.id;
               // Phase 8.8 — Analytics : item_opened (sans PII ; juste ID + contexte
               // filtre actif pour analyse de discovery).
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_4__["default"].track('item_opened', {
                   item_id: product.id,
-                  category_id: (_product$item_categor = product.item_category_id) !== null && _product$item_categor !== void 0 ? _product$item_categor : null,
-                  active_filters: Array.isArray(_this5.activeFilters) ? _this5.activeFilters.slice() : []
+                  category_id: (_product$item_categor = product.item_category_id) !== null && _product$item_categor !== void 0 ? _product$item_categor : null
                 });
               } catch (_) {}
               _context3.p = 3;
               _context3.n = 4;
-              return _this5.$store.dispatch('frontendItem/details', {
+              return _this4.$store.dispatch('frontendItem/details', {
                 id: product.id,
                 surface: 'kiosk'
               });
             case 4:
               res = _context3.v;
               detail = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || product;
-              if (_this5.hasOptions(detail)) {
-                _this5.activeItem = detail;
+              if (_this4.hasOptions(detail)) {
+                _this4.activeItem = detail;
               } else {
-                _this5.addItem(_this5.buildSimpleCartItem(detail));
-                _this5.showToast(_this5.$t('kiosk.item_added', {
-                  name: _this5.sanitizeItemName(detail.name)
+                _this4.addItem(_this4.buildSimpleCartItem(detail));
+                _this4.showToast(_this4.$t('kiosk.item_added', {
+                  name: _this4.sanitizeItemName(detail.name)
                 }), 'success', 1800);
               }
               _context3.n = 6;
               break;
             case 5:
               _context3.p = 5;
-              _t3 = _context3.v;
-              _this5.addItem(_this5.buildSimpleCartItem(product));
-              _this5.showToast(_this5.$t('kiosk.item_added', {
-                name: _this5.sanitizeItemName(product.name)
+              _t2 = _context3.v;
+              _this4.addItem(_this4.buildSimpleCartItem(product));
+              _this4.showToast(_this4.$t('kiosk.item_added', {
+                name: _this4.sanitizeItemName(product.name)
               }), 'success', 1800);
             case 6:
               _context3.p = 6;
-              _this5.loadingItemId = null;
+              _this4.loadingItemId = null;
               return _context3.f(6);
             case 7:
               return _context3.a(2);
@@ -2527,32 +2448,6 @@ var EMOJI_MAP = {
     },
     productAllergens: function productAllergens(product) {
       return (0,_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_5__.extractAllergenCodes)(product);
-    },
-    toggleFilter: function toggleFilter(key) {
-      if (!_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_5__.KIOSK_FILTERS.includes(key)) return;
-      var wasOn = this.activeFilters.includes(key);
-      try {
-        this.$store.dispatch('kioskFilter/toggle', key);
-      } catch (_) {}
-      try {
-        _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_4__["default"].track('filter_toggled', {
-          filter: key,
-          active: !wasOn,
-          active_filters: this.activeFilters.slice(),
-          result_count: this.filteredProductCount
-        });
-      } catch (_) {}
-    },
-    resetFilters: function resetFilters() {
-      if (this.activeFilters.length === 0) return;
-      try {
-        this.$store.dispatch('kioskFilter/reset');
-      } catch (_) {}
-      try {
-        _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_4__["default"].track('filter_reset', {
-          result_count: this.filteredProductCount
-        });
-      } catch (_) {}
     }
   })
 });
@@ -6202,6 +6097,36 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       if (!item) return false;
       return item.has_menu === true || (0,_helpers_kioskDrinkAddons__WEBPACK_IMPORTED_MODULE_6__.kioskDrinkAddonRowsFromItem)(item).length > 0;
     },
+    compositionSummaryChips: function compositionSummaryChips() {
+      var _this$selections$_tai;
+      if (!this.resolvedItem) return [];
+      var chips = [];
+      if (this.shouldShowCompositionStep('taille') && (_this$selections$_tai = this.selections._tailleMeta) !== null && _this$selections$_tai !== void 0 && _this$selections$_tai.label) {
+        chips.push({
+          key: 'taille',
+          label: this.compositionLabel('taille'),
+          value: this.selections._tailleMeta.label,
+          image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(this.resolvedItem),
+          icon: '📏'
+        });
+      }
+      var painChip = this.compositionPainChip();
+      if (painChip) chips.push(painChip);
+      var viandeChip = this.compositionViandeChip();
+      if (viandeChip) chips.push(viandeChip);
+      var sauceChip = this.compositionSauceChip();
+      if (sauceChip) chips.push(sauceChip);
+      var garnitureChip = this.compositionExtraGroupChip('garnitures');
+      if (garnitureChip) chips.push(garnitureChip);
+      var supplementChip = this.compositionExtraGroupChip('supplements');
+      if (supplementChip) chips.push(supplementChip);
+      var menuChip = this.compositionMenuChip();
+      if (menuChip) chips.push(menuChip);
+      this.compositionComposerChips().forEach(function (chip) {
+        return chips.push(chip);
+      });
+      return chips;
+    },
     /** Évite de passer des props inconnues aux autres étapes du wizard. */kioskMenuStepExtraProps: function kioskMenuStepExtraProps() {
       var _this$currentStep2;
       if (((_this$currentStep2 = this.currentStep) === null || _this$currentStep2 === void 0 ? void 0 : _this$currentStep2.type) !== 'menu') return {};
@@ -6428,7 +6353,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return 'simple';
     },
     detectViandeCount: function detectViandeCount() {
-      var _this$selections$_tai;
+      var _this$selections$_tai2;
       // [P-MEGA-01] Sources de vérité par ordre de priorité :
       //   1. Sélection explicite Taille (selections._tailleMeta.viandeCount)
       //   2. Champ serveur item.viande_count (P-MEGA-23 — quand exposé)
@@ -6436,7 +6361,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       //   4. Fallback à 1 — UNIQUEMENT au moment de l'usage, jamais
       //      pour décider d'afficher / cacher l'étape Taille (cf.
       //      shouldAskTacosTaille). Tracé via analytics quand utilisé.
-      if ((_this$selections$_tai = this.selections._tailleMeta) !== null && _this$selections$_tai !== void 0 && _this$selections$_tai.viandeCount) {
+      if ((_this$selections$_tai2 = this.selections._tailleMeta) !== null && _this$selections$_tai2 !== void 0 && _this$selections$_tai2.viandeCount) {
         return this.selections._tailleMeta.viandeCount;
       }
       var item = this.resolvedItem;
@@ -6576,6 +6501,196 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
         return sum + (parseInt(row.count || 0, 10) || 0);
       }, 0);
     },
+    compactChoiceText: function compactChoiceText(values) {
+      var max = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+      var clean = (Array.isArray(values) ? values : []).map(function (v) {
+        return String(v || '').trim();
+      }).filter(Boolean);
+      if (clean.length <= max) return clean.join(', ');
+      return "".concat(clean.slice(0, max).join(', '), " +").concat(clean.length - max);
+    },
+    formatChoiceNameWithCount: function formatChoiceNameWithCount(name, count) {
+      var n = parseInt(count || 0, 10) || 0;
+      return n > 1 ? "".concat(name, " x").concat(n) : name;
+    },
+    stepIndexForType: function stepIndexForType(type) {
+      return (this.activeSteps || []).findIndex(function (step) {
+        return (step === null || step === void 0 ? void 0 : step.type) === type;
+      });
+    },
+    shouldShowCompositionStep: function shouldShowCompositionStep(type) {
+      var idx = this.stepIndexForType(type);
+      if (idx < 0) return false;
+      return this.currentStepIndex >= idx;
+    },
+    compositionLabel: function compositionLabel(type) {
+      var fallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+      var keys = {
+        taille: 'kiosk.wizard.live_composition_size',
+        pain: 'kiosk.wizard.summary.bread_type',
+        viande: 'kiosk.wizard.summary.meats',
+        sauce: 'kiosk.wizard.summary.sauces',
+        garnitures: 'kiosk.wizard.summary.garnishes',
+        supplements: 'kiosk.wizard.summary.supplements',
+        menu: 'kiosk.wizard.summary.menu'
+      };
+      var key = keys[type];
+      if (key) {
+        var translated = this.$t(key);
+        if (translated !== key) return String(translated).replace(/[:\?\u061F]+$/, '');
+      }
+      var raw = fallback || this.getStepLabel(type);
+      return String(raw).replace(/[:\?\u061F]+$/, '').replace(/^\s*(quel|quelle|quels|quelles|choose|any)\s+/i, '').trim();
+    },
+    compositionPainChip: function compositionPainChip() {
+      var _kioskVariationsForAt, _this$selections$_pai;
+      var item = this.resolvedItem;
+      var painId = this.selections.pain;
+      if (!this.shouldShowCompositionStep('pain')) return null;
+      if (!item || !painId) return null;
+      var painAttr = this.kioskNormalizeItemAttributes(item.itemAttributes).find(function (a) {
+        return ((a === null || a === void 0 ? void 0 : a.name) || '').toLowerCase().includes('pain') || ((a === null || a === void 0 ? void 0 : a.name) || '').toLowerCase().includes('galette');
+      });
+      var variation = painAttr ? (_kioskVariationsForAt = (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskVariationsForAttribute)(item, painAttr.id)) === null || _kioskVariationsForAt === void 0 ? void 0 : _kioskVariationsForAt.find(function (v) {
+        return String(v.id) === String(painId);
+      }) : null;
+      var name = ((_this$selections$_pai = this.selections._painMeta) === null || _this$selections$_pai === void 0 ? void 0 : _this$selections$_pai.name) || (variation === null || variation === void 0 ? void 0 : variation.name) || String(painId);
+      return {
+        key: 'pain',
+        label: this.compositionLabel('pain'),
+        value: name,
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(variation, item),
+        icon: '🥖'
+      };
+    },
+    compositionViandeChip: function compositionViandeChip() {
+      var _this5 = this;
+      if (!this.shouldShowCompositionStep('viande')) return null;
+      var meta = Array.isArray(this.selections._viandeMeta) ? this.selections._viandeMeta : [];
+      var selected = meta.filter(function (row) {
+        return row && (parseInt(row.count || 0, 10) || 0) > 0;
+      });
+      if (selected.length === 0) return null;
+      var catalog = (0,_helpers_kioskViandeCatalog__WEBPACK_IMPORTED_MODULE_11__.kioskViandeCatalogForItem)(this.resolvedItem);
+      var first = selected[0];
+      var firstCatalog = catalog.find(function (row) {
+        return row.key === first.key || String(row.id) === String(first.id);
+      });
+      return {
+        key: 'viande',
+        label: this.compositionLabel('viande'),
+        value: this.compactChoiceText(selected.map(function (row) {
+          return _this5.formatChoiceNameWithCount(row.name, row.count);
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(firstCatalog, firstCatalog === null || firstCatalog === void 0 ? void 0 : firstCatalog.thumb),
+        icon: '🥩'
+      };
+    },
+    compositionSauceChip: function compositionSauceChip() {
+      var _this6 = this;
+      if (!this.shouldShowCompositionStep('sauce')) return null;
+      var order = Array.isArray(this.selections.sauceOrder) ? this.selections.sauceOrder : [];
+      if (order.length === 0) return null;
+      var rows = order.map(function (key) {
+        return _this6.kioskFindSauceVariation(_this6.resolvedItem, key);
+      }).filter(Boolean);
+      return {
+        key: 'sauce',
+        label: this.compositionLabel('sauce'),
+        value: this.compactChoiceText(rows.map(function (row) {
+          return row.name || 'Sauce';
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(rows[0], this.resolvedItem),
+        icon: '🥫'
+      };
+    },
+    compositionExtraGroupChip: function compositionExtraGroupChip(group) {
+      var _this7 = this;
+      var item = this.resolvedItem;
+      var type = group === 'supplements' ? 'supplements' : 'garnitures';
+      if (!this.shouldShowCompositionStep(type)) return null;
+      if (!item || !Array.isArray(item.extras)) return null;
+      var source = this.selections[group] || {};
+      var selected = Object.entries(source).map(function (_ref4) {
+        var _ref5 = _slicedToArray(_ref4, 2),
+          id = _ref5[0],
+          raw = _ref5[1];
+        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(raw);
+        if (count <= 0) return null;
+        var extra = item.extras.find(function (row) {
+          return String(row.id) === String(id);
+        });
+        if (!extra) return null;
+        return {
+          extra: extra,
+          count: count
+        };
+      }).filter(Boolean);
+      if (selected.length === 0) return null;
+      var isSupplement = group === 'supplements';
+      return {
+        key: group,
+        label: this.compositionLabel(type),
+        value: this.compactChoiceText(selected.map(function (row) {
+          return _this7.formatChoiceNameWithCount(row.extra.name, row.count);
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(selected[0].extra, item),
+        icon: isSupplement ? '🧀' : '🥗'
+      };
+    },
+    compositionMenuChip: function compositionMenuChip() {
+      var _this$selections$_boi,
+        _this8 = this;
+      if (!this.shouldShowCompositionStep('menu')) return null;
+      var mc = this.selections.menuChoice;
+      if (!mc || mc === 'none') return null;
+      var s = 'kiosk.wizard.summary';
+      var base = {
+        full: this.$t("".concat(s, ".menu_label_full")),
+        frites: this.$t("".concat(s, ".menu_label_frites")),
+        boisson: this.$t("".concat(s, ".menu_label_boisson"))
+      }[mc] || mc;
+      var details = [base];
+      if ((_this$selections$_boi = this.selections._boissonMeta) !== null && _this$selections$_boi !== void 0 && _this$selections$_boi.boissonName && (mc === 'full' || mc === 'boisson')) {
+        details.push(this.selections._boissonMeta.boissonName);
+      }
+      var fryOrder = (this.selections.fritesSauceOrder || []).filter(function (key) {
+        return key && key !== 'sans';
+      });
+      if (fryOrder.length > 0) {
+        details.push(this.compactChoiceText(fryOrder.map(function (key) {
+          return _this8.kioskFritesSauceDisplayName(key);
+        }), 1));
+      }
+      return {
+        key: 'menu',
+        label: this.compositionLabel('menu'),
+        value: details.join(' · '),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(this.resolvedItem),
+        icon: '🍟'
+      };
+    },
+    compositionComposerChips: function compositionComposerChips() {
+      var _this9 = this;
+      var grouped = {};
+      this.composerChoiceEntries().forEach(function (entry) {
+        var label = entry.step_label || _this9.$t('kiosk.wizard.generic.step_fallback');
+        if (!grouped[label]) grouped[label] = [];
+        grouped[label].push(_this9.formatChoiceNameWithCount(entry.name || entry.id, entry.count));
+      });
+      return Object.entries(grouped).map(function (_ref6, index) {
+        var _ref7 = _slicedToArray(_ref6, 2),
+          label = _ref7[0],
+          values = _ref7[1];
+        return {
+          key: "composer-".concat(index),
+          label: label,
+          value: _this9.compactChoiceText(values),
+          image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(_this9.resolvedItem),
+          icon: '＋'
+        };
+      });
+    },
     updateSelection: function updateSelection(key, value, meta) {
       this.serverPreviewTotal = null;
       this.selections[key] = value;
@@ -6653,21 +6768,21 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return status !== 0 && status !== 2 && status !== 10;
     },
     composerStepAllowedChoiceKeys: function composerStepAllowedChoiceKeys(step) {
-      var _this5 = this;
+      var _this0 = this;
       var composerStep = (step === null || step === void 0 ? void 0 : step.composer_step) || step || {};
       return new Set((Array.isArray(composerStep.choices) ? composerStep.choices : []).filter(function (choice) {
-        return _this5.composerProjectedChoiceAvailable(choice);
+        return _this0.composerProjectedChoiceAvailable(choice);
       }).map(function (choice) {
         return "".concat(choice.source_type || composerStep.source_type || 'choice', ":").concat(choice.id);
       }));
     },
     currentComposerAllowedChoiceKeys: function currentComposerAllowedChoiceKeys() {
-      var _this6 = this;
+      var _this1 = this;
       return new Set(this.composerActiveSteps().flatMap(function (step) {
         var _step$composer_step5;
         return Array.isArray(step === null || step === void 0 || (_step$composer_step5 = step.composer_step) === null || _step$composer_step5 === void 0 ? void 0 : _step$composer_step5.choices) ? step.composer_step.choices : [];
       }).filter(function (choice) {
-        return _this6.composerProjectedChoiceAvailable(choice);
+        return _this1.composerProjectedChoiceAvailable(choice);
       }).map(function (choice) {
         return "".concat(choice.source_type || 'choice', ":").concat(choice.id);
       }));
@@ -6675,15 +6790,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     sanitizeComposerChoicesForCurrentProfile: function sanitizeComposerChoicesForCurrentProfile(groups) {
       var allowedKeys = this.currentComposerAllowedChoiceKeys();
       var sanitized = {};
-      Object.entries(groups || {}).forEach(function (_ref4) {
-        var _ref5 = _slicedToArray(_ref4, 2),
-          groupKey = _ref5[0],
-          group = _ref5[1];
+      Object.entries(groups || {}).forEach(function (_ref8) {
+        var _ref9 = _slicedToArray(_ref8, 2),
+          groupKey = _ref9[0],
+          group = _ref9[1];
         var nextChoices = {};
-        Object.entries((group === null || group === void 0 ? void 0 : group.choices) || {}).forEach(function (_ref6) {
-          var _ref7 = _slicedToArray(_ref6, 2),
-            choiceKey = _ref7[0],
-            choice = _ref7[1];
+        Object.entries((group === null || group === void 0 ? void 0 : group.choices) || {}).forEach(function (_ref0) {
+          var _ref1 = _slicedToArray(_ref0, 2),
+            choiceKey = _ref1[0],
+            choice = _ref1[1];
           if (allowedKeys.has(choiceKey)) {
             nextChoices[choiceKey] = choice;
           }
@@ -6708,13 +6823,13 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       var allowedKeys = this.currentComposerAllowedChoiceKeys();
       return Object.values(groups).flatMap(function (group) {
         var choices = (group === null || group === void 0 ? void 0 : group.choices) || {};
-        return Object.entries(choices).filter(function (_ref8) {
-          var _ref9 = _slicedToArray(_ref8, 1),
-            choiceKey = _ref9[0];
+        return Object.entries(choices).filter(function (_ref10) {
+          var _ref11 = _slicedToArray(_ref10, 1),
+            choiceKey = _ref11[0];
           return allowedKeys.has(choiceKey);
-        }).map(function (_ref0) {
-          var _ref1 = _slicedToArray(_ref0, 2),
-            choice = _ref1[1];
+        }).map(function (_ref12) {
+          var _ref13 = _slicedToArray(_ref12, 2),
+            choice = _ref13[1];
           return choice;
         }).map(function (choice) {
           return _objectSpread(_objectSpread({}, choice), {}, {
@@ -6736,10 +6851,10 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return n.includes('sauce') || n.includes('condiment') || n.includes('dressing') || n.includes('dip');
     },
     kioskSauceAttribute: function kioskSauceAttribute(item) {
-      var _this7 = this;
+      var _this10 = this;
       var attrs = this.kioskNormalizeItemAttributes(item === null || item === void 0 ? void 0 : item.itemAttributes);
       return attrs.find(function (a) {
-        return _this7.kioskIsSauceLikeAttributeName(a.name);
+        return _this10.kioskIsSauceLikeAttributeName(a.name);
       }) || null;
     },
     kioskSauceVariationsList: function kioskSauceVariationsList(item) {
@@ -7009,9 +7124,9 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       };
     },
     fetchItemById: function fetchItemById(id) {
-      var _this8 = this;
+      var _this11 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _res$data, res, _this8$selections$_ta, inferredTaille, count, _t;
+        var _res$data, res, _this11$selections$_t, inferredTaille, count, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -7021,46 +7136,46 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
               }
               return _context.a(2);
             case 1:
-              _this8.resetSelections();
-              _this8.fetchLoading = true;
-              _this8.fetchError = null;
+              _this11.resetSelections();
+              _this11.fetchLoading = true;
+              _this11.fetchError = null;
               _context.p = 2;
               _context.n = 3;
-              return _this8.$store.dispatch('frontendItem/details', {
+              return _this11.$store.dispatch('frontendItem/details', {
                 id: id,
                 surface: 'kiosk'
               });
             case 3:
               res = _context.v;
-              _this8.fetchedItem = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || null;
-              if (_this8.fetchedItem) {
-                _this8.initGarnitures();
-                inferredTaille = _this8.inferTacosPresetMeta();
+              _this11.fetchedItem = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || null;
+              if (_this11.fetchedItem) {
+                _this11.initGarnitures();
+                inferredTaille = _this11.inferTacosPresetMeta();
                 if (inferredTaille) {
-                  _this8.selections._tailleMeta = inferredTaille;
-                  _this8.selections.taille = inferredTaille.label;
-                } else if (!((_this8$selections$_ta = _this8.selections._tailleMeta) !== null && _this8$selections$_ta !== void 0 && _this8$selections$_ta.viandeCount)) {
+                  _this11.selections._tailleMeta = inferredTaille;
+                  _this11.selections.taille = inferredTaille.label;
+                } else if (!((_this11$selections$_t = _this11.selections._tailleMeta) !== null && _this11$selections$_t !== void 0 && _this11$selections$_t.viandeCount)) {
                   // Non-tacos or generic tacos needing taille step: pre-seed viandeCount
                   // so the viande step component has a single source of truth.
-                  count = _this8.detectViandeCount();
-                  _this8.selections._tailleMeta = _objectSpread(_objectSpread({}, _this8.selections._tailleMeta || {}), {}, {
+                  count = _this11.detectViandeCount();
+                  _this11.selections._tailleMeta = _objectSpread(_objectSpread({}, _this11.selections._tailleMeta || {}), {}, {
                     viandeCount: count
                   });
                 }
                 // [P-MEGA-05] Restore après fetch + inférences (mode edit via /wizard/:id).
-                _this8.restoreEditingSelectionsIfAny();
+                _this11.restoreEditingSelectionsIfAny();
               } else {
-                _this8.fetchError = _this8.$t('kiosk.wizard.product_not_found');
+                _this11.fetchError = _this11.$t('kiosk.wizard.product_not_found');
               }
               _context.n = 5;
               break;
             case 4:
               _context.p = 4;
               _t = _context.v;
-              _this8.fetchError = _this8.$t('kiosk.wizard.product_load_error');
+              _this11.fetchError = _this11.$t('kiosk.wizard.product_load_error');
             case 5:
               _context.p = 5;
-              _this8.fetchLoading = false;
+              _this11.fetchLoading = false;
               return _context.f(5);
             case 6:
               return _context.a(2);
@@ -7072,7 +7187,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     // cas d'erreur : `serverPreviewTotal` reste à sa dernière valeur connue
     // (ou `null`) et `runningTotal` retombe sur `runningTotalLocal`.
     refreshServerPreviewTotal: function refreshServerPreviewTotal() {
-      var _this9 = this;
+      var _this12 = this;
       if (!this._kioskPricingPreview) return;
       var cartItem = this.buildCartItem();
       if (!cartItem || !cartItem.item_id) return;
@@ -7105,17 +7220,17 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
           })
         }]
       }).then(function (res) {
-        _this9.serverPreviewLoading = false;
+        _this12.serverPreviewLoading = false;
         if (res && Number.isFinite(res.total)) {
-          _this9.serverPreviewTotal = Math.round(res.total * 100) / 100;
+          _this12.serverPreviewTotal = Math.round(res.total * 100) / 100;
         }
         // res === null : on garde le total précédent (UX > affichage 0,00).
       })["catch"](function () {
-        _this9.serverPreviewLoading = false;
+        _this12.serverPreviewLoading = false;
       });
     },
     buildCartItem: function buildCartItem() {
-      var _this0 = this,
+      var _this13 = this,
         _item$item_category_i;
       var item = this.resolvedItem;
       if (!item) return null;
@@ -7161,15 +7276,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       // Build normalized item_variations array directly in server format:
       // [{ id: varId, variation_name: attrLabel, name: chosenValueName }]
       // This avoids the fragile index-based reconstruction in kioskCart.submitOrder.
-      var normalizedVariations = Object.entries(allVariations).filter(function (_ref10) {
-        var _ref11 = _slicedToArray(_ref10, 2),
-          varId = _ref11[1];
+      var normalizedVariations = Object.entries(allVariations).filter(function (_ref14) {
+        var _ref15 = _slicedToArray(_ref14, 2),
+          varId = _ref15[1];
         return varId;
-      }).map(function (_ref12) {
+      }).map(function (_ref16) {
         var _item$itemAttributes4;
-        var _ref13 = _slicedToArray(_ref12, 2),
-          attrId = _ref13[0],
-          varId = _ref13[1];
+        var _ref17 = _slicedToArray(_ref16, 2),
+          attrId = _ref17[0],
+          varId = _ref17[1];
         // attrId is the attribute id (key in allVariations); find the matching label
         // allVariationNames is keyed by attribute name (e.g. 'Pain', 'Viande', 'Sauce')
         // We stored attrId → varId and attrName → chosenName in parallel, so we look up
@@ -7196,7 +7311,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       var composerVariationTotal = 0;
       var composerExtraTotal = 0;
       Object.keys(this.selections.garnitures).forEach(function (id) {
-        if (_this0.selections.garnitures[id]) {
+        if (_this13.selections.garnitures[id]) {
           var _item$extras4;
           var extra = (_item$extras4 = item.extras) === null || _item$extras4 === void 0 ? void 0 : _item$extras4.find(function (e) {
             return e.id === parseInt(id);
@@ -7209,7 +7324,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
       Object.keys(this.selections.supplements).forEach(function (id) {
         var _item$extras5;
-        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(_this0.selections.supplements[id]);
+        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(_this13.selections.supplements[id]);
         if (count <= 0) return;
         var extra = (_item$extras5 = item.extras) === null || _item$extras5 === void 0 ? void 0 : _item$extras5.find(function (e) {
           return e.id === parseInt(id);
@@ -7256,9 +7371,9 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       this.composerChoiceEntries().forEach(function (entry) {
         var count = Math.max(1, parseInt(entry.count || 1, 10) || 1);
         if (entry.source_type === 'variation') {
-          var _variation3 = _this0.findItemVariationById(item, entry.id);
+          var _variation3 = _this13.findItemVariationById(item, entry.id);
           if (!_variation3) return;
-          var attrName = _this0.attributeNameForVariation(item, _variation3) || entry.attribute_name || entry.item_attribute_name || '';
+          var attrName = _this13.attributeNameForVariation(item, _variation3) || entry.attribute_name || entry.item_attribute_name || '';
           normalizedVariations.push(_objectSpread({
             id: parseInt(entry.id, 10),
             variation_name: attrName,
@@ -7269,7 +7384,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
           composerVariationTotal += (parseFloat(_variation3.convert_price || _variation3.price || 0) || 0) * count;
         }
         if (entry.source_type === 'extra') {
-          var extra = _this0.findItemExtraById(item, entry.id);
+          var extra = _this13.findItemExtraById(item, entry.id);
           if (!extra) return;
           normalizedExtras.push(_objectSpread({
             id: parseInt(entry.id, 10),
@@ -7349,14 +7464,14 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
     },
     buildInstruction: function buildInstruction() {
-      var _this1 = this,
-        _this$selections$_tai2;
+      var _this14 = this,
+        _this$selections$_tai3;
       var item = this.resolvedItem;
       var parts = [];
       var ti = function ti(key, values) {
-        return _this1.$t("kiosk.wizard.instruction.".concat(key), values);
+        return _this14.$t("kiosk.wizard.instruction.".concat(key), values);
       };
-      if ((_this$selections$_tai2 = this.selections._tailleMeta) !== null && _this$selections$_tai2 !== void 0 && _this$selections$_tai2.label) {
+      if ((_this$selections$_tai3 = this.selections._tailleMeta) !== null && _this$selections$_tai3 !== void 0 && _this$selections$_tai3.label) {
         parts.push(ti('taille', {
           label: this.selections._tailleMeta.label
         }));
@@ -7368,7 +7483,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
         });
         if (painAttr && (_item$variations5 = item.variations) !== null && _item$variations5 !== void 0 && _item$variations5[painAttr.id]) {
           var painVar = item.variations[painAttr.id].find(function (v) {
-            return v.id === _this1.selections.pain;
+            return v.id === _this14.selections.pain;
           });
           if (painVar) parts.push(ti('pain', {
             name: painVar.name
@@ -7387,15 +7502,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
             list: viandes.join(', ')
           }));
         } else {
-          var _viandes = Object.entries(this.selections.viandes).filter(function (_ref14) {
-            var _ref15 = _slicedToArray(_ref14, 2),
-              _ = _ref15[0],
-              count = _ref15[1];
+          var _viandes = Object.entries(this.selections.viandes).filter(function (_ref18) {
+            var _ref19 = _slicedToArray(_ref18, 2),
+              _ = _ref19[0],
+              count = _ref19[1];
             return count > 0;
-          }).map(function (_ref16) {
-            var _ref17 = _slicedToArray(_ref16, 2),
-              key = _ref17[0],
-              count = _ref17[1];
+          }).map(function (_ref20) {
+            var _ref21 = _slicedToArray(_ref20, 2),
+              key = _ref21[0],
+              count = _ref21[1];
             return "".concat(key, " \xD7").concat(count);
           });
           if (_viandes.length > 0) parts.push(ti('viandes', {
@@ -7405,7 +7520,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       if (this.selections.sauceOrder.length > 1 && item) {
         var extraSauces = this.selections.sauceOrder.slice(1).map(function (id) {
-          var v = _this1.kioskFindSauceVariation(item, id);
+          var v = _this14.kioskFindSauceVariation(item, id);
           return v ? v.name : null;
         }).filter(Boolean);
         if (extraSauces.length > 0) parts.push(ti('sauces_extra', {
@@ -7435,7 +7550,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
       if (hasFrites && fryOrder.length > 0) {
         var labels = fryOrder.map(function (k) {
-          return _this1.kioskFritesSauceDisplayName(k);
+          return _this14.kioskFritesSauceDisplayName(k);
         });
         parts.push(ti('frites_sauce', {
           list: labels.join(', ')
@@ -7443,14 +7558,14 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       var composerGroups = {};
       this.composerChoiceEntries().forEach(function (entry) {
-        var label = entry.step_label || _this1.$t('kiosk.wizard.generic.step_fallback');
+        var label = entry.step_label || _this14.$t('kiosk.wizard.generic.step_fallback');
         if (!composerGroups[label]) composerGroups[label] = [];
         composerGroups[label].push("".concat(entry.name || entry.id).concat(entry.count > 1 ? " x".concat(entry.count) : ''));
       });
-      Object.entries(composerGroups).forEach(function (_ref18) {
-        var _ref19 = _slicedToArray(_ref18, 2),
-          label = _ref19[0],
-          values = _ref19[1];
+      Object.entries(composerGroups).forEach(function (_ref22) {
+        var _ref23 = _slicedToArray(_ref22, 2),
+          label = _ref23[0],
+          values = _ref23[1];
         parts.push("".concat(label, ": ").concat(values.join(', ')));
       });
       var joined = parts.join('. ');
@@ -7498,7 +7613,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     }
   },
   mounted: function mounted() {
-    var _this10 = this;
+    var _this15 = this;
     if (this.item) {
       this.resetSelections();
       this.initGarnitures();
@@ -7515,8 +7630,8 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     }
     // Phase 8.8 — fire first wizard_step_entered event.
     this.$nextTick(function () {
-      var _this10$currentStep;
-      return _this10.emitWizardStepEntered((_this10$currentStep = _this10.currentStep) === null || _this10$currentStep === void 0 ? void 0 : _this10$currentStep.type);
+      var _this15$currentStep;
+      return _this15.emitWizardStepEntered((_this15$currentStep = _this15.currentStep) === null || _this15$currentStep === void 0 ? void 0 : _this15$currentStep.type);
     });
 
     // Kiosk Phase 9.1.3 — Initialise le debouncer SSOT (non-reactif pour éviter
@@ -7530,7 +7645,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     });
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(function () {
-      return _this10.refreshServerPreviewTotal();
+      return _this15.refreshServerPreviewTotal();
     });
   },
   beforeUnmount: function beforeUnmount() {
@@ -7569,7 +7684,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
   },
   watch: {
     showAbandonConfirm: function showAbandonConfirm(open) {
-      var _this11 = this;
+      var _this16 = this;
       if (typeof document === 'undefined') return;
       if (this._abandonDocKeydown) {
         document.removeEventListener('keydown', this._abandonDocKeydown, true);
@@ -7577,13 +7692,13 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       if (!open) return;
       this._abandonDocKeydown = function (e) {
-        if (!_this11.showAbandonConfirm) return;
+        if (!_this16.showAbandonConfirm) return;
         if (e.key === 'Escape') {
           e.preventDefault();
-          _this11.onAbandonCancel();
+          _this16.onAbandonCancel();
           return;
         }
-        var root = _this11.$refs.abandonModalEl;
+        var root = _this16.$refs.abandonModalEl;
         if (!root || !root.contains(document.activeElement)) return;
         if (e.key !== 'Tab') return;
         var focusables = _toConsumableArray(root.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
@@ -7600,7 +7715,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       };
       document.addEventListener('keydown', this._abandonDocKeydown, true);
       this.$nextTick(function () {
-        var root = _this11.$refs.abandonModalEl;
+        var root = _this16.$refs.abandonModalEl;
         var firstBtn = root === null || root === void 0 ? void 0 : root.querySelector('button');
         firstBtn === null || firstBtn === void 0 || firstBtn.focus({
           preventScroll: true
@@ -8563,155 +8678,127 @@ var _hoisted_10 = {
 var _hoisted_11 = ["aria-label"];
 var _hoisted_12 = {
   key: 0,
-  "class": "kiosk-active-filter-banner",
-  role: "status",
-  "aria-live": "polite",
-  "data-testid": "kiosk-active-filter-banner"
-};
-var _hoisted_13 = {
-  "class": "kiosk-active-filter-banner__summary"
-};
-var _hoisted_14 = {
-  "class": "kiosk-active-filter-banner__list"
-};
-var _hoisted_15 = {
-  key: 0,
   "class": "kiosk-cache-banner",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-categories-cache-banner"
 };
-var _hoisted_16 = {
-  key: 1,
+var _hoisted_13 = {
+  key: 0,
   "class": "kiosk-catalogue-loading",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-categories-loading"
 };
-var _hoisted_17 = {
-  key: 2,
+var _hoisted_14 = {
+  key: 1,
   "class": "kiosk-catalogue-empty",
   "data-testid": "kiosk-categories-empty"
 };
-var _hoisted_18 = {
+var _hoisted_15 = {
   key: 0,
   "class": "kiosk-catalogue-error",
   role: "alert"
 };
-var _hoisted_19 = {
+var _hoisted_16 = {
   key: 1
 };
-var _hoisted_20 = {
+var _hoisted_17 = {
   "class": "kiosk-catalogue-body"
 };
-var _hoisted_21 = ["aria-label"];
-var _hoisted_22 = ["aria-current", "aria-label", "data-testid", "onClick"];
-var _hoisted_23 = {
+var _hoisted_18 = ["aria-label"];
+var _hoisted_19 = ["aria-current", "aria-label", "data-testid", "onClick"];
+var _hoisted_20 = {
   "class": "kiosk-sidebar-name"
 };
-var _hoisted_24 = {
+var _hoisted_21 = {
   "class": "kiosk-sidebar-thumb-wrap",
   "aria-hidden": "true"
 };
-var _hoisted_25 = ["src"];
-var _hoisted_26 = {
+var _hoisted_22 = ["src"];
+var _hoisted_23 = {
   key: 1,
   "class": "kiosk-sidebar-thumb-fallback"
 };
-var _hoisted_27 = {
+var _hoisted_24 = {
   ref: "productZone",
   "class": "kiosk-product-zone",
   "data-testid": "kiosk-categories-products"
 };
-var _hoisted_28 = {
+var _hoisted_25 = {
   "class": "kiosk-product-zone-header"
 };
-var _hoisted_29 = {
+var _hoisted_26 = {
   "class": "kiosk-zone-title",
   "data-testid": "kiosk-categories-zone-title"
 };
-var _hoisted_30 = {
+var _hoisted_27 = {
   "class": "kiosk-zone-subtitle",
   "data-testid": "kiosk-categories-zone-count"
 };
-var _hoisted_31 = ["aria-label"];
-var _hoisted_32 = ["aria-current", "aria-label", "data-testid", "onClick"];
-var _hoisted_33 = {
-  "class": "kiosk-category-pill-media",
-  "aria-hidden": "true"
-};
-var _hoisted_34 = ["src"];
-var _hoisted_35 = {
-  key: 1
-};
-var _hoisted_36 = {
-  "class": "kiosk-category-pill-name"
-};
-var _hoisted_37 = ["aria-label"];
-var _hoisted_38 = {
+var _hoisted_28 = {
   "class": "kiosk-product-grid",
   role: "list"
 };
-var _hoisted_39 = ["tabindex", "aria-disabled", "aria-label", "aria-busy", "data-testid", "title", "onClick", "onKeydown"];
-var _hoisted_40 = {
+var _hoisted_29 = ["tabindex", "aria-disabled", "aria-label", "aria-busy", "data-testid", "title", "onClick", "onKeydown"];
+var _hoisted_30 = {
   "class": "kiosk-product-media"
 };
-var _hoisted_41 = ["src"];
-var _hoisted_42 = {
+var _hoisted_31 = ["src"];
+var _hoisted_32 = {
   key: 1,
   "class": "kiosk-product-image-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_43 = {
+var _hoisted_33 = {
   "class": "kiosk-product-emoji"
 };
-var _hoisted_44 = ["data-testid"];
-var _hoisted_45 = ["onClick", "disabled", "aria-label", "data-testid"];
-var _hoisted_46 = {
+var _hoisted_34 = ["data-testid"];
+var _hoisted_35 = ["onClick", "disabled", "aria-label", "data-testid"];
+var _hoisted_36 = {
   key: 0,
   "class": "kiosk-product-add-spinner",
   "aria-hidden": "true"
 };
-var _hoisted_47 = {
+var _hoisted_37 = {
   key: 1,
   "aria-hidden": "true"
 };
-var _hoisted_48 = {
+var _hoisted_38 = {
   "class": "kiosk-product-copy"
 };
-var _hoisted_49 = {
+var _hoisted_39 = {
   "class": "kiosk-product-name"
 };
-var _hoisted_50 = {
+var _hoisted_40 = {
   key: 0,
   "class": "kiosk-product-flag-row",
   "aria-hidden": "false"
 };
-var _hoisted_51 = {
+var _hoisted_41 = {
   key: 2,
   "class": "kiosk-product-desc"
 };
-var _hoisted_52 = ["data-testid"];
-var _hoisted_53 = ["aria-label"];
-var _hoisted_54 = {
+var _hoisted_42 = ["data-testid"];
+var _hoisted_43 = ["aria-label"];
+var _hoisted_44 = {
   "class": "kiosk-bottom-summary"
 };
-var _hoisted_55 = ["disabled", "aria-label"];
-var _hoisted_56 = {
+var _hoisted_45 = ["disabled", "aria-label"];
+var _hoisted_46 = {
   "class": "kiosk-bottom-total",
   "data-testid": "kiosk-categories-cart-total"
 };
-var _hoisted_57 = {
+var _hoisted_47 = {
   "class": "kiosk-bottom-actions"
 };
-var _hoisted_58 = ["disabled"];
-var _hoisted_59 = {
+var _hoisted_48 = ["disabled"];
+var _hoisted_49 = {
   key: 0,
   "class": "kiosk-wizard-overlay"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_KioskPromoCarouselComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KioskPromoCarouselComponent");
-  var _component_KsFilterChip = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsFilterChip");
   var _component_KsBadge = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsBadge");
   var _component_KsAllergenBadge = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsAllergenBadge");
   var _component_KioskWizardComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KioskWizardComponent");
@@ -8728,46 +8815,35 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.openMyAccount && $options.openMyAccount.apply($options, arguments);
     })
-  }, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-top-chip-icon",
     "aria-hidden": "true"
-  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.my_account')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_11)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" P-MEGA-09 — Filtres actifs (Vuex + localStorage) : bandeau lisible + reset "), $options.activeFilters.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.filters_label')) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.activeFilters.length) + ") ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_14, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.activeFilters, function (f) {
-    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
-      key: f
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.filters.' + f)), 1 /* TEXT */);
-  }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    type: "button",
-    "class": "kiosk-active-filter-banner__clear",
-    onClick: _cache[1] || (_cache[1] = function () {
-      return $options.resetFilters && $options.resetFilters.apply($options, arguments);
-    }),
-    "data-testid": "kiosk-active-filter-banner-clear"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.filters_reset')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Phase 8.5 — Bandeau promos (server-driven, jamais calculé côté client) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KioskPromoCarouselComponent), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [C2] Offline snapshot banner — shown when menu is served from IndexedDB cache "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.my_account')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_11)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Phase 8.5 — Bandeau promos (server-driven, jamais calculé côté client) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KioskPromoCarouselComponent), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [C2] Offline snapshot banner — shown when menu is served from IndexedDB cache "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "slide-down"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_ctx.fromCache && !_ctx.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      return [_ctx.fromCache && !_ctx.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "class": "kiosk-cache-banner-icon",
         "aria-hidden": "true"
       }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.cache_banner')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
-  }), _ctx.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }), _ctx.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-spinner",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.loading_menu')), 1 /* TEXT */)])) : !_ctx.loading && _ctx.categories.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [$data.loadError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.loading_menu')), 1 /* TEXT */)])) : !_ctx.loading && _ctx.categories.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [$data.loadError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-catalogue-error-icon",
     "aria-hidden": "true"
   }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.load_error_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-catalogue-retry-btn",
-    onClick: _cache[2] || (_cache[2] = function () {
+    onClick: _cache[1] || (_cache[1] = function () {
       return $options.loadCatalogue && $options.loadCatalogue.apply($options, arguments);
     }),
     "data-testid": "kiosk-categories-retry"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.retry')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.no_categories')), 1 /* TEXT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-    key: 3
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.retry')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.no_categories')), 1 /* TEXT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
     "class": "kiosk-sidebar",
     "aria-label": _ctx.$t('kiosk.catalog.categories_nav_label'),
     role: "navigation",
@@ -8785,14 +8861,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.selectCategory(cat);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayCategoryName(cat)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [cat.image_full_path || cat.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayCategoryName(cat)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [cat.image_full_path || cat.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: cat.image_full_path || cat.image,
       alt: '',
       "class": "kiosk-sidebar-thumb",
       loading: "lazy"
-    }, null, 8 /* PROPS */, _hoisted_25)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getCategoryEmoji(cat.name)), 1 /* TEXT */))])], 10 /* CLASS, PROPS */, _hoisted_22);
-  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("main", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transition locale (le shell ne refait plus slide-left à chaque ?cat= — voir KioskAppComponent) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    }, null, 8 /* PROPS */, _hoisted_22)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getCategoryEmoji(cat.name)), 1 /* TEXT */))])], 10 /* CLASS, PROPS */, _hoisted_19);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_18), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("main", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transition locale (le shell ne refait plus slide-left à chaque ?cat= — voir KioskAppComponent) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "kiosk-cat-pane",
     mode: "out-in"
   }, {
@@ -8800,46 +8876,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: "".concat(_ctx.selectedCategoryId, "-").concat(_ctx.kioskSandwichSubcolumn || 'sig'),
         "class": "kiosk-product-zone-transition"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.selectedCategoryDisplayName), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredProductCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredProductCount > 1 ? _ctx.$t('kiosk.catalog.product_many') : _ctx.$t('kiosk.catalog.product_one')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-        "class": "kiosk-category-strip",
-        "aria-label": "".concat(_ctx.$t('kiosk.catalog.categories_nav_label'), " - raccourci"),
-        role: "navigation",
-        "data-testid": "kiosk-categories-quick-strip"
-      }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(_ctx.sidebarCategories, function (cat) {
-        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-          key: "quick-".concat(cat.kioskRowKey),
-          type: "button",
-          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-category-pill", {
-            active: $options.isCategoryActive(cat)
-          }]),
-          "aria-current": $options.isCategoryActive(cat) ? 'page' : undefined,
-          "aria-label": $options.displayCategoryName(cat),
-          "data-testid": "kiosk-categories-quick-item-".concat(cat.id),
-          onClick: function onClick($event) {
-            return $options.selectCategory(cat);
-          }
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, [cat.image_full_path || cat.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
-          key: 0,
-          src: cat.image_full_path || cat.image,
-          alt: '',
-          loading: "lazy"
-        }, null, 8 /* PROPS */, _hoisted_34)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getCategoryEmoji(cat.name)), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayCategoryName(cat)), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_32);
-      }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_31), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Phase 8.4 — Filter chips row (DATA_CONTRACT §9.3) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-        "class": "kiosk-filter-bar",
-        role: "group",
-        "aria-label": _ctx.$t('kiosk.catalog.filters_label') || 'Filtres',
-        "data-testid": "kiosk-filter-bar"
-      }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskFilterDefs, function (f) {
-        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KsFilterChip, {
-          key: f.key,
-          filter: f.key,
-          icon: f.icon,
-          label: _ctx.$t(f.i18n) || f.key,
-          active: $options.activeFilters.includes(f.key),
-          "data-testid": "kiosk-filter-".concat(f.key),
-          onToggle: $options.toggleFilter
-        }, null, 8 /* PROPS */, ["filter", "icon", "label", "active", "data-testid", "onToggle"]);
-      }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_37), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.catalogProducts, function (product) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.selectedCategoryDisplayName), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredProductCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredProductCount > 1 ? _ctx.$t('kiosk.catalog.product_many') : _ctx.$t('kiosk.catalog.product_one')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.catalogProducts, function (product) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: product.id,
           "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-product-card", {
@@ -8861,18 +8898,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
             return $options.onProductCardActivate(product, $event);
           }, ["prevent"]), ["space"])]
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [product.thumb || product.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [product.thumb || product.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
           key: 0,
           src: product.thumb || product.image,
           alt: '',
           "class": "kiosk-product-image",
           loading: "lazy",
           "aria-hidden": "true"
-        }, null, 8 /* PROPS */, _hoisted_41)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getCategoryEmoji(product.name)), 1 /* TEXT */)])), $options.getProductBadge(product) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+        }, null, 8 /* PROPS */, _hoisted_31)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getCategoryEmoji(product.name)), 1 /* TEXT */)])), $options.getProductBadge(product) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: 2,
           "class": "kiosk-product-badge",
           "data-testid": "kiosk-product-badge-".concat(product.id)
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getProductBadge(product)), 9 /* TEXT, PROPS */, _hoisted_44)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getProductBadge(product)), 9 /* TEXT, PROPS */, _hoisted_34)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           type: "button",
           "class": "kiosk-product-add",
           onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -8883,7 +8920,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             name: $options.sanitizeItemName(product.name)
           }),
           "data-testid": "kiosk-product-add-".concat(product.id)
-        }, [$data.loadingItemId === product.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_46)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_47, "+"))], 8 /* PROPS */, _hoisted_45)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sanitizeItemName(product.name)), 1 /* TEXT */), $options.productBadges(product).length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_50, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.productBadges(product), function (b) {
+        }, [$data.loadingItemId === product.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_37, "+"))], 8 /* PROPS */, _hoisted_35)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sanitizeItemName(product.name)), 1 /* TEXT */), $options.productBadges(product).length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_40, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.productBadges(product), function (b) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KsBadge, {
             key: b.color + b.label,
             color: b.color,
@@ -8901,10 +8938,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           allergens: $options.productAllergens(product),
           "customer-allergens": $options.customerAllergenCodes,
           "data-testid": "kiosk-product-allergens-".concat(product.id)
-        }, null, 8 /* PROPS */, ["allergens", "customer-allergens", "data-testid"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), product.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.truncate(product.description, 68)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        }, null, 8 /* PROPS */, ["allergens", "customer-allergens", "data-testid"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), product.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.truncate(product.description, 68)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
           "class": "kiosk-product-price",
           "data-testid": "kiosk-product-price-".concat(product.id)
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(product.convert_price)), 9 /* TEXT, PROPS */, _hoisted_52)])], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_39);
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(product.convert_price)), 9 /* TEXT, PROPS */, _hoisted_42)])], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_29);
       }), 128 /* KEYED_FRAGMENT */))])]))];
     }),
     _: 1 /* STABLE */
@@ -8913,10 +8950,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     role: "region",
     "aria-label": _ctx.$t('kiosk.catalog.cart_summary_label'),
     "data-testid": "kiosk-categories-bottom-bar"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-bottom-cart",
-    onClick: _cache[3] || (_cache[3] = function () {
+    onClick: _cache[2] || (_cache[2] = function () {
       return $options.goToCart && $options.goToCart.apply($options, arguments);
     }),
     disabled: _ctx.cartCount === 0,
@@ -8924,26 +8961,26 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       n: _ctx.cartCount
     }),
     "data-testid": "kiosk-categories-cart-indicator"
-  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<span class=\"kiosk-bottom-cart-icon\" aria-hidden=\"true\" data-v-9a1bc680><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" data-v-9a1bc680><path d=\"M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-v-9a1bc680></path><circle cx=\"10\" cy=\"19\" r=\"1.6\" fill=\"currentColor\" data-v-9a1bc680></circle><circle cx=\"17\" cy=\"19\" r=\"1.6\" fill=\"currentColor\" data-v-9a1bc680></circle></svg></span>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount > 1 ? _ctx.$t('kiosk.article_plural') : _ctx.$t('kiosk.article_singular')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_55), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.cartTotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<span class=\"kiosk-bottom-cart-icon\" aria-hidden=\"true\" data-v-9a1bc680><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" data-v-9a1bc680><path d=\"M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-v-9a1bc680></path><circle cx=\"10\" cy=\"19\" r=\"1.6\" fill=\"currentColor\" data-v-9a1bc680></circle><circle cx=\"17\" cy=\"19\" r=\"1.6\" fill=\"currentColor\" data-v-9a1bc680></circle></svg></span>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount > 1 ? _ctx.$t('kiosk.article_plural') : _ctx.$t('kiosk.article_singular')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_45), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.cartTotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-bottom-abandon",
-    onClick: _cache[4] || (_cache[4] = function () {
+    onClick: _cache[3] || (_cache[3] = function () {
       return $options.abandonOrder && $options.abandonOrder.apply($options, arguments);
     }),
     "data-testid": "kiosk-categories-abandon"
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.abandon_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-bottom-pay",
-    onClick: _cache[5] || (_cache[5] = function () {
+    onClick: _cache[4] || (_cache[4] = function () {
       return $options.goToCart && $options.goToCart.apply($options, arguments);
     }),
     disabled: _ctx.cartCount === 0,
     "data-testid": "kiosk-categories-pay"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.pay')), 9 /* TEXT, PROPS */, _hoisted_58)])], 8 /* PROPS */, _hoisted_53)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.catalog.pay')), 9 /* TEXT, PROPS */, _hoisted_48)])], 8 /* PROPS */, _hoisted_43)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "slide-up"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [$data.activeItem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KioskWizardComponent, {
+      return [$data.activeItem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KioskWizardComponent, {
         item: $data.activeItem,
         "on-add-to-cart": $options.addToCartAndClose,
         "on-close": $options.closeWizard
@@ -11275,35 +11312,66 @@ var _hoisted_18 = {
   "class": "kiosk-step-number"
 };
 var _hoisted_19 = ["aria-label", "disabled"];
-var _hoisted_20 = {
-  "class": "kiosk-step-question"
-};
+var _hoisted_20 = ["aria-label"];
 var _hoisted_21 = {
-  "class": "kiosk-step-content"
+  "class": "kiosk-live-composition-title"
 };
 var _hoisted_22 = {
+  "class": "kiosk-live-composition-list"
+};
+var _hoisted_23 = ["data-testid"];
+var _hoisted_24 = {
+  "class": "kiosk-live-composition-thumb",
+  "aria-hidden": "true"
+};
+var _hoisted_25 = ["src"];
+var _hoisted_26 = {
+  key: 1,
+  "class": "kiosk-live-composition-icon"
+};
+var _hoisted_27 = {
+  "class": "kiosk-live-composition-copy"
+};
+var _hoisted_28 = {
+  "class": "kiosk-live-composition-chip-label"
+};
+var _hoisted_29 = {
+  "class": "kiosk-live-composition-chip-value"
+};
+var _hoisted_30 = {
+  key: 0,
+  "class": "kiosk-live-composition-empty",
+  "data-testid": "kiosk-composition-empty"
+};
+var _hoisted_31 = {
+  "class": "kiosk-step-question"
+};
+var _hoisted_32 = {
+  "class": "kiosk-step-content"
+};
+var _hoisted_33 = {
   "class": "kiosk-nav-actions"
 };
-var _hoisted_23 = ["disabled"];
-var _hoisted_24 = ["disabled", "aria-label"];
-var _hoisted_25 = {
+var _hoisted_34 = ["disabled"];
+var _hoisted_35 = ["disabled", "aria-label"];
+var _hoisted_36 = {
   "class": "kiosk-nav-total"
 };
-var _hoisted_26 = {
+var _hoisted_37 = {
   ref: "abandonModalEl",
   "class": "kiosk-wizard-abandon-modal",
   role: "dialog",
   "aria-modal": "true",
   "aria-labelledby": "kiosk-wizard-abandon-title"
 };
-var _hoisted_27 = {
+var _hoisted_38 = {
   id: "kiosk-wizard-abandon-title",
   "class": "kiosk-wizard-abandon-title"
 };
-var _hoisted_28 = {
+var _hoisted_39 = {
   "class": "kiosk-wizard-abandon-sub"
 };
-var _hoisted_29 = {
+var _hoisted_40 = {
   "class": "kiosk-wizard-abandon-actions"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -11373,7 +11441,26 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.nextStep && $options.nextStep.apply($options, arguments);
     }),
     disabled: $data.currentStepIndex >= $options.activeSteps.length - 1 || !$options.canAdvance
-  }, " › ", 8 /* PROPS */, _hoisted_19)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currentStep.type === 'recap' ? _ctx.$t('kiosk.wizard.recap_order_title') : $options.getQuestionLabel($options.currentStep)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, " › ", 8 /* PROPS */, _hoisted_19)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-live-composition",
+    role: "region",
+    "aria-label": _ctx.$t('kiosk.wizard.live_composition_label'),
+    "data-testid": "kiosk-wizard-live-composition"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.live_composition_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.compositionSummaryChips, function (chip) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: chip.key,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-live-composition-chip", {
+        'is-product': chip.kind === 'product'
+      }]),
+      "data-testid": "kiosk-composition-chip-".concat(chip.key)
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, [chip.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: chip.image,
+      alt: '',
+      "class": "kiosk-live-composition-img",
+      loading: "lazy"
+    }, null, 8 /* PROPS */, _hoisted_25)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.icon), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.value), 1 /* TEXT */)])], 10 /* CLASS, PROPS */, _hoisted_23);
+  }), 128 /* KEYED_FRAGMENT */)), $options.compositionSummaryChips.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.live_composition_empty')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_20), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currentStep.type === 'recap' ? _ctx.$t('kiosk.wizard.recap_order_title') : $options.getQuestionLabel($options.currentStep)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "step-slide",
     mode: "out-in"
   }, {
@@ -11389,7 +11476,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-nav", {
       'kiosk-nav--recap': ((_$options$currentStep = $options.currentStep) === null || _$options$currentStep === void 0 ? void 0 : _$options$currentStep.type) === 'recap'
     }])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-btn-abandon",
     onClick: _cache[4] || (_cache[4] = function () {
@@ -11402,7 +11489,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.prevStep && $options.prevStep.apply($options, arguments);
     }),
     disabled: $data.currentStepIndex === 0
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.nav_previous')), 9 /* TEXT, PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.nav_previous')), 9 /* TEXT, PROPS */, _hoisted_34), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     onClick: _cache[6] || (_cache[6] = function ($event) {
       return $data.currentStepIndex < $options.activeSteps.length - 1 ? $options.nextStep() : $options.addToCart();
@@ -11412,7 +11499,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }]),
     disabled: !$options.canAdvance,
     "aria-label": $data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_24)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.total')) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.runningTotal)), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" P2 : confirmation avant abandon (évite erreur tactile) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_35)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.total')) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.runningTotal)), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" P2 : confirmation avant abandon (évite erreur tactile) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "fade"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
@@ -11423,7 +11510,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
           return $options.onAbandonCancel && $options.onAbandonCancel.apply($options, arguments);
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "kiosk-wizard-abandon-yes",
         onClick: _cache[7] || (_cache[7] = function () {

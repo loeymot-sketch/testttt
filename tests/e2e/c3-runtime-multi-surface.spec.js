@@ -306,8 +306,8 @@ test.describe('C3 runtime multi-surface sync', () => {
       const kdsMs = await waitForBodyText(kdsPage, queuePattern, 15_000);
 
       await posPage.bringToFront();
-      await expect(posPage.locator('.kiosk-cash-fab')).toBeVisible({ timeout: 15_000 });
-      await posPage.locator('.kiosk-cash-fab').click();
+      await expect(posPage.locator('[data-testid="kiosk-cash-open"]')).toBeVisible({ timeout: 15_000 });
+      await posPage.locator('[data-testid="kiosk-cash-open"]').click();
       await posPage.locator('.kiosk-cash-refresh-btn').click();
       await expect(posPage.locator('.kiosk-cash-order-card').filter({ hasText: order.queue_number })).toBeVisible({ timeout: 15_000 });
 

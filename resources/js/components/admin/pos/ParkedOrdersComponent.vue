@@ -12,6 +12,34 @@
                     </button>
                 </div>
 
+                <!--
+                  [POS-V4-CASHIER-OPS 2026-05-02] Inline search.
+                  - Filters client-side over already-fetched parked orders so it stays
+                    instant even on slow networks (parked list is small by definition).
+                  - Search matches: id (numeric prefix), label (case-insensitive
+                    substring), and customer name when present in the parked payload.
+                -->
+                <div v-if="parkedOrders.length > 0" class="parked-orders-search">
+                    <i class="fa-solid fa-magnifying-glass parked-orders-search-icon" aria-hidden="true"></i>
+                    <input
+                        type="search"
+                        v-model="searchQuery"
+                        :placeholder="$t('pos.parked_search_placeholder')"
+                        :aria-label="$t('pos.parked_search_placeholder')"
+                        data-testid="parked-orders-search"
+                        class="parked-orders-search-input"
+                    />
+                    <button
+                        v-if="searchQuery"
+                        type="button"
+                        class="parked-orders-search-clear"
+                        :aria-label="$t('button.clear')"
+                        @click="searchQuery = ''"
+                    >
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+
                 <div class="parked-orders-body">
                     <div v-if="loading" class="parked-orders-empty">
                         {{ $t('label.loading') || 'Loading...' }}
@@ -21,8 +49,12 @@
                         {{ $t('pos.empty_parked_orders') }}
                     </div>
 
+                    <div v-else-if="filteredParkedOrders.length === 0" class="parked-orders-empty">
+                        {{ $t('pos.parked_search_no_match') }}
+                    </div>
+
                     <article
-                        v-for="order in parkedOrders"
+                        v-for="order in filteredParkedOrders"
                         :key="order.id"
                         class="parked-orders-card"
                     >
@@ -85,11 +117,42 @@ export default {
         return {
             loading: false,
             busyId: null,
+            // [POS-V4-CASHIER-OPS 2026-05-02] Client-side search over the already
+            // fetched parked list. Empty string = no filter (all visible).
+            searchQuery: '',
         };
     },
     computed: {
         parkedOrders() {
             return this.$store.getters['posParked/list'] || [];
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Filter by id prefix, label substring, or
+        // customer name (when exposed in the parked payload). Case-insensitive,
+        // accent-tolerant via toLowerCase normalization. Defensive against
+        // missing/null fields — the parked schema is loose.
+        filteredParkedOrders() {
+            // Defensive: drop null / id-less entries first so the v-for key
+            // never receives undefined (Vue would warn) and downstream code
+            // can assume a usable object.
+            const list = (this.parkedOrders || []).filter((o) => o && o.id != null);
+            const raw = String(this.searchQuery || '').trim().toLowerCase();
+            if (!raw) {
+                return list;
+            }
+            return list.filter((order) => {
+                if (!order) return false;
+                const idStr = String(order.id || '').toLowerCase();
+                const label = String(order.label || '').toLowerCase();
+                const customer = String(
+                    order.customer_name
+                    || order.user_name
+                    || (order.customer && order.customer.name)
+                    || ''
+                ).toLowerCase();
+                return idStr.startsWith(raw)
+                    || label.indexOf(raw) !== -1
+                    || customer.indexOf(raw) !== -1;
+            });
         },
         setting() {
             return this.$store.getters['frontendSetting/lists'] || {};
@@ -230,6 +293,61 @@ export default {
     font-size: 0.8125rem;
     color: #6b7280;
     margin-top: 4px;
+}
+
+/* [POS-V4-CASHIER-OPS 2026-05-02] Inline search input above the parked list. */
+.parked-orders-search {
+    position: relative;
+    margin: 14px 20px 4px;
+    display: flex;
+    align-items: center;
+}
+.parked-orders-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 12px;
+    pointer-events: none;
+}
+.parked-orders-search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 36px 0 32px;
+    border: 1px solid #eff0f6;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #2e2f38;
+    background: #f9fafb;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.parked-orders-search-input:focus {
+    outline: none;
+    border-color: #b0004d;
+    background: #fff;
+}
+.parked-orders-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #eff0f6;
+    color: #6b7280;
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.parked-orders-search-clear:hover {
+    background: #b0004d;
+    color: #fff;
 }
 
 .parked-orders-close {

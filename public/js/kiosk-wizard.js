@@ -40,7 +40,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-wizard[data-v-ccf7fd5e] {\n  --kiosk-bg: #FFFBF5;\n  --kiosk-bg-2: #FFFFFF;\n  --kiosk-bg-3: #FFF0F2;\n  --kiosk-surface: #FFFFFF;\n  --kiosk-surface-alt: #F7F3EC;\n  --kiosk-surface-strong: #FFFFFF;\n  --kiosk-border: #EEE6D9;\n  --kiosk-border-strong: #D9C9B8;\n  --kiosk-text: #1A1A1A;\n  --kiosk-text-2: #3F3435;\n  --kiosk-text-muted: #5A5A5A;\n  --kiosk-text-mute: #7D7374;\n  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);\n  --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);\n  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);\n  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);\n  --kiosk-focus-ring: #2563EB;\n\n  display: flex;\n  flex-direction: column;\n  height: 100vh;\n  width: 100vw;\n  background:\n    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 252, 247, 1) 48%, rgba(255, 248, 241, 1) 100%);\n  color: var(--kiosk-text, #1a1a1a);\n  overflow: hidden;\n}\n.kiosk-wizard-loading[data-v-ccf7fd5e],\n.kiosk-wizard-error[data-v-ccf7fd5e] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: var(--kiosk-page-bg, var(--kiosk-bg, #070304));\n  color: var(--kiosk-text-muted, #777);\n  font-size: 1.05rem;\n}\n.kiosk-wizard-spinner[data-v-ccf7fd5e] {\n  width: 48px;\n  height: 48px;\n  border: 4px solid var(--kiosk-border, #e0e0e0);\n  border-top-color: var(--kiosk-primary, #e8001c);\n  border-radius: 50%;\n  animation: kiosk-spin-ccf7fd5e 0.9s linear infinite;\n}\n@keyframes kiosk-spin-ccf7fd5e {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-wizard-header[data-v-ccf7fd5e] {\n  position: relative;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 76px;\n  padding: 18px 76px 10px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n  box-shadow: 0 10px 28px rgba(20, 20, 20, 0.05);\n  flex-shrink: 0;\n}\n.kiosk-wizard-header[data-v-ccf7fd5e]::before {\n  content: '';\n  position: absolute;\n  top: 8px;\n  left: 28px;\n  right: 28px;\n  height: 3px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.9;\n}\n.kiosk-item-info[data-v-ccf7fd5e] {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n}\n.kiosk-item-info[data-v-ccf7fd5e]::before {\n  content: 'Vous composez';\n  font-size: 11px;\n  font-weight: 900;\n  letter-spacing: 0.16em;\n  text-transform: uppercase;\n  color: var(--kiosk-text-muted, #8a807a);\n}\n\n/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */\n.kiosk-wizard-header-allergens[data-v-ccf7fd5e] {\n  margin-top: 2px;\n}\n.kiosk-item-name[data-v-ccf7fd5e] {\n  margin: 0;\n  font-size: clamp(22px, 2.35vw, 32px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  max-width: 780px;\n  line-height: 1.05;\n}\n.kiosk-wizard-sr-only[data-v-ccf7fd5e] {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: 18px;\n  top: 50%;\n  transform: translateY(-50%);\n  min-width: 52px;\n  min-height: 52px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text-muted, #5a5a5a);\n  font-size: 26px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e] {\n  display: flex;\n  gap: 14px;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 16px 20px 10px;\n  overflow-x: auto;\n  background: var(--kiosk-surface, #fff);\n  scrollbar-width: none;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-step-visual[data-v-ccf7fd5e] {\n  min-width: 104px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 7px;\n  opacity: 0.72;\n  transition: opacity 0.18s ease, transform 0.18s ease;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e],\n.kiosk-step-visual.done[data-v-ccf7fd5e] {\n  opacity: 1;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e] {\n  transform: translateY(-1px);\n}\n.kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  position: relative;\n  width: 78px;\n  height: 78px;\n  border-radius: 50%;\n  border: 3px solid var(--kiosk-border, #eee6d9);\n  background: #fff;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 30px;\n  overflow: hidden;\n  box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);\n}\n.kiosk-step-visual.active .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);\n}\n.kiosk-step-visual.done .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  opacity: 0.78;\n}\n.kiosk-step-visual-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-step-visual-fallback[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 34px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: -2px;\n  bottom: -2px;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #e8001c);\n  border: 2px solid #fff;\n  color: #fff;\n  font-size: 0;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e]::before {\n  content: '✓';\n  font-size: 10px;\n}\n.kiosk-step-visual:not(.done) .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  display: none;\n}\n.kiosk-step-visual.active .kiosk-step-visual-index[data-v-ccf7fd5e],\n.kiosk-step-visual.done .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  color: #fff;\n}\n.kiosk-step-visual-label[data-v-ccf7fd5e] {\n  text-align: center;\n  font-size: 11px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted, #8a807a);\n  text-transform: uppercase;\n  line-height: 1.2;\n  max-width: 98px;\n  letter-spacing: 0.04em;\n}\n.kiosk-step-visual.active .kiosk-step-visual-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-primary, #e8001c);\n}\n.kiosk-progress-bar[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 48px 1fr 48px;\n  align-items: center;\n  gap: 14px;\n  padding: 0 22px 14px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e] {\n  min-width: 46px;\n  min-height: 46px;\n  width: 46px;\n  height: 46px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 28px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:disabled {\n  opacity: 0.55;\n}\n.kiosk-progress-track[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  min-width: 0;\n  max-width: 620px;\n  justify-self: center;\n  width: 100%;\n}\n.kiosk-step-dot[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  flex: 1 1 0;\n  min-width: 18px;\n}\n.kiosk-step-dot[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-dot.done[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-number[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 8px;\n  border-radius: 999px;\n  border: 0;\n  color: transparent;\n  background: var(--kiosk-border, #eee6d9);\n  display: block;\n  font-size: 0;\n  font-weight: 800;\n}\n.kiosk-step-dot.active .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);\n}\n.kiosk-step-dot.done .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.85;\n}\n.kiosk-step-question[data-v-ccf7fd5e] {\n  padding: 18px 24px 4px;\n  text-align: center;\n  font-size: clamp(20px, 2.1vw, 30px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-step-content[data-v-ccf7fd5e] {\n  flex: 1;\n  overflow-y: auto;\n  background: transparent;\n  scrollbar-width: none;\n  padding: 0 8px 8px;\n}\n.kiosk-step-content[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-nav[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  align-items: center;\n  gap: 12px;\n  min-height: 84px;\n  border-top: 1px solid var(--kiosk-border, #e7e7e7);\n  background: var(--kiosk-surface, #f7f7f7);\n  box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));\n  flex-shrink: 0;\n  padding: 10px 12px;\n}\n.kiosk-nav-actions[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1.25fr 0.8fr 1fr;\n  gap: 8px;\n  align-items: stretch;\n}\n.kiosk-nav--recap .kiosk-nav-actions[data-v-ccf7fd5e] {\n  grid-template-columns: 1fr 0.78fr 1.55fr;\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e],\n.kiosk-btn-back[data-v-ccf7fd5e],\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  border: 1.5px solid var(--kiosk-border-strong, #e0b0b7);\n  background: var(--kiosk-surface-alt, #fff);\n  font-size: 12px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #c33345);\n  letter-spacing: 0;\n  border-radius: var(--kiosk-btn-radius, 12px);\n  min-height: 52px;\n  padding: 0 14px;\n}\n.kiosk-btn-back[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #b54d5c);\n  border-color: var(--kiosk-border, #e3c2c7);\n}\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));\n}\n.kiosk-btn-next--cart[data-v-ccf7fd5e] {\n  min-height: 58px;\n  font-size: 14px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 18px 38px rgba(232,0,28,0.34);\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-back[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-next[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-btn-next[data-v-ccf7fd5e]:disabled,\n.kiosk-btn-back[data-v-ccf7fd5e]:disabled {\n  opacity: 1;\n  color: var(--kiosk-text-mute, #aa7d84);\n  background: var(--kiosk-surface-alt, #f4e3e6);\n  border-color: var(--kiosk-border, #ecd4d8);\n  box-shadow: none;\n}\n.kiosk-nav-total[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 160px;\n  min-height: 52px;\n  padding: 0 14px;\n  white-space: nowrap;\n  font-size: 15px;\n  font-weight: 700;\n  color: var(--kiosk-text, #6a4047);\n  background: var(--kiosk-primary-soft, #f7e5e8);\n  border-radius: var(--kiosk-btn-radius, 12px);\n  border: 1px solid var(--kiosk-border, #efd2d7);\n}\n[data-v-ccf7fd5e] .kiosk-step-title {\n  display: none;\n}\n.step-slide-enter-active[data-v-ccf7fd5e],\n.step-slide-leave-active[data-v-ccf7fd5e] {\n  transition:\n    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),\n    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n.step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n@media (prefers-reduced-motion: reduce) {\n.step-slide-enter-active[data-v-ccf7fd5e],\n  .step-slide-leave-active[data-v-ccf7fd5e] {\n    transition: none !important;\n}\n.step-slide-enter-from[data-v-ccf7fd5e],\n  .step-slide-leave-to[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n    opacity: 1 !important;\n    transform: none !important;\n}\n}\n.fade-enter-active[data-v-ccf7fd5e],\n.fade-leave-active[data-v-ccf7fd5e] {\n  transition: opacity 0.2s ease;\n}\n.fade-enter-from[data-v-ccf7fd5e],\n.fade-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n}\n.kiosk-wizard-abandon-overlay[data-v-ccf7fd5e] {\n  position: fixed;\n  inset: 0;\n  z-index: 120;\n  background: var(--kiosk-overlay-modal, rgba(0, 0, 0, 0.45));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 20px;\n}\n.kiosk-wizard-abandon-modal[data-v-ccf7fd5e] {\n  background: var(--kiosk-surface, #fff);\n  border-radius: 20px;\n  padding: 1.75rem 1.5rem;\n  max-width: 400px;\n  width: 100%;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.2));\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-wizard-abandon-title[data-v-ccf7fd5e] {\n  margin: 0 0 0.5rem;\n  font-size: 1.25rem;\n  font-weight: 800;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-wizard-abandon-sub[data-v-ccf7fd5e] {\n  margin: 0 0 1.35rem;\n  font-size: 0.95rem;\n  color: var(--kiosk-text-muted, #777);\n  line-height: 1.4;\n}\n.kiosk-wizard-abandon-actions[data-v-ccf7fd5e] {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-wizard-abandon-yes[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: none;\n  border-radius: 12px;\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 1rem;\n  font-weight: 800;\n  cursor: pointer;\n}\n.kiosk-wizard-abandon-no[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: 1.5px solid var(--kiosk-border, #e0e0e0);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt, #f7f7f8);\n  color: var(--kiosk-text, #444);\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-wizard[data-v-ccf7fd5e] {\n  --kiosk-bg: #FFFBF5;\n  --kiosk-bg-2: #FFFFFF;\n  --kiosk-bg-3: #FFF0F2;\n  --kiosk-surface: #FFFFFF;\n  --kiosk-surface-alt: #F7F3EC;\n  --kiosk-surface-strong: #FFFFFF;\n  --kiosk-border: #EEE6D9;\n  --kiosk-border-strong: #D9C9B8;\n  --kiosk-text: #1A1A1A;\n  --kiosk-text-2: #3F3435;\n  --kiosk-text-muted: #5A5A5A;\n  --kiosk-text-mute: #7D7374;\n  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);\n  --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);\n  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);\n  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);\n  --kiosk-focus-ring: #2563EB;\n\n  display: flex;\n  flex-direction: column;\n  height: 100vh;\n  width: 100vw;\n  background:\n    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 252, 247, 1) 48%, rgba(255, 248, 241, 1) 100%);\n  color: var(--kiosk-text, #1a1a1a);\n  overflow: hidden;\n}\n.kiosk-wizard-loading[data-v-ccf7fd5e],\n.kiosk-wizard-error[data-v-ccf7fd5e] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: var(--kiosk-page-bg, var(--kiosk-bg, #070304));\n  color: var(--kiosk-text-muted, #777);\n  font-size: 1.05rem;\n}\n.kiosk-wizard-spinner[data-v-ccf7fd5e] {\n  width: 48px;\n  height: 48px;\n  border: 4px solid var(--kiosk-border, #e0e0e0);\n  border-top-color: var(--kiosk-primary, #e8001c);\n  border-radius: 50%;\n  animation: kiosk-spin-ccf7fd5e 0.9s linear infinite;\n}\n@keyframes kiosk-spin-ccf7fd5e {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-wizard-header[data-v-ccf7fd5e] {\n  position: relative;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 76px;\n  padding: 18px 76px 10px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n  box-shadow: 0 10px 28px rgba(20, 20, 20, 0.05);\n  flex-shrink: 0;\n}\n.kiosk-wizard-header[data-v-ccf7fd5e]::before {\n  content: '';\n  position: absolute;\n  top: 8px;\n  left: 28px;\n  right: 28px;\n  height: 3px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.9;\n}\n.kiosk-item-info[data-v-ccf7fd5e] {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n}\n.kiosk-item-info[data-v-ccf7fd5e]::before {\n  content: 'Vous composez';\n  font-size: 11px;\n  font-weight: 900;\n  letter-spacing: 0.16em;\n  text-transform: uppercase;\n  color: var(--kiosk-text-muted, #8a807a);\n}\n\n/* Kiosk Phase 9.1.2 — Badge allergènes persistent dans header wizard. */\n.kiosk-wizard-header-allergens[data-v-ccf7fd5e] {\n  margin-top: 2px;\n}\n.kiosk-item-name[data-v-ccf7fd5e] {\n  margin: 0;\n  font-size: clamp(22px, 2.35vw, 32px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n  max-width: 780px;\n  line-height: 1.05;\n}\n.kiosk-wizard-sr-only[data-v-ccf7fd5e] {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: 18px;\n  top: 50%;\n  transform: translateY(-50%);\n  min-width: 52px;\n  min-height: 52px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text-muted, #5a5a5a);\n  font-size: 26px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-wizard-close[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e] {\n  display: flex;\n  gap: 14px;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 16px 20px 10px;\n  overflow-x: auto;\n  background: var(--kiosk-surface, #fff);\n  scrollbar-width: none;\n}\n.kiosk-step-visuals[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-step-visual[data-v-ccf7fd5e] {\n  min-width: 104px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 7px;\n  opacity: 0.72;\n  transition: opacity 0.18s ease, transform 0.18s ease;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e],\n.kiosk-step-visual.done[data-v-ccf7fd5e] {\n  opacity: 1;\n}\n.kiosk-step-visual.active[data-v-ccf7fd5e] {\n  transform: translateY(-1px);\n}\n.kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  position: relative;\n  width: 78px;\n  height: 78px;\n  border-radius: 50%;\n  border: 3px solid var(--kiosk-border, #eee6d9);\n  background: #fff;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 30px;\n  overflow: hidden;\n  box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);\n}\n.kiosk-step-visual.active .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);\n}\n.kiosk-step-visual.done .kiosk-step-visual-icon[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  opacity: 0.78;\n}\n.kiosk-step-visual-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-step-visual-fallback[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 34px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e] {\n  position: absolute;\n  inset-inline-end: -2px;\n  bottom: -2px;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #e8001c);\n  border: 2px solid #fff;\n  color: #fff;\n  font-size: 0;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-step-visual-index[data-v-ccf7fd5e]::before {\n  content: '✓';\n  font-size: 10px;\n}\n.kiosk-step-visual:not(.done) .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  display: none;\n}\n.kiosk-step-visual.active .kiosk-step-visual-index[data-v-ccf7fd5e],\n.kiosk-step-visual.done .kiosk-step-visual-index[data-v-ccf7fd5e] {\n  border-color: var(--kiosk-primary, #e8001c);\n  color: #fff;\n}\n.kiosk-step-visual-label[data-v-ccf7fd5e] {\n  text-align: center;\n  font-size: 11px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted, #8a807a);\n  text-transform: uppercase;\n  line-height: 1.2;\n  max-width: 98px;\n  letter-spacing: 0.04em;\n}\n.kiosk-step-visual.active .kiosk-step-visual-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-primary, #e8001c);\n}\n.kiosk-progress-bar[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 48px 1fr 48px;\n  align-items: center;\n  gap: 14px;\n  padding: 0 22px 14px;\n  background: var(--kiosk-surface, #fff);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.92);\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e] {\n  min-width: 46px;\n  min-height: 46px;\n  width: 46px;\n  height: 46px;\n  border: 2px solid var(--kiosk-border, #eee6d9);\n  border-radius: 50%;\n  background: #fff;\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 28px;\n  line-height: 1;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 0;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-progress-arrow[data-v-ccf7fd5e]:disabled {\n  opacity: 0.55;\n}\n.kiosk-progress-track[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  min-width: 0;\n  max-width: 620px;\n  justify-self: center;\n  width: 100%;\n}\n.kiosk-step-dot[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  flex: 1 1 0;\n  min-width: 18px;\n}\n.kiosk-step-dot[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-dot.done[data-v-ccf7fd5e]:not(:last-child)::after {\n  display: none;\n}\n.kiosk-step-number[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 8px;\n  border-radius: 999px;\n  border: 0;\n  color: transparent;\n  background: var(--kiosk-border, #eee6d9);\n  display: block;\n  font-size: 0;\n  font-weight: 800;\n}\n.kiosk-step-dot.active .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);\n}\n.kiosk-step-dot.done .kiosk-step-number[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  opacity: 0.85;\n}\n.kiosk-live-composition[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr);\n  align-items: center;\n  gap: 12px;\n  min-height: 58px;\n  padding: 8px 24px 10px;\n  background: rgba(255, 255, 255, 0.94);\n  border-bottom: 1px solid rgba(238, 230, 217, 0.86);\n  box-shadow: 0 8px 22px rgba(20, 20, 20, 0.035);\n  flex-shrink: 0;\n}\n.kiosk-live-composition-title[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #6f6762);\n  font-size: 11px;\n  font-weight: 950;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  white-space: nowrap;\n}\n.kiosk-live-composition-list[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  overflow-x: auto;\n  scrollbar-width: none;\n  -webkit-overflow-scrolling: touch;\n}\n.kiosk-live-composition-list[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-live-composition-chip[data-v-ccf7fd5e] {\n  flex: 0 0 auto;\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  max-width: 210px;\n  min-height: 42px;\n  padding: 5px 10px 5px 6px;\n  border: 1px solid rgba(238, 230, 217, 0.95);\n  border-radius: 999px;\n  background: linear-gradient(180deg, #fff, #fffaf4);\n  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.045);\n}\n.kiosk-live-composition-chip.is-product[data-v-ccf7fd5e] {\n  max-width: 250px;\n  border-color: rgba(232, 0, 28, 0.18);\n  background: linear-gradient(180deg, #fff, #fff5f6);\n}\n.kiosk-live-composition-thumb[data-v-ccf7fd5e] {\n  width: 32px;\n  height: 32px;\n  flex: 0 0 32px;\n  border-radius: 50%;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, #f7f3ec);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-live-composition-img[data-v-ccf7fd5e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-live-composition-icon[data-v-ccf7fd5e] {\n  font-size: 17px;\n  line-height: 1;\n}\n.kiosk-live-composition-copy[data-v-ccf7fd5e] {\n  min-width: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n}\n.kiosk-live-composition-chip-label[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-mute, #837a75);\n  font-size: 9px;\n  font-weight: 950;\n  line-height: 1;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  white-space: nowrap;\n}\n.kiosk-live-composition-chip-value[data-v-ccf7fd5e] {\n  color: var(--kiosk-text, #1a1a1a);\n  font-size: 12px;\n  font-weight: 900;\n  line-height: 1.12;\n  max-width: 156px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-live-composition-empty[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-mute, #837a75);\n  font-size: 12px;\n  font-weight: 800;\n  white-space: nowrap;\n}\n.kiosk-step-question[data-v-ccf7fd5e] {\n  padding: 18px 24px 4px;\n  text-align: center;\n  font-size: clamp(20px, 2.1vw, 30px);\n  font-weight: 900;\n  color: var(--kiosk-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0;\n}\n.kiosk-step-content[data-v-ccf7fd5e] {\n  flex: 1;\n  overflow-y: auto;\n  background: transparent;\n  scrollbar-width: none;\n  padding: 0 8px 8px;\n}\n.kiosk-step-content[data-v-ccf7fd5e]::-webkit-scrollbar { display: none;\n}\n.kiosk-nav[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1fr auto;\n  align-items: center;\n  gap: 12px;\n  min-height: 84px;\n  border-top: 1px solid var(--kiosk-border, #e7e7e7);\n  background: var(--kiosk-surface, #f7f7f7);\n  box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));\n  flex-shrink: 0;\n  padding: 10px 12px;\n}\n.kiosk-nav-actions[data-v-ccf7fd5e] {\n  display: grid;\n  grid-template-columns: 1.25fr 0.8fr 1fr;\n  gap: 8px;\n  align-items: stretch;\n}\n.kiosk-nav--recap .kiosk-nav-actions[data-v-ccf7fd5e] {\n  grid-template-columns: 1fr 0.78fr 1.55fr;\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e],\n.kiosk-btn-back[data-v-ccf7fd5e],\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  border: 1.5px solid var(--kiosk-border-strong, #e0b0b7);\n  background: var(--kiosk-surface-alt, #fff);\n  font-size: 12px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #c33345);\n  letter-spacing: 0;\n  border-radius: var(--kiosk-btn-radius, 12px);\n  min-height: 52px;\n  padding: 0 14px;\n}\n.kiosk-btn-back[data-v-ccf7fd5e] {\n  color: var(--kiosk-text-muted, #b54d5c);\n  border-color: var(--kiosk-border, #e3c2c7);\n}\n.kiosk-btn-next[data-v-ccf7fd5e] {\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  border-color: var(--kiosk-primary, #e8001c);\n  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));\n}\n.kiosk-btn-next--cart[data-v-ccf7fd5e] {\n  min-height: 58px;\n  font-size: 14px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 18px 38px rgba(232,0,28,0.34);\n}\n.kiosk-btn-abandon[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-back[data-v-ccf7fd5e]:focus-visible,\n.kiosk-btn-next[data-v-ccf7fd5e]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563eb);\n  outline-offset: 2px;\n}\n.kiosk-btn-next[data-v-ccf7fd5e]:disabled,\n.kiosk-btn-back[data-v-ccf7fd5e]:disabled {\n  opacity: 1;\n  color: var(--kiosk-text-mute, #aa7d84);\n  background: var(--kiosk-surface-alt, #f4e3e6);\n  border-color: var(--kiosk-border, #ecd4d8);\n  box-shadow: none;\n}\n.kiosk-nav-total[data-v-ccf7fd5e] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 160px;\n  min-height: 52px;\n  padding: 0 14px;\n  white-space: nowrap;\n  font-size: 15px;\n  font-weight: 700;\n  color: var(--kiosk-text, #6a4047);\n  background: var(--kiosk-primary-soft, #f7e5e8);\n  border-radius: var(--kiosk-btn-radius, 12px);\n  border: 1px solid var(--kiosk-border, #efd2d7);\n}\n[data-v-ccf7fd5e] .kiosk-step-title {\n  display: none;\n}\n.step-slide-enter-active[data-v-ccf7fd5e],\n.step-slide-leave-active[data-v-ccf7fd5e] {\n  transition:\n    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),\n    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n.step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(-30px);\n}\n[dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n  transform: translateX(30px);\n}\n@media (prefers-reduced-motion: reduce) {\n.step-slide-enter-active[data-v-ccf7fd5e],\n  .step-slide-leave-active[data-v-ccf7fd5e] {\n    transition: none !important;\n}\n.step-slide-enter-from[data-v-ccf7fd5e],\n  .step-slide-leave-to[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-enter-from[data-v-ccf7fd5e],\n  [dir=\"rtl\"] .step-slide-leave-to[data-v-ccf7fd5e] {\n    opacity: 1 !important;\n    transform: none !important;\n}\n}\n.fade-enter-active[data-v-ccf7fd5e],\n.fade-leave-active[data-v-ccf7fd5e] {\n  transition: opacity 0.2s ease;\n}\n.fade-enter-from[data-v-ccf7fd5e],\n.fade-leave-to[data-v-ccf7fd5e] {\n  opacity: 0;\n}\n.kiosk-wizard-abandon-overlay[data-v-ccf7fd5e] {\n  position: fixed;\n  inset: 0;\n  z-index: 120;\n  background: var(--kiosk-overlay-modal, rgba(0, 0, 0, 0.45));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 20px;\n}\n.kiosk-wizard-abandon-modal[data-v-ccf7fd5e] {\n  background: var(--kiosk-surface, #fff);\n  border-radius: 20px;\n  padding: 1.75rem 1.5rem;\n  max-width: 400px;\n  width: 100%;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal, 0 16px 48px rgba(0, 0, 0, 0.2));\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-wizard-abandon-title[data-v-ccf7fd5e] {\n  margin: 0 0 0.5rem;\n  font-size: 1.25rem;\n  font-weight: 800;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-wizard-abandon-sub[data-v-ccf7fd5e] {\n  margin: 0 0 1.35rem;\n  font-size: 0.95rem;\n  color: var(--kiosk-text-muted, #777);\n  line-height: 1.4;\n}\n.kiosk-wizard-abandon-actions[data-v-ccf7fd5e] {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-wizard-abandon-yes[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: none;\n  border-radius: 12px;\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 1rem;\n  font-weight: 800;\n  cursor: pointer;\n}\n.kiosk-wizard-abandon-no[data-v-ccf7fd5e] {\n  width: 100%;\n  min-height: 50px;\n  border: 1.5px solid var(--kiosk-border, #e0e0e0);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt, #f7f7f8);\n  color: var(--kiosk-text, #444);\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -841,6 +841,36 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       if (!item) return false;
       return item.has_menu === true || (0,_helpers_kioskDrinkAddons__WEBPACK_IMPORTED_MODULE_6__.kioskDrinkAddonRowsFromItem)(item).length > 0;
     },
+    compositionSummaryChips: function compositionSummaryChips() {
+      var _this$selections$_tai;
+      if (!this.resolvedItem) return [];
+      var chips = [];
+      if (this.shouldShowCompositionStep('taille') && (_this$selections$_tai = this.selections._tailleMeta) !== null && _this$selections$_tai !== void 0 && _this$selections$_tai.label) {
+        chips.push({
+          key: 'taille',
+          label: this.compositionLabel('taille'),
+          value: this.selections._tailleMeta.label,
+          image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(this.resolvedItem),
+          icon: '📏'
+        });
+      }
+      var painChip = this.compositionPainChip();
+      if (painChip) chips.push(painChip);
+      var viandeChip = this.compositionViandeChip();
+      if (viandeChip) chips.push(viandeChip);
+      var sauceChip = this.compositionSauceChip();
+      if (sauceChip) chips.push(sauceChip);
+      var garnitureChip = this.compositionExtraGroupChip('garnitures');
+      if (garnitureChip) chips.push(garnitureChip);
+      var supplementChip = this.compositionExtraGroupChip('supplements');
+      if (supplementChip) chips.push(supplementChip);
+      var menuChip = this.compositionMenuChip();
+      if (menuChip) chips.push(menuChip);
+      this.compositionComposerChips().forEach(function (chip) {
+        return chips.push(chip);
+      });
+      return chips;
+    },
     /** Évite de passer des props inconnues aux autres étapes du wizard. */kioskMenuStepExtraProps: function kioskMenuStepExtraProps() {
       var _this$currentStep2;
       if (((_this$currentStep2 = this.currentStep) === null || _this$currentStep2 === void 0 ? void 0 : _this$currentStep2.type) !== 'menu') return {};
@@ -1067,7 +1097,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return 'simple';
     },
     detectViandeCount: function detectViandeCount() {
-      var _this$selections$_tai;
+      var _this$selections$_tai2;
       // [P-MEGA-01] Sources de vérité par ordre de priorité :
       //   1. Sélection explicite Taille (selections._tailleMeta.viandeCount)
       //   2. Champ serveur item.viande_count (P-MEGA-23 — quand exposé)
@@ -1075,7 +1105,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       //   4. Fallback à 1 — UNIQUEMENT au moment de l'usage, jamais
       //      pour décider d'afficher / cacher l'étape Taille (cf.
       //      shouldAskTacosTaille). Tracé via analytics quand utilisé.
-      if ((_this$selections$_tai = this.selections._tailleMeta) !== null && _this$selections$_tai !== void 0 && _this$selections$_tai.viandeCount) {
+      if ((_this$selections$_tai2 = this.selections._tailleMeta) !== null && _this$selections$_tai2 !== void 0 && _this$selections$_tai2.viandeCount) {
         return this.selections._tailleMeta.viandeCount;
       }
       var item = this.resolvedItem;
@@ -1215,6 +1245,196 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
         return sum + (parseInt(row.count || 0, 10) || 0);
       }, 0);
     },
+    compactChoiceText: function compactChoiceText(values) {
+      var max = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+      var clean = (Array.isArray(values) ? values : []).map(function (v) {
+        return String(v || '').trim();
+      }).filter(Boolean);
+      if (clean.length <= max) return clean.join(', ');
+      return "".concat(clean.slice(0, max).join(', '), " +").concat(clean.length - max);
+    },
+    formatChoiceNameWithCount: function formatChoiceNameWithCount(name, count) {
+      var n = parseInt(count || 0, 10) || 0;
+      return n > 1 ? "".concat(name, " x").concat(n) : name;
+    },
+    stepIndexForType: function stepIndexForType(type) {
+      return (this.activeSteps || []).findIndex(function (step) {
+        return (step === null || step === void 0 ? void 0 : step.type) === type;
+      });
+    },
+    shouldShowCompositionStep: function shouldShowCompositionStep(type) {
+      var idx = this.stepIndexForType(type);
+      if (idx < 0) return false;
+      return this.currentStepIndex >= idx;
+    },
+    compositionLabel: function compositionLabel(type) {
+      var fallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+      var keys = {
+        taille: 'kiosk.wizard.live_composition_size',
+        pain: 'kiosk.wizard.summary.bread_type',
+        viande: 'kiosk.wizard.summary.meats',
+        sauce: 'kiosk.wizard.summary.sauces',
+        garnitures: 'kiosk.wizard.summary.garnishes',
+        supplements: 'kiosk.wizard.summary.supplements',
+        menu: 'kiosk.wizard.summary.menu'
+      };
+      var key = keys[type];
+      if (key) {
+        var translated = this.$t(key);
+        if (translated !== key) return String(translated).replace(/[:\?\u061F]+$/, '');
+      }
+      var raw = fallback || this.getStepLabel(type);
+      return String(raw).replace(/[:\?\u061F]+$/, '').replace(/^\s*(quel|quelle|quels|quelles|choose|any)\s+/i, '').trim();
+    },
+    compositionPainChip: function compositionPainChip() {
+      var _kioskVariationsForAt, _this$selections$_pai;
+      var item = this.resolvedItem;
+      var painId = this.selections.pain;
+      if (!this.shouldShowCompositionStep('pain')) return null;
+      if (!item || !painId) return null;
+      var painAttr = this.kioskNormalizeItemAttributes(item.itemAttributes).find(function (a) {
+        return ((a === null || a === void 0 ? void 0 : a.name) || '').toLowerCase().includes('pain') || ((a === null || a === void 0 ? void 0 : a.name) || '').toLowerCase().includes('galette');
+      });
+      var variation = painAttr ? (_kioskVariationsForAt = (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskVariationsForAttribute)(item, painAttr.id)) === null || _kioskVariationsForAt === void 0 ? void 0 : _kioskVariationsForAt.find(function (v) {
+        return String(v.id) === String(painId);
+      }) : null;
+      var name = ((_this$selections$_pai = this.selections._painMeta) === null || _this$selections$_pai === void 0 ? void 0 : _this$selections$_pai.name) || (variation === null || variation === void 0 ? void 0 : variation.name) || String(painId);
+      return {
+        key: 'pain',
+        label: this.compositionLabel('pain'),
+        value: name,
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(variation, item),
+        icon: '🥖'
+      };
+    },
+    compositionViandeChip: function compositionViandeChip() {
+      var _this5 = this;
+      if (!this.shouldShowCompositionStep('viande')) return null;
+      var meta = Array.isArray(this.selections._viandeMeta) ? this.selections._viandeMeta : [];
+      var selected = meta.filter(function (row) {
+        return row && (parseInt(row.count || 0, 10) || 0) > 0;
+      });
+      if (selected.length === 0) return null;
+      var catalog = (0,_helpers_kioskViandeCatalog__WEBPACK_IMPORTED_MODULE_11__.kioskViandeCatalogForItem)(this.resolvedItem);
+      var first = selected[0];
+      var firstCatalog = catalog.find(function (row) {
+        return row.key === first.key || String(row.id) === String(first.id);
+      });
+      return {
+        key: 'viande',
+        label: this.compositionLabel('viande'),
+        value: this.compactChoiceText(selected.map(function (row) {
+          return _this5.formatChoiceNameWithCount(row.name, row.count);
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(firstCatalog, firstCatalog === null || firstCatalog === void 0 ? void 0 : firstCatalog.thumb),
+        icon: '🥩'
+      };
+    },
+    compositionSauceChip: function compositionSauceChip() {
+      var _this6 = this;
+      if (!this.shouldShowCompositionStep('sauce')) return null;
+      var order = Array.isArray(this.selections.sauceOrder) ? this.selections.sauceOrder : [];
+      if (order.length === 0) return null;
+      var rows = order.map(function (key) {
+        return _this6.kioskFindSauceVariation(_this6.resolvedItem, key);
+      }).filter(Boolean);
+      return {
+        key: 'sauce',
+        label: this.compositionLabel('sauce'),
+        value: this.compactChoiceText(rows.map(function (row) {
+          return row.name || 'Sauce';
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(rows[0], this.resolvedItem),
+        icon: '🥫'
+      };
+    },
+    compositionExtraGroupChip: function compositionExtraGroupChip(group) {
+      var _this7 = this;
+      var item = this.resolvedItem;
+      var type = group === 'supplements' ? 'supplements' : 'garnitures';
+      if (!this.shouldShowCompositionStep(type)) return null;
+      if (!item || !Array.isArray(item.extras)) return null;
+      var source = this.selections[group] || {};
+      var selected = Object.entries(source).map(function (_ref4) {
+        var _ref5 = _slicedToArray(_ref4, 2),
+          id = _ref5[0],
+          raw = _ref5[1];
+        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(raw);
+        if (count <= 0) return null;
+        var extra = item.extras.find(function (row) {
+          return String(row.id) === String(id);
+        });
+        if (!extra) return null;
+        return {
+          extra: extra,
+          count: count
+        };
+      }).filter(Boolean);
+      if (selected.length === 0) return null;
+      var isSupplement = group === 'supplements';
+      return {
+        key: group,
+        label: this.compositionLabel(type),
+        value: this.compactChoiceText(selected.map(function (row) {
+          return _this7.formatChoiceNameWithCount(row.extra.name, row.count);
+        })),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(selected[0].extra, item),
+        icon: isSupplement ? '🧀' : '🥗'
+      };
+    },
+    compositionMenuChip: function compositionMenuChip() {
+      var _this$selections$_boi,
+        _this8 = this;
+      if (!this.shouldShowCompositionStep('menu')) return null;
+      var mc = this.selections.menuChoice;
+      if (!mc || mc === 'none') return null;
+      var s = 'kiosk.wizard.summary';
+      var base = {
+        full: this.$t("".concat(s, ".menu_label_full")),
+        frites: this.$t("".concat(s, ".menu_label_frites")),
+        boisson: this.$t("".concat(s, ".menu_label_boisson"))
+      }[mc] || mc;
+      var details = [base];
+      if ((_this$selections$_boi = this.selections._boissonMeta) !== null && _this$selections$_boi !== void 0 && _this$selections$_boi.boissonName && (mc === 'full' || mc === 'boisson')) {
+        details.push(this.selections._boissonMeta.boissonName);
+      }
+      var fryOrder = (this.selections.fritesSauceOrder || []).filter(function (key) {
+        return key && key !== 'sans';
+      });
+      if (fryOrder.length > 0) {
+        details.push(this.compactChoiceText(fryOrder.map(function (key) {
+          return _this8.kioskFritesSauceDisplayName(key);
+        }), 1));
+      }
+      return {
+        key: 'menu',
+        label: this.compositionLabel('menu'),
+        value: details.join(' · '),
+        image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(this.resolvedItem),
+        icon: '🍟'
+      };
+    },
+    compositionComposerChips: function compositionComposerChips() {
+      var _this9 = this;
+      var grouped = {};
+      this.composerChoiceEntries().forEach(function (entry) {
+        var label = entry.step_label || _this9.$t('kiosk.wizard.generic.step_fallback');
+        if (!grouped[label]) grouped[label] = [];
+        grouped[label].push(_this9.formatChoiceNameWithCount(entry.name || entry.id, entry.count));
+      });
+      return Object.entries(grouped).map(function (_ref6, index) {
+        var _ref7 = _slicedToArray(_ref6, 2),
+          label = _ref7[0],
+          values = _ref7[1];
+        return {
+          key: "composer-".concat(index),
+          label: label,
+          value: _this9.compactChoiceText(values),
+          image: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_5__.kioskResolveImageSrc)(_this9.resolvedItem),
+          icon: '＋'
+        };
+      });
+    },
     updateSelection: function updateSelection(key, value, meta) {
       this.serverPreviewTotal = null;
       this.selections[key] = value;
@@ -1292,21 +1512,21 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return status !== 0 && status !== 2 && status !== 10;
     },
     composerStepAllowedChoiceKeys: function composerStepAllowedChoiceKeys(step) {
-      var _this5 = this;
+      var _this0 = this;
       var composerStep = (step === null || step === void 0 ? void 0 : step.composer_step) || step || {};
       return new Set((Array.isArray(composerStep.choices) ? composerStep.choices : []).filter(function (choice) {
-        return _this5.composerProjectedChoiceAvailable(choice);
+        return _this0.composerProjectedChoiceAvailable(choice);
       }).map(function (choice) {
         return "".concat(choice.source_type || composerStep.source_type || 'choice', ":").concat(choice.id);
       }));
     },
     currentComposerAllowedChoiceKeys: function currentComposerAllowedChoiceKeys() {
-      var _this6 = this;
+      var _this1 = this;
       return new Set(this.composerActiveSteps().flatMap(function (step) {
         var _step$composer_step5;
         return Array.isArray(step === null || step === void 0 || (_step$composer_step5 = step.composer_step) === null || _step$composer_step5 === void 0 ? void 0 : _step$composer_step5.choices) ? step.composer_step.choices : [];
       }).filter(function (choice) {
-        return _this6.composerProjectedChoiceAvailable(choice);
+        return _this1.composerProjectedChoiceAvailable(choice);
       }).map(function (choice) {
         return "".concat(choice.source_type || 'choice', ":").concat(choice.id);
       }));
@@ -1314,15 +1534,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     sanitizeComposerChoicesForCurrentProfile: function sanitizeComposerChoicesForCurrentProfile(groups) {
       var allowedKeys = this.currentComposerAllowedChoiceKeys();
       var sanitized = {};
-      Object.entries(groups || {}).forEach(function (_ref4) {
-        var _ref5 = _slicedToArray(_ref4, 2),
-          groupKey = _ref5[0],
-          group = _ref5[1];
+      Object.entries(groups || {}).forEach(function (_ref8) {
+        var _ref9 = _slicedToArray(_ref8, 2),
+          groupKey = _ref9[0],
+          group = _ref9[1];
         var nextChoices = {};
-        Object.entries((group === null || group === void 0 ? void 0 : group.choices) || {}).forEach(function (_ref6) {
-          var _ref7 = _slicedToArray(_ref6, 2),
-            choiceKey = _ref7[0],
-            choice = _ref7[1];
+        Object.entries((group === null || group === void 0 ? void 0 : group.choices) || {}).forEach(function (_ref0) {
+          var _ref1 = _slicedToArray(_ref0, 2),
+            choiceKey = _ref1[0],
+            choice = _ref1[1];
           if (allowedKeys.has(choiceKey)) {
             nextChoices[choiceKey] = choice;
           }
@@ -1347,13 +1567,13 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       var allowedKeys = this.currentComposerAllowedChoiceKeys();
       return Object.values(groups).flatMap(function (group) {
         var choices = (group === null || group === void 0 ? void 0 : group.choices) || {};
-        return Object.entries(choices).filter(function (_ref8) {
-          var _ref9 = _slicedToArray(_ref8, 1),
-            choiceKey = _ref9[0];
+        return Object.entries(choices).filter(function (_ref10) {
+          var _ref11 = _slicedToArray(_ref10, 1),
+            choiceKey = _ref11[0];
           return allowedKeys.has(choiceKey);
-        }).map(function (_ref0) {
-          var _ref1 = _slicedToArray(_ref0, 2),
-            choice = _ref1[1];
+        }).map(function (_ref12) {
+          var _ref13 = _slicedToArray(_ref12, 2),
+            choice = _ref13[1];
           return choice;
         }).map(function (choice) {
           return _objectSpread(_objectSpread({}, choice), {}, {
@@ -1375,10 +1595,10 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       return n.includes('sauce') || n.includes('condiment') || n.includes('dressing') || n.includes('dip');
     },
     kioskSauceAttribute: function kioskSauceAttribute(item) {
-      var _this7 = this;
+      var _this10 = this;
       var attrs = this.kioskNormalizeItemAttributes(item === null || item === void 0 ? void 0 : item.itemAttributes);
       return attrs.find(function (a) {
-        return _this7.kioskIsSauceLikeAttributeName(a.name);
+        return _this10.kioskIsSauceLikeAttributeName(a.name);
       }) || null;
     },
     kioskSauceVariationsList: function kioskSauceVariationsList(item) {
@@ -1648,9 +1868,9 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       };
     },
     fetchItemById: function fetchItemById(id) {
-      var _this8 = this;
+      var _this11 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _res$data, res, _this8$selections$_ta, inferredTaille, count, _t;
+        var _res$data, res, _this11$selections$_t, inferredTaille, count, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -1660,46 +1880,46 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
               }
               return _context.a(2);
             case 1:
-              _this8.resetSelections();
-              _this8.fetchLoading = true;
-              _this8.fetchError = null;
+              _this11.resetSelections();
+              _this11.fetchLoading = true;
+              _this11.fetchError = null;
               _context.p = 2;
               _context.n = 3;
-              return _this8.$store.dispatch('frontendItem/details', {
+              return _this11.$store.dispatch('frontendItem/details', {
                 id: id,
                 surface: 'kiosk'
               });
             case 3:
               res = _context.v;
-              _this8.fetchedItem = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || null;
-              if (_this8.fetchedItem) {
-                _this8.initGarnitures();
-                inferredTaille = _this8.inferTacosPresetMeta();
+              _this11.fetchedItem = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || null;
+              if (_this11.fetchedItem) {
+                _this11.initGarnitures();
+                inferredTaille = _this11.inferTacosPresetMeta();
                 if (inferredTaille) {
-                  _this8.selections._tailleMeta = inferredTaille;
-                  _this8.selections.taille = inferredTaille.label;
-                } else if (!((_this8$selections$_ta = _this8.selections._tailleMeta) !== null && _this8$selections$_ta !== void 0 && _this8$selections$_ta.viandeCount)) {
+                  _this11.selections._tailleMeta = inferredTaille;
+                  _this11.selections.taille = inferredTaille.label;
+                } else if (!((_this11$selections$_t = _this11.selections._tailleMeta) !== null && _this11$selections$_t !== void 0 && _this11$selections$_t.viandeCount)) {
                   // Non-tacos or generic tacos needing taille step: pre-seed viandeCount
                   // so the viande step component has a single source of truth.
-                  count = _this8.detectViandeCount();
-                  _this8.selections._tailleMeta = _objectSpread(_objectSpread({}, _this8.selections._tailleMeta || {}), {}, {
+                  count = _this11.detectViandeCount();
+                  _this11.selections._tailleMeta = _objectSpread(_objectSpread({}, _this11.selections._tailleMeta || {}), {}, {
                     viandeCount: count
                   });
                 }
                 // [P-MEGA-05] Restore après fetch + inférences (mode edit via /wizard/:id).
-                _this8.restoreEditingSelectionsIfAny();
+                _this11.restoreEditingSelectionsIfAny();
               } else {
-                _this8.fetchError = _this8.$t('kiosk.wizard.product_not_found');
+                _this11.fetchError = _this11.$t('kiosk.wizard.product_not_found');
               }
               _context.n = 5;
               break;
             case 4:
               _context.p = 4;
               _t = _context.v;
-              _this8.fetchError = _this8.$t('kiosk.wizard.product_load_error');
+              _this11.fetchError = _this11.$t('kiosk.wizard.product_load_error');
             case 5:
               _context.p = 5;
-              _this8.fetchLoading = false;
+              _this11.fetchLoading = false;
               return _context.f(5);
             case 6:
               return _context.a(2);
@@ -1711,7 +1931,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     // cas d'erreur : `serverPreviewTotal` reste à sa dernière valeur connue
     // (ou `null`) et `runningTotal` retombe sur `runningTotalLocal`.
     refreshServerPreviewTotal: function refreshServerPreviewTotal() {
-      var _this9 = this;
+      var _this12 = this;
       if (!this._kioskPricingPreview) return;
       var cartItem = this.buildCartItem();
       if (!cartItem || !cartItem.item_id) return;
@@ -1744,17 +1964,17 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
           })
         }]
       }).then(function (res) {
-        _this9.serverPreviewLoading = false;
+        _this12.serverPreviewLoading = false;
         if (res && Number.isFinite(res.total)) {
-          _this9.serverPreviewTotal = Math.round(res.total * 100) / 100;
+          _this12.serverPreviewTotal = Math.round(res.total * 100) / 100;
         }
         // res === null : on garde le total précédent (UX > affichage 0,00).
       })["catch"](function () {
-        _this9.serverPreviewLoading = false;
+        _this12.serverPreviewLoading = false;
       });
     },
     buildCartItem: function buildCartItem() {
-      var _this0 = this,
+      var _this13 = this,
         _item$item_category_i;
       var item = this.resolvedItem;
       if (!item) return null;
@@ -1800,15 +2020,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       // Build normalized item_variations array directly in server format:
       // [{ id: varId, variation_name: attrLabel, name: chosenValueName }]
       // This avoids the fragile index-based reconstruction in kioskCart.submitOrder.
-      var normalizedVariations = Object.entries(allVariations).filter(function (_ref10) {
-        var _ref11 = _slicedToArray(_ref10, 2),
-          varId = _ref11[1];
+      var normalizedVariations = Object.entries(allVariations).filter(function (_ref14) {
+        var _ref15 = _slicedToArray(_ref14, 2),
+          varId = _ref15[1];
         return varId;
-      }).map(function (_ref12) {
+      }).map(function (_ref16) {
         var _item$itemAttributes4;
-        var _ref13 = _slicedToArray(_ref12, 2),
-          attrId = _ref13[0],
-          varId = _ref13[1];
+        var _ref17 = _slicedToArray(_ref16, 2),
+          attrId = _ref17[0],
+          varId = _ref17[1];
         // attrId is the attribute id (key in allVariations); find the matching label
         // allVariationNames is keyed by attribute name (e.g. 'Pain', 'Viande', 'Sauce')
         // We stored attrId → varId and attrName → chosenName in parallel, so we look up
@@ -1835,7 +2055,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       var composerVariationTotal = 0;
       var composerExtraTotal = 0;
       Object.keys(this.selections.garnitures).forEach(function (id) {
-        if (_this0.selections.garnitures[id]) {
+        if (_this13.selections.garnitures[id]) {
           var _item$extras4;
           var extra = (_item$extras4 = item.extras) === null || _item$extras4 === void 0 ? void 0 : _item$extras4.find(function (e) {
             return e.id === parseInt(id);
@@ -1848,7 +2068,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
       Object.keys(this.selections.supplements).forEach(function (id) {
         var _item$extras5;
-        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(_this0.selections.supplements[id]);
+        var count = (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_8__.normalizeKioskSelectionCount)(_this13.selections.supplements[id]);
         if (count <= 0) return;
         var extra = (_item$extras5 = item.extras) === null || _item$extras5 === void 0 ? void 0 : _item$extras5.find(function (e) {
           return e.id === parseInt(id);
@@ -1895,9 +2115,9 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       this.composerChoiceEntries().forEach(function (entry) {
         var count = Math.max(1, parseInt(entry.count || 1, 10) || 1);
         if (entry.source_type === 'variation') {
-          var _variation3 = _this0.findItemVariationById(item, entry.id);
+          var _variation3 = _this13.findItemVariationById(item, entry.id);
           if (!_variation3) return;
-          var attrName = _this0.attributeNameForVariation(item, _variation3) || entry.attribute_name || entry.item_attribute_name || '';
+          var attrName = _this13.attributeNameForVariation(item, _variation3) || entry.attribute_name || entry.item_attribute_name || '';
           normalizedVariations.push(_objectSpread({
             id: parseInt(entry.id, 10),
             variation_name: attrName,
@@ -1908,7 +2128,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
           composerVariationTotal += (parseFloat(_variation3.convert_price || _variation3.price || 0) || 0) * count;
         }
         if (entry.source_type === 'extra') {
-          var extra = _this0.findItemExtraById(item, entry.id);
+          var extra = _this13.findItemExtraById(item, entry.id);
           if (!extra) return;
           normalizedExtras.push(_objectSpread({
             id: parseInt(entry.id, 10),
@@ -1988,14 +2208,14 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
     },
     buildInstruction: function buildInstruction() {
-      var _this1 = this,
-        _this$selections$_tai2;
+      var _this14 = this,
+        _this$selections$_tai3;
       var item = this.resolvedItem;
       var parts = [];
       var ti = function ti(key, values) {
-        return _this1.$t("kiosk.wizard.instruction.".concat(key), values);
+        return _this14.$t("kiosk.wizard.instruction.".concat(key), values);
       };
-      if ((_this$selections$_tai2 = this.selections._tailleMeta) !== null && _this$selections$_tai2 !== void 0 && _this$selections$_tai2.label) {
+      if ((_this$selections$_tai3 = this.selections._tailleMeta) !== null && _this$selections$_tai3 !== void 0 && _this$selections$_tai3.label) {
         parts.push(ti('taille', {
           label: this.selections._tailleMeta.label
         }));
@@ -2007,7 +2227,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
         });
         if (painAttr && (_item$variations5 = item.variations) !== null && _item$variations5 !== void 0 && _item$variations5[painAttr.id]) {
           var painVar = item.variations[painAttr.id].find(function (v) {
-            return v.id === _this1.selections.pain;
+            return v.id === _this14.selections.pain;
           });
           if (painVar) parts.push(ti('pain', {
             name: painVar.name
@@ -2026,15 +2246,15 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
             list: viandes.join(', ')
           }));
         } else {
-          var _viandes = Object.entries(this.selections.viandes).filter(function (_ref14) {
-            var _ref15 = _slicedToArray(_ref14, 2),
-              _ = _ref15[0],
-              count = _ref15[1];
+          var _viandes = Object.entries(this.selections.viandes).filter(function (_ref18) {
+            var _ref19 = _slicedToArray(_ref18, 2),
+              _ = _ref19[0],
+              count = _ref19[1];
             return count > 0;
-          }).map(function (_ref16) {
-            var _ref17 = _slicedToArray(_ref16, 2),
-              key = _ref17[0],
-              count = _ref17[1];
+          }).map(function (_ref20) {
+            var _ref21 = _slicedToArray(_ref20, 2),
+              key = _ref21[0],
+              count = _ref21[1];
             return "".concat(key, " \xD7").concat(count);
           });
           if (_viandes.length > 0) parts.push(ti('viandes', {
@@ -2044,7 +2264,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       if (this.selections.sauceOrder.length > 1 && item) {
         var extraSauces = this.selections.sauceOrder.slice(1).map(function (id) {
-          var v = _this1.kioskFindSauceVariation(item, id);
+          var v = _this14.kioskFindSauceVariation(item, id);
           return v ? v.name : null;
         }).filter(Boolean);
         if (extraSauces.length > 0) parts.push(ti('sauces_extra', {
@@ -2074,7 +2294,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       });
       if (hasFrites && fryOrder.length > 0) {
         var labels = fryOrder.map(function (k) {
-          return _this1.kioskFritesSauceDisplayName(k);
+          return _this14.kioskFritesSauceDisplayName(k);
         });
         parts.push(ti('frites_sauce', {
           list: labels.join(', ')
@@ -2082,14 +2302,14 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       var composerGroups = {};
       this.composerChoiceEntries().forEach(function (entry) {
-        var label = entry.step_label || _this1.$t('kiosk.wizard.generic.step_fallback');
+        var label = entry.step_label || _this14.$t('kiosk.wizard.generic.step_fallback');
         if (!composerGroups[label]) composerGroups[label] = [];
         composerGroups[label].push("".concat(entry.name || entry.id).concat(entry.count > 1 ? " x".concat(entry.count) : ''));
       });
-      Object.entries(composerGroups).forEach(function (_ref18) {
-        var _ref19 = _slicedToArray(_ref18, 2),
-          label = _ref19[0],
-          values = _ref19[1];
+      Object.entries(composerGroups).forEach(function (_ref22) {
+        var _ref23 = _slicedToArray(_ref22, 2),
+          label = _ref23[0],
+          values = _ref23[1];
         parts.push("".concat(label, ": ").concat(values.join(', ')));
       });
       var joined = parts.join('. ');
@@ -2137,7 +2357,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     }
   },
   mounted: function mounted() {
-    var _this10 = this;
+    var _this15 = this;
     if (this.item) {
       this.resetSelections();
       this.initGarnitures();
@@ -2154,8 +2374,8 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     }
     // Phase 8.8 — fire first wizard_step_entered event.
     this.$nextTick(function () {
-      var _this10$currentStep;
-      return _this10.emitWizardStepEntered((_this10$currentStep = _this10.currentStep) === null || _this10$currentStep === void 0 ? void 0 : _this10$currentStep.type);
+      var _this15$currentStep;
+      return _this15.emitWizardStepEntered((_this15$currentStep = _this15.currentStep) === null || _this15$currentStep === void 0 ? void 0 : _this15$currentStep.type);
     });
 
     // Kiosk Phase 9.1.3 — Initialise le debouncer SSOT (non-reactif pour éviter
@@ -2169,7 +2389,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
     });
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(function () {
-      return _this10.refreshServerPreviewTotal();
+      return _this15.refreshServerPreviewTotal();
     });
   },
   beforeUnmount: function beforeUnmount() {
@@ -2208,7 +2428,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
   },
   watch: {
     showAbandonConfirm: function showAbandonConfirm(open) {
-      var _this11 = this;
+      var _this16 = this;
       if (typeof document === 'undefined') return;
       if (this._abandonDocKeydown) {
         document.removeEventListener('keydown', this._abandonDocKeydown, true);
@@ -2216,13 +2436,13 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       }
       if (!open) return;
       this._abandonDocKeydown = function (e) {
-        if (!_this11.showAbandonConfirm) return;
+        if (!_this16.showAbandonConfirm) return;
         if (e.key === 'Escape') {
           e.preventDefault();
-          _this11.onAbandonCancel();
+          _this16.onAbandonCancel();
           return;
         }
-        var root = _this11.$refs.abandonModalEl;
+        var root = _this16.$refs.abandonModalEl;
         if (!root || !root.contains(document.activeElement)) return;
         if (e.key !== 'Tab') return;
         var focusables = _toConsumableArray(root.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
@@ -2239,7 +2459,7 @@ var KioskStepGenericChoices = (0,vue__WEBPACK_IMPORTED_MODULE_0__.defineAsyncCom
       };
       document.addEventListener('keydown', this._abandonDocKeydown, true);
       this.$nextTick(function () {
-        var root = _this11.$refs.abandonModalEl;
+        var root = _this16.$refs.abandonModalEl;
         var firstBtn = root === null || root === void 0 ? void 0 : root.querySelector('button');
         firstBtn === null || firstBtn === void 0 || firstBtn.focus({
           preventScroll: true
@@ -2593,35 +2813,66 @@ var _hoisted_18 = {
   "class": "kiosk-step-number"
 };
 var _hoisted_19 = ["aria-label", "disabled"];
-var _hoisted_20 = {
-  "class": "kiosk-step-question"
-};
+var _hoisted_20 = ["aria-label"];
 var _hoisted_21 = {
-  "class": "kiosk-step-content"
+  "class": "kiosk-live-composition-title"
 };
 var _hoisted_22 = {
+  "class": "kiosk-live-composition-list"
+};
+var _hoisted_23 = ["data-testid"];
+var _hoisted_24 = {
+  "class": "kiosk-live-composition-thumb",
+  "aria-hidden": "true"
+};
+var _hoisted_25 = ["src"];
+var _hoisted_26 = {
+  key: 1,
+  "class": "kiosk-live-composition-icon"
+};
+var _hoisted_27 = {
+  "class": "kiosk-live-composition-copy"
+};
+var _hoisted_28 = {
+  "class": "kiosk-live-composition-chip-label"
+};
+var _hoisted_29 = {
+  "class": "kiosk-live-composition-chip-value"
+};
+var _hoisted_30 = {
+  key: 0,
+  "class": "kiosk-live-composition-empty",
+  "data-testid": "kiosk-composition-empty"
+};
+var _hoisted_31 = {
+  "class": "kiosk-step-question"
+};
+var _hoisted_32 = {
+  "class": "kiosk-step-content"
+};
+var _hoisted_33 = {
   "class": "kiosk-nav-actions"
 };
-var _hoisted_23 = ["disabled"];
-var _hoisted_24 = ["disabled", "aria-label"];
-var _hoisted_25 = {
+var _hoisted_34 = ["disabled"];
+var _hoisted_35 = ["disabled", "aria-label"];
+var _hoisted_36 = {
   "class": "kiosk-nav-total"
 };
-var _hoisted_26 = {
+var _hoisted_37 = {
   ref: "abandonModalEl",
   "class": "kiosk-wizard-abandon-modal",
   role: "dialog",
   "aria-modal": "true",
   "aria-labelledby": "kiosk-wizard-abandon-title"
 };
-var _hoisted_27 = {
+var _hoisted_38 = {
   id: "kiosk-wizard-abandon-title",
   "class": "kiosk-wizard-abandon-title"
 };
-var _hoisted_28 = {
+var _hoisted_39 = {
   "class": "kiosk-wizard-abandon-sub"
 };
-var _hoisted_29 = {
+var _hoisted_40 = {
   "class": "kiosk-wizard-abandon-actions"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -2691,7 +2942,26 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.nextStep && $options.nextStep.apply($options, arguments);
     }),
     disabled: $data.currentStepIndex >= $options.activeSteps.length - 1 || !$options.canAdvance
-  }, " › ", 8 /* PROPS */, _hoisted_19)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currentStep.type === 'recap' ? _ctx.$t('kiosk.wizard.recap_order_title') : $options.getQuestionLabel($options.currentStep)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, " › ", 8 /* PROPS */, _hoisted_19)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-live-composition",
+    role: "region",
+    "aria-label": _ctx.$t('kiosk.wizard.live_composition_label'),
+    "data-testid": "kiosk-wizard-live-composition"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.live_composition_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.compositionSummaryChips, function (chip) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: chip.key,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-live-composition-chip", {
+        'is-product': chip.kind === 'product'
+      }]),
+      "data-testid": "kiosk-composition-chip-".concat(chip.key)
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, [chip.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: chip.image,
+      alt: '',
+      "class": "kiosk-live-composition-img",
+      loading: "lazy"
+    }, null, 8 /* PROPS */, _hoisted_25)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.icon), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.value), 1 /* TEXT */)])], 10 /* CLASS, PROPS */, _hoisted_23);
+  }), 128 /* KEYED_FRAGMENT */)), $options.compositionSummaryChips.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.live_composition_empty')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_20), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currentStep.type === 'recap' ? _ctx.$t('kiosk.wizard.recap_order_title') : $options.getQuestionLabel($options.currentStep)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "step-slide",
     mode: "out-in"
   }, {
@@ -2707,7 +2977,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-nav", {
       'kiosk-nav--recap': ((_$options$currentStep = $options.currentStep) === null || _$options$currentStep === void 0 ? void 0 : _$options$currentStep.type) === 'recap'
     }])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-btn-abandon",
     onClick: _cache[4] || (_cache[4] = function () {
@@ -2720,7 +2990,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.prevStep && $options.prevStep.apply($options, arguments);
     }),
     disabled: $data.currentStepIndex === 0
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.nav_previous')), 9 /* TEXT, PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.nav_previous')), 9 /* TEXT, PROPS */, _hoisted_34), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     onClick: _cache[6] || (_cache[6] = function ($event) {
       return $data.currentStepIndex < $options.activeSteps.length - 1 ? $options.nextStep() : $options.addToCart();
@@ -2730,7 +3000,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }]),
     disabled: !$options.canAdvance,
     "aria-label": $data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_24)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.total')) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.runningTotal)), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" P2 : confirmation avant abandon (évite erreur tactile) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.currentStepIndex < $options.activeSteps.length - 1 ? _ctx.$t('kiosk.wizard.nav_next') : _ctx.$t('kiosk.wizard.add_to_cart')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_35)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.total')) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.runningTotal)), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" P2 : confirmation avant abandon (évite erreur tactile) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "fade"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
@@ -2741,7 +3011,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
           return $options.onAbandonCancel && $options.onAbandonCancel.apply($options, arguments);
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "kiosk-wizard-abandon-yes",
         onClick: _cache[7] || (_cache[7] = function () {

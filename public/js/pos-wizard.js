@@ -520,13 +520,20 @@
                 var unitPrice = parseFloat(ad.addon_item_convert_price)
                     || parseFloat(ad.addonItem && ad.addonItem.convert_price || 0)
                     || parseFloat(ad.total_convert_price) || 0;
+                // [POS-WIZARD-DRINKS 2026-05-02] Capture group_label pour détection boisson
+                // multi-priorité (alignée sur kioskIsDrinkAddon — symétrie POS↔borne).
+                var groupLabel = '';
+                if (ad.group_label) groupLabel = String(ad.group_label);
+                else if (ad.addonItem && ad.addonItem.group_label) groupLabel = String(ad.addonItem.group_label);
+                else if (ad.addon_item && ad.addon_item.group_label) groupLabel = String(ad.addon_item.group_label);
                 return {
                     id: ad.id,
                     itemId: ad.addon_item_id || ad.item_addon_id,
                     name: ad.addon_item_name,
                     price: unitPrice,
                     currencyPrice: '€' + unitPrice.toFixed(2),
-                    thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || '')
+                    thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || ''),
+                    groupLabel: groupLabel.toLowerCase()
                 };
             });
         }
@@ -779,25 +786,60 @@
                 inline: true
             });
 
-            // [P1] Step: boisson_choice — Choix boisson (visible si menu complet ou boisson seule)
-            // [BUG-W5 FIX] Only add boisson_choice step if there are actual boisson items
-            // [FIX] Exclude "Boisson Seule" addon which is a formula option, not a real drink
-            var boissonItems = addonItems.filter(function (a) {
-                var name = a.name.toLowerCase().trim();
-                // Skip formula addons that contain "seule" or are exactly "boisson"
-                if (name === 'boisson' || name === 'boisson seule' || name.includes('seule')) {
-                    return false;
+            // [POS-WIZARD-DRINKS 2026-05-02] Détection boisson catalogue-aware multi-priorité.
+            // Aligné sur `kioskIsDrinkAddon` (resources/js/helpers/kioskDrinkAddons.js) pour
+            // garantir la symétrie POS↔borne (même item, même règles, stock partagé via
+            // le même item_id côté backend).
+            //
+            // Sources d'autorité (ordre décroissant) :
+            //   P1. Catalogue Vue : addon dont l'`itemId` est dans la catégorie « boisson »
+            //       (data-pos-drinks-catalog attribut DOM, alimenté par PosComponent.drinksCatalog)
+            //   P2. Catalogue Vue : addon dont le nom matche un nom du catalogue
+            //   P3. group_label explicite ('boisson' | 'drink' | 'drinks' | 'beverage')
+            //   P4. Regex legacy (eau, thé, jus, lipton, evian, perrier, etc. — couvre cas
+            //       où admin n'a pas encore configuré le catalogue/group_label)
+            //
+            // Exclusions explicites : addons formule (boisson seule), food-like (frites,
+            // nuggets, wraps, etc.), addons groupés en frites ou menu.
+            var boissonItems = (function () {
+                var modalEl = document.getElementById('item-variation-modal');
+                var catalogList = [];
+                if (modalEl) {
+                    var rawCatalog = modalEl.getAttribute('data-pos-drinks-catalog');
+                    if (rawCatalog) {
+                        try { catalogList = JSON.parse(rawCatalog) || []; } catch (e) { catalogList = []; }
+                    }
                 }
-                // Match real drink items: named drinks or specific drink keywords
-                return (name.includes('coca') || name.includes('fanta') || name.includes('sprite') ||
-                    name.includes('pepsi') || name.includes('7up') || name.includes('orangina') ||
-                    name.includes('oasis') || name.includes('volvic') || name.includes('evian') ||
-                    name.includes('cristalline') || name.includes('soda') || name.includes('jus') ||
-                    name.includes('citron') || name.includes('orange') || name.includes('pomme') ||
-                    name.includes('raisin') || name.includes('tropico') || name.includes('schweppes') ||
-                    name.includes('red bull') || name.includes('monster') || name.includes('eau')) &&
-                    !name.includes('frite') && !name.includes('menu');
-            });
+                var catalogIds = new Set();
+                var catalogNames = new Set();
+                for (var ci = 0; ci < catalogList.length; ci++) {
+                    var d = catalogList[ci];
+                    if (!d) continue;
+                    if (d.id != null) catalogIds.add(String(d.id));
+                    if (d.name) catalogNames.add(String(d.name).toLowerCase().trim());
+                }
+
+                var DRINK_LIKE_REGEX = /\b(coca|cola|pepsi|fanta|sprite|schweppes|eau|th[ée]|tea|ice\s?tea|jus|boisson|soda|drink|limonade|orangina|oasis|tropico|caf[ée]|coffee|red\s?bull|vittel|evian|perrier|badoit|heineken|1664|kronenbourg|desperados|kas|san\s?pellegrino|lipton|nestea|cristalline|volvic|monster|citron|raisin|7up|pomme)/i;
+                var FOOD_LIKE_REGEX = /frite|patate|nugget|tender|onion|oignon|mozzarella|accompagn|snack|dessert|glace|wrap|cornet|potato|boulette|stick|ring|douille|corbeille|panier|barquette|salade/i;
+                var GENERIC_OPTION_REGEX = /^\s*(?:\+?\s*)?(boisson|drink)(?:\s+(seule?|only))?\s*$/i;
+
+                return addonItems.filter(function (a) {
+                    var name = String(a.name || '').toLowerCase().trim();
+                    if (!name) return false;
+                    if (GENERIC_OPTION_REGEX.test(name)) return false;
+                    if (FOOD_LIKE_REGEX.test(name)) return false;
+                    if (name.indexOf('menu') !== -1) return false;
+
+                    if (a.itemId != null && catalogIds.has(String(a.itemId))) return true;
+                    if (catalogNames.has(name)) return true;
+
+                    var gl = a.groupLabel || '';
+                    if (gl === 'boisson' || gl === 'drink' || gl === 'drinks' || gl === 'beverage') return true;
+                    if (gl !== '' && (gl.indexOf('frite') !== -1 || gl.indexOf('food') !== -1 || gl === 'menu' || gl.indexOf('menu_') === 0)) return false;
+
+                    return DRINK_LIKE_REGEX.test(name);
+                });
+            })();
             if (boissonItems.length > 0) {
                 s.push({
                     type: 'boisson_choice',
@@ -4144,6 +4186,15 @@
 
         originalBody.style.display = 'none';
 
+        // [POS-V4-WIZARD-VIEWPORT-FIT] Hide Vue-injected wizard footer (Add to cart) so the
+        // wizard's own sticky CTA remains the single source of truth (bound to running total).
+        // Without this, the Vue button stays visible above the wizard and submits temp.total_price = 0.
+        var vueFooter = modal.querySelector('[data-wiz-vue-footer]');
+        if (vueFooter) {
+            vueFooter.setAttribute('data-wiz-hidden', '1');
+            vueFooter.style.display = 'none';
+        }
+
         // [NEW SPRINT 4] Inject CSS styles if not already present
         if (!document.getElementById('pos-wizard-styles')) {
             var styleEl = document.createElement('style');
@@ -4529,6 +4580,12 @@
                 originalHeader.removeAttribute('data-wiz-hidden');
             }
             if (originalBody) originalBody.style.display = '';
+            // [POS-V4-WIZARD-VIEWPORT-FIT] Restore Vue-injected footer for simple products
+            // (no wizard rendered → Vue native CTA must be visible).
+            if (vueFooter) {
+                vueFooter.style.display = '';
+                vueFooter.removeAttribute('data-wiz-hidden');
+            }
             // Clear any stale wizard data-attributes from previous wizard session
             modal.removeAttribute('data-wizard-total');
             modal.removeAttribute('data-wizard-pos-line-addons');
@@ -4612,6 +4669,12 @@
                 if (hiddenHeader) {
                     hiddenHeader.style.display = '';
                     hiddenHeader.removeAttribute('data-wiz-hidden');
+                }
+                // [POS-V4-WIZARD-VIEWPORT-FIT] Restore Vue-injected wizard footer for fallback (simple products).
+                var hiddenVueFooter = modalEl.querySelector('[data-wiz-vue-footer][data-wiz-hidden]');
+                if (hiddenVueFooter) {
+                    hiddenVueFooter.style.display = '';
+                    hiddenVueFooter.removeAttribute('data-wiz-hidden');
                 }
             }
             if (!keepOriginalHidden) {

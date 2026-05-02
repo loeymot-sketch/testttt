@@ -31,6 +31,15 @@ import { getCurrentLocale } from '../i18n';
  * @param {object} store  Vuex store instance
  * @returns {{ token: string|null, language: string|null }}
  */
+export function selectSurfaceBearerToken({ kioskToken = null, userToken = null } = {}, pathname = null) {
+    const path = pathname ?? (typeof window !== 'undefined' ? (window.location.pathname || '') : '');
+    const kioskSurface = path.startsWith('/kiosk');
+
+    return kioskSurface
+        ? (kioskToken || userToken || null)
+        : (userToken || kioskToken || null);
+}
+
 export function readTokenFromVuexLocalStorage(store) {
     let kioskToken = store.state.kioskCart?.kioskToken || null;
     let userToken = store.state.auth?.authToken || null;
@@ -45,7 +54,10 @@ export function readTokenFromVuexLocalStorage(store) {
         } catch (_) { /* ignore — corrupt JSON in localStorage falls through */ }
     }
 
-    return { token: kioskToken || userToken, language };
+    return {
+        token: selectSurfaceBearerToken({ kioskToken, userToken }),
+        language
+    };
 }
 
 /**

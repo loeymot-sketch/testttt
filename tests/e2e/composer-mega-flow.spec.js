@@ -164,8 +164,8 @@ test.describe('Product Composer B9 — cash-at-counter E2E', () => {
       posPage = await browser.newPage();
       await loginAsPOS(posPage);
       await waitForPendingOrderInPosApi(posPage, confirmOrder.id);
-      await expect(posPage.locator('.kiosk-cash-fab')).toBeVisible({ timeout: 20_000 });
-      await posPage.locator('.kiosk-cash-fab').click();
+      await expect(posPage.locator('[data-testid="kiosk-cash-open"]')).toBeVisible({ timeout: 20_000 });
+      await posPage.locator('[data-testid="kiosk-cash-open"]').click();
 
       const confirmCard = posPage
         .locator('.kiosk-cash-order-card')
@@ -236,8 +236,8 @@ test.describe('Product Composer B9 — cash-at-counter E2E', () => {
       await loginAsPOS(posPage);
       await waitForPendingOrderInPosApi(posPage, directCancelOrder.id);
 
-      await expect(posPage.locator('.kiosk-cash-fab')).toBeVisible({ timeout: 20_000 });
-      await posPage.locator('.kiosk-cash-fab').click();
+      await expect(posPage.locator('[data-testid="kiosk-cash-open"]')).toBeVisible({ timeout: 20_000 });
+      await posPage.locator('[data-testid="kiosk-cash-open"]').click();
       await posPage.locator('.kiosk-cash-refresh-btn').click();
 
       const cancelCard = posPage

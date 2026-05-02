@@ -71,7 +71,7 @@ function extraQuantityRow(page: Page, nameRe: RegExp) {
 
 function productTile(page: Page) {
   return page
-    .locator('[data-modal="#item-variation-modal"]')
+    .locator('[data-pos-item-id]')
     .filter({ has: page.locator('h3').filter({ hasText: ITEM_CATALOG_RE }) })
     .first();
 }

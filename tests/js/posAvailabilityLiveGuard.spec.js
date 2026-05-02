@@ -153,10 +153,48 @@ describe('POS availability live guard (T11)', () => {
             },
         });
 
-        await wrapper.find('.pos-item-tile').trigger('click');
+        await wrapper.vm.$nextTick();
+        wrapper.vm.handleNativeTileClick({
+            target: wrapper.find('.pos-item-tile').element,
+            preventDefault: vi.fn(),
+        });
         await flushPromises();
 
         expect(dispatch).toHaveBeenCalledWith('item/details', { id: 42, surface: 'pos' });
+    });
+
+    it('modal load normalizes missing collection fields before opening', async () => {
+        const detail = {
+            id: 44,
+            name: 'Bare item',
+            thumb: '',
+            description: '',
+            convert_price: 6,
+            currency_price: '6.00 EUR',
+        };
+        const vm = createVm(null, vi.fn(() => Promise.resolve({ data: { data: detail } })));
+
+        await vm.variationModalShow({ id: 44 });
+        await flushPromises();
+
+        expect(vm.item.offer).toEqual([]);
+        expect(vm.item.addons).toEqual([]);
+        expect(vm.item.extras).toEqual([]);
+        expect(vm.item.itemAttributes).toEqual([]);
+        expect(vm.item.variations).toEqual({});
+        expect(vm.$refs.itemVariationModal.classList.add).toHaveBeenCalledWith('active');
+    });
+
+    it('modal load failure is visible instead of silently swallowing the click', async () => {
+        const error = new Error('Forbidden');
+        const vm = createVm(null, vi.fn(() => Promise.reject(error)));
+        vm.showItemLoadError = vi.fn();
+
+        await vm.variationModalShow({ id: 45 });
+        await flushPromises();
+
+        expect(vm.showItemLoadError).toHaveBeenCalledWith(error);
+        expect(vm.$refs.itemVariationModal.classList.add).not.toHaveBeenCalled();
     });
 
     it('unavailable tile: has is-unavailable class and click does not load details', async () => {

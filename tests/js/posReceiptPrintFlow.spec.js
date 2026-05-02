@@ -64,11 +64,24 @@ describe('ReceiptComponent print policy (W9.D)', () => {
     it('calls the increment endpoint when the operator clicks print', async () => {
         const wrapper = mountReceipt(0);
 
-        await wrapper.find('[data-testid="receipt-print-trigger"]').trigger('click');
+        await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledTimes(1);
         expect(axios.post).toHaveBeenCalledWith('admin/pos/orders/42/print-receipt');
+    });
+
+    it('does not call the fiscal increment endpoint for kitchen print', async () => {
+        axios.post = vi.fn(() => Promise.resolve({
+            data: { order_id: 42, receipt_print_count: 1, is_duplicata: false, audit_emitted: true },
+        }));
+
+        const wrapper = mountReceipt(0);
+
+        await wrapper.find('[data-testid="receipt-print-kitchen"]').trigger('click');
+        await flushPromises();
+
+        expect(axios.post).not.toHaveBeenCalled();
     });
 
     it('updates the local DUPLICATA marker BEFORE triggering the iframe print', async () => {
@@ -78,7 +91,7 @@ describe('ReceiptComponent print policy (W9.D)', () => {
 
         const wrapper = mountReceipt(1); // already printed once
 
-        await wrapper.find('[data-testid="receipt-print-trigger"]').trigger('click');
+        await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
         await flushPromises();
 
         // localPrintCount should reflect the server response (2),
@@ -91,10 +104,10 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         axios.post = vi.fn(() => Promise.reject(new Error('network down')));
 
         const wrapper = mountReceipt(0);
-        const hiddenTrigger = wrapper.find('[data-testid="receipt-hidden-print-button"]');
+        const hiddenTrigger = wrapper.find('[data-testid="receipt-hidden-print-button-client"]');
         const clickSpy = vi.spyOn(hiddenTrigger.element, 'click');
 
-        await wrapper.find('[data-testid="receipt-print-trigger"]').trigger('click');
+        await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
         await flushPromises();
 
         // Optimistic local bump even when the API rejects
@@ -132,7 +145,7 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         axios.post = vi.fn(() => new Promise((r) => { resolve = r; }));
 
         const wrapper = mountReceipt(0);
-        const trigger = wrapper.find('[data-testid="receipt-print-trigger"]');
+        const trigger = wrapper.find('[data-testid="receipt-print-client"]');
 
         await trigger.trigger('click');
         await trigger.trigger('click');

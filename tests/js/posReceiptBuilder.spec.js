@@ -6,6 +6,8 @@ import {
     receiptWidthClass,
     normalizeReceiptVariations,
     normalizeReceiptExtras,
+    receiptBranchHeader,
+    receiptInstructionForPrint,
 } from '../../resources/js/helpers/posReceiptBuilder';
 
 describe('posReceiptBuilder', () => {
@@ -153,5 +155,69 @@ describe('posReceiptBuilder', () => {
             { name: 'Bacon', quantity: 1 },
         ]);
         expect(normalizeReceiptExtras(null)).toEqual([]);
+    });
+
+    it('receiptBranchHeader overlays fresh order.branch onto stale Vuex snapshot', () => {
+        const store = { address: 'Paris', phone: '+33600000000' };
+        const order = {
+            branch: { address: 'Paris, France', phone: '+330352560356' },
+        };
+        const merged = receiptBranchHeader(order, store);
+        expect(merged.phone).toBe('+330352560356');
+        expect(merged.address).toBe('Paris, France');
+    });
+
+    it('receiptBranchHeader falls back to store when order.branch missing', () => {
+        const store = { phone: '+33123456789', address: 'Lyon' };
+        expect(receiptBranchHeader({}, store).phone).toBe('+33123456789');
+        expect(receiptBranchHeader({ branch: null }, store).phone).toBe('+33123456789');
+    });
+
+    it('receiptInstructionForPrint drops long duplicate wizard narration when variations exist', () => {
+        const item = {
+            item_name: 'Tacos M (1 Viande)',
+            instruction:
+                'TACOS M (1 VIANDE) Viandes : Merguez, +Merguez, +Mexicain - Salade, Tomate, Oignon Sauce : Ketchup + Menu (Frites + Boisson) (+3.00€) ↳ Sauce frites: Ketchup',
+            item_variations: [
+                { attribute_name: 'Viande 1', variation_name: 'Merguez', quantity: 1 },
+                { attribute_name: 'Sauce (1ère Gratuite)', variation_name: 'Ketchup', quantity: 1 },
+            ],
+            item_extras: [],
+        };
+        expect(receiptInstructionForPrint(item)).toBe('');
+    });
+
+    it('receiptInstructionForPrint removes pure-repeat sentences (stress)', () => {
+        const item = {
+            item_name: 'X',
+            instruction:
+                'Merguez Ketchup Merguez Ketchup Merguez Ketchup Merguez Ketchup Merguez Ketchup Merguez Ketchup Merguez Ketchup Merguez Ketchup',
+            item_variations: [
+                { attribute_name: 'Viande 1', variation_name: 'Merguez', quantity: 1 },
+                { attribute_name: 'Sauce', variation_name: 'Ketchup', quantity: 1 },
+            ],
+            item_extras: [],
+        };
+        expect(receiptInstructionForPrint(item)).toBe('');
+    });
+
+    it('receiptInstructionForPrint keeps short menu-only instructions', () => {
+        const item = {
+            item_name: 'Menu (Frites + Boisson)',
+            instruction: 'Sauce frites: Ketchup',
+            item_variations: [],
+            item_extras: [],
+        };
+        expect(receiptInstructionForPrint(item)).toBe('Sauce frites: Ketchup');
+    });
+
+    it('receiptInstructionForPrint keeps short bespoke notes with structured lines', () => {
+        const item = {
+            item_name: 'Burger',
+            instruction: 'Sans cornichons stp',
+            item_variations: [{ attribute_name: 'Cuisson', variation_name: 'Saignant', quantity: 1 }],
+            item_extras: [],
+        };
+        expect(receiptInstructionForPrint(item)).toBe('Sans cornichons stp');
     });
 });

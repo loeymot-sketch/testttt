@@ -1,0 +1,61 @@
+# Mission Claude (terminal) — Plan final de remédiation : intelligence vs gaspillage
+
+Tu es l’orchestrateur / auditeur FoodKing. Objectif : **trancher** ce qu’on **corrige**, ce qu’on **garde**, et ce qu’on **supprime ou simplifie** pour retrouver un équilibre :
+- **Mémoire** : Graphiti + JSONL utilisés comme **raccourci cognitif** (faits ciblés), pas comme option décorative qui pousse à **relire demi-dépôt**.
+- **Tokens / contexte** : respect de `context-hygiene.mdc` et `global.mdc` (qualité d’abord, pas économie stupide) — mais **fin** des workflows qui multiplient les lectures **sans valeur**.
+- **Orchestration** : **une seule autorité** documentaire pour « qui fait PLAN / EXECUTE / AUDIT » — pas trois histoires différentes.
+
+## Contexte humain (hypothèse à valider sur le disque)
+
+Le projet avait une discipline **mémoire + contexte** jugée efficace ; après des « améliorations », le système est perçu comme **plus gaspillant** : tâches simples sur-payées en étapes, Graphiti **non obligatoire** (`graphiti-memory.mdc` §4 : si MCP absent → continuer), agents qui **lisent trop de fichiers** au lieu de **`search_memory_facts` + plan `## PRIOR_CONTEXT`**, absence de **cache** procédural clair.
+
+## Lecture obligatoire avant conclusion
+
+1. `.cursor/rules/graphiti-memory.mdc`
+2. `.cursor/rules/context-hygiene.mdc`
+3. `.cursor/rules/global.mdc` (token discipline)
+4. `docs/orchestration/MEMORY_MATRIX.md`
+5. `docs/orchestration/GLOBAL_SYSTEM_PRIMER.md` (entièrement — surtout §1 et diagramme)
+6. `.cursor/routing.md`
+7. `.cursor/commands/run-cycle.md` (Steps 0–5, Graphiti step 0 item 5)
+8. `reports/audit/CLAUDE_SYSTEME_GLOBAL_AUDIT_OUTPUT_AGENT_RUN_*.txt` (le plus récent si plusieurs — audit REWORK déjà produit)
+
+## Questions auxquelles tu dois répondre (sans ambiguïté)
+
+### A — Une pile « canonique » unique
+
+Propose **une seule** pile officielle (tableau) : PLAN / PLAN_REVIEW / EXECUTE / VALIDATE / AUDIT / GPT_FINAL — avec **modèle + canal** par ligne. Indique **explicitement** quels fichiers du dépôt doivent être **édités** pour éliminer la contradiction actuelle (routing vs primer vs run-cycle).
+
+### B — Graphiti : obligation vs secours
+
+Ne dis pas seulement « recommandé ». Propose une **politique à trois niveaux** :
+- **Niveau 1** : MCP Graphiti chargé → comportement **obligatoire** minimal (quelle requête, quel moment — avant écriture code/plan long).
+- **Niveau 2** : MCP absent → **secours** JSONL / `memory/INDEX.md` — **liste exacte** de ce qui doit être lu (par domaine), pas « tout le repo ».
+- **Niveau 3** : ce qui reste **interdit** (ex. paraphraser 40 fichiers sans mission).
+
+### C — Double audit (Claude + GPT final)
+
+Pour **chaque classe de risque** (ex. P0 fiscal/sync/authz vs doc-only vs typo), indique : **FULL double audit** | **simple audit** | **skip**. Justifie en **coût / risque** (1 phrase par ligne).
+
+### D — Ce qu’on enlève sans nuire à la sécurité
+
+Liste les **doublons** ou **étapes redondantes** identifiés (docs ou procédure) avec recommandation **DROP** ou **MERGE**. Si une étape est utile seulement pour les cycles **P0**, dis-le.
+
+### E — Plan de correction ordonné
+
+Tableau **ordre** | **ACTION** | **Fichiers touchés** | **Critère de DONE** | **Risque si on ne le fait pas**.
+
+8 à 15 lignes max — pas un roman.
+
+## Livrables finaux
+
+1. **`REMEDIATION_STACK_DECISION`** : une phrase qui tranche la doctrine globale.
+2. **`KEEP`** (liste à puces : ce qu’on conserve tel quel).
+3. **`CHANGE`** (liste : quoi modifier où).
+4. **`DROP_OR_SIMPLIFY`** (liste : quoi alléger ou supprimer).
+5. **`GRAPHITI_POLICY_FINAL`** : 5 puces max.
+6. **`DOUBLE_AUDIT_POLICY_FINAL`** : tableau risque → niveau d’audit.
+7. Une ligne :  
+   `PLAN_FINAL_VERDICT: READY_TO_APPLY | NEEDS_HUMAN_GATE`
+
+Style : français, sévère, factuel. Pas de promesse « zéro tokens » — seulement **discipline vérifiable**.

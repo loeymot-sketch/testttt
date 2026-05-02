@@ -5,24 +5,97 @@
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
-    <div class="pos-v4-main md:w-[calc(100%-340px)] lg:w-[calc(100%-320px)] xl:w-[calc(100%-377px)]">
+    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-346px)]">
         <div class="pos-v4-operator-bar">
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
                 <p class="pos-v4-eyebrow">Caisse FoodKing</p>
                 <h1 class="pos-v4-title">Commande rapide</h1>
                 <div class="pos-v4-status-row">
                     <span>{{ checkoutProps.form.branch_id ? ($t('label.branch') + ' #' + checkoutProps.form.branch_id) : $t('label.ready') }}</span>
                     <span>{{ totalItems() }} {{ $t('label.items') }}</span>
-                    <span v-if="kioskCashOrders.length > 0">{{ kioskCashOrders.length }} borne cash</span>
                 </div>
             </div>
+            <div class="pos-v4-operator-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+                <button
+                    v-if="kioskCashOrders.length > 0"
+                    type="button"
+                    class="kiosk-cash-bar-btn"
+                    data-testid="kiosk-cash-open"
+                    :title="$t('pos.kiosk_counter_collect_hint')"
+                    @click="showKioskCashPanel = true"
+                >
+                    <span class="kiosk-cash-bar-btn-icon" aria-hidden="true">🖥️</span>
+                    <span class="kiosk-cash-bar-btn-text">
+                        <span class="kiosk-cash-bar-btn-label">{{ $t('pos.kiosk_counter_collect_short') }}</span>
+                        <span class="kiosk-cash-bar-btn-sub">{{ $t('pos.kiosk_counter_collect_sub') }}</span>
+                    </span>
+                    <span class="kiosk-cash-bar-btn-badge">{{ kioskCashOrders.length }}</span>
+                </button>
+                <!--
+                  [POS-V4-ORDERS-TRACKER 2026-05-02] Bouton suivi commandes.
+                  - Toujours visible ; muet si aucune commande active (badge 0).
+                  - Vert + halo subtil dès qu'une commande passe à PREPARED — pas de
+                    popup, pas de toast, juste un signal visuel pour le caissier.
+                  - Le clic ouvre l'écran kanban dédié sans casser le panier en cours
+                    (router-link garde le state Vuex).
+                -->
+                <router-link
+                    :to="{ name: 'admin.pos-orders.tracker' }"
+                    :class="['pos-tracker-bar-btn', activeOrdersStats.ready > 0 ? 'is-ready' : '']"
+                    data-testid="pos-tracker-open"
+                    :title="$t('pos.tracker.button_hint')"
+                >
+                    <span class="pos-tracker-bar-btn-icon" aria-hidden="true">📋</span>
+                    <span class="pos-tracker-bar-btn-text">
+                        <span class="pos-tracker-bar-btn-label">{{ $t('pos.tracker.button_label') }}</span>
+                        <span class="pos-tracker-bar-btn-sub" v-if="activeOrdersStats.ready > 0">
+                            {{ activeOrdersStats.ready }} {{ $t('pos.tracker.ready_short') }}
+                        </span>
+                        <span class="pos-tracker-bar-btn-sub" v-else>{{ $t('pos.tracker.button_sub') }}</span>
+                    </span>
+                    <span
+                        v-if="activeOrdersStats.active > 0"
+                        class="pos-tracker-bar-btn-badge"
+                    >{{ activeOrdersStats.active }}</span>
+                </router-link>
+                <router-link
+                    :to="{ name: 'admin.order-status-screen' }"
+                    target="_blank"
+                    rel="noopener"
+                    class="pos-tracker-bar-customer inline-flex items-center gap-2 rounded-lg border border-[#EFF0F6] bg-white px-3 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] hover:border-primary transition"
+                    :title="$t('pos.tracker.customer_screen_hint')"
+                >
+                    <i class="fa-solid fa-display" aria-hidden="true"></i>
+                    <span class="hidden xl:inline">{{ $t('pos.tracker.customer_screen') }}</span>
+                </router-link>
             <router-link :to="{ name: 'admin.pos.floorplan' }"
                 class="pos-v4-floorplan-link inline-flex items-center rounded-lg border border-[#EFF0F6] bg-white px-4 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] transition">
                 {{ $t('label.floorplan') }}
             </router-link>
+            <!--
+              [POS-V4-CASHIER-OPS 2026-05-02] No-sale / open drawer.
+              - Discoverable in the operator bar but visually neutral (no badge, no glow)
+                so it never competes with payment / tracker actions.
+              - Calls the existing kioskHardware.openDrawer() bridge, which is a safe
+                no-op in dev (returns ok:true) — production hardware opens the till.
+              - Logs the event server-side via the bridge for audit trail.
+            -->
+            <button
+                type="button"
+                class="pos-v4-no-sale-btn inline-flex items-center gap-2 rounded-lg border border-[#EFF0F6] bg-white px-3 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] hover:border-primary transition"
+                data-testid="pos-no-sale"
+                :title="$t('pos.no_sale_hint')"
+                :disabled="noSaleBusy"
+                :aria-busy="noSaleBusy"
+                @click="triggerNoSaleOpenDrawer"
+            >
+                <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
+                <span class="hidden xl:inline">{{ $t('pos.no_sale') }}</span>
+            </button>
+            </div>
         </div>
         <form @submit.prevent="search"
-            class="pos-v4-search flex items-center w-full h-[38px] leading-[38px] mb-4 rounded-lg bg-white border-[#EFF0F6] border-t border-l border-b">
+            class="pos-v4-search flex items-center w-full h-[38px] leading-[38px] mb-2 rounded-lg bg-white border-[#EFF0F6] border-t border-l border-b">
             <input type="text" :value="props.search.name" @input="onSearchInput"
                 :placeholder="$t('label.search_by_menu_item')"
                 :aria-label="$t('label.search_by_menu_item')"
@@ -37,62 +110,46 @@
             </button>
         </form>
 
-        <!-- LANDING: grille catégories + best sellers -->
-        <template v-if="isLanding">
-            <!-- Grille catégories (grandes cartes) -->
-            <!-- [Y6 FIX] Filter out the "All" pseudo-category (id=0 or id='') instead of slice(1)
-                 so real categories are never hidden if API order changes. -->
-            <div v-if="categories.filter(c => c.id && c.id !== 0).length > 0" class="pos-v4-category-grid grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
-                <button v-for="(category, index) in categories.filter(c => c.id && c.id !== 0)" :key="category.id"
-                    type="button" @click="setCategory(category.id)"
-                    class="pos-v4-category-card flex flex-col items-center text-center gap-2 py-4 px-2 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary transition">
-                    <img class="h-10 w-10 object-contain drop-shadow-category" :src="category.thumb" alt="category">
-                    <h3 class="text-xs font-medium font-rubik leading-tight">{{ category.name }}</h3>
-                </button>
-            </div>
+        <!-- Vue unifiée : bande de catégories (Toutes + …) toujours visible + grille produits -->
+        <!-- Native horizontal scroll (no Swiper) — avoids long animated slides between categories -->
+        <!--
+          [POS-V4-DENSITY 2026-05-02] Compact pills (was w-28 / py-4 / gap-4 /
+          h-7 thumb). Saves ~28px of vertical space before the products grid.
+          The user explicitly asked for tighter category buttons + more room
+          for products — operator bar + tracker buttons stay untouched.
+        -->
+        <div
+            v-if="categories.length > 1"
+            class="pos-menu-category-scroll pos-v4-category-strip mb-2 flex flex-nowrap gap-2 overflow-x-auto pb-1"
+            ref="categoryScrollStrip"
+            role="tablist"
+            :aria-label="$t('label.categories') || 'Categories'"
+        >
+            <template v-for="(category, index) in categories" :key="category.id || index">
+                <div
+                    class="flex-shrink-0 w-24"
+                    :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''"
+                >
+                    <button v-if="index === 0" type="button" @click="allCategory"
+                        class="pos-v4-category-pill w-24 flex flex-col items-center text-center gap-1.5 py-2 px-2 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
+                        <img class="h-6 drop-shadow-category" :src="category.thumb" alt="">
+                        <h3 class="text-[11px] leading-[14px] font-medium font-rubik">{{ category.name }}</h3>
+                    </button>
+                    <button v-else type="button" @click="setCategory(category.id)"
+                        class="pos-v4-category-pill w-24 flex flex-col items-center text-center gap-1.5 py-2 px-2 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
+                        <img class="h-6 drop-shadow-category" :src="category.thumb" alt="">
+                        <h3 class="text-[11px] leading-[14px] font-medium font-rubik">{{ category.name }}</h3>
+                    </button>
+                </div>
+            </template>
+        </div>
 
-            <!-- Best Sellers -->
-            <div aria-live="polite" aria-relevant="additions" :aria-busy="loadingItems ? 'true' : 'false'">
-                <SkeletonGrid v-if="loadingItems" :count="12" />
-                <template v-else>
-                    <div v-if="bestSellerItems.length > 0" class="mb-4">
-                        <div class="pos-v4-section-heading">
-                            <h3 class="text-sm font-semibold font-rubik text-heading mb-3">{{ $t('label.best_sellers') }}</h3>
-                            <span>{{ $t('label.ready') }}</span>
-                        </div>
-                        <ItemComponent ref="posItemComponent" :items="bestSellerItems" />
-                    </div>
-                    <!-- Pas de best sellers trouvés: monter ItemComponent vide pour permettre l'édition depuis le panier -->
-                    <ItemComponent v-else ref="posItemComponent" :items="[]" />
-                </template>
-            </div>
-        </template>
-
-        <!-- FILTRÉ: swiper catégories + liste complète -->
-        <template v-else>
-            <div class="swiper pos-menu-swiper pos-v4-category-strip mb-4" v-if="categories.length > 1">
-                <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="16" class="menu-slides">
-                    <!-- [W9 FIX] Stable key using category.id instead of object reference -->
-                    <SwiperSlide class="!w-fit" v-for="(category, index) in categories" :key="category.id || index"
-                        :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''">
-                        <button v-if="index === 0" type="button" @click="allCategory"
-                            class="pos-v4-category-pill w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                        </button>
-                        <button v-else type="button" @click="setCategory(category.id)"
-                            class="pos-v4-category-pill w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                        </button>
-                    </SwiperSlide>
-                </Swiper>
-            </div>
-
-            <div aria-live="polite" aria-relevant="additions" :aria-busy="loadingItems ? 'true' : 'false'">
-                <SkeletonGrid v-if="loadingItems" :count="12" />
-                <template v-else>
-                    <ItemComponent ref="posItemComponent" :items="items" />
+        <div aria-live="polite" aria-relevant="additions"
+            :aria-busy="loadingItems ? 'true' : 'false'"
+            class="pos-menu-products-region">
+            <SkeletonGrid v-if="loadingItems" :count="12" />
+            <template v-else>
+                <ItemComponent ref="posItemComponent" :items="items" :drinks-catalog="drinksCatalog" />
 
                 <div class="my-12" v-if="items.length === 0 && !props.search.name">
                     <div class="max-w-[350px] mx-auto">
@@ -106,16 +163,15 @@
                     </div>
                     <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
                 </div>
-                </template>
-            </div>
-        </template>
+            </template>
+        </div>
     </div>
 
 
     <div id="pos-cart"
         role="region"
         :aria-label="$t('a11y.cart_region')"
-        class="db-pos-cartDiv pos-v4-cart-panel fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[85px] ltr:md:right-5 rtl:md:left-5 md:w-[322px] lg:w-[305px] xl:w-[360px] md:h-[calc(100dvh-85px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
+        class="db-pos-cartDiv pos-v4-cart-panel fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[300px] lg:w-[290px] xl:w-[330px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
         <div class="pos-v4-cart-head p-4 flex-shrink-0">
             <div class="md:hidden text-right mb-3">
                 <button type="button" class="db-pos-cartCls" @click="closeCanvas('pos-cart')"
@@ -164,6 +220,25 @@
                     @click="openParkedOrders"
                 >
                     {{ $t('pos.parked_orders') }} ({{ parkedOrdersCount }})
+                </button>
+            </div>
+            <!--
+              [POS-V4-CASHIER-OPS 2026-05-02] Cancel last cart line.
+              - Visible only when at least one line exists.
+              - Subtle styling: not a red destructive button — cashier should feel
+                this is a one-tap "oops" undo, not a heavyweight cancel.
+              - Confirms via a single OK alert (no native confirm()) to avoid a
+                double-click drag in fast-food rush hour.
+            -->
+            <div v-if="carts.length > 0" class="mb-3">
+                <button
+                    type="button"
+                    class="w-full h-9 rounded-lg border border-dashed border-[#D9DBE9] text-xs font-medium text-[#6E7191] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:text-primary transition flex items-center justify-center gap-2"
+                    data-testid="pos-cancel-last-line"
+                    @click="cancelLastCartLine"
+                >
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    {{ $t('pos.cancel_last_line') }}
                 </button>
             </div>
 
@@ -452,19 +527,47 @@
                 </div>
                 <input v-on:keypress="floatNumber($event)" v-model="discount" type="text"
                     :placeholder="$t('label.add_discount')"
+                    data-testid="pos-discount-input"
                     class="w-full h-full border-t border-b px-3 border-[#EFF0F6]">
+                <!--
+                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button is disabled when a
+                  positive discount is set without a 3+ char reason. Backend
+                  enforces this (OrderService L2007-2011) — we mirror it client-side
+                  to keep UX immediate and prevent a wasted server round-trip in the
+                  fast-food rush hour. Empty discount stays applyable to clear it.
+                -->
                 <button @click.prevent="applyDiscount" type="button"
-                    class="flex-shrink-0 w-16 h-full text-sm font-medium font-rubik capitalize ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg text-white bg-[#008BBA]">
+                    :disabled="!isDiscountApplyable"
+                    :aria-disabled="!isDiscountApplyable"
+                    data-testid="pos-discount-apply"
+                    class="flex-shrink-0 w-16 h-full text-sm font-medium font-rubik capitalize ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg text-white bg-[#008BBA] disabled:opacity-50 disabled:cursor-not-allowed">
                     {{ $t('button.apply') }}
                 </button>
             </div>
             <div class="mt-2" v-if="carts.length > 0">
-                <label for="pos-discount-reason" class="block mb-1 text-xs font-rubik capitalize text-[#2E2F38]">
-                    {{ $t('label.reason') }}
+                <label for="pos-discount-reason" class="flex items-center justify-between mb-1 text-xs font-rubik capitalize text-[#2E2F38]">
+                    <span>
+                        {{ $t('label.reason') }}
+                        <span
+                            v-if="discountReasonRequired"
+                            class="ml-1 text-[10px] font-medium text-[#FB4E4E] normal-case"
+                            data-testid="pos-discount-reason-required-flag"
+                        >({{ $t('pos.reason_required_short') }})</span>
+                    </span>
+                    <span class="text-[10px] font-medium text-[#8E8EA9] normal-case">{{ (discountReason || '').length }}/255</span>
                 </label>
                 <input id="pos-discount-reason" v-model="discountReason" type="text" maxlength="255"
-                    :placeholder="$t('label.reason')"
-                    class="w-full h-9 text-sm rounded-lg border px-3 text-heading border-[#EFF0F6]">
+                    :placeholder="$t('pos.reason_required_placeholder')"
+                    data-testid="pos-discount-reason"
+                    :class="['w-full h-9 text-sm rounded-lg border px-3 text-heading transition', discountReasonInvalid ? 'border-[#FB4E4E] bg-[#FFF5F5]' : 'border-[#EFF0F6]']">
+                <p
+                    v-if="discountReasonInvalid"
+                    class="mt-1 text-[11px] font-medium text-[#FB4E4E]"
+                    role="alert"
+                    data-testid="pos-discount-reason-invalid"
+                >
+                    {{ $t('pos.reason_required_hint') }}
+                </p>
             </div>
 
             <div class="flex flex-col gap-1.5 mb-4 mt-4" role="status" aria-live="polite" aria-atomic="true">
@@ -498,10 +601,16 @@
                 <div class="pos-v4-total-row flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
                     <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
                         {{ $t("label.total") }}
-                        <!-- [AUDIT-P2] Tax is recalculated server-side from catalog tax_id.
-                             Display total here is pre-tax (subtotal + delivery - discount).
-                             Final order total may differ slightly if products carry a tax rate. -->
-                        <span class="text-xs font-normal text-[#A0A3BD] ml-1">(HT)</span>
+                        <!--
+                          [POS-V4-DENSITY 2026-05-02] The "(HT)" suffix was technically
+                          honest under the legacy assumption that catalog prices are
+                          stored ex-tax — but that very assumption is now contested
+                          (cf. GATE_POS_V4_VAT_HT_TTC_2026-05-02). Until the human
+                          gate decides whether catalog prices represent HT or TTC,
+                          we drop the suffix here: the receipt remains the fiscal
+                          authority and shows the proper TVA breakdown explicitly.
+                          This is purely a UI clarification — no pricing math changed.
+                        -->
                     </span>
                     <span class="text-base font-bold font-rubik leading-6 text-primary">
                         {{
@@ -644,27 +753,29 @@
         </span>
     </button>
 
-    <!-- ═══ Borne Cash — notification flottante ═══ -->
-    <!-- Badge pulsant si des commandes kiosk cash sont en attente de paiement -->
-    <transition name="slide-up-pos">
-      <button
-        v-if="kioskCashOrders.length > 0"
-        class="kiosk-cash-fab"
-        @click="showKioskCashPanel = true"
-        title="Commandes borne à encaisser"
-      >
-        <span class="kiosk-cash-fab-icon">🖥️</span>
-        <span class="kiosk-cash-fab-badge">{{ kioskCashOrders.length }}</span>
-      </button>
-    </transition>
-
-    <!-- Panel commandes borne cash -->
+    <!-- Panel commandes borne cash (ouvert depuis la barre du haut) -->
     <transition name="slide-panel">
       <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
         <div class="kiosk-cash-panel">
           <div class="kiosk-cash-panel-header">
             <h3>🖥️ Commandes borne — à encaisser</h3>
-            <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+            <div class="kiosk-cash-panel-header-actions">
+                <!--
+                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers
+                  la liste filtrée historique (status / date / N° / client) sans passer
+                  par le menu admin latéral.
+                -->
+                <router-link
+                    :to="{ name: 'admin.pos-orders.list' }"
+                    class="kiosk-cash-panel-history-link"
+                    :title="$t('pos.orders.history_hint')"
+                    data-testid="kiosk-cash-panel-history"
+                >
+                    <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+                    <span>{{ $t('pos.orders.history') }}</span>
+                </router-link>
+                <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+            </div>
           </div>
           <div class="kiosk-cash-panel-body">
             <div v-if="kioskCashLoading" class="kiosk-cash-loading">
@@ -732,6 +843,20 @@
               </div>
               <div class="kiosk-cash-order-foot">
                 <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
+                <!--
+                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la
+                  commande (lignes, statut, ticket fiscal) — accessible sans quitter
+                  l'écran caisse pour vérification ou réimpression.
+                -->
+                <router-link
+                  :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
+                  class="kiosk-cash-detail-btn"
+                  :title="$t('pos.orders.view_detail')"
+                  :data-testid="`kiosk-cash-detail-${order.id}`"
+                >
+                  <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  {{ $t('pos.orders.detail_short') }}
+                </router-link>
                 <button
                   class="kiosk-cash-collect-btn"
                   :disabled="order._collecting || order._canceling"
@@ -774,11 +899,13 @@ import PosSyncService from "../../../services/PosSyncService";
 import discountTypeEnum from "../../../enums/modules/discountTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
+// [POS-V4-CASHIER-OPS 2026-05-02] No-sale / drawer open passes through the
+// hardware bridge wrapper. Returns {ok:true} in dev (no real till) and logs
+// hardware_event server-side in production for audit trail.
+import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHardware";
 import PaymentComponent from "./PaymentComponent.vue";
 import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import 'swiper/css';
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
@@ -816,8 +943,6 @@ export default {
         ItemComponent,
         SkeletonGrid,
         ParkedOrdersComponent,
-        Swiper,
-        SwiperSlide,
         PaymentComponent
     },
     data() {
@@ -836,9 +961,19 @@ export default {
             showKioskCashPanel: false,
             showParkedOrders: false,
             expandedKioskCashOrders: {},
+            // [POS-V4-ORDERS-TRACKER 2026-05-02] Stats discrètes pour le bouton "Suivi
+            // commandes" : `active` = ACCEPT+PREPARING+PREPARED (badge), `ready` =
+            // PREPARED uniquement (déclencheur du halo vert). Pas de popup, pas de son
+            // ici — l'écran tracker dédié et l'OSS client gèrent les notifications fortes.
+            activeOrdersStats: { active: 0, ready: 0 },
+            // [POS-V4-CASHIER-OPS 2026-05-02] Guard against double-tap on the
+            // no-sale button while the hardware bridge resolves (real till can
+            // take ~200-500ms to physically open).
+            noSaleBusy: false,
             parkingInFlight: false,
             /** [T12] Item grid skeleton while first POS menu fetch is in flight */
             posItemsFetchPending: false,
+            _itemListFetchDepth: 0,
             _kioskPollTimer: null,
             _posSyncBranchId: null,
             _eventSub: null,
@@ -974,6 +1109,32 @@ export default {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
         },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Discount-with-reason UX guards.
+        // Backend rule: any positive POS discount requires a reason ≥3 chars
+        // (assertPosManualDiscountAllowed). Mirrored client-side so:
+        //  - the apply button is greyed out the instant either constraint is
+        //    violated (no surprise alert after click);
+        //  - the reason field shows a red border + inline hint as soon as the
+        //    cashier types a discount value but skips the reason.
+        // Empty discount stays applyable so the cashier can clear an existing
+        // discount without re-typing a reason.
+        discountAmountValue: function () {
+            const raw = this.discount;
+            if (raw === '' || raw == null) return 0;
+            const n = parseFloat(raw);
+            return Number.isFinite(n) ? n : 0;
+        },
+        discountReasonRequired: function () {
+            return this.discountAmountValue > 0;
+        },
+        discountReasonInvalid: function () {
+            if (!this.discountReasonRequired) return false;
+            return String(this.discountReason || '').trim().length < 3;
+        },
+        isDiscountApplyable: function () {
+            if (this.discountAmountValue <= 0) return true;
+            return !this.discountReasonInvalid;
+        },
         /**
          * [POS-9.1.6] POS dine-in feature flag.
          * Reads `pos_dine_in_enabled` from the frontend settings store;
@@ -1012,6 +1173,59 @@ export default {
                 const n = (item.name || '').toLowerCase();
                 return names.some(function (bs) { return n.includes(bs); });
             });
+        },
+        /**
+         * [POS-WIZARD-DRINKS 2026-05-02] Catalogue boissons — symétrie POS↔borne.
+         *
+         * Source : `posCategory/lists` (déjà branch-scoped) + `item/lists` (déjà branch-scoped
+         * par RouteServiceProvider via auth user). Détection catégorie identique à
+         * `KioskStepMenuComponent.isDrinkCategory` (regex sur name+slug). Le wizard JS shim
+         * reçoit ce catalogue via attribut DOM (`data-pos-drinks-catalog`) sur la modal racine
+         * et l'utilise comme priorité 1 pour reconnaître les addons boisson, plus permettre
+         * une cross-reference par item_id ou nom — au-delà de la regex keywords legacy.
+         *
+         * Invariants respectés :
+         * - Backend pricing SSOT : aucun prix calculé ici, juste id/name/thumb pour affichage.
+         * - branch_id : items et catégories déjà filtrés par le backend selon l'utilisateur.
+         * - Pas de mutation, lecture-only.
+         */
+        drinksCatalog: function () {
+            const allCats = this.$store.getters["posCategory/lists"] || [];
+            const drinkCatRegex = /\b(boisson|boissons|drink|drinks|soda|sodas|beverage|beverages)\b/i;
+            const drinkCategoryIds = new Set(
+                allCats
+                    .filter(function (c) {
+                        const haystack = String(c.name || '') + ' ' + String(c.slug || '');
+                        return drinkCatRegex.test(haystack);
+                    })
+                    .map(function (c) { return String(c.id); })
+            );
+            if (drinkCategoryIds.size === 0) return [];
+            const allItems = this.$store.getters["item/lists"] || [];
+            const seen = new Set();
+            const out = [];
+            for (let i = 0; i < allItems.length; i++) {
+                const it = allItems[i];
+                if (!it) continue;
+                if (it.is_available === false) continue;
+                const status = Number(it.status);
+                if (status === 0 || status === 2 || status === 10) continue;
+                const catId = String(it.item_category_id != null ? it.item_category_id : (it.category_id != null ? it.category_id : ''));
+                if (catId === '' || !drinkCategoryIds.has(catId)) continue;
+                const idRaw = it.id != null ? it.id : (it.item_id != null ? it.item_id : null);
+                if (idRaw == null) continue;
+                const idKey = String(idRaw);
+                if (seen.has(idKey)) continue;
+                seen.add(idKey);
+                out.push({
+                    id: typeof idRaw === 'number' ? idRaw : (Number(idRaw) || idRaw),
+                    name: String(it.name || it.item_name || ''),
+                    thumb: it.thumb || it.image || '',
+                    category_id: it.item_category_id != null ? it.item_category_id : (it.category_id != null ? it.category_id : null),
+                    is_available: it.is_available !== false,
+                });
+            }
+            return out;
         },
         customers: function () {
             return this.$store.getters['user/lists'];
@@ -1073,7 +1287,7 @@ export default {
     },
     mounted() {
         this._debouncedListRefresh = debounce(() => {
-            this.itemList();
+            this.itemList(1, { overlay: false });
         }, 150);
         this._stopBarcode = createBarcodeDetector((code) => this.onBarcodeScanned(code));
         // [V14 C-α / FINDING C-5 P2] Disable F-key shortcuts when the parked
@@ -1086,8 +1300,13 @@ export default {
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
+        const bootstrapBranchId = this.authBranchId();
+        if (bootstrapBranchId) {
+            this.applyPosBranchScope(bootstrapBranchId);
+        }
         this.itemList();
         this.loadKioskCashOrders();
+        this.loadActiveOrdersStats();
         this._subscribeEcho();
         this._startKioskPolling();
         this._bindWsService();
@@ -1095,29 +1314,33 @@ export default {
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
-                this.checkoutProps.form.branch_id = res.data.data.branch_id
-                this.props.search.branch_id = res.data.data.branch_id;
-                this._startPosSyncFallback();
-                // [POS-9.1.9] Bind the POS cart to the active cashier (branch + user).
-                // Without this, all carts share `pos_cart_v2` and a cashier B
-                // logging in after cashier A inherits A's lines (POS-GA-F-41).
-                try {
-                    const authInfo = this.$store.getters['auth/authInfo'] || {};
-                    this.$store.dispatch('posCart/setScope', {
-                        branchId: res.data.data.branch_id,
-                        userId: authInfo.id || null,
-                    });
-                } catch (e) { /* defensive: never block POS bootstrap */ }
-                this.$store.dispatch("frontendBranch/show", this.checkoutProps.form.branch_id).then(res => {
-                    this.location = {
-                        lat: res.data.data.latitude,
-                        lng: res.data.data.longitude
-                    };
-                }).catch();
-                this.itemList();
+                const previousBranchId = this.props.search.branch_id;
+                const branchId = this.resolveDefaultAccessBranchId(res);
+                if (branchId) {
+                    this.applyPosBranchScope(branchId);
+                    this.loadBranchLocation(branchId);
+                    this._startPosSyncFallback();
+                    if (previousBranchId !== branchId) {
+                        this.itemList();
+                    } else {
+                        this.loading.isActive = false;
+                    }
+                } else {
+                    this.loading.isActive = false;
+                }
 
             }).catch((err) => {
-                this.loading.isActive = false;
+                const previousBranchId = this.props.search.branch_id;
+                const fallbackBranchId = this.authBranchId();
+                if (fallbackBranchId) {
+                    this.applyPosBranchScope(fallbackBranchId);
+                    this._startPosSyncFallback();
+                    if (previousBranchId !== fallbackBranchId) {
+                        this.itemList();
+                    }
+                } else {
+                    this.loading.isActive = false;
+                }
             });
 
             this.loading.isActive = true;
@@ -1203,10 +1426,13 @@ export default {
     },
     methods: {
         authBranchId() {
+            const authInfo = this.$store.getters['auth/authInfo'] || {};
             const candidates = [
                 this.$store.getters['auth/authBranchId'],
+                authInfo.branch_id,
                 this.$store.getters.authBranchId,
                 this.$store.state?.auth?.authBranchId,
+                this.$store.state?.auth?.authInfo?.branch_id,
             ];
 
             for (const candidate of candidates) {
@@ -1221,6 +1447,52 @@ export default {
             }
 
             return 0;
+        },
+
+        resolveDefaultAccessBranchId(response) {
+            const raw = response?.data?.data?.branch_id;
+            if (raw !== '' && raw !== null && typeof raw !== 'undefined') {
+                const value = parseInt(raw, 10);
+                if (Number.isFinite(value) && value > 0) {
+                    return value;
+                }
+            }
+
+            return this.authBranchId();
+        },
+
+        applyPosBranchScope(branchId) {
+            const value = parseInt(branchId, 10);
+            if (!Number.isFinite(value) || value <= 0) {
+                return null;
+            }
+
+            this.checkoutProps.form.branch_id = value;
+            this.props.search.branch_id = value;
+
+            try {
+                const authInfo = this.$store.getters['auth/authInfo'] || {};
+                this.$store.dispatch('posCart/setScope', {
+                    branchId: value,
+                    userId: authInfo.id || null,
+                });
+            } catch (e) { /* defensive: never block POS bootstrap */ }
+
+            return value;
+        },
+
+        loadBranchLocation(branchId) {
+            const value = parseInt(branchId, 10);
+            if (!Number.isFinite(value) || value <= 0) {
+                return;
+            }
+
+            this.$store.dispatch("frontendBranch/show", value).then(res => {
+                this.location = {
+                    lat: res.data.data.latitude,
+                    lng: res.data.data.longitude
+                };
+            }).catch(() => {});
         },
 
         findWalkInCustomer(customers) {
@@ -1330,7 +1602,11 @@ export default {
             return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
-            this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), this._kioskPollingInterval());
+            this._kioskPollTimer = setInterval(() => {
+                this.loadKioskCashOrders();
+                // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
+                this.loadActiveOrdersStats();
+            }, this._kioskPollingInterval());
         },
         _restartKioskPolling() {
             if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
@@ -1351,10 +1627,24 @@ export default {
                             // kiosk-cash / online orders, only a silent list refresh.
                             this._notifyNewOrder(event);
                             this.loadKioskCashOrders();
+                            // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
+                            this.loadActiveOrdersStats();
                         },
                     },
-                    { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
-                    { broadcastAs: 'OrderPaidAtCounter', handler: () => this.loadKioskCashOrders() },
+                    {
+                        broadcastAs: 'OrderStatusChanged',
+                        handler: () => {
+                            this.loadKioskCashOrders();
+                            this.loadActiveOrdersStats();
+                        },
+                    },
+                    {
+                        broadcastAs: 'OrderPaidAtCounter',
+                        handler: () => {
+                            this.loadKioskCashOrders();
+                            this.loadActiveOrdersStats();
+                        },
+                    },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
                     // so freshly out-of-stock tiles grey out without an F5.
                     // Audit POS-GA-F-45 — kiosk already subscribes; POS did not.
@@ -1382,7 +1672,7 @@ export default {
                 return;
             }
 
-            try { this.itemList(); } catch (e) { /* defensive */ }
+            try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
         },
         /**
          * [POS-9.1.10] Apply an ItemAvailabilityChanged broadcast to the POS
@@ -1413,7 +1703,7 @@ export default {
             if (!hasAvailabilitySignal) {
                 // Global catalogue change — refresh items list silently if structural.
                 if (payload.type === 'full') {
-                    try { this.itemList(); } catch (e) { /* defensive */ }
+                    try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
                 }
                 return;
             }
@@ -1448,7 +1738,7 @@ export default {
             // If the broadcast signals a structural change (price / variation /
             // category move), reload the catalogue in the background.
             if (payload.type === 'full') {
-                try { this.itemList(); } catch (e) { /* defensive */ }
+                try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             }
         },
         /**
@@ -1552,6 +1842,30 @@ export default {
                 }
                 emit();
             } catch (e) { /* defensive */ }
+        },
+
+        // ── Suivi commandes (badge tracker caisse) ────────────────────────
+        // [POS-V4-ORDERS-TRACKER 2026-05-02]
+        // Lecture-only. Source : `admin/oss-order` (OSS endpoint déjà branch-scoped
+        // côté backend). On compte ACCEPT (4) + PREPARING (7) + PREPARED (8) pour le
+        // badge total, et PREPARED seul pour le halo vert. En cas d'erreur on retombe
+        // silencieusement à 0/0 — le tracker plein écran reste accessible quand même.
+        async loadActiveOrdersStats() {
+            try {
+                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
+                let active = 0;
+                let ready = 0;
+                for (let i = 0; i < list.length; i++) {
+                    const s = parseInt(list[i].status ?? list[i].order_status ?? 0, 10);
+                    if (s === orderStatusEnum.ACCEPT || s === orderStatusEnum.PREPARING) active += 1;
+                    else if (s === orderStatusEnum.PREPARED) { active += 1; ready += 1; }
+                }
+                this.activeOrdersStats = { active, ready };
+            } catch (e) {
+                // Silencieux — pas de toast (le caissier n'a pas besoin de bruit ici).
+                this.activeOrdersStats = { active: 0, ready: 0 };
+            }
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────
@@ -1790,7 +2104,7 @@ export default {
                 this._debouncedListRefresh.cancel();
             }
             this.props.search.name = "";
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         onSearchInput: function (event) {
             this.props.search.name = event.target.value;
@@ -1822,12 +2136,12 @@ export default {
             this.discountType = value;
         },
         search: function () {
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         allCategory: function () {
             this.props.search.name = "";
             this.props.search.item_category_id = "";
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         closeSidebar: function () {
             this.$store.dispatch("globalState/set", { topSidebar: false });
@@ -1835,29 +2149,47 @@ export default {
             document?.querySelector(".db-main")?.classList?.add("expand");
         },
         itemCategories: function (page = 1) {
-            this.loading.isActive = true;
+            // No fullscreen overlay — runs in parallel with itemList on mount; overlay was confusing with menu fetch.
             this.props.search.page = page;
-            this.$store.dispatch("posCategory/lists", this.categoryProps).then((res) => {
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
+            this.$store.dispatch("posCategory/lists", this.categoryProps).then(() => {}).catch(() => {});
         },
-        itemList: function (page = 1) {
-            this.loading.isActive = true;
+        /**
+         * Load POS menu items. Use `{ overlay: false }` for category/search/filter changes so the
+         * fullscreen spinner is not shown; the previous grid stays visible until the new list arrives.
+         */
+        itemList: function (page = 1, opts) {
+            const options = opts != null && typeof opts === 'object' ? opts : {};
+            const showOverlay = options.overlay !== false;
+
+            if (showOverlay) {
+                this.loading.isActive = true;
+            }
+
+            this._itemListFetchDepth = (this._itemListFetchDepth || 0) + 1;
             this.posItemsFetchPending = true;
+
             this.props.search.page = page;
-            this.$store.dispatch("item/lists", this.props.search).then((res) => {
-                this.loading.isActive = false;
-                this.posItemsFetchPending = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-                this.posItemsFetchPending = false;
+
+            const finish = () => {
+                this._itemListFetchDepth = Math.max(0, (this._itemListFetchDepth || 1) - 1);
+                if (this._itemListFetchDepth === 0) {
+                    this.posItemsFetchPending = false;
+                }
+                if (showOverlay) {
+                    this.loading.isActive = false;
+                }
+            };
+
+            this.$store.dispatch("item/lists", this.props.search).then(() => {
+                finish();
+            }).catch(() => {
+                finish();
             });
         },
         setCategory: function (id) {
+            this.props.search.name = "";
             this.props.search.item_category_id = id;
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         cartQuantityUp: function (id, e) {
             // [V4 FIX] e.target.value is always a string from DOM input; parseInt before storing
@@ -1875,6 +2207,49 @@ export default {
         },
         deleteCartItem: function (id) {
             this.$store.dispatch('posCart/deleteCartItem', { id: id, status: "decrement" }).then().catch();
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Cancel the most recently added cart line.
+        // Reuses the existing deleteCartItem mutation; no new store contract needed.
+        cancelLastCartLine: function () {
+            const lines = this.$store.getters['posCart/lists'] || [];
+            if (lines.length === 0) {
+                return;
+            }
+            const lastIndex = lines.length - 1;
+            const lastLine = lines[lastIndex];
+            this.$store.dispatch('posCart/deleteCartItem', { id: lastIndex, status: 'decrement' })
+                .then(() => {
+                    const label = (lastLine && lastLine.name) ? lastLine.name : '';
+                    alertService.info(label
+                        ? this.$t('pos.cancel_last_line_done_named', { name: label })
+                        : this.$t('pos.cancel_last_line_done'));
+                })
+                .catch(() => {
+                    alertService.error(this.$t('pos.cancel_last_line_error'));
+                });
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] No-sale / open drawer.
+        // No order is created. Backend audit trail comes from the hardware
+        // bridge (reportHardwareEvent) — we don't double-log here. We also
+        // surface a tiny success/info toast so the cashier sees feedback even
+        // when the dev stub returns immediately.
+        triggerNoSaleOpenDrawer: async function () {
+            if (this.noSaleBusy) {
+                return;
+            }
+            this.noSaleBusy = true;
+            try {
+                const result = await Promise.resolve(kioskHardwareOpenDrawer());
+                if (result && result.ok === false) {
+                    alertService.error(this.$t('pos.no_sale_error'));
+                } else {
+                    alertService.info(this.$t('pos.no_sale_done'));
+                }
+            } catch (e) {
+                alertService.error(this.$t('pos.no_sale_error'));
+            } finally {
+                this.noSaleBusy = false;
+            }
         },
         applyDiscount: function () {
             // [POS-9.1.1] Require motif for any non-zero discount; surface server permission gate.
@@ -2579,9 +2954,16 @@ export default {
   --pos-v4-green: #12965d;
   --pos-v4-border: rgba(20, 24, 33, 0.1);
   --pos-v4-shadow: 0 18px 48px rgba(20, 24, 33, 0.12);
-  min-height: calc(100dvh - 85px);
-  margin: -8px -8px 0 -8px;
-  padding: 12px;
+  /* [POS-V4-DENSITY 2026-05-02] Tightened to match the slimmer admin header
+     (.db-header now py-2 instead of p-4 -> ~64px). The previous 85px offset
+     left a ~21px dead band above the operator bar that ate vertical space
+     for nothing — cashier wants product grid taller, not whitespace. */
+  min-height: calc(100dvh - 64px);
+  margin: -4px -8px 0 -8px;
+  padding: 4px 10px 12px 8px;
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow-x: hidden;
   background:
     linear-gradient(180deg, rgba(20, 24, 33, 0.04), rgba(20, 24, 33, 0)),
     var(--pos-v4-bg);
@@ -2589,7 +2971,8 @@ export default {
 }
 
 .pos-v4-main {
-  padding: 0 10px 22px 0;
+  padding: 0 8px 16px 0;
+  min-height: 0;
 }
 
 .pos-v4-operator-bar {
@@ -2658,11 +3041,30 @@ export default {
   white-space: nowrap;
 }
 
+/* [POS-V4-CASHIER-OPS 2026-05-02] no-sale button — neutral, low-noise */
+.pos-v4-no-sale-btn {
+  min-height: 46px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pos-v4-no-sale-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pos-v4-no-sale-btn i {
+  color: var(--pos-v4-red, #FB4E4E);
+}
+
+/* [POS-V4-DENSITY 2026-05-02] Search bar slimmed from 48px back to its
+   declared 38px (the 48px override was a leftover from an earlier visual
+   pass and ate ~10px of product-grid real estate for no functional gain).
+   Margin-bottom reduced from mb-4 (16px) to mb-2 (8px) below via inline
+   class — cf. template. */
 .pos-v4-search {
-  height: 48px !important;
+  height: 38px !important;
   border: 1px solid var(--pos-v4-border) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 10px 26px rgba(20, 24, 33, 0.08);
+  border-radius: 12px !important;
+  box-shadow: 0 6px 14px rgba(20, 24, 33, 0.06);
   overflow: hidden;
 }
 
@@ -2681,11 +3083,14 @@ export default {
   align-items: stretch;
 }
 
+/* [POS-V4-DENSITY 2026-05-02] Pill height tightened from 108px to 76px;
+   shadow softened so the strip reads as a compact navigation row, not a
+   second hero band above the products. */
 .pos-v4-category-card,
 .pos-v4-category-pill {
-  min-height: 108px;
+  min-height: 76px;
   border-color: transparent !important;
-  box-shadow: 0 10px 28px rgba(20, 24, 33, 0.08);
+  box-shadow: 0 4px 12px rgba(20, 24, 33, 0.06);
 }
 
 .pos-v4-category-card:hover,
@@ -2701,6 +3106,22 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+/* Category strip: native overflow scroll (replaced Swiper — no 1s slide animation) */
+.pos-menu-category-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scroll-behavior: auto;
+}
+
+.pos-menu-category-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pos-menu-category-scroll::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: rgba(20, 24, 33, 0.22);
 }
 
 .pos-v4-section-heading > span {
@@ -2848,40 +3269,87 @@ export default {
     flex-direction: column;
   }
 
+  .pos-v4-operator-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kiosk-cash-bar-btn {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
   .pos-v4-floorplan-link {
     width: 100%;
     justify-content: center;
   }
 }
 
-/* ── Kiosk cash FAB button ── */
-.kiosk-cash-fab {
-  position: fixed;
-  bottom: 88px;
-  right: 20px;
-  z-index: 1000;
-  background: #e8001c;
-  border: none;
-  border-radius: 50px;
-  padding: 0.6rem 1rem 0.6rem 0.85rem;
-  display: flex; align-items: center; gap: 0.4rem;
+/* ── Borne cash : bouton dans la barre opérateur (remplace l’ancien FAB bas-droite) ── */
+.kiosk-cash-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem 0.5rem 0.65rem;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(232,0,28,0.4);
-  animation: kiosk-fab-pulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+  max-width: min(100%, 320px);
+  text-align: left;
+  animation: kiosk-bar-pulse 2.2s ease-in-out infinite;
 }
-@keyframes kiosk-fab-pulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(232,0,28,0.4); }
-  50% { box-shadow: 0 4px 28px rgba(232,0,28,0.7); }
+.kiosk-cash-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
 }
-.kiosk-cash-fab-icon { font-size: 1.2rem; }
-.kiosk-cash-fab-badge {
+@keyframes kiosk-bar-pulse {
+  0%, 100% { box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 4px 22px rgba(255, 255, 255, 0.35); }
+}
+.kiosk-cash-bar-btn-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.kiosk-cash-bar-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.kiosk-cash-bar-btn-label {
+  font-weight: 900;
+  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+.kiosk-cash-bar-btn-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  opacity: 0.9;
+  line-height: 1.2;
+}
+.kiosk-cash-bar-btn-badge {
+  flex-shrink: 0;
+  min-width: 1.85rem;
+  height: 1.85rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
   background: #fff;
   color: #e8001c;
-  border-radius: 50%;
-  width: 22px; height: 22px;
-  font-size: 0.78rem; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 /* ── Panel overlay ── */
 .kiosk-cash-panel-overlay {
   position: fixed; inset: 0; z-index: 2000;
@@ -2901,9 +3369,53 @@ export default {
   border-bottom: 1px solid #f0f0f0;
   font-weight: 700; font-size: 0.95rem;
 }
+.kiosk-cash-panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.kiosk-cash-panel-history-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #EFF0F6;
+  background: #ffffff;
+  color: #1F1F39;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.kiosk-cash-panel-history-link:hover {
+  background: #FFEDF4;
+  border-color: #B0004D;
+  color: #B0004D;
+}
 .kiosk-cash-panel-close {
   background: none; border: none; font-size: 1.1rem;
   cursor: pointer; color: #888; padding: 0.25rem;
+}
+.kiosk-cash-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid #EFF0F6;
+  background: #ffffff;
+  color: #1F1F39;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.kiosk-cash-detail-btn:hover {
+  background: #FFEDF4;
+  border-color: #B0004D;
+  color: #B0004D;
 }
 .kiosk-cash-panel-body {
   flex: 1; overflow-y: auto;
@@ -2979,12 +3491,111 @@ export default {
 }
 .kiosk-cash-refresh-btn:hover { background: #ebebeb; }
 /* Transitions */
-.slide-up-pos-enter-active, .slide-up-pos-leave-active { transition: transform 0.3s ease, opacity 0.3s; }
-.slide-up-pos-enter-from, .slide-up-pos-leave-to { transform: translateY(20px); opacity: 0; }
 .slide-panel-enter-active, .slide-panel-leave-active { transition: opacity 0.25s; }
 .slide-panel-enter-from, .slide-panel-leave-to { opacity: 0; }
 .slide-panel-enter-active .kiosk-cash-panel,
 .slide-panel-leave-active .kiosk-cash-panel { transition: transform 0.3s ease; }
 .slide-panel-enter-from .kiosk-cash-panel,
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
+
+/* ── [POS-V4-ORDERS-TRACKER 2026-05-02] Bouton suivi commandes ────────────
+   Discret par défaut (bord neutre), tourne vert avec halo respirant dès
+   qu'une commande passe à PREPARED. Aucun popup, aucun son — juste un
+   signal visuel pour que le caissier sache, sans être interrompu pendant
+   une prise de commande en cours. */
+.pos-tracker-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.8rem 0.4rem 0.6rem;
+  border-radius: 12px;
+  border: 1px solid #EFF0F6;
+  background: #ffffff;
+  color: #1F1F39;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+}
+
+.pos-tracker-bar-btn:hover {
+  background: #FFEDF4;
+  border-color: #B0004D;
+}
+
+.pos-tracker-bar-btn-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pos-tracker-bar-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.pos-tracker-bar-btn-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.pos-tracker-bar-btn-sub {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.7;
+  line-height: 1.2;
+}
+
+.pos-tracker-bar-btn-badge {
+  flex-shrink: 0;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #F1F5F9;
+  color: #1F1F39;
+  font-weight: 800;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pos-tracker-bar-btn.is-ready {
+  background: #DCFCE7;
+  border-color: #1AB759;
+  color: #14532D;
+  animation: pos-tracker-bar-glow 2.6s ease-in-out infinite;
+}
+
+.pos-tracker-bar-btn.is-ready:hover {
+  background: #BBF7D0;
+  border-color: #15A151;
+}
+
+.pos-tracker-bar-btn.is-ready .pos-tracker-bar-btn-badge {
+  background: #1AB759;
+  color: #ffffff;
+}
+
+@keyframes pos-tracker-bar-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pos-tracker-bar-btn.is-ready { animation: none; }
+}
+
+@media (max-width: 767px) {
+  .pos-tracker-bar-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .pos-tracker-bar-btn-text { flex: 1; }
+}
 </style>

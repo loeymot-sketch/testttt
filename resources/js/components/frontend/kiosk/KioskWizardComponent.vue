@@ -89,6 +89,46 @@
         </button>
       </div>
 
+      <div
+        class="kiosk-live-composition"
+        role="region"
+        :aria-label="$t('kiosk.wizard.live_composition_label')"
+        data-testid="kiosk-wizard-live-composition"
+      >
+        <span class="kiosk-live-composition-title">{{ $t('kiosk.wizard.live_composition_title') }}</span>
+        <div class="kiosk-live-composition-list">
+          <div
+            v-for="chip in compositionSummaryChips"
+            :key="chip.key"
+            class="kiosk-live-composition-chip"
+            :class="{ 'is-product': chip.kind === 'product' }"
+            :data-testid="`kiosk-composition-chip-${chip.key}`"
+          >
+            <span class="kiosk-live-composition-thumb" aria-hidden="true">
+              <img
+                v-if="chip.image"
+                :src="chip.image"
+                :alt="''"
+                class="kiosk-live-composition-img"
+                loading="lazy"
+              />
+              <span v-else class="kiosk-live-composition-icon">{{ chip.icon }}</span>
+            </span>
+            <span class="kiosk-live-composition-copy">
+              <span class="kiosk-live-composition-chip-label">{{ chip.label }}</span>
+              <span class="kiosk-live-composition-chip-value">{{ chip.value }}</span>
+            </span>
+          </div>
+          <span
+            v-if="compositionSummaryChips.length === 0"
+            class="kiosk-live-composition-empty"
+            data-testid="kiosk-composition-empty"
+          >
+            {{ $t('kiosk.wizard.live_composition_empty') }}
+          </span>
+        </div>
+      </div>
+
       <div class="kiosk-step-question">
         {{ currentStep.type === 'recap' ? $t('kiosk.wizard.recap_order_title') : getQuestionLabel(currentStep) }}
       </div>
@@ -508,6 +548,43 @@ export default {
       if (!item) return false;
       return item.has_menu === true || kioskDrinkAddonRowsFromItem(item).length > 0;
     },
+    compositionSummaryChips() {
+      if (!this.resolvedItem) return [];
+
+      const chips = [];
+
+      if (this.shouldShowCompositionStep('taille') && this.selections._tailleMeta?.label) {
+        chips.push({
+          key: 'taille',
+          label: this.compositionLabel('taille'),
+          value: this.selections._tailleMeta.label,
+          image: kioskResolveImageSrc(this.resolvedItem),
+          icon: '📏',
+        });
+      }
+
+      const painChip = this.compositionPainChip();
+      if (painChip) chips.push(painChip);
+
+      const viandeChip = this.compositionViandeChip();
+      if (viandeChip) chips.push(viandeChip);
+
+      const sauceChip = this.compositionSauceChip();
+      if (sauceChip) chips.push(sauceChip);
+
+      const garnitureChip = this.compositionExtraGroupChip('garnitures');
+      if (garnitureChip) chips.push(garnitureChip);
+
+      const supplementChip = this.compositionExtraGroupChip('supplements');
+      if (supplementChip) chips.push(supplementChip);
+
+      const menuChip = this.compositionMenuChip();
+      if (menuChip) chips.push(menuChip);
+
+      this.compositionComposerChips().forEach((chip) => chips.push(chip));
+
+      return chips;
+    },
     /** Évite de passer des props inconnues aux autres étapes du wizard. */
     kioskMenuStepExtraProps() {
       if (this.currentStep?.type !== 'menu') return {};
@@ -885,6 +962,163 @@ export default {
       return meta
         .filter((row) => row && row.source !== 'extra')
         .reduce((sum, row) => sum + (parseInt(row.count || 0, 10) || 0), 0);
+    },
+    compactChoiceText(values, max = 2) {
+      const clean = (Array.isArray(values) ? values : [])
+        .map((v) => String(v || '').trim())
+        .filter(Boolean);
+      if (clean.length <= max) return clean.join(', ');
+      return `${clean.slice(0, max).join(', ')} +${clean.length - max}`;
+    },
+    formatChoiceNameWithCount(name, count) {
+      const n = parseInt(count || 0, 10) || 0;
+      return n > 1 ? `${name} x${n}` : name;
+    },
+    stepIndexForType(type) {
+      return (this.activeSteps || []).findIndex((step) => step?.type === type);
+    },
+    shouldShowCompositionStep(type) {
+      const idx = this.stepIndexForType(type);
+      if (idx < 0) return false;
+      return this.currentStepIndex >= idx;
+    },
+    compositionLabel(type, fallback = '') {
+      const keys = {
+        taille: 'kiosk.wizard.live_composition_size',
+        pain: 'kiosk.wizard.summary.bread_type',
+        viande: 'kiosk.wizard.summary.meats',
+        sauce: 'kiosk.wizard.summary.sauces',
+        garnitures: 'kiosk.wizard.summary.garnishes',
+        supplements: 'kiosk.wizard.summary.supplements',
+        menu: 'kiosk.wizard.summary.menu',
+      };
+      const key = keys[type];
+      if (key) {
+        const translated = this.$t(key);
+        if (translated !== key) return String(translated).replace(/[:?؟]+$/u, '');
+      }
+      const raw = fallback || this.getStepLabel(type);
+      return String(raw)
+        .replace(/[:?؟]+$/u, '')
+        .replace(/^\s*(quel|quelle|quels|quelles|choose|any)\s+/i, '')
+        .trim();
+    },
+    compositionPainChip() {
+      const item = this.resolvedItem;
+      const painId = this.selections.pain;
+      if (!this.shouldShowCompositionStep('pain')) return null;
+      if (!item || !painId) return null;
+      const painAttr = this.kioskNormalizeItemAttributes(item.itemAttributes).find((a) =>
+        (a?.name || '').toLowerCase().includes('pain') ||
+        (a?.name || '').toLowerCase().includes('galette')
+      );
+      const variation = painAttr ? kioskVariationsForAttribute(item, painAttr.id)?.find((v) => String(v.id) === String(painId)) : null;
+      const name = this.selections._painMeta?.name || variation?.name || String(painId);
+      return {
+        key: 'pain',
+        label: this.compositionLabel('pain'),
+        value: name,
+        image: kioskResolveImageSrc(variation, item),
+        icon: '🥖',
+      };
+    },
+    compositionViandeChip() {
+      if (!this.shouldShowCompositionStep('viande')) return null;
+      const meta = Array.isArray(this.selections._viandeMeta) ? this.selections._viandeMeta : [];
+      const selected = meta.filter((row) => row && (parseInt(row.count || 0, 10) || 0) > 0);
+      if (selected.length === 0) return null;
+      const catalog = kioskViandeCatalogForItem(this.resolvedItem);
+      const first = selected[0];
+      const firstCatalog = catalog.find((row) => row.key === first.key || String(row.id) === String(first.id));
+      return {
+        key: 'viande',
+        label: this.compositionLabel('viande'),
+        value: this.compactChoiceText(selected.map((row) => this.formatChoiceNameWithCount(row.name, row.count))),
+        image: kioskResolveImageSrc(firstCatalog, firstCatalog?.thumb),
+        icon: '🥩',
+      };
+    },
+    compositionSauceChip() {
+      if (!this.shouldShowCompositionStep('sauce')) return null;
+      const order = Array.isArray(this.selections.sauceOrder) ? this.selections.sauceOrder : [];
+      if (order.length === 0) return null;
+      const rows = order
+        .map((key) => this.kioskFindSauceVariation(this.resolvedItem, key))
+        .filter(Boolean);
+      return {
+        key: 'sauce',
+        label: this.compositionLabel('sauce'),
+        value: this.compactChoiceText(rows.map((row) => row.name || 'Sauce')),
+        image: kioskResolveImageSrc(rows[0], this.resolvedItem),
+        icon: '🥫',
+      };
+    },
+    compositionExtraGroupChip(group) {
+      const item = this.resolvedItem;
+      const type = group === 'supplements' ? 'supplements' : 'garnitures';
+      if (!this.shouldShowCompositionStep(type)) return null;
+      if (!item || !Array.isArray(item.extras)) return null;
+      const source = this.selections[group] || {};
+      const selected = Object.entries(source)
+        .map(([id, raw]) => {
+          const count = normalizeKioskSelectionCount(raw);
+          if (count <= 0) return null;
+          const extra = item.extras.find((row) => String(row.id) === String(id));
+          if (!extra) return null;
+          return { extra, count };
+        })
+        .filter(Boolean);
+      if (selected.length === 0) return null;
+
+      const isSupplement = group === 'supplements';
+      return {
+        key: group,
+        label: this.compositionLabel(type),
+        value: this.compactChoiceText(selected.map((row) => this.formatChoiceNameWithCount(row.extra.name, row.count))),
+        image: kioskResolveImageSrc(selected[0].extra, item),
+        icon: isSupplement ? '🧀' : '🥗',
+      };
+    },
+    compositionMenuChip() {
+      if (!this.shouldShowCompositionStep('menu')) return null;
+      const mc = this.selections.menuChoice;
+      if (!mc || mc === 'none') return null;
+      const s = 'kiosk.wizard.summary';
+      const base = {
+        full: this.$t(`${s}.menu_label_full`),
+        frites: this.$t(`${s}.menu_label_frites`),
+        boisson: this.$t(`${s}.menu_label_boisson`),
+      }[mc] || mc;
+      const details = [base];
+      if (this.selections._boissonMeta?.boissonName && (mc === 'full' || mc === 'boisson')) {
+        details.push(this.selections._boissonMeta.boissonName);
+      }
+      const fryOrder = (this.selections.fritesSauceOrder || []).filter((key) => key && key !== 'sans');
+      if (fryOrder.length > 0) {
+        details.push(this.compactChoiceText(fryOrder.map((key) => this.kioskFritesSauceDisplayName(key)), 1));
+      }
+      return {
+        key: 'menu',
+        label: this.compositionLabel('menu'),
+        value: details.join(' · '),
+        image: kioskResolveImageSrc(this.resolvedItem),
+        icon: '🍟',
+      };
+    },
+    compositionComposerChips() {
+      const grouped = {};
+      this.composerChoiceEntries().forEach((entry) => {
+        const label = entry.step_label || this.$t('kiosk.wizard.generic.step_fallback');
+        if (!grouped[label]) grouped[label] = [];
+        grouped[label].push(this.formatChoiceNameWithCount(entry.name || entry.id, entry.count));
+      });
+      return Object.entries(grouped).map(([label, values], index) => ({
+        key: `composer-${index}`,
+        label,
+        value: this.compactChoiceText(values),
+        image: kioskResolveImageSrc(this.resolvedItem),
+        icon: '＋',
+      }));
     },
     updateSelection(key, value, meta) {
       this.serverPreviewTotal = null;
@@ -2176,6 +2410,118 @@ export default {
 .kiosk-step-dot.done .kiosk-step-number {
   background: var(--kiosk-primary, #e8001c);
   opacity: 0.85;
+}
+
+.kiosk-live-composition {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 24px 10px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid rgba(238, 230, 217, 0.86);
+  box-shadow: 0 8px 22px rgba(20, 20, 20, 0.035);
+  flex-shrink: 0;
+}
+
+.kiosk-live-composition-title {
+  color: var(--kiosk-text-muted, #6f6762);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.kiosk-live-composition-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kiosk-live-composition-list::-webkit-scrollbar { display: none; }
+
+.kiosk-live-composition-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 210px;
+  min-height: 42px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid rgba(238, 230, 217, 0.95);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #fffaf4);
+  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.045);
+}
+
+.kiosk-live-composition-chip.is-product {
+  max-width: 250px;
+  border-color: rgba(232, 0, 28, 0.18);
+  background: linear-gradient(180deg, #fff, #fff5f6);
+}
+
+.kiosk-live-composition-thumb {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--kiosk-product-media-bg, #f7f3ec);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-live-composition-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kiosk-live-composition-icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.kiosk-live-composition-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kiosk-live-composition-chip-label {
+  color: var(--kiosk-text-mute, #837a75);
+  font-size: 9px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.kiosk-live-composition-chip-value {
+  color: var(--kiosk-text, #1a1a1a);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.12;
+  max-width: 156px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiosk-live-composition-empty {
+  color: var(--kiosk-text-mute, #837a75);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .kiosk-step-question {

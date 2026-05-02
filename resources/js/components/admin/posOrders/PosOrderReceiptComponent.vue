@@ -4,8 +4,8 @@
             <div class="modal-body">
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
-                    <h4 class="text-sm font-normal">{{ branch.address }}</h4>
-                    <h5 class="text-sm font-normal">Tel: {{ branch.phone }}</h5>
+                    <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
+                    <h5 class="text-sm font-normal">Tel: {{ receiptBranch.phone }}</h5>
                 </div>
 
                 <table class="w-full my-1.5">
@@ -157,6 +157,7 @@
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import OrderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import { receiptBranchHeader } from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "PosOrderReceiptComponent",
@@ -185,8 +186,11 @@ export default {
         company: function () {
             return this.$store.getters['company/lists'];
         },
-        branch: function () {
-            return this.$store.getters['backendGlobalState/branchShow'];
+        receiptBranch: function () {
+            return receiptBranchHeader(
+                this.order,
+                this.$store.getters['backendGlobalState/branchShow']
+            );
         },
         orderItems: function () {
             return this.$store.getters['posOrder/orderItems'];
@@ -197,6 +201,10 @@ export default {
     },
     mounted() {
         this.$store.dispatch("company/lists").then().catch();
+        const bid = this.order?.branch_id ?? this.order?.branch?.id;
+        if (bid) {
+            this.$store.dispatch('backendGlobalState/branchShow', bid).catch(() => {});
+        }
     }
 }
 </script>

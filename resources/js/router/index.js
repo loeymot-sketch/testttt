@@ -42,6 +42,10 @@ import kioskRoutes from "./modules/kioskRoutes";
 // [STAFF-ONLY-V1] Helper: lit le flag + état d'auth pour router la racine intelligemment.
 const isStaffOnly = () => !!(window.foodkingConfig && window.foodkingConfig.staffOnlyMode);
 const isAuthenticated = () => !!store.getters.authStatus;
+const authenticatedStaffLanding = () => {
+    const url = store.getters.authDefaultPermission?.url || store.getters.authDefaultMenu?.url || null;
+    return url ? `/admin/${url}` : { name: "admin.dashboard" };
+};
 
 // [STAFF-ONLY-V1] Liste blanche des frontend routes accessibles même en staff-only mode.
 // Tout ce qui n'est pas ici est redirigé vers /login quand staffOnlyMode=true.
@@ -61,7 +65,7 @@ const baseRoutes = [
         name: "root",
         redirect: () => {
             if (isStaffOnly()) {
-                return isAuthenticated() ? { name: "admin.dashboard" } : { name: "auth.login" };
+                return isAuthenticated() ? authenticatedStaffLanding() : { name: "auth.login" };
             }
             return { name: "frontend.home" };
         },
@@ -184,8 +188,8 @@ router.beforeEach((to, from, next) => {
             }
         }
     } else if (to.name === "auth.login" && store.getters.authStatus) {
-        // [STAFF-ONLY-V1] En staff-only, si déjà connecté, on envoie directement au dashboard.
-        next({ name: isStaffOnly() ? "admin.dashboard" : "frontend.home" });
+        // [STAFF-ONLY-V1] En staff-only, respecter la landing du rôle (POS => /admin/pos).
+        next(isStaffOnly() ? authenticatedStaffLanding() : { name: "frontend.home" });
     } else {
         next();
     }

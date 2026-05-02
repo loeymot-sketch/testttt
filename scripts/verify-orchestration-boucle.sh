@@ -87,7 +87,13 @@ else
   echo "[--] codex (extension Pro) non teste (defaut). FULL: npm run codex:smoke avec VERIFY_BILLING_FULL=1"
 fi
 
-# 4) Fichiers procéduraux
+# 4) PHASE canonique (ACTIVE_CYCLE — warn par défaut, strict via VERIFY_ACTIVE_CYCLE_STRICT=1)
+echo
+if [[ -x "$REPO_ROOT/scripts/validate-active-cycle.sh" ]]; then
+  bash "$REPO_ROOT/scripts/validate-active-cycle.sh" || true
+fi
+
+# 5) Fichiers procéduraux
 echo
 if [[ -f "$REPO_ROOT/.cursor/commands/run-cycle.md" ]]; then
   if grep -q "AUDIT_CHANNEL: claude-terminal" "$REPO_ROOT/.cursor/commands/run-cycle.md" 2>/dev/null; then

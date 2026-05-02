@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\Ask;
 use App\Models\Address;
 use App\Enums\Role as EnumRole;
+use App\Models\DefaultAccess;
 use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Database\Seeder;
 use App\Models\User;
@@ -89,6 +90,10 @@ class UserTableSeeder extends Seeder
             'is_guest'          => Ask::NO
         ]);
         $posOperatorLc->assignRole(EnumRole::POS_OPERATOR);
+        DefaultAccess::firstOrCreate(
+            ['user_id' => $posOperatorLc->id, 'name' => 'branch_id'],
+            ['default_id' => 1]
+        );
 
         // Chef KDS — toujours créé (branche 1), même sans DEMO=true
         // (le compte chef@example.com du bloc DEMO reste un bonus démo Bangladesh)

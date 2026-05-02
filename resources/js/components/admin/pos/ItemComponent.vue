@@ -1,16 +1,15 @@
 <template>
-    <div class="grid grid-cols-3 gap-2.5 mb-8 md:mb-0">
-        <div v-for="item in items" :key="item.id || item"
+    <div ref="itemsGrid" class="grid grid-cols-2 xl:grid-cols-3 gap-3 mb-8 md:mb-0">
+        <button v-for="item in items" :key="item.id || item"
+            type="button"
             :class="tileClassList(item)"
             :aria-disabled="isCatalogTileUnavailable(item) ? 'true' : 'false'"
-            role="button"
-            :tabindex="isCatalogTileUnavailable(item) ? -1 : 0"
+            :disabled="isCatalogTileUnavailable(item)"
             :aria-label="$t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
+            :data-pos-item-id="item.id"
             style="min-height: 90px;"
-            @click.prevent="onProductTileClick(item)"
             @keyup.enter.prevent="addItem(item)"
-            @keyup.space.prevent="addItem(item)"
-            data-modal="#item-variation-modal">
+            @keyup.space.prevent="addItem(item)">
             <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge">{{ $t('pos.item_86_d') }}</span>
             <div class="flex-1 flex items-center justify-center w-full">
                 <h3 class="text-xs font-semibold font-rubik capitalize text-center leading-tight text-[#2E2F38] line-clamp-3">{{ item.name }}</h3>
@@ -24,7 +23,7 @@
                     <i class="lab lab-bag-2 font-fill-primary lab-font-size-10" style="font-size:11px;"></i>
                 </span>
             </div>
-        </div>
+        </button>
     </div>
 
     <!--========INFO PART START=========-->
@@ -42,9 +41,11 @@
     <!--========INFO PART END===========-->
 
     <!--========VARIATION PART START=========-->
-    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal">
-        <div class="modal-dialog max-w-[820px]" v-if="item">
-            <div class="modal-header items-start border-none pb-0">
+    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal" :data-pos-drinks-catalog="drinksCatalogJson">
+        <div
+            class="modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl"
+            v-if="item">
+            <div class="modal-header items-start border-none pb-0 flex-shrink-0">
                 <div class="flex gap-4">
                     <img class="flex-shrink-0 w-[72px] h-[72px] object-cover rounded-lg" :src="item.thumb"
                         alt="thumbnail">
@@ -64,7 +65,7 @@
                 <button class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
                     @click.prevent="variationModalHide"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body pos-v4-item-wizard-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 <div class="flex items-center gap-2 mb-4">
                     <h3 class="text-sm leading-6 font-medium first-letter:uppercase text-heading">
                         {{ $t('label.quantity') }}:</h3>
@@ -198,7 +199,7 @@
                 <div class="mb-5" v-if="item.addons.length > 0">
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.addons') }}</h3>
                     <div class="swiper addon-swiper">
-                        <Swiper :speed="1000" slidesPerView="auto" :spaceBetween="16">
+                        <Swiper :speed="280" slidesPerView="auto" :spaceBetween="16">
                             <SwiperSlide v-for="addon in item.addons" :key="addon">
                                 <div class="!w-fit !relative">
                                     <div @click.prevent="changeAddon(addon)"
@@ -267,7 +268,11 @@
                         class="h-12 w-full rounded-lg border py-1.5 px-2 placeholder:text-[10px] placeholder:text-[#6E7191] border-[#D9DBE9]"></textarea>
                     <small class="db-field-alert" v-if="instructionError">{{ instructionError }}</small>
                 </div>
-                <div class="pos-add-to-cart-sticky">
+            </div>
+            <div
+                class="pos-v4-item-wizard-footer pos-add-to-cart-sticky flex-shrink-0 border-t border-[#EFF0F6] bg-white px-4 pb-4 pt-3"
+                data-wiz-vue-footer
+            >
                     <button type="button" :disabled="!canAddToCart" @click.prevent="addToCart"
                         class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="icon-bag-2"></i>
@@ -282,7 +287,6 @@
                     <div v-if="itemUnavailabilityBannerVisible" class="alert alert-warning mt-2" role="status">
                         {{ $t('pos.item_unavailable_during_edit') }}
                     </div>
-                </div>
             </div>
         </div>
     </div>
@@ -327,7 +331,11 @@ export default {
         SwiperSlide,
     },
     props: {
-        items: Object
+        items: Object,
+        drinksCatalog: {
+            type: Array,
+            default: function () { return []; }
+        }
     },
     data() {
         return {
@@ -374,6 +382,19 @@ export default {
         canAddToCart: function () {
             return this.temp.total_price > 0 && !this.hasSelectionErrors() && this.catalogItemAvailable;
         },
+        /**
+         * [POS-WIZARD-DRINKS 2026-05-02] Sérialisation du catalogue boissons pour le shim
+         * `public/js/pos-wizard.js` (vanilla JS hors webpack). Le wizard lit cet attribut
+         * DOM pour détecter quels addons du produit sont des boissons (cross-reference
+         * id catalogue / nom catalogue), assurant la symétrie POS↔borne.
+         */
+        drinksCatalogJson: function () {
+            try {
+                return JSON.stringify(Array.isArray(this.drinksCatalog) ? this.drinksCatalog : []);
+            } catch (e) {
+                return '[]';
+            }
+        },
     },
     methods: {
         onlyNumber: function (e) {
@@ -389,6 +410,72 @@ export default {
             this.temp = createEmptyTemp();
             this.addons = {};
             this.addonQuantity = {};
+        },
+        normalizeLoadedItem: function (raw) {
+            const item = Object.assign({}, raw || {});
+            item.offer = Array.isArray(item.offer) ? item.offer : [];
+            item.addons = Array.isArray(item.addons) ? item.addons : [];
+            item.extras = Array.isArray(item.extras) ? item.extras : [];
+            item.itemAttributes = Array.isArray(item.itemAttributes) ? item.itemAttributes : [];
+            item.variations = item.variations && typeof item.variations === 'object' ? item.variations : {};
+            return item;
+        },
+        showItemLoadError: function (error) {
+            if (typeof console !== 'undefined' && console.error) {
+                console.error('[POS] item/details failed', error);
+            }
+            alertService.error(this.$t('message.something_went_wrong') || 'Erreur lors du chargement du produit.');
+        },
+        renderedItemsList: function () {
+            if (Array.isArray(this.items)) {
+                return this.items;
+            }
+            if (this.items && typeof this.items === 'object') {
+                return Object.values(this.items);
+            }
+            return [];
+        },
+        findRenderedItemById: function (itemId) {
+            const normalizedItemId = normalizeId(itemId);
+            if (normalizedItemId === null) {
+                return null;
+            }
+
+            return this.renderedItemsList()
+                .find((row) => normalizeId(row && row.id) === normalizedItemId) || null;
+        },
+        handleNativeTileClick: function (event) {
+            if (event?.__fkPosTileHandled) {
+                return;
+            }
+
+            const tile = event?.target?.closest?.('[data-pos-item-id]');
+            if (!tile) {
+                return;
+            }
+            if (tile.disabled || tile.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
+
+            const selectedItem = this.findRenderedItemById(tile.getAttribute('data-pos-item-id'));
+            if (!selectedItem || this.isCatalogTileUnavailable(selectedItem)) {
+                return;
+            }
+
+            event.__fkPosTileHandled = true;
+            event.preventDefault();
+            this.variationModalShow(selectedItem);
+        },
+        posItemDetailsPayload: function (id) {
+            const payload = { id, surface: 'pos' };
+            const branchId = this.$store.getters['auth/authBranchId']
+                || this.$store.getters.authBranchId
+                || this.$store.state?.auth?.authBranchId
+                || null;
+            if (branchId) {
+                payload.branch_id = branchId;
+            }
+            return payload;
         },
         getAttributeConfig: function (attribute) {
             const maxSelect = normalizeQuantity(attribute && attribute.max_select, 1);
@@ -646,11 +733,11 @@ export default {
 
             // [AUDIT 2026-04-17 R2] Surface=pos so the backend only returns
             // extras/variations visible on the cashier channel (NormalItemResource).
-            this.$store.dispatch('item/details', { id: selectedItem.id, surface: 'pos' })
+            this.$store.dispatch('item/details', this.posItemDetailsPayload(selectedItem.id))
                 .then((res) => {
 
-                    const item = res.data.data;
-                    this.item = res.data.data;
+                    const item = this.normalizeLoadedItem(res.data.data);
+                    this.item = item;
 
                     if (this.item.addons.length > 0) {
                         _.forEach(this.item.addons, (addon) => {
@@ -675,7 +762,9 @@ export default {
                     }
                     modalTarget?.classList?.add("active");
                     document.body.style.overflowY = "hidden";
-                }).catch({});
+                }).catch((error) => {
+                    this.showItemLoadError(error);
+                });
         },
         /**
          * Rouvre le modal article depuis une ligne panier (édition).
@@ -686,9 +775,9 @@ export default {
             if (!cartLine || cartLine.item_id == null) return;
             this.editingCartIndex = typeof index === 'number' ? index : null;
             // [AUDIT 2026-04-17 R2] Keep the POS channel projection on edit too.
-            this.$store.dispatch('item/details', { id: cartLine.item_id, surface: 'pos' })
+            this.$store.dispatch('item/details', this.posItemDetailsPayload(cartLine.item_id))
                 .then((res) => {
-                    const item = res.data.data;
+                    const item = this.normalizeLoadedItem(res.data.data);
                     this.item = item;
                     this.addons = {};
                     this.addonQuantity = {};
@@ -1335,6 +1424,11 @@ export default {
     },
 
     mounted() {
+        this._posTileClickHandler = (event) => this.handleNativeTileClick(event);
+        this.$nextTick(() => {
+            document?.addEventListener?.('click', this._posTileClickHandler, true);
+        });
+
         // [WIZARD-SUBMIT] The pos-wizard.js dispatches 'wizard:add-to-cart' on the modal element
         // instead of clicking the (potentially disabled) Vue button.
         // This listener calls addToCart() directly, bypassing the :disabled guard.
@@ -1349,6 +1443,12 @@ export default {
                 if (!this.canAddToCart) return;
                 this.addToCart();
             });
+        }
+    },
+    beforeUnmount() {
+        if (this._posTileClickHandler) {
+            document?.removeEventListener?.('click', this._posTileClickHandler, true);
+            this._posTileClickHandler = null;
         }
     },
 
@@ -1381,5 +1481,11 @@ export default {
     background: #fff;
     padding-top: 8px;
     padding-bottom: 2px;
+}
+/* Wizard shell: footer is a flex column — not sticky inside scroll */
+.pos-v4-item-wizard-footer.pos-add-to-cart-sticky {
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 </style>

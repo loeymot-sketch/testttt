@@ -154,15 +154,24 @@ export const item = {
             return new Promise((resolve, reject) => {
                 let id = payload;
                 let surface = null;
+                let branchId = null;
                 if (payload !== null && typeof payload === 'object') {
                     id = payload.id;
                     if (typeof payload.surface === 'string'
                         && ['pos', 'kiosk', 'web'].indexOf(payload.surface) !== -1) {
                         surface = payload.surface;
                     }
+                    branchId = payload.branch_id || payload.branchId || null;
                 }
                 let url = `admin/item/details/${id}`;
-                const config = surface ? { params: { surface } } : undefined;
+                const params = {};
+                if (surface) {
+                    params.surface = surface;
+                }
+                if (branchId) {
+                    params.branch_id = branchId;
+                }
+                const config = Object.keys(params).length > 0 ? { params } : undefined;
                 axios.get(url, config).then((res) => {
                     resolve(res);
                 }).catch((err) => {

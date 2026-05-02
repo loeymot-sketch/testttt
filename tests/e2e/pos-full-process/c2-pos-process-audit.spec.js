@@ -35,8 +35,8 @@ async function waitForPendingOrderInPosApi(page, orderId) {
 
 async function openCounterCollectCard(page, order) {
   await waitForPendingOrderInPosApi(page, order.id);
-  await expect(page.locator('.kiosk-cash-fab')).toBeVisible({ timeout: 20_000 });
-  await page.locator('.kiosk-cash-fab').click();
+  await expect(page.locator('[data-testid="kiosk-cash-open"]')).toBeVisible({ timeout: 20_000 });
+  await page.locator('[data-testid="kiosk-cash-open"]').click();
   await page.locator('.kiosk-cash-refresh-btn').click();
   const card = page.locator('.kiosk-cash-order-card').filter({ hasText: order.queue_number });
   await expect(card).toBeVisible({ timeout: 20_000 });

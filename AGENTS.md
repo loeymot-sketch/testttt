@@ -1,5 +1,7 @@
 # FoodKing – Cursor Agent Operating Contract
 
+> **Routine production (non négociable)** — Dès l’ouverture du dépôt ou d’une session agent : **ne pas attendre** qu’un humain dise « lis AGENTS ». La boucle **`run-cycle <TASK_ID>`** (voir **`.cursor/commands/run-cycle.md`**) est le chemin **par défaut** pour toute modification **code produit** dans une mission traçable. Rappel court à la racine : **`BOUCLE.md`**.
+
 ## 0. Quick start contract — read this first
 
 Commence ici. Ne lance aucune action tant que tu n'as pas lu les priorités P0.
@@ -32,6 +34,13 @@ npm run verify:boucle
 bash scripts/agent-activity-log.sh tail 50
 run-cycle <TASK_ID>
 ```
+
+### Routine obligatoire — sans rappel humain « lis AGENTS »
+
+- **Toute** évolution produit dans une mission avec **`TASK_ID`** suit **`run-cycle`** de bout en bout (Steps 0→5). Ce n’est pas réservé aux « gros » chantiers.
+- **Avant EXECUTE** sur les fichiers applicatifs : réservation **`scripts/agent-activity-log.sh start`** (voir **`.cursor/rules/cross-agent-sync.mdc`**).
+- **EXECUTE** complexe : canal primaire **`codex-extension`** ; Composer / session Cursor **ne remplacent pas** ce canal sauf **fallback** documenté (`FALLBACK_REASON`) — voir **§ Workflow** ci-dessous.
+- Le fichier racine **`BOUCLE.md`** du dépôt duplique ce rappel pour les agents qui listent les fichiers sans rouvrir tout `AGENTS.md`.
 
 ### Caisse V1 — Masterplay loop (actif)
 
@@ -79,8 +88,8 @@ Lis-le après P0, puis enchaîne sur P1 avant toute contribution effective.
 |-------|--------|------------------|
 | **0. Continuation** | Lire **`.cursor/ACTIVE_CYCLE.md`**. | Si `PHASE` n’est **pas** vide et le cycle n’est **pas** archivé : **reprendre** ce `TASK_ID` / ce `PLAN_FILE` / ce `REPORT_FILE` — **ne pas** dupliquer un second cycle fantôme. Si humain confirme **nouveau** sujet : réinitialiser / nouveau `TASK_ID` selon `run-cycle` Step 0. |
 | **1. Lecture initiale** | Lire **ce fichier** (`AGENTS.md`) **puis** **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`** (table §1 = ordre complet : routing, `run-cycle`, Graphiti, `MEMORY_MATRIX`, etc.). | **Avant** tout code ou plan non trivial. Même en « continuation » si le contexte a dérivé ou l’onglet a été rafraîchi. |
-| **2. Cycle structuré (SSOT procédurale)** | Toute tâche avec **`TASK_ID`** : suivre **`.cursor/commands/run-cycle.md`** et la commande **`run-cycle <TASK_ID>`** (ou équivalent explicite dans le chat : enchaîner les **Steps 0 → 5** sans en sauter). | **Programme courant (quota-optimized)** : `PLAN GPT → PLAN_REVIEW GPT → EXECUTE GPT → VALIDATE → AUDIT GPT → [CLAUDE CRITIQUE SI NÉCESSAIRE] → [GATE \| CLOSE]`. Aucun « close » sans audit PASS documenté. |
-| **3. Vérification d’environnement** | `npm run verify:boucle` (0 requête par défaut). **Si le terminal ne “voit” pas Codex alors que l’extension est connectée** : l’auth IDE n’alimente pas le CLI — lancer `npm run codex:doctor` (npm + `login status` + 1 requête). **Rapide :** `npm run codex:verify-pro`. **Complet :** `npm run verify:boucle:full`. Encart : `agents/codex-extension-instructions.md`. | Même en **Step 5** : l’`EXECUTE` (CLI `codex`) requiert le binaire + session Pro sur **ce** binaire. Voir `run-cycle` Step 0 item 8. |
+| **2. Cycle structuré (SSOT procédurale)** | Toute tâche avec **`TASK_ID`** : suivre **`.cursor/commands/run-cycle.md`** et la commande **`run-cycle <TASK_ID>`** (ou équivalent explicite dans le chat : enchaîner les **Steps 0 → 5** sans en sauter). | **Doctrine alignée `.cursor/routing.md` :** PLAN (Claude/orchestration plan fichier) → PLAN_REVIEW GPT (Codex) → EXECUTE GPT (Codex) → VALIDATE → AUDIT Claude terminal → GPT_FINAL_AUDIT (Codex). Aucun « close » sans double PASS documenté. |
+| **3. Vérification d’environnement** | `npm run verify:boucle` (0 requête ; vérifie aussi `npm run validate:active-cycle` — WARN si PHASE hors liste canonique dans `.cursor/ACTIVE_CYCLE.md`). **Si le terminal ne “voit” pas Codex alors que l’extension est connectée** : l’auth IDE n’alimente pas le CLI — lancer `npm run codex:doctor` (npm + `login status` + 1 requête). **Rapide :** `npm run codex:verify-pro`. **Complet :** `npm run verify:boucle:full`. Encart : `agents/codex-extension-instructions.md`. | Même en **Step 5** : l’`EXECUTE` (CLI `codex`) requiert le binaire + session Pro sur **ce** binaire. Voir `run-cycle` Step 0 item 8. |
 | **4. Secrets & outils machine** | Binaire **`claude`** sur le **`PATH`** (Claude Code CLI) pour l’**AUDIT** PRIMARY en terminal. Binaire **`codex`** (CLI OpenAI) : *Sign in with ChatGPT* **Pro** — **pas** de clé API dans le dépôt. Résolution : `PATH` **ou** `node_modules/.bin/codex` après **`npm install`** (dépendance **`@openai/codex`**) **ou** `npm i -g @openai/codex`. **Ne pas** mélanger avec une clé *Platform* restreinte dans l’environnement (provoque des 401 *scopes* sur l’API Responses) — `npm run codex:audit-bleed` aide. (Option) MCP Graphiti selon `~/.cursor/mcp.json`. | Sans `claude` : noter dès le **plan** l’`AUDIT` fallback + `AUDIT_FALLBACK_REASON`. Sans binaire `codex` : pas d’`EXECUTE` complexe PRIMARY (sub-agent + `FALLBACK_REASON` ou `npm install` + auth Pro). |
 | **5. Traces & mémoire (déjà dans ce fichier)** | **`EXECUTE_DELEGATION:`** avant VALIDATE ; **`AUDIT_CHANNEL:`** + **`TERMINAL_AUDIT_OK: 1`** si audit terminal OK ; `docs/orchestration/MEMORY_MATRIX.md` ; `scripts/agent-activity-log.sh` (tail / start / done). | Traçabilité = **même** qualité en prod sur N agents parallèles. |
 
@@ -100,22 +109,24 @@ Tout nouvel intervenant (session Cursor, sub-agent Task, CLI terminal, humain) q
 
 **Synchro multi-agents (cross-conv, cross-terminal)** : `.cursor/rules/cross-agent-sync.mdc` (alwaysApply) + `reports/AGENT_ACTIVITY_LOG.md` (append-only) + `scripts/agent-activity-log.sh` (`tail | start | done | collisions | active`). Au démarrage de session : `tail 50` (~500 tokens). Avant édition produit (Step 2 EXECUTE) : `start` (refus exit 2 si collision). À la clôture (Step 5 CLOSE) : `done`. Évite que deux agents (Cursor convs / `codex-extension` / `claude-terminal` / humain) modifient les mêmes fichiers à leur insu. **Doctrine étendue** (Graphiti = mémoire partagée, rôles Claude vs Codex, anti-patterns) : **`docs/orchestration/MULTI_AGENT_ORCHESTRATION.md`**.
 
-## Workflow
-PLAN GPT (codex) → PLAN_REVIEW GPT (codex) → EXECUTE GPT (codex) → VALIDATE → AUDIT GPT (codex) → [CLAUDE CRITICAL ESCALATION ONLY] → [HUMAN GATE | CLOSE]
+## Workflow (multi-agents — pivot 2026-05-02)
+PLAN **Claude** → PLAN_REVIEW **GPT/Codex** → EXECUTE **{routine: Composer | complex: GPT/Codex}** → VALIDATE → AUDIT **Claude (terminal)** → GPT_FINAL_AUDIT **GPT/Codex** → [HUMAN GATE | CLOSE]
 
-No phase may be skipped. Default close condition is `AUDIT_VERDICT: PASS` from GPT path, with optional Claude escalation audit only for critical/blocked cases.
+No phase may be skipped. Close condition = double PASS (`AUDIT_VERDICT: PASS` Claude **+** `GPT_FINAL_AUDIT_VERDICT: PASS` GPT). SSOT procédurale du pivot : `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md`.
 
-## Model Roles
-| Model | Role | Channel (priorité **qualité maximale / zéro raccourci token**) |
+## Model Roles (canonique 2026-05-02)
+| Modèle | Rôle | Canal d'invocation |
 |---|---|---|
-| Claude | Escalade critique uniquement | Utiliser Claude seulement pour cas vraiment critiques: blocage logique majeur, gate ambigu non résoluble, conflit d'audits, ou arbitrage architecture multi-fichiers à haut risque. Le canal prioritaire reste GPT/Codex pour économiser les quotas Claude. |
-| **GPT-5.5 / GPT-5.5-pro** | **PLAN + PLAN_REVIEW + EXECUTE + AUDIT** | **`codex-extension`** — `npm run codex:plan-review`, `npm run codex:complex`, `npm run codex:final-audit` (CLI `codex` + `codex exec`, **compte ChatGPT Pro**, modèle `gpt-5.5-pro` si dispo sinon `gpt-5.5`, `model_reasoning_effort=xhigh`). GPT devient le canal principal d'orchestration, implémentation et audit de routine. |
-| GPT-5.5 (fallback) | Complex implementation (FALLBACK only) | **Sub-agent** `foodking-complex-implementer` (Task Cursor) — consomme l’**usage** des modèles de l’**abonnement Cursor**. **Uniquement** si `codex` / l’exécution `codex exec` a échoué (≥2 tentatives documentées) ou binaire indispo. |
-| Composer | Validation/report only | Plus d’implémentation routine pendant les cycles de finition. Composer peut résumer, exécuter/rapporter des validations, mais toute correction produit repart en EXECUTE GPT. |
+| **Claude** | **PLAN + AUDIT post-impl + escalade critique** | Session Cursor par défaut (chat = Claude) ; AUDIT en terminal `bash scripts/foodking-claude-orchestrate.sh audit` (PRIMARY) ; fallback Task `foodking-planner-orchestrator`. **Ne fait pas** d'implémentation produit. |
+| **Composer** (Max mode + thinking) | **EXECUTE routine** (tier S, hors invariants) | Task Cursor **`foodking-routine-implementer`**. Trace : `EXECUTE_DELEGATION: foodking-routine-implementer`. Sur contact avec un invariant critique → halt + escalade vers tier complex. |
+| **GPT-5.5-pro xhigh** | **EXECUTE complex + PLAN_REVIEW + GPT_FINAL_AUDIT** | PRIMARY : **`codex-extension`** CLI `codex` Pro (`npm run codex:plan-review`, `npm run codex:complex`, `npm run codex:final-audit`). FALLBACK EXECUTE : Task **`foodking-complex-implementer`** si binaire/Pro indispo après ≥2 reprises (`FALLBACK_REASON:`). |
 
-**Qui décide (mode actuel quota-optimized)** : **GPT/Codex** porte l’**autorité opérationnelle** sur planification, implémentation, auto-audit, et audit final de routine. **Claude** est mis en pause et appelé uniquement en **escalade critique** (ambiguïté structurelle, gate sensible, conflit technique majeur, analyse de risque à très forte complexité). Le **fait** code / test l’emporte sur la croyance.
+**Tier-routing déterministe** — une tâche est **routine** ssi **toutes** : effort S (≤2h, ≤5 fichiers) **ET** aucun invariant critique (pricing, `OrderStatus`, `branch_id`, dispatch, `OrderService`/`FrontendOrderService` symmetry, frozen, schema/DDL, auth) **ET** pas de nouveau service ni refactor cross-module. Sinon **complex**. Doute → complex (principe « partial > wrong »).
 
-**Principe unique (mode actuel) — à valider en prod sur chaque cycle :** **PLAN GPT → PLAN_REVIEW GPT → EXECUTE GPT → self-audit GPT → VALIDATE → AUDIT GPT**. Le repli vers Claude n’intervient qu'en escalade critique documentée (`CLAUDE_ESCALATION_REASON:`), avec portée minimale.
+**Qui décide quoi** :
+- **Claude** : autorité sur la planification, l'audit, l'escalade. Décide aussi du **tier** (routine / complex) et l'inscrit dans le plan en `EXECUTION_TIER: routine|complex`.
+- **GPT/Codex** : autorité technique sur le PLAN_REVIEW, l'implémentation complexe, l'audit final.
+- **Composer** : exécutant fidèle de la routine — pas de décision d'architecture, halt+escalade sur contact avec invariant.
 
 One PRIMARY_EXECUTION_MODEL per cycle. Roles are explicit and layered; review checkpoints do not authorize scope expansion.
 Full routing policy: `.cursor/routing.md`. Naming: the **PRIMARY complex implementer** is the **FoodKing Codex Complex Implementer** (slug `codex-extension`); see `docs/orchestration/CODEX_API_DELEGATION.md`.
@@ -129,15 +140,17 @@ For **TASK_ID-driven** work in Cursor, this path is **authoritative** and overri
 3. **Plan artifact:** `plans/PLAN_[TASK_ID]_[DATE].md` per `.cursor/context/plan-context.md` (from `plans/PLAN_TEMPLATE.md` when applicable).
 4. **Phase instructions:** `.cursor/context/plan-context.md` (PLAN), `.cursor/context/execute-context.md` (EXECUTE), `.cursor/context/audit-context.md` (AUDIT); VALIDATE per `run-cycle.md` when `validate-context.md` is absent.
 
-**EXECUTE delegation (GPT only; PRIMARY first, FALLBACK only on failure):**
+**EXECUTE delegation (tier-routing 2026-05-02 ; PRIMARY first, FALLBACK only on failure):**
 
-- **Routine implementation disabled during finishing cycles** : no product edit via Composer / `foodking-routine-implementer`. Small edits still route through GPT to keep the same quality chain.
-- **PRIMARY** : **`codex-extension`** — **FoodKing Codex Complex Implementer** (CLI `codex`, compte **ChatGPT Pro**, `gpt-5.5-pro`, `model_reasoning_effort=xhigh`). Procédure :
+- **Routine (tier S, hors invariants)** : **Composer** via Task Cursor **`foodking-routine-implementer`**. Trace obligatoire : `EXECUTE_DELEGATION: foodking-routine-implementer`. Halt + escalade vers tier complex sur contact avec un invariant critique (pricing, `OrderStatus`, `branch_id`, dispatch, frozen, schema, auth).
+- **Complex (M/L/XL OU invariants en scope) — PRIMARY** : **`codex-extension`** — **FoodKing Codex Complex Implementer** (CLI `codex`, compte **ChatGPT Pro**, `gpt-5.5-pro`, `model_reasoning_effort=xhigh`). Procédure :
   1. Préparer `missions/{TASK_ID}/input.json` (+ optionnels : `graphiti_context.md` issu de `search_memory_facts(group_ids=["foodking"])`, `plan_excerpt.md`, `execute_brief.md`, `cycle_snapshot.md` — fusionnés par le script d’assemblage de prompt).
   2. Lancer `npm run codex:complex -- {TASK_ID}` (`bash scripts/codex-extension-execute.sh`) ; le wrapper passe explicitement `-m ${CODEX_EXT_MODEL_PRO:-gpt-5.5-pro}` et `model_reasoning_effort=${CODEX_EXT_REASONING_EFFORT:-xhigh}`. (Instructions custom : `agents/codex-extension-instructions.md`.) **Bootstrap** : `npm run codex:prepare -- {TASK_ID}`.
-  3. Appliquer `missions/{TASK_ID}/output_codex.json` ; consommer l’**auto-audit** `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md` (généré par le wrapper).
-  4. Tracer `EXECUTE_DELEGATION: codex-extension` dans `reports/post_execute_latest.log` et le `REPORT_FILE`.
-- **Complexe — FALLBACK (uniquement si `codex exec` est HS après reprises, ou binaire manquant)** : `Task` → `foodking-complex-implementer` — tracer `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:`. 
+ 3. Appliquer `missions/{TASK_ID}/output_codex.json` ; consommer l’**auto-audit** `reports/audit/GPT_SELF_AUDIT_{TASK_ID}.md` (généré par le wrapper).
+ 4. Tracer `EXECUTE_DELEGATION: codex-extension` dans `reports/post_execute_latest.log` et le `REPORT_FILE`.
+- **Complex — FALLBACK (uniquement si `codex exec` est HS après ≥2 reprises documentées, ou binaire manquant)** : `Task` → `foodking-complex-implementer` — tracer `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` + `FALLBACK_REASON:`.
+
+**Règle anti-dérive (Claude orchestrateur)** : Claude (chat session par défaut) **ne doit pas** exécuter d'édition produit (`app/`, `resources/`, `routes/`, `database/`, `tests/`, `bootstrap/`, `config/`, `composer.json`, `package.json`) elle-même. Sa mission unique en EXECUTE = **déléguer** au bon canal selon `EXECUTION_TIER`. Toute édition produit faite directement par Claude doit être consignée comme **violation** dans `reports/AGENT_ACTIVITY_LOG.md` (sauf hot-fix doctrine / config orchestration, qui restent autorisés).
 
 Référence complète : **`docs/orchestration/CODEX_API_DELEGATION.md`** (naming, fallback contract, audit handoff, token discipline, schéma boucle). Procédure cycle : `.cursor/commands/run-cycle.md`. La trace `EXECUTE_DELEGATION` dans le rapport est **obligatoire** pour passer en VALIDATE.
 
