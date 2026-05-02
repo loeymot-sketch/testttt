@@ -69,6 +69,9 @@ return [
             'no_low_alerts' => 'কোনো কম স্টক সতর্কতা নেই।',
             'below_threshold' => 'সীমার নিচে',
         ],
+        'configure_wizard' => 'উইজার্ড কনফিগার করুন',
+        'view_product'     => 'পণ্য দেখুন',
+        'continue'         => 'চালিয়ে যান',
     ],
     'message' => [
         'validation_error'            => 'বৈধকরণ ত্রুটি।',
@@ -115,6 +118,8 @@ return [
         'out_of_service_area'         => 'দুঃখিত, এই ঠিকানাটি আমাদের পরিষেবা এলাকার বাইরে',
         'kiosk_machine_not_found'     => 'কিওস্ক মেশিনটি খুঁজে পাওয়া যায়নি',
         'already_logged_in'           => 'অন্য ডিভাইসে ইতিমধ্যেই লগ ইন করেছেন। অনুগ্রহ করে প্রথমে লগ আউট করুন।',
-        'database_error_message'      => 'ডাটাবেসে একটি ত্রুটি ঘটেছে।'
+        'database_error_message'      => 'ডাটাবেসে একটি ত্রুটি ঘটেছে।',
+        'item_created_success'        => 'পণ্য সফলভাবে তৈরি হয়েছে',
+        'item_created_next_step'      => 'এরপর আপনি কি করতে চান?'
     ]
 ];

@@ -69,6 +69,9 @@ return [
             'no_low_alerts' => 'Keine Warnungen bei niedrigem Bestand.',
             'below_threshold' => 'Unter Schwellenwert',
         ],
+        'configure_wizard' => 'Wizard konfigurieren',
+        'view_product'     => 'Produkt anzeigen',
+        'continue'         => 'Weiter',
     ],
     'message' => [
         'validation_error'            => 'Validierungsfehler.',
@@ -115,7 +118,9 @@ return [
         'out_of_service_area'         => 'Sorry, dit adres ligt buiten ons servicegebied',
         'kiosk_machine_not_found'     => 'De kioskmachine is niet gevonden',
         'already_logged_in'           => 'Al ingelogd op een ander apparaat. Meld u eerst af.',
-        'database_error_message'      => 'Er is een fout opgetreden in de database.'
+        'database_error_message'      => 'Er is een fout opgetreden in de database.',
+        'item_created_success'        => 'Produkt erfolgreich erstellt',
+        'item_created_next_step'      => 'Was möchten Sie als Nächstes tun?'
 
     ]
 ];

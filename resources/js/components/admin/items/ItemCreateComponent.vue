@@ -177,10 +177,55 @@
             </form>
         </div>
     </div>
+
+    <!-- [T-WC-AFTER-CREATE-01] Post-save CTA — guidage admin après création (Voir produit / Configurer wizard / Continuer) -->
+    <div
+        v-if="showPostSaveCta"
+        class="item-create-cta-overlay"
+        data-testid="item-create-post-save-cta"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="item-create-cta-title"
+    >
+        <div class="item-create-cta-card">
+            <h3 id="item-create-cta-title" class="item-create-cta-title">
+                {{ $t('message.item_created_success') }}
+            </h3>
+            <p class="item-create-cta-text">
+                {{ $t('message.item_created_next_step') }}
+            </p>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button
+                    type="button"
+                    class="db-btn py-2 text-white bg-primary"
+                    data-testid="cta-configure-wizard"
+                    @click="goToWizard"
+                >
+                    {{ $t('label.configure_wizard') }}
+                </button>
+                <button
+                    type="button"
+                    class="db-btn py-2"
+                    data-testid="cta-view-product"
+                    @click="goToProductDetail"
+                >
+                    {{ $t('label.view_product') }}
+                </button>
+                <button
+                    type="button"
+                    class="modal-btn-outline"
+                    data-testid="cta-continue"
+                    @click="dismissCta"
+                >
+                    {{ $t('label.continue') }}
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
-import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalCreateComponent";
-import LoadingComponent from "../components/LoadingComponent";
+import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalCreateComponent.vue";
+import LoadingComponent from "../components/LoadingComponent.vue";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
@@ -215,6 +260,8 @@ export default {
             },
             image: "",
             errors: {},
+            showPostSaveCta: false,
+            savedItemId: null,
         }
     },
     computed: {
@@ -326,7 +373,17 @@ export default {
                     };
                     this.image = "";
                     this.errors = {};
-                    this.$refs.imageProperty.value = null;
+                    if (this.$refs.imageProperty) {
+                        this.$refs.imageProperty.value = null;
+                    }
+                    // [T-WC-AFTER-CREATE-01] Capture id only on CREATE (tempId === null) and surface CTA modal.
+                    if (tempId === null) {
+                        const newId = res?.data?.data?.id ?? res?.data?.id ?? null;
+                        if (newId) {
+                            this.savedItemId = newId;
+                            this.showPostSaveCta = true;
+                        }
+                    }
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = {};
@@ -340,7 +397,61 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err)
             }
+        },
+        // [T-WC-AFTER-CREATE-01] Post-save CTA handlers — wizard / product detail / dismiss.
+        goToWizard: function () {
+            const id = this.savedItemId;
+            this.dismissCta();
+            if (id) {
+                this.$router.push({ name: 'admin.items.composer', params: { id } });
+            }
+        },
+        goToProductDetail: function () {
+            const id = this.savedItemId;
+            this.dismissCta();
+            if (id) {
+                this.$router.push({ name: 'admin.item.show', params: { id } });
+            }
+        },
+        dismissCta: function () {
+            this.showPostSaveCta = false;
+            this.savedItemId = null;
         }
     }
 }
 </script>
+
+<style scoped>
+/* [T-WC-AFTER-CREATE-01] Self-contained CTA modal — no global CSS dependency. */
+.item-create-cta-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 1rem;
+}
+
+.item-create-cta-card {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+    padding: 1.5rem;
+    max-width: 28rem;
+    width: 100%;
+}
+
+.item-create-cta-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.item-create-cta-text {
+    font-size: 0.95rem;
+    color: #475569;
+    margin: 0;
+}
+</style>

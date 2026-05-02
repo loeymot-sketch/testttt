@@ -2829,3 +2829,24 @@ SENTINEL: vitest 1001/2 (no regression); v1HiddenMenuModules 4/4 toujours green.
 GAP_FERMÉ: A.3 #1+#2 (Catégories+Attributs accessibles depuis Items via VIRTUAL_CHILDREN_BY_URL) + A.1 §5 (composer Vuex registered).
 NOTES: Reconstitution sous-section Catalogue 100% côté Vue (pas migration DB seeder). Cleanup zombies pid23675+pid47838.
 COMMIT: 6c1b739c6
+
+=== EXECUTE — CV1-WIZARD-COMPOSABLE-001 / T-WC-AFTER-CREATE-01 ===
+DATE: 2026-05-02T23:35+02:00
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+SCOPE_FILES_TOUCHED:
+  - resources/js/components/admin/items/ItemCreateComponent.vue (template + data + save() + new methods + scoped <style>)
+  - lang/{fr,en,de,ar,bn}/all.php (5 fichiers — clés label.{configure_wizard,view_product,continue} + message.{item_created_success,item_created_next_step})
+  - tests/js/itemCreatePostSaveCTA.spec.js (NEW — 5 cas sentinel)
+SENTINEL_RESULTS: itemCreatePostSaveCTA 5/5; vitest global 154 files / 1006 passed | 2 skipped (no regression vs T-WC-MENU-CATALOG-01 baseline 1001/2 — 5 added, 0 broken).
+GAP_FERMÉ: A.3 #8 — guidage post-création (CTA Configurer wizard / Voir produit / Continuer après save).
+NOTES:
+  - Pattern toast existant (alertService.successFlip via vue-toastification) conservé en plus du modal: l'admin garde le feedback visuel ET reçoit l'invitation au prochain step.
+  - Modal scopé (.item-create-cta-overlay) — pas d'impact sur CSS global (style scoped).
+  - CTA capté UNIQUEMENT en mode CREATE (tempId === null). En EDIT (temp_id !== null), aucun CTA — sentinel "EDIT mode" couvre.
+  - Récupération id défensive: res?.data?.data?.id ?? res?.data?.id ?? null. Si null → CTA non affiché (fallback gracieux).
+  - Imports .vue extension ajoutée (SmSidebarModalCreateComponent.vue, LoadingComponent.vue) pour résolution Vitest/Vite — webpack tolère les deux variantes; aligne avec PosComponent.vue (l. 933, 955).
+  - Guard $refs.imageProperty (if ($refs.imageProperty) { value = null; }) — robuste en happy-dom.
+  - JSON i18n NOT touché — collision détectée avec T-WC-PERM-01 (cursor-claude pid47838) sur resources/js/languages/{fr,en,de,ar,bn}.json. Agent-sync rule: ne pas forcer. PHP-only scope respecté. **GAP RUNTIME**: Vue $t résout via JSON; les 4 nouvelles clés (configure_wizard, view_product, item_created_success, item_created_next_step — `continue` existe déjà JSON) afficheront leur key string en fallback jusqu'à un follow-up cycle de sync JSON. Sentinel `$t: (key) => key` valide le wiring même sans JSON.
+COMMIT_PLAN: 1 commit unique conformément à mission.
+

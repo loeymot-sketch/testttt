@@ -76,6 +76,9 @@ return [
             'no_low_alerts' => 'Aucune alerte de stock faible.',
             'below_threshold' => 'Sous le seuil',
         ],
+        'configure_wizard' => 'Configurer le wizard',
+        'view_product' => 'Voir le produit',
+        'continue' => 'Continuer',
     ],
     'message' => [
         'validation_error' => 'Erreur de validation.',
@@ -128,6 +131,8 @@ return [
         'kiosk_machine_not_found' => 'La borne kiosque est introuvable.',
         'already_logged_in' => "Déjà connecté sur un autre appareil. Veuillez d'abord vous déconnecter.",
         'database_error_message' => "Une erreur de base de données s'est produite.",
-        'invalid_status_transition' => "Transition de statut invalide. La commande ne peut pas passer directement à cet état."
+        'invalid_status_transition' => "Transition de statut invalide. La commande ne peut pas passer directement à cet état.",
+        'item_created_success' => 'Produit créé avec succès',
+        'item_created_next_step' => 'Que voulez-vous faire ensuite ?'
     ]
 ];

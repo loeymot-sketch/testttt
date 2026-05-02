@@ -69,6 +69,9 @@ return [
             'no_low_alerts' => 'No low stock alerts.',
             'below_threshold' => 'Below threshold',
         ],
+        'configure_wizard' => 'Configure wizard',
+        'view_product' => 'View product',
+        'continue' => 'Continue',
     ],
     'message' => [
         'validation_error' => 'Validation Error.',
@@ -120,6 +123,8 @@ return [
         'kiosk_machine_not_found' => 'The Kiosk machine not found.',
         'already_logged_in' => 'Already logged in on another device. Please logout first.',
         'database_error_message' => 'A database error occurred.',
-        'invalid_status_transition' => 'Invalid status transition. The order cannot be moved to this state directly.'
+        'invalid_status_transition' => 'Invalid status transition. The order cannot be moved to this state directly.',
+        'item_created_success' => 'Item created successfully',
+        'item_created_next_step' => 'What would you like to do next?'
     ]
 ];

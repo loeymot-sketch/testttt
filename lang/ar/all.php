@@ -69,6 +69,9 @@ return [
             'no_low_alerts' => 'لا توجد تنبيهات انخفاض مخزون.',
             'below_threshold' => 'أقل من الحد',
         ],
+        'configure_wizard'  => 'تكوين المعالج',
+        'view_product'      => 'عرض المنتج',
+        'continue'          => 'متابعة',
     ],
     'message' => [
         'validation_error'            => 'خطأ في التحقق.',
@@ -116,7 +119,9 @@ return [
         'out_of_service_area'         => 'عذراً، هذا العنوان خارج منطقة خدمتنا',
         'kiosk_machine_not_found'     => 'لم يتم العثور على جهاز الكشك',
         'already_logged_in'           => 'تم تسجيل الدخول بالفعل على جهاز آخر. يرجى تسجيل الخروج أولاً.',
-        'database_error_message'      => 'حدث خطأ في قاعدة البيانات.'
+        'database_error_message'      => 'حدث خطأ في قاعدة البيانات.',
+        'item_created_success'        => 'تم إنشاء المنتج بنجاح',
+        'item_created_next_step'      => 'ماذا تريد أن تفعل بعد ذلك؟'
 
     ]
 ];
