@@ -269,6 +269,9 @@
         "previous": "Previous",
         "next": "Next",
         "default": "Default",
+        "configure_wizard": "Configure wizard",
+        "wizard_configured": "Wizard configured",
+        "view_product": "View product",
         "action": "Action",
         "availability": "Availability",
         "available": "Available",
@@ -1007,6 +1010,8 @@
     },
     "message": {
         "permission_required": "Permission required to access this page: {permission}",
+        "item_created_success": "Product created successfully",
+        "item_created_next_step": "What would you like to do next?",
         "kds_recall_grace_expired": "Recall unavailable: the 60-second undo window has passed.",
         "kds_status_conflict": "This order was changed elsewhere. The list was refreshed—check the status before you act.",
         "nfc_unsupported_browser": "NFC is not available in this browser.",

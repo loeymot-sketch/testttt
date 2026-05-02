@@ -127,6 +127,9 @@
         "previous": "Vorherige",
         "next": "Nächste",
         "default": "Verzug",
+        "configure_wizard": "Wizard konfigurieren",
+        "wizard_configured": "Wizard konfiguriert",
+        "view_product": "Produkt anzeigen",
         "action": "Aktion",
         "id": "Id",
         "name": "Name",
@@ -783,6 +786,8 @@
     },
     "message": {
         "permission_required": "Erforderliche Berechtigung für den Zugriff auf diese Seite: {permission}",
+        "item_created_success": "Produkt erfolgreich erstellt",
+        "item_created_next_step": "Was möchten Sie als Nächstes tun?",
         "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
         "password_update": "Passwort erfolgreich aktualisiert.",
         "photo_update": "Foto erfolgreich aktualisiert.",

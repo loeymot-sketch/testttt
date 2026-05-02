@@ -127,6 +127,9 @@
         "previous": "আগের",
         "next": "পরবর্তী",
         "default": "ডিফল্ট",
+        "configure_wizard": "উইজার্ড কনফিগার করুন",
+        "wizard_configured": "উইজার্ড কনফিগার করা",
+        "view_product": "পণ্য দেখুন",
         "action": "অ্যাকশন",
         "id": "আইডি",
         "name": "নাম",
@@ -783,6 +786,8 @@
     },
     "message": {
         "permission_required": "এই পৃষ্ঠায় প্রবেশ করতে অনুমতি প্রয়োজন: {permission}",
+        "item_created_success": "পণ্য সফলভাবে তৈরি হয়েছে",
+        "item_created_next_step": "এরপর আপনি কী করতে চান?",
         "pagination_label": "{total} টি এন্ট্রির মধ্যে {from} থেকে {to} পর্যন্ত দেখানো হচ্ছে",
         "password_update": "পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে।",
         "photo_update": "ছবিটি সফলভাবে আপডেট করা হয়েছে।",

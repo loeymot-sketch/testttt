@@ -190,6 +190,9 @@
         "previous": "السابق",
         "next": "التالي",
         "default": "الافتراضي",
+        "configure_wizard": "تكوين المعالج",
+        "wizard_configured": "تم تكوين المعالج",
+        "view_product": "عرض المنتج",
         "action": "إجراء",
         "audit_fingerprint": "بصمة التدقيق",
         "fiscal_ticket_no": "رقم إيصال NF525",
@@ -895,6 +898,8 @@
     },
     "message": {
         "permission_required": "الإذن المطلوب للوصول إلى هذه الصفحة: {permission}",
+        "item_created_success": "تم إنشاء المنتج بنجاح",
+        "item_created_next_step": "ماذا تريد أن تفعل بعد ذلك؟",
         "kds_recall_grace_expired": "لا يمكن التراجع: انتهت مهلة الإلغاء (60 ثانية).",
         "kds_status_conflict": "تم تعديل الطلب في مكان آخر. تم تحديث القائمة — راجع الحالة قبل المتابعة.",
         "nfc_unsupported_browser": "تقنية NFC غير متوفرة في هذا المتصفح.",
