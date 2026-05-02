@@ -5212,3 +5212,15 @@ LOCAL_VALIDATE: php artisan test --filter=ProfilePublishMidCartRejectionTest -> 
 LINT: php -l test file OK
 HALT: none
 NOTE: Kiosk 422 rejection uses JSON {status:false, message} from PricingService French string; plan keys errors.composer / composer_removed_options not in OrderController yet (docblock discovery).
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.5 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.5
+DATE: 2026-05-02
+FILES_TOUCHED:
+  - docs/sync/CENTRAL_MANAGEMENT_RUNBOOK.md (append section)
+SCOPE: docs-only
+SENTINEL: N/A (docs only)
+LINT: N/A (docs only)
+HALT: none

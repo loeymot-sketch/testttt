@@ -53,6 +53,62 @@ Files:
 - `resources/js/store/modules/kioskMenu.js`
 - `resources/js/components/admin/pos/PosComponent.vue`
 
+### Symptom : POS et Kiosk affichent des catégories différentes
+
+**Vérification (tinker)**
+
+Comparer les IDs de catégories renvoyés par la projection POS (`MenuProjectionService::forChannel`) et par le menu kiosk (`KioskMenuService::build`). Adapter `$branchId` (et charger la branche pour `build`).
+
+```bash
+php artisan tinker
+```
+
+```php
+$branchId = 1; // remplacer
+$branch = \App\Models\Branch::findOrFail($branchId);
+
+$pos = app(\App\Services\Menu\MenuProjectionService::class)->forChannel('pos', $branchId);
+$kiosk = app(\App\Services\Kiosk\KioskMenuService::class)->build($branch);
+
+$posIds = collect($pos['categories'] ?? [])->pluck('id');
+$kioskIds = collect($kiosk['categories'] ?? [])->pluck('id');
+
+$onlyPos = $posIds->diff($kioskIds);
+$onlyKiosk = $kioskIds->diff($posIds);
+
+dump([
+    'category_ids_only_on_pos' => $onlyPos->values()->all(),
+    'category_ids_only_on_kiosk' => $onlyKiosk->values()->all(),
+]);
+```
+
+**Causes possibles**
+
+1. **`channels` à NULL côté admin (item)** — Comportement historique : souvent interprété comme « visible partout », mais des filtres canal peuvent diverger selon la surface ou la phase de convergence catalogue. Voir plan §1.4 : warning log **`[catalog.channels-null]`**. Quand `config('catalog_v15.warnings.expose_to_admin_show')` est vrai, le détail est exposé dans la réponse **`GET /api/admin/items/{id}`** (tableau `warnings`).
+2. **`item_branch_availability` manquant ou `is_available = false`** — Sémantique menu : **absence de ligne** ⇒ disponible par défaut pour la branche ; **ligne présente avec `is_available = false`** ⇒ l’article peut être exclu / masqué selon la projection. Sonde rapide :
+
+```sql
+SELECT * FROM item_branch_availability WHERE item_id = ? AND branch_id = ?;
+```
+
+3. **Feature flag `catalog_v15.unified_projection.kill_switch`** — Si **`config('catalog_v15.unified_projection.kill_switch')`** est truthy, POS peut rester sur la projection legacy alors que le kiosk utilise déjà le chemin unifié (ou l’inverse selon déploiement), ce qui diverge les jeux de catégories / items visibles. Contrôle :
+
+```php
+config('catalog_v15.unified_projection.kill_switch');
+```
+
+Variable d’environnement associée : **`FK_CATALOG_UNIFIED_PROJECTION_KILL_SWITCH`**.
+
+**Procédure de recovery**
+
+1. Identifier l’article ou la branche fautive via l’étape de vérification ci-dessus (écarts d’IDs de catégories, puis items si besoin).
+2. Corriger la cause racine : renseigner explicitement `channels`, réparer / ajuster `item_branch_availability`, ou aligner le kill-switch et les flags `unified_projection` selon la politique de rollout.
+3. Invalider le cache menu et notifier les surfaces : après correction DB, déclencher le **même pipeline** que les mutations catalogue admin — en pratique un **événement domaine** écouté par `InvalidateKioskMenuCacheOnCatalogChange` et `PersistCatalogChangedToOutbox` (ex. `event(new \App\Events\CategoryUpdated($categoryId));` ou autre événement pertinent selon l’entité modifiée). À défaut d’ID métier précis, recours minimal côté infra : `app(\App\Services\Menu\MenuSnapshot::class)->bump($branchId)` et `\Illuminate\Support\Facades\Cache::forget('kiosk.menu.branch.'.$branchId)`.  
+   *Note ops :* `\App\Events\CatalogChanged` est agrégé via `CatalogChanged::fromMenuMutation()` dans le listener outbox ; **`CatalogChanged::dispatch(...)`** attend la signature constructeur `(string $entityType, int $entityId, string $changeType, ?int $branchId = null, …)` et **n’est pas** enregistré comme événement Laravel écouté à part entière — privilégier `CategoryUpdated`, `ItemAvailabilityChanged`, etc., comme le fait le code applicatif.
+4. Rejouer le snippet tinker de vérification : les deux projections doivent alors présenter le même ensemble de catégories (IDs) pour la branche.
+
+**Validation post-fix** — Sentinelles PHP : `tests/Feature/Menu/PosCategoryBranchScopeTest.php`. Quand la livraison 1.3 sera en place : `tests/js/posComponentMenuFiltering.spec.js`.
+
 ### Wizard not visible
 
 Check:
