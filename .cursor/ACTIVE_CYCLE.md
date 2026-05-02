@@ -5,13 +5,14 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `EXECUTE` |
-| **TASK_ID** | `CV1-LIFECYCLE-UX-001` (Vague 2 — task 2.1 Auto-86 cron + dashboard) |
-| **PLAN_FILE** | `plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md` |
-| **EXECUTION_TIER** | `complex` (multi-file: command body + Kernel schedule + 3 admin endpoints + Vue dashboard + 6 sentinel cases) |
-| **EXECUTE_DELEGATION** | `foodking-complex-implementer (codex-extension-fallback)` — `FALLBACK_REASON: codex-extension Pro usage limit reached at 18:27 Europe/Paris (until 22:21)` |
+| **PHASE** | `PLAN` (Phase 1 audits parallèles en cours) |
+| **TASK_ID** | `CV1-V1-CLOSEOUT-001` (Master orchestration V1 close-out — 5 audits parallèles + synthèse + cleanup + refonte dashboard + roadmap wizard) |
+| **PLAN_FILE** | `plans/PLAN_CV1-V1-CLOSEOUT-MASTER-2026-05-02.md` |
+| **EXECUTION_TIER** | mixed (audits read-only via `explore` × 5 ; cleanup routine via Composer ; gates écrits par orchestrator) |
+| **EXECUTE_DELEGATION** | déterminé par tâche issue de la synthèse Phase 2 |
 | **REPORT_FILE** | `reports/post_execute_latest.log` (append — preuve `EXECUTE_DELEGATION` / `AUDIT_*`) |
 | **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
+| **PARENT_CYCLE** | `CV1-LIFECYCLE-UX-001` V2 closed (6 PASS + 2 gates pending). Cleanup demandé par user pour livrer V1 fonctionnelle propre. |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
 > Cycles plus anciens en lecture seule = **archive** déplacée dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** (lecture humaine / forensique uniquement, **non requise** par le parcours obligatoire).
