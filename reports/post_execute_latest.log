@@ -2759,3 +2759,14 @@ SENTINEL_RESULTS: SetMaxDailyQtyEndpointTest 5/5 PASS
 REGRESSION: --filter='Availability|Menu' = 131 passed / 21 skipped / 0 failed (78s)
 GAP_FERMÉ: P0 #1 audit Axe 2/3 — endpoint admin pour M2 V2 task 2.5 (AvailabilityService::setMaxDailyQty n''avait aucun endpoint HTTP)
 NOTES: Pattern auth observé = middleware Spatie 'permission:items_edit' (guard sanctum) + AdminController::resolveScopedBranchIds() pour vérifier ownership branch. Route ajoutée dans le groupe existant Route::prefix('admin')->name('admin.')->middleware(['installed','apiKey','auth:sanctum','localization','throttle:admin-mutation']) à côté de availability/toggle. Tests utilisent actingAs($admin,'sanctum') + assignRole('Admin'), seedMinimalSettings()+seedSpatieRoles() en setUp, conforme à AvailabilityToggleAuthzMatrixTest.
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / T-DEEP-AVAIL-API-01 ===
+DATE: 2026-05-02T22:07+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_COMPLIANCE: PASS — controller +1 méthode, routes/api.php +1 route, sentinel NEW.
+SENTINEL_RESULTS: SetMaxDailyQtyEndpointTest 5/5; Availability|Menu 131/21 (no regression).
+GAP_FERMÉ: P0 #1 audit Axe 2/3 — endpoint admin pour M2 V2 task 2.5 (auth Spatie items_edit + branch-scope guard alignés sur toggle()).
+COMMIT: ae50f0b84
