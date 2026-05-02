@@ -1,4 +1,27 @@
 {
+    "admin": {
+        "help": {
+            "attribute": {
+                "title": "Attribut",
+                "body": "Eine Auswahlgruppe für den Gast (z. B. Größe, Garstufe). Darunter liegen die Variationen desselben Attributs."
+            },
+            "variation": {
+                "title": "Variation",
+                "body": "Eine Option mit Aufpreis innerhalb eines Attributs (M +0 €, L +2 €). Pro Attribut wählt der Gast genau eine Variation."
+            },
+            "extra": {
+                "title": "Extra",
+                "body": "Ein kostenpflichtiger Zusatz aus der Karte (z. B. Cheddar +0,50 €). Optional und mehrfach wählbar."
+            },
+            "addon": {
+                "title": "Addon",
+                "body": "Ein kostenloser oder schneller Zubereitungshinweis (ohne Zwiebeln, gut durch)."
+            },
+            "toggle_show": "Hilfe einblenden",
+            "toggle_hide": "Hilfe ausblenden",
+            "learn_more": "Mehr erfahren"
+        }
+    },
     "menu": {
         "dashboard": "Armaturenbrett",
         "settings": "Einstellungen",

@@ -37,6 +37,29 @@
         "loading_items": "Chargement des articles",
         "cart_updated": "Panier mis à jour"
     },
+    "admin": {
+        "help": {
+            "attribute": {
+                "title": "Attribut",
+                "body": "Un groupe de choix proposé au client (ex. Taille, Cuisson). C'est la catégorie sous laquelle on trouve les variations."
+            },
+            "variation": {
+                "title": "Variation",
+                "body": "Une option de prix au sein d'un attribut (M +0€, L +2€). Le client choisit une variation par attribut."
+            },
+            "extra": {
+                "title": "Extra",
+                "body": "Un supplément payant à la carte (Cheddar +0,50€). Cumulable, optionnel."
+            },
+            "addon": {
+                "title": "Addon",
+                "body": "Une consigne de préparation gratuite ou rapide (Sans oignons, Bien cuit)."
+            },
+            "toggle_show": "Afficher l'aide",
+            "toggle_hide": "Masquer l'aide",
+            "learn_more": "En savoir plus"
+        }
+    },
     "pos": {
         "item_86_d": "Épuisé",
         "item_unavailable_during_edit": "Cet article vient de devenir indisponible. Demandez à un manager ou choisissez un autre produit.",

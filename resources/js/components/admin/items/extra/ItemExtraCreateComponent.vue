@@ -14,6 +14,7 @@
                     @click="reset"></button>
             </div>
             <div class="modal-body">
+                <CatalogConceptHelpComponent concept="extra" />
                 <form @submit.prevent="save">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-6">
@@ -111,6 +112,7 @@
     </div>
 </template>
 <script>
+import CatalogConceptHelpComponent from "../CatalogConceptHelpComponent.vue";
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
 import appService from "../../../../services/appService";
@@ -118,7 +120,7 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 
 export default {
     name: "ItemExtraCreateComponent",
-    components: { LoadingComponent },
+    components: { CatalogConceptHelpComponent, LoadingComponent },
     props: ["props"],
     data() {
         return {

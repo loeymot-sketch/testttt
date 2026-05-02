@@ -5505,3 +5505,11 @@ INVARIANT_CHECKS:
 NOTE: i18n keys live at `warning.catalog.*` (matches existing ComposerProfileWarningBadge.vue), not `admin.item_warnings.*` as drafted in the brief — Composer correctly aligned with reality. Plan-drift acceptable.
 COMMIT: 28f579651
 NEXT: M2 1.6 (Help inline) — Composer routine.
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 1.6 ===
+DATE: 2026-05-02T15:12:47Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: resources/js/components/admin/items/CatalogConceptHelpComponent.vue; resources/js/components/admin/items/variation/ItemVariationCreateComponent.vue; resources/js/components/admin/items/extra/ItemExtraCreateComponent.vue; resources/js/components/admin/items/addon/ItemAddonCreateComponent.vue; resources/js/components/admin/settings/ItemAttribute/ItemAttributeCreateComponent.vue; resources/js/languages/fr.json; resources/js/languages/en.json; resources/js/languages/de.json; resources/js/languages/ar.json; resources/js/languages/bn.json
+SENTINEL_RESULTS: vitest 971 passed (14 skipped, 985 total tests)
+NOTES: No db-help-panel in repo; reused cv1-warning-badge data-severity=info tokens. Help panel collapsed toggle a11y; learn_more+i18n for optional prop learnMoreHref.

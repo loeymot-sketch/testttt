@@ -37,6 +37,29 @@
         "loading_items": "Loading menu items",
         "cart_updated": "Cart updated"
     },
+    "admin": {
+        "help": {
+            "attribute": {
+                "title": "Attribute",
+                "body": "A choice group offered to the customer (e.g. size, doneness). It is the category under which variations are listed."
+            },
+            "variation": {
+                "title": "Variation",
+                "body": "A priced option within an attribute (M +€0, L +€2). The customer picks one variation per attribute."
+            },
+            "extra": {
+                "title": "Extra",
+                "body": "A paid à la carte add-on (e.g. Cheddar +€0.50). Optional and can be combined."
+            },
+            "addon": {
+                "title": "Addon",
+                "body": "A free or quick preparation note (no onions, well done)."
+            },
+            "toggle_show": "Show help",
+            "toggle_hide": "Hide help",
+            "learn_more": "Learn more"
+        }
+    },
     "pos": {
         "item_86_d": "Sold out",
         "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",

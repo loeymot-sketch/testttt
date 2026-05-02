@@ -10,6 +10,7 @@
                     @click="reset"></button>
             </div>
             <div class="modal-body">
+                <CatalogConceptHelpComponent concept="attribute" />
                 <form @submit.prevent="save">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-6">
@@ -116,6 +117,7 @@
     </div>
 </template>
 <script>
+import CatalogConceptHelpComponent from "../../items/CatalogConceptHelpComponent.vue";
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../../components/LoadingComponent";
 import statusEnum from "../../../../enums/modules/statusEnum";
@@ -124,7 +126,7 @@ import appService from "../../../../services/appService";
 
 export default {
     name: "ItemAttributeCreateComponent",
-    components: { SmModalCreateComponent, LoadingComponent },
+    components: { CatalogConceptHelpComponent, SmModalCreateComponent, LoadingComponent },
     props: ["props"],
     data() {
         return {
