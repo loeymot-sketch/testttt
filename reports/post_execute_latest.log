@@ -2850,3 +2850,12 @@ NOTES:
   - JSON i18n NOT touché — collision détectée avec T-WC-PERM-01 (cursor-claude pid47838) sur resources/js/languages/{fr,en,de,ar,bn}.json. Agent-sync rule: ne pas forcer. PHP-only scope respecté. **GAP RUNTIME**: Vue $t résout via JSON; les 4 nouvelles clés (configure_wizard, view_product, item_created_success, item_created_next_step — `continue` existe déjà JSON) afficheront leur key string en fallback jusqu'à un follow-up cycle de sync JSON. Sentinel `$t: (key) => key` valide le wiring même sans JSON.
 COMMIT_PLAN: 1 commit unique conformément à mission.
 
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-AFTER-CREATE-01 ===
+DATE: 2026-05-02T23:36+02:00
+AUDIT_VERDICT: PASS_WITH_FOLLOWUP
+SCOPE_COMPLIANCE: PASS — ItemCreateComponent + 5 lang/*/all.php + sentinel.
+SENTINEL: itemCreatePostSaveCTA 5/5; vitest 1006/2 (no regression).
+GAP_FERMÉ: A.3 #8 (CTA post-création).
+FOLLOWUP_NEEDED: 4 clés i18n JSON (configure_wizard, view_product, item_created_success, item_created_next_step) à synchroniser dans resources/js/languages/{fr,en,de,ar,bn}.json (deferred par collision T-WC-PERM-01 — résolue maintenant).
+COMMIT: 63727b667
