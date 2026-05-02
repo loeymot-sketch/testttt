@@ -2684,3 +2684,2531 @@ NEW_SENTINEL: itemShowComposerWarning.spec.js (4 cases)
 LOCAL_VALIDATE: vitest itemShowComposerWarning -> PASS (4/4); php artisan test --filter=Catalog -> PASS (43 passed, 1 skipped)
 LINT: SKIP (npm run lint absent; ESLint flat config not found)
 HALT: none
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.1 ===
+DATE: 2026-05-02T10:19+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+ROUND: 1 / 5
+SCOPE_COMPLIANCE: PASS (10 files touched, all reserved; +619/-15 — large for S but justified by 5×i18n + Vue badge skeleton fill + 4-case sentinel)
+INTEGRATION_WIRING: verified by reading ItemShowComponent.vue:241 — `this.warnings = Array.isArray(res.data.warnings) ? res.data.warnings : []` (defensive); template wires `:warnings`/`@action`/`@dismiss` correctly to ComposerProfileWarningBadge.
+INVARIANT_CHECKS:
+  - Pricing / OrderStatus / branch_id / dispatch / auth / frozen / schema: all untouched (PASS)
+  - CatalogWarningService::forItem extended for composer_unpublished + composer_missing_for_complex_kind WITHOUT touching channels_null path (PASS regression)
+TEST_DEPTH_NOTE: Composer self-flagged that ItemShowComponent transitive Vue admin import graph prevented a full integration mount under Vitest. The 4 sentinel cases run against ComposerProfileWarningBadge directly. Integration path (mounted() → res.data.warnings → :warnings prop) is verifiable by code reading and is trivially correct (template wiring), not by automated test. ACCEPTABLE — future hardening could add a thin shallowMount integration test if needed (out of scope for 1.1).
+SENTINEL_RERUN: Vitest itemShowComposerWarning -> 4 passed
+SUITE_REGRESSION: --filter=Catalog -> 43 passed, 1 skipped (PosCategoryBranchScopeTest, pre-existing) — same as task 1.2 baseline, no regression
+COMMIT: 3d444c246 (single, conventional)
+NEXT_TASK: Sprint 1 #7 = M2 1.4 Sentinel profil v1→v2 mid-cart (S, routine — TEST-ONLY task probing existing PricingService rejection path; halt-conditions allow NEEDS_CLAUDE if existing path misaligned)
+[post-execute] task: unknown
+[post-execute] timestamp: 20260502_101722
+[post-execute] timestamped log: reports/test_unknown_20260502_101722.log
+[post-execute] running: php artisan test --stop-on-failure
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Domain\Events\EventContractUnitTest[39m
+  [32;1m✓[39;22m[39m [2mbuild envelope produces flat v1 shape[22m[39m
+  [32;1m✓[39;22m[39m [2mvalid envelope passes[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope with wrong version throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope with unknown type throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope missing aggregate id throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope missing branch id key throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope payload not object throws[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload validation catches missing required key for status changed[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload validation allows extra keys[22m[39m
+  [32;1m✓[39;22m[39m [2mbroadcast map matches all v1 types[22m[39m
+  [32;1m✓[39;22m[39m [2mtype for broadcast as returns mapped type or identity[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload mismatch exception exposes context[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Domain\Order\OrderStateMachineTest[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → accept"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → rejected"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "accept → preparing"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "accept → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "preparing → prepared"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "preparing → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "prepared → out_for_delivery"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "prepared → delivered"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "out_for_delivery → delivered"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "delivered → returned"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→19"[22m[39m
+  [32;1m✓[39;22m[39m [2midentity transition is always allowed[22m[39m
+  [32;1m✓[39;22m[39m [2massert allows throws on illegal transition[22m[39m
+  [32;1m✓[39;22m[39m [2massert allows does not throw on legal transition[22m[39m
+  [32;1m✓[39;22m[39m [2mpos shortcut allows accept to delivered for pos user[22m[39m
+  [32;1m✓[39;22m[39m [2mpos shortcut does not apply to non pos user[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can transition from terminal states[22m[39m
+  [32;1m✓[39;22m[39m [2mrequires reason is true for cancel reject return[22m[39m
+  [32;1m✓[39;22m[39m [2mrequires reason is false for happy path[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions matrix contains exactly expected count[22m[39m
+  [32;1m✓[39;22m[39m [2mall statuses returns nine v1 states[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Http\Resources\ItemCategoryResourceTest[39m
+  [32;1m✓[39;22m[39m [2mit exposes legacy kiosk image aliases[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Rules\ValidJsonOrderTest[39m
+  [32;1m✓[39;22m[39m [2mit rejects items without item id[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects items with zero item id[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects items with negative item id[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects items without quantity[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects items with zero quantity[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects empty array[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects invalid json[22m[39m
+  [32;1m✓[39;22m[39m [2mit rejects non string input[22m[39m
+  [32;1m✓[39;22m[39m [2mit accepts valid item array[22m[39m
+  [32;1m✓[39;22m[39m [2mit accepts multiple valid items[22m[39m
+  [32;1m✓[39;22m[39m [2mit includes index in error message[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Security\RateLimiterConfigTest[39m
+  [32;1m✓[39;22m[39m [2mnamed limiter is registered with expected cap with data set "admin-mutation"[22m[39m
+  [32;1m✓[39;22m[39m [2mnamed limiter is registered with expected cap with data set "pos-order-create"[22m[39m
+  [32;1m✓[39;22m[39m [2mnamed limiter is registered with expected cap with data set "pos-order-update"[22m[39m
+  [32;1m✓[39;22m[39m [2mapi limiter cap matches config[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout limiter is registered[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk orders limiter is registered[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Security\VHtmlStaticGuardTest[39m
+  [32;1m✓[39;22m[39m [2mevery v html usage is sanitized[22m[39m
+  [32;1m✓[39;22m[39m [2mno inner html dom mutations[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\AllergenServiceTest[39m
+  [32;1m✓[39;22m[39m [2mpivot sync with legacy json[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\DeliveryFeeServiceTest[39m
+  [32;1m✓[39;22m[39m [2mfoodking v1 delivery fee rule[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\FrontendOrderServiceTest[39m
+  [32;1m✓[39;22m[39m [2mit throws invalid argument exception for nonexistent item[22m[39m
+  [32;1m✓[39;22m[39m [2mit prioritizes db price over client price[22m[39m
+  [32;1m✓[39;22m[39m [2msource code contains item validation[22m[39m
+  [32;1m✓[39;22m[39m [2msource code rejects invalid variations and extras[22m[39m
+  [32;1m✓[39;22m[39m [2morder service contains item validation[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\Menu\MenuSnapshotTest[39m
+  [32;1m✓[39;22m[39m [2mcurrent returns one when key absent[22m[39m
+  [32;1m✓[39;22m[39m [2mcurrent is idempotent[22m[39m
+  [32;1m✓[39;22m[39m [2mbump increments and returns new value[22m[39m
+  [32;1m✓[39;22m[39m [2mbump initializes when absent[22m[39m
+  [32;1m✓[39;22m[39m [2mbranches are isolated[22m[39m
+  [32;1m✓[39;22m[39m [2mbump returns strictly monotonic sequence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\OrderServiceSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mit throws exception for nonexistent variation[22m[39m
+  [32;1m✓[39;22m[39m [2mit throws exception for nonexistent extra[22m[39m
+  [32;1m✓[39;22m[39m [2mit prioritizes db price for variations[22m[39m
+  [32;1m✓[39;22m[39m [2mit prioritizes db price for extras[22m[39m
+  [32;1m✓[39;22m[39m [2msource code contains variation validation[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\Pricing\DiscountCalculatorTest[39m
+  [32;1m✓[39;22m[39m [2mmanual discount zero when requested negative or zero[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount returns requested when below subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount equal to subtotal is allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount rejected when greater than subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon discount zero when id non positive[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon discount delegates to service and casts to float[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon discount propagates service exception[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Services\Pricing\TaxCalculatorTest[39m
+  [32;1m✓[39;22m[39m [2mpercentage tax rounded[22m[39m
+  [32;1m✓[39;22m[39m [2mpercentage tax unrounded[22m[39m
+  [32;1m✓[39;22m[39m [2mpercentage tax rounds to two decimals[22m[39m
+  [32;1m✓[39;22m[39m [2mfixed tax not rounded when disabled[22m[39m
+  [32;1m✓[39;22m[39m [2mfixed tax ignores subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mzero rate produces zero tax[22m[39m
+  [32;1m✓[39;22m[39m [2mzero subtotal with percentage is zero[22m[39m
+  [32;1m✓[39;22m[39m [2mhigh precision rounding boundary[22m[39m
+  [32;1m✓[39;22m[39m [2mnegative rate produces negative tax percentage[22m[39m
+  [32;1m✓[39;22m[39m [2munknown tax type falls back to percentage branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ActionLogBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2mcreating log authenticated auto sets branch id[22m[39m
+  [32;1m✓[39;22m[39m [2mcreating log unauthenticated falls back to user branch[22m[39m
+  [32;1m✓[39;22m[39m [2maudit trail scoped to actor branch[22m[39m
+  [32;1m✓[39;22m[39m [2maudit trail admin sees null branch legacy rows[22m[39m
+  [32;1m✓[39;22m[39m [2madmin action log gets branch id zero not null[22m[39m
+  [32;1m✓[39;22m[39m [2maudit trail admin sees every branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AddressSecurityTest[39m
+  [32;1m✓[39;22m[39m [2muser cannot view other users address[22m[39m
+  [32;1m✓[39;22m[39m [2muser cannot update other users address[22m[39m
+  [32;1m✓[39;22m[39m [2muser cannot delete other users address[22m[39m
+  [32;1m✓[39;22m[39m [2muser can view own address[22m[39m
+  [32;1m✓[39;22m[39m [2muser can update own address[22m[39m
+  [32;1m✓[39;22m[39m [2muser can delete own address[22m[39m
+  [32;1m✓[39;22m[39m [2maccess nonexistent address returns 404[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\AvailabilityControllerTest[39m
+  [32;1m✓[39;22m[39m [2mstaff can toggle item availability[22m[39m
+  [32;1m✓[39;22m[39m [2mstaff can reactivate item availability[22m[39m
+  [32;1m✓[39;22m[39m [2midempotent toggle does not dispatch event when state unchanged[22m[39m
+  [32;1m✓[39;22m[39m [2madmin global can toggle with branch id null fan out[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch staff cannot toggle other branch item 403[22m[39m
+  [32;1m✓[39;22m[39m [2mtoggle persists domain event outbox with correct channel[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal item availability changed payload includes full contract keys[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\KdsSyncControllerTest[39m
+  [32;1m✓[39;22m[39m [2msync rejects missing since with 400[22m[39m
+  [32;1m✓[39;22m[39m [2msync rejects unparseable since with 400[22m[39m
+  [32;1m✓[39;22m[39m [2msync returns orders updated since[22m[39m
+  [32;1m✓[39;22m[39m [2msync returns deleted ids for orders that left active window[22m[39m
+  [32;1m✓[39;22m[39m [2msync branch isolation non admin cannot cross branch[22m[39m
+  [32;1m✓[39;22m[39m [2msync admin can view all branches with branch id zero[22m[39m
+  [32;1m✓[39;22m[39m [2msync server now advances strictly when cache is bypassed[22m[39m
+  [32;1m✓[39;22m[39m [2msync cache key is isolated per branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\POS\ReceiptPrintControllerTest[39m
+  [32;1m✓[39;22m[39m [2mincrement first call returns count 1 not duplicata[22m[39m
+  [32;1m✓[39;22m[39m [2mincrement second call returns count 2 is duplicata true[22m[39m
+  [32;1m✓[39;22m[39m [2mincrement persists in db[22m[39m
+  [32;1m✓[39;22m[39m [2mcross branch order returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2munauthenticated returns 401[22m[39m
+  [32;1m✓[39;22m[39m [2mfirst print writes pos receipt print audit row[22m[39m
+  [32;1m✓[39;22m[39m [2mreprint writes pos receipt reprint audit row[22m[39m
+  [32;1m✓[39;22m[39m [2mconsecutive reprints each produce distinct audit rows[22m[39m
+  [32;1m✓[39;22m[39m [2maudit write failure returns audit emitted false and does not rollback counter[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AdminCrudComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2madmin can list items[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create item[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can view item[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can update item price[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can delete item[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can list categories[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create category[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can delete category[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can list branches[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create branch[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can update branch[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can delete branch[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create coupon[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can list coupons[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can delete coupon[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create dining table[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can list dining tables[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can delete dining table[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can create kiosk machine[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can change kiosk machine status[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AfterCommitDispatchTest[39m
+  [32;1m✓[39;22m[39m [2moutbox broadcast events use after commit dispatch trait with data set "OrderCreated"[22m[39m
+  [32;1m✓[39;22m[39m [2moutbox broadcast events use after commit dispatch trait with data set "OrderStatusChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2moutbox broadcast events use after commit dispatch trait with data set "OrderPaidAtCounter"[22m[39m
+  [32;1m✓[39;22m[39m [2moutbox broadcast events use after commit dispatch trait with data set "ItemAvailabilityChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2moutbox broadcast events use after commit dispatch trait with data set "OrderTableChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2morder events are registered to outbox listeners with data set "OrderCreated"[22m[39m
+  [32;1m✓[39;22m[39m [2morder events are registered to outbox listeners with data set "OrderStatusChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2morder events are registered to outbox listeners with data set "OrderPaidAtCounter"[22m[39m
+  [32;1m✓[39;22m[39m [2morder outbox listeners persist branch channel and dispatch job after commit with data set "OrderCreated"[22m[39m
+  [32;1m✓[39;22m[39m [2morder outbox listeners persist branch channel and dispatch job after commit with data set "OrderStatusChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2morder outbox listeners persist branch channel and dispatch job after commit with data set "OrderPaidAtCounter"[22m[39m
+  [32;1m✓[39;22m[39m [2morder event outbox channel map doc exists[22m[39m
+  [32;1m✓[39;22m[39m [2morder service uses dispatchable order events not direct event instances[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch domain events job claims row before broadcast for dedupe[22m[39m
+
+
+--- AG-02: API wizard_template ---
+[POS-WIZARD] wizard_template from API: simple
+has_menu: false
+
+--- AG-04: Order with Instruction ---
+Order Status: 201
+Saved Instruction in DB: VIANDES: Merguez, Poulet. SAUCE: Harissa. FORMULE: Menu Complet.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AntiGravityFinalTest[39m
+  [32;1m✓[39;22m[39m [2mag 02 and 04[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AntiGravityLoginRedirectionTest[39m
+  [32;1m✓[39;22m[39m [2mpos operator receives pos landing url[22m[39m
+  [32;1m✓[39;22m[39m [2mchef receives kds landing url[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer receives null landing url[22m[39m
+  [32;1m✓[39;22m[39m [2mpos menu items are visible[22m[39m
+
+--- AG-02: API wizard_template ---
+Template: simple
+HasMenu: false
+
+--- AG-03-T01: D-001 Fake Item ID ---
+Status: 422
+Message: Article 999999 introuvable. Commande rejetée.
+
+--- AG-03-T02: D-004 Missing Item ID ---
+Status: 422
+Errors: {"items":["L'article \u00e0 l'index 0 n'a pas d'item_id valide."]}
+
+--- AG-03-T03: Valid Order ---
+Status: 401
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AntiGravityManualTest[39m
+  [32;1m✓[39;22m[39m [2mag 02 and 03[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AntiGravityTest[39m
+  [32;1m✓[39;22m[39m [2mt01 kiosk login valid[22m[39m
+  [32;1m✓[39;22m[39m [2mt02 kiosk login invalid[22m[39m
+  [32;1m✓[39;22m[39m [2mt03 kiosk login already logged in[22m[39m
+  [32;1m✓[39;22m[39m [2mt04 kiosk login inactive[22m[39m
+  [32;1m✓[39;22m[39m [2mt05 kiosk cannot access admin[22m[39m
+  [32;1m✓[39;22m[39m [2mt06 kiosk can create order[22m[39m
+  [32;1m✓[39;22m[39m [2mt07 kiosk cannot read pos orders[22m[39m
+  [32;1m✓[39;22m[39m [2mt08 order forged price uses db price[22m[39m
+  [32;1m✓[39;22m[39m [2mt09 order forged total rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mt10 invalid coupon rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mt11 order without auth returns 401[22m[39m
+  [32;1m✓[39;22m[39m [2mt12 pending order visible in pos[22m[39m
+  [32;1m✓[39;22m[39m [2mt13 pending to accept transitions[22m[39m
+  [32;1m✓[39;22m[39m [2mt14 pending to prepared rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mt18 kds sees only own branch[22m[39m
+  [32;1m✓[39;22m[39m [2mt20 kds cannot mark delivered[22m[39m
+  [32;1m✓[39;22m[39m [2mt22 oss post rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mt23 oss without token rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mt08b pos order forged price uses db price[22m[39m
+  [32;1m✓[39;22m[39m [2mt08c pos kds notification dispatched[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\KioskThrottleKeysTest[39m
+  [32;1m✓[39;22m[39m [2mlegitimate kiosk orders pass until cap[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk orders recovery after window reset[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk orders isolation two machines same ip[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout email path 429 after max attempts[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout anon fallback when no email no username[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AuthComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2madmin can login with valid credentials[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin with invalid credentials returns 400[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator receives correct landing permission[22m[39m
+  [32;1m✓[39;22m[39m [2mchef receives correct landing permission[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer receives home landing[22m[39m
+  [32;1m✓[39;22m[39m [2mlogout invalidates token[22m[39m
+  [32;1m✓[39;22m[39m [2maccess without token returns 401[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can access admin routes[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer cannot access admin routes[22m[39m
+  [32;1m✓[39;22m[39m [2mtoken is generated with sanctum[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator can access pos routes[22m[39m
+  [32;1m✓[39;22m[39m [2mchef can access kds routes[22m[39m
+  [32;1m✓[39;22m[39m [2mnonexistent user cannot login[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin with empty credentials returns 422[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Availability\StockReleaseTest[39m
+  [32;1m✓[39;22m[39m [2mfull cancel releases consumed stock and stamps released qty[22m[39m
+  [32;1m✓[39;22m[39m [2mfull cancel flips unavailable item back to available and dispatches event[22m[39m
+  [32;1m✓[39;22m[39m [2mpartial refund releases only requested quantity[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate order canceled is idempotent[22m[39m
+  [32;1m✓[39;22m[39m [2morder canceled then full refund second delivery is no op[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\BranchFiscalIdentityTest[39m
+  [32;1m✓[39;22m[39m [2mfillable persists fiscal identity fields[22m[39m
+  [32;1m✓[39;22m[39m [2mmigration down up is idempotent for fiscal columns[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy branch has null fiscal fields by default[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\OrderBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2morder and frontend branch filters are exact not prefix matches[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\OssAdminBranchPolicyTest[39m
+  [32;1m✓[39;22m[39m [2mbranch id zero non admin is not global for pos order store[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch id zero non admin is not global for destroy[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\BranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2mcashier index does not leak other branch orders[22m[39m
+  [32;1m✓[39;22m[39m [2mcashier cannot show other branch order[22m[39m
+  [32;1m✓[39;22m[39m [2mcashier cannot change status of other branch order[22m[39m
+  [32;1m✓[39;22m[39m [2mcashier cannot change payment status of other branch order[22m[39m
+  [32;1m✓[39;22m[39m [2mcashier cannot destroy other branch order[22m[39m
+  [32;1m✓[39;22m[39m [2mchef kds does not leak other branch orders[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\BranchScopeTest[39m
+  [32;1m✓[39;22m[39m [2muser branch a only sees branch a orders[22m[39m
+  [32;1m✓[39;22m[39m [2muser branch b cannot see branch a orders[22m[39m
+  [32;1m✓[39;22m[39m [2madmin sees all branches orders[22m[39m
+  [32;1m✓[39;22m[39m [2mcomplex query with where respects branch scope[22m[39m
+  [32;1m✓[39;22m[39m [2morwhere does not break isolation[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal records with branch id zero are visible[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend order has same branch scope[22m[39m
+  [32;1m✓[39;22m[39m [2mapi admin orders respects branch scope[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Cache\CacheInvalidationTest[39m
+  [32;1m✓[39;22m[39m [2mcreate purges menu cache[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CancelAuditTrailTest[39m
+  [32;1m✓[39;22m[39m [2mcancel writes action log fiscal audit and single cashback[22m[39m
+  [32;1m✓[39;22m[39m [2mcancel without reason is rejected without audit or cashback[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\AddonRolePersistenceTest[39m
+  [32;1m✓[39;22m[39m [2maddon role enum persists without price duplication[22m[39m
+  [32;1m✓[39;22m[39m [2maddon role rejects unknown values portably[22m[39m
+  [32;1m✓[39;22m[39m [2madmin addon api persists and returns role[22m[39m
+  [32;1m✓[39;22m[39m [2madmin addon api rejects unknown role[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\CatalogChangedDispatchTest[39m
+  [32;1m✓[39;22m[39m [2mcategory catalog mutation persists catalog changed per active branch[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch availability catalog mutation stays branch scoped[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\CatalogOutboxIdempotencyTest[39m
+  [32;1m✓[39;22m[39m [2msame catalog event correlation is persisted once per branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\CentralManagementAuthzMatrixTest[39m
+  [32;1m✓[39;22m[39m [2mitems show can read modifiers but cannot mutate them[22m[39m
+  [32;1m✓[39;22m[39m [2mcategory management operations require settings permission[22m[39m
+  [32;1m✓[39;22m[39m [2mcatalog item reads require items show and branch overlay is scoped[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\ChannelsNullWarningTest[39m
+  [32;1m✓[39;22m[39m [2mitem store with null channels emits warning[22m[39m
+  [32;1m✓[39;22m[39m [2mitem update with null channels emits warning[22m[39m
+  [32;1m✓[39;22m[39m [2mitem store with non null channels does not emit channels null log[22m[39m
+  [32;1m✓[39;22m[39m [2mwarning disabled when flag off[22m[39m
+  [32;1m✓[39;22m[39m [2madmin show includes channels null warning when expose enabled[22m[39m
+  [32;1m✓[39;22m[39m [2madmin show warnings empty or absent for explicit channels when expose enabled[22m[39m
+  [32;1m✓[39;22m[39m [2madmin show omits warnings key when expose disabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\ComposerSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mprofile steps are ordered and publish bumps version[22m[39m
+  [32;1m✓[39;22m[39m [2mstep rejects invalid selection bounds[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\ItemDeletionWithOrderHistoryTest[39m
+  [32;1m✓[39;22m[39m [2msoft delete works without force param[22m[39m
+  [32;1m✓[39;22m[39m [2mforce delete blocked when order history exists and flag on[22m[39m
+  [32;1m✓[39;22m[39m [2mforce delete allowed when no order history[22m[39m
+  [32;1m✓[39;22m[39m [2mforce delete allowed when flag off[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\PhotoEndToEndKioskInvalidationTest[39m
+  [32;1m✓[39;22m[39m [2madmin product photo upload invalidates kiosk menu and returns new snapshot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\ProductPhotoAuthzTest[39m
+  [32;1m✓[39;22m[39m [2mproduct photo mutation is reserved to global catalog roles[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CleanupVsConfirmRaceTest[39m
+  [32;1m✓[39;22m[39m [2mlate payment confirm after cleanup is rejected and audited[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerAuthzMinimalTest[39m
+  [32;1m✓[39;22m[39m [2mbranch admin can compose own branch[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot compose other branch[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot create or mutate global composer profiles[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot update foreign profile by forging payload scope[22m[39m
+  [32;1m✓[39;22m[39m [2mshow defaults to actor branch and does not leak foreign latest profile[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin show defaults to global profile not branch latest[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin can compose any branch[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin can create global composer profile[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator and delivery boy are forbidden[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot mutate composer steps for other branch[22m[39m
+  [32;1m✓[39;22m[39m [2mno catalog manager role is created[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerProfileApiTest[39m
+  [32;1m✓[39;22m[39m [2mprofile crud publish unpublish and price payload rejection[22m[39m
+  [32;1m✓[39;22m[39m [2mstep endpoint rejects price payload[22m[39m
+  [32;1m✓[39;22m[39m [2mprofile and step endpoints reject unsupported fixed source type[22m[39m
+  [32;1m✓[39;22m[39m [2mprofile rejects invalid step surface and selection range[22m[39m
+  [32;1m✓[39;22m[39m [2mstep endpoint rejects invalid surface and selection range[22m[39m
+  [32;1m✓[39;22m[39m [2mpublish rejects empty profile and legacy unsupported step[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerPublishSyncTest[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped publish invalidates kiosk cache and persists catalog outbox[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal publish persists outbox for active branches only[22m[39m
+  [32;1m✓[39;22m[39m [2munpublish invalidates cache and persists catalog outbox[22m[39m
+  [32;1m✓[39;22m[39m [2mpublished step mutation invalidates catalog projection[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerStepServiceContractTest[39m
+  [32;1m✓[39;22m[39m [2mservice rejects unsupported fixed source type[22m[39m
+  [32;1m✓[39;22m[39m [2mservice rejects invalid visible surface[22m[39m
+  [32;1m✓[39;22m[39m [2mservice rejects max select below min select[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Composer\ProfilePublishMidCartRejectionTest[39m
+  [33;1m-[39;22m[39m [2mv1 payload with v2 removed option returns 422 with composer remediation keys[22m[39m[33m → Pending plan task 1.4 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mv1 payload with v2 renamed option still resolves by id[22m[39m[33m → Pending plan task 1.4 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mversion check returns 409 when flag enabled[22m[39m[33m → Pending plan task 2.2 + GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK.[39m
+  [33;1m-[39;22m[39m [2mpost remediation order writes v2 composition snapshot[22m[39m[33m → Pending plan task 2.2 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ConcurrentOrderTest[39m
+  [32;1m✓[39;22m[39m [2midempotency prevents duplicate order[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo orders created with different keys[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty concurrent redemption does not overdraw[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CorrelationIdMiddlewareTest[39m
+  [32;1m✓[39;22m[39m [2mgenerates correlation id if absent[22m[39m
+  [32;1m✓[39;22m[39m [2mpropagates correlation id from request[22m[39m
+  [32;1m✓[39;22m[39m [2mcorrelation id is stable within request[22m[39m
+  [32;1m✓[39;22m[39m [2mcorrelation id is attached to subsequent log entries[22m[39m
+  [32;1m✓[39;22m[39m [2meach request without header gets a unique id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CouponCheckNegativeTotalTest[39m
+  [32;1m✓[39;22m[39m [2mcoupon checking rejects negative total[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CouponRequestNegativeAmountsTest[39m
+  [32;1m✓[39;22m[39m [2madmin coupon store rejects negative minimum order[22m[39m
+  [32;1m✓[39;22m[39m [2madmin coupon store rejects negative discount[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CouponSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mapply valid coupon recalculates discount[22m[39m
+  [32;1m✓[39;22m[39m [2mfake discount injection is ignored[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CustomerNfcLookupTest[39m
+  [32;1m✓[39;22m[39m [2mlookup returns customer when uid matches in branch[22m[39m
+  [32;1m✓[39;22m[39m [2mlookup returns 404 when uid unknown[22m[39m
+  [32;1m✓[39;22m[39m [2mlookup returns 404 for cross branch uid[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Dashboard\DashboardBranchScopeMatrixTest[39m
+  [32;1m✓[39;22m[39m [2mdashboard permission is required[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch dashboard reads only own branch runtime orders[22m[39m
+  [32;1m✓[39;22m[39m [2madmin dashboard keeps global visibility[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Database\AllergensSeederTest[39m
+  [32;1m✓[39;22m[39m [2mfr codes present[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Database\ItemBranchAvailabilityFkTest[39m
+  [33;1m-[39;22m[39m [2mcascade on item delete[22m[39m[33m → MySQL-only: ALTER TABLE foreign keys are asserted in CI on MySQL.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Delivery\DeliveryFeeForgePosTest[39m
+  [32;1m✓[39;22m[39m [2mpos quote ignores forged delivery charge and recomputes from distance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Delivery\DeliveryFeeForgeWebTest[39m
+  [32;1m✓[39;22m[39m [2mweb delivery fee is recomputed from saved address coordinates[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Delivery\GeocodeFailureBlocksOrderTest[39m
+  [32;1m✓[39;22m[39m [2mweb delivery with non geocoded address returns geocode failed[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\DeliveryBoyOrderStatusOrderingTest[39m
+  [32;1m✓[39;22m[39m [2msave then dispatch then event[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\DeliveryOrderContractTest[39m
+  [32;1m✓[39;22m[39m [2mdelivery boy api lists shows and advances assigned order in branch[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery boy api blocks cross branch assigned order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\DispatchAfterCommitTest[39m
+  [32;1m✓[39;22m[39m [2mevent is not dispatched if transaction rolls back with data set "OrderCreated"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is not dispatched if transaction rolls back with data set "OrderStatusChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is not dispatched if transaction rolls back with data set "ItemAvailabilityChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is not dispatched if transaction rolls back with data set "OrderTableChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is dispatched after successful commit with data set "OrderCreated"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is dispatched after successful commit with data set "OrderStatusChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is dispatched after successful commit with data set "ItemAvailabilityChanged"[22m[39m
+  [32;1m✓[39;22m[39m [2mevent is dispatched after successful commit with data set "OrderTableChanged"[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Domain\OrderStateMachineApplyTest[39m
+  [32;1m✓[39;22m[39m [2mapply legal transition mutates and audits[22m[39m
+  [32;1m✓[39;22m[39m [2mapply illegal transition throws and rolls back[22m[39m
+  [32;1m✓[39;22m[39m [2mapply identity transition is noop[22m[39m
+  [32;1m✓[39;22m[39m [2mapply cancel requires reason[22m[39m
+  [32;1m✓[39;22m[39m [2mapply cancel with reason succeeds and persists reason[22m[39m
+  [32;1m✓[39;22m[39m [2mapply records actor id when user provided[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\EscPosOpenDrawerTest[39m
+  [32;1m✓[39;22m[39m [2mopen drawer command emits correct esc p sequence[22m[39m
+  [32;1m✓[39;22m[39m [2mopen drawer uses default receipt printer for branch[22m[39m
+  [32;1m✓[39;22m[39m [2mopen drawer returns error when no printer configured[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\EventContractTest[39m
+  [32;1m✓[39;22m[39m [2mevent type enum contains all v1 types[22m[39m
+  [32;1m✓[39;22m[39m [2morder created listener uses event type constant[22m[39m
+  [32;1m✓[39;22m[39m [2morder status changed listener uses event type constant[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch job broadcasts canonical envelope[22m[39m
+  [32;1m✓[39;22m[39m [2mdomain event has correlation id[22m[39m
+  [32;1m✓[39;22m[39m [2morder realtime payload contract requires origin payment method and queue[22m[39m
+  [32;1m✓[39;22m[39m [2morder created listener persists realtime identity payload[22m[39m
+  [32;1m✓[39;22m[39m [2morder status changed listener persists realtime identity payload[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch job rejects envelope that violates contract[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogBranchRequiredTest[39m
+  [32;1m✓[39;22m[39m [2mnull branch is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mexplicit null branch is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mzero branch is accepted as system chain[22m[39m
+  [32;1m✓[39;22m[39m [2msystem and tenant chains are independent[22m[39m
+  [32;1m✓[39;22m[39m [2mnegative branch is accepted but isolated[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogConcurrencyTest[39m
+  [32;1m✓[39;22m[39m [2munique chain index rejects fork[22m[39m
+  [32;1m✓[39;22m[39m [2mretry after forced collision produces consistent chain[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo sequential branches do not interfere[22m[39m
+  [32;1m✓[39;22m[39m [2mcache lock serialises writers[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogHashChainTest[39m
+  [32;1m✓[39;22m[39m [2mchain verified after sequence of writes[22m[39m
+  [32;1m✓[39;22m[39m [2mtampering detected on payload[22m[39m
+  [32;1m✓[39;22m[39m [2mforged row with wrong prev hash is detected[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload key order does not affect hash[22m[39m
+  [32;1m✓[39;22m[39m [2msecret mandatory[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\AuditLogImmutabilityTest[39m
+  [32;1m✓[39;22m[39m [2minsert is allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate blocked via eloquent[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate blocked via raw sql[22m[39m
+  [32;1m✓[39;22m[39m [2mdelete blocked via eloquent[22m[39m
+  [32;1m✓[39;22m[39m [2mdelete blocked via raw sql[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveMemoryBoundedTest[39m
+  [32;1m✓[39;22m[39m [2marchive with 1k orders stays under memory ceiling[22m[39m
+  [32;1m✓[39;22m[39m [2mempty window produces empty arrays[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveScheduledTest[39m
+  [32;1m✓[39;22m[39m [2mit schedules a daily fiscal archive at 02 00 with overlap and one server constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mit runs archive for all active branches on yesterday only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveTest[39m
+  [32;1m✓[39;22m[39m [2mzip contains all z reports and orders and audit logs[22m[39m
+  [32;1m✓[39;22m[39m [2mround trip deterministic[22m[39m
+  [32;1m✓[39;22m[39m [2marchive respects window boundaries[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveTtlTest[39m
+  [32;1m✓[39;22m[39m [2mnf525 archive retention defaults to six years[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalArchiveVerifyChainTest[39m
+  [32;1m✓[39;22m[39m [2marchive succeeds when z chain is intact[22m[39m
+  [32;1m✓[39;22m[39m [2marchive aborts when z chain signature is corrupted[22m[39m
+  [32;1m✓[39;22m[39m [2mno verify flag bypasses check and marks manifest unverified[22m[39m
+  [32;1m✓[39;22m[39m [2mverify disabled via config skips check silently[22m[39m
+  [32;1m✓[39;22m[39m [2marchive succeeds for branch with no z reports yet[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalCashAtCounterLifecycleTest[39m
+  [32;1m✓[39;22m[39m [2mcash at counter sequence is allocated only on confirm and not on reprint[22m[39m
+  [32;1m✓[39;22m[39m [2mcash at counter confirm is idempotent without second sequence or duplicate payment[22m[39m
+  [32;1m✓[39;22m[39m [2mcash at counter cancel before payment never allocates sequence or payment transaction[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalHardeningMinorTest[39m
+  [32;1m✓[39;22m[39m [2mz signature canonicalises closed at in utc[22m[39m
+  [32;1m✓[39;22m[39m [2mz signature differs when absolute moment differs[22m[39m
+  [32;1m✓[39;22m[39m [2maudit logs down is blocked in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit logs unique index down is blocked in production[22m[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence is monotonic under serial calls[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalObservabilityTest[39m
+  [32;1m✓[39;22m[39m [2mfiscal channel is registered[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log write emits breadcrumb[22m[39m
+  [32;1m✓[39;22m[39m [2mz report open and close emit breadcrumbs[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalPermissionTest[39m
+  [32;1m✓[39;22m[39m [2mpos operator cannot manage fiscal[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch manager can manage fiscal[22m[39m
+  [32;1m✓[39;22m[39m [2munrooled user has no fiscal permission[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalRateLimitTest[39m
+  [32;1m✓[39;22m[39m [2mz report open route declares throttle middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mz report close route declares throttle middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mread endpoints are not rate limited[22m[39m
+  [32;1m✓[39;22m[39m [2meleventh open call is throttled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSealingHmacTest[39m
+  [32;1m✓[39;22m[39m [2mhmac is deterministic for canonical payload order[22m[39m
+  [32;1m✓[39;22m[39m [2mhmac is branch scoped[22m[39m
+  [32;1m✓[39;22m[39m [2mz report signature matches legacy service hmac contract[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSecretProductionGuardTest[39m
+  [32;1m✓[39;22m[39m [2maudit log rejects dev sentinel in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log rejects short secret in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log accepts strong secret in production[22m[39m
+  [32;1m✓[39;22m[39m [2maudit log allows dev sentinel outside production[22m[39m
+  [32;1m✓[39;22m[39m [2mz report rejects dev sentinel in production[22m[39m
+  [32;1m✓[39;22m[39m [2mz report rejects short secret in production[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\FiscalSequenceTest[39m
+  [32;1m✓[39;22m[39m [2mfirst number for a branch is one[22m[39m
+  [32;1m✓[39;22m[39m [2matomic per branch no gaps[22m[39m
+  [32;1m✓[39;22m[39m [2msequences are independent per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mnon positive branch id is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mcontinues from existing max[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\OrderFiscalSequenceSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence column exists on orders[22m[39m
+  [32;1m✓[39;22m[39m [2munique branch fiscal sequence is enforced[22m[39m
+  [32;1m✓[39;22m[39m [2msame sequence allowed on different branches[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL1WireInTest[39m
+  [32;1m✓[39;22m[39m [2mpos order receives fiscal sequence no monotonic per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mfiscal sequence is scoped per branch[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order stores allergens snapshot from pivot[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot remains immutable after item allergens change[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL2AuditCallSitesTest[39m
+  [32;1m✓[39;22m[39m [2mpos order with manual discount writes discount applied audit[22m[39m
+  [32;1m✓[39;22m[39m [2mchange status to cancel writes order cancelled audit[22m[39m
+  [32;1m✓[39;22m[39m [2mchange status to returned writes order returned audit[22m[39m
+  [32;1m✓[39;22m[39m [2mreturned without reason fails validation[22m[39m
+  [32;1m✓[39;22m[39m [2mchange payment status writes payment status changed audit[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy order writes order destroyed audit[22m[39m
+  [32;1m✓[39;22m[39m [2mcash back writes payment cash back issued audit[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\PosOrderBL3DestroyAfterZTest[39m
+  [32;1m✓[39;22m[39m [2mdestroy rejected 409 when sealed by closed z[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy allowed when z report still open[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy allowed for order without fiscal sequence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundPostZTest[39m
+  [32;1m✓[39;22m[39m [2mreturned order after previous z is counted as negative adjustment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\RefundPreZTest[39m
+  [32;1m✓[39;22m[39m [2mreturned order before z close is not counted as positive revenue[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\VoidPreZTest[39m
+  [32;1m✓[39;22m[39m [2mcanceled order before z close is counted as void without revenue[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\XReportTest[39m
+  [32;1m✓[39;22m[39m [2msnapshot matches orders since last close[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot handles no prior z[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot is idempotent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZAggregationKioskRoutingTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk payment confirm does not directly fiscalize z under option b[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZOpenChainVerifiedTest[39m
+  [32;1m✓[39;22m[39m [2mno z reports chain trivially valid[22m[39m
+  [32;1m✓[39;22m[39m [2msingle z with legacy genesis shape is valid[22m[39m
+  [32;1m✓[39;22m[39m [2mchain of three consistent z reports is valid[22m[39m
+  [32;1m✓[39;22m[39m [2msignature tampering is detected[22m[39m
+  [32;1m✓[39;22m[39m [2mchain break prev hash mismatch is detected[22m[39m
+  [32;1m✓[39;22m[39m [2msequence gap is detected in chain[22m[39m
+  [32;1m✓[39;22m[39m [2mstrict mode throws runtime exception[22m[39m
+  [32;1m✓[39;22m[39m [2mopen and close enforce pre checks when strict mode is enabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportAggregateFilterTest[39m
+  [32;1m✓[39;22m[39m [2morders without fiscal sequence are excluded[22m[39m
+  [32;1m✓[39;22m[39m [2msoft deleted orders are excluded[22m[39m
+  [32;1m✓[39;22m[39m [2mx report inherits same filter[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportBoundaryTest[39m
+  [32;1m✓[39;22m[39m [2morder on lower boundary is excluded[22m[39m
+  [32;1m✓[39;22m[39m [2mfirst z with null from counts whole history[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo back to back z windows never double count[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportCloseTest[39m
+  [32;1m✓[39;22m[39m [2msequential open close five times no gap[22m[39m
+  [32;1m✓[39;22m[39m [2mclose aggregates only paid orders within window[22m[39m
+  [32;1m✓[39;22m[39m [2msecond close blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mopen blocked while one is already open[22m[39m
+  [32;1m✓[39;22m[39m [2msignature verifies and detects tampering[22m[39m
+  [32;1m✓[39;22m[39m [2msignature chains between consecutive closes[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportControllerTest[39m
+  [32;1m✓[39;22m[39m [2mpermission required for open[22m[39m
+  [32;1m✓[39;22m[39m [2mpermission required for close[22m[39m
+  [32;1m✓[39;22m[39m [2mmanager can open and close[22m[39m
+  [32;1m✓[39;22m[39m [2mpdf route returns signed bundle[22m[39m
+  [32;1m✓[39;22m[39m [2mcross branch show is forbidden[22m[39m
+  [32;1m✓[39;22m[39m [2mx report requires permission[22m[39m
+  [32;1m✓[39;22m[39m [2mx report returns snapshot for manager[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mtable has required columns[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch sequence unique[22m[39m
+  [32;1m✓[39;22m[39m [2maggregates round trip through json casts[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Fiscal\ZReportTaxBreakdownTest[39m
+  [32;1m✓[39;22m[39m [2mtax breakdown groups per rate[22m[39m
+  [32;1m✓[39;22m[39m [2mempty when no orders[22m[39m
+  [32;1m✓[39;22m[39m [2mtax rate keys are canonicalised[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Frontend\OrderRequestDeliveryFeeAuthorityTest[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery recomputes forged delivery charge from saved address coordinates[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery zero distance keeps minimum delivery charge[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery requires distance instead of silent minimum fallback[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend takeaway does not require delivery distance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\FrontendDiscountIntegrityTest[39m
+  [32;1m✓[39;22m[39m [2minvalid coupon id rejects frontend order[22m[39m
+  [32;1m✓[39;22m[39m [2mvalid coupon is applied through centralized validation[22m[39m
+  [32;1m✓[39;22m[39m [2mforged frontend totals do not change server coupon discount[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon takes priority over loyalty discount on frontend order[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty below minimum points is not applied server side[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\HealthControllerTest[39m
+  [32;1m✓[39;22m[39m [2mhealth live returns 200 plain text ok[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth live carries correlation id header[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth ready returns full schema when healthy[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth ready returns 503 when degraded[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth full returns documented schema[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth full subsystem reports have status key[22m[39m
+  [32;1m✓[39;22m[39m [2mhealth full rejects non whitelisted ip when whitelist set[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Http\Admin\MenuProjectionControllerTest[39m
+  [32;1m✓[39;22m[39m [2mendpoint requires authentication[22m[39m
+  [32;1m✓[39;22m[39m [2mendpoint rejects missing channel[22m[39m
+  [32;1m✓[39;22m[39m [2mendpoint rejects unsupported channel[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk projection returns label override and emoji[22m[39m
+  [32;1m✓[39;22m[39m [2mpos projection returns legacy name and no emoji[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch user cannot read foreign branch projection[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch user can read own branch projection[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch user without catalog permission cannot read own projection[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator cannot read menu projection[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ItemAttributeComposerResourceTest[39m
+  [32;1m✓[39;22m[39m [2mitem attribute resource exposes composer constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mcatalog resources keep composer constraints for pos and kiosk[22m[39m
+  [32;1m✓[39;22m[39m [2mitem resources prefer branch scoped composer profile over global profile[22m[39m
+  [32;1m✓[39;22m[39m [2mpublic item resource ignores client forged branch id for composer profile[22m[39m
+  [32;1m✓[39;22m[39m [2mitem resources project composer choices for generic wizard steps[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ItemAttributeMultiSelectMigrationTest[39m
+  [32;1m✓[39;22m[39m [2mcolumns exist after migration[22m[39m
+  [32;1m✓[39;22m[39m [2mdefaults preserve legacy single select[22m[39m
+  [32;1m✓[39;22m[39m [2mmulti select values persist with correct casts[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ItemExtraManagementTest[39m
+  [32;1m✓[39;22m[39m [2mitem store creates extras[22m[39m
+  [32;1m✓[39;22m[39m [2mitem update syncs extras[22m[39m
+  [32;1m✓[39;22m[39m [2mitem update rejects foreign nested variation id[22m[39m
+  [32;1m✓[39;22m[39m [2mitem update rejects foreign nested extra id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ItemResourceAllergensTest[39m
+  [32;1m✓[39;22m[39m [2madmin item show returns allergens array[22m[39m
+  [32;1m✓[39;22m[39m [2mitem with no allergens returns empty array[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsAllergenAggregationSplitTest[39m
+  [32;1m✓[39;22m[39m [2mtwo items same id same extras  d i f f e r e n t allergens are  n o t merged[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo items same id same extras  s a m e allergens  a r e merged[22m[39m
+  [32;1m✓[39;22m[39m [2mitems with  n u l l allergens snapshot merge with items with  e m p t y array[22m[39m
+  [32;1m✓[39;22m[39m [2mitems with unsorted allergens arrays merge correctly[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo orders same item different allergens are  n o t merged across orders[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDS\KdsSnapshotImmutableTest[39m
+  [32;1m✓[39;22m[39m [2mtoggling availability does not mutate existing order[22m[39m
+  [32;1m✓[39;22m[39m [2mrearming availability also does not mutate orders[22m[39m
+  [32;1m✓[39;22m[39m [2mkds order item resource exposes composer addons from snapshot[22m[39m
+  [32;1m✓[39;22m[39m [2mkds items board keeps distinct addon choices unmerged[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDSFlowTest[39m
+  [32;1m✓[39;22m[39m [2mkds invalid transition[22m[39m
+  [32;1m✓[39;22m[39m [2mkds list filtered by branch[22m[39m
+  [32;1m✓[39;22m[39m [2mkds change status accept to preparing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDSOrderItemsTest[39m
+  [32;1m✓[39;22m[39m [2madmin kds order items not empty[22m[39m
+  [32;1m✓[39;22m[39m [2mkitchen status filter does not crash[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KDSScopeRestrictionTest[39m
+  [32;1m✓[39;22m[39m [2mkds cannot access global settings[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KdsBranchFilterExactTest[39m
+  [32;1m✓[39;22m[39m [2mbranch id filter does not match substring branches[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KdsChangeStatusConcurrencyTest[39m
+  [32;1m✓[39;22m[39m [2mkds service aborts 409 when in memory order status differs from locked row[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KdsExpectedStatusConflictTest[39m
+  [32;1m✓[39;22m[39m [2mkds stale expected status returns 409 under server lock[22m[39m
+  [32;1m✓[39;22m[39m [2mkds expected status is required for valid target status[22m[39m
+  [32;1m✓[39;22m[39m [2mkds noop expected status does not dispatch status event[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KdsPaginationOverflowTest[39m
+  [32;1m✓[39;22m[39m [2mkds list keeps server cap at fifty active orders[22m[39m
+  [32;1m✓[39;22m[39m [2mkds list releases paid orders and pos cash exception only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KdsTransitionWhitelistTest[39m
+  [32;1m✓[39;22m[39m [2mkds request rejects non kitchen status target[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskAuthTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk login with valid credentials[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot access admin flows[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskBundleLockdownTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk admin public bundle and source are absent[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy non manifest kiosk bundle is absent[22m[39m
+  [32;1m✓[39;22m[39m [2mforbidden kiosk asset names do not fall through to spa[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskEventTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk event creates action log[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk event rejects unknown type[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk event requires auth[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk event all allowed types are accepted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskFrontendComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2mlist items[22m[39m
+  [32;1m✓[39;22m[39m [2mpopular items[22m[39m
+  [32;1m✓[39;22m[39m [2mfeatured items[22m[39m
+  [32;1m✓[39;22m[39m [2mitem details[22m[39m
+  [32;1m✓[39;22m[39m [2mlist categories[22m[39m
+  [32;1m✓[39;22m[39m [2mcreate kiosk order[22m[39m
+  [32;1m✓[39;22m[39m [2mfake price kiosk order is ignored[22m[39m
+  [32;1m✓[39;22m[39m [2mvalid coupon[22m[39m
+  [32;1m✓[39;22m[39m [2minvalid coupon[22m[39m
+  [32;1m✓[39;22m[39m [2mtime slots[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskLoginApiTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk login and logout flow[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk login rejects email as username[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskLoyaltyDoubleRedeemRefusedTest[39m
+  [32;1m✓[39;22m[39m [2mredeem then kiosk order joins existing transaction without second decrement[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order direct redeem still deducts once and writes ledger[22m[39m
+  [32;1m✓[39;22m[39m [2mpending redeem with different discount amount is rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskLoyaltyLedgerAtomicTest[39m
+  [32;1m✓[39;22m[39m [2mledger failure rolls back points and order[22m[39m
+  [32;1m✓[39;22m[39m [2mnominal redeem decrements points and writes one ledger entry[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate ledger insert recovers existing entry without second entry[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskMultiBranch\KioskLocaleMiddlewareTest[39m
+  [32;1m✓[39;22m[39m [2mno locale header nor query passes through[22m[39m
+  [32;1m✓[39;22m[39m [2mallowed locale via header is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mdenied locale via header returns 400 with structured code[22m[39m
+  [32;1m✓[39;22m[39m [2mdenied locale via query returns 400[22m[39m
+  [32;1m✓[39;22m[39m [2mmalformed locale is rejected 400[22m[39m
+  [32;1m✓[39;22m[39m [2mheader takes precedence over query[22m[39m
+  [32;1m✓[39;22m[39m [2moff allowlist denial is logged to observability channel[22m[39m
+  [32;1m✓[39;22m[39m [2mmalformed locale is also logged to observability channel[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskOfflinePaymentScopeTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk cancel paths use order status enum not magic literal[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment confirm contract is deferred card or tr only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPaymentStateMachineTest[39m
+  [32;1m✓[39;22m[39m [2mcard order stays pending until payment confirm[22m[39m
+  [32;1m✓[39;22m[39m [2mcash order is immediately sent to kds pending counter payment[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment confirm can finalize an already paid but pending kiosk order[22m[39m
+  [32;1m✓[39;22m[39m [2mfinalize paid kiosk order rejects unpaid order[22m[39m
+  [32;1m✓[39;22m[39m [2mfinalize paid kiosk order promotes paid order when called directly[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\AllergensSeederTest[39m
+  [32;1m✓[39;22m[39m [2mseeder inserts 14 rows[22m[39m
+  [32;1m✓[39;22m[39m [2mseeder is idempotent on code[22m[39m
+  [32;1m✓[39;22m[39m [2mall 14 eu codes present[22m[39m
+  [32;1m✓[39;22m[39m [2mname keys are i18n ready[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\BranchAvailableLocalesTest[39m
+  [32;1m✓[39;22m[39m [2mavailable locales cast to array[22m[39m
+  [32;1m✓[39;22m[39m [2mactive locales falls back to default when null[22m[39m
+  [32;1m✓[39;22m[39m [2mactive locales returns branch field when set[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\InvalidateKioskMenuCacheListenerTest[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped event invalidates only that branch key[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal event invalidates all active branches[22m[39m
+  [32;1m✓[39;22m[39m [2mlistener is registered for item availability changed event[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\KioskPhase1\ItemCategoryHierarchyTest[39m
+  [32;1m✓[39;22m[39m [2mroot category has no parent and depth zero[22m[39m
+  [32;1m✓[39;22m[39m [2mchild category depth is one[22m[39m
+  [32;1m✓[39;22m[39m [2mcan attach under root[22m[39m
+  [32;1m✓[39;22m[39m [2mcannot attach under child depth guard[22m[39m
+  [32;1m✓[39;22m[39m [2mattach under null is always allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mchildren relation loads descendants[22m[39m
+  [33;1m-[39;22m[39m [2mdeleting parent sets child parent id to null[22m[39m[33m → SQLite ne re-trigger pas ON DELETE SET NULL pour les FK ajoutées via ALTER TABLE.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskEndpointsTest[39m
+  [32;1m✓[39;22m[39m [2mmenu requires auth[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu returns unified structure[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu projects branch availability and ui price fields[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu returns 503 when no kiosk machine[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu includes chef pick flag[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview requires auth[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview ignores client prices ssot[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview honors variation and extra quantities[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview guards cross item variation[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview applies kiosk promo priority[22m[39m
+  [32;1m✓[39;22m[39m [2mpromo validate prioritizes kiosk promo over coupon[22m[39m
+  [32;1m✓[39;22m[39m [2mpromo validate falls back to coupon[22m[39m
+  [32;1m✓[39;22m[39m [2mpromo validate rejects unknown code[22m[39m
+  [32;1m✓[39;22m[39m [2mpromo validate kiosk branch isolation[22m[39m
+  [32;1m✓[39;22m[39m [2mupsell returns rule based suggestion when matches[22m[39m
+  [32;1m✓[39;22m[39m [2mupsell falls back to legacy when no rule[22m[39m
+  [32;1m✓[39;22m[39m [2mupsell excludes items already in cart[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskEventAliasTest[39m
+  [32;1m✓[39;22m[39m [2mslash alias is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy dash route still works[22m[39m
+  [32;1m✓[39;22m[39m [2malias requires auth[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskEventExtendedTypesTest[39m
+  [32;1m✓[39;22m[39m [2mcash instruction shown type accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mcash instruction ack with reason[22m[39m
+  [32;1m✓[39;22m[39m [2mall 4 error subtypes accepted[22m[39m
+  [32;1m✓[39;22m[39m [2merror context payload serialized to json[22m[39m
+  [32;1m✓[39;22m[39m [2munknown type rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mdetails overflow truncated[22m[39m
+  [32;1m✓[39;22m[39m [2mcontext array rejected when not array[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy types still work[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskPromoModelTest[39m
+  [32;1m✓[39;22m[39m [2mfind valid matches active in window[22m[39m
+  [32;1m✓[39;22m[39m [2mfind valid rejects inactive[22m[39m
+  [32;1m✓[39;22m[39m [2mfind valid rejects below min cart[22m[39m
+  [32;1m✓[39;22m[39m [2mfind valid rejects when max uses reached[22m[39m
+  [32;1m✓[39;22m[39m [2mcompute discount percent[22m[39m
+  [32;1m✓[39;22m[39m [2mcompute discount amount capped at cart total[22m[39m
+  [32;1m✓[39;22m[39m [2mcompute discount zero for empty cart[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch isolation unique constraint[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\LoyaltyConsentTest[39m
+  [32;1m✓[39;22m[39m [2mhash identifier returns 64 char hex sha256[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier is deterministic with app key[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier differs with different inputs[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier empty input returns placeholder[22m[39m
+  [32;1m✓[39;22m[39m [2mhash identifier is not reversible to ip[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\LoyaltyOptInEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mopt in creates user and consent log[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects without consent[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects consent false[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in rejects without privacy notice version[22m[39m
+  [32;1m✓[39;22m[39m [2mopt in requires phone or email[22m[39m
+  [32;1m✓[39;22m[39m [2mip is stored hashed not raw[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\NormalItemResourceAllergensTest[39m
+  [32;1m✓[39;22m[39m [2mresource includes is available boolean[22m[39m
+  [32;1m✓[39;22m[39m [2mis available defaults to true when null[22m[39m
+  [32;1m✓[39;22m[39m [2mis available false when flag is false[22m[39m
+  [32;1m✓[39;22m[39m [2mresource includes empty allergens array when none attached[22m[39m
+  [32;1m✓[39;22m[39m [2mresource projects allergens with expected shape[22m[39m
+  [32;1m✓[39;22m[39m [2mresource shape is stable for legacy consumers[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\Phase1MigrationsTest[39m
+  [32;1m✓[39;22m[39m [2mitem categories has parent id[22m[39m
+  [32;1m✓[39;22m[39m [2mallergens table exists[22m[39m
+  [32;1m✓[39;22m[39m [2mitem allergen pivot exists[22m[39m
+  [32;1m✓[39;22m[39m [2mupsell rules table exists[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk promos table exists[22m[39m
+  [32;1m✓[39;22m[39m [2mbranches has available locales[22m[39m
+  [32;1m✓[39;22m[39m [2mitems has is chef pick[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty consents table exists[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\SsotInjectionHardeningTest[39m
+  [32;1m✓[39;22m[39m [2mpreview injection branch id is ignored[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview injection price is ignored[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview arbitrary keys are stripped[22m[39m
+  [32;1m✓[39;22m[39m [2mpromo validate ignores injected branch id[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu ignores injected branch id query string[22m[39m
+  [32;1m✓[39;22m[39m [2mupsell ignores injected branch id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\UpsellRuleModelTest[39m
+  [32;1m✓[39;22m[39m [2mtrigger category in cart matches when category present[22m[39m
+  [32;1m✓[39;22m[39m [2mtrigger item in cart matches when item present[22m[39m
+  [32;1m✓[39;22m[39m [2mtrigger cart total gte[22m[39m
+  [32;1m✓[39;22m[39m [2munknown trigger returns false[22m[39m
+  [32;1m✓[39;22m[39m [2mactive for branch scope filters inactive[22m[39m
+  [32;1m✓[39;22m[39m [2mactive for branch scope respects time window[22m[39m
+  [32;1m✓[39;22m[39m [2mpriority ordering desc[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase5\KioskEventPhase5WhitelistTest[39m
+  [32;1m✓[39;22m[39m [2ma11y settings type accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mhardware health type accepted with payload[22m[39m
+  [32;1m✓[39;22m[39m [2mhardware event accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mconsent event accepted[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics event requires event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics accepts whitelisted event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics accepts composer heuristic fallback event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics rejects unknown event name[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload with email is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload with phone nested is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2munknown top level type is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy types still accepted after phase5[22m[39m
+  [32;1m✓[39;22m[39m [2mall 6 new phase5 types accepted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase7\KioskAdminOverrideAuditTest[39m
+  [32;1m✓[39;22m[39m [2midle timeouts override is logged with before after[22m[39m
+  [32;1m✓[39;22m[39m [2mconsent override is logged[22m[39m
+  [32;1m✓[39;22m[39m [2madmin override context never leaks  p i i[22m[39m
+  [32;1m✓[39;22m[39m [2madmin action with payload containing  p i i is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2madmin action without subtype still accepted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase7\KioskEventBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2manalytics event with forged branch id logs server branch  a[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch id fallback to machine branch when payload absent[22m[39m
+  [32;1m✓[39;22m[39m [2munauthenticated cannot post any event[22m[39m
+  [32;1m✓[39;22m[39m [2mtoken without kiosk order ability is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mall phase5 types respect branch isolation[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskQuoteForgesBranchIdSilentlyOverriddenTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk forged branch id is silently overridden by machine branch[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk without branch id uses machine branch[22m[39m
+  [32;1m✓[39;22m[39m [2mpos quote still accepts coherent branch payload[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk quote without kiosk order ability is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2minactive kiosk machine cannot receive quote[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskQuoteIntegrityTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit consumes quote and ignores client totals[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit rejects quote when items change[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskQuoteTokenRequiredOnCommitTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit without quote token is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit without quote signature is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit with expired quote token returns 410[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit with valid quote pair creates order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskRealtimeBroadcastTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order created outbox payload exposes pos realtime identity[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order status changed outbox payload exposes pos realtime identity[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskScopeIsolationTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk token cannot access admin dashboard[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk token cannot delete branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskSecurity\KioskEventAbilityTest[39m
+  [32;1m✓[39;22m[39m [2mroute rejects token without kiosk order ability with data set "hyphen route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute rejects token without kiosk order ability with data set "slash route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute accepts token with kiosk order ability with data set "hyphen route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute accepts token with kiosk order ability with data set "slash route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute rejects unauthenticated request with data set "hyphen route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute rejects unauthenticated request with data set "slash route"[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskSecurity\KioskEventBranchSpoofingTest[39m
+  [32;1m✓[39;22m[39m [2mmatch no security log branch authoritative[22m[39m
+  [32;1m✓[39;22m[39m [2mmismatch logs security and uses server branch kiosk event route[22m[39m
+  [32;1m✓[39;22m[39m [2mmismatch logs security and uses server branch kiosk slash event route[22m[39m
+  [32;1m✓[39;22m[39m [2mno branch id in payload uses server branch no security log[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk login succeeds when machine already marked logged in[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order type persists when valid with data set "takeaway"[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order type persists when valid with data set "kiosk_sur_place"[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk branch id is forced from machine[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order rejects token without registered machine[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk order rejects inactive machine[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskUpsellCategoryTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk upsell excludes items from category with pool disabled[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KitchenDisplaySystemOrderSortTest[39m
+  [32;1m✓[39;22m[39m [2minvalid kds sort params fall back without breaking the api[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KitchenReleaseRuleTest[39m
+  [32;1m✓[39;22m[39m [2mkitchen release predicate allows only forward kds transitions[22m[39m
+  [32;1m✓[39;22m[39m [2mkitchen release dispatch predicate dedupes noop status[22m[39m
+  [32;1m✓[39;22m[39m [2mkitchen release statuses are kds visible only[22m[39m
+  [32;1m✓[39;22m[39m [2mreleased to kitchen requires paid order after accept[22m[39m
+  [32;1m✓[39;22m[39m [2mpos cash is released to kitchen before paid flag[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LoyaltyApiTest[39m
+  [32;1m✓[39;22m[39m [2mloyalty register[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty check[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty add points[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem[22m[39m
+  [32;1m✓[39;22m[39m [2mloyalty redeem not enough points[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\AdminItemBranchAvailabilityProjectionTest[39m
+  [32;1m✓[39;22m[39m [2madmin item list projects effective branch availability for pos[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\AvailabilityServiceTest[39m
+  [32;1m✓[39;22m[39m [2mtoggle creates row when missing and dispatches event[22m[39m
+  [32;1m✓[39;22m[39m [2mtoggle back to available clears reason and since[22m[39m
+  [32;1m✓[39;22m[39m [2mtoggle is idempotent when state unchanged[22m[39m
+  [32;1m✓[39;22m[39m [2mis available defaults to true when no row[22m[39m
+  [32;1m✓[39;22m[39m [2mis available returns stored value[22m[39m
+  [32;1m✓[39;22m[39m [2mtoggle for all branches touches every branch[22m[39m
+  [32;1m✓[39;22m[39m [2mlistener persists branch scoped event to outbox[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\AvailabilityToggleAuthzMatrixTest[39m
+  [32;1m✓[39;22m[39m [2mtoggle requires items edit permission[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch user can toggle own branch but not foreign branch[22m[39m
+  [32;1m✓[39;22m[39m [2mnull branch fanout is scoped for branch user and global for admin[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\BumpMenuSnapshotListenerTest[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped event bumps only that branch[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal event bumps every active branch[22m[39m
+  [32;1m✓[39;22m[39m [2mitem created catalog event bumps snapshot and invalidates kiosk cache[22m[39m
+  [32;1m✓[39;22m[39m [2mcategory updated catalog event bumps snapshot and invalidates kiosk cache[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\CatalogMutationSnapshotCoverageTest[39m
+  [32;1m✓[39;22m[39m [2mvariation mutations emit full item refresh[22m[39m
+  [32;1m✓[39;22m[39m [2mextra mutations emit full item refresh[22m[39m
+  [32;1m✓[39;22m[39m [2maddon mutations emit full item refresh[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\CatalogStockCentralSyncEndToEndTest[39m
+  [32;1m✓[39;22m[39m [2mcentral stock toggle syncs to kiosk pos and order guard[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Menu\FrontendSurfaceFilteringTest[39m
+  [33;1m-[39;22m[39m [2mitem list without surface returns every item[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2mitem list with surface kiosk hides pos only items[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2mitem list with surface pos hides kiosk only items[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2mitem list with unknown surface falls back to all[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2mcategory list with surface kiosk hides pos only categories[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2mcategory list without surface returns every category[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2madmin item list pos operator without surface defaults like surface pos[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2madmin item list admin without surface keeps legacy all channels visible[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2madmin item list pos operator implicit surface matches explicit surface pos[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+  [33;1m-[39;22m[39m [2madmin item list pos operator with surface kiosk is not overridden to pos[22m[39m[33m → Surface filtering contract relies on MySQL JSON_CONTAINS. Current driver: sqlite. This test runs in the phpunit.yml CI job against MySQL 8.0. See docs/TESTING.md §surface-filtering.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\ItemImageCatalogRefreshTest[39m
+  [32;1m✓[39;22m[39m [2mproduct image change dispatches full catalog refresh event[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Menu\MaxDailyQtyChangeReEvaluationTest[39m
+  [33;1m-[39;22m[39m [2mlowering max daily below consumed triggers auto 86[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mraising max daily restores availability[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2msetting max daily null unlimited restores availability[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2midempotent no duplicate event[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\OrderRejectsUnavailableBranchItemTest[39m
+  [32;1m✓[39;22m[39m [2mfrontend order rejects item marked unavailable for branch[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend quote rejects item globally marked unavailable[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend quote rejects inactive supplement id[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Menu\PosCategoryBranchScopeTest[39m
+  [33;1m-[39;22m[39m [2mbranch manager sees only own branch categories[22m[39m[33m → Pending plan task 1.1 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mbranch manager does not see other branch categories[22m[39m[33m → Pending plan task 1.1 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mtenant admin sees global catalog[22m[39m[33m → Pending plan task 1.1 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mkiosk only categories never appear on pos[22m[39m[33m → Pending plan task 1.1 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Menu\PosKioskProjectionParityTest[39m
+  [33;1m-[39;22m[39m [2mitem visible on both when channels null[22m[39m[33m → Pending plan tasks 2.4 and 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mkiosk only item not on pos[22m[39m[33m → Pending plan tasks 2.4 and 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mpos only item not on kiosk[22m[39m[33m → Pending plan tasks 2.4 and 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mbranch unavailable item disabled on both[22m[39m[33m → Pending plan tasks 2.4 and 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mpos categories subset of kiosk[22m[39m[33m → Pending plan tasks 2.4 and 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Menu\PosMenuProjectionFeatureFlagTest[39m
+  [33;1m-[39;22m[39m [2mdefault mode is legacy[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mshadow compare returns legacy and logs diff[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2munified mode returns adapted payload[22m[39m[33m → Pending plan task 2.2 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2mkill switch forces legacy[22m[39m[33m → Pending plan task 2.6 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+  [33;1m-[39;22m[39m [2munified failure does not break legacy[22m[39m[33m → Pending plan task 2.5 (PLAN_CV1-CATALOG-CONVERGENCE-001).[39m
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Nos Tacos (template: tacos)
+  ✓ Created: Nos Sandwichs (template: sandwich)
+  ✓ Created: Nos Burgers (template: burger)
+  ✓ Created: Nos Assiettes (template: assiette)
+  ✓ Created: Ojja (template: simple)
+  ✓ Created: Omelettes (template: omelette)
+  ✓ Created: Nos Salades (template: salade)
+  ✓ Created: Poulet croustillant (template: snacking)
+  ✓ Created: Nos Menus Enfants (template: simple)
+  ✓ Created: Frites & Accompagnements (template: simple)
+  ✓ Created: Nos Desserts (template: simple)
+  ✓ Created: Nos Boissons (template: simple)
+  ✓ Created: Suppléments (template: simple)
+✓ Created 13 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ✓ Tacos M (1 Viande) (6.5€)
+  ✓ Tacos L (2 Viandes) (8.5€)
+  ✓ Tacos XL (3 Viandes) (10.5€)
+  ✓ Tacos XXL (4 Viandes) (12.5€)
+  ✓ Le Méga (8€)
+  ✓ Le Terminator (9€)
+  ✓ Le Suprême (7€)
+  ✓ Le Cayenne (7€)
+  ✓ Sandwich Froid (4.5€)
+  ✓ Panini (5€)
+  ✓ Sandwich Classique (Pain) (6.5€)
+  ✓ Sandwich Classique (Galette) (6.5€)
+  ✓ Burger Poulet (6€)
+  ✓ Cheese Burger (6€)
+  ✓ Fish Burger (6€)
+  ✓ Double Cheese (7€)
+  ✓ Big Burger (9€)
+  ✓ Grill Burger (8€)
+  ✓ Assiette Poulet (12.5€)
+  ✓ Assiette Kefta (12.5€)
+  ✓ Assiette Merguez (12.5€)
+  ✓ Assiette Mixte (14.5€)
+  ✓ Ojja Bœuf (13.5€)
+  ✓ Ojja Poulet (13.5€)
+  ✓ Ojja Viande Hachée (13.5€)
+  ✓ Ojja Merguez (13.5€)
+  ✓ Omelette Nature (7.5€)
+  ✓ Omelette Fromage (8.5€)
+  ✓ Omelette Champignons Fromage (9.5€)
+  ✓ Salade Chèvre (7.5€)
+  ✓ Salade Royale (7.5€)
+  ✓ Salade Saumon (7.5€)
+  ✓ Salade Tunisienne (7.5€)
+  ✓ Ailes de poulet (6 pièces) (6€)
+  ✓ Ailes de poulet (12 pièces) (10.5€)
+  ✓ Filets de poulet croustillants (6 pièces) (7.5€)
+  ✓ Filets de poulet croustillants (12 pièces) (13.5€)
+  ✓ Menu Cheese Burger (Enfant) (6€)
+  ✓ Menu Nuggets (Enfant) (6€)
+  ✓ Frites Moyenne (2.5€)
+  ✓ Frites Grande (4€)
+  ✓ Glace (3.8€)
+  ✓ Tarte Daim (3.8€)
+  ✓ Tiramisu (3.8€)
+  ✓ Coca-Cola 33cl (1.5€)
+  ✓ Coca-Cola Zero 33cl (1.5€)
+  ✓ Fanta Orange 33cl (1.5€)
+  ✓ Sprite 33cl (1.5€)
+  ✓ Oasis Tropical 33cl (1.5€)
+  ✓ Orangina 33cl (1.5€)
+  ✓ Eau Plate 50cl (1€)
+  ✓ Capri-Sun (1.5€)
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 60 menu items
+
+
+Verifying French integrity...
+  - Categories: 13
+  - Items: 63
+  - Item Attributes: 6
+  - Item Variations: 772
+  - Item Extras: 530
+  - Item Addons: 180
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Nos Sandwichs' contains English word: Sandwich
+  - Category 'Nos Burgers' contains English word: Burger
+  - Category 'Nos Salades' contains English word: Salad
+
+✅ Menu seeding completed successfully!
+====================================
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Nos Tacos (template: tacos)
+  ✓ Created: Nos Sandwichs (template: sandwich)
+  ✓ Created: Nos Burgers (template: burger)
+  ✓ Created: Nos Assiettes (template: assiette)
+  ✓ Created: Ojja (template: simple)
+  ✓ Created: Omelettes (template: omelette)
+  ✓ Created: Nos Salades (template: salade)
+  ✓ Created: Poulet croustillant (template: snacking)
+  ✓ Created: Nos Menus Enfants (template: simple)
+  ✓ Created: Frites & Accompagnements (template: simple)
+  ✓ Created: Nos Desserts (template: simple)
+  ✓ Created: Nos Boissons (template: simple)
+  ✓ Created: Suppléments (template: simple)
+✓ Created 13 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ✓ Tacos M (1 Viande) (6.5€)
+  ✓ Tacos L (2 Viandes) (8.5€)
+  ✓ Tacos XL (3 Viandes) (10.5€)
+  ✓ Tacos XXL (4 Viandes) (12.5€)
+  ✓ Le Méga (8€)
+  ✓ Le Terminator (9€)
+  ✓ Le Suprême (7€)
+  ✓ Le Cayenne (7€)
+  ✓ Sandwich Froid (4.5€)
+  ✓ Panini (5€)
+  ✓ Sandwich Classique (Pain) (6.5€)
+  ✓ Sandwich Classique (Galette) (6.5€)
+  ✓ Burger Poulet (6€)
+  ✓ Cheese Burger (6€)
+  ✓ Fish Burger (6€)
+  ✓ Double Cheese (7€)
+  ✓ Big Burger (9€)
+  ✓ Grill Burger (8€)
+  ✓ Assiette Poulet (12.5€)
+  ✓ Assiette Kefta (12.5€)
+  ✓ Assiette Merguez (12.5€)
+  ✓ Assiette Mixte (14.5€)
+  ✓ Ojja Bœuf (13.5€)
+  ✓ Ojja Poulet (13.5€)
+  ✓ Ojja Viande Hachée (13.5€)
+  ✓ Ojja Merguez (13.5€)
+  ✓ Omelette Nature (7.5€)
+  ✓ Omelette Fromage (8.5€)
+  ✓ Omelette Champignons Fromage (9.5€)
+  ✓ Salade Chèvre (7.5€)
+  ✓ Salade Royale (7.5€)
+  ✓ Salade Saumon (7.5€)
+  ✓ Salade Tunisienne (7.5€)
+  ✓ Ailes de poulet (6 pièces) (6€)
+  ✓ Ailes de poulet (12 pièces) (10.5€)
+  ✓ Filets de poulet croustillants (6 pièces) (7.5€)
+  ✓ Filets de poulet croustillants (12 pièces) (13.5€)
+  ✓ Menu Cheese Burger (Enfant) (6€)
+  ✓ Menu Nuggets (Enfant) (6€)
+  ✓ Frites Moyenne (2.5€)
+  ✓ Frites Grande (4€)
+  ✓ Glace (3.8€)
+  ✓ Tarte Daim (3.8€)
+  ✓ Tiramisu (3.8€)
+  ✓ Coca-Cola 33cl (1.5€)
+  ✓ Coca-Cola Zero 33cl (1.5€)
+  ✓ Fanta Orange 33cl (1.5€)
+  ✓ Sprite 33cl (1.5€)
+  ✓ Oasis Tropical 33cl (1.5€)
+  ✓ Orangina 33cl (1.5€)
+  ✓ Eau Plate 50cl (1€)
+  ✓ Capri-Sun (1.5€)
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 60 menu items
+
+
+Verifying French integrity...
+  - Categories: 13
+  - Items: 63
+  - Item Attributes: 6
+  - Item Variations: 772
+  - Item Extras: 530
+  - Item Addons: 180
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Nos Sandwichs' contains English word: Sandwich
+  - Category 'Nos Burgers' contains English word: Burger
+  - Category 'Nos Salades' contains English word: Salad
+
+✅ Menu seeding completed successfully!
+====================================
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Nos Tacos (template: tacos)
+  ✓ Created: Nos Sandwichs (template: sandwich)
+  ✓ Created: Nos Burgers (template: burger)
+  ✓ Created: Nos Assiettes (template: assiette)
+  ✓ Created: Ojja (template: simple)
+  ✓ Created: Omelettes (template: omelette)
+  ✓ Created: Nos Salades (template: salade)
+  ✓ Created: Poulet croustillant (template: snacking)
+  ✓ Created: Nos Menus Enfants (template: simple)
+  ✓ Created: Frites & Accompagnements (template: simple)
+  ✓ Created: Nos Desserts (template: simple)
+  ✓ Created: Nos Boissons (template: simple)
+  ✓ Created: Suppléments (template: simple)
+✓ Created 13 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ✓ Tacos M (1 Viande) (6.5€)
+  ✓ Tacos L (2 Viandes) (8.5€)
+  ✓ Tacos XL (3 Viandes) (10.5€)
+  ✓ Tacos XXL (4 Viandes) (12.5€)
+  ✓ Le Méga (8€)
+  ✓ Le Terminator (9€)
+  ✓ Le Suprême (7€)
+  ✓ Le Cayenne (7€)
+  ✓ Sandwich Froid (4.5€)
+  ✓ Panini (5€)
+  ✓ Sandwich Classique (Pain) (6.5€)
+  ✓ Sandwich Classique (Galette) (6.5€)
+  ✓ Burger Poulet (6€)
+  ✓ Cheese Burger (6€)
+  ✓ Fish Burger (6€)
+  ✓ Double Cheese (7€)
+  ✓ Big Burger (9€)
+  ✓ Grill Burger (8€)
+  ✓ Assiette Poulet (12.5€)
+  ✓ Assiette Kefta (12.5€)
+  ✓ Assiette Merguez (12.5€)
+  ✓ Assiette Mixte (14.5€)
+  ✓ Ojja Bœuf (13.5€)
+  ✓ Ojja Poulet (13.5€)
+  ✓ Ojja Viande Hachée (13.5€)
+  ✓ Ojja Merguez (13.5€)
+  ✓ Omelette Nature (7.5€)
+  ✓ Omelette Fromage (8.5€)
+  ✓ Omelette Champignons Fromage (9.5€)
+  ✓ Salade Chèvre (7.5€)
+  ✓ Salade Royale (7.5€)
+  ✓ Salade Saumon (7.5€)
+  ✓ Salade Tunisienne (7.5€)
+  ✓ Ailes de poulet (6 pièces) (6€)
+  ✓ Ailes de poulet (12 pièces) (10.5€)
+  ✓ Filets de poulet croustillants (6 pièces) (7.5€)
+  ✓ Filets de poulet croustillants (12 pièces) (13.5€)
+  ✓ Menu Cheese Burger (Enfant) (6€)
+  ✓ Menu Nuggets (Enfant) (6€)
+  ✓ Frites Moyenne (2.5€)
+  ✓ Frites Grande (4€)
+  ✓ Glace (3.8€)
+  ✓ Tarte Daim (3.8€)
+  ✓ Tiramisu (3.8€)
+  ✓ Coca-Cola 33cl (1.5€)
+  ✓ Coca-Cola Zero 33cl (1.5€)
+  ✓ Fanta Orange 33cl (1.5€)
+  ✓ Sprite 33cl (1.5€)
+  ✓ Oasis Tropical 33cl (1.5€)
+  ✓ Orangina 33cl (1.5€)
+  ✓ Eau Plate 50cl (1€)
+  ✓ Capri-Sun (1.5€)
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 60 menu items
+
+
+Verifying French integrity...
+  - Categories: 13
+  - Items: 63
+  - Item Attributes: 6
+  - Item Variations: 772
+  - Item Extras: 530
+  - Item Addons: 180
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Nos Sandwichs' contains English word: Sandwich
+  - Category 'Nos Burgers' contains English word: Burger
+  - Category 'Nos Salades' contains English word: Salad
+
+✅ Menu seeding completed successfully!
+====================================
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 13
+  - Existing items: 63
+  - Found French categories: 3
+  ⚠️ Found English category: 'Nos Sandwichs'
+🚨 ENGLISH MENU DETECTED! Force purging...
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Nos Tacos (template: tacos)
+  ✓ Created: Nos Sandwichs (template: sandwich)
+  ✓ Created: Nos Burgers (template: burger)
+  ✓ Created: Nos Assiettes (template: assiette)
+  ✓ Created: Ojja (template: simple)
+  ✓ Created: Omelettes (template: omelette)
+  ✓ Created: Nos Salades (template: salade)
+  ✓ Created: Poulet croustillant (template: snacking)
+  ✓ Created: Nos Menus Enfants (template: simple)
+  ✓ Created: Frites & Accompagnements (template: simple)
+  ✓ Created: Nos Desserts (template: simple)
+  ✓ Created: Nos Boissons (template: simple)
+  ✓ Created: Suppléments (template: simple)
+✓ Created 13 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ✓ Tacos M (1 Viande) (6.5€)
+  ✓ Tacos L (2 Viandes) (8.5€)
+  ✓ Tacos XL (3 Viandes) (10.5€)
+  ✓ Tacos XXL (4 Viandes) (12.5€)
+  ✓ Le Méga (8€)
+  ✓ Le Terminator (9€)
+  ✓ Le Suprême (7€)
+  ✓ Le Cayenne (7€)
+  ✓ Sandwich Froid (4.5€)
+  ✓ Panini (5€)
+  ✓ Sandwich Classique (Pain) (6.5€)
+  ✓ Sandwich Classique (Galette) (6.5€)
+  ✓ Burger Poulet (6€)
+  ✓ Cheese Burger (6€)
+  ✓ Fish Burger (6€)
+  ✓ Double Cheese (7€)
+  ✓ Big Burger (9€)
+  ✓ Grill Burger (8€)
+  ✓ Assiette Poulet (12.5€)
+  ✓ Assiette Kefta (12.5€)
+  ✓ Assiette Merguez (12.5€)
+  ✓ Assiette Mixte (14.5€)
+  ✓ Ojja Bœuf (13.5€)
+  ✓ Ojja Poulet (13.5€)
+  ✓ Ojja Viande Hachée (13.5€)
+  ✓ Ojja Merguez (13.5€)
+  ✓ Omelette Nature (7.5€)
+  ✓ Omelette Fromage (8.5€)
+  ✓ Omelette Champignons Fromage (9.5€)
+  ✓ Salade Chèvre (7.5€)
+  ✓ Salade Royale (7.5€)
+  ✓ Salade Saumon (7.5€)
+  ✓ Salade Tunisienne (7.5€)
+  ✓ Ailes de poulet (6 pièces) (6€)
+  ✓ Ailes de poulet (12 pièces) (10.5€)
+  ✓ Filets de poulet croustillants (6 pièces) (7.5€)
+  ✓ Filets de poulet croustillants (12 pièces) (13.5€)
+  ✓ Menu Cheese Burger (Enfant) (6€)
+  ✓ Menu Nuggets (Enfant) (6€)
+  ✓ Frites Moyenne (2.5€)
+  ✓ Frites Grande (4€)
+  ✓ Glace (3.8€)
+  ✓ Tarte Daim (3.8€)
+  ✓ Tiramisu (3.8€)
+  ✓ Coca-Cola 33cl (1.5€)
+  ✓ Coca-Cola Zero 33cl (1.5€)
+  ✓ Fanta Orange 33cl (1.5€)
+  ✓ Sprite 33cl (1.5€)
+  ✓ Oasis Tropical 33cl (1.5€)
+  ✓ Orangina 33cl (1.5€)
+  ✓ Eau Plate 50cl (1€)
+  ✓ Capri-Sun (1.5€)
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 60 menu items
+
+
+Verifying French integrity...
+  - Categories: 13
+  - Items: 63
+  - Item Attributes: 6
+  - Item Variations: 772
+  - Item Extras: 530
+  - Item Addons: 180
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Nos Sandwichs' contains English word: Sandwich
+  - Category 'Nos Burgers' contains English word: Burger
+  - Category 'Nos Salades' contains English word: Salad
+
+✅ Menu seeding completed successfully!
+====================================
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\MenuSeederTest[39m
+  [32;1m✓[39;22m[39m [2mmenu seeder runs with sqlite[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu seeder creates french menu[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu seeder is idempotent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Migrations\ActionLogsCompositeIndexTest[39m
+  [32;1m✓[39;22m[39m [2mcomposite branch created index exists[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Migrations\MigrationDryRunTest[39m
+  [32;1m✓[39;22m[39m [2mdry run help and default fail closed[22m[39m
+  [32;1m✓[39;22m[39m [2mdry run print command uses pretend and never fresh or rollback[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Migrations\MigrationRollbackTest[39m
+  [32;1m✓[39;22m[39m [2mbackup and rehearsal help are available and default fail closed[22m[39m
+  [32;1m✓[39;22m[39m [2msqlite backup creates manifest with hash[22m[39m
+  [32;1m✓[39;22m[39m [2mrehearsal print command documents up down up and never fresh[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\MultiVariationValidationTest[39m
+  [32;1m✓[39;22m[39m [2mpreview accepts legacy single select without quantity[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview accepts multi qty when allow repeat and within max[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview rejects total below min select with structured errors[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview rejects total above max select[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview rejects repeat when not allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit rejects repeat when not allowed before quote replay[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview accepts valid multi attribute mix[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview accepts missing or empty item variations[22m[39m
+  [32;1m✓[39;22m[39m [2mrule ignores unknown variation id for constraint[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OSSReadOnlyTest[39m
+  [32;1m✓[39;22m[39m [2moss system is strictly read only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\CorrelationIdEndToEndTest[39m
+  [32;1m✓[39;22m[39m [2mclient provided correlation id is echoed in response header[22m[39m
+  [32;1m✓[39;22m[39m [2mmissing correlation id is generated by middleware[22m[39m
+  [32;1m✓[39;22m[39m [2mcorrelation id works on anonymous routes csp report[22m[39m
+  [32;1m✓[39;22m[39m [2mlog listen does not capture a different correlation id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\CspReportEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mvalid csp report is accepted and logged to observability channel[22m[39m
+  [32;1m✓[39;22m[39m [2mmalformed payload is still accepted with warning log[22m[39m
+  [32;1m✓[39;22m[39m [2mdocument uri with sensitive query params is redacted[22m[39m
+  [32;1m✓[39;22m[39m [2mroute is anonymous no auth required[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\DispatchDomainEventsObservabilityIntegrationTest[39m
+  [32;1m✓[39;22m[39m [2mmetrics insert failure does not break outbox finalisation[22m[39m
+  [32;1m✓[39;22m[39m [2mworker context propagates domain event correlation id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\EnsureCorrelationIdPropagatesToMetricsTest[39m
+  [32;1m✓[39;22m[39m [2mrequest correlation id header is propagated to sync metrics[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\ObservabilityLogChannelTest[39m
+  [32;1m✓[39;22m[39m [2mobservability channel is configured[22m[39m
+  [32;1m✓[39;22m[39m [2msecurity and hardware channels preserved for  k6  k4 heritage[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\PostLaunchObservabilityChecklistTest[39m
+  [32;1m✓[39;22m[39m [2mobservability doc and runbook cover required kpis rules and cadence[22m[39m
+  [32;1m✓[39;22m[39m [2mchecker help and default fail closed[22m[39m
+  [32;1m✓[39;22m[39m [2mchecker passes with complete green evidence packet[22m[39m
+  [32;1m✓[39;22m[39m [2mchecker blocks p0 anomaly evidence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SecurityLogChannelTest[39m
+  [32;1m✓[39;22m[39m [2msecurity channel is configured[22m[39m
+  [32;1m✓[39;22m[39m [2msecurity channel is resolvable and writable[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SloEvaluatorJobTest[39m
+  [32;1m✓[39;22m[39m [2mevaluates active branches and persists snapshot[22m[39m
+  [32;1m✓[39;22m[39m [2mmetric collector classifies no data status[22m[39m
+  [32;1m✓[39;22m[39m [2mpercentile classification respects adr7 thresholds[22m[39m
+  [32;1m✓[39;22m[39m [2mjob is resilient to branch processing error[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SyncMetricsRecorderTest[39m
+  [32;1m✓[39;22m[39m [2mrecord event dispatched inserts outbox dispatch latency metric[22m[39m
+  [32;1m✓[39;22m[39m [2mrecord websocket auth failure inserts count one metric[22m[39m
+  [32;1m✓[39;22m[39m [2mrecord kds sync fallback includes reason label[22m[39m
+  [32;1m✓[39;22m[39m [2mrecord client metric whitelist rejects unknown type[22m[39m
+  [32;1m✓[39;22m[39m [2mrecord silently swallows db failure to protect business flow[22m[39m
+  [32;1m✓[39;22m[39m [2mrecorder is singleton in container[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SyncOverviewControllerTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated user receives 401[22m[39m
+  [32;1m✓[39;22m[39m [2madmin user can query sync overview for their branch[22m[39m
+  [32;1m✓[39;22m[39m [2moverview returns p50 p95 p99 for dispatch latency metric[22m[39m
+  [32;1m✓[39;22m[39m [2moverview filters by since query param[22m[39m
+  [32;1m✓[39;22m[39m [2moverview includes recent failures from domain events table[22m[39m
+  [32;1m✓[39;22m[39m [2mclient metrics endpoint accepts valid batch returns 202[22m[39m
+  [32;1m✓[39;22m[39m [2mclient metrics endpoint rejects unknown metric type with 422[22m[39m
+  [32;1m✓[39;22m[39m [2mclient metrics endpoint rejects batch over 200 with 422[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped operator cannot read another branch metrics[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped operator omitting branch id is force scoped to own branch[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal admin can aggregate across branches when omitting branch id[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch manager without kds permission cannot read sync overview[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch manager cannot post client metrics either[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator cannot read another branch metrics[22m[39m
+  [32;1m✓[39;22m[39m [2mnull branch id without admin role cannot aggregate globally[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OpsPreflightCaisseV1Test[39m
+  [32;1m✓[39;22m[39m [2mops preflight help and default fail closed[22m[39m
+  [32;1m✓[39;22m[39m [2mops preflight passes with explicit rehearsal and branch evidence[22m[39m
+  [32;1m✓[39;22m[39m [2mpreflight production help is registered[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderCancellationLoyaltyTest[39m
+  [32;1m✓[39;22m[39m [2mcancel order refunds loyalty points[22m[39m
+  [32;1m✓[39;22m[39m [2mcancel order without loyalty does nothing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderFlowTest[39m
+  [32;1m✓[39;22m[39m [2morder without auth returns 401[22m[39m
+  [32;1m✓[39;22m[39m [2morder price recalculated server side[22m[39m
+  [32;1m✓[39;22m[39m [2minvalid status transition rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderItemCompositionSnapshotTest[39m
+  [32;1m✓[39;22m[39m [2mcolumn composition snapshot exists after migration[22m[39m
+  [32;1m✓[39;22m[39m [2morderitem cast to array[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy orderitem with null snapshot works in resource fallback[22m[39m
+  [32;1m✓[39;22m[39m [2mresource prefers snapshot over legacy field[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot is immutable after variation rename[22m[39m
+  [32;1m✓[39;22m[39m [2mbuilder supports quantity field[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderPipeline\KioskFullFlowE2ETest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order full flow to kds with variations extras allergens[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderQuoteHmacKeyRequiredTest[39m
+  [32;1m✓[39;22m[39m [2morder quote hmac key uses configured app key[22m[39m
+  [32;1m✓[39;22m[39m [2morder quote hmac key fails closed when app key missing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderRequestNegativeTotalTest[39m
+  [32;1m✓[39;22m[39m [2mfrontend order rejects negative total[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend order rejects negative subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend order rejects negative discount[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderSetupRequestNegativeValuesTest[39m
+  [32;1m✓[39;22m[39m [2morder setup update rejects negative basic delivery charge[22m[39m
+  [32;1m✓[39;22m[39m [2morder setup update rejects negative food preparation time[22m[39m
+  [32;1m✓[39;22m[39m [2morder setup update accepts valid non negative payload[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderStateTransitionTest[39m
+  [32;1m✓[39;22m[39m [2minvalid order state transition is rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderStatusNoopSideEffectsTest[39m
+  [32;1m✓[39;22m[39m [2mrepeated cancel invokes cashback once only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\CleanupStalePendingOrdersTest[39m
+  [32;1m✓[39;22m[39m [2mcancels stale pending kiosk orders only[22m[39m
+  [32;1m✓[39;22m[39m [2mkernel registers cleanup job every five minutes[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\CrossItemGuardTest[39m
+  [32;1m✓[39;22m[39m [2mpos pricing request rejects forbidden item combo[22m[39m
+  [32;1m✓[39;22m[39m [2mtable and web also enforce[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\IdempotencyBranchScopedTest[39m
+  [32;1m✓[39;22m[39m [2msame key different branches ok[22m[39m
+  [32;1m✓[39;22m[39m [2msame key same branch duplicate rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\KDSAllergenVisibilityTest[39m
+  [32;1m✓[39;22m[39m [2mkds endpoint exposes per item allergens snapshot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\KioskIdsOnlyPayloadTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk ids only payload is accepted and total is recomputed server side[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\OrderAllergenSnapshotComposedTest[39m
+  [32;1m✓[39;22m[39m [2msentinel base item plus extra with milk should snapshot lait[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Orders\OrderAllergenSnapshotTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order stores allergens snapshot from pivot[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot remains immutable after item allergens change[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Outbox\CatalogEventDispatchAfterCommitTest[39m
+  [32;1m✓[39;22m[39m [2mcatalog crud events not dispatched when transaction roll back[22m[39m
+  [32;1m✓[39;22m[39m [2mcatalog crud events dispatched after successful commit[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Outbox\OutboxConcurrentWorkerDedupeTest[39m
+  [32;1m✓[39;22m[39m [2mtwo sequential handle calls only broadcast once[22m[39m
+  [32;1m✓[39;22m[39m [2mclaim is committed before broadcast[22m[39m
+  [32;1m✓[39;22m[39m [2mbroadcast failure releases claim for retry[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload contract violation releases claim and writes last error[22m[39m
+  [32;1m✓[39;22m[39m [2munrelated domain events do not block each other[22m[39m
+  [32;1m✓[39;22m[39m [2mskip does not increment attempts or clear last error[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed callback preserves contract violation prefix for payload mismatch[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed callback stores raw message for generic exceptions[22m[39m
+  [32;1m✓[39;22m[39m [2mevent with null channel marks dispatched without broadcast[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Outbox\OutboxProductionLikeSimulationTest[39m
+  [32;1m✓[39;22m[39m [2mrescue requeues only stale retriable pending events[22m[39m
+  [32;1m✓[39;22m[39m [2mretry failed resets only recent failed events[22m[39m
+  [32;1m✓[39;22m[39m [2mbroadcast failure releases claim and rescue can requeue for successful retry[22m[39m
+  [32;1m✓[39;22m[39m [2mglobal catalog event fans out to active branch channels with valid envelopes[22m[39m
+  [32;1m✓[39;22m[39m [2mcontract violation never reaches broadcaster and remains retriable[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OutboxRescueTest[39m
+  [32;1m✓[39;22m[39m [2moutbox rescue commands are registered[22m[39m
+  [32;1m✓[39;22m[39m [2moutbox rescue requeues stale pending event on high queue[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OutboxTest[39m
+  [32;1m✓[39;22m[39m [2morder created persists domain event[22m[39m
+  [32;1m✓[39;22m[39m [2mdomain event not persisted on rollback[22m[39m
+  [32;1m✓[39;22m[39m [2mdomain event persisted only after commit[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch job marks event dispatched[22m[39m
+  [32;1m✓[39;22m[39m [2mrescue command requeues stale events[22m[39m
+  [32;1m✓[39;22m[39m [2mretry failed resets and requeues[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\POSComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2mpos can create order[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can list orders[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can view order details[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can change status to preparing[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can change payment status[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can delete order[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can export orders[22m[39m
+  [32;1m✓[39;22m[39m [2mpos can reorder items[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\CounterDeferredPaymentLifecycleTest[39m
+  [32;1m✓[39;22m[39m [2mpos confirm allocates fiscal sequence and payment event[22m[39m
+  [32;1m✓[39;22m[39m [2mpos cancel counter payment does not allocate fiscal sequence[22m[39m
+  [32;1m✓[39;22m[39m [2mpending counter list is branch scoped[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter confirm does not cross branch[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter confirm requires pos permission[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\PaymentMethodAttemptAuditTest[39m
+  [32;1m✓[39;22m[39m [2mblocked payment method attempt is audited[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\PaymentMethodRestrictedTest[39m
+  [32;1m✓[39;22m[39m [2munsupported payment method is rejected server side[22m[39m
+  [32;1m✓[39;22m[39m [2mallowed pilot method can capture payment[22m[39m
+  [32;1m✓[39;22m[39m [2menv cannot silently enable non code allowlisted method[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\PaymentStateMachineTransitionsTest[39m
+  [32;1m✓[39;22m[39m [2mpending counter can only be confirmed or canceled[22m[39m
+  [32;1m✓[39;22m[39m [2mterminal payment states do not reopen[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\StripeActivationGuardTest[39m
+  [32;1m✓[39;22m[39m [2mstripe public payment activation is blocked without gate clearance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Payment\WebPaymentDisabledTest[39m
+  [32;1m✓[39;22m[39m [2mpublic web payment entrypoint is disabled for v1[22m[39m
+  [32;1m✓[39;22m[39m [2mpublic web payment callbacks are disabled for v1[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PaymentConfirmAbilityTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk token without kiosk order ability cannot confirm payment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PaymentConfirmCrossBranchTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk machine cannot confirm order from another branch[22m[39m
+  [32;1m✓[39;22m[39m [2mcash kiosk order cannot be confirmed as card payment[22m[39m
+  [32;1m✓[39;22m[39m [2mduplicate tpe transaction reference cannot pay two orders[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment confirm rejects unpaid non pending order[22m[39m
+  [32;1m✓[39;22m[39m [2malready paid order requires same tpe transaction for idempotence[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PaymentConfirmMachineResolverTest[39m
+  [32;1m✓[39;22m[39m [2mpayment confirm uses kiosk machine branch when user branch is global[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PaymentNoopIdempotencyTest[39m
+  [32;1m✓[39;22m[39m [2mcashback is idempotent for same order[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment transaction reference cannot be reused for another order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\DiningTableReleaseAfterPosOrderTest[39m
+  [32;1m✓[39;22m[39m [2mreleases table when occupied by same paid dine in order[22m[39m
+  [32;1m✓[39;22m[39m [2mdoes not release when table held by another order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\FloorplanControllerTest[39m
+  [32;1m✓[39;22m[39m [2mstate returns only tables from the current branch[22m[39m
+  [32;1m✓[39;22m[39m [2massign on a free table marks it occupied and creates an audit log[22m[39m
+  [32;1m✓[39;22m[39m [2massign on a table occupied by another order returns 409[22m[39m
+  [32;1m✓[39;22m[39m [2massign on a table already occupied by the same order is idempotent[22m[39m
+  [32;1m✓[39;22m[39m [2mrelease marks the table free without modifying the order table reference[22m[39m
+  [32;1m✓[39;22m[39m [2mtransfer moves the order to the target table and logs the action[22m[39m
+  [32;1m✓[39;22m[39m [2mtransfer dispatches order table changed event[22m[39m
+  [32;1m✓[39;22m[39m [2massign dispatches order table changed event[22m[39m
+  [32;1m✓[39;22m[39m [2massign idempotent does not re dispatch event[22m[39m
+  [32;1m✓[39;22m[39m [2mtransfer within the same branch frees the source and occupies the target[22m[39m
+  [32;1m✓[39;22m[39m [2mtransfer cross branch returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2massign syncs orders dining table id on occupation[22m[39m
+  [32;1m✓[39;22m[39m [2massign with non existent order id returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2massign with cross branch order id returns 422[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\PosMenuRuntimeAccessTest[39m
+  [32;1m✓[39;22m[39m [2mpos operator can read runtime menu without catalog management permission[22m[39m
+  [32;1m✓[39;22m[39m [2mpos runtime details reject items hidden from pos surface[22m[39m
+  [32;1m✓[39;22m[39m [2mpos runtime menu reads force cashier branch scope even if forged[22m[39m
+  [32;1m✓[39;22m[39m [2mpos runtime menu reads do not trip mutation throttle[22m[39m
+  [32;1m✓[39;22m[39m [2mnon pos user cannot read pos runtime categories[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator bootstrap survives missing default access row[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\PosPurgeParkedScheduleTest[39m
+  [32;1m✓[39;22m[39m [2mkernel registers pos purge parked daily[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Pos\QuoteBindingTest[39m
+  [32;1m✓[39;22m[39m [2mpos commit requires quote token and signature[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit consumes quote bound to branch actor and items[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit rejects quote from different actor[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit rejects already committed quote replay[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosCashEndpointSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpos kiosk cash collection uses dedicated pos route[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosCollectKioskCashRouteTest[39m
+  [32;1m✓[39;22m[39m [2mpos collect kiosk cash route accepts pending cash order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosDineInServerGateTest[39m
+  [32;1m✓[39;22m[39m [2mdine in rejected when flag off[22m[39m
+  [32;1m✓[39;22m[39m [2mdine in requires table when flag on[22m[39m
+  [32;1m✓[39;22m[39m [2morder type string casts to int[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosDiscountForgeryTest[39m
+  [32;1m✓[39;22m[39m [2mdiscount permission uses backend subtotal not forged client subtotal[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosDiscountPermissionTest[39m
+  [32;1m✓[39;22m[39m [2mdiscount without motif is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 5pct without permission is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 5pct with cashier permission is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 25pct cashier only is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 25pct with manager permission is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 75pct manager only is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscount 75pct with unlimited is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mzero discount does not require motif or permission[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosDiscountTest[39m
+  [32;1m✓[39;22m[39m [2mmanual discount is applied when less than or equal to subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount is rejected when greater than subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon takes priority over manual discount[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosKioskPricingParityTest[39m
+  [32;1m✓[39;22m[39m [2mcase a two meat mix 1 plus 1 totals match[22m[39m
+  [32;1m✓[39;22m[39m [2mcase b three same meat totals match[22m[39m
+  [32;1m✓[39;22m[39m [2mcase c four meat 2 plus 1 plus 1 totals match[22m[39m
+  [32;1m✓[39;22m[39m [2mcase d with paid extra totals match[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosManualDiscountAuditTest[39m
+  [32;1m✓[39;22m[39m [2mmanual pos discount writes actor reason and backend subtotal audit[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosOrderDestroyTest[39m
+  [32;1m✓[39;22m[39m [2mcannot destroy order from another branch[22m[39m
+  [32;1m✓[39;22m[39m [2mcannot destroy paid order without permission[22m[39m
+  [32;1m✓[39;22m[39m [2mcan destroy paid order with permission[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy writes action log[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosOrderRequestNullableTotalTest[39m
+  [32;1m✓[39;22m[39m [2mpayload without total or subtotal is accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mspoofed low total is ignored server recomputes[22m[39m
+  [32;1m✓[39;22m[39m [2mcash received below server total is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mnegative subtotal rejected at validation[22m[39m
+  [32;1m✓[39;22m[39m [2mnegative pos received amount rejected at validation[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosOrderRestoreIntegrityTest[39m
+  [32;1m✓[39;22m[39m [2mrestoring a soft deleted order throws[22m[39m
+  [32;1m✓[39;22m[39m [2mforce deleting a trashed order still works[22m[39m
+  [32;1m✓[39;22m[39m [2msave on a live order is not blocked by restore guard[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosOrderTaxTest[39m
+  [32;1m✓[39;22m[39m [2mpos order tax is calculated from db[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment status change requires role[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosParkedOrderTest[39m
+  [32;1m✓[39;22m[39m [2mpark creates a database entry[22m[39m
+  [32;1m✓[39;22m[39m [2mlist returns only orders for the same operator and branch[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall deletes the entry and returns the payload[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall on unknown id returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscard deletes the entry[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall cross branch returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2mdiscard cross branch returns 404[22m[39m
+  [32;1m✓[39;22m[39m [2mpark with the same idempotency token creates only one row[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosParkedRecallVariationAvailabilityTest[39m
+  [32;1m✓[39;22m[39m [2mrecall drops unavailable variation and returns warning[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall succeeds unchanged when all variations available[22m[39m
+  [32;1m✓[39;22m[39m [2mrecall returns warning count matching dropped variations[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosPricingSsotProofTest[39m
+  [32;1m✓[39;22m[39m [2mpos order overwrites client forged pricing with ssot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosPriorityApiTest[39m
+  [32;1m✓[39;22m[39m [2minvalid coupon id returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery with foreign address returns 422[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosReceiptFiscalExposureTest[39m
+  [32;1m✓[39;22m[39m [2morder details resource exposes fiscal branch operator and payments breakdown[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy order without fiscal sequence exposes null[22m[39m
+  [32;1m✓[39;22m[39m [2maudit chain fingerprint is twelve hex chars when audit log exists[22m[39m
+  [32;1m✓[39;22m[39m [2maudit chain fingerprint is null without audit row[22m[39m
+  [32;1m✓[39;22m[39m [2morder item resource returns snapshot lines for receipt consumption[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosReceiptTaxLinesTest[39m
+  [32;1m✓[39;22m[39m [2mtax lines are grouped by rate[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosTicketRestaurantPaymentTest[39m
+  [32;1m✓[39;22m[39m [2mpos order accepts ticket restaurant with reference note[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosUITest[39m
+  [32;1m✓[39;22m[39m [2mpos order creates with takeaway order type[22m[39m
+  [32;1m✓[39;22m[39m [2mcompany data is populated in pos component[22m[39m
+  [32;1m✓[39;22m[39m [2morder total includes delivery charge[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosWalkInAndDeliveryFeeTest[39m
+  [32;1m✓[39;22m[39m [2mpos quote resolves walk in customer and authoritative delivery fee[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PricingIntegrityTest[39m
+  [32;1m✓[39;22m[39m [2mserver rejects forged pricing in order payload[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PrinterControllerTest[39m
+  [32;1m✓[39;22m[39m [2madmin can create a printer[22m[39m
+  [32;1m✓[39;22m[39m [2mindex returns only printers for the current branch[22m[39m
+  [32;1m✓[39;22m[39m [2mtest print returns ok with null transport in testing[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate changes the station[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PrinterServiceTest[39m
+  [32;1m✓[39;22m[39m [2mtest print returns true and captures escpos payload[22m[39m
+  [32;1m✓[39;22m[39m [2mtest print embeds the printer name in payload[22m[39m
+  [32;1m✓[39;22m[39m [2mopen drawer sends the cash drawer sequence[22m[39m
+  [32;1m✓[39;22m[39m [2msend raw returns false when transport fails[22m[39m
+  [32;1m✓[39;22m[39m [2mprinter model is branch scoped[22m[39m
+  [32;1m✓[39;22m[39m [2mline kv respects width chars[22m[39m
+  [32;1m✓[39;22m[39m [2mselect code page emits esc t sequence[22m[39m
+  [32;1m✓[39;22m[39m [2mencode for printer returns single byte string[22m[39m
+  [32;1m✓[39;22m[39m [2mtest print injects codepage selection in payload[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\ProdLike\ProdLikeConcurrencyTest[39m
+  [33;1m-[39;22m[39m [2mmysql redis stock decrement survives 50 parallel workers[22m[39m[33m → Prod-like concurrency test requires DB_CONNECTION=mysql.[39m
+  [33;1m-[39;22m[39m [2mmysql redis queue numbers stay unique for 50 parallel pos and kiosk workers[22m[39m[33m → Prod-like concurrency test requires DB_CONNECTION=mysql.[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Queue\DispatchDomainEventsFailedCallbackTest[39m
+  [32;1m✓[39;22m[39m [2mfailed callback does not crash when domain event row is missing[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed callback mirrors contract violation prefix in log context[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed callback categorizes generic exceptions as runtime failure[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed callback does not emit php warnings when sentry sdk absent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Queue\QueueRoutingTest[39m
+  [32;1m✓[39;22m[39m [2mdispatch domain events job targets high queue[22m[39m
+  [32;1m✓[39;22m[39m [2msend fcm notification job targets notifications queue[22m[39m
+  [32;1m✓[39;22m[39m [2msend fcm via topic also targets notifications queue[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch domain events default queue property[22m[39m
+  [32;1m✓[39;22m[39m [2msend fcm default queue property[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch domain events backoff curve outlasts pusher restart[22m[39m
+  [32;1m✓[39;22m[39m [2msend fcm backoff is short to avoid amplifying throttling[22m[39m
+  [32;1m✓[39;22m[39m [2mdispatch time queue override wins over constructor default[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Queue\ShouldQueueJobsDeclareTriesTest[39m
+  [32;1m✓[39;22m[39m [2mevery should queue job in app jobs declares a retry budget[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QueueNumberConcurrencyTest[39m
+  [32;1m✓[39;22m[39m [2mdatabase rejects duplicate queue number within same branch and business date[22m[39m
+  [32;1m✓[39;22m[39m [2mdatabase allows same queue number for same branch on different business dates[22m[39m
+  [32;1m✓[39;22m[39m [2mdatabase allows same queue number across different branches on same business date[22m[39m
+  [32;1m✓[39;22m[39m [2mnull queue numbers remain allowed for legacy rows[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk allocators share gapless sequence across 50 creations[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteCurrencyOriginTest[39m
+  [32;1m✓[39;22m[39m [2mquote currency comes from backend settings and is signed[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk quote resolves branch from machine[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteDiscountAuthoritativeTest[39m
+  [32;1m✓[39;22m[39m [2mquote discount uses backend subtotal not forged client total[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteExpirationTest[39m
+  [32;1m✓[39;22m[39m [2mexpired quote replay is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit with expired quote is rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteReplayIdempotencyTest[39m
+  [32;1m✓[39;22m[39m [2mquote consume replay is idempotent[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit consumes quote with order id[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk commit consumes quote with frontend order id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteTamperTest[39m
+  [32;1m✓[39;22m[39m [2mquote token replay with changed intent is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit with tampered quote intent is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mpos commit rejects cross branch quote replay[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RepairMultiVariationFixturesSeederTest[39m
+  [32;1m✓[39;22m[39m [2mdry run does not mutate db[22m[39m
+  [32;1m✓[39;22m[39m [2mdry run writes audit report[22m[39m
+  [32;1m✓[39;22m[39m [2mforce with empty rules does not mutate db[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Requests\ItemAttributeRequestTest[39m
+  [32;1m✓[39;22m[39m [2maccepts product composer selection constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mrejects max select below min select[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Requests\ItemCategoryRequestTest[39m
+  [32;1m✓[39;22m[39m [2maccepts hierarchy and channels[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Requests\ItemRequestTest[39m
+  [32;1m✓[39;22m[39m [2maccepts all kiosk flags[22m[39m
+  [32;1m✓[39;22m[39m [2mrejects invalid nested modifier surface contract[22m[39m
+  [32;1m✓[39;22m[39m [2maccepts valid nested modifier surface contract[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RolloutCanaryDrillTest[39m
+  [32;1m✓[39;22m[39m [2mrollout config declares flags phases and predicates[22m[39m
+  [32;1m✓[39;22m[39m [2mrollout drill help and default fail closed[22m[39m
+  [32;1m✓[39;22m[39m [2mrollout drill passes with green preflight and metrics[22m[39m
+  [32;1m✓[39;22m[39m [2mrollout drill blocks on rollback predicate breach[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Routes\MenuControllerRateLimitTest[39m
+  [32;1m✓[39;22m[39m [2mmenu uses kiosk menu rate limit[22m[39m
+  [32;1m✓[39;22m[39m [2mlimit exceeded returns 429[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\CorsTest[39m
+  [32;1m✓[39;22m[39m [2mcors config does not contain wildcard[22m[39m
+  [32;1m✓[39;22m[39m [2mcors allows credentials only with specific origins[22m[39m
+  [32;1m✓[39;22m[39m [2mcors preflight rejects unknown origin[22m[39m
+  [32;1m✓[39;22m[39m [2mcors preflight allows app url origin[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\RateLimitTest[39m
+  [32;1m✓[39;22m[39m [2madmin mutation rate limit returns 429[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin rate limit[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout limiter respects auth config override[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout env example documents prod safe defaults[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\SecurityComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot access admin dashboard[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot delete branch[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot create item[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot edit item price[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer cannot access admin routes[22m[39m
+  [32;1m✓[39;22m[39m [2mchef cannot see other branch orders[22m[39m
+  [32;1m✓[39;22m[39m [2mpos recalculates prices server side[22m[39m
+  [32;1m✓[39;22m[39m [2minvalid status transition is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2madmin routes require api key[22m[39m
+  [32;1m✓[39;22m[39m [2mrevoked token is rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Seeders\ComposerPermissionSeederProductionTest[39m
+  [32;1m✓[39;22m[39m [2mcomposer permission seeder is wired into database seeder[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer permission seeder grants expected catalog permissions[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Seeders\RolePermissionSeederTest[39m
+  [32;1m✓[39;22m[39m [2mbranch manager receives expected permissions[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator receives expected permissions[22m[39m
+  [32;1m✓[39;22m[39m [2mchef receives expected permissions[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\CleanupVsConfirmRaceSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mlate payment confirm after cleanup is rejected and audited[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\ClientTotalWriteForbiddenSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mclient total lint passes current order write surfaces[22m[39m
+  [32;1m✓[39;22m[39m [2mclient total lint rejects direct request total assignment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\FiscalZBranchExactnessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mz report aggregate counts only requested branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\FrenchRuntimeNoBangladeshDemoDataSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mcleanup demo data command reports legacy rows without mutating database[22m[39m
+  [32;1m✓[39;22m[39m [2mruntime seeders do not reintroduce bangladesh currency or bundle bangla locale[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\IdempotencyRecoveryBranchScopedTest[39m
+  [32;1m✓[39;22m[39m [2mpos recovery returns existing order in same branch only[22m[39m
+  [32;1m✓[39;22m[39m [2mpos recovery resolves same key to requested branch when both branches have it[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk recovery returns existing order in same branch only[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk recovery resolves same key to requested branch when both branches have it[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\KdsExpectedStatusConflictSentinelTest[39m
+  [32;1m✓[39;22m[39m [2msecond kds bump with same expected status returns conflict[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\KdsTransitionWhitelistSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mkds cannot cancel order from kitchen screen[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\OrderListBranchExactnessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2morder list branch id filter is exact not substring[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\OrderShowBranchGuardSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mbranch staff cannot show foreign branch order[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\OrderStatusNoopSideEffectsSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mrepeated cancel invokes cashback once only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\OssAdminBranchPolicySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mbranch staff cannot request global oss scope but global admin can[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PaymentConfirmAbilitySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mnon kiosk staff token cannot confirm kiosk card payment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PaymentConfirmCashOrderSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mcash kiosk order cannot be confirmed as card payment[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PaymentConfirmConcurrencySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mduplicate tpe transaction reference cannot pay two orders[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PaymentConfirmCrossBranchSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk machine cannot confirm order from another branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PlaywrightFixtureCleanupCommandTest[39m
+  [32;1m✓[39;22m[39m [2mdry run reports playwright fixtures without mutating database[22m[39m
+  [32;1m✓[39;22m[39m [2mapply removes only prefixed playwright fixtures[22m[39m
+  [32;1m✓[39;22m[39m [2mapply requires explicit confirmation[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PosCashEndpointSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpos has dedicated collect kiosk cash route[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PosReorderHistoricalPricingSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mreorder items returns historical snapshot but commit uses current quote ssot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PosSubtotalForgerySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpos discount permission uses backend subtotal not forged client subtotal[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\QueueNumberUniquenessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2morders have database unique guard for branch business date queue number[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\TransactionBranchExactnessSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mbranch staff cannot query transactions for another branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\ItemCategoryHierarchyTest[39m
+  [32;1m✓[39;22m[39m [2mdepth 2 enforced[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Menu\MenuProjectionComposerProfileTest[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection consume published composer profile without price duplication[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk legacy menu and canonical projection share composer profile steps[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped profile wins over global profile[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer projection filters inactive variation and extra choices[22m[39m
+  [32;1m✓[39;22m[39m [2mstockable composer choices expose branch stock rupture for variations extras and addons[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Menu\MenuProjectionParitySentinelTest[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection keep shared item identity price and availability[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection filter channel specific composition without price drift[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection filter inactive unavailable and hidden addons[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk projection include composer selection constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk legacy menu shared fields match canonical projection[22m[39m
+  [32;1m✓[39;22m[39m [2mpos and kiosk consume published composer profile for shared steps[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Menu\MenuProjectionServiceTest[39m
+  [32;1m✓[39;22m[39m [2munsupported channel is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope shape is contract stable[22m[39m
+  [32;1m✓[39;22m[39m [2mnull channels means item visible everywhere[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk only item is hidden on pos[22m[39m
+  [32;1m✓[39;22m[39m [2mpos only category is hidden on kiosk[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk label overrides name only on kiosk[22m[39m
+  [32;1m✓[39;22m[39m [2mchannel specific sort is applied[22m[39m
+  [32;1m✓[39;22m[39m [2mavailability row marks item unavailable[22m[39m
+  [32;1m✓[39;22m[39m [2mabsent availability row defaults to available[22m[39m
+  [32;1m✓[39;22m[39m [2mavailability is scoped to the requested branch[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk emoji is exposed only on kiosk[22m[39m
+  [32;1m✓[39;22m[39m [2mallergen flags are passed through[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot version is returned and monotonic[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Pricing\ComposerStepConstraintTest[39m
+  [32;1m✓[39;22m[39m [2mrequired composer variation step is enforced server side[22m[39m
+  [32;1m✓[39;22m[39m [2mvalid composer variation step is accepted server side[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer extra step rejects over max and repeat when not allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mrequired composer addon step is enforced server side[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer addon step rejects branch unavailable addon item[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer addon step rejects inactive or hidden addon item[22m[39m
+  [32;1m✓[39;22m[39m [2mstockable variation and extra steps reject branch stock rupture[22m[39m
+  [32;1m✓[39;22m[39m [2mstockable addon step rejects branch stock rupture[22m[39m
+  [32;1m✓[39;22m[39m [2morder quote canonical modifiers include addons[22m[39m
+  [32;1m✓[39;22m[39m [2mcomposer addon step rejects repeat when not allowed[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch scoped composer profile wins for pricing constraints[22m[39m
+  [32;1m✓[39;22m[39m [2mpublished profile rejects stale choice ids not in current projection[22m[39m
+  [32;1m✓[39;22m[39m [2mpricing rejects legacy published profile with unsupported source type[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Pricing\PricingServiceMultiQtyTest[39m
+  [32;1m✓[39;22m[39m [2mlegacy single variation no quantity yields baseline price[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy single variation with explicit quantity one is identical[22m[39m
+  [32;1m✓[39;22m[39m [2mfour same meats allow repeat true[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo plus two mixed meats[22m[39m
+  [32;1m✓[39;22m[39m [2mthree plus one mixed[22m[39m
+  [32;1m✓[39;22m[39m [2mviolation max select returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mviolation min select returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mviolation allow repeat false[22m[39m
+  [32;1m✓[39;22m[39m [2mextras with quantity field multiplies price[22m[39m
+  [32;1m✓[39;22m[39m [2mssot path emits composition snapshot in insert rows[22m[39m
+  [32;1m✓[39;22m[39m [2mssot snapshot includes attribute name and extras[22m[39m
+  [32;1m✓[39;22m[39m [2mssot legacy payload without quantity still emits snapshot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\Pricing\PricingServiceTest[39m
+  [32;1m✓[39;22m[39m [2mempty cart produces zero everywhere[22m[39m
+  [32;1m✓[39;22m[39m [2msingle line pos rounds totals and tax[22m[39m
+  [32;1m✓[39;22m[39m [2msingle line web does not round[22m[39m
+  [32;1m✓[39;22m[39m [2mzero priced item is valid[22m[39m
+  [32;1m✓[39;22m[39m [2mquantity is clamped to minimum one[22m[39m
+  [32;1m✓[39;22m[39m [2mmulti line same tax sums correctly[22m[39m
+  [32;1m✓[39;22m[39m [2mmulti line mixed tax accumulates per line[22m[39m
+  [32;1m✓[39;22m[39m [2mvariation price adds to unit[22m[39m
+  [32;1m✓[39;22m[39m [2mextra price adds to unit[22m[39m
+  [32;1m✓[39;22m[39m [2mcross item variation rejected when guards on[22m[39m
+  [32;1m✓[39;22m[39m [2mcross item extra rejected when guards on[22m[39m
+  [32;1m✓[39;22m[39m [2mcross item variation rejected for web when guards on[22m[39m
+  [32;1m✓[39;22m[39m [2munknown item id is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2munknown variation is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount applied in pos context[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount ignored in web context[22m[39m
+  [32;1m✓[39;22m[39m [2mmanual discount greater than subtotal becomes zero[22m[39m
+  [32;1m✓[39;22m[39m [2mcoupon discount takes precedence over manual[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery charge added to total after tax[22m[39m
+  [32;1m✓[39;22m[39m [2mtotal never goes negative even if discount exceeds subtotal plus tax[22m[39m
+  [32;1m✓[39;22m[39m [2minsert rows contain branch id and order id[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\StaffOnlyRoutingTest[39m
+  [32;1m✓[39;22m[39m [2mstaff only mode flag is defined[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk use pos wizard flag is defined[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk credentials defined[22m[39m
+  [32;1m✓[39;22m[39m [2mmix pusher credentials defined for echo client[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk config loads auto login payload[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockAvailabilityAfterCommitTest[39m
+  [32;1m✓[39;22m[39m [2mstock availability side effects run after successful commit[22m[39m
+  [32;1m✓[39;22m[39m [2mstock availability side effects are dropped when outer transaction rolls back[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2msame stockable can have isolated levels per branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockConcurrentDecrementTest[39m
+  [32;1m✓[39;22m[39m [2matomic guard allows only available quantity[22m[39m
+  [32;1m✓[39;22m[39m [2mstress guard allows only 20 successes across 50 attempts[22m[39m
+  [32;1m✓[39;22m[39m [2mfailed multi line decrement rolls back prior stock changes[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockDecrementFrontendOrderServiceTest[39m
+  [32;1m✓[39;22m[39m [2mfrontend order store decrements item stock inside kiosk flow[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockDecrementOrderServiceTest[39m
+  [32;1m✓[39;22m[39m [2mpos order store decrements item stock inside order flow[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order store rejects when tracked item stock is empty[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockLevelSchemaTest[39m
+  [32;1m✓[39;22m[39m [2mstock levels schema and unique stockable tuple[22m[39m
+  [32;1m✓[39;22m[39m [2mstock level rejects reserved greater than on hand[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Stock\StockMovementIdempotencyKeyUniqueTest[39m
+  [33;1m-[39;22m[39m [2munique constraint present[22m[39m[33m → Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mduplicate insert throws and is treated as noop[22m[39m[33m → Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mappend only guard unaffected[22m[39m[33m → Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mconcurrent decrement still passes[22m[39m[33m → Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockMovementsAppendOnlyTest[39m
+  [32;1m✓[39;22m[39m [2mstock movements are append only[22m[39m
+  [32;1m✓[39;22m[39m [2mstock movements cannot be deleted[22m[39m
+  [32;1m✓[39;22m[39m [2mstock movement idempotency key is unique when present[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockReleaseOnCancelTest[39m
+  [32;1m✓[39;22m[39m [2morder canceled event releases decremented stock once[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockReleaseOnRefundTest[39m
+  [32;1m✓[39;22m[39m [2mrefund event releases decremented stock once[22m[39m
+  [32;1m✓[39;22m[39m [2mdecrement and partial refund track addon target stock from composition snapshot[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockRuptureAvailabilitySyncTest[39m
+  [32;1m✓[39;22m[39m [2mstock reaching zero marks item unavailable for pos and kiosk projection[22m[39m
+  [32;1m✓[39;22m[39m [2mstock release restores only auto stock ruptures[22m[39m
+  [32;1m✓[39;22m[39m [2mstock zero does not override manual admin rupture reason[22m[39m
+
+  [30;43;1m WARN [39;49;22m[39m Tests\Feature\Stock\StockScanRuptureCommandTest[39m
+  [33;1m-[39;22m[39m [2mskipped when flag disabled[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mmulti branch scan flips only affected[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mdry run does not mutate[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2midempotent second run[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mbranch option restricts scope[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+  [33;1m-[39;22m[39m [2mitem with at least one orderable choice not flipped[22m[39m[33m → Pending plan task 2.1 (PLAN_CV1-LIFECYCLE-UX-001).[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Stock\StockSymmetryDiffTest[39m
+  [32;1m✓[39;22m[39m [2morder service and frontend order service stock hunks stay symmetric[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Symmetry\OrderServicesContractTest[39m
+  [32;1m✓[39;22m[39m [2mmethod contract documents intentional payment asymmetry[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch and dispatch contract is source anchored[22m[39m
+  [32;1m✓[39;22m[39m [2mos status and payment noops do not emit side effects[22m[39m
+  [32;1m✓[39;22m[39m [2mfos status noop does not emit cancel side effects[22m[39m
+  [32;1m✓[39;22m[39m [2mfos deferred payment confirm golden response is idempotent[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\SyncComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mkds status change reflected in oss[22m[39m
+  [32;1m✓[39;22m[39m [2mtable order appears in kds[22m[39m
+  [32;1m✓[39;22m[39m [2mpos order updates dashboard counters[22m[39m
+  [32;1m✓[39;22m[39m [2mend to end order consistency[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TableOrderNegativeTotalTest[39m
+  [32;1m✓[39;22m[39m [2mtable dining order rejects negative total[22m[39m
+  [32;1m✓[39;22m[39m [2mtable dining order rejects negative subtotal[22m[39m
+  [32;1m✓[39;22m[39m [2mtable dining order rejects negative discount[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TableOrderSecurityTest[39m
+  [32;1m✓[39;22m[39m [2mfake price in table order is ignored[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UpsellApiTest[39m
+  [32;1m✓[39;22m[39m [2mitem upsell returns data[22m[39m
+
+  [37;1mTests:  [39;22m[33;1m46 skipped[39;22m[39m, [39m[32;1m1263 passed[39;22m
+  [37;1mTime:   [39;22m[39m202.24s[39m
+
+
+[post-execute] tests: PASSED
+[post-execute] lint: SKIPPED — no lint script in package.json
+[post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
+[post-execute] done — invoke Composer validate phase next
+
+=== CV1-LIFECYCLE-UX-001 / task 1.4 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine (TEST-ONLY)
+TASK_ID: CV1-LIFECYCLE-UX-001-task-1.4
+DATE: 2026-05-02
+FILES_TOUCHED: tests/Feature/Composer/ProfilePublishMidCartRejectionTest.php
+PRODUCT_FILES_TOUCHED: 0 (per task contract)
+SENTINELS_UNSKIPPED: 2 of 4 (Vague 1 cases) ; remaining 2 stay skipped behind GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK
+LOCAL_VALIDATE: php artisan test --filter=ProfilePublishMidCartRejectionTest -> PASS (2 passed, 2 skipped) ; --filter=Composer -> PASS (58 passed, 2 skipped)
+LINT: php -l test file OK
+HALT: none
+NOTE: Kiosk 422 rejection uses JSON {status:false, message} from PricingService French string; plan keys errors.composer / composer_removed_options not in OrderController yet (docblock discovery).
