@@ -5669,3 +5669,16 @@ EXECUTE_DELEGATION: foodking-routine-implementer
 SCOPE_FILES_TOUCHED: tests/Feature/Composer/ComposerProfileUnpublishTest.php
 SENTINEL_RESULTS: ComposerProfileUnpublishTest 5/5 PASS; php artisan test --filter=Composer: 64 passed, 2 skipped
 NOTES: ComposerProfileChanged uses public profileId, changeType, branchId, payloadDiff; item_wizard_profiles.template must be enum simple|sandwich|tacos|assiette|snacking|menu|custom (used custom). ItemWizardStep via factory with step_key, source_ref, position.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 2.8 ===
+DATE: 2026-05-02T17:55+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+SCOPE_COMPLIANCE: PASS — only new sentinel file (no implementation changes; ComposerProfileService::unpublish already existed and dispatched ComposerProfileChanged correctly).
+SENTINEL_RESULTS: ComposerProfileUnpublishTest 5/5 PASS; Composer filter 64/2 no regression.
+INVARIANT_CHECKS: untouched (test-only).
+DRIFT NOTED (non-blocking): Composer adapted template=`custom` (DB CHECK constraint), ItemWizardStep factory shape (step_key, label, source_ref). Reality-aligned.
+COMMIT: 5958f5911
