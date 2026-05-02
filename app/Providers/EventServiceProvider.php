@@ -46,6 +46,7 @@ use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderPaidAtCounterToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\PersistOrderTableChangedToOutbox;
+use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -173,6 +174,7 @@ class EventServiceProvider extends ServiceProvider
         StockLevelChanged::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
             PersistCatalogChangedToOutbox::class,
+            NotifyStockLowOnStockLevelChanged::class,
         ],
     ];
 

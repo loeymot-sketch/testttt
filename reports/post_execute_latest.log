@@ -5682,3 +5682,11 @@ SENTINEL_RESULTS: ComposerProfileUnpublishTest 5/5 PASS; Composer filter 64/2 no
 INVARIANT_CHECKS: untouched (test-only).
 DRIFT NOTED (non-blocking): Composer adapted template=`custom` (DB CHECK constraint), ItemWizardStep factory shape (step_key, label, source_ref). Reality-aligned.
 COMMIT: 5958f5911
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 2.7 ===
+DATE: 2026-05-02T16:21:59Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: app/Listeners/NotifyStockLowOnStockLevelChanged.php (new), app/Providers/EventServiceProvider.php, tests/Feature/Stock/NotifyStockLowOnStockLevelChangedTest.php (new)
+SENTINEL_RESULTS: NotifyStockLowOnStockLevelChanged 4/4; Stock filter 38 passed, 11 skipped (no regression)
+NOTES: Stock schema matches migration (branch_id, stockable_*, on_hand, reserved, threshold_low). activity-log start refused exit 2 (collision cursor-claude CV1-LIFECYCLE-UX-001-task-2.7 same scope); routine delegation completed same files.
