@@ -187,6 +187,11 @@ final class AvailabilityService
     /**
      * Apply daily counters after an order is created (no-op if no row exists).
      * Auto-86 once the daily cap is reached.
+     *
+     * Uses the atomic conditional UPDATE pattern selected in
+     * reports/audit/M2_1_9_INDUSTRY_COMPARATIVE_ANALYSIS_2026-05-02.md:
+     * one capped counter update, then one CAS-style availability flip so
+     * concurrent decrements emit the 86 event exactly once.
      */
     public function decrementForOrder(Model $order): void
     {
@@ -194,37 +199,46 @@ final class AvailabilityService
         $today = Carbon::today()->toDateString();
 
         foreach ($order->orderItems as $line) {
-            $row = ItemBranchAvailability::query()
+            $qty = (int) $line->quantity;
+
+            DB::table('item_branch_availability')
                 ->where('item_id', $line->item_id)
                 ->where('branch_id', $branchId)
-                ->first();
+                ->whereDate('daily_reset_at', '<', $today)
+                ->update([
+                    'daily_consumed_qty' => 0,
+                    'daily_reset_at' => $today,
+                ]);
 
-            if (! $row || $row->max_daily_qty === null) {
+            $rows = DB::table('item_branch_availability')
+                ->where('item_id', $line->item_id)
+                ->where('branch_id', $branchId)
+                ->whereNotNull('max_daily_qty')
+                ->update([
+                    'daily_consumed_qty' => DB::raw(
+                        "CASE WHEN daily_consumed_qty + {$qty} > max_daily_qty "
+                        . "THEN max_daily_qty ELSE daily_consumed_qty + {$qty} END"
+                    ),
+                    'updated_at' => now(),
+                ]);
+
+            if ($rows === 0) {
                 continue;
             }
 
-            if ($row->daily_reset_at?->toDateString() !== $today) {
-                $row->daily_consumed_qty = 0;
-                $row->daily_reset_at = $today;
-            }
+            $flipRows = DB::table('item_branch_availability')
+                ->where('item_id', $line->item_id)
+                ->where('branch_id', $branchId)
+                ->where('is_available', true)
+                ->whereRaw('daily_consumed_qty >= max_daily_qty')
+                ->update([
+                    'is_available' => false,
+                    'unavailable_reason' => 'out_of_stock',
+                    'unavailable_since' => now(),
+                    'updated_at' => now(),
+                ]);
 
-            $wasAvailable = (bool) $row->is_available;
-
-            $row->daily_consumed_qty = min(
-                $row->max_daily_qty,
-                (int) $row->daily_consumed_qty + (int) $line->quantity
-            );
-
-            if ($row->daily_consumed_qty >= $row->max_daily_qty) {
-                $row->is_available = false;
-                $row->unavailable_reason = 'out_of_stock';
-                $row->unavailable_since = now();
-            }
-
-            $row->save();
-
-            // Emit only on availability state flip (was available, now 86).
-            if ($wasAvailable && ! (bool) $row->is_available) {
+            if ($flipRows === 1) {
                 $this->dispatchEvent(
                     (int) $line->item_id,
                     $branchId,
