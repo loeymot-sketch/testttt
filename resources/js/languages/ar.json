@@ -58,6 +58,20 @@
             "toggle_show": "إظهار المساعدة",
             "toggle_hide": "إخفاء المساعدة",
             "learn_more": "معرفة المزيد"
+        },
+        "item_preview": {
+            "tab_label": "معاينة",
+            "title": "معاينة Kiosk + POS",
+            "subtitle": "قارن ما ستعرضه الشاشة الذاتية والصراف لهذا الفرع.",
+            "surface_pos": "الصراف (POS)",
+            "surface_kiosk": "الشاشة الذاتية (Kiosk)",
+            "no_pos_data": "العنصر غير متاح على الصراف لهذا الفرع.",
+            "no_kiosk_data": "العنصر غير متاح على الشاشة الذاتية لهذا الفرع.",
+            "divergence_warn_price": "السعر يختلف بين POS وKiosk.",
+            "divergence_warn_availability": "التوفر يختلف بين POS وKiosk.",
+            "divergence_warn_visibility": "العنصر مرئي على سطح واحد فقط من السطحين.",
+            "loading": "جاري تحميل المعاينة…",
+            "load_error": "تعذّر تحميل المعاينة. أعِد المحاولة لاحقًا."
         }
     },
     "pos": {

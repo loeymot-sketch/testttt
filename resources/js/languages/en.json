@@ -58,6 +58,20 @@
             "toggle_show": "Show help",
             "toggle_hide": "Hide help",
             "learn_more": "Learn more"
+        },
+        "item_preview": {
+            "tab_label": "Preview",
+            "title": "Kiosk + POS preview",
+            "subtitle": "Compare what the kiosk and the cashier will show for this branch.",
+            "surface_pos": "Cash register (POS)",
+            "surface_kiosk": "Kiosk",
+            "no_pos_data": "Item not available on the cash register for this branch.",
+            "no_kiosk_data": "Item not available on the kiosk for this branch.",
+            "divergence_warn_price": "Price differs between POS and Kiosk.",
+            "divergence_warn_availability": "Availability differs between POS and Kiosk.",
+            "divergence_warn_visibility": "The item is visible on only one of the two surfaces.",
+            "loading": "Loading preview…",
+            "load_error": "Could not load the preview. Try again later."
         }
     },
     "pos": {
@@ -257,6 +271,7 @@
         "action": "Action",
         "availability": "Availability",
         "available": "Available",
+        "unavailable": "Unavailable",
         "out_of_stock": "Out of stock",
         "toggle_unavailable": "Mark unavailable",
         "toggle_available": "Mark available",

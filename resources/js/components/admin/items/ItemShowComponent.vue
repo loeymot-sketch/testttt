@@ -9,7 +9,7 @@
             @dismiss="onCatalogWarningDismiss"
         />
 
-        <div class="grid grid-cols-1 sm:grid-cols-6 mb-4 sm:mb-0">
+        <div class="grid grid-cols-1 sm:grid-cols-7 mb-4 sm:mb-0">
             <button type="button" @click="handleTab($event, '#information', '.db-tabBtn', '.db-tabDiv', 'active')"
                 class="db-tabBtn !justify-start active">
                 <i class="lab lab-information lab-font-size-16"></i>
@@ -38,6 +38,12 @@
                 @click="handleTab($event, '#composition', '.db-tabBtn', '.db-tabDiv', 'active')"><i
                     class="lab lab-menu lab-font-size-16"></i>
                 Composition
+            </button>
+            <button type="button"
+                data-testid="admin-item-tab-preview"
+                @click="handleTab($event, '#preview', '.db-tabBtn', '.db-tabDiv', 'active')"
+                class="db-tabBtn !justify-start"><i class="lab lab-eye lab-font-size-16"></i>
+                {{ $t('admin.item_preview.tab_label') }}
             </button>
         </div>
         <div class="db-tabDiv active" id="information">
@@ -171,6 +177,14 @@
         <div class="db-tabDiv" id="composition">
             <ProductComposerSummaryComponent :item="item" />
         </div>
+        <div class="db-tabDiv" id="preview">
+            <ItemPreviewComponent
+                v-if="branches.length"
+                :item="item"
+                :branches="branches"
+                @parity-warning="onParityWarning"
+            />
+        </div>
     </div>
 </template>
 
@@ -186,6 +200,7 @@ import ItemExtraListComponent from "./extra/ItemExtraListComponent";
 import ItemAddonListComponent from "./addon/ItemAddonListComponent";
 import ProductComposerSummaryComponent from "./ProductComposerSummaryComponent";
 import ComposerProfileWarningBadge from "./ComposerProfileWarningBadge";
+import ItemPreviewComponent from "./ItemPreviewComponent";
 
 export default {
     name: "ItemShowComponent",
@@ -196,10 +211,13 @@ export default {
         ItemAddonListComponent,
         ProductComposerSummaryComponent,
         ComposerProfileWarningBadge,
+        ItemPreviewComponent,
     },
     data() {
         return {
             warnings: [],
+            branches: [],
+            parityWarningMsg: '',
             loading: {
                 isActive: false
             },
@@ -235,6 +253,11 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
+        this.$store.dispatch('backendGlobalState/branches', {}).then(() => {
+            this.branches = this.$store.getters['backendGlobalState/branches'] || [];
+        }).catch(() => {
+            this.branches = [];
+        });
         this.$store.dispatch('item/show', this.$route.params.id).then(res => {
             this.defaultImage = res.data.data.preview;
             this.previewImage = res.data.data.preview;
@@ -257,6 +280,9 @@ export default {
         },
         onCatalogWarningDismiss(warning) {
             void warning;
+        },
+        onParityWarning(msg) {
+            this.parityWarningMsg = msg;
         },
         changePreviewImage: function (e) {
             if (e.target.files[0]) {

@@ -5527,3 +5527,11 @@ INVARIANT_CHECKS: untouched (UI-only, no backend, no API call).
 NOTE: composant utilise tokens CV1 (cv1-warning-badge) au lieu d'un nouveau "db-help-panel" — discipline exemplaire.
 COMMIT: 82556218
 NEXT: M2 1.2 (Aperçu Kiosk+POS tab) — Composer routine.
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 1.2 ===
+DATE: 2026-05-02T15:17:00Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: resources/js/components/admin/items/ItemPreviewComponent.vue, resources/js/components/admin/items/ItemShowComponent.vue, tests/js/itemPreviewProjection.spec.js, resources/js/languages/en.json, resources/js/languages/fr.json, resources/js/languages/ar.json, resources/js/languages/de.json, resources/js/languages/bn.json
+SENTINEL_RESULTS: itemPreviewProjection 5/5 passed (2 skipped); vitest full 976 passed | 9 skipped (985 total)
+NOTES: Onglet Aperçu + projections parallèles, alertes parité, annonce branche aria-live polite, erreur 500 assertive + announcer.

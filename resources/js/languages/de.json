@@ -20,6 +20,20 @@
             "toggle_show": "Hilfe einblenden",
             "toggle_hide": "Hilfe ausblenden",
             "learn_more": "Mehr erfahren"
+        },
+        "item_preview": {
+            "tab_label": "Vorschau",
+            "title": "Kiosk + POS Vorschau",
+            "subtitle": "Vergleichen Sie, was Kiosk und Kasse für diese Filiale anzeigen.",
+            "surface_pos": "Kasse (POS)",
+            "surface_kiosk": "Kiosk",
+            "no_pos_data": "Artikel ist für diese Filiale an der Kasse nicht verfügbar.",
+            "no_kiosk_data": "Artikel ist für diese Filiale am Kiosk nicht verfügbar.",
+            "divergence_warn_price": "Der Preis unterscheidet sich zwischen POS und Kiosk.",
+            "divergence_warn_availability": "Die Verfügbarkeit unterscheidet sich zwischen POS und Kiosk.",
+            "divergence_warn_visibility": "Der Artikel ist nur auf einer der beiden Oberflächen sichtbar.",
+            "loading": "Vorschau wird geladen…",
+            "load_error": "Vorschau konnte nicht geladen werden. Bitte später erneut versuchen."
         }
     },
     "menu": {

@@ -20,6 +20,20 @@
             "toggle_show": "সাহায্য দেখান",
             "toggle_hide": "সাহায্য লুকান",
             "learn_more": "আরও জানুন"
+        },
+        "item_preview": {
+            "tab_label": "প্রিভিউ",
+            "title": "Kiosk + POS প্রিভিউ",
+            "subtitle": "এই শাখায় কিয়োস্ক ও ক্যাশিয়ার কী দেখাবে তা তুলনা করুন।",
+            "surface_pos": "ক্যাশ (POS)",
+            "surface_kiosk": "কিয়োস্ক",
+            "no_pos_data": "এই শাখায় এই আইটেম ক্যাশে পাওয়া যায় না।",
+            "no_kiosk_data": "এই শাখায় এই আইটেম কিয়োস্কে পাওয়া যায় না।",
+            "divergence_warn_price": "POS ও Kiosk-এর মধ্যে দাম আলাদা।",
+            "divergence_warn_availability": "POS ও Kiosk-এর মধ্যে প্রাপ্যতা আলাদা।",
+            "divergence_warn_visibility": "আইটেমটি দুই সطحের মাত্র একটিতে দৃশ্যমান।",
+            "loading": "প্রিভিউ লোড হচ্ছে…",
+            "load_error": "প্রিভিউ লোড করা যায়নি। পরে আবার চেষ্টা করুন।"
         }
     },
     "menu": {
