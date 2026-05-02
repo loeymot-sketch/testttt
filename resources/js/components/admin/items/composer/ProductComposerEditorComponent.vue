@@ -575,7 +575,11 @@ export default {
             }
         },
         async applyTemplate(template) {
-            const response = await axios.post(`/admin/composer/items/${this.itemId}/apply-template`, { template });
+            const payload = { template };
+            if (this.branchIdScope) {
+                payload.branch_id_scope = this.branchIdScope;
+            }
+            const response = await axios.post(`/admin/composer/items/${this.itemId}/apply-template`, payload);
             this.templateModalOpen = false;
             this.hydrateProfile(response.data?.data || null);
             alertService.success(this.t('message.composer.template_applied', 'Template applique.'));

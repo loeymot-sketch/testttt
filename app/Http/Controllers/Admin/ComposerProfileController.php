@@ -69,21 +69,24 @@ class ComposerProfileController extends AdminController
 
     /**
      * Apply a named wizard template (sandwich/tacos/...) to bootstrap a starter
-     * profile. The resulting profile is unpublished and global (branch_id_scope=null);
-     * the admin can then customise/publish it through the standard endpoints.
+     * profile. When the admin selected a branch in the composer UI, the resulting
+     * profile is scoped to that branch; otherwise it is global (branch_id_scope=null).
+     * Branch-scoped seeding is only allowed for the user's own branch (Branch Admin/
+     * Manager) or for any branch (Admin / Tenant Admin); a global seed still requires
+     * Admin / Tenant Admin.
      */
     public function applyTemplate(Request $request, Item $item): JsonResponse
     {
         $data = $request->validate([
             'template' => ['required', 'string', Rule::in(ComposerTemplateService::TEMPLATES)],
+            'branch_id_scope' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
 
-        // Templates create a global (null scope) starter; only Admin / Tenant Admin
-        // may seed cross-branch profiles. Branch-scoped users should fall back to
-        // the standard `store` endpoint with their own branch_id_scope.
-        $this->authorizeWritableBranchScope($request, null);
+        $branchIdScope = isset($data['branch_id_scope']) ? (int) $data['branch_id_scope'] : null;
 
-        $payload = $this->templates->buildPayload($data['template'], $item);
+        $this->authorizeWritableBranchScope($request, $branchIdScope);
+
+        $payload = $this->templates->buildPayload($data['template'], $item, $branchIdScope);
         $profile = $this->profiles->createForItem($item, $payload);
 
         return response()->json([

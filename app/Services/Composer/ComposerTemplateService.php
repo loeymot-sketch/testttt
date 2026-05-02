@@ -21,13 +21,13 @@ class ComposerTemplateService
     /**
      * @return array{template: string, branch_id_scope: ?int, steps: array<int, array<string, mixed>>}
      */
-    public function buildPayload(string $template, Item $item): array
+    public function buildPayload(string $template, Item $item, ?int $branchIdScope = null): array
     {
         $template = in_array($template, self::TEMPLATES, true) ? $template : 'custom';
 
         return [
             'template' => $template,
-            'branch_id_scope' => null,
+            'branch_id_scope' => $branchIdScope,
             'steps' => $this->stepsFor($template),
         ];
     }
