@@ -59,7 +59,7 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
-            store.dispatch('auth/logout').catch(() => {});
+            store.dispatch('logout').catch(() => {});
             window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -114,6 +114,15 @@ router.beforeEach((to, from, next) => {
         return;
     }
     next();
+});
+
+router.afterEach(() => {
+    try {
+        document?.querySelector('.backdrop')?.classList?.remove('active');
+        document.body.style.overflowY = 'auto';
+    } catch (_) {
+        /* no-op */
+    }
 });
 
 const app = createApp({});

@@ -111,7 +111,7 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
-            store.dispatch('auth/logout').catch(() => {});
+            store.dispatch('logout').catch(() => {});
             router.push({ name: 'auth.login' }).catch(() => {});
         }
         return Promise.reject(error);
@@ -133,5 +133,16 @@ app.use(i18n)
 // Permet d'utiliser <KsButton>, <KsCard>, <KsBadge>, <KsChip>, <KsModal>,
 // <KsStepper>, <KsPriceLine> dans tous les composants Vue sans import local.
 app.use(KioskDesignSystem)
+
+// Clear stray drawer backdrop after SPA navigation (same-origin shell unmount
+// does not remove BackendNavbarComponent's .backdrop.active — leaves a full-screen dim layer).
+router.afterEach(() => {
+    try {
+        document?.querySelector('.backdrop')?.classList?.remove('active');
+        document.body.style.overflowY = 'auto';
+    } catch (_) {
+        /* no-op */
+    }
+});
 
 app.mount('#app');

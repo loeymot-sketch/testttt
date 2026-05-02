@@ -25,12 +25,13 @@ export default {
     sideDrawerHide: function (id = 'sideDrawer') {
         const drawerDivs = document?.querySelectorAll(".drawer");
         const drawerSets = document?.querySelectorAll("[data-drawer]");
-        document?.querySelectorAll("#sidebar")?.forEach((closeBtn) => {
-            drawerSets?.forEach(drawerBtn => drawerBtn?.classList?.remove("active"));
-            drawerDivs?.forEach(drawerDiv => drawerDiv?.classList?.remove("active"));
-            document?.querySelector(".backdrop")?.classList?.remove("active");
-            document.body.style.overflowY = "auto"
-        });
+        // Always tear down drawer/backdrop state — do NOT gate on #sidebar.
+        // Dashboard and many routes have no #sidebar; hiding used to no-op and left
+        // .backdrop.active stuck (full-screen dim overlay after SPA navigation).
+        drawerSets?.forEach((drawerBtn) => drawerBtn?.classList?.remove("active"));
+        drawerDivs?.forEach((drawerDiv) => drawerDiv?.classList?.remove("active"));
+        document?.querySelector(".backdrop")?.classList?.remove("active");
+        document.body.style.overflowY = "auto";
     },
 
     modalShow: function (id = '.modal') {
