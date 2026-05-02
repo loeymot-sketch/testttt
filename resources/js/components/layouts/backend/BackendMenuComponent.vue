@@ -12,7 +12,7 @@
         </div>
         <!--        {{ menus }}-->
         <nav class="db-sidebar-nav">
-            <ul class="db-sidebar-nav-list" v-if="menus.length > 0" v-for="menu in menus" :key="menu">
+            <ul class="db-sidebar-nav-list" v-if="visibleMenus.length > 0" v-for="menu in visibleMenus" :key="menu">
                 <li class="db-sidebar-nav-item" v-if="menu.url === '#'" @click.prevent="sidebarActive($event)">
                     <button type="button" :aria-label="$t('menu.' + menu.language)" class="db-sidebar-nav-title">
                         {{ $t('menu.' + menu.language) }}
@@ -47,6 +47,22 @@
 </template>
 
 <script>
+import { V1_HIDDEN_MENU_MODULES } from "../../../config/v1-hidden-modules";
+
+/**
+ * Mapping local : clés de V1_HIDDEN_MENU_MODULES → URL `menu.url` côté seeder.
+ * Le seeder utilise du kebab-case (`credit-balance-report`) alors que la
+ * constante partagée garde un identifiant logique (`creditBalanceReport`).
+ * Les clés `settings.*` sont gérées par admin/settings/MenuComponent.vue,
+ * pas ici.
+ */
+const HIDDEN_KEY_TO_MENU_URL = Object.freeze({
+    customers: 'customers',
+    coupons: 'coupons',
+    offers: 'offers',
+    creditBalanceReport: 'credit-balance-report',
+});
+
 export default {
     name: "BackendMenuComponent",
     data: function () {
@@ -62,6 +78,31 @@ export default {
         },
         menus: function () {
             return this.$store.getters.authMenu;
+        },
+        hiddenMenuUrls() {
+            return new Set(
+                V1_HIDDEN_MENU_MODULES
+                    .map(key => HIDDEN_KEY_TO_MENU_URL[key])
+                    .filter(Boolean),
+            );
+        },
+        visibleMenus() {
+            const hidden = this.hiddenMenuUrls;
+            return (this.menus || [])
+                .map(menu => {
+                    if (!menu.children) return menu;
+                    return {
+                        ...menu,
+                        children: menu.children.filter(child => !hidden.has(child.url)),
+                    };
+                })
+                .filter(menu => {
+                    if (hidden.has(menu.url)) return false;
+                    if (menu.url === '#' && Array.isArray(menu.children) && menu.children.length === 0) {
+                        return false;
+                    }
+                    return true;
+                });
         },
         sidebar() {
             return this.$store.getters['globalState/lists'].topSidebar;

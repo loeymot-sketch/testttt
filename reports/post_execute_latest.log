@@ -2724,3 +2724,27 @@ SCOPE_FILES_TOUCHED: app/Services/Menu/AvailabilityService.php (1 method dispatc
 SENTINEL_RESULTS: AvailabilityDispatchAfterCommitTest 3/3 PASS (outside_tx | committed_outer_tx | rollbacked_outer_tx)
 INVARIANT_FIXED: #4 dispatch-after-commit dans AvailabilityService::dispatchEvent (toggle/setMaxDailyQty/decrementForOrder désormais conformes)
 NOTES: PHP -l OK sur les 2 fichiers. Régression filter='Availability|Stock|Menu' = 155 passed, 26 skipped (skips pré-existants Pending plan task 2.6 — unrelated). Méthode dispatchEvent à lignes 330-340 (vs 252-260 dans la mission, légère dérive de numérotation, fix appliqué au bon endroit). releaseForOrderItems inchangé : il n'appelle pas dispatchEvent() (utilise son propre DB::afterCommit + event() inline) — nesting safe.
+
+=== EXECUTE — CV1-V1-CLOSEOUT-001 / Lot A.2 ===
+DATE: 2026-05-02T22:04+02:00
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_FILES_TOUCHED: resources/js/components/layouts/backend/BackendMenuComponent.vue, resources/js/components/admin/settings/MenuComponent.vue
+NEW_FILES: resources/js/config/v1-hidden-modules.js + tests/js/v1HiddenMenuModules.spec.js
+HIDDEN_MODULES: customers, coupons, offers, creditBalanceReport, settings.mail, settings.loyalty-setup, settings.notification, settings.theme
+PATTERN_OBSERVED: BackendMenuComponent itéré (v-for sur store getter authMenu, structure parent/children depuis MenuTableSeeder) ; settings/MenuComponent statique (router-link hardcodés par route name)
+SENTINEL_RESULTS: v1HiddenMenuModules.spec 4/4 PASS ; vitest global 152 files / 992 passed / 2 skipped (baseline 988+2 + 4 nouveaux tests, 0 régression)
+NOTES: deux mappings locaux ajoutés sans renommer la constante centrale — (a) BackendMenu : creditBalanceReport → URL kebab-case `credit-balance-report` ; (b) settings : `settings.loyalty-setup` → identifiant local `loyaltySetup` pour matcher la route admin.settings.loyaltySetup. Filtre BackendMenu masque aussi les groupes parents (`url='#'`) devenus vides après filtrage des enfants. Seeder DB et routes Vue/Laravel intacts. Modules restent accessibles par URL directe.
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / T-CENT-AVAIL-DISPATCH-01 ===
+DATE: 2026-05-02T22:03+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_COMPLIANCE: PASS — 1 méthode wrappée + sentinel.
+SENTINEL_RESULTS: AvailabilityDispatchAfterCommitTest 3/3; Availability|Stock|Menu 155/26 (no regression).
+INVARIANT_FIXED: #4 dispatch-after-commit dans AvailabilityService::dispatchEvent.
+NOTES: dispatchEvent à ligne 330-340 (pas 252-260 — dérive post-ajout releaseForOrderItems). Sémantique transaction imbriquée Laravel confirmée.
+COMMIT: f41e7fd9d

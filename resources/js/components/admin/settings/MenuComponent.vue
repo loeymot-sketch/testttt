@@ -22,7 +22,7 @@
                 <i class="lab lab-kiosk text-sm"></i>
                 {{ $t("menu.kiosk_machines") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.mail' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('mail')" :to="{ name: 'admin.settings.mail' }" class="db-tab-btn">
                 <i class="lab lab-mail text-sm"></i>
                 {{ $t("menu.mail") }}
             </router-link>
@@ -34,7 +34,7 @@
                 <i class="lab lab-kiosk text-sm"></i>
                 {{ $t("menu.kiosk_setup") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.loyaltySetup' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('loyaltySetup')" :to="{ name: 'admin.settings.loyaltySetup' }" class="db-tab-btn">
                 <i class="lab lab-loyalty text-sm"></i>
                 {{ $t("menu.loyalty_setup") }}
             </router-link>
@@ -42,7 +42,7 @@
                 <i class="lab lab-otp text-sm"></i>
                 {{ $t("menu.otp") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.notification' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('notification')" :to="{ name: 'admin.settings.notification' }" class="db-tab-btn">
                 <i class="lab lab-notification text-sm"></i>
                 {{ $t("menu.notification") }}
             </router-link>
@@ -62,7 +62,7 @@
                 <i class="lab lab-analytics text-sm"></i>
                 {{ $t("menu.analytics") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.theme' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('theme')" :to="{ name: 'admin.settings.theme' }" class="db-tab-btn">
                 <i class="lab lab-theme text-sm"></i>
                 {{ $t("menu.theme") }}
             </router-link>
@@ -120,11 +120,35 @@
 
 <script>
 import appService from "../../../services/appService";
+import { V1_HIDDEN_MENU_MODULES } from "../../../config/v1-hidden-modules";
+
+/**
+ * Mapping local : clés `settings.*` de V1_HIDDEN_MENU_MODULES → identifiant
+ * court utilisé dans ce composant pour l'attribut `v-if` (ex. `loyaltySetup`,
+ * pas `loyalty-setup`). La constante centrale garde le format kebab-case ;
+ * la conversion vit ici pour ne pas polluer le contrat partagé.
+ */
+const HIDDEN_KEY_TO_LOCAL_SETTING = Object.freeze({
+    'settings.mail': 'mail',
+    'settings.loyalty-setup': 'loyaltySetup',
+    'settings.notification': 'notification',
+    'settings.theme': 'theme',
+});
+
+const HIDDEN_LOCAL_SETTINGS = new Set(
+    V1_HIDDEN_MENU_MODULES
+        .map(key => HIDDEN_KEY_TO_LOCAL_SETTING[key])
+        .filter(Boolean),
+);
+
 export default {
     name: "MenuComponent",
     methods: {
         openSettingMenu: function (event) {
             return appService.openSettingMenu(event);
+        },
+        isSettingHidden(localKey) {
+            return HIDDEN_LOCAL_SETTINGS.has(localKey);
         },
     }
 };
