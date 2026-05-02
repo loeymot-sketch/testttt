@@ -9,6 +9,7 @@ use App\Http\Resources\SimpleItemResource;
 use App\Imports\ItemImport;
 use Exception;
 use App\Models\Item;
+use App\Services\Catalog\CatalogWarningService;
 use App\Services\ItemService;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemResource;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ChangeImageRequest;
+use Illuminate\Support\Facades\DB;
 use Response;
 
 class ItemController extends AdminController
@@ -30,13 +32,22 @@ class ItemController extends AdminController
         $this->middleware(['permission:items_create'])->only('store', 'import');
         $this->middleware(['permission:items_edit'])->only('update', 'changeImage');
         $this->middleware(['permission:items_delete'])->only('destroy');
-        $this->middleware(['permission:items_show'])->only('index', 'show', 'itemDetails', 'lookupBarcode', 'downloadSample');
+        $this->middleware(['permission:items_show'])->only('show', 'downloadSample');
+        $this->middleware(function ($request, $next) {
+            $user = $request->user();
+            abort_unless($user && $user->canAny(['items_show', 'pos']), 403);
+
+            return $next($request);
+        })->only('index', 'itemDetails', 'lookupBarcode');
     }
 
     public function index(PaginateRequest $request) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
-        if ($request->filled('branch_id')) {
-            $this->authorizeBranchScope($request, (int) $request->get('branch_id'));
+        $forcedBranchId = $this->forcePosRuntimeBranchScope($request);
+        $branchId = $forcedBranchId ?? ($request->filled('branch_id') ? (int) $request->get('branch_id') : null);
+
+        if ($branchId !== null) {
+            $this->authorizeBranchScope($request, $branchId);
         }
 
         try {
@@ -54,7 +65,17 @@ class ItemController extends AdminController
         }
 
         try {
-            return new ItemResource($this->itemService->show($item));
+            $loaded   = $this->itemService->show($item);
+            $resource = new ItemResource($loaded);
+
+            if (config('catalog_v15.warnings.expose_to_admin_show', true)) {
+                $branchId = request()->filled('branch_id') ? (int) request()->get('branch_id') : null;
+                $warnings = app(CatalogWarningService::class)->forItem($loaded, $branchId);
+
+                return $resource->additional(['warnings' => $warnings]);
+            }
+
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -134,8 +155,18 @@ class ItemController extends AdminController
 
     public function itemDetails(Item $item)
     {
-        if (request()->filled('branch_id')) {
-            $this->authorizeBranchScope(request(), (int) request()->get('branch_id'));
+        $forcedBranchId = $this->forcePosRuntimeBranchScope(request());
+        $branchId = $forcedBranchId ?? (request()->filled('branch_id') ? (int) request()->get('branch_id') : null);
+
+        if ($branchId !== null) {
+            $this->authorizeBranchScope(request(), $branchId);
+        }
+
+        $surface = strtolower(trim((string) request()->get('surface', '')));
+        if (in_array($surface, ['pos', 'kiosk', 'web'], true)) {
+            $item->loadMissing('category');
+            abort_unless($item->isVisibleOn($surface), 404);
+            abort_unless(! $item->category || $item->category->isVisibleOn($surface), 404);
         }
 
         try {
@@ -157,8 +188,12 @@ class ItemController extends AdminController
                 ->where('barcode', $code)
                 ->where('is_available', true)
                 ->where(function ($q) {
-                    $q->whereNull('channels')
-                        ->orWhereJsonContains('channels', 'pos');
+                    $q->whereNull('channels');
+                    if (DB::connection()->getDriverName() === 'sqlite') {
+                        $q->orWhere('channels', 'like', '%"pos"%');
+                        return;
+                    }
+                    $q->orWhereJsonContains('channels', 'pos');
                 });
             $count = (clone $base)->count();
             $item = (clone $base)->orderBy('id')->first();
@@ -180,5 +215,21 @@ class ItemController extends AdminController
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    private function forcePosRuntimeBranchScope($request): ?int
+    {
+        $user = $request->user();
+        if (! $user || $user->can('items_show') || ! $user->can('pos')) {
+            return null;
+        }
+
+        $branchId = (int) $user->branch_id;
+        abort_if($branchId < 1, 403);
+
+        $request->merge(['branch_id' => $branchId]);
+        $request->query->set('branch_id', $branchId);
+
+        return $branchId;
     }
 }

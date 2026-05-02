@@ -2505,3 +2505,18 @@ A1_STATUS: CLOSED
 2026-05-01T01:24:00+02:00 | TASK=GLOBAL-POS-KIOSK-ORDER-TRACE-AUDIT-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_GLOBAL_SOFTWARE_SYNC_READY_FOR_HARDWARE_UAT | Global POS+kiosk order trace repeat-each=3 PASS; dashboard CRUD browser PASS; C3 multi-surface PASS; PHP targeted 26 PASS; Vitest targeted 23 PASS; KDS addon bundle rebuilt; report=reports/audit/CODEX_GLOBAL_POS_KIOSK_ORDER_TRACE_AUDIT_2026-05-01.md
 2026-05-01T01:40:00+02:00 | TASK=GLOBAL-POS-KIOSK-SECOND-REVIEW-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_READY_FOR_MANUAL_CHECK | Second review reran global trace 3/3, dashboard CRUD 1/1, C3 2/2, design D1/D2/D3 3/3, PHP targeted 26 PASS, Vitest targeted 29 PASS, DB fixture cleanup 0 residual; report=reports/audit/CODEX_GLOBAL_POS_KIOSK_SECOND_REVIEW_2026-05-01.md
 2026-05-01T02:05:00+02:00 | TASK=FINAL-ULTRA-ORDER-SECURITY-REVIEW-2026-05-01 | EXECUTE_DELEGATION=cursor-session | AUDIT_CHANNEL=cursor-session | AUDIT_VERDICT=PASS | STATUS=PASS_READY_FOR_CLAUDE_EXTERNAL_ATTACK_REVIEW | Final adversarial pass: safety PASS; PHP targeted 159 PASS incl MySQL/Redis ProdLike on temp DB; Playwright global POS+kiosk+KDS 1 PASS; fixture cleanup 0 residual; reports/audit/CODEX_FINAL_ULTRA_ORDER_SECURITY_AND_SYNC_REVIEW_2026-05-01.md; Claude prompt=reports/audit/_CLAUDE_FINAL_ULTRA_REVIEW_PROMPT_2026-05-01.txt
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.4 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.4
+DATE: 2026-05-02
+FILES_TOUCHED:
+  - app/Services/ItemService.php
+  - app/Services/Catalog/CatalogWarningService.php
+  - app/Http/Controllers/Admin/ItemController.php
+  - tests/Feature/Catalog/ChannelsNullWarningTest.php
+SENTINELS_UNSKIPPED: ChannelsNullWarningTest (7 cases)
+LOCAL_VALIDATE: php artisan test --filter=ChannelsNullWarningTest -> PASS (7 tests)
+LINT: phpcs not installed in vendor (skipped)
+HALT: none

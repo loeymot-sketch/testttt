@@ -144,8 +144,12 @@ class ItemService
             return;
         }
         $query->where(function ($q) use ($surface) {
-            $q->whereNull('channels')
-                ->orWhereJsonContains('channels', $surface);
+            $q->whereNull('channels');
+            if (DB::connection()->getDriverName() === 'sqlite') {
+                $q->orWhere('channels', 'like', '%"' . $surface . '"%');
+                return;
+            }
+            $q->orWhereJsonContains('channels', $surface);
         });
     }
 
@@ -221,6 +225,8 @@ class ItemService
                     event(new ItemCreated($createdItemId));
                 });
             });
+            $this->warnCatalogChannelsNullIfNeeded($this->item, 'store');
+
             return $this->item;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -313,6 +319,7 @@ class ItemService
                 }
             });
             $refreshed = $item->refresh();
+            $this->warnCatalogChannelsNullIfNeeded($refreshed, 'update');
 
             // [C3] Broadcast item change to all kiosk displays so they can update
             // their menu cache without waiting for the 5-minute TTL.
@@ -481,5 +488,24 @@ class ItemService
         }
         $decoded = json_decode($json, $assoc);
         return json_last_error() === JSON_ERROR_NONE ? $decoded : ($assoc ? [] : null);
+    }
+
+    /**
+     * Log [catalog.channels-null] when an item is saved with channels=NULL (legacy all-surfaces default).
+     */
+    private function warnCatalogChannelsNullIfNeeded(Item $item, string $action): void
+    {
+        if (! config('catalog_v15.channels_filter.warn_on_null', true)) {
+            return;
+        }
+        if ($item->channels !== null) {
+            return;
+        }
+        Log::warning('[catalog.channels-null]', [
+            'item_id'   => (int) $item->id,
+            'user_id'   => auth()->id(),
+            'tenant_id' => auth()->user()?->getAttribute('tenant_id'),
+            'action'    => $action,
+        ]);
     }
 }
