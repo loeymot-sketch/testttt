@@ -5245,3 +5245,74 @@ PROCESS_NOTE (for log integrity):
   - Going forward: Composer should `git stash --include-untracked` or check `git status` before its first commit to avoid sweeping orchestrator-staged-but-not-yet-committed changes.
 COMMIT: 15f36553d (Composer) + restoration commit (Claude orchestrator, this turn)
 NEXT_TASK: M1 1.3 sentinel JS parité menu POS↔Kiosk -> EXECUTION_TIER=routine (TEST-ONLY, vitest fixtures + spec)
+
+=== OUT-OF-ORDER RECOVERY APPENDIX (2026-05-02T10:50+02:00) ===
+The following 3 trace blocks were appended to this log between 10:23 and 10:42 today (chronologically BEFORE the M1 1.5 EXECUTE/AUDIT pair just above) but were dropped from the in-tree file when foodking-routine-implementer amended its task-1.5 commit at 10:44. The dropped lines were preserved in orphan commit 98b7d0bcc and are restored here at the end of the file as an "out-of-order recovery appendix" to maintain a complete audit trail. Read them positioned chronologically just after the M1 1.4 EXECUTE block (line ~5208).
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.4 ===
+DATE: 2026-05-02T10:23+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS_WITH_DISCOVERY_NOTE
+ROUND: 1 / 5
+SCOPE_COMPLIANCE: PASS — TEST-ONLY contract honoured (1 sentinel + trace, 0 product files touched)
+SENTINEL_RESULTS: ProfilePublishMidCartRejectionTest -> 2 passed (Vague 1: option_removed + option_renamed_same_id) / 2 skipped (Vague 2 behind GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK + plan §2.2)
+SUITE_REGRESSION: --filter=Composer -> 58 passed, 2 skipped (no regression)
+
+DISCOVERY (highly valuable orchestration signal):
+  Plan §1.4 contract specified an aspirational response shape for the rejection (HTTP 422 with body errors.composer / composer_removed_options / i18n key composer.choice_no_longer_available). Composer correctly investigated the actual rejection path (PricingService::assertComposerSelectionsBelongToPublishedProfile -> InvalidArgumentException -> 422) and discovered the REAL shape is {status: false, message: "Composition : le choix #X n'appartient pas au profil publié."}.
+  Composer did NOT modify production code to fit the plan, did NOT skip the test, and instead asserted the real behaviour (422 + status:false + message + variation id + French fragment + DB rollback). This is exactly the discipline the brief asked for ("ne pas adapter le test à un comportement faux ; signaler honnêtement").
+  Implication: the kiosk frontend currently handles a flat {status, message} response. The aspirational structured shape from plan §1.4 (composer_removed_options array, structured i18n) would be a UX upgrade. NOT a correctness fix — current behaviour is correct, just less rich.
+
+FOLLOW_UP_TICKET_RECOMMENDED (out of scope for 1.4):
+  "Harden composer rejection response shape: emit structured composer_removed_options + i18n key composer.choice_no_longer_available so kiosk can show modal '<Le menu a été mis à jour>'". This would touch PricingService or a new error-formatter wrapper -> tier=complex (frozen zone proximity). Park for plan amendment / future sprint.
+
+INVARIANT_CHECKS:
+  - Pricing logic: untouched (read-only investigation only) (PASS)
+  - Frozen zones: respected (PASS)
+  - Schema / Auth / Dispatch / branch_id / OrderStatus: untouched (PASS)
+COMMIT: d8d30b59c (single, test-only)
+NEXT_TASK: Sprint 1 #8 = M1 1.1 Branch-scope PosCategoryController -> EXECUTION_TIER=complex (M effort, branch_id data isolation + JSON_CONTAINS query path) -> Codex
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.1 ===
+EXECUTE_DELEGATION: codex-extension
+EXECUTION_TIER: complex
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.1
+DATE: 2026-05-02
+FILES_TOUCHED:
+  - app/Http/Controllers/Admin/PosCategoryController.php
+  - tests/Feature/Menu/PosCategoryBranchScopeTest.php
+SENTINEL_UNSKIPPED: PosCategoryBranchScopeTest (3 cases)
+LOCAL_VALIDATE: php artisan test --filter=PosCategoryBranchScopeTest -> PASS (3 passed); php artisan test --filter=Menu -> PASS (88 passed, 24 skipped)
+LINT: php -l app/Http/Controllers/Admin/PosCategoryController.php -> PASS; php -l tests/Feature/Menu/PosCategoryBranchScopeTest.php -> PASS
+VERIFY_BOUCLE: npm run verify:boucle -> EXIT 1 after banner only (no diagnostic emitted)
+RESERVATION: preflight accepted existing cursor-claude reservation for this task/scope; second codex-extension start attempt collided with same handoff reservation
+HALT: none
+
+=== AUDIT — CV1-CATALOG-CONVERGENCE-001 / task 1.1 ===
+DATE: 2026-05-02T10:42+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+ROUND: 1 / 5
+EXECUTE_DELEGATION: codex-extension (gpt-5.5-pro xhigh)
+EXECUTION_TIER: complex
+SCOPE_COMPLIANCE: PASS — only PosCategoryController.php (+59/-4) + new sentinel; no off-limits services or frozen zones touched
+SENTINEL_RESULTS: PosCategoryBranchScopeTest -> 3 passed (branch A / branch B / tenant-admin+branch-manager); 0 skipped
+SUITE_REGRESSION: --filter=Menu -> 88 passed, 24 skipped (was 85/28 baseline -> +3 unskipped, +3 passing, no regression)
+INVARIANT_CHECKS:
+  - branch_id data isolation (FoodKing #3, DIRECTLY in scope): PASS — whereHas closure scopes by DefaultAccessService->show()['branch_id']; fail-closed 403 if branch missing; no cross-branch query path.
+  - Channels filter (JSON contains 'pos' OR NULL): PASS — preserved at root level + extended to whereHas('items') closure with sqlite/mysql portability.
+  - Virtual id:0 'all_items': PASS — always injected at array head before merge with itemCategoryArray.
+  - Branch Manager carve-out: PASS — `! $user->hasRole('Branch Manager')` short-circuits scoping; sentinel verifies BM keeps global view.
+  - Tenant Admin / Admin back-compat: PASS — `$user->can('items_show')` short-circuits; sentinel verifies TA keeps global view.
+  - ItemBranchAvailability default-true semantics: PASS — `whereNotExists OR (whereExists AND is_available=true)` correctly implements "row absent => available".
+  - Pricing / OrderStatus / Dispatch / Schema: untouched (PASS)
+RISKS_FROM_CODEX_OUTPUT:
+  - Codex flagged commit could not be created (sandbox `.git/index.lock` perm) — orchestrator (Claude in-session) committed manually: 957f59c65.
+  - Codex flagged `npm run verify:boucle` exited 1 with banner only — env-only artifact (sandbox could not run sub-scripts), NOT a code regression. Will re-run on next routine cycle.
+TEST_DESIGN_NOTE: The sentinel includes 5 distinct exclusion vectors (branch availability false, opposite-branch availability, kiosk-only item channels, kiosk-only category channels, plus the included branch case) — strong negative-path coverage exceeding plan §1.1 minimum spec.
+COMMIT: 957f59c65
+NEXT_TASK: continue Sprint 1 — remaining items in plan PLAN_CV1-CATALOG-CONVERGENCE-001 §1 (Mission 1). Check §1.3 / §1.5 / §1.7 / §1.8 status next.
+
+=== END OUT-OF-ORDER RECOVERY APPENDIX ===
