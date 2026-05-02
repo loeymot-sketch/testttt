@@ -2811,3 +2811,11 @@ DATE: 2026-05-02T22:28+02:00
 A.1 verdict: PARTIEL — composer UI orienté dev (3/10 user-friendly), pas de drag&drop/preview/picker; ProductCreateWizardComponent = SKELETON; module composer.js Vuex non enregistré.
 A.2 verdict: PARTIEL — source_ref non FK, stock_levels polymorphe sans FK, propagation kiosk inégale entre item/variation/extra/addon; fixed enum mort.
 NEXT: attendre A.3 + A.4 puis synthèse Phase B.
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-PERM-01 ===
+DATE: 2026-05-02T23:31+02:00
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+SENTINEL: routerPermissionRequired 9/9; vitest 1001/2 (no regression).
+GAP_FERMÉ: A.3 #5 — message clair permission catalog.compose + redirect contextuel.
+COMMIT: 27514adb2
