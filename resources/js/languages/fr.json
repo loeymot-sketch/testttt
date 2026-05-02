@@ -836,6 +836,7 @@
         "printer_unreachable": "Impossible de joindre l'imprimante."
     },
     "message": {
+        "permission_required": "Permission requise pour accéder à cette page : {permission}",
         "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
         "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",
         "nfc_unsupported_browser": "Le NFC n'est pas disponible dans ce navigateur.",

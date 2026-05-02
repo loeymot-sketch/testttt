@@ -1005,6 +1005,7 @@
         "printer_unreachable": "The printer could not be reached."
     },
     "message": {
+        "permission_required": "Permission required to access this page: {permission}",
         "kds_recall_grace_expired": "Recall unavailable: the 60-second undo window has passed.",
         "kds_status_conflict": "This order was changed elsewhere. The list was refreshed—check the status before you act.",
         "nfc_unsupported_browser": "NFC is not available in this browser.",

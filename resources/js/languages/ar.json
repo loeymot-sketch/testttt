@@ -893,6 +893,7 @@
         "printer_unreachable": "تعذر الوصول إلى الطابعة."
     },
     "message": {
+        "permission_required": "الإذن المطلوب للوصول إلى هذه الصفحة: {permission}",
         "kds_recall_grace_expired": "لا يمكن التراجع: انتهت مهلة الإلغاء (60 ثانية).",
         "kds_status_conflict": "تم تعديل الطلب في مكان آخر. تم تحديث القائمة — راجع الحالة قبل المتابعة.",
         "nfc_unsupported_browser": "تقنية NFC غير متوفرة في هذا المتصفح.",

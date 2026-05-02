@@ -781,6 +781,7 @@
         "something_wrong": "Stimmt etwas nicht."
     },
     "message": {
+        "permission_required": "Erforderliche Berechtigung für den Zugriff auf diese Seite: {permission}",
         "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
         "password_update": "Passwort erfolgreich aktualisiert.",
         "photo_update": "Foto erfolgreich aktualisiert.",

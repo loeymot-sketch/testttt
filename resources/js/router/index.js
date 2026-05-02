@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import ENV from '../config/env';
 import appService from "../services/appService";
-import { ensureKioskLocale } from '../i18n';
+import alertService from "../services/alertService";
+import i18n, { ensureKioskLocale } from '../i18n';
 import DashboardComponent from "../components/admin/dashboard/DashboardComponent";
 import NotFoundComponent from "../components/frontend/otherPage/NotFoundComponent";
 import ExceptionComponent from "../components/frontend/otherPage/ExceptionComponent";
@@ -58,6 +59,43 @@ const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
     "route.notFound",
     "route.exception",
 ]);
+
+// [CV1-WIZARD-COMPOSABLE-001 T-WC-PERM-01] Vérifie si l'utilisateur dispose d'une
+// permission donnée (via son URL Spatie, ex: 'items'). Renvoie true quand
+// l'entrée est inconnue côté store pour préserver le comportement historique
+// (le backend reste l'autorité finale via 403 sur l'API).
+const userHasPermission = (permissionUrl) => {
+    if (!permissionUrl) return true;
+    const permissions = store.getters.authPermission || [];
+    const entry = permissions.find((p) => p && p.url === permissionUrl);
+    if (!entry) return true;
+    return entry.access === true;
+};
+
+// [CV1-WIZARD-COMPOSABLE-001 T-WC-PERM-01] Notifie l'utilisateur quand une route
+// avec meta.permissionUrl lui est refusée (meta.access === false), et redirige
+// vers la fiche produit si l'ID est connu, sinon vers le dashboard. Remplace
+// l'ancien redirect aveugle vers `route.exception` qui n'expliquait rien.
+const handlePermissionDenied = (to, next) => {
+    const permissionUrl = (to.meta && to.meta.permissionUrl) || null;
+    const message = permissionUrl
+        ? i18n.global.t('message.permission_required', { permission: permissionUrl })
+        : i18n.global.t('message.not_authorize');
+    try {
+        alertService.error(message);
+    } catch (_e) {
+        // Toast indisponible (ex: bootstrap très précoce avant montage de l'app).
+    }
+    if (
+        to.params &&
+        to.params.id &&
+        to.name !== 'admin.item.show' &&
+        userHasPermission('items')
+    ) {
+        return next({ name: 'admin.item.show', params: { id: to.params.id } });
+    }
+    return next({ name: 'admin.dashboard' });
+};
 
 const baseRoutes = [
     {
@@ -177,9 +215,9 @@ router.beforeEach((to, from, next) => {
         } else {
             if (to.meta.isFrontend === false) {
                 if (to.meta.access === false) {
-                    next({
-                        name: "route.exception",
-                    });
+                    // [CV1-WIZARD-COMPOSABLE-001 T-WC-PERM-01] Toast clair + redirect
+                    // contextuel au lieu du redirect aveugle vers route.exception.
+                    return handlePermissionDenied(to, next);
                 } else {
                     next();
                 }

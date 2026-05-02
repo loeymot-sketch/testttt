@@ -781,6 +781,7 @@
         "something_wrong": "কিছু ভুল।"
     },
     "message": {
+        "permission_required": "এই পৃষ্ঠায় প্রবেশ করতে অনুমতি প্রয়োজন: {permission}",
         "pagination_label": "{total} টি এন্ট্রির মধ্যে {from} থেকে {to} পর্যন্ত দেখানো হচ্ছে",
         "password_update": "পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে।",
         "photo_update": "ছবিটি সফলভাবে আপডেট করা হয়েছে।",
