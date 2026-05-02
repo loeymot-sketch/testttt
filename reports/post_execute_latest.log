@@ -2878,3 +2878,16 @@ COMMIT: 4e92be7c9
 GAP_FERMÉS: A.3 #1+#2+#3+#4+#5+#6+#8 + A.1 §5 (composer Vuex registered).
 GLOBAL VITEST: 1010+ passed / 2 skipped / 0 régression.
 NEXT: Phase C.2 (TEMPLATES + SOURCE-PICKER) puis C.3 EDITOR XL via Codex Pro.
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-TEMPLATES + SOURCE-PICKER (combo) ===
+DATE: 2026-05-02T23:55+02:00
+AUDIT_VERDICT: PASS
+SCOPE_COMPLIANCE: PASS — 6 fichiers allowlist (Service+Controller+Routes+StepEditor+2 sentinels).
+SENTINELS: ComposerTemplateApplyTest 6/6 + ComposerAvailableSourcesTest 2/2; Composer 72/2; vitest 1010/2 (no regression).
+GAP_FERMÉ: §0 user demand templates + A.1 F3 (source_ref picker).
+NOTES: ItemAddon.role mappé (pas addon_role); permission:catalog.compose sur les 2 nouvelles routes; wiring parent picker reporté T-WC-EDITOR-01.
+COMMIT: 3757f9a04
+
+=== PHASE C.2 CLOSED — Wizard Composable Admin V1 ===
+T-WC-TEMPLATES-01 + T-WC-SOURCE-PICKER-01 combo PASS.
+NEXT: Phase C.3 (T-WC-EDITOR-01 XL) via Codex Pro — input.json prête (commit antérieur).
