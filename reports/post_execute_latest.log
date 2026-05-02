@@ -2891,3 +2891,14 @@ COMMIT: 3757f9a04
 === PHASE C.2 CLOSED — Wizard Composable Admin V1 ===
 T-WC-TEMPLATES-01 + T-WC-SOURCE-PICKER-01 combo PASS.
 NEXT: Phase C.3 (T-WC-EDITOR-01 XL) via Codex Pro — input.json prête (commit antérieur).
+
+=== PLAN_REVIEW — CV1-WIZARD-COMPOSABLE-001 / T-WC-EDITOR-01 ===
+DATE: 2026-05-02T23:55+02:00
+PLAN_REVIEW_VERDICT: PASS
+PLAN_REVIEW_REVIEWER: Claude in-session orchestrator
+PLAN_REVIEW_NOTES:
+  - Scope: 5 nouveaux composants Vue + 1 sentinel + i18n 5 langues. Allowlist stricte.
+  - Endpoints consommés: apply-template (T-WC-TEMPLATES-01 commit 3757f9a04) + available-sources (idem) + GET profile (existant) + publish/unpublish (existant).
+  - Préserve route admin.items.composer + permission catalog.compose (déjà en place).
+  - Sentinel 8 cas couvre header, drag&drop, templates, source picker, publish (workflow user complet).
+  - Frozen zones non touchées (frontend pur + i18n + tests).
