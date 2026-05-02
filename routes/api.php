@@ -647,6 +647,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::middleware('permission:catalog.compose')->group(function () {
             Route::get('/items/{item}/profile', [ComposerProfileController::class, 'show']);
             Route::post('/items/{item}/profile', [ComposerProfileController::class, 'store']);
+            // [CV1-WIZARD-COMPOSABLE-001 T-WC-TEMPLATES-01] Apply named starter template
+            Route::post('/items/{item}/apply-template', [ComposerProfileController::class, 'applyTemplate']);
+            // [CV1-WIZARD-COMPOSABLE-001 T-WC-SOURCE-PICKER-01] Available source candidates for picker
+            Route::get('/items/{item}/available-sources', [ComposerProfileController::class, 'availableSources']);
             Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
             Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
             Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
