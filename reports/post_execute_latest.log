@@ -2919,3 +2919,11 @@ NOTES:
   - hasGenericComposerChoices() inchangé (méthode Vue) — invariant : tout step inconnu MAIS avec choices non vides retombe sur KioskStepGenericChoicesComponent.
   - componentForStepType() inchangé — toutes les valeurs registry (pain/viande/sauce/garnitures/supplements/menu/taille) sont déjà mappées.
   - INVARIANTS FoodKing : aucune logique pricing touchée (pure résolution UI). branch_id non concerné. OrderStatus non concerné. Frontend display only.
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-KIOSK-REGISTRY-01 ===
+DATE: 2026-05-03T00:08+02:00
+AUDIT_VERDICT: PASS
+SCOPE_COMPLIANCE: PASS — KioskWizardComponent + sentinel.
+SENTINEL: kioskWizardStepRegistry 5/5; vitest 1015/2 (no regression).
+GAP_FERMÉ: A.4 #1 — heuristique sous-chaîne remplacée par registre explicite ; step_key='dessert' + addon_role mappings supportés.
+COMMIT: 1112a9f79
