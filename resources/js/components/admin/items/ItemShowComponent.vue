@@ -2,6 +2,13 @@
     <LoadingComponent :props="loading" />
 
     <div class="col-12">
+        <ComposerProfileWarningBadge
+            class="mb-4"
+            :warnings="warnings"
+            @action="onCatalogWarningAction"
+            @dismiss="onCatalogWarningDismiss"
+        />
+
         <div class="grid grid-cols-1 sm:grid-cols-6 mb-4 sm:mb-0">
             <button type="button" @click="handleTab($event, '#information', '.db-tabBtn', '.db-tabDiv', 'active')"
                 class="db-tabBtn !justify-start active">
@@ -178,6 +185,7 @@ import ItemVariationListComponent from "./variation/ItemVariationListComponent";
 import ItemExtraListComponent from "./extra/ItemExtraListComponent";
 import ItemAddonListComponent from "./addon/ItemAddonListComponent";
 import ProductComposerSummaryComponent from "./ProductComposerSummaryComponent";
+import ComposerProfileWarningBadge from "./ComposerProfileWarningBadge";
 
 export default {
     name: "ItemShowComponent",
@@ -186,10 +194,12 @@ export default {
         LoadingComponent,
         ItemExtraListComponent,
         ItemAddonListComponent,
-        ProductComposerSummaryComponent
+        ProductComposerSummaryComponent,
+        ComposerProfileWarningBadge,
     },
     data() {
         return {
+            warnings: [],
             loading: {
                 isActive: false
             },
@@ -228,6 +238,7 @@ export default {
         this.$store.dispatch('item/show', this.$route.params.id).then(res => {
             this.defaultImage = res.data.data.preview;
             this.previewImage = res.data.data.preview;
+            this.warnings = Array.isArray(res.data.warnings) ? res.data.warnings : [];
             this.loading.isActive = false;
         }).catch((error) => {
             this.loading.isActive = false;
@@ -239,6 +250,13 @@ export default {
         },
         handleTab: function (event, targetID, targetButton, targetDiv, activeClass) {
             return appService.handleTab(event, targetID, targetButton, targetDiv, activeClass);
+        },
+        onCatalogWarningAction(warning) {
+            void warning;
+            /* Composer codes route inside ComposerProfileWarningBadge; other targets may be wired later */
+        },
+        onCatalogWarningDismiss(warning) {
+            void warning;
         },
         changePreviewImage: function (e) {
             if (e.target.files[0]) {

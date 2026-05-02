@@ -1331,6 +1331,11 @@
             "abandon_yes": "نعم، إلغاء",
             "abandon_continue": "متابعة",
             "recap_strip": "الملخص",
+            "live_composition_label": "تكوين الطلب مباشرة",
+            "live_composition_title": "اختياراتك",
+            "live_composition_product": "المنتج",
+            "live_composition_size": "الحجم",
+            "live_composition_empty": "ستظهر اختياراتك هنا أثناء التخصيص.",
             "supplements_empty": "لا إضافات متاحة لهذا المنتج",
             "supplements_step_title": "أي إضافة؟",
             "supplements_badge_paid": "خيارات مدفوعة",
@@ -1437,6 +1442,15 @@
                     "empty_hint": "لا توجد لحوم متوفرة لهذا المنتج.",
                     "add_one": "أضف حصة من {name}",
                     "remove_one": "أزل حصة من {name}",
+                    "tap_to_choose": "اختيار",
+                    "instruction_one": "يحتوي التاكو على نوع لحم واحد: المس الخيار الذي تريده.",
+                    "instruction_many": "يحتوي التاكو على {n} حصص: اختر عدة لحوم أو كرر نفس الخيار بزر + بعد اختياره.",
+                    "instruction_remaining_one": "بقيت حصة واحدة: المس لحماً آخر أو + على خيار اخترته.",
+                    "instruction_remaining_many": "بقيت {n} حصص: المس لحماً آخر أو + على خيار اخترته.",
+                    "instruction_complete": "تم اختيار اللحم. يمكنك المتابعة أو التعديل باستخدام + / −.",
+                    "meta_included": "مشمول",
+                    "meta_selected": "مختار",
+                    "meta_paid": "إضافة {price}",
                     "fallback_poulet": "دجاج",
                     "fallback_boeuf": "لحم بقر",
                     "fallback_merguez": "مرقاز",
@@ -1555,6 +1569,26 @@
         },
         "waiting": {
             "ready_visual_fallback": "طلبك جاهز!"
+        }
+    },
+    "warning": {
+        "catalog": {
+            "region_label": "تنبيهات الكتالوج لهذا الصنف",
+            "composer_unpublished": {
+                "title": "ملف المرشد في وضع المسودّة",
+                "message": "يوجد تعريف Wizard لكنه غير منشور. لن يظهر المرشد للعملاء قبل النشر.",
+                "action": "نشر الآن"
+            },
+            "composer_missing_for_complex_kind": {
+                "title": "ملف المرشد (Composer) مفقود",
+                "message": "يحتوي هذا الصنف على خيارات أو إضافات دون أي ملف Composer. أنشِئ واحداً لتفعيل المسار الموجّه.",
+                "action": "إنشاء ملف Composer"
+            },
+            "channels_null": {
+                "title": "القنوات غير مقيّدة",
+                "message": "الحقول فارغة (متورّثة)؛ قد يظهر هذا المنتَج على جميع الأسطح ما لم تقيّد القنوات صراحةً.",
+                "action": "ضبط القنوات"
+            }
         }
     }
 }

@@ -1211,6 +1211,11 @@
             "abandon_yes": "Oui, abandonner",
             "abandon_continue": "Continuer",
             "recap_strip": "RÉCAP",
+            "live_composition_label": "Composition en direct",
+            "live_composition_title": "Votre composition",
+            "live_composition_product": "Produit",
+            "live_composition_size": "Taille",
+            "live_composition_empty": "Vos choix s'ajoutent ici au fur et à mesure.",
             "supplements_empty": "Aucun supplément disponible pour cet article",
             "supplements_step_title": "Quel supplément ?",
             "supplements_badge_paid": "Options payantes",
@@ -1317,6 +1322,15 @@
                     "empty_hint": "Aucune viande disponible pour ce produit.",
                     "add_one": "Ajouter une portion de {name}",
                     "remove_one": "Retirer une portion de {name}",
+                    "tap_to_choose": "Choisir",
+                    "instruction_one": "Votre tacos comprend 1 viande : touchez celle que vous voulez.",
+                    "instruction_many": "Votre tacos comprend {n} portions : choisissez plusieurs viandes ou répétez la même avec + après l'avoir choisie.",
+                    "instruction_remaining_one": "Encore {n} portion : touchez une autre viande ou + sur une viande déjà choisie.",
+                    "instruction_remaining_many": "Encore {n} portions : touchez une autre viande ou + sur une viande déjà choisie.",
+                    "instruction_complete": "Choix validé. Vous pouvez continuer ou ajuster avec + / −.",
+                    "meta_included": "Inclus",
+                    "meta_selected": "Choisi",
+                    "meta_paid": "Supplément {price}",
                     "fallback_poulet": "Poulet",
                     "fallback_boeuf": "Bœuf",
                     "fallback_merguez": "Merguez",
@@ -1435,6 +1449,26 @@
         },
         "waiting": {
             "ready_visual_fallback": "Ihre Bestellung ist fertig!"
+        }
+    },
+    "warning": {
+        "catalog": {
+            "region_label": "Kataloghinweise für diesen Artikel",
+            "composer_unpublished": {
+                "title": "Composer-Profil ist ein Entwurf",
+                "message": "Ein Wizard ist vorhanden, aber noch nicht veröffentlicht. Kunden sehen ihn erst nach Veröffentlichung.",
+                "action": "Jetzt veröffentlichen"
+            },
+            "composer_missing_for_complex_kind": {
+                "title": "Composer-Profil fehlt",
+                "message": "Dieser Artikel hat Varianten oder Zusätze, aber kein Composer-Profil. Legen Sie eines an für den geführten Bestellablauf.",
+                "action": "Composer-Profil anlegen"
+            },
+            "channels_null": {
+                "title": "Kanäle nicht eingeschränkt",
+                "message": "Kanäle sind leer (übernommene Standards): dieser Artikel kann auf allen Oberflächen erscheinen, bis Kanäle explizit eingeschränkt werden.",
+                "action": "Kanäle bearbeiten"
+            }
         }
     }
 }

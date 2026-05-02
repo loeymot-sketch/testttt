@@ -2673,3 +2673,14 @@ SENTINEL_EXTENDED: FrontendSurfaceFilteringTest (was 6 cases, now 10 cases, +4 n
 LOCAL_VALIDATE: php artisan test --filter=FrontendSurfaceFilteringTest -> PASS (10 skipped on sqlite; MySQL CI exercises branches); --filter=Menu -> PASS (85 passed, 28 skipped)
 LINT: PASS (php -l; IDE lints clean)
 HALT: none
+
+=== CV1-LIFECYCLE-UX-001 / task 1.1 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+TASK_ID: CV1-LIFECYCLE-UX-001-task-1.1
+DATE: 2026-05-02
+FILES_TOUCHED: app/Services/Catalog/CatalogWarningService.php, resources/js/components/admin/items/ComposerProfileWarningBadge.vue, resources/js/components/admin/items/ItemShowComponent.vue, resources/js/languages/fr.json, resources/js/languages/en.json, resources/js/languages/de.json, resources/js/languages/ar.json, resources/js/languages/bn.json, tests/js/itemShowComposerWarning.spec.js
+NEW_SENTINEL: itemShowComposerWarning.spec.js (4 cases)
+LOCAL_VALIDATE: vitest itemShowComposerWarning -> PASS (4/4); php artisan test --filter=Catalog -> PASS (43 passed, 1 skipped)
+LINT: SKIP (npm run lint absent; ESLint flat config not found)
+HALT: none

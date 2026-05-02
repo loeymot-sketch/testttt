@@ -4,6 +4,7 @@ namespace App\Services\Catalog;
 
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\ItemWizardProfile;
 
 /**
  * CatalogWarningService — Mission #2 lifecycle UX hardening.
@@ -71,13 +72,29 @@ class CatalogWarningService
     {
         $warnings = [];
 
-        // TODO (Codex — task 1.1): implement composer_unpublished detection.
-        // Pseudo-code:
-        //   $profile = ItemWizardProfile::where('item_id', $item->id)->latest()->first();
-        //   if ($profile && !$profile->is_published) { warnings[] = code:composer_unpublished, ... }
+        $profile = ItemWizardProfile::query()
+            ->where('item_id', $item->id)
+            ->orderByDesc('version')
+            ->first();
 
-        // TODO (Codex — task 1.1): implement composer_missing_for_complex_kind.
-        //   Heuristic: $item has variations or extras AND no published profile.
+        if ($profile !== null && !$profile->is_published) {
+            $warnings[] = [
+                'code'     => self::CODE_COMPOSER_UNPUBLISHED,
+                'severity' => self::SEVERITY_WARNING,
+                'context'  => ['profile_id' => $profile->id],
+            ];
+        }
+
+        $isComplexKind = $item->variations()->exists()
+            || $item->extras()->exists();
+
+        if ($profile === null && $isComplexKind) {
+            $warnings[] = [
+                'code'     => self::CODE_COMPOSER_MISSING_FOR_COMPLEX,
+                'severity' => self::SEVERITY_BLOCKER,
+                'context'  => [],
+            ];
+        }
 
         if ($item->channels === null) {
             $warnings[] = [
