@@ -5535,3 +5535,17 @@ EXECUTE_DELEGATION: foodking-routine-implementer
 SCOPE_FILES_TOUCHED: resources/js/components/admin/items/ItemPreviewComponent.vue, resources/js/components/admin/items/ItemShowComponent.vue, tests/js/itemPreviewProjection.spec.js, resources/js/languages/en.json, resources/js/languages/fr.json, resources/js/languages/ar.json, resources/js/languages/de.json, resources/js/languages/bn.json
 SENTINEL_RESULTS: itemPreviewProjection 5/5 passed (2 skipped); vitest full 976 passed | 9 skipped (985 total)
 NOTES: Onglet Aperçu + projections parallèles, alertes parité, annonce branche aria-live polite, erreur 500 assertive + announcer.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.2 ===
+DATE: 2026-05-02T17:17+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+SCOPE_COMPLIANCE: PASS — ItemPreviewComponent.vue (+280 from skeleton), ItemShowComponent.vue (+27 surgical), 5 lang JSONs (+14/+15), new sentinel (+151), log appendix.
+SENTINEL_RESULTS: itemPreviewProjection 5/2 (2 skipped documented for arrow-keys + announcer.polite); vitest full 976 passed / 9 skipped (vs 971/14 baseline → +5 passed, -5 skipped: net positive).
+INVARIANT_CHECKS: untouched (UI-only consuming existing /api/admin/menu-projection endpoint; pricing & order-status & branch_id & dispatch-after-commit all unaffected).
+NOTE: Composer used real store dispatch `backendGlobalState/branches` (verified pattern from BackendNavbarComponent), not a fallback axios call. Solid reality probe.
+COMMIT: c60135b7f
+NEXT: M2 1.3 + M2 1.7 in parallel via codex-extension (complex tier).
