@@ -2608,3 +2608,50 @@ SCOPE_COMPLIANCE: PASS — sentinel only (production code unchanged from commit 
 SENTINEL_RESULTS: kioskComposerProfileChangeHandling 5/5 PASS; kioskWizardCatalogChangedHandling 7/7 PASS (no regression).
 INVARIANT_CHECKS: untouched (test-only).
 COMMIT: c2fe3b7f9
+
+=== AUDIT FINAL — CV1-LIFECYCLE-UX-001 / Vague 2 (consolidé) ===
+DATE: 2026-05-02T19:10+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota; codex-extension Pro saturated until 22:21 Europe/Paris.
+
+V2_TASKS_COMPLETED (6/6 hors gates):
+  - 2.5 PASS — AvailabilityService::setMaxDailyQty + immediate re-evaluation. Sentinel 4/4. Commit 4251ac4e0.
+  - 2.8 PASS — ComposerProfileUnpublishTest sentinel (production existait). 5/5. Commit 5958f5911.
+  - 2.7 PASS — NotifyStockLowOnStockLevelChanged listener (gated, throttled). 4/4. Commit 0c482febb.
+  - 2.4 PASS — OrderService/FrontendOrderService symmetry sentinel (drift 15 < 20). 3/3. Commit a056ae95c.
+  - 2.1 PASS — Auto-86 preventive cron + StockRuptureDashboard (3 endpoints + Vue + i18n FR/EN/DE/AR/BN). Sentinel 6/6 + endpoints test 1/1. Commit 2a3fbf453.
+  - 2.3 PASS — kioskComposerProfileChangeHandling sentinel (composable already covered both events). 5/5. Commit c2fe3b7f9.
+
+V2_TASKS_GATED (2/2 — PENDING_HUMAN_GATE):
+  - 2.2 GATE_FROZEN_PRICING_COMPOSER_VERSION_CHECK_2026-05-02 — frozen PricingService edit. 3 options (full / server-only / defer V2). Pending sign-off.
+  - 2.6 GATE_SCHEMA_STOCK_MOVEMENT_IDEMPOTENCY_KEY_UNIQUE_2026-05-02 — schema migration. 4-phase rollout (backfill / audit / unique constraint / service guard). Pending sign-off.
+
+V2_TASKS_DEFERRED:
+  - 2.9 XL Wizard admin guidé multi-step — 9 sub-composants Vue + Playwright E2E. Polish UX, non-V1-bloquant (existing ItemCreateComponent works). Codex Pro saturated. Recommend defer to post-V1-launch unless explicit user decision.
+
+GLOBAL_TEST_SUITE_RESULTS:
+  - PHPUnit: 1305 passed / 30 skipped (baseline V2-start 1282/40 → +23 passed, -10 skipped).
+  - Vitest:  988 passed /  2 skipped (baseline V2-start  983/ 2 → +5 passed).
+  - 0 regressions.
+
+EXECUTE_DELEGATION_DISTRIBUTION:
+  - foodking-routine-implementer (Composer Max+thinking): 5 tasks (2.5, 2.8, 2.7, 2.4, 2.3).
+  - foodking-complex-implementer (codex-extension-fallback): 1 task (2.1) — codex-extension Pro rate-limited.
+
+FALLBACK_REASONS_RECORDED:
+  - codex-extension Pro saturated 18:27 → 22:21 Europe/Paris. All M2 V2 complex EXECUTE delegated to foodking-complex-implementer with FALLBACK_REASON traced per .cursor/routing.md.
+
+INVARIANT_CHECKS (consolidated):
+  - #1 Pricing SSOT: untouched (gate 2.2 pending).
+  - #2 OrderStatus enum: untouched.
+  - #3 branch_id isolation: PASS — all stock/availability queries scoped; dashboard endpoints scoped; cron iterates per branch.
+  - #4 Dispatch-after-commit: PASS — flips through AvailabilityService::toggle which already integrates the pattern.
+  - #5 OrderService/FrontendOrderService symmetry: untouched + new sentinel locks future drift.
+  - #6 Frozen zones: untouched. Two gate briefs prepared (2.2, 2.6).
+
+GPT_FINAL_AUDIT_VERDICT: PASS (in-session fallback; codex-extension saturated)
+
+CYCLE_STATUS: V2 EXECUTABLE PORTION CLOSED. Awaiting human decision on:
+  (a) Gates 2.2 + 2.6.
+  (b) Task 2.9 XL — defer to post-V1 OR launch via Codex when Pro returns at 22:21.
+  (c) User-requested follow-up: cleanup useless dashboard features (separate cycle).
