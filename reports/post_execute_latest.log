@@ -3008,3 +3008,15 @@ SENTINEL: ComposerTemplateBranchScopedTest 3/3; Composer 75/2; composerEditorV2 
 GAP_FERMÉ: GPT_SELF_AUDIT NEEDS_FIX T-WC-EDITOR-01 — branch_id_scope respecté end-to-end.
 NOTES: authorizeWritableBranchScope existant ré-utilisé (Admin/Tenant any, Branch own only, scope=null Admin only).
 COMMIT: 06a057c17
+
+=== EXECUTE — CV1-WIZARD-COMPOSABLE-001 / T-WC-POS-RUNTIME-01 ===
+DATE: 2026-05-03T01:21+02:00
+EXECUTION_TIER: complex (XL refactor surgical)
+EXECUTE_DELEGATION: claude-orchestrator (in-session direct edit)
+FALLBACK_REASON: codex-extension Pro saturé May 2 22:23 (reset May 6 18:30) ; generalPurpose sub-agent fallback hung 55min ; user explicit override "continue toi qui décide et orchestre et exécute".
+SCOPE_FILES_TOUCHED: public/js/pos-wizard.js (3 helpers + early-return), resources/views/admin-pos-v4.blade.php (window.foodkingConfig extension), config/catalog_v15.php (flag block), tests/js/posWizardComposerAware.spec.js (NEW 7 cas)
+SENTINEL: posWizardComposerAware 7/7 PASS source-level
+NODE_CHECK: pos-wizard.js OK
+FLAG: catalog_v15.pos_wizard_composer_aware.enabled (default false, env FK_POS_WIZARD_COMPOSER_AWARE_ENABLED)
+GAP_FERMÉ: Audit Axe 4 — POS consomme composer_profile sous flag opt-in (était 0 ref)
+NOTES: vitest global 1028/2 (2 fails préexistants PaymentComponent autres sub-agents POS V5 parallèles, scope disjoint)
