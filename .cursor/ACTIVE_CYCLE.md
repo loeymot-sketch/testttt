@@ -5,14 +5,14 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `PLAN` (Phase 1 audits parallèles en cours) |
-| **TASK_ID** | `CV1-V1-CLOSEOUT-001` (Master orchestration V1 close-out — 5 audits parallèles + synthèse + cleanup + refonte dashboard + roadmap wizard) |
-| **PLAN_FILE** | `plans/PLAN_CV1-V1-CLOSEOUT-MASTER-2026-05-02.md` |
-| **EXECUTION_TIER** | mixed (audits read-only via `explore` × 5 ; cleanup routine via Composer ; gates écrits par orchestrator) |
-| **EXECUTE_DELEGATION** | déterminé par tâche issue de la synthèse Phase 2 |
+| **PHASE** | `EXECUTE` (Cycle 1 DS-XSS-CLEANUP, puis Cycle 2 CENTRAL-TREE) |
+| **TASK_ID** | `CV1-DS-XSS-CLEANUP-001` (priorité immédiate: 3 régressions actives PaymentComponent×2 + KsThemeToggle v-html). Suivant: `CV1-CENTRAL-TREE-ARCHITECTURE-001`. |
+| **PLAN_FILE** | (pas de plan dédié — fix ciblés routine, suivis du cycle CENTRAL-TREE plus large) |
+| **EXECUTION_TIER** | routine (3 fixes ciblés) → puis Cycle 2 mixed (audits + cleanup) |
+| **EXECUTE_DELEGATION** | `generalPurpose (routine sub)` (foodking-routine-implementer subagent type unavailable in this session) |
 | **REPORT_FILE** | `reports/post_execute_latest.log` (append — preuve `EXECUTE_DELEGATION` / `AUDIT_*`) |
 | **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
-| **PARENT_CYCLE** | `CV1-LIFECYCLE-UX-001` V2 closed (6 PASS + 2 gates pending). Cleanup demandé par user pour livrer V1 fonctionnelle propre. |
+| **PARENT_CYCLE** | `CV1-WIZARD-COMPOSABLE-001` CLOSED (9 PASS, 1 deferred, 16 gaps fermés). User a autorisé les 2 followups (DS XSS + CENTRAL-TREE) un par un avec MAX intelligence + double audit + double vérification + Playwright captures. |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
 > Cycles plus anciens en lecture seule = **archive** déplacée dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** (lecture humaine / forensique uniquement, **non requise** par le parcours obligatoire).

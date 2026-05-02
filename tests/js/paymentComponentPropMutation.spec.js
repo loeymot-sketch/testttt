@@ -19,7 +19,15 @@ describe('PaymentComponent prop mutation contract', () => {
     it('declares explicit payment-form events for parent-owned state changes', () => {
         const source = readFileSync(paymentComponentPath, 'utf8');
 
-        expect(source).toContain('emits: ["payment-form:patch", "payment-form:reset"]');
+        // Tolerant pattern: emits array MUST include payment-form:patch + payment-form:reset
+        // (additional events like "order:confirmed" are allowed — sentinel verrouille
+        // l'intent "events explicites pour parent-owned state", pas une signature stricte).
+        const emitsBlockMatch = source.match(/emits:\s*\[[^\]]*\]/);
+        expect(emitsBlockMatch, 'emits array should be declared').toBeTruthy();
+        const emitsBlock = emitsBlockMatch[0];
+        expect(emitsBlock).toContain('"payment-form:patch"');
+        expect(emitsBlock).toContain('"payment-form:reset"');
+
         expect(source).toContain('this.$emit("payment-form:patch", patch)');
         expect(source).toContain('this.$emit("payment-form:reset")');
     });

@@ -18,7 +18,15 @@ describe('PaymentComponentPropMutationSentinelTest', () => {
         const matches = source.match(directPropMutationPattern) || [];
 
         expect(matches, `direct prop mutations: ${matches.join(', ')}`).toEqual([]);
-        expect(source).toContain('emits: ["payment-form:patch", "payment-form:reset"]');
+
+        // Tolerant pattern: emits array MUST include payment-form:patch + payment-form:reset
+        // (additional events allowed — sentinel verrouille intent, pas signature stricte).
+        const emitsBlockMatch = source.match(/emits:\s*\[[^\]]*\]/);
+        expect(emitsBlockMatch).toBeTruthy();
+        const emitsBlock = emitsBlockMatch[0];
+        expect(emitsBlock).toContain('"payment-form:patch"');
+        expect(emitsBlock).toContain('"payment-form:reset"');
+
         expect(source).toContain('this.$emit("payment-form:patch", patch)');
         expect(source).toContain('this.$emit("payment-form:reset")');
     });
