@@ -47,6 +47,10 @@ return [
         'online_orders'    => 'Online-Bestellungen',
         'sales_report'     => 'Verkaufsbericht',
         'items_report'     => 'Güter bericht',
+        'stock_low_alerts' => 'Niedrige Lagerbestand-Warnungen',
+        'last_z_report'    => 'Letzter Z-Bericht',
+        'view_all_alerts'  => 'Alle anzeigen',
+        'no_low_alerts'    => 'Keine Warnungen',
         'stock_rupture'    => [
             'title' => 'Bestandsbruch Monitor',
             'subtitle' => 'Status des vorbeugenden Auto-86-Scans und Warnungen bei niedrigem Bestand.',

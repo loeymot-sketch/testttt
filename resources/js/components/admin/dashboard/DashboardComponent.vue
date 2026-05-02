@@ -22,8 +22,8 @@
     <div class="row">
         <ErrorBoundary><SalesSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><OrderSummaryComponent/></ErrorBoundary>
-        <ErrorBoundary><CustomerStatsComponent/></ErrorBoundary>
-        <ErrorBoundary><TopCustomersComponent/></ErrorBoundary>
+        <ErrorBoundary><StockLowAlertsWidget/></ErrorBoundary>
+        <ErrorBoundary><LastZReportWidget/></ErrorBoundary>
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
         <ErrorBoundary><MostPopularItemsComponent/></ErrorBoundary>
     </div>
@@ -33,12 +33,12 @@
 import LoadingComponent from "../components/LoadingComponent";
 import OverviewComponent from "./OverviewComponent";
 import OrderStatisticsComponent from "./OrderStatisticsComponent";
-import TopCustomersComponent from "./TopCustomersComponent";
+import StockLowAlertsWidget from "./StockLowAlertsWidget";
+import LastZReportWidget from "./LastZReportWidget";
 import FeaturedItemsComponent from "./FeaturedItemsComponent";
 import MostPopularItemsComponent from "./MostPopularItemsComponent";
 import SalesSummaryComponent from "./SalesSummaryComponent";
 import OrderSummaryComponent from "./OrderSummaryComponent";
-import CustomerStatsComponent from "./CustomerStatsComponent";
 import RealtimeReportComponent from "./RealtimeReportComponent";
 import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
@@ -52,12 +52,12 @@ export default {
         LoadingComponent,
         OverviewComponent,
         OrderStatisticsComponent,
-        TopCustomersComponent,
+        StockLowAlertsWidget,
+        LastZReportWidget,
         FeaturedItemsComponent,
         MostPopularItemsComponent,
         SalesSummaryComponent,
         OrderSummaryComponent,
-        CustomerStatsComponent,
         RealtimeReportComponent,
         SlaAlertsComponent,
         ChannelStatsComponent,

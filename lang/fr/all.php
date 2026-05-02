@@ -54,6 +54,10 @@ return [
         'online_orders' => 'Commandes en ligne',
         'sales_report' => 'Rapport des ventes',
         'items_report' => 'Rapport des articles',
+        'stock_low_alerts' => 'Alertes stock bas',
+        'last_z_report' => 'Dernier rapport Z',
+        'view_all_alerts' => 'Voir toutes',
+        'no_low_alerts' => 'Aucune alerte',
         'stock_rupture' => [
             'title' => 'Surveillance des ruptures stock',
             'subtitle' => 'Statut du scan auto-86 préventif et alertes de stock faible.',

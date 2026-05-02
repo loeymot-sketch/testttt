@@ -47,6 +47,10 @@ return [
         'online_orders'     => 'الطلبات عبر الإنترنت',
         'sales_report'      => 'تقرير المبيعات',
         'items_report'      => 'تقرير العناصر',
+        'stock_low_alerts' => 'تنبيهات المخزون المنخفض',
+        'last_z_report'    => 'آخر تقرير Z',
+        'view_all_alerts'  => 'عرض الكل',
+        'no_low_alerts'    => 'لا توجد تنبيهات',
         'stock_rupture'     => [
             'title' => 'مراقبة نفاد المخزون',
             'subtitle' => 'حالة فحص auto-86 الوقائي وتنبيهات انخفاض المخزون.',

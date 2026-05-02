@@ -2655,3 +2655,15 @@ CYCLE_STATUS: V2 EXECUTABLE PORTION CLOSED. Awaiting human decision on:
   (a) Gates 2.2 + 2.6.
   (b) Task 2.9 XL — defer to post-V1 OR launch via Codex when Pro returns at 22:21.
   (c) User-requested follow-up: cleanup useless dashboard features (separate cycle).
+
+=== EXECUTE — CV1-V1-CLOSEOUT-001 / Lot C ===
+DATE: 2026-05-02T19:48:37Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_FILES_TOUCHED: resources/js/components/admin/dashboard/DashboardComponent.vue, OverviewComponent.vue, StockLowAlertsWidget.vue (new), LastZReportWidget.vue (new), resources/js/languages/fr.json, en.json, ar.json, de.json, bn.json, lang/fr/all.php, lang/en/all.php, lang/de/all.php, lang/ar/all.php, lang/bn/all.php
+NEW_WIDGETS: StockLowAlertsWidget, LastZReportWidget
+REMOVED_FROM_DASHBOARD: TopCustomersComponent, CustomerStatsComponent (composant fichier conservé)
+OVERVIEW_CARDS: 4 → 3 (retiré total_customers)
+I18N_KEYS_ADDED: 4 × 5 langues (+ fr/en/ar/de/bn JSON pour Vue admin)
+LOCAL_VALIDATE: vitest no regression — 151 fichiers, 988 passed, 2 skipped
+NOTES: Stock link /admin/stock/rupture sans route Vue router listée — lien prêt si menu/ route ajoutée. Z-report: GET /api/admin/fiscal/z-report (permission pos-manage-fiscal ; sinon placeholder no_data_available + lien admin.transactions.list).

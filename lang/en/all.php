@@ -47,6 +47,10 @@ return [
         'online_orders' => 'Online Orders',
         'sales_report' => 'Sales Report',
         'items_report' => 'Items Report',
+        'stock_low_alerts' => 'Stock low alerts',
+        'last_z_report' => 'Last Z-report',
+        'view_all_alerts' => 'View all',
+        'no_low_alerts' => 'No alerts',
         'stock_rupture' => [
             'title' => 'Stock rupture monitor',
             'subtitle' => 'Preventive auto-86 scan status and low stock alerts.',

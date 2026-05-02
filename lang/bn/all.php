@@ -47,6 +47,10 @@ return [
         'online_orders'    =>  'অনলাইন অর্ডার',
         'sales_report'     => 'বিক্রয় প্রতিবেদন',
         'items_report'     => 'পন্যের রিপোর্ট',
+        'stock_low_alerts' => 'কম স্টক সতর্কতা',
+        'last_z_report'    => 'শেষ Z-রিপোর্ট',
+        'view_all_alerts'  => 'সব দেখুন',
+        'no_low_alerts'    => 'কোন সতর্কতা নেই',
         'stock_rupture'    => [
             'title' => 'স্টক রাপচার মনিটর',
             'subtitle' => 'প্রিভেন্টিভ auto-86 স্ক্যান স্ট্যাটাস এবং কম স্টক সতর্কতা।',
