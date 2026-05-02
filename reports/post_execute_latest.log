@@ -2988,3 +2988,14 @@ GAP_FERMÉ: A.1 F1+F2+F3+F4+F6+F7 (composer plug-and-play user-friendly).
 FOLLOWUP_NEEDED: T-WC-EDITOR-01-FIX-BRANCH-SCOPE (envoyer branchIdScope dans apply-template POST + sentinel branch-scoped template).
 NOTES: Codex sandbox .git access bloqué → commit manuel par orchestrator (allowlist strict respectée).
 COMMIT: <à venir post-commit>
+
+=== PLAN_REVIEW — CV1-WIZARD-COMPOSABLE-001 / T-WC-POS-RUNTIME-01 ===
+DATE: 2026-05-03T00:22+02:00
+PLAN_REVIEW_VERDICT: PASS
+PLAN_REVIEW_REVIEWER: Claude in-session orchestrator
+PLAN_REVIEW_NOTES:
+  - Scope: 4 fichiers (pos-wizard.js modify minimal + Blade window.foodkingConfig + config flag + sentinel NEW).
+  - Flag opt-in catalog_v15.pos_wizard_composer_aware.enabled (default false) garantit non-régression.
+  - Pos-wizard.js (5832 lignes) modifié chirurgicalement: 3 helpers nouveaux + early-return dans buildSteps.
+  - Sentinel 5 cas: flag OFF passthrough, ON sans profile, ON avec profile, unsupported skip, visible_on filter.
+  - Frozen zones non touchées.
