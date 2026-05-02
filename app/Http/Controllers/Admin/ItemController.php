@@ -103,12 +103,22 @@ class ItemController extends AdminController
         }
     }
 
-    public function destroy(Item $item) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    public function destroy(Item $item) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory | \Illuminate\Http\JsonResponse
     {
+        $forceDelete = request()->boolean('force');
+
         try {
-            $this->itemService->destroy($item);
+            $this->itemService->destroy($item, $forceDelete);
             return response('', 202);
         } catch (Exception $exception) {
+            if ((int) $exception->getCode() === 409) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                    'error' => 'errors.item.cannot_force_delete_with_history',
+                ], 409);
+            }
+
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }

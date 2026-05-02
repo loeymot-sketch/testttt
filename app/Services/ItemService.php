@@ -13,6 +13,8 @@ use App\Events\ItemDeleted;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemVariation;
 use App\Models\ItemExtra;
+use App\Models\ItemAddon;
+use App\Models\OrderItem;
 use App\Http\Requests\ItemRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +22,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\ChangeImageRequest;
 use App\Events\ItemAvailabilityChanged;
+use Illuminate\Support\Facades\Schema;
 
 class ItemService
 {
@@ -351,22 +354,66 @@ class ItemService
     /**
      * @throws Exception
      */
-    public function destroy(Item $item)
+    public function destroy(Item $item, bool $forceDelete = false): void
     {
+        $itemId = (int) $item->id;
+
+        if ($forceDelete
+            && config('catalog_v15.item_deletion.protect_force_delete_when_referenced', true)
+        ) {
+            $historyCount = OrderItem::query()->where('item_id', $itemId)->count();
+            if ($historyCount > 0) {
+                $message = sprintf(
+                    'Cet item est référencé par %d commandes historiques. Suppression douce uniquement.',
+                    $historyCount
+                );
+                throw new Exception($message, 409);
+            }
+        }
+
         try {
-            $itemId = (int) $item->id;
-            DB::transaction(function () use ($item, $itemId) {
-                $item->variations()->delete();
-                $item->extras()->delete();
-                $item->addons()->delete();
-                $item->delete();
-                DB::afterCommit(function () use ($itemId): void {
-                    event(new ItemDeleted($itemId));
+            // FK relax only in automated tests: production keeps strict FK (QueryException / SQLSTATE on kill-switch).
+            $relaxFk = $forceDelete
+                && ! config('catalog_v15.item_deletion.protect_force_delete_when_referenced', true)
+                && app()->environment('testing');
+
+            if ($relaxFk) {
+                Schema::disableForeignKeyConstraints();
+            }
+            try {
+                DB::transaction(function () use ($item, $itemId, $forceDelete): void {
+                    if ($forceDelete) {
+                        foreach ($item->variations()->get() as $variation) {
+                            $variation->forceDelete();
+                        }
+                        foreach ($item->extras()->get() as $extra) {
+                            $extra->forceDelete();
+                        }
+                        foreach ($item->addons()->get() as $addon) {
+                            $addon->forceDelete();
+                        }
+                        $item->forceDelete();
+                    } else {
+                        $item->variations()->delete();
+                        $item->extras()->delete();
+                        $item->addons()->delete();
+                        $item->delete();
+                    }
+                    DB::afterCommit(function () use ($itemId): void {
+                        event(new ItemDeleted($itemId));
+                    });
                 });
-            });
+            } finally {
+                if ($relaxFk) {
+                    Schema::enableForeignKeyConstraints();
+                }
+            }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
+            if ((int) $exception->getCode() === 409) {
+                throw $exception;
+            }
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
