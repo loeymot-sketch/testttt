@@ -102,6 +102,10 @@
             kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
+            posFallbackPolling: {
+                enabled: @json((bool) config('catalog_v15.pos_fallback_polling.enabled', false)),
+                intervalMsWhenDisconnected: @json((int) config('catalog_v15.pos_fallback_polling.interval_ms_when_disconnected', 30000)),
+            },
             posV4Entry: true,
         };
     </script>

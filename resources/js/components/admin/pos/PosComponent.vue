@@ -770,6 +770,7 @@ import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import roleEnum from "../../../enums/modules/roleEnum";
 import appService from "../../../services/appService";
+import PosSyncService from "../../../services/PosSyncService";
 import discountTypeEnum from "../../../enums/modules/discountTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
@@ -839,6 +840,7 @@ export default {
             /** [T12] Item grid skeleton while first POS menu fetch is in flight */
             posItemsFetchPending: false,
             _kioskPollTimer: null,
+            _posSyncBranchId: null,
             _eventSub: null,
             _walkInCustomerPromise: null,
             /** [T11] Debounce map itemId → timer id — max one toast / item / second */
@@ -1064,6 +1066,8 @@ export default {
             } catch (_e) { /* defensive */ }
         }
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        PosSyncService.stop();
+        this._posSyncBranchId = null;
         this._unsubscribeEcho();
         this._unbindWsService();
     },
@@ -1087,11 +1091,13 @@ export default {
         this._subscribeEcho();
         this._startKioskPolling();
         this._bindWsService();
+        this._startPosSyncFallback();
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
                 this.checkoutProps.form.branch_id = res.data.data.branch_id
                 this.props.search.branch_id = res.data.data.branch_id;
+                this._startPosSyncFallback();
                 // [POS-9.1.9] Bind the POS cart to the active cashier (branch + user).
                 // Without this, all carts share `pos_cart_v2` and a cashier B
                 // logging in after cashier A inherits A's lines (POS-GA-F-41).
@@ -1282,6 +1288,25 @@ export default {
         },
 
         // ── WebSocket state awareness ────────────────────────────────────
+        _startPosSyncFallback() {
+            const branchId = parseInt(
+                this.props.search.branch_id || this.checkoutProps.form.branch_id || this.authBranchId(),
+                10,
+            );
+            if (!Number.isFinite(branchId) || branchId <= 0) {
+                return;
+            }
+            if (this._posSyncBranchId === branchId) {
+                return;
+            }
+            this._posSyncBranchId = branchId;
+            PosSyncService.start({
+                branchId,
+                store: this.$store,
+                axios: window.axios || axios,
+                webSocketService: window._wsService,
+            });
+        },
         _bindWsService() {
             const ws = window._wsService;
             if (!ws) return;
