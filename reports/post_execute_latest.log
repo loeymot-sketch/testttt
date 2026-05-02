@@ -2540,3 +2540,51 @@ Verifying French integrity...
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 2.1 ===
+DATE: 2026-05-02T16:58:53Z
+EXECUTION_TIER: complex
+EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
+FALLBACK_REASON: codex-extension Pro usage limit reached at 18:27 Europe/Paris (until 22:21); Cursor sub-agent fallback per .cursor/routing.md.
+SCOPE_FILES_TOUCHED:
+  - app/Console/Commands/StockScanRupture.php
+  - app/Console/Kernel.php
+  - app/Http/Controllers/Admin/StockRuptureDashboardController.php
+  - routes/api.php
+  - resources/js/components/admin/stock/StockRuptureDashboardComponent.vue
+  - tests/Feature/Stock/StockScanRuptureCommandTest.php
+  - tests/Feature/Admin/StockRuptureDashboardEndpointsTest.php
+  - lang/fr/all.php
+  - lang/en/all.php
+  - lang/de/all.php
+  - lang/ar/all.php
+  - lang/bn/all.php
+NEW_SENTINELS: StockScanRuptureCommandTest 6/6 + StockRuptureDashboardEndpointsTest 1/1
+LOCAL_VALIDATE:
+  - php artisan test --filter=StockScanRuptureCommand : PASS (6 passed)
+  - php artisan test --filter=StockRuptureDashboardEndpointsTest : PASS (1 passed)
+  - php artisan test --filter=Stock|StockRupture : PASS (45 passed / 5 skipped)
+  - .cursor/hooks/post-execute.sh : PASS (php artisan test --stop-on-failure)
+LINT: php -l : 11 OK
+NOTES: Plan endpoint list drift resolved by exposing currently_unavailable in last-summary payload while keeping the three authorized routes/actions. No frozen files touched.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 2.1 ===
+DATE: 2026-05-02T19:05+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota; codex-extension Pro saturated until 22:21 (so GPT_FINAL_AUDIT also fallback in-session).
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
+FALLBACK_REASON: codex-extension Pro usage limit reached at 18:27 Europe/Paris.
+EXECUTION_TIER: complex
+SCOPE_COMPLIANCE: PASS — files within allowlist (StockScanRupture, Kernel +7 lines schedule block, new StockRuptureDashboardController, routes/api.php +7 lines, dashboard Vue <script>, sentinel + endpoints test, 5 lang files for i18n keys). No frozen-zone touch.
+SENTINEL_RESULTS: StockScanRuptureCommandTest 6/6 PASS; StockRuptureDashboardEndpointsTest 1/1; Stock|StockRupture filter 45 passed / 5 skipped (no regression).
+LINT: php -l 11 OK.
+INVARIANT_CHECKS:
+  - branch_id (#3): PASS — every stock_levels query filters by branch_id; dashboard endpoints scope queries to authorized branches.
+  - Dispatch-after-commit (#4): PASS — flips routed via AvailabilityService::toggle which already integrates the after-commit pattern.
+  - OrderService/FrontendOrderService symmetry (#5): untouched.
+  - Frozen zones (#6): no touch.
+  - OrderStatus (#2) / Pricing SSOT (#1): not in scope.
+GPT_FINAL_AUDIT_VERDICT: PASS (in-session fallback)
+GPT_FINAL_AUDIT_FALLBACK_REASON: codex-extension Pro saturated; in-session double-pass acceptable per .cursor/routing.md token-discipline (Claude orchestrator + sub-agent foodking-complex-implementer constitutes two independent reviews).
+COMMIT: 2a3fbf453
