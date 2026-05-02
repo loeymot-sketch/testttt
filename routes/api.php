@@ -248,6 +248,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu-projection.show');
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
+    // [CV1-V1-CLOSEOUT-001 T-DEEP-AVAIL-API-01] Endpoint admin pour AvailabilityService::setMaxDailyQty (M2 V2 task 2.5).
+    Route::post('/menu/availability/max-daily-qty', [AvailabilityController::class, 'setMaxDailyQty'])
+        ->name('menu.availability.max-daily-qty');
     Route::get('/stock/scan-rupture/last-summary', [StockRuptureDashboardController::class, 'lastSummary'])
         ->name('stock.scan-rupture.last-summary');
     Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])

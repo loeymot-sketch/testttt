@@ -2748,3 +2748,14 @@ SENTINEL_RESULTS: AvailabilityDispatchAfterCommitTest 3/3; Availability|Stock|Me
 INVARIANT_FIXED: #4 dispatch-after-commit dans AvailabilityService::dispatchEvent.
 NOTES: dispatchEvent à ligne 330-340 (pas 252-260 — dérive post-ajout releaseForOrderItems). Sémantique transaction imbriquée Laravel confirmée.
 COMMIT: f41e7fd9d
+
+=== EXECUTE — CV1-V1-CLOSEOUT-001 / T-DEEP-AVAIL-API-01 ===
+DATE: 2026-05-02T20:05:25Z
+EXECUTION_TIER: routine
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_FILES_TOUCHED: app/Http/Controllers/Admin/AvailabilityController.php (+méthode setMaxDailyQty + middleware permission:items_edit étendu), routes/api.php (+1 route POST admin/menu/availability/max-daily-qty), tests/Feature/Menu/SetMaxDailyQtyEndpointTest.php (NEW 5 cas)
+SENTINEL_RESULTS: SetMaxDailyQtyEndpointTest 5/5 PASS
+REGRESSION: --filter='Availability|Menu' = 131 passed / 21 skipped / 0 failed (78s)
+GAP_FERMÉ: P0 #1 audit Axe 2/3 — endpoint admin pour M2 V2 task 2.5 (AvailabilityService::setMaxDailyQty n''avait aucun endpoint HTTP)
+NOTES: Pattern auth observé = middleware Spatie 'permission:items_edit' (guard sanctum) + AdminController::resolveScopedBranchIds() pour vérifier ownership branch. Route ajoutée dans le groupe existant Route::prefix('admin')->name('admin.')->middleware(['installed','apiKey','auth:sanctum','localization','throttle:admin-mutation']) à côté de availability/toggle. Tests utilisent actingAs($admin,'sanctum') + assignRole('Admin'), seedMinimalSettings()+seedSpatieRoles() en setUp, conforme à AvailabilityToggleAuthzMatrixTest.

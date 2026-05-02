@@ -6,8 +6,10 @@ use App\Events\ItemAvailabilityChanged;
 use App\Http\Requests\Admin\AvailabilityToggleRequest;
 use App\Models\Branch;
 use App\Models\ItemBranchAvailability;
+use App\Services\Menu\AvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AvailabilityController extends AdminController
@@ -16,7 +18,7 @@ class AvailabilityController extends AdminController
     {
         parent::__construct();
 
-        $this->middleware(['permission:items_edit'])->only('toggle');
+        $this->middleware(['permission:items_edit'])->only(['toggle', 'setMaxDailyQty']);
     }
 
     public function toggle(AvailabilityToggleRequest $request): JsonResponse
@@ -78,6 +80,55 @@ class AvailabilityController extends AdminController
             'branch_id' => $branchId,
             'is_available' => $isAvailable,
             'unavailable_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Update the per-branch daily quota cap and re-evaluate availability immediately.
+     *
+     * Delegates to {@see AvailabilityService::setMaxDailyQty()} (M2 V2 task 2.5):
+     *  - lowering the cap below current consumed qty triggers an auto-86,
+     *  - raising it above consumed qty restores availability,
+     *  - null means unlimited (always available from the quota perspective).
+     *
+     * Authorization mirrors {@see toggle()}: requires `items_edit` permission and
+     * the requested `branch_id` must be inside the caller's branch scope.
+     */
+    public function setMaxDailyQty(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'item_id' => ['required', 'integer', 'exists:items,id'],
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'max_daily_qty' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $branchId = (int) $data['branch_id'];
+        $scopeBranchIds = $this->resolveScopedBranchIds((int) ($request->user()?->branch_id ?? 0));
+
+        if (! in_array($branchId, $scopeBranchIds, true)) {
+            return response()->json([
+                'message' => 'Branch scope denied.',
+            ], 403);
+        }
+
+        $row = app(AvailabilityService::class)->setMaxDailyQty(
+            (int) $data['item_id'],
+            $branchId,
+            array_key_exists('max_daily_qty', $data) && $data['max_daily_qty'] !== null
+                ? (int) $data['max_daily_qty']
+                : null,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'item_id' => (int) $row->item_id,
+                'branch_id' => (int) $row->branch_id,
+                'is_available' => (bool) $row->is_available,
+                'max_daily_qty' => $row->max_daily_qty !== null ? (int) $row->max_daily_qty : null,
+                'daily_consumed_qty' => (int) $row->daily_consumed_qty,
+                'unavailable_reason' => $row->unavailable_reason,
+            ],
         ]);
     }
 
