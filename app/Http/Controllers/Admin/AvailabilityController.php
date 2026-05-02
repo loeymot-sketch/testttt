@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Events\ItemAvailabilityChanged;
 use App\Http\Requests\Admin\AvailabilityToggleRequest;
 use App\Models\Branch;
 use App\Models\ItemBranchAvailability;
 use App\Services\Menu\AvailabilityService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +19,20 @@ class AvailabilityController extends AdminController
         $this->middleware(['permission:items_edit'])->only(['toggle', 'setMaxDailyQty']);
     }
 
+    /**
+     * Toggle per-branch availability (manual rupture / 86) for one or many branches.
+     *
+     * [CV1-V1-CLOSEOUT-001 T-CENT-DEDUP-AVAIL-01] Delegates the actual mutation to
+     * {@see AvailabilityService::toggle()} so admin HTTP and internal callers share
+     * a single SSOT (locking, idempotency, dispatch-after-commit). Auth, branch
+     * scoping and JSON response shape remain owned by the controller (public API).
+     *
+     * Fan-out semantics (branch_id = null): the controller iterates the caller's
+     * branch scope and delegates per-branch. To avoid materializing spurious rows
+     * when re-enabling an item that has no per-branch override yet, branches
+     * without an existing row are skipped on reactivation (preserves the prior
+     * controller behaviour relied on by branch-scoped admin UX).
+     */
     public function toggle(AvailabilityToggleRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -36,42 +48,35 @@ class AvailabilityController extends AdminController
             ], 403);
         }
 
-        $dispatches = [];
+        $targetBranchIds = $branchId !== null ? [$branchId] : $scopeBranchIds;
+        $forceUpsert = $branchId !== null;
+        $service = app(AvailabilityService::class);
 
         DB::transaction(function () use (
-            $branchId,
-            &$dispatches,
-            $isAvailable,
             $itemId,
+            $targetBranchIds,
+            $isAvailable,
             $reason,
-            $scopeBranchIds
+            $forceUpsert,
+            $service
         ): void {
-            $targetBranchIds = $branchId !== null ? [$branchId] : $scopeBranchIds;
-
             foreach ($targetBranchIds as $targetBranchId) {
-                $didChange = $this->toggleBranchAvailability(
-                    itemId: $itemId,
-                    branchId: $targetBranchId,
-                    isAvailable: $isAvailable,
-                    reason: $reason,
-                    forceUpsert: $branchId !== null
-                );
+                $targetBranchId = (int) $targetBranchId;
 
-                if ($didChange) {
-                    $dispatches[] = [$targetBranchId, $isAvailable, $reason];
+                if (!$forceUpsert && $isAvailable) {
+                    $rowExists = ItemBranchAvailability::query()
+                        ->where('item_id', $itemId)
+                        ->where('branch_id', $targetBranchId)
+                        ->lockForUpdate()
+                        ->exists();
+
+                    if (!$rowExists) {
+                        continue;
+                    }
                 }
+
+                $service->toggle($itemId, $targetBranchId, $isAvailable, $reason);
             }
-
-            DB::afterCommit(function () use ($dispatches, $itemId): void {
-                foreach ($dispatches as [$targetBranchId, $available, $dispatchReason]) {
-                    event(ItemAvailabilityChanged::forBranch(
-                        itemId: $itemId,
-                        branchId: (int) $targetBranchId,
-                        isAvailable: (bool) $available,
-                        reason: $dispatchReason
-                    ));
-                }
-            });
         });
 
         return response()->json([
@@ -145,50 +150,5 @@ class AvailabilityController extends AdminController
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->all();
-    }
-
-    private function toggleBranchAvailability(
-        int $itemId,
-        int $branchId,
-        bool $isAvailable,
-        ?string $reason,
-        bool $forceUpsert
-    ): bool {
-        $row = ItemBranchAvailability::query()
-            ->where('item_id', $itemId)
-            ->where('branch_id', $branchId)
-            ->lockForUpdate()
-            ->first();
-
-        if (!$row) {
-            if (!$forceUpsert && $isAvailable) {
-                return false;
-            }
-
-            ItemBranchAvailability::query()->create([
-                'item_id' => $itemId,
-                'branch_id' => $branchId,
-                'is_available' => $isAvailable,
-                'unavailable_reason' => $isAvailable ? null : $reason,
-                'unavailable_since' => $isAvailable ? null : now(),
-                'daily_consumed_qty' => 0,
-                'daily_reset_at' => Carbon::today()->toDateString(),
-            ]);
-
-            return true;
-        }
-
-        $normalizedReason = $isAvailable ? null : $reason;
-        if ((bool) $row->is_available === $isAvailable && $row->unavailable_reason === $normalizedReason) {
-            return false;
-        }
-
-        $row->update([
-            'is_available' => $isAvailable,
-            'unavailable_reason' => $normalizedReason,
-            'unavailable_since' => $isAvailable ? null : now(),
-        ]);
-
-        return true;
     }
 }
