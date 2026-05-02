@@ -5549,3 +5549,91 @@ INVARIANT_CHECKS: untouched (UI-only consuming existing /api/admin/menu-projecti
 NOTE: Composer used real store dispatch `backendGlobalState/branches` (verified pattern from BackendNavbarComponent), not a fallback axios call. Solid reality probe.
 COMMIT: c60135b7f
 NEXT: M2 1.3 + M2 1.7 in parallel via codex-extension (complex tier).
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 1.7 ===
+DATE: 2026-05-02T15:42:00Z
+EXECUTION_TIER: complex
+EXECUTE_DELEGATION: codex-extension
+SCOPE_FILES_TOUCHED: app/Services/ItemService.php, app/Http/Controllers/Admin/ItemController.php, routes/api.php, tests/Feature/Catalog/ItemDuplicationTest.php, resources/js/components/admin/items/ItemListComponent.vue, resources/js/languages/fr.json, resources/js/languages/en.json, resources/js/languages/de.json, resources/js/languages/ar.json, resources/js/languages/bn.json
+IMPLEMENTATION: admin duplicate endpoint + service copy transaction + inactive draft status + child variations/extras/addons + published composer profile copied as draft + list-row duplicate action + 5-language i18n.
+SENTINEL_RESULTS:
+  - php artisan test --filter=ItemDup: 5/5 passed
+  - php artisan test --filter=Catalog: 53/53 passed
+  - php -l modified PHP files: passed
+  - JSON parse for 5 Vue locale files: passed
+  - ESLint: not runnable in this checkout (no eslint dependency or npm script present)
+  - npm run i18n:audit: failed on pre-existing missing/dead locale key debt outside this task scope; duplicate keys added in all 5 locales.
+INVARIANT_CHECKS:
+  - pricing_ssot: PASS — duplicate preserves stored item price/flat_price; no frontend price computation added.
+  - order_status: PASS — not in scope.
+  - branch_id: PASS — no item_branch_availability rows duplicated.
+  - commit_before_dispatch: PASS — ItemCreated dispatch occurs after DB::transaction returns; DispatchableAfterCommit still defers if caller has an outer transaction.
+NOTES: Item has no itemWizardProfile relationship in App\Models\Item; composer profile clone uses ItemWizardProfile::query() directly to stay inside the hard file scope.
+
+=== EXECUTE — CV1-LIFECYCLE-UX-001 / task 1.3 ===
+DATE: 2026-05-02T17:36:00+02:00
+EXECUTION_TIER: complex
+EXECUTE_DELEGATION: codex-extension
+SCOPE_FILES_TOUCHED: resources/js/composables/useCatalogChangeNotifier.js, resources/js/components/frontend/kiosk/CatalogChangeToastComponent.vue, resources/js/components/frontend/kiosk/KioskAppComponent.vue, resources/js/store/modules/kioskCart.js, resources/js/store/modules/kioskMenu.js, resources/js/languages/fr.json, resources/js/languages/en.json, resources/js/languages/de.json, resources/js/languages/ar.json, resources/js/languages/bn.json, tests/js/kioskWizardCatalogChangedHandling.spec.js
+SENTINEL_RESULTS: kioskWizardCatalogChangedHandling 7/7 passed; vitest full 983 passed / 2 skipped (985 total)
+NOTES: CatalogChanged + ComposerProfileChanged are routed through KioskAppComponent's existing single Echo subscription to avoid double branch-channel leave semantics. Existing kioskCart/pruneUnavailableLines exists but ignores explicit removed IDs, so the notifier dispatches it for contract compatibility and then commits SET_CART_LINES for structurally removed catalog lines without changing store actions/mutations. Graphiti MCP query was attempted but the MCP call was cancelled by the host; fallback memory/INDEX.md was read. ESLint was not runnable because eslint is absent locally and npx attempted a blocked npm registry fetch. Reality probes: KioskWizardComponent has no wizard:invalidate-step listener in this checkout (event emitted for V2 task 2.3); kioskAnalytics.track is called but the real helper may silently drop catalog_change_mid_session until its whitelist is updated in a separately scoped task.
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.7 ===
+DATE: 2026-05-02T17:42+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: codex-extension (CLI codex 0.125.0, gpt-5.5-pro, xhigh)
+EXECUTION_TIER: complex
+GPT_SELF_AUDIT_VERDICT: PASS (reports/audit/GPT_SELF_AUDIT_CV1-LIFECYCLE-UX-001-task-1.7.md)
+SCOPE_COMPLIANCE: PASS — only 5 declared files (ItemService.php +128, ItemController.php +12, routes/api.php +1, ItemListComponent.vue +34, ItemDuplicationTest.php new +180). i18n keys (label.duplicate, message.item_duplicated) committed atomically with M2 1.3 (next commit) — noted in commit body.
+SENTINEL_RESULTS: ItemDuplication 5/5 PASS; full PHP test 1282 passed / 40 skipped (+19 passed vs baseline post M1 1263/46).
+INVARIANT_CHECKS:
+  - Pricing SSOT (#1): PASS — replicate() preserves flat_price; no recomputation.
+  - OrderStatus (#2): N/A.
+  - branch_id (#3): PASS — items have no branch_id; item_branch_availability rows NOT duplicated; copy starts with no per-branch availability rows.
+  - DispatchableAfterCommit (#4): PASS — ItemCreated::dispatch() called AFTER DB::transaction returns (and event uses DispatchableAfterCommit trait).
+  - OrderService symmetry (#5): N/A.
+  - Frozen zones (#6): PASS — none touched.
+DRIFT NOTED (non-blocking): brief said `slug = null`, Codex used `Str::slug($copy->name)` because items.slug is non-null in DB; correct adaptation.
+COMMIT: 1c8e6e463
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.3 ===
+DATE: 2026-05-02T17:42+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: codex-extension (CLI codex 0.125.0, gpt-5.5-pro, xhigh)
+EXECUTION_TIER: complex
+GPT_SELF_AUDIT_VERDICT: PASS (capped at usage limit before final paragraph rendered; full content captured in reports/audit/GPT_SELF_AUDIT_CV1-LIFECYCLE-UX-001-task-1.3.md including invariants + risks block).
+SCOPE_COMPLIANCE: PASS — 6 frontend files (composable +456, toast +243 from skeleton, KioskAppComponent +74 surgical, kioskCart +1, kioskMenu +5, sentinel +249) + 5 lang JSONs (+14 each, includes M2 1.7 i18n keys bundled atomically).
+SENTINEL_RESULTS: kioskWizardCatalogChangedHandling 7/7 PASS; full vitest 983 passed / 2 skipped (+7 passed vs M2 1.2 baseline 976/9).
+INVARIANT_CHECKS:
+  - branch_id (#3): PASS — onCatalogChanged discards events whose event.branch_id !== branchId (verified via sentinel "ignores events for other branches").
+  - Pricing SSOT (#1): PASS — frontend-only, no price logic.
+  - OrderStatus (#2): N/A (no order flow touched).
+  - DispatchableAfterCommit (#4): N/A (frontend-only).
+  - OrderService symmetry (#5): N/A.
+  - Frozen zones (#6): PASS — none touched.
+RISK NOTED (deferred to V2 task 2.3): KioskWizardComponent has no wizard:invalidate-step listener yet; the CustomEvent emission is safe (no consumer = no-op) and is the contract for V2.
+RISK NOTED (deferred): kioskAnalytics.track may silently drop catalog_change_mid_session if event-name whitelist is enforced; analytics layer not in this scope.
+COMMIT: 556c86ef6
+
+=== M2 VAGUE 1 — CYCLE COMPLETION SUMMARY ===
+DATE: 2026-05-02T17:42+02:00
+TASK_ID: CV1-LIFECYCLE-UX-001
+PLAN_FILE: plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md
+RUNNER_MODE: single-session
+PHASE: AUDIT_PASS → CLOSE
+EXECUTION_DELEGATION_SUMMARY:
+  - Routine (foodking-routine-implementer / Composer Max+thinking): tasks 1.5, 1.6, 1.2 → all PASS first round
+  - Complex (codex-extension / Codex CLI gpt-5.5-pro xhigh): tasks 1.3, 1.7, 1.9-v2 → all PASS first round (1.9 round 2 after architectural pivot)
+  - Already closed in earlier sessions: 1.1 (composer warning), 1.4 (profile publish mid-cart), 1.8 (hard-delete protection), 1.9 round 2 (atomic UPDATE)
+SENTINEL_BASELINE_DELTA:
+  - PHP: 1263 → 1282 passed (+19), 46 → 40 skipped (-6)
+  - JS: 971 → 983 passed (+12), 14 → 2 skipped (-12)
+INVARIANT_VIOLATIONS_DETECTED: 0
+GATE_TRIGGERS_DETECTED: 0
+SCOPE_PRESSURE_EVENTS: 0
+ESCALATIONS: 1 (M2 1.9 round 1 → architectural option chosen by user → resolved in round 2 prior to this session)
+NEXT: M2 Vague 1 fully closed. Next cycle = M2 Vague 2 (auto-86 cron, profile_version check FROZEN GATE, wizard guidé multi-step) — defer to user instruction (gate cleared required for 2.2).
