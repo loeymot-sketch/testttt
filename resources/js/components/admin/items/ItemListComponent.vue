@@ -237,6 +237,19 @@
                                         <SmIconSidebarModalEditComponent @click="edit(item)"
                                             v-if="permissionChecker('items_edit')" />
                                     </span>
+                                    <span :data-testid="`admin-item-configure-wizard-${item.id}`">
+                                        <router-link
+                                            v-if="permissionChecker('items_edit')"
+                                            :to="{ name: 'admin.items.composer', params: { id: item.id } }"
+                                            class="db-table-action view"
+                                            :title="$t('label.configure_wizard')"
+                                            :aria-label="$t('label.configure_wizard')"
+                                            data-testid="item-list-configure-wizard-button"
+                                        >
+                                            <i class="lab lab-cog"></i>
+                                            <span class="db-tooltip">{{ $t('label.configure_wizard') }}</span>
+                                        </router-link>
+                                    </span>
                                     <span :data-testid="`admin-item-duplicate-${item.id}`">
                                         <button
                                             type="button"
@@ -415,6 +428,12 @@ export default {
         }).catch((err) => {
             this.loading.isActive = false;
         });
+        // [T-WC-CREATE-URL-01] /admin/items/create deep-link → opens create drawer.
+        // The drawer DOM lives inside ItemCreateComponent (v-if=items_create), so we
+        // wait one tick to ensure it is mounted before activating the [data-drawer] target.
+        if (this.$route?.query?.create === '1' && this.permissionChecker('items_create')) {
+            this.$nextTick(() => appService.sideDrawerShow());
+        }
     },
     computed: {
         items: function () {

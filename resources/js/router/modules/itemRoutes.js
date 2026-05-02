@@ -29,6 +29,25 @@ export default [
                     breadcrumb: ''
                 },
             },
+            // [CV1-WIZARD-COMPOSABLE-001 T-WC-CREATE-URL-01] Dedicated /admin/items/create
+            // entry point. We do not render a distinct Create page: redirect to the list with
+            // ?create=1 so the existing ItemCreateComponent drawer (mounted inside the list)
+            // opens via mounted() hook in ItemListComponent. Keeps /admin/items/create
+            // bookmarkable, share-able, and breadcrumb-traceable while reusing the drawer UX.
+            {
+                path: 'create',
+                component: ItemListComponent,
+                name: 'admin.items.create',
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: 'items_create',
+                    breadcrumb: 'create',
+                },
+                beforeEnter: (to, from, next) => {
+                    next({ name: 'admin.items.list', query: { create: '1' } });
+                },
+            },
             {
                 path: "show/:id",
                 component: ItemShowComponent,
