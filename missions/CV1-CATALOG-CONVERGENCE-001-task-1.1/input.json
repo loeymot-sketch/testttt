@@ -1,0 +1,60 @@
+{
+  "task_id": "CV1-CATALOG-CONVERGENCE-001-task-1.1",
+  "parent_cycle": "CV1-CATALOG-CONVERGENCE-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-CATALOG-CONVERGENCE-001_2026-05-02.md",
+  "plan_section": "§ 1.1 (lines 67-96)",
+  "audit_source": "reports/audit/CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_1_CATALOG_SYNC_2026-05-02.md §A.1 #1",
+  "delegated_by": "Claude (in-session orchestrator) — terminal Claude in Anthropic Pro quota until 12:00 Europe/Paris",
+  "delegation_reason": "M effort + FoodKing invariant #3 (branch_id data isolation) directly in scope + role-aware filter (BRANCH_MANAGER carve-out) + JSON contains preservation. Per MULTI_AGENT_LOOP_2026-05-02 §2: this is the canonical complex task.",
+
+  "instruction": "Implement plan task 1.1 strictly: branch-scope the PosCategoryController::index query so POS users see only categories that contain at least one item available on their active branch, while preserving the existing channels filter (JSON contains 'pos' OR NULL) and the virtual id:0 'all_items' header injection. Read app/Services/DefaultAccessService.php to retrieve active_branch_id for the authenticated user. The Spatie heuristic for 'POS-only runtime' is `can('pos') && !can('items_show')` — same gate as ItemController::forcePosRuntimeBranchScope and the new applyDefaultPosSurfaceForPosRuntimeUser landed in task 1.2 (see commit e88911275). Tenant Admin / Admin (with `items_show` permission) keep the legacy global view (no breaking change for their workflow). Branch Manager role MUST keep seeing all categories for planning — implement the carve-out per plan §1.1 risks: when user has `branch_manager` role (or equivalent — verify in app/Services/DefaultAccessService.php and the role table), bypass the whereHas filter. The whereHas('items', ...) closure must constrain on (a) branch availability (item_branch_availability row exists with is_available=true OR row absent — verify default-true semantics in AvailabilityService) AND (b) channels JSON contains 'pos' OR channels IS NULL. Then create/un-skip the sentinel tests/Feature/Menu/PosCategoryBranchScopeTest.php with the 3 cases listed in plan §1.1: branch A user sees only A's category set, branch B user sees only B's category set, tenant admin sees all. Use the existing skipped sentinel as starting scaffold (foundations already created it). Run `php artisan test --filter=PosCategoryBranchScopeTest` until all cases pass, then `php artisan test --filter=Menu` to confirm zero regression. Keep diffstat tight: only PosCategoryController.php and the sentinel test — DO NOT touch ItemService, MenuProjectionService, KioskMenuService, frozen zones, or any Vue file. Append the standard EXECUTE_DELEGATION trace and commit once.",
+
+  "subsystems": [
+    "app/Http/Controllers/Admin/PosCategoryController.php (write — index method only, lines 35-99)",
+    "tests/Feature/Menu/PosCategoryBranchScopeTest.php (write — un-skip + implement 3 cases)"
+  ],
+
+  "subsystems_off_limits": [
+    "app/Services/ItemService.php (frozen-by-task-shim per plan)",
+    "app/Services/MenuProjectionService.php (V2 convergence)",
+    "app/Services/KioskMenuService.php (V2 migration)",
+    "app/Services/Pricing/PricingService.php (frozen NF525)",
+    "app/Services/Orders/OrderService.php (frozen)",
+    "app/Services/FrontendOrderService.php (frozen)",
+    "any Vue component"
+  ],
+
+  "invariants_at_risk": [
+    "branch_id data isolation (FoodKing invariant #3) — DIRECTLY in scope. Every query must filter by branch_id and never leak data across branches. The whereHas closure must use the user's active_branch_id, not request-supplied without authz check.",
+    "Channels filter (JSON contains 'pos' OR NULL) — must be preserved exactly as today (lines 60-67 of current controller).",
+    "Virtual id:0 'all_items' header (lines 74-80) — must remain in the response in all cases.",
+    "Branch Manager role view — must NOT be broken (carve-out required per plan risks)."
+  ],
+
+  "acceptance": [
+    "POS-only user (can('pos') && !can('items_show')) on branch A: index returns only categories with at least one available item on branch A (plus the virtual id:0).",
+    "Same user switched to branch B: returns only B's eligible categories.",
+    "Admin / Tenant Admin (has items_show): returns full legacy list (back-compat).",
+    "Branch Manager role: returns full list (per carve-out).",
+    "Channels filter (`pos` OR NULL) still applied in every code path.",
+    "Virtual id:0 always injected at the head of the array.",
+    "tests/Feature/Menu/PosCategoryBranchScopeTest.php all 3 cases pass locally.",
+    "--filter=Menu: no regression (current baseline 85 passed, 28 skipped from task 1.2 audit).",
+    "Single commit, conventional message: [CV1-CATALOG-CONVERGENCE-001 task 1.1] Branch-scope PosCategoryController::index."
+  ],
+
+  "halt_conditions": [
+    "DefaultAccessService does not expose active_branch_id with a clean read API — write reports/handoff/blocks/NEEDS_CLAUDE_M1_1_1.md and HALT.",
+    "Branch Manager role / permission name is ambiguous in the codebase (multiple candidates with different scopes) — HALT and document.",
+    "ItemBranchAvailability default semantics (default-true vs default-false when row missing) cannot be confirmed by reading AvailabilityService — HALT.",
+    "Any frozen zone modification appears necessary — HALT.",
+    "More than 2 attempts to make the sentinel pass without a clear hypothesis."
+  ],
+
+  "trace_template": "=== CV1-CATALOG-CONVERGENCE-001 / task 1.1 ===\nEXECUTE_DELEGATION: codex-extension\nEXECUTION_TIER: complex\nTASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.1\nDATE: 2026-05-02\nFILES_TOUCHED:\n  - app/Http/Controllers/Admin/PosCategoryController.php\n  - tests/Feature/Menu/PosCategoryBranchScopeTest.php\nSENTINEL_UNSKIPPED: PosCategoryBranchScopeTest (3 cases)\nLOCAL_VALIDATE: php artisan test --filter=PosCategoryBranchScopeTest -> <verdict> ; --filter=Menu -> <verdict, count>\nLINT: <verdict>\nHALT: <none | reason>\n",
+
+  "commit_message_template": "[CV1-CATALOG-CONVERGENCE-001 task 1.1] Branch-scope PosCategoryController::index for POS-only runtime users\n\n- whereHas('items') filter on active_branch_id + channels(pos|null) for POS-only users (can('pos') && !can('items_show')).\n- Branch Manager role bypasses the whereHas (carve-out per plan risks).\n- Tenant Admin / Admin keep the legacy global view (back-compat).\n- Virtual id:0 'all_items' header preserved in all paths.\n- Sentinel: PosCategoryBranchScopeTest (skipped -> passing, 3 cases).\n- Audit: reports/audit/CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_1_CATALOG_SYNC_2026-05-02.md §A.1 #1\n"
+}
