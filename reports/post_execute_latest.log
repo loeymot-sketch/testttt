@@ -2685,3 +2685,32 @@ SCOPE_FILES_TOUCHED: tests/Feature/Catalog/CategoryRenameSyncTest.php
 SENTINEL_RESULTS: CategoryRenameSyncTest 3/3 SKIPPED (production gap)
 PRODUCTION_GAP_DETECTED: YES — CategoryUpdated is dispatched from ItemCategoryService::update via DB::afterCommit(event()), not from ItemCategory Eloquent saves (no observer on model).
 NOTES: Sentinel documents gap for audit Axe 1; assertions kept for future PASS when rename path emits event from tested surface.
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / Lot C ===
+DATE: 2026-05-02T21:55+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_COMPLIANCE: PASS — DashboardComponent + Overview + 2 nouveaux widgets + 5 langues i18n.
+SENTINEL_RESULTS: Vitest 988/2 (no regression).
+NOTES: lien /admin/stock/rupture sans route Vue (à câbler dans cycle suivant).
+COMMIT: edd2c4b0d
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / T-DEEP-PROD-01 ===
+DATE: 2026-05-02T21:55+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_COMPLIANCE: PASS — sentinel only.
+SENTINEL_RESULTS: PriceChangeSnapshotTest 3/3; Order|Pricing 459/1 (no regression).
+INVARIANT_LOCKED: #1 Pricing SSOT lifecycle order_items.price snapshot.
+COMMIT: 247a7d923
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / T-DEEP-CAT-01 ===
+DATE: 2026-05-02T21:55+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS
+EXECUTE_DELEGATION: foodking-routine-implementer
+SCOPE_COMPLIANCE: PASS — sentinel only.
+SENTINEL_RESULTS: CategoryRenameSyncTest 3/3.
+COMMIT: 924eeedfe
