@@ -2999,3 +2999,12 @@ PLAN_REVIEW_NOTES:
   - Pos-wizard.js (5832 lignes) modifié chirurgicalement: 3 helpers nouveaux + early-return dans buildSteps.
   - Sentinel 5 cas: flag OFF passthrough, ON sans profile, ON avec profile, unsupported skip, visible_on filter.
   - Frozen zones non touchées.
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-EDITOR-01-FIX-BRANCH-SCOPE ===
+DATE: 2026-05-03T00:29+02:00
+AUDIT_VERDICT: PASS
+SCOPE_COMPLIANCE: PASS — 4 fichiers allowlist (Service+Controller+Vue+sentinel).
+SENTINEL: ComposerTemplateBranchScopedTest 3/3; Composer 75/2; composerEditorV2 8/8 (no regression).
+GAP_FERMÉ: GPT_SELF_AUDIT NEEDS_FIX T-WC-EDITOR-01 — branch_id_scope respecté end-to-end.
+NOTES: authorizeWritableBranchScope existant ré-utilisé (Admin/Tenant any, Branch own only, scope=null Admin only).
+COMMIT: 06a057c17
