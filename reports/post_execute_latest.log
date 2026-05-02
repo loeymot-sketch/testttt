@@ -2902,3 +2902,20 @@ PLAN_REVIEW_NOTES:
   - Préserve route admin.items.composer + permission catalog.compose (déjà en place).
   - Sentinel 8 cas couvre header, drag&drop, templates, source picker, publish (workflow user complet).
   - Frozen zones non touchées (frontend pur + i18n + tests).
+
+=== EXECUTE — CV1-WIZARD-COMPOSABLE-001 / T-WC-KIOSK-REGISTRY-01 ===
+DATE: 2026-05-03T00:06+02:00
+EXECUTION_TIER: complex
+EXECUTE_DELEGATION: generalPurpose (complex sub fallback)
+SCOPE_FILES_TOUCHED: resources/js/components/frontend/kiosk/KioskWizardComponent.vue, tests/js/kioskWizardStepRegistry.spec.js (NEW)
+SCOPE_COMPLIANCE: PASS — 2 fichiers allowlist stricte (1 modify + 1 new sentinel).
+SENTINEL_RESULTS: kioskWizardStepRegistry 5/5 PASS
+REGRESSION_RESULTS: vitest run tests/js/ → 156 files / 1015 PASS / 2 skipped (baseline preserved).
+GAP_FERMÉ: A.4 #1 — heuristique sous-chaîne (composerStepType haystack.includes) remplacée par registre explicite STEP_KEY_REGISTRY + ADDON_ROLE_TO_TYPE + resolveExplicitStepType ; un step admin-créé avec step_key='dessert' (ou tout addon_role mapping) est désormais résolu vers le composant menu au lieu d'être droppé silencieusement.
+NOTES:
+  - Module-level constants Object.freeze (immutables) + fonction pure resolveExplicitStepType — testable en source-level.
+  - Priorité explicite : addon_role (priority 1) avant step_key (priority 2) — cohérent avec l'audit Axe A.4 où les addons "drink/side/dessert/menu_component" doivent rendre via le KioskStepMenu component.
+  - Step inconnu sans choices → console.warn + null (pas de fallback récap fantôme qui casserait l'UX). Le recap auto-push existant dans composerActiveSteps() reste intact.
+  - hasGenericComposerChoices() inchangé (méthode Vue) — invariant : tout step inconnu MAIS avec choices non vides retombe sur KioskStepGenericChoicesComponent.
+  - componentForStepType() inchangé — toutes les valeurs registry (pain/viande/sauce/garnitures/supplements/menu/taille) sont déjà mappées.
+  - INVARIANTS FoodKing : aucune logique pricing touchée (pure résolution UI). branch_id non concerné. OrderStatus non concerné. Frontend display only.

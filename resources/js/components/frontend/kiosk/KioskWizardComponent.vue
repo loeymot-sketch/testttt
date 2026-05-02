@@ -271,6 +271,60 @@ const KioskStepGenericChoices = defineAsyncComponent(() =>
   import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepGenericChoicesComponent.vue')
 );
 
+// [T-WC-KIOSK-REGISTRY-01] Explicit registry — replaces heuristic substring matching.
+// Audit Axe A.4 #1 : un step avec step_key arbitraire (ex. 'dessert') tombait à null
+// faute de match sous-chaîne. Ce registre map explicitement chaque clé connue vers
+// son composant spécialisé. Tout step inconnu mais avec `choices` non vides retombe
+// sur KioskStepGenericChoicesComponent ; sans choices, il est loggué puis skippé.
+const STEP_KEY_REGISTRY = Object.freeze({
+    pain: 'pain',
+    galette: 'pain',
+    bun: 'pain',
+    viande: 'viande',
+    meat: 'viande',
+    proteine: 'viande',
+    sauce: 'sauce',
+    sauces: 'sauce',
+    garnitures: 'garnitures',
+    garniture: 'garnitures',
+    crudites: 'garnitures',
+    supplements: 'supplements',
+    supplement: 'supplements',
+    extras: 'supplements',
+    menu: 'menu',
+    formule: 'menu',
+    boisson: 'menu',
+    drink: 'menu',
+    frites: 'menu',
+    side: 'menu',
+    dessert: 'menu',
+    taille: 'taille',
+    size: 'taille',
+});
+
+const ADDON_ROLE_TO_TYPE = Object.freeze({
+    drink: 'menu',
+    side: 'menu',
+    dessert: 'menu',
+    menu_component: 'menu',
+});
+
+function resolveExplicitStepType(step) {
+    if (!step) return null;
+
+    const addonRole = String(step.addon_role || '').toLowerCase().trim();
+    if (addonRole && ADDON_ROLE_TO_TYPE[addonRole]) {
+        return ADDON_ROLE_TO_TYPE[addonRole];
+    }
+
+    const stepKey = String(step.step_key || '').toLowerCase().trim();
+    if (stepKey && STEP_KEY_REGISTRY[stepKey]) {
+        return STEP_KEY_REGISTRY[stepKey];
+    }
+
+    return null;
+}
+
 export default {
   name: 'KioskWizardComponent',
   mixins: [kioskPriceMixin],
@@ -675,32 +729,19 @@ export default {
       return ['item_attribute', 'extra_group', 'addon'].includes(step?.source_type);
     },
     composerStepType(step) {
-      const haystack = [
-        step?.step_key,
-        step?.label,
-        step?.source_type,
-        step?.source_ref,
-        step?.addon_role,
-      ].filter(Boolean).join(' ').toLowerCase();
+      const explicit = resolveExplicitStepType(step);
+      if (explicit) return explicit;
 
-      if (haystack.includes('recap')) return 'recap';
-      if (haystack.includes('taille') || haystack.includes('size')) return 'taille';
-      if (haystack.includes('pain') || haystack.includes('galette')) return 'pain';
-      if (haystack.includes('viande') || haystack.includes('meat')) return 'viande';
-      if (haystack.includes('sauce')) return 'sauce';
-      if (haystack.includes('crudite') || haystack.includes('crudité') || haystack.includes('garniture')) return 'garnitures';
-      if (haystack.includes('supplement') || haystack.includes('supplément')) return 'supplements';
-      if (
-        haystack.includes('menu') ||
-        haystack.includes('boisson') ||
-        haystack.includes('drink') ||
-        haystack.includes('frites') ||
-        ['drink', 'side', 'dessert', 'menu_component'].includes(step?.addon_role)
-      ) {
-        return 'menu';
+      if (this.hasGenericComposerChoices(step)) return 'generic_choices';
+
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[kiosk-wizard.composer] step skipped (no kind match + no choices)', {
+          step_key: step?.step_key,
+          label: step?.label,
+          source_type: step?.source_type,
+        });
       }
-
-      return this.hasGenericComposerChoices(step) ? 'generic_choices' : null;
+      return null;
     },
     componentForStepType(type) {
       const map = {
