@@ -2770,3 +2770,15 @@ SCOPE_COMPLIANCE: PASS — controller +1 méthode, routes/api.php +1 route, sent
 SENTINEL_RESULTS: SetMaxDailyQtyEndpointTest 5/5; Availability|Menu 131/21 (no regression).
 GAP_FERMÉ: P0 #1 audit Axe 2/3 — endpoint admin pour M2 V2 task 2.5 (auth Spatie items_edit + branch-scope guard alignés sur toggle()).
 COMMIT: ae50f0b84
+
+=== AUDIT — CV1-V1-CLOSEOUT-001 / Lot A.2 ===
+DATE: 2026-05-02T22:10+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_VERDICT: PASS (with commit hygiene anomaly noted)
+EXECUTE_DELEGATION: generalPurpose (routine sub)
+FALLBACK_REASON: foodking-routine-implementer subagent type unavailable in this session
+SCOPE_COMPLIANCE: PASS — 4 fichiers + log d'append.
+SENTINEL_RESULTS: v1HiddenMenuModules 4/4; vitest global 992/2 (no regression).
+HIDDEN_MODULES: customers, coupons, offers, creditBalanceReport, settings.mail, settings.loyalty-setup, settings.notification, settings.theme.
+PATTERN: BackendMenuComponent itéré + settings/MenuComponent statique avec mappings locaux kebab/camelCase.
+COMMIT_HYGIENE_ANOMALY: les 4 fichiers + bloc EXECUTE Lot A.2 livrés par sub-agent ont été absorbés par mon commit chore "[chore] Log AUDIT T-CENT-AVAIL-DISPATCH-01 PASS" (3bb709056) à cause d'une race git index avec sub-agent parallèle. État fonctionnel correct (code + tests en HEAD), seul le message commit est incohérent avec le contenu — documenté pour archéologie future. Pas de réécriture historique (risque collision avec sub-agents en cours).
