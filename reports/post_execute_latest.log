@@ -5335,3 +5335,94 @@ PROBED_GETTERS:
 CHANNEL_SENTINEL: catalogItemVisibleOnSurface() inlined in spec — mirrors PHP App\Models\Item::isVisibleOn (NULL=>all surfaces, non-null array lists allowed surfaces, empty array=>visibility nowhere)
 IMPORT_NOTE: importing store/modules/item.js loads appService which bootstraps production root store; Vitest hoists vi.mock('../../resources/js/services/appService', ...) so the module can be tested in isolation
 NOTES: No client-side shared filter export in resources/js; parity locked by applying Item::isVisibleOn semantics to the same fixture blob committed to both item/lists and kioskMenu/SET_ITEMS for this sentinel
+
+=== AUDIT — CV1-CATALOG-CONVERGENCE-001 / task 1.3 ===
+DATE: 2026-05-02T10:54+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS_WITH_DISCOVERY_NOTE
+ROUND: 1 / 5
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine (TEST-ONLY)
+SCOPE_COMPLIANCE: PASS — 3 files changed (+279), all in tests/js/__fixtures__/ + tests/js/ + log trace; 0 product files touched; clean commit, no amend
+SENTINEL_RESULTS: posComponentMenuFiltering -> 4 tests passed, 0 it.todo
+SUITE_REGRESSION: full vitest -> 147 files / 966 tests passing (no regression)
+LOG_INTEGRITY: PASS — Composer respected the post-1.5 protocol (single commit, no amend, only intended files staged)
+
+REALITY PROBE (extremely valuable orchestration signal):
+  Composer probed and documented the actual filter architecture:
+  - POS: resources/js/store/modules/item.js exposes getter `lists` (item/lists). NO client-side channels filter — filtering is SERVER-SIDE via ItemService when ?surface=pos is passed (this is exactly what task 1.2 hardened).
+  - Kiosk: resources/js/store/modules/kioskMenu.js exposes getter `allItems` (kioskMenu/allItems). NO client-side channels filter — filtering is SERVER-SIDE via the kiosk menu projection when surface=kiosk is in scope.
+  - There is NO first-class shared client-side predicate. Both surfaces trust API-filtered payloads.
+  
+  Sentinel design (correct adaptation): instead of comparing two getters' raw outputs (which would only assert that the same fixture put into two stores stays the same), the spec hydrates both stores with the SAME unfiltered 10-item blob, then applies catalogItemVisibleOnSurface (a JS predicate mirroring App\Models\Item::isVisibleOn) to derive what each surface SHOULD see, then asserts the predicate matches the expected channel matrix. This locks the contract to Item::isVisibleOn semantics — if anyone later adds client-side filtering (e.g. for offline mode or PosSyncService fallback caching) and it diverges from Item::isVisibleOn, the test catches it.
+
+CONVERGENCE GAP (open architectural signal, not a regression):
+  No shared client filter today. Implications:
+  - GOOD: server is SSOT including channel filtering (matches FoodKing invariant doctrine).
+  - RISK: PosSyncService (task 1.7, next) fallback-poll cache rehydration must use server payloads as-is OR re-apply Item::isVisibleOn equivalent in JS. The sentinel from 1.3 establishes the canonical predicate that 1.7 can reference.
+  
+  Recommendation: NO action needed at this layer. Document Item::isVisibleOn as the canonical surface-visibility predicate in plan §1.7 brief.
+
+INVARIANT_CHECKS: untouched (PASS) — TEST-ONLY task
+
+IMPORT_NOTE (test-isolation, not a product change):
+  resources/js/store/modules/item.js imports appService which pulls the production root store on load. Composer correctly stubbed ../../resources/js/services/appService in vitest before importing the item module. This is standard test-isolation discipline, NOT a product change. Documented in spec comment + trace.
+
+COMMIT: a5b417de4
+NEXT_TASK: M1 1.7 PosSyncService fallback polling -> EXECUTION_TIER=complex (M effort, 7 sub-tasks of frontend reactive logic + Echo state machine + AbortController + backoff doubling). Codex (codex-extension).
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.7 ===
+EXECUTE_DELEGATION: codex-extension
+EXECUTION_TIER: complex
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.7
+DATE: 2026-05-02
+FILES_TOUCHED:
+  - resources/js/services/PosSyncService.js (start() implemented)
+  - resources/js/components/admin/pos/PosComponent.vue (mounted + beforeUnmount hooks)
+  - tests/js/posSyncFallback.spec.js (new, 5 cases)
+  - resources/views/admin-pos-v4.blade.php (window.foodkingConfig.posFallbackPolling)
+SENTINEL_CASES: 5 passing / 0 it.todo / 0 skipped
+LOCAL_VALIDATE: npx vitest run tests/js/posSyncFallback.spec.js -> PASS (5/5); npm run vitest -> PASS (148 files / 971 tests)
+TARGETED_VALIDATE: npx vitest run tests/js/PosComponent.spec.js tests/js/posSyncFallback.spec.js -> PASS (11/11); KDS sync references -> PASS (13/13)
+LINT: npm run pos:lint:pricing -> PASS with existing signoff-pending warning; npm run pos:lint:status -> PASS
+WS_EVENT_NAMES_PROBED: connected, disconnected, state_change, reconnect_storm
+COMMIT: not created by codex-extension because sandbox cannot write .git/index.lock (Operation not permitted)
+HALT: none
+
+=== AUDIT — CV1-CATALOG-CONVERGENCE-001 / task 1.7 ===
+DATE: 2026-05-02T11:22+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS_WITH_CONSCIOUS_DISCIPLINE_NOTE
+ROUND: 2 / 5 (round 1 was a HALT — see plan-drift discovery below)
+EXECUTE_DELEGATION: codex-extension (gpt-5.5-pro xhigh, second run with corrected brief)
+EXECUTION_TIER: complex
+SCOPE_COMPLIANCE: PASS — surgical PosComponent.vue commit (+25 lines all PosSync-wiring) + new PosSyncService.js (425 lines impl) + new posSyncFallback.spec.js (5 cases) + admin-pos-v4.blade.php (+4 lines, foodkingConfig.posFallbackPolling)
+SENTINEL_RESULTS: posSyncFallback -> 5/5 passed (flag off / disconnected starts / reconnect suspends / 5xx backoff 5-10-20-30 / abort on overlap)
+SUITE_REGRESSION: full vitest -> 148 files / 971 tests passing (was 147/966 -> +1 file +5 tests)
+
+ROUND_1_DISCOVERY (plan drift correctly halted):
+  First codex run halted before any edit because the brief referenced non-existent resources/views/layouts/app.blade.php and wrong global window.fkConfig. Reality: POS V4 surface is rendered by resources/views/admin-pos-v4.blade.php (route /admin/pos-v4/{any?}) and the canonical runtime config object is window.foodkingConfig (admin-pos-v4.blade.php:96). WebSocketService event names confirmed: connected, disconnected, state_change, reconnect_storm.
+  Codex's halt before edits is exactly the discipline halts are for. Brief was amended (8 surgical input.json edits) and re-launched; round 2 succeeded.
+
+CONSCIOUS_DISCIPLINE_NOTE (orchestrator surgical commit):
+  The PosComponent.vue working tree had ~700 pre-existing uncommitted lines from prior session POS V4 cycles (PLAN_POS_V4_UNIFIED_CATEGORY_VIEW + PLAN_POS_V4_VIEWPORT_UI — viewport widths 340/320/377 -> 316/302/346, removal of LANDING template / best-sellers / category grid). Sweeping those into the M1 1.7 commit would have produced a misleading commit (979 lines named "PosSyncService fallback polling"). 
+  Orchestrator action: backed up Codex's full output to /tmp/PosComponent_codex_full.vue, reset PosComponent.vue to HEAD, surgically re-applied ONLY Codex's M1 1.7 hooks (6 StrReplace edits totaling +25 lines), verified posSyncFallback 5/5 still green against the smaller diff, committed clean. Then restored /tmp backup to working tree to preserve the prior-session work for a future commit under its own cycle context. No data lost.
+
+INVARIANT_CHECKS:
+  - branch_id data isolation: PASS — _startPosSyncFallback resolves branchId from props.search.branch_id || checkoutProps.form.branch_id || authBranchId() (the same chain used by other cart/POS scoping logic) and passes it to PosSyncService.start; idempotency guard prevents polling a different branch.
+  - No client-side pricing logic: PASS — PosSyncService just dispatches Vuex item/lists with surface=pos + branch_id, uses vuex:false + guarded manual commits to avoid stale-overwrite.
+  - DispatchableAfterCommit: N/A (no event dispatch in this layer)
+  - Frozen zones: respected (PASS) — no Pricing/OrderService/FrontendOrderService touched
+
+RISKS_FROM_CODEX_OUTPUT:
+  - Codex flagged commit could not be created (sandbox .git/index.lock) — orchestrator committed manually: 87011d916.
+  - npm run verify:boucle exited 1 with banner only in sandbox — same env-only artifact as task 1.1, not a code regression.
+  - Codex noted unrelated stderr noise in legacy vitest tests (localhost:3000 fetch, evil.tld, router-link warnings) — pre-existing, NOT introduced by 1.7.
+COMMIT: 87011d916
+SPRINT_1_VAGUE_1_STATUS: complete (1.1 PASS, 1.2 PASS, 1.3 PASS_WITH_DISCOVERY, 1.4 PASS_WITH_DISCOVERY, 1.5 PASS_WITH_NOTE, 1.6 PASS, 1.7 PASS_WITH_DISCIPLINE_NOTE).
+NEXT_TASK_OPTIONS:
+  (a) Vague 2 (Mission 1) — convergence: requires staging shadow_compare activation (2.1) + projection migrations (2.2-2.7). Several tasks need human gate before staging.
+  (b) Resume CV1-LIFECYCLE-UX-001 (Mission 2) — only 1.9 escalated remains; potentially other Sprint 1 items in that plan to scan.
+  (c) Surface the M2 1.9 ESCALATED architectural decision to user (3 options pending).
