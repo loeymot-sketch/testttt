@@ -50,6 +50,12 @@ class ItemController extends AdminController
             $this->authorizeBranchScope($request, $branchId);
         }
 
+        // CV1 catalog convergence (audit CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_1 §A.1 #3):
+        // POS-only runtime callers (permission `pos` without catalog `items_show`) must get
+        // `?surface=pos` semantics by default so `/api/admin/item` never leaks kiosk-only SKUs.
+        // Same heuristic as forcePosRuntimeBranchScope(). Client-provided surface wins.
+        $this->applyDefaultPosSurfaceForPosRuntimeUser($request);
+
         try {
             return SimpleItemResource::collection($this->itemService->simpleList($request));
         } catch (Exception $exception) {
@@ -241,5 +247,24 @@ class ItemController extends AdminController
         $request->query->set('branch_id', $branchId);
 
         return $branchId;
+    }
+
+    /**
+     * DefaultAccessService only tracks saved defaults (branch, etc.). POS vs admin "surface intent"
+     * is inferred here from the same Spatie gates as POS runtime branch forcing: `pos` without
+     * `items_show` means menu-only callers that must not see kiosk-scoped SKUs unless they pass ?surface=kiosk.
+     */
+    private function applyDefaultPosSurfaceForPosRuntimeUser(\Illuminate\Http\Request $request): void
+    {
+        $user = $request->user();
+        if (! $user || $user->can('items_show') || ! $user->can('pos')) {
+            return;
+        }
+        if ($request->filled('surface')) {
+            return;
+        }
+
+        $request->merge(['surface' => 'pos']);
+        $request->query->set('surface', 'pos');
     }
 }

@@ -3,11 +3,12 @@
 namespace Tests\Feature\Menu;
 
 use App\Enums\Status;
+use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Tests\TestCase;
 
 /**
@@ -28,7 +29,6 @@ use Tests\TestCase;
 class FrontendSurfaceFilteringTest extends TestCase
 {
     use RefreshDatabase;
-    use WithoutMiddleware;
 
     private Tax $tax;
 
@@ -91,6 +91,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_item_list_without_surface_returns_every_item(): void
     {
+        $this->withoutMiddleware();
         $allCat = $this->seedCategory('All', null);
         $kioskCat = $this->seedCategory('KioskOnly', ['kiosk']);
 
@@ -109,6 +110,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_item_list_with_surface_kiosk_hides_pos_only_items(): void
     {
+        $this->withoutMiddleware();
         $allCat = $this->seedCategory('All', null);
 
         $legacyItem = $this->seedItem('LegacyNullChannels', $allCat, null);
@@ -126,6 +128,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_item_list_with_surface_pos_hides_kiosk_only_items(): void
     {
+        $this->withoutMiddleware();
         $allCat = $this->seedCategory('All', null);
 
         $legacyItem = $this->seedItem('LegacyNullChannels', $allCat, null);
@@ -143,6 +146,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_item_list_with_unknown_surface_falls_back_to_all(): void
     {
+        $this->withoutMiddleware();
         $allCat = $this->seedCategory('All', null);
 
         $legacyItem = $this->seedItem('LegacyNullChannels', $allCat, null);
@@ -162,6 +166,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_category_list_with_surface_kiosk_hides_pos_only_categories(): void
     {
+        $this->withoutMiddleware();
         $legacyCat = $this->seedCategory('LegacyNullChannels', null);
         $kioskCat = $this->seedCategory('KioskExclusive', ['kiosk']);
         $posCat = $this->seedCategory('PosExclusive', ['pos']);
@@ -177,6 +182,7 @@ class FrontendSurfaceFilteringTest extends TestCase
 
     public function test_category_list_without_surface_returns_every_category(): void
     {
+        $this->withoutMiddleware();
         $legacyCat = $this->seedCategory('LegacyNullChannels', null);
         $kioskCat = $this->seedCategory('KioskExclusive', ['kiosk']);
         $posCat = $this->seedCategory('PosExclusive', ['pos']);
@@ -188,5 +194,137 @@ class FrontendSurfaceFilteringTest extends TestCase
         $this->assertContains($legacyCat->name, $names);
         $this->assertContains($kioskCat->name, $names);
         $this->assertContains($posCat->name, $names);
+    }
+
+    /** @see ItemController::index — default ?surface=pos for POS-runtime users without items_show */
+    public function test_admin_item_list_pos_operator_without_surface_defaults_like_surface_pos(): void
+    {
+        $driver = config('database.default');
+        $dbDriver = config("database.connections.$driver.driver");
+        if ($dbDriver !== 'mysql') {
+            $this->markTestSkipped('Admin POS surface sentinel requires MySQL JSON_CONTAINS (same as frontend contract).');
+        }
+
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+        $operator->assignRole('POS Operator');
+        $this->assertTrue($operator->can('pos'));
+        $this->assertFalse($operator->can('items_show'));
+
+        $category = $this->seedCategory('AdminPosDefaultSurfCat', null);
+        $legacyItem = $this->seedItem('AdminPosDefaultLegacy', $category, null);
+        $kioskItem = $this->seedItem('AdminPosDefaultKioskExcl', $category, ['kiosk']);
+        $posItem = $this->seedItem('AdminPosDefaultPosExcl', $category, ['pos']);
+
+        $base = '/api/admin/item?paginate=0&status=' . Status::ACTIVE . '&item_category_id=' . $category->id;
+
+        $names = collect(
+            $this->actingAs($operator, 'sanctum')->getJson($base)->assertOk()->json('data')
+        )->pluck('name')->all();
+
+        $this->assertContains($legacyItem->name, $names);
+        $this->assertContains($posItem->name, $names);
+        $this->assertNotContains($kioskItem->name, $names, 'POS runtime without surface must not leak kiosk-exclusive SKUs');
+    }
+
+    public function test_admin_item_list_admin_without_surface_keeps_legacy_all_channels_visible(): void
+    {
+        $driver = config('database.default');
+        $dbDriver = config("database.connections.$driver.driver");
+        if ($dbDriver !== 'mysql') {
+            $this->markTestSkipped('Admin POS surface sentinel requires MySQL JSON_CONTAINS (same as frontend contract).');
+        }
+
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $branch->id]);
+        $admin->assignRole('Admin');
+        $this->assertTrue($admin->can('items_show'));
+
+        $category = $this->seedCategory('AdminLegacySurfCat', null);
+        $legacyItem = $this->seedItem('AdminLegacySurfNull', $category, null);
+        $kioskItem = $this->seedItem('AdminLegacySurfKiosk', $category, ['kiosk']);
+        $posItem = $this->seedItem('AdminLegacySurfPos', $category, ['pos']);
+
+        $base = '/api/admin/item?paginate=0&status=' . Status::ACTIVE . '&item_category_id=' . $category->id;
+
+        $names = collect(
+            $this->actingAs($admin, 'sanctum')->getJson($base)->assertOk()->json('data')
+        )->pluck('name')->all();
+
+        $this->assertContains($legacyItem->name, $names);
+        $this->assertContains($posItem->name, $names);
+        $this->assertContains($kioskItem->name, $names, 'Admin without explicit surface stays catalog-wide');
+    }
+
+    public function test_admin_item_list_pos_operator_implicit_surface_matches_explicit_surface_pos(): void
+    {
+        $driver = config('database.default');
+        $dbDriver = config("database.connections.$driver.driver");
+        if ($dbDriver !== 'mysql') {
+            $this->markTestSkipped('Admin POS surface sentinel requires MySQL JSON_CONTAINS (same as frontend contract).');
+        }
+
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+        $operator->assignRole('POS Operator');
+
+        $category = $this->seedCategory('AdminExplicitPosParityCat', null);
+        $this->seedItem('ExplicitParityLegacy', $category, null);
+        $this->seedItem('ExplicitParityKiosk', $category, ['kiosk']);
+        $this->seedItem('ExplicitParityPos', $category, ['pos']);
+
+        $q = '?paginate=0&status=' . Status::ACTIVE . '&item_category_id=' . $category->id;
+
+        $implicit = collect(
+            $this->actingAs($operator, 'sanctum')->getJson('/api/admin/item' . $q)->assertOk()->json('data')
+        )->pluck('name')->sort()->values()->all();
+
+        $explicit = collect(
+            $this->actingAs($operator, 'sanctum')->getJson('/api/admin/item' . $q . '&surface=pos')->assertOk()->json('data')
+        )->pluck('name')->sort()->values()->all();
+
+        $this->assertSame($explicit, $implicit);
+    }
+
+    /** Client-declared surface wins (no forcing pos onto ?surface=kiosk). */
+    public function test_admin_item_list_pos_operator_with_surface_kiosk_is_not_overridden_to_pos(): void
+    {
+        $driver = config('database.default');
+        $dbDriver = config("database.connections.$driver.driver");
+        if ($dbDriver !== 'mysql') {
+            $this->markTestSkipped('Admin POS surface sentinel requires MySQL JSON_CONTAINS (same as frontend contract).');
+        }
+
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+        $operator->assignRole('POS Operator');
+
+        $category = $this->seedCategory('AdminKioskOverrideCat', null);
+        $legacyItem = $this->seedItem('KioskSurfLegacy', $category, null);
+        $kioskItem = $this->seedItem('KioskSurfKioskOnly', $category, ['kiosk']);
+        $posItem = $this->seedItem('KioskSurfPosOnly', $category, ['pos']);
+
+        $url = '/api/admin/item?paginate=0&status=' . Status::ACTIVE .
+            '&item_category_id=' . $category->id . '&surface=kiosk';
+
+        $names = collect(
+            $this->actingAs($operator, 'sanctum')->getJson($url)->assertOk()->json('data')
+        )->pluck('name')->all();
+
+        $this->assertContains($legacyItem->name, $names);
+        $this->assertContains($kioskItem->name, $names);
+        $this->assertNotContains($posItem->name, $names, 'Explicit kiosk surface must not be replaced by POS default');
     }
 }

@@ -2612,3 +2612,64 @@ FILES_TOUCHED: app/Services/ItemService.php
 SENTINELS_RERUN: ItemDeletionWithOrderHistoryTest -> 4 passed / Catalog suite -> 43 passed (1 skipped)
 LINT: php -l app/Services/ItemService.php -> OK
 HALT: none
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.8 (round 2) ===
+DATE: 2026-05-02T09:54+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: PASS
+ROUND: 2 / 5
+RESOLUTION: Option A (gate FK disable to app()->environment('testing'))
+CHECK_PRODUCTION_SAFE: confirmed line 378 — Schema::disableForeignKeyConstraints unreachable in non-testing env even with kill-switch flag off
+SENTINEL_RERUN: ItemDeletionWithOrderHistoryTest -> 4 passed (0.73s)
+SUITE_REGRESSION: --filter=Catalog -> 43 passed, 1 skipped (was 39 passed; +4 = our new sentinels)
+COMMIT: 47324fa33 (single, includes round 1 + 2 squashed)
+NEXT_TASK: Sprint 1 #4 = M2 1.9 lockForUpdate AvailabilityService -> EXECUTION_TIER=complex (concurrency primitive, OrderService callsite, sentinel to invent) -> Codex
+
+=== CV1-LIFECYCLE-UX-001 / task 1.9 ===
+EXECUTE_DELEGATION: codex-extension
+EXECUTION_TIER: complex
+TASK_ID: CV1-LIFECYCLE-UX-001-task-1.9
+DATE: 2026-05-02
+FILES_TOUCHED:
+  - reports/handoff/blocks/NEEDS_CLAUDE_M2_1_9.md
+NEW_SENTINEL: not created (halted before product edit)
+LOCAL_VALIDATE: not run (halted before product edit)
+LINT: not run (halted before product edit)
+HALT: caller_not_in_transaction — AvailabilityService::decrementForOrder is reached through OrderCreated after-commit listener, not inside OrderService/FrontendOrderService transaction boundary; see reports/handoff/blocks/NEEDS_CLAUDE_M2_1_9.md
+
+=== AUDIT — CV1-LIFECYCLE-UX-001 / task 1.9 ===
+DATE: 2026-05-02T10:04+02:00
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude-terminal Anthropic Pro quota
+AUDIT_VERDICT: ESCALATED
+ESCALATION_TYPE: soft_gate_plan_drift (per human-gates.mdc — Claude audit detects plan drift)
+ROUND: 1 / 5 (no rework loop applicable — architectural decision required)
+FINDINGS:
+  Codex (codex-extension, gpt-5.5-pro xhigh) correctly halted before any product edit per declared halt-condition. The plan §1.9 contract requires `lockForUpdate()` to operate "inside the existing transaction context", but the actual runtime call path is:
+    OrderService::create / FrontendOrderService::create -> DB::transaction commit
+    -> OrderCreated event (DispatchableAfterCommit, hardened in task 1.6)
+    -> EventServiceProvider maps OrderCreated to DecrementItemAvailabilityOnOrder
+    -> Listener calls AvailabilityService::decrementForOrder($order) AFTER commit (no surrounding tx)
+  Adding lockForUpdate in this context is meaningless (no transaction to scope the lock).
+  Wrapping in a new local transaction was explicitly forbidden by the brief because it would change lifecycle semantics (when ItemAvailabilityChanged fires).
+  Codex evidence cross-checked by Claude orchestrator (in-session): listener file confirmed at app/Listeners/DecrementItemAvailabilityOnOrder.php, OrderCreated trait confirmed DispatchableAfterCommit (just hardened in task 1.6).
+SCOPE_RESPECTED: yes (Codex modified only reports/handoff/blocks/NEEDS_CLAUDE_M2_1_9.md, post_execute_latest.log, AGENT_ACTIVITY_LOG.md — no product file touched).
+ARCHITECTURAL_OPTIONS_FOR_HUMAN:
+  Option 1 — Move AvailabilityService::decrementForOrder INTO OrderService transaction (alongside StockService::decrementForOrder), remove the after-commit listener path. Pros: lockForUpdate becomes meaningful, atomic with stock decrement. Cons: changes ItemAvailabilityChanged dispatch timing (now during order tx — but the event itself is also DispatchableAfterCommit so net timing OK); requires careful symmetry review (FoodKing invariant #5).
+  Option 2 — Authorize a local DB::transaction inside AvailabilityService::decrementForOrder + lockForUpdate inside it. Pros: smallest diff, listener path preserved. Cons: subdivides the lifecycle (event timing inside listener slightly different from current); introduces nested transaction-like behavior.
+  Option 3 — Pivot strategy from "lockForUpdate" to ATOMIC SQL increment (DB::table('item_branch_availability')->where(...)->update(['daily_consumed_qty' => DB::raw('LEAST(daily_consumed_qty + ?, max_daily_qty)'), ...])). Pros: lock-free, race-free at row level, no transaction needed, cleanest. Cons: requires more careful event-flip detection (UPDATE returns affected rows; need a second query to read the new state for the is_available flip decision); replaces plan's prescribed implementation strategy.
+RECOMMENDED_BY_CLAUDE_ORCHESTRATOR: Option 3 (atomic UPDATE) — sidesteps the entire transaction-boundary question, race-free without a lock, and aligns with the spirit of §1.9 ("garantir que 2 commandes simultanées ... ne perdent pas un increment"). Plan §1.9 would need a small amendment.
+NEXT_TASK_PROCEED: Sprint 1 #5 = M1 1.2 Surface filter défaut (CATALOG, S, routine -> Composer). M2 1.9 parked pending human architectural call.
+TRACE_INTEGRITY: post_execute trace + activity-log blocked + NEEDS_CLAUDE_M2_1_9.md all in place; 0 product file touched.
+
+=== CV1-CATALOG-CONVERGENCE-001 / task 1.2 ===
+EXECUTE_DELEGATION: foodking-routine-implementer
+EXECUTION_TIER: routine
+TASK_ID: CV1-CATALOG-CONVERGENCE-001-task-1.2
+DATE: 2026-05-02
+FILES_TOUCHED: app/Http/Controllers/Admin/ItemController.php, tests/Feature/Menu/FrontendSurfaceFilteringTest.php
+SENTINEL_EXTENDED: FrontendSurfaceFilteringTest (was 6 cases, now 10 cases, +4 new)
+LOCAL_VALIDATE: php artisan test --filter=FrontendSurfaceFilteringTest -> PASS (10 skipped on sqlite; MySQL CI exercises branches); --filter=Menu -> PASS (85 passed, 28 skipped)
+LINT: PASS (php -l; IDE lints clean)
+HALT: none
