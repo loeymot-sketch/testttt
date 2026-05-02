@@ -2927,3 +2927,22 @@ SCOPE_COMPLIANCE: PASS — KioskWizardComponent + sentinel.
 SENTINEL: kioskWizardStepRegistry 5/5; vitest 1015/2 (no regression).
 GAP_FERMÉ: A.4 #1 — heuristique sous-chaîne remplacée par registre explicite ; step_key='dessert' + addon_role mappings supportés.
 COMMIT: 1112a9f79
+
+=== EXECUTE — CV1-WIZARD-COMPOSABLE-001 / T-WC-STOCK-PROPAGATION-01 ===
+DATE: 2026-05-03T00:10+02:00
+EXECUTION_TIER: complex
+EXECUTE_DELEGATION: generalPurpose (complex sub fallback)
+SCOPE_FILES_TOUCHED: tests/Feature/Stock/WizardOptionStockSyncTest.php (NEW)
+SCOPE_COMPLIANCE: PASS — 1 nouveau sentinel, allowlist stricte respectée. PersistItemAvailabilityChangedToOutbox.php lu en read-only — aucun gap critique justifiant une modification.
+SENTINEL_RESULTS: WizardOptionStockSyncTest 4/4 PASS
+REGRESSION_RESULTS: php artisan test --filter='Stock' → 49 PASS / 5 skipped (baseline 45 PASS + 5 skipped + 4 nouveaux = 49/5 — 0 régression).
+GAP_FERMÉ: A.2 §4 — propagation rupture wizard options verrouillée par sentinel sur 4 chemins distincts (variation, extra, addon, asymétrie IBA).
+NOTES:
+  - Asymétrie réelle (vs synthèse audit) : variation/extra émettent UNIQUEMENT StockLevelChanged (drive CatalogChanged → kiosk.menu.branch.{id} invalidation + refetch) car syncItemAvailabilityForStockLevel skip si stockable_type !== Item::class. Aucune ligne IBA créée pour variation_id/extra_id (IBA est keyed sur item_id only).
+  - Addon items (stockable_type=Item, line_uid contient :addon-item:) : DOUBLE propagation — ItemAvailabilityChanged (IBA flippé is_available=false, reason=stock_rupture) ET StockLevelChanged (isChoiceBoundaryMutation true via addon-item flag).
+  - Item direct (line_uid contient :item:) : seul ItemAvailabilityChanged fire (déjà couvert par StockRuptureAvailabilitySyncTest existant).
+  - Le sentinel exerce le vrai chemin StockService::decrementForOrder via OrderItem.item_variations / item_extras / composition_snapshot.addons[*].addon_item_id (real wizard payload shape) — pas un dispatch manuel.
+  - Synthèse audit Axe A.2 §4 légèrement imprécise sur le path addon : addon DOES auto-sync IBA (puisque stockable_type=Item). La vraie asymétrie est variation/extra ≠ Item-keyed IBA, pas addon ≠ IBA.
+  - Aucun impact runtime sur ChoiceAvailabilityResolver (T-WC-STOCK-SYNC-01) ni sur PersistItemAvailabilityChangedToOutbox (lecture seule confirmée).
+  - INVARIANTS FoodKing : pricing SSOT non touché ; OrderStatus non touché ; branch_id préservé (toutes assertions filtrent par branch_id) ; dispatch-after-commit déjà couvert par StockAvailabilityAfterCommitTest (sentinel parallèle).
+
