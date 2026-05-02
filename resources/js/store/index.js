@@ -107,6 +107,10 @@ import { kioskCart } from './modules/kioskCart';
 import { kioskMenu } from './modules/kioskMenu';
 import { kioskSettings } from './modules/kioskSettings';
 import kioskFilter from './modules/kioskFilter';
+// [CV1-WC-T-WC-MENU-CATALOG-01] Composer module registration. Module exists since
+// item composer profile feature mais n'était pas câblé dans le store — actions
+// `show / save / publish / unpublish` désormais accessibles via `composer/...`.
+import { composer } from './modules/composer';
 // [PHASE-6.4] Plugin analytics : s'abonne aux mutations Vuex pertinentes
 //             et relaie vers kioskAnalytics.track() (consent-gated, anonyme).
 import kioskAnalyticsPlugin from './plugins/kioskAnalyticsPlugin';
@@ -224,6 +228,7 @@ export default new createStore({
         kioskMenu,
         kioskSettings,
         kioskFilter,
+        composer,
     },
     plugins: [
         createPersistedState({

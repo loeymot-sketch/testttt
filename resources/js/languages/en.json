@@ -189,6 +189,7 @@
         "order": "Order",
         "item": "Item",
         "items": "Items",
+        "product_list": "Product List",
         "taxes": "Taxes",
         "currencies": "Currencies",
         "mail": "Mail",

@@ -49,6 +49,7 @@
         "order": "Auftrag",
         "item": "Güter",
         "items": "Güter",
+        "product_list": "Produktliste",
         "taxes": "Steuern",
         "currencies": "Währungen",
         "mail": "Post",

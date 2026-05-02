@@ -12,7 +12,7 @@
         </div>
         <!--        {{ menus }}-->
         <nav class="db-sidebar-nav">
-            <ul class="db-sidebar-nav-list" v-if="visibleMenus.length > 0" v-for="menu in visibleMenus" :key="menu">
+            <ul class="db-sidebar-nav-list" v-if="enrichedVisibleMenus.length > 0" v-for="menu in enrichedVisibleMenus" :key="menu">
                 <li class="db-sidebar-nav-item" v-if="menu.url === '#'" @click.prevent="sidebarActive($event)">
                     <button type="button" :aria-label="$t('menu.' + menu.language)" class="db-sidebar-nav-title">
                         {{ $t('menu.' + menu.language) }}
@@ -63,6 +63,29 @@ const HIDDEN_KEY_TO_MENU_URL = Object.freeze({
     creditBalanceReport: 'credit-balance-report',
 });
 
+/**
+ * [CV1-WC-T-WC-MENU-CATALOG-01] Sous-section "Catalogue" côté Vue.
+ *
+ * Le seeder `MenuTableSeeder` enregistre `Items` comme entrée de menu plate
+ * (`url='items'`, sans `children`). Catégories et Attributs sont enfouis sous
+ * `Réglages` (audit A.3 #1+#2). On reconstitue ici un regroupement Catalogue
+ * **sans toucher la table `menus` en DB** : si le menu Items arrive sans
+ * children, on injecte 3 sous-items virtuels (liste produits + catégories +
+ * attributs). Si la DB a déjà été personnalisée (children non vides), on
+ * respecte la configuration existante et on n'écrase rien.
+ *
+ * Les `language` mappent les clés `menu.<key>` du JSON i18n (cf. `i18n.js` →
+ * `resources/js/languages/{fr,en,ar,bn,de}.json`). Les `icon` reprennent la
+ * convention seeder `lab lab-<icon>`.
+ */
+const VIRTUAL_CHILDREN_BY_URL = Object.freeze({
+    items: Object.freeze([
+        Object.freeze({ url: 'items',                          language: 'product_list',     icon: 'lab lab-list' }),
+        Object.freeze({ url: 'settings/item-categories/list',  language: 'item_categories',  icon: 'lab lab-item-categories' }),
+        Object.freeze({ url: 'settings/item-attributes/list',  language: 'item_attributes',  icon: 'lab lab-item-attributes' }),
+    ]),
+});
+
 export default {
     name: "BackendMenuComponent",
     data: function () {
@@ -103,6 +126,20 @@ export default {
                     }
                     return true;
                 });
+        },
+        /**
+         * [CV1-WC-T-WC-MENU-CATALOG-01] Enrichit les menus visibles avec les
+         * sous-items virtuels (Catalogue) sans toucher la DB. Préserve la
+         * configuration custom si l'admin a déjà des `children` non vides.
+         */
+        enrichedVisibleMenus() {
+            return this.visibleMenus.map(menu => {
+                const virtualChildren = VIRTUAL_CHILDREN_BY_URL[menu.url];
+                if (!virtualChildren) return menu;
+                const hasExistingChildren = Array.isArray(menu.children) && menu.children.length > 0;
+                if (hasExistingChildren) return menu;
+                return { ...menu, children: virtualChildren };
+            });
         },
         sidebar() {
             return this.$store.getters['globalState/lists'].topSidebar;

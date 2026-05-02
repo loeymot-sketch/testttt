@@ -187,6 +187,7 @@
         "order": "Commande",
         "item": "Article",
         "items": "Articles",
+        "product_list": "Liste produits",
         "customers": "Clients",
         "loyalty_setup": "Fidélité",
         "kiosk_setup": "Configuration borne",
