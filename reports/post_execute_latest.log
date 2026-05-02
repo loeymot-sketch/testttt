@@ -2946,3 +2946,12 @@ NOTES:
   - Aucun impact runtime sur ChoiceAvailabilityResolver (T-WC-STOCK-SYNC-01) ni sur PersistItemAvailabilityChangedToOutbox (lecture seule confirmée).
   - INVARIANTS FoodKing : pricing SSOT non touché ; OrderStatus non touché ; branch_id préservé (toutes assertions filtrent par branch_id) ; dispatch-after-commit déjà couvert par StockAvailabilityAfterCommitTest (sentinel parallèle).
 
+
+=== AUDIT — CV1-WIZARD-COMPOSABLE-001 / T-WC-STOCK-PROPAGATION-01 ===
+DATE: 2026-05-03T00:12+02:00
+AUDIT_VERDICT: PASS
+SCOPE_COMPLIANCE: PASS — 1 sentinel new + read-only inspection PersistItemAvailabilityChangedToOutbox.
+SENTINEL: WizardOptionStockSyncTest 4/4; Stock 49/5 (no regression).
+GAP_FERMÉ: A.2 §4 — propagation rupture wizard options verrouillée sur 4 chemins.
+FINDING_CORRECTION_AUDIT_A2: addon items via stockable_type=Item DO auto-sync IBA + dispatch ItemAvailabilityChanged (synthèse audit imprécise sur ce point). Vraie asymétrie = variation/extra n'ont PAS de ligne IBA (keyée item_id), kiosk dépend de StockLevelChanged → CatalogChanged → refetch.
+COMMIT: 41cac097b
