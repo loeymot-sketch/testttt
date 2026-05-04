@@ -3,8 +3,11 @@
     <div
       v-if="modelValue"
       ref="modalRoot"
-      class="ks-modal"
-      :class="{ 'ks-modal--no-pad': bare }"
+      :class="[
+        'ks-modal',
+        `ks-modal--tone-${tone}`,
+        { 'ks-modal--no-pad': bare }
+      ]"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
@@ -75,6 +78,17 @@ export default {
         escClose: { type: Boolean, default: true },
         bare: { type: Boolean, default: false },
         closeLabel: { type: String, default: 'Fermer' },
+        /**
+         * V1.8 Bold Appétissant — tone visuel.
+         *  - default   : surface kiosk legacy (--kiosk-surface)
+         *  - warm-blur : backdrop blur warm + surface bold (--kiosk-bold-surface)
+         *                + ombre modal-bold (premium feel pour wizard abandon, etc.)
+         */
+        tone: {
+            type: String,
+            default: 'default',
+            validator: (v) => ['default', 'warm-blur'].includes(v),
+        },
     },
     emits: ['update:modelValue', 'close'],
     data() {
@@ -286,5 +300,45 @@ export default {
 .ks-modal-enter-from .ks-modal__panel,
 .ks-modal-leave-to   .ks-modal__panel {
     transform: translateY(16px) scale(0.98);
+}
+
+/* ---------- V1.8 Bold Appétissant — tone "warm-blur" ---------- */
+.ks-modal--tone-warm-blur {
+    background: var(--kiosk-backdrop-overlay-bold, rgba(26, 20, 16, 0.55));
+    backdrop-filter: var(--kiosk-backdrop-blur-bold, blur(16px) saturate(180%));
+    -webkit-backdrop-filter: var(--kiosk-backdrop-blur-bold, blur(16px) saturate(180%));
+}
+.ks-modal--tone-warm-blur .ks-modal__panel {
+    background: var(--kiosk-bold-surface);
+    color: var(--kiosk-bold-text-primary);
+    box-shadow: var(--kiosk-shadow-modal-bold, var(--kiosk-shadow-modal));
+    border-radius: var(--kiosk-radius-2xl);
+}
+.ks-modal--tone-warm-blur .ks-modal__header {
+    border-bottom-color: var(--kiosk-bold-border);
+}
+.ks-modal--tone-warm-blur .ks-modal__title {
+    font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+    font-weight: var(--kiosk-display-weight-bold, 700);
+    letter-spacing: -0.02em;
+}
+.ks-modal--tone-warm-blur .ks-modal__close {
+    background: var(--kiosk-bold-surface-subtle);
+    border-color: var(--kiosk-bold-border);
+    color: var(--kiosk-bold-text-primary);
+}
+.ks-modal--tone-warm-blur .ks-modal__footer {
+    border-top-color: var(--kiosk-bold-border);
+}
+
+/* Reduced motion : conserver le fade mais sans transform scale (déjà géré
+   par le @media query global, mais ceinture-bretelles ici aussi pour le tone bold). */
+[data-kiosk-reduced-motion='true'] .ks-modal-enter-active,
+[data-kiosk-reduced-motion='true'] .ks-modal-leave-active {
+    transition: opacity 1ms;
+}
+[data-kiosk-reduced-motion='true'] .ks-modal-enter-from .ks-modal__panel,
+[data-kiosk-reduced-motion='true'] .ks-modal-leave-to .ks-modal__panel {
+    transform: none;
 }
 </style>

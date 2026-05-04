@@ -12,6 +12,8 @@ import settingRoutes from "./modules/settingRoutes";
 import adminRoutes from "./modules/adminRoutes";
 import offerRoutes from "./modules/offerRoutes";
 import itemRoutes from "./modules/itemRoutes";
+import stockRoutes from "./modules/stockRoutes";
+import ingredientRoutes from "./modules/ingredientRoutes";
 import couponRoutes from "./modules/couponRoutes";
 import onlineOrderRoutes from "./modules/onlineOrderRoutes";
 import pushNotificationRoutes from "./modules/pushNotificationRoutes";
@@ -153,6 +155,8 @@ export const routes = baseRoutes.concat(
     adminRoutes,
     offerRoutes,
     itemRoutes,
+    stockRoutes,
+    ingredientRoutes,
     pushNotificationRoutes,
     couponRoutes,
     onlineOrderRoutes,

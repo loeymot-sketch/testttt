@@ -1,102 +1,139 @@
 <template>
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal paiement.
+      - Hero "À encaisser" en display 48px monospace tabular (le moment de vérité)
+      - Méthodes en segmented control V5 (cash | card)
+      - Numpad partagé via PosV5Numpad (réutilisable futurs override prix admin)
+      - CTA confirm V5 "primary-pay" avec ombre rouge soft
+      - Logique métier (paiement, quote refresh, auth retry) inchangée.
+    -->
     <LoadingComponent :props="loading" />
 
-    <div id="orderpayment" class="modal pos-v4-payment-modal">
-        <div class="modal-dialog pos-v4-payment-dialog max-w-[428px] w-full">
-            <div class="modal-header pos-v4-payment-header pb-3 border-b border-[#D9DBE9]">
-                <h3 class="capitalize font-medium">{{ $t('label.order_payment') }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click="reset"></button>
+    <div id="orderpayment" class="modal pos-v4-payment-modal pos-v5-payment-modal">
+        <div class="modal-dialog pos-v4-payment-dialog pos-v5-payment-dialog max-w-[480px] w-full">
+            <div class="modal-header pos-v4-payment-header pos-v5-payment-header pb-3 border-b">
+                <h3 class="capitalize font-extrabold text-[var(--pos-v5-text-h5)] text-[var(--pos-v5-ink)] m-0">
+                    💳 {{ $t('label.order_payment') }}
+                </h3>
+                <button class="modal-close pos-v5-payment-close" @click="reset" :aria-label="$t('button.close')">
+                    <span aria-hidden="true">✕</span>
+                </button>
             </div>
             <div class="modal-body">
+                <!-- Hero "À encaisser" — moment de vérité -->
                 <div class="mb-4">
-                    <div
-                        class="pos-v4-payment-total-card flex justify-between items-center h-12 w-full rounded-lg py-1.5 px-2 placeholder:text-[10px] placeholder:text-[#6E7191] bg-[#F7F7FC]">
-                        <span class="text-sm font-normal text-[#2E2F38]">{{ $t('label.total_amount')
-                            }}</span>
-                        <span class="text-primary text-base font-medium">{{
+                    <div class="pos-v4-payment-total-card pos-v5-payment-total-card">
+                        <p class="pos-v5-payment-total-label">{{ $t('label.total_amount') }}</p>
+                        <p class="pos-v5-payment-total-value pos-v5-tabular">{{
                             currencyFormat(props.form.total,
                                 setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
                                 setting.site_currency_position)
-                        }}</span>
+                        }}</p>
                     </div>
                 </div>
+
+                <!-- Méthode de paiement -->
                 <div class="mb-4">
-                    <h3 class="capitalize font-medium mb-2">{{ $t('label.select_payment_method')
-                        }}</h3>
-                    <nav class="pos-v4-payment-methods flex flex-wrap gap-4 active-group">
-                        <button data-tab="#cash" type="button"
-                            class="other-tabBtn pos-v4-payment-method w-fit flex flex-col items-center gap-2 rounded-lg py-3 px-7 border bg-[#F7F7FC] border-[#F7F7FC] flex-1"
-                            :class="props.form.pos_payment_method === posPaymentMethodEnum.CASH ? 'active' : ''"
-                            @click="paymentMethod(posPaymentMethodEnum.CASH, 'cashInput')">
-                            <i class="lab lab-cash lab-font-size-24"></i>
-                            <span class="text-xs font-normal leading-none text-heading">{{ $t("label.cash") }}</span>
+                    <p class="pos-v5-payment-section-title">{{ $t('label.select_payment_method') }}</p>
+                    <nav class="pos-v4-payment-methods pos-v5-payment-methods" role="tablist">
+                        <button
+                            data-tab="#cash"
+                            type="button"
+                            role="tab"
+                            :aria-selected="props.form.pos_payment_method === posPaymentMethodEnum.CASH"
+                            class="other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+                            :class="{ 'active is-active': props.form.pos_payment_method === posPaymentMethodEnum.CASH }"
+                            @click="paymentMethod(posPaymentMethodEnum.CASH, 'cashInput')"
+                        >
+                            <span class="pos-v5-payment-method-icon" aria-hidden="true">💵</span>
+                            <span class="pos-v5-payment-method-label">{{ $t("label.cash") }}</span>
                         </button>
-                        <button data-tab="#card" type="button"
-                            class="other-tabBtn pos-v4-payment-method w-fit flex flex-col items-center gap-2 rounded-lg py-3 px-7 border bg-[#F7F7FC] border-[#F7F7FC] flex-1"
-                            :class="props.form.pos_payment_method === posPaymentMethodEnum.CARD ? 'active' : ''"
-                            @click="paymentMethod(posPaymentMethodEnum.CARD, 'cardInput')">
-                            <i class="lab lab-card-2 lab-font-size-24"></i>
-                            <span class="text-xs font-normal leading-none text-heading">{{ $t("label.card") }} (TPE)</span>
+                        <button
+                            data-tab="#card"
+                            type="button"
+                            role="tab"
+                            :aria-selected="props.form.pos_payment_method === posPaymentMethodEnum.CARD"
+                            class="other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+                            :class="{ 'active is-active': props.form.pos_payment_method === posPaymentMethodEnum.CARD }"
+                            @click="paymentMethod(posPaymentMethodEnum.CARD, 'cardInput')"
+                        >
+                            <span class="pos-v5-payment-method-icon" aria-hidden="true">💳</span>
+                            <span class="pos-v5-payment-method-label">{{ $t("label.card") }} (TPE)</span>
                         </button>
                     </nav>
                 </div>
+
+                <!-- Cash input + change due -->
                 <div id="cash" class="data-tab hidden"
                     :class="props.form.pos_payment_method === posPaymentMethodEnum.CASH ? 'active' : ''">
-                    <div class="mb-4">
-                        <h3 class="capitalize font-medium mb-2">{{ $t("label.received_amount") }}</h3>
-                        <input id="cashInput" ref="cashInput" type="text" v-on:keypress="floatNumber($event)"
+                    <div class="mb-3">
+                        <label for="cashInput" class="pos-v5-payment-input-label">{{ $t("label.received_amount") }}</label>
+                        <input
+                            id="cashInput"
+                            ref="cashInput"
+                            type="text"
+                            v-on:keypress="floatNumber($event)"
                             @input="onCashInput"
-                            class="h-12 w-full rounded-lg border py-1.5 px-4 border-[#D9DBE9] text-black">
+                            class="pos-v5-payment-input pos-v5-tabular"
+                        />
                     </div>
-                    <div v-if="cashChange > 0"
-                        class="mb-4 flex justify-between items-center h-12 w-full rounded-lg py-1.5 px-3 bg-green-50 border border-green-300">
-                        <span class="text-sm font-semibold text-green-700">{{ $t("label.change_due") || 'Monnaie à rendre' }}</span>
-                        <span class="text-green-700 text-lg font-bold">{{
+                    <div v-if="cashChange > 0" class="pos-v5-payment-change" role="status" aria-live="polite">
+                        <span class="pos-v5-payment-change-label">
+                            <span aria-hidden="true">✨</span>
+                            {{ $t("label.change_due") || 'Monnaie à rendre' }}
+                        </span>
+                        <span class="pos-v5-payment-change-value pos-v5-tabular">{{
                             currencyFormat(cashChange,
                                 setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
                                 setting.site_currency_position)
                         }}</span>
                     </div>
                 </div>
+
+                <!-- Card input -->
                 <div id="card" class="data-tab hidden"
                     :class="props.form.pos_payment_method === posPaymentMethodEnum.CARD ? 'active' : ''">
-                    <div class="mb-4">
-                        <h3 class="capitalize font-medium mb-2">{{ $t('label.enter_card_last_4_digits') }}</h3>
-                        <input id="cardInput" type="number" ref="cardInput"
-                            class="h-12 w-full rounded-lg border py-1.5 px-4 border-[#D9DBE9] text-black" required>
+                    <div class="mb-3">
+                        <label for="cardInput" class="pos-v5-payment-input-label">{{ $t('label.enter_card_last_4_digits') }}</label>
+                        <input
+                            id="cardInput"
+                            ref="cardInput"
+                            type="number"
+                            class="pos-v5-payment-input pos-v5-tabular"
+                            required
+                        />
                     </div>
                 </div>
 
-
-                <div class="pos-v4-numpad grid grid-cols-4 gap-x-4 gap-y-3.5 mb-6"
-                    v-if="props.form.pos_payment_method === posPaymentMethodEnum.CASH || props.form.pos_payment_method === posPaymentMethodEnum.CARD">
-                    <button @click="numpadInput('1')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">1</button>
-                    <button @click="numpadInput('2')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">2</button>
-                    <button @click="numpadInput('3')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">3</button>
-                    <button @click="numpadBack()" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path
-                                d="M16.9997 3.75H10.2797C8.86969 3.75 7.52969 4.34 6.57969 5.39L3.04969 9.27C1.63969 10.82 1.63969 13.18 3.04969 14.73L6.57969 18.61C7.52969 19.65 8.86969 20.25 10.2797 20.25H16.9997C19.7597 20.25 21.9997 18.01 21.9997 15.25V8.75C21.9997 5.99 19.7597 3.75 16.9997 3.75ZM16.5297 13.94C16.8197 14.23 16.8197 14.71 16.5297 15C16.3797 15.15 16.1897 15.22 15.9997 15.22C15.8097 15.22 15.6197 15.15 15.4697 15L13.5297 13.06L11.5897 15C11.4397 15.15 11.2497 15.22 11.0597 15.22C10.8697 15.22 10.6797 15.15 10.5297 15C10.2397 14.71 10.2397 14.23 10.5297 13.94L12.4697 12L10.5297 10.06C10.2397 9.77 10.2397 9.29 10.5297 9C10.8197 8.71 11.2997 8.71 11.5897 9L13.5297 10.94L15.4697 9C15.7597 8.71 16.2397 8.71 16.5297 9C16.8197 9.29 16.8197 9.77 16.5297 10.06L14.5897 12L16.5297 13.94Z"
-                                fill="#1F1F39" />
-                        </svg>
-                    </button>
-                    <button @click="numpadInput('4')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">4</button>
-                    <button @click="numpadInput('5')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">5</button>
-                    <button @click="numpadInput('6')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">6</button>
-                    <button @click="numpadInput('7')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">7</button>
-                    <button @click="numpadInput('8')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">8</button>
-                    <button @click="numpadInput('9')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">9</button>
-                    <button @click="numpadClear()" type="reset" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39] row-span-2">
-                        {{ $t('button.clear') }}
-                    </button>
-                    <button @click="numpadInput('00')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">00</button>
-                    <button @click="numpadInput('0')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">0</button>
-                    <button @click="numpadInput('.')" class="num pos-v4-numpad-key bg-[#F7F7FC] rounded-lg p-2.5 flex items-center justify-center text-base font-medium text-[#1F1F39]">.</button>
+                <!--
+                  Numpad V5 — composant partagé (PosV5Numpad).
+                  Émissions @input(value) / @back / @clear sont raccordées aux
+                  méthodes existantes numpadInput / numpadBack / numpadClear.
+                -->
+                <div
+                    class="pos-v4-numpad pos-v5-payment-numpad-wrap mb-4"
+                    v-if="props.form.pos_payment_method === posPaymentMethodEnum.CASH || props.form.pos_payment_method === posPaymentMethodEnum.CARD"
+                >
+                    <PosV5Numpad
+                        aria-label="Pavé numérique"
+                        @input="numpadInput"
+                        @back="numpadBack"
+                        @clear="numpadClear"
+                    />
                 </div>
+
                 <!-- [AUDIT-P2] :disabled prevents a second click while the order is being submitted -->
-                <button @click="confirmOrder" type="button" :disabled="loading.isActive"
-                    class="pos-v4-confirm-button rounded-3xl text-base py-2 px-3 font-medium w-full text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">{{
-                        $t('button.confirm_and_print') }}</button>
+                <button
+                    @click="confirmOrder"
+                    type="button"
+                    :disabled="loading.isActive"
+                    :aria-busy="loading.isActive"
+                    class="pos-v4-confirm-button pos-v5-payment-confirm w-full"
+                    data-testid="pos-payment-confirm"
+                >
+                    <span aria-hidden="true">✓</span>
+                    {{ $t('button.confirm_and_print') }}
+                </button>
             </div>
         </div>
     </div>
@@ -118,11 +155,13 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { openDrawer } from "../../../services/kioskHardware";
 import { normalizeId } from "../../../helpers/posNormalizeIds";
 import { normalizeCartForApi } from "../../../store/modules/posCart";
+// [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Numpad partagé V5
+import PosV5Numpad from "./v5/PosV5Numpad.vue";
 
 export default {
     name: "PaymentComponent",
-    components: { LoadingComponent, ReceiptComponent },
-    emits: ["payment-form:patch", "payment-form:reset"],
+    components: { LoadingComponent, ReceiptComponent, PosV5Numpad },
+    emits: ["payment-form:patch", "payment-form:reset", "order:confirmed"],
     props: {
         props: Object,
     },
@@ -368,6 +407,9 @@ export default {
             this.loading.isActive = true;
             try {
                 await this.confirmOrderWithAuthRetry();
+                // [POS-V5 WAVE 3 2026-05-02] Notify parent for success-flash animation
+                // (overlay vert 700ms après confirm). Logique métier inchangée.
+                this.$emit("order:confirmed", this.order);
             } catch (err) {
                 this.handlePaymentError(err);
             } finally {
@@ -379,87 +421,283 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   PaymentComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.3
+   - Hero "À encaisser" 48px monospace tabular = moment de vérité du flow
+   - Méthodes en segmented control V5
+   - Numpad partagé via PosV5Numpad
+   - CTA "Confirmer & Imprimer" full-width primary-pay
+   ============================================================================= */
+
+.pos-v5-payment-dialog,
 .pos-v4-payment-dialog {
-  border: 0;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 30px 80px rgba(20, 24, 33, 0.28);
+    border: 1px solid var(--pos-v5-border) !important;
+    border-radius: var(--pos-v5-radius-xl) !important;
+    overflow: hidden;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    font-family: var(--pos-v5-font-sans);
 }
 
+/* Header — warm soft (pas de gradient sombre) */
+.pos-v5-payment-header,
 .pos-v4-payment-header {
-  min-height: 70px;
-  padding: 18px 20px !important;
-  background: linear-gradient(135deg, #111827, #2b1118 62%, #e8001c 130%);
-  color: #fff;
-  border-bottom: 0 !important;
+    min-height: 64px;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+    color: var(--pos-v5-ink) !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pos-v5-space-3);
 }
 
-.pos-v4-payment-header h3 {
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: 0;
+.pos-v5-payment-header h3 {
+    font-size: var(--pos-v5-text-h5);
+    font-weight: var(--pos-v5-weight-extrabold);
+    letter-spacing: var(--pos-v5-tracking-tight);
+    color: var(--pos-v5-ink) !important;
+    margin: 0;
 }
 
-.pos-v4-payment-header .modal-close {
-  color: rgba(255, 255, 255, 0.84);
+.pos-v5-payment-close {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: var(--pos-v5-radius-pill);
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink-soft);
+    font-size: 14px;
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.pos-v5-payment-close:hover {
+    background: var(--pos-v5-danger-soft);
+    color: var(--pos-v5-danger);
 }
 
+/* Hero "À encaisser" — moment de vérité, display 48px */
+.pos-v5-payment-total-card,
 .pos-v4-payment-total-card {
-  min-height: 72px !important;
-  padding: 12px 14px !important;
-  border: 1px solid rgba(232, 0, 28, 0.14);
-  border-radius: 18px !important;
-  background: linear-gradient(135deg, #fff5f6, #fff) !important;
+    display: block !important;
+    width: 100%;
+    height: auto !important;
+    min-height: 110px !important;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;
+    border: 1px dashed var(--pos-v5-brand-red) !important;
+    border-radius: var(--pos-v5-radius-lg) !important;
+    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-receipt)) !important;
+    text-align: center;
+    box-shadow: var(--pos-v5-shadow-sm);
+}
+.pos-v5-payment-total-label {
+    margin: 0 0 4px;
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-ink-soft);
+    line-height: 1;
+}
+.pos-v5-payment-total-value {
+    margin: 0;
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-display-lg);
+    font-weight: var(--pos-v5-weight-black);
+    color: var(--pos-v5-brand-red);
+    line-height: 1.1;
+    letter-spacing: var(--pos-v5-tracking-tight);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
 }
 
-.pos-v4-payment-total-card span:last-child {
-  color: #e8001c !important;
-  font-size: 26px !important;
-  font-weight: 900 !important;
+/* Section title (Mode de paiement / Reçu / Carte) */
+.pos-v5-payment-section-title {
+    margin: 0 0 var(--pos-v5-space-2);
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-ink-soft);
 }
 
+/* Méthodes paiement — segmented control 2 onglets */
+.pos-v5-payment-methods,
+.pos-v4-payment-methods {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--pos-v5-space-2) !important;
+    padding: 4px;
+    background: var(--pos-v5-bg-subtle);
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-md);
+}
+
+.pos-v5-payment-method,
 .pos-v4-payment-method {
-  min-height: 88px;
-  border-radius: 18px !important;
-  border: 1px solid rgba(20, 24, 33, 0.08) !important;
-  background: #f6f8fb !important;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    min-height: 64px !important;
+    border-radius: var(--pos-v5-radius-sm) !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--pos-v5-ink-soft);
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pos-v5-space-2);
+    flex-direction: row !important;
+    padding: var(--pos-v5-space-2) var(--pos-v5-space-3) !important;
+    cursor: pointer;
+    box-shadow: none;
 }
 
-.pos-v4-payment-method:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(20, 24, 33, 0.1);
+.pos-v5-payment-method:hover {
+    background: var(--pos-v5-bg-panel) !important;
+    color: var(--pos-v5-ink) !important;
+    box-shadow: var(--pos-v5-shadow-sm);
 }
 
+.pos-v5-payment-method.is-active,
+.pos-v5-payment-method.active,
 .pos-v4-payment-method.active {
-  border-color: rgba(232, 0, 28, 0.36) !important;
-  background: #fff5f6 !important;
-  color: #e8001c;
-  box-shadow: 0 16px 34px rgba(232, 0, 28, 0.13);
+    background: var(--pos-v5-bg-panel) !important;
+    border-color: var(--pos-v5-brand-red) !important;
+    color: var(--pos-v5-brand-red) !important;
+    box-shadow: var(--pos-v5-shadow-md), 0 0 0 3px var(--pos-v5-brand-red-soft);
+    font-weight: var(--pos-v5-weight-extrabold);
 }
 
+.pos-v5-payment-method-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.pos-v5-payment-method-label {
+    font-size: var(--pos-v5-text-body);
+    font-weight: var(--pos-v5-weight-bold);
+}
+
+/* Cash / card input */
+.pos-v5-payment-input-label {
+    display: block;
+    margin-bottom: var(--pos-v5-space-2);
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-ink-soft);
+}
+.pos-v5-payment-input {
+    width: 100%;
+    height: 56px;
+    padding: 0 var(--pos-v5-space-4);
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-md);
+    background: var(--pos-v5-bg-panel);
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h4);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+    text-align: center;
+    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.pos-v5-payment-input:focus {
+    outline: 0;
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);
+}
+
+/* Change due — success vibrant */
+.pos-v5-payment-change {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pos-v5-space-3);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+    margin-top: var(--pos-v5-space-3);
+    background: var(--pos-v5-success-soft);
+    border: 1px solid var(--pos-v5-success);
+    border-radius: var(--pos-v5-radius-md);
+    box-shadow: var(--pos-v5-shadow-success);
+}
+.pos-v5-payment-change-label {
+    font-size: var(--pos-v5-text-body);
+    font-weight: var(--pos-v5-weight-bold);
+    color: var(--pos-v5-success-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pos-v5-space-2);
+}
+.pos-v5-payment-change-value {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h4);
+    font-weight: var(--pos-v5-weight-black);
+    color: var(--pos-v5-success-dark);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+
+/* Numpad container */
+.pos-v5-payment-numpad-wrap,
 .pos-v4-numpad {
-  gap: 10px !important;
+    background: transparent;
+    padding: 0;
+    border: 0;
+    margin-bottom: var(--pos-v5-space-4);
 }
 
-.pos-v4-numpad-key {
-  min-height: 48px;
-  border-radius: 16px !important;
-  border: 1px solid rgba(20, 24, 33, 0.08);
-  background: #f6f8fb !important;
-  font-weight: 900 !important;
-  box-shadow: inset 0 -1px 0 rgba(20, 24, 33, 0.04);
-}
-
-.pos-v4-numpad-key:active {
-  transform: translateY(1px);
-}
-
+/* Confirm CTA — primary-pay full width */
+.pos-v5-payment-confirm,
 .pos-v4-confirm-button {
-  min-height: 52px;
-  border-radius: 16px !important;
-  background: #12965d !important;
-  font-weight: 900 !important;
-  box-shadow: 0 16px 34px rgba(18, 150, 93, 0.24);
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pos-v5-space-2);
+    min-height: 56px;
+    width: 100%;
+    padding: 0 var(--pos-v5-space-5);
+    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;
+    color: var(--pos-v5-ink-on-red) !important;
+    border: 0 !important;
+    border-radius: var(--pos-v5-radius-lg) !important;
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h6);
+    font-weight: var(--pos-v5-weight-extrabold);
+    letter-spacing: var(--pos-v5-tracking-tight);
+    cursor: pointer;
+    box-shadow: var(--pos-v5-shadow-cta);
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.pos-v5-payment-confirm:hover:not(:disabled),
+.pos-v4-confirm-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);
+}
+.pos-v5-payment-confirm:disabled,
+.pos-v4-confirm-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.pos-v5-payment-confirm:focus-visible,
+.pos-v4-confirm-button:focus-visible {
+    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);
+    outline-offset: var(--pos-v5-focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-v5-payment-confirm,
+    .pos-v4-confirm-button { transition: none !important; }
+    .pos-v5-payment-confirm:hover:not(:disabled),
+    .pos-v4-confirm-button:hover:not(:disabled) { transform: none; }
 }
 </style>

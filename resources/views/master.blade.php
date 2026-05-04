@@ -41,6 +41,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    {{-- CV1-KIOSK-VISUAL-REDESIGN-001 V1.2 — Fraunces display font, kiosk-only.
+         Plan : plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md §1.3
+         CSP : déjà autorisé via le header report-only (style-src + font-src
+               whitelistent fonts.googleapis.com / fonts.gstatic.com).
+         TODO V1.2.1 : self-hosted woff2 sous public/fonts/fraunces/ pour
+                       offline kiosk + perf LCP + CSP strict (suppression
+                       de l'allowlist Google Fonts). --}}
+    @if (request()->is('kiosk*'))
+        <link
+            href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&display=swap"
+            rel="stylesheet"
+        >
+    @endif
+
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/fontawesome/fontawesome.css') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/lab/lab.css') }}">
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/typography/public/public.css') }}">
@@ -123,9 +138,25 @@
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
             kioskConfirmationAutoReturnSeconds: @json((int) config('kiosk.confirmation_auto_return_seconds', 30)),
+            ossFallbackPolling: {
+                enabled: @json((bool) config('catalog_v15.oss_fallback_polling.enabled', true)),
+                intervalMsWhenConnected: @json((int) config('catalog_v15.oss_fallback_polling.interval_ms_when_connected', 60000)),
+                intervalMsWhenDisconnected: @json((int) config('catalog_v15.oss_fallback_polling.interval_ms_when_disconnected', 5000)),
+            },
+            kdsFallbackPolling: {
+                highActivityBaseMs: @json((int) config('catalog_v15.kds_fallback_polling.high_activity_base_ms', 3000)),
+                highActivityJitterMs: @json((int) config('catalog_v15.kds_fallback_polling.high_activity_jitter_ms', 1000)),
+                degradedBaseMs: @json((int) config('catalog_v15.kds_fallback_polling.degraded_base_ms', 5000)),
+                degradedJitterMs: @json((int) config('catalog_v15.kds_fallback_polling.degraded_jitter_ms', 2000)),
+                disconnectedBaseMs: @json((int) config('catalog_v15.kds_fallback_polling.disconnected_base_ms', 10000)),
+                disconnectedJitterMs: @json((int) config('catalog_v15.kds_fallback_polling.disconnected_jitter_ms', 3000)),
+            },
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
+            features: {
+                wizard_per_item_demo: @json((bool) config('catalog_v15.features.wizard_per_item_demo.enabled', false)),
+            },
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

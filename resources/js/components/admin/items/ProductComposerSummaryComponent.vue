@@ -10,7 +10,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <router-link
-                        v-if="item.id"
+                        v-if="item.id && wizardPerItemDemoEnabled"
                         :to="{ name: 'admin.items.composer', params: { id: item.id } }"
                         class="db-btn bg-primary text-white"
                     >
@@ -155,6 +155,10 @@ export default {
         },
         imageState() {
             return this.item.preview || this.item.thumb || this.item.cover ? 'Image configuree' : 'Image manquante';
+        },
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
         },
         variationGroups() {
             const attributes = this.toArray(this.item.itemAttributes);

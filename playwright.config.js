@@ -8,6 +8,7 @@ module.exports = defineConfig({
   testDir: './tests',
   testMatch: [
     'e2e/**/*.spec.{js,ts}',
+    'playwright/**/*.spec.{js,ts}',
     'Playwright/**/*.spec.{js,ts}',
   ],
   // Un seul worker : les specs déclenchent POST /api/auth/login en rafale ; en parallèle

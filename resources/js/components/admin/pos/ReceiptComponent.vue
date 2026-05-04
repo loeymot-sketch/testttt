@@ -1,11 +1,17 @@
 <template>
-    <div id="receiptModal" class="modal" role="document" :aria-label="$t('a11y.receipt_preview')">
-        <div class="modal-dialog rounded-none w-full max-w-md">
-            <div class="modal-header hidden-print flex flex-wrap items-center justify-end gap-2">
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal Receipt.
+      Le bloc papier print (.print-receipt-client / .print-receipt-kitchen)
+      reste INTACT — zone fiscale NF525 : monospace + dashed borders légaux.
+    -->
+    <div id="receiptModal" class="modal pos-v5-receipt-modal" role="document" :aria-label="$t('a11y.receipt_preview')">
+        <div class="modal-dialog pos-v5-receipt-dialog rounded-none w-full max-w-md">
+            <div class="modal-header pos-v5-receipt-toolbar hidden-print flex flex-wrap items-center justify-end gap-2">
                 <button type="button" @click="reset"
-                    class="modal-close flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-[#FB4E4E]">
-                    <i class="lab lab-back-bold lab-font-size-16 text-white"></i>
-                    <span class="text-xs leading-5 capitalize text-white">{{ $t('button.close') }}</span>
+                    class="modal-close pos-v5-receipt-btn pos-v5-receipt-btn--ghost"
+                    :aria-label="$t('button.close')">
+                    <span aria-hidden="true">←</span>
+                    <span class="text-xs leading-5 capitalize">{{ $t('button.close') }}</span>
                 </button>
                 <button
                     type="button"
@@ -13,8 +19,8 @@
                     :disabled="isPrinting"
                     :aria-busy="isPrinting"
                     data-testid="receipt-print-kitchen"
-                    class="flex items-center justify-center gap-1.5 py-2 px-3 rounded bg-[#2E2F38] text-white disabled:opacity-60 text-xs">
-                    <i class="lab lab-print-bold lab-font-size-16 text-white"></i>
+                    class="pos-v5-receipt-btn pos-v5-receipt-btn--kitchen">
+                    <span aria-hidden="true">👨‍🍳</span>
                     <span class="leading-5 capitalize">{{ $t('pos.print_ticket_kitchen') }}</span>
                 </button>
                 <button
@@ -23,9 +29,9 @@
                     :disabled="isPrinting"
                     :aria-busy="isPrinting"
                     data-testid="receipt-print-client"
-                    class="flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-[#1AB759] disabled:opacity-60">
-                    <i class="lab lab-print-bold lab-font-size-16 text-white"></i>
-                    <span class="text-xs leading-5 capitalize text-white">{{ $t('pos.print_ticket_client') }}</span>
+                    class="pos-v5-receipt-btn pos-v5-receipt-btn--client">
+                    <span aria-hidden="true">🧾</span>
+                    <span class="text-xs leading-5 capitalize">{{ $t('pos.print_ticket_client') }}</span>
                 </button>
                 <button
                     ref="hiddenPrintClientButton"
@@ -513,6 +519,13 @@ export default {
 }
 </script>
 <style scoped>
+/* =============================================================================
+   ReceiptComponent — POS V5 chrome refonte (paper print intact pour fiscal NF525)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.4
+   ============================================================================= */
+
 .receipt-58mm {
     width: 58mm;
     max-width: 100%;
@@ -524,14 +537,81 @@ export default {
     box-sizing: border-box;
 }
 @media print {
-    .hidden-print {
-        display: none !important;
-    }
-    .receipt-58mm {
-        width: 58mm !important;
-    }
-    .receipt-80mm {
-        width: 80mm !important;
-    }
+    .hidden-print { display: none !important; }
+    .receipt-58mm { width: 58mm !important; }
+    .receipt-80mm { width: 80mm !important; }
+}
+
+/* =============================================================================
+   POS V5 Receipt modal chrome
+   ============================================================================= */
+.pos-v5-receipt-modal :deep(.modal-dialog) {
+    border-radius: var(--pos-v5-radius-xl) !important;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    border: 1px solid var(--pos-v5-border) !important;
+    overflow: hidden;
+}
+
+.pos-v5-receipt-toolbar {
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4) !important;
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+}
+
+.pos-v5-receipt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--pos-v5-radius-md);
+    border: 1px solid transparent;
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-caption);
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+    appearance: none;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+    min-height: 36px;
+}
+.pos-v5-receipt-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.pos-v5-receipt-btn:focus-visible {
+    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);
+    outline-offset: var(--pos-v5-focus-offset);
+}
+
+/* Bouton "Fermer" — ghost discret */
+.pos-v5-receipt-btn--ghost {
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink-soft);
+    border-color: var(--pos-v5-border);
+}
+.pos-v5-receipt-btn--ghost:hover:not(:disabled) {
+    background: var(--pos-v5-bg-panel);
+    border-color: var(--pos-v5-border-strong);
+    color: var(--pos-v5-ink);
+}
+
+/* Bouton "Ticket cuisine" — inversé sombre warm (signal différenciation) */
+.pos-v5-receipt-btn--kitchen {
+    background: var(--pos-v5-bg-strong);
+    color: var(--pos-v5-ink-on-dark);
+}
+.pos-v5-receipt-btn--kitchen:hover:not(:disabled) {
+    background: #2d2d2d;
+}
+
+/* Bouton "Ticket client" — success vibrant (action principale) */
+.pos-v5-receipt-btn--client {
+    background: var(--pos-v5-success);
+    color: var(--pos-v5-ink-on-dark);
+    box-shadow: var(--pos-v5-shadow-success);
+}
+.pos-v5-receipt-btn--client:hover:not(:disabled) {
+    background: var(--pos-v5-success-dark);
 }
 </style>

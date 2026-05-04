@@ -118,14 +118,13 @@ describe('K-02 kiosk explicit order type', () => {
         expect(normalizeKioskOrderType(999)).toBeNull();
     });
 
-    it('idle screen records the chosen type before entering categories', async () => {
+    it('idle screen emits start-order; parent startOrder applies type + navigates', async () => {
         const store = makeStoreWithCart();
-        const push = vi.fn();
         const wrapper = mount(KioskIdleScreenComponent, {
             global: {
                 plugins: [store],
                 mocks: {
-                    $router: { push },
+                    $router: { push: vi.fn() },
                     $t: (key) => key,
                 },
                 stubs: { KsA11ySettings: true },
@@ -134,8 +133,9 @@ describe('K-02 kiosk explicit order type', () => {
 
         await wrapper.find('[data-testid="kiosk-order-type-takeaway"]').trigger('click');
 
-        expect(store.getters['kioskCart/orderType']).toBe(KIOSK_ORDER_TYPES.TAKEAWAY);
-        expect(push).toHaveBeenCalledWith({ name: 'kiosk.categories' });
+        expect(wrapper.emitted('start-order')?.[0]).toEqual([KIOSK_ORDER_TYPES.TAKEAWAY]);
+        // Store / navigation are owned by KioskAppComponent.startOrder (single push).
+        expect(store.getters['kioskCart/orderType']).toBeNull();
     });
 
     it('categories redirects back to idle when the type is still absent', () => {

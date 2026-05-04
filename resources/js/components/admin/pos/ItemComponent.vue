@@ -1,27 +1,43 @@
 <template>
-    <div ref="itemsGrid" class="grid grid-cols-2 xl:grid-cols-3 gap-3 mb-8 md:mb-0">
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02 R2] Tiles produits avec photo hero.
+      - Photo aspect-ratio 4/3 si `item.thumb` existe, sinon fallback emoji 🍴
+      - Body sous photo : nom (clamp 2 lignes) + prix rouge brand + bouton "+" rond
+      - Hover : lift + scale image + bouton "+" devient rouge brand plein
+      - Disponibilité : overlay rouge translucide centré "Indisponible"
+      - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)
+    -->
+    <div ref="itemsGrid" class="pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8 md:mb-0">
         <button v-for="item in items" :key="item.id || item"
             type="button"
-            :class="tileClassList(item)"
+            :class="['pos-v5-tile', tileClassList(item)]"
             :aria-disabled="isCatalogTileUnavailable(item) ? 'true' : 'false'"
             :disabled="isCatalogTileUnavailable(item)"
             :aria-label="$t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
             :data-pos-item-id="item.id"
-            style="min-height: 90px;"
             @keyup.enter.prevent="addItem(item)"
             @keyup.space.prevent="addItem(item)">
-            <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge">{{ $t('pos.item_86_d') }}</span>
-            <div class="flex-1 flex items-center justify-center w-full">
-                <h3 class="text-xs font-semibold font-rubik capitalize text-center leading-tight text-[#2E2F38] line-clamp-3">{{ item.name }}</h3>
+            <!-- Photo hero (aspect-ratio 4/3) -->
+            <div class="pos-v5-tile__visual">
+                <img v-if="item.thumb"
+                    :src="item.thumb"
+                    :alt="item.name"
+                    loading="lazy"
+                    class="pos-v5-tile__image" />
+                <span v-else class="pos-v5-tile__visual-fallback" aria-hidden="true">🍴</span>
+                <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge pos-v5-tile__overlay">{{ $t('pos.item_86_d') }}</span>
             </div>
-            <div class="flex items-center justify-between w-full mt-1">
-                <h4 class="text-[11px] font-rubik font-medium text-primary">
-                    {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
-                </h4>
-                <span aria-hidden="true"
-                    class="flex items-center justify-center w-6 h-6 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition">
-                    <i class="lab lab-bag-2 font-fill-primary lab-font-size-10" style="font-size:11px;"></i>
-                </span>
+            <!-- Body -->
+            <div class="pos-v5-tile__body">
+                <h3 class="pos-v5-tile__name text-sm font-bold capitalize leading-snug line-clamp-2">{{ item.name }}</h3>
+                <div class="pos-v5-tile__foot">
+                    <h4 class="pos-v5-tile__price">
+                        {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
+                    </h4>
+                    <span aria-hidden="true" class="pos-v5-tile__add">
+                        <i class="lab lab-bag-2" style="font-size:13px;"></i>
+                    </span>
+                </div>
             </div>
         </button>
     </div>
@@ -40,25 +56,29 @@
     </div>
     <!--========INFO PART END===========-->
 
-    <!--========VARIATION PART START=========-->
-    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal" :data-pos-drinks-catalog="drinksCatalogJson">
+    <!--========VARIATION PART START=========
+       [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal + header V5.
+       L'image item devient ronde 88px (mirror wizard composition chips).
+       La logique du wizard reste FROZEN (utilisé pour produits sans wizard).
+    -->
+    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal" :data-pos-drinks-catalog="drinksCatalogJson">
         <div
             class="modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl"
             v-if="item">
-            <div class="modal-header items-start border-none pb-0 flex-shrink-0">
-                <div class="flex gap-4">
-                    <img class="flex-shrink-0 w-[72px] h-[72px] object-cover rounded-lg" :src="item.thumb"
+            <div class="modal-header items-start border-none pb-0 flex-shrink-0 pos-v5-item-modal__head">
+                <div class="flex gap-4 items-center">
+                    <img class="flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md" :src="item.thumb"
                         alt="thumbnail">
                     <div class="flex-auto">
                         <div class="flex items-start gap-2 mb-1">
-                            <h3 class="text-sm font-semibold capitalize">{{ item.name }}</h3>
+                            <h3 class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
                             <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start"
                                 data-modal="#item-info-modal" @click.prevent="infoModalShow(item.name, item.caution)">
                                 <i class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>
                             </button>
                         </div>
-                        <p class="text-xs mb-2">{{ item.description }}</p>
-                        <h4 class="text-sm font-semibold">{{ item.offer.length > 0 ? item.offer[0].currency_price :
+                        <p class="text-xs mb-2 text-[var(--pos-v5-ink-soft)]">{{ item.description }}</p>
+                        <h4 class="text-lg font-extrabold text-[var(--pos-v5-brand-red)] pos-v5-tabular">{{ item.offer.length > 0 ? item.offer[0].currency_price :
                             item.currency_price }}</h4>
                     </div>
                 </div>
@@ -270,18 +290,18 @@
                 </div>
             </div>
             <div
-                class="pos-v4-item-wizard-footer pos-add-to-cart-sticky flex-shrink-0 border-t border-[#EFF0F6] bg-white px-4 pb-4 pt-3"
+                class="pos-v4-item-wizard-footer pos-add-to-cart-sticky pos-v5-item-modal__foot flex-shrink-0 border-t border-[var(--pos-v5-border)] bg-white px-4 pb-4 pt-3"
                 data-wiz-vue-footer
             >
                     <button type="button" :disabled="!canAddToCart" @click.prevent="addToCart"
-                        class="flex items-center justify-center gap-3 rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="icon-bag-2"></i>
+                        class="pos-v5-item-add-cta flex items-center justify-center gap-3 rounded-2xl text-base py-3 px-4 font-extrabold w-full text-white disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        <i class="icon-bag-2" aria-hidden="true"></i>
                         <span>
-                            {{ $t('button.add_to_cart') }} -
-                            {{
+                            {{ $t('button.add_to_cart') }} ·
+                            <span class="pos-v5-tabular">{{
                                 currencyFormat(temp.total_price, setting.site_digit_after_decimal_point,
                                     setting.site_default_currency_symbol, setting.site_currency_position)
-                            }}
+                            }}</span>
                         </span>
                     </button>
                     <div v-if="itemUnavailabilityBannerVisible" class="alert alert-warning mt-2" role="status">
@@ -682,11 +702,11 @@ export default {
             return v === false || v === 0 || v === '0';
         },
         tileClassList: function (row) {
+            // [POS-V5 R2] Layout délégué à .pos-v5-tile (CSS scoped). Cette méthode
+            // garde uniquement les flags d'état pour la compat sentinels.
             return {
                 'pos-item-tile': true,
                 'is-unavailable': this.isCatalogTileUnavailable(row),
-                'relative flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:shadow-sm transition cursor-pointer select-none': !this.isCatalogTileUnavailable(row),
-                'relative flex flex-col items-center justify-between gap-2 p-3 rounded-xl border border-[#EFF0F6] bg-white transition select-none': this.isCatalogTileUnavailable(row),
             };
         },
         onProductTileClick: function (selectedItem) {
@@ -1456,23 +1476,188 @@ export default {
 </script>
 
 <style scoped>
-.pos-item-tile.is-unavailable {
-    opacity: 0.45;
-    pointer-events: none;
-    filter: grayscale(0.7);
+/* =============================================================================
+   ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.2
+   - Tiles produits stylisées via :deep() override dans PosComponent.vue
+     (tokens V5 unifiés). On ne redéfinit pas ici pour ne pas fragmenter.
+   - Modal item variation : chrome refondu en warm V5 (cf. .pos-v5-item-modal*).
+   ============================================================================= */
+
+/* =============================================================================
+   POS V5 R2 — Tiles produits avec photo hero (layout vertical : visual + body)
+   ============================================================================= */
+.pos-v5-tile.pos-item-tile {
+    /* Reset de l'ancien flex-col items-center forcé */
+    display: flex;
+    flex-direction: column;
+    background: var(--pos-v5-bg-panel);
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    appearance: none;
+    text-align: left;
+    font-family: var(--pos-v5-font-sans);
+    color: inherit;
+    padding: 0 !important;
+    box-shadow: var(--pos-v5-shadow-sm);
+    transition:
+        transform var(--pos-v5-duration-base) var(--pos-v5-ease-bounce),
+        border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        box-shadow var(--pos-v5-duration-base) var(--pos-v5-ease-standard);
+    min-height: 0;
 }
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable):not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-lift);
+}
+.pos-v5-tile.pos-item-tile:active:not(.is-unavailable):not(:disabled) {
+    transform: translateY(0);
+}
+.pos-v5-tile.pos-item-tile:focus-visible {
+    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);
+    outline-offset: var(--pos-v5-focus-offset);
+}
+
+/* Photo visual (hero 4/3) */
+.pos-v5-tile__visual {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--pos-v5-bg-subtle);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.pos-v5-tile__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);
+}
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__image {
+    transform: scale(1.06);
+}
+.pos-v5-tile__visual-fallback {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--pos-v5-ink-muted);
+}
+
+/* Body (name + price + add) */
+.pos-v5-tile__body {
+    padding: var(--pos-v5-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pos-v5-space-2);
+    flex: 1;
+    min-height: 84px;
+}
+.pos-v5-tile__name {
+    margin: 0;
+    color: var(--pos-v5-ink);
+    font-size: var(--pos-v5-text-body) !important;
+    font-weight: var(--pos-v5-weight-bold) !important;
+    line-height: var(--pos-v5-leading-snug) !important;
+    flex: 1;
+    text-transform: capitalize;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-align: left;
+}
+.pos-v5-tile__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pos-v5-space-2);
+    margin-top: auto;
+}
+.pos-v5-tile__price {
+    margin: 0;
+    font-family: var(--pos-v5-font-sans);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    font-size: var(--pos-v5-text-body-lg) !important;
+    font-weight: var(--pos-v5-weight-extrabold) !important;
+    color: var(--pos-v5-brand-red) !important;
+    line-height: 1;
+}
+.pos-v5-tile__add {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition:
+        background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+        transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.pos-v5-tile__add i {
+    line-height: 1;
+}
+.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__add {
+    background: var(--pos-v5-brand-red);
+    color: var(--pos-v5-ink-on-red);
+    transform: scale(1.08);
+}
+
+/* Unavailable overlay (pos-item-86-badge devient un overlay full surface) */
+.pos-v5-tile__overlay,
 .pos-item-86-badge {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    inset: 0;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(194, 30, 47, 0.86);
+    color: var(--pos-v5-ink-on-red);
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h6);
+    font-weight: var(--pos-v5-weight-extrabold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    text-align: center;
+    padding: var(--pos-v5-space-2);
+    backdrop-filter: blur(2px);
+    /* Reset des anciens placement / radius */
+    top: auto;
+    right: auto;
+    border-radius: 0;
+    box-shadow: none;
+    line-height: 1.1;
+}
+/* When pos-item-86-badge is OUTSIDE the tile__visual (legacy compat — no longer used) */
+.pos-item-tile > .pos-item-86-badge:not(.pos-v5-tile__overlay) {
+    inset: auto;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
     font-size: 10px;
-    font-weight: 600;
-    line-height: 1;
-    padding: 3px 6px;
-    border-radius: 6px;
-    background: rgba(46, 47, 56, 0.85);
-    color: #fff;
+    background: rgba(194, 30, 47, 0.92);
+    backdrop-filter: none;
+    box-shadow: 0 2px 6px rgba(26, 26, 26, 0.18);
+}
+
+.pos-item-tile.is-unavailable {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: grayscale(0.4);
 }
 .pos-add-to-cart-sticky {
     position: sticky;
@@ -1487,5 +1672,55 @@ export default {
     position: relative;
     padding-top: 0;
     padding-bottom: 0;
+}
+
+/* =============================================================================
+   POS V5 Item Modal (variation modal léger — produits sans wizard kiosk)
+   -----------------------------------------------------------------------------
+   Le wizard kiosk reste FROZEN. Ce modal sert pour les produits simples
+   (boisson avec taille, dessert avec variantes, etc.) — refonte chrome warm V5.
+   ============================================================================= */
+.pos-v5-item-modal :deep(.modal-dialog) {
+    border-radius: var(--pos-v5-radius-xl) !important;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    border: 1px solid var(--pos-v5-border) !important;
+    font-family: var(--pos-v5-font-sans);
+}
+
+.pos-v5-item-modal__head {
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-3) !important;
+}
+
+.pos-v5-item-modal__foot {
+    background: var(--pos-v5-bg-panel) !important;
+    box-shadow: var(--pos-v5-shadow-sticky-top);
+}
+
+/* CTA "Ajouter au panier — X €" : pleine largeur, brand gradient, ombre soft */
+.pos-v5-item-add-cta {
+    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;
+    border: 0;
+    box-shadow: var(--pos-v5-shadow-cta);
+    min-height: var(--pos-v5-tap-large);
+    letter-spacing: var(--pos-v5-tracking-tight);
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.pos-v5-item-add-cta:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);
+}
+
+/* Attribute / variation cards within the modal body */
+.pos-v5-item-modal :deep(.modal-body) > * {
+    font-family: var(--pos-v5-font-sans);
+}
+
+/* Respecte reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .pos-v5-item-add-cta { transition: none !important; }
+    .pos-v5-item-add-cta:hover:not(:disabled) { transform: none; }
 }
 </style>

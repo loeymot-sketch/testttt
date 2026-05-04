@@ -14,8 +14,22 @@
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="block">
-                <span class="mb-1 block text-sm font-semibold text-[#405149]">
-                    {{ t('label.composer.source_type', 'Source') }}
+                <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
+                    {{ t('label.composer.source_type_human', "D'où viennent les choix ?") }}
+                    <span class="group relative inline-flex">
+                        <button
+                            type="button"
+                            class="text-neutral-400 hover:text-neutral-700"
+                            :aria-label="t('label.composer.source_type_help', 'Détermine la base : attributs, extras ou add-ons catalogue.')"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                            {{ t('label.composer.source_type_help', 'Détermine la base : attributs, extras ou add-ons catalogue.') }}
+                        </span>
+                    </span>
                 </span>
                 <select
                     v-model="draft.source_type"
@@ -30,8 +44,22 @@
             </label>
 
             <label class="block">
-                <span class="mb-1 block text-sm font-semibold text-[#405149]">
-                    {{ t('label.composer.source_ref', 'Choix disponibles') }}
+                <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
+                    {{ t('label.composer.source_ref_human', 'Limiter à un groupe précis (optionnel)') }}
+                    <span class="group relative inline-flex">
+                        <button
+                            type="button"
+                            class="text-neutral-400 hover:text-neutral-700"
+                            :aria-label="t('label.composer.source_ref_help', 'Par défaut toutes les options de la source sont proposées.')"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                            {{ t('label.composer.source_ref_help', 'Par défaut toutes les options de la source sont proposées.') }}
+                        </span>
+                    </span>
                 </span>
                 <select
                     v-model="draft.source_ref"
@@ -52,8 +80,24 @@
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
-                <span class="flex items-center justify-between text-sm font-semibold text-[#405149]">
-                    {{ t('label.composer.min_select', 'Minimum') }}
+                <span class="flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]">
+                    <span class="flex items-center gap-2">
+                        {{ t('label.composer.min_select', 'Minimum') }}
+                        <span class="group relative inline-flex">
+                            <button
+                                type="button"
+                                class="text-neutral-400 hover:text-neutral-700"
+                                :aria-label="t('label.composer.min_select_help', 'Combien d’articles le client doit minimum choisir.')"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                                {{ t('label.composer.min_select_help', 'Combien d’articles le client doit minimum choisir.') }}
+                            </span>
+                        </span>
+                    </span>
                     <strong>{{ draft.min_select }}</strong>
                 </span>
                 <input
@@ -68,8 +112,24 @@
             </label>
 
             <label class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
-                <span class="flex items-center justify-between text-sm font-semibold text-[#405149]">
-                    {{ t('label.composer.max_select', 'Maximum') }}
+                <span class="flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]">
+                    <span class="flex items-center gap-2">
+                        {{ t('label.composer.max_select', 'Maximum') }}
+                        <span class="group relative inline-flex">
+                            <button
+                                type="button"
+                                class="text-neutral-400 hover:text-neutral-700"
+                                :aria-label="t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.')"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                                {{ t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.') }}
+                            </span>
+                        </span>
+                    </span>
                     <strong>{{ draft.max_select }}</strong>
                 </span>
                 <input
@@ -83,10 +143,35 @@
                 />
             </label>
         </div>
+        <div class="text-xs text-neutral-600" data-testid="composer-step-min-max-summary">
+            <span v-if="Number(draft.min_select) === 0 && Number(draft.max_select) === 1">
+                {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
+            </span>
+            <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
+                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', draft.min_select) }}
+            </span>
+            <span v-else>
+                {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.').replace('{min}', draft.min_select).replace('{max}', draft.max_select) }}
+            </span>
+        </div>
 
         <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
             <legend class="px-1 text-sm font-semibold text-[#405149]">
                 {{ t('label.composer.visible_on', 'Visible sur') }}
+                <span class="group relative ml-2 inline-flex">
+                    <button
+                        type="button"
+                        class="text-neutral-400 hover:text-neutral-700"
+                        :aria-label="t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.')"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                    <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                        {{ t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.') }}
+                    </span>
+                </span>
             </legend>
             <div class="mt-3 flex flex-wrap gap-3">
                 <label class="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#405149]">
@@ -112,8 +197,22 @@
 
         <label class="flex items-center justify-between rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
             <span>
-                <span class="block text-sm font-semibold text-[#405149]">
+                <span class="flex items-center gap-2 text-sm font-semibold text-[#405149]">
                     {{ t('label.composer.is_active', 'Active') }}
+                    <span class="group relative inline-flex">
+                        <button
+                            type="button"
+                            class="text-neutral-400 hover:text-neutral-700"
+                            :aria-label="t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.')"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                            {{ t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.') }}
+                        </span>
+                    </span>
                 </span>
                 <span class="block text-xs text-[#66756e]">
                     {{ draft.is_active ? t('label.active', 'Actif') : t('label.inactive', 'Inactif') }}
@@ -176,8 +275,13 @@ export default {
             return typeof this.$t === 'function' ? this.$t(key) : fallback;
         },
         clone(value) {
+            const minSelect = value?.min_select ?? value?.min ?? 0;
+            const maxSelect = value?.max_select ?? value?.max ?? Math.max(1, Number(minSelect));
+
             return {
                 ...value,
+                min_select: Number(minSelect),
+                max_select: Number(maxSelect),
                 visible_on: Array.isArray(value?.visible_on) ? [...value.visible_on] : ['pos', 'kiosk'],
             };
         },

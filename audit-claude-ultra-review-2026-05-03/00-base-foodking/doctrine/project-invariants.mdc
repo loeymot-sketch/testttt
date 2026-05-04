@@ -1,0 +1,82 @@
+---
+description: FoodKing domain invariants. Non-negotiable. Violation triggers an immediate gate at any phase.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# FoodKing Domain Invariants
+
+Violation of any invariant at any phase triggers an immediate gate.
+Claude checks at plan and Claude audit. GPT-5.5 (delivered via **`codex-extension`** (CLI `codex`, compte ChatGPT Pro) primarily, sub-agent `foodking-complex-implementer` only as fallback) checks at plan review, execution, self-audit, and final GPT audit. Composer is validation/report only and halts/logs on contact.
+
+---
+
+## 1. Backend Pricing is SSOT
+The Laravel backend is the sole source of truth for all pricing.
+No Vue component, Pinia store, computed property, or JS utility may calculate, derive, adjust, or override a price.
+The frontend displays values returned by the backend — nothing more.
+
+Violation trigger: any pricing logic outside the Laravel backend.
+
+---
+
+## 2. OrderStatus Enum is Authoritative
+`OrderStatus` values are defined in one authoritative enum in the codebase.
+No hardcoded string values for order status on backend or frontend.
+New statuses are added to the enum first, then referenced everywhere else.
+GPT-5.5 must locate and cite the enum file in the plan before implementing any order-status logic.
+
+Violation trigger: string literal used where an `OrderStatus` enum value is required.
+
+---
+
+## 3. branch_id is Business Data Isolation
+`branch_id` is a business-level data boundary. It is not a git concept.
+Every query and mutation that returns or modifies tenant or branch-scoped data must be filtered by `branch_id`.
+No query may return data across `branch_id` boundaries.
+No mutation may affect records outside the authorized `branch_id` scope.
+If a cycle touches data access logic, the plan must explicitly declare whether `branch_id` isolation is affected and how it is maintained.
+
+Violation trigger: query or mutation that crosses `branch_id` boundaries without explicit plan authorization.
+
+---
+
+## 4. Dispatch After DB Commit
+Event and job dispatch occurs strictly after the DB transaction commits.
+No dispatch inside a transaction block before commit.
+No dispatch in a `finally` clause that could execute before commit confirmation.
+GPT-5.5 must verify commit-before-dispatch for every cycle that touches the event or job layer.
+
+Violation trigger: dispatch call that can execute before DB commit completes.
+
+---
+
+## 5. OrderService / FrontendOrderService Symmetry
+If either `OrderService` or `FrontendOrderService` is modified in a cycle, the other must be reviewed.
+Symmetry review is not optional.
+GPT-5.5 logs any asymmetry risk under `SYMMETRY_NOTE` in the plan file before completing execution.
+Claude confirms symmetry status during audit. An unresolved `SYMMETRY_NOTE` blocks cycle close.
+
+Violation trigger: one service modified without a completed symmetry review of the other.
+
+---
+
+## 6. Frozen Zones
+Frozen zone files must not be edited without explicit human gate clearance in `docs/gates/`.
+Reading a frozen zone file for context is permitted.
+A plan that requires a frozen zone edit must include a gate brief before implementation begins — not after.
+Claude confirms the current frozen zone list at plan phase whenever a potentially frozen file is in scope.
+
+Violation trigger: edit to a frozen zone file without a cleared and logged gate.
+
+---
+
+## Enforcement by Phase
+| Phase | Model | Responsibility |
+|---|---|---|
+| PLAN | Claude | Identify which invariants are at risk; list under `INVARIANTS_AT_RISK` in plan file |
+| PLAN_REVIEW | GPT-5.5 | Challenge plan completeness, gates, test strategy, and invariant coverage before implementation |
+| EXECUTE | GPT-5.5 | Respect all invariants; stop and log `ESCALATION` on any conflict |
+| VALIDATE | Composer / local tooling | Run declared checks, summarize results, and route any product correction back to GPT |
+| AUDIT | Claude | Confirm every declared invariant was respected; gate on any violation found |
+| GPT_FINAL_AUDIT | GPT-5.5 | Provide second final opinion after Claude audit; close requires `PASS` from both audits |

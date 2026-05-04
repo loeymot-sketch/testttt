@@ -88,5 +88,6 @@ class Kernel extends HttpKernel
         // locale is outside the branch allowlist. Aligned with the
         // testttt-kiosk-p93 reference worktree.
         'kiosk.locale' => \App\Http\Middleware\ValidateKioskLocale::class,
+        'wizard.per_item_demo' => \App\Http\Middleware\EnsureWizardPerItemDemoEnabled::class,
     ];
 }

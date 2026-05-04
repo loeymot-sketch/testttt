@@ -208,3 +208,27 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+/* =============================================================================
+   PosOrderReceiptComponent — POS V5 chrome touche (refonte 2026-05-02 R2)
+   -----------------------------------------------------------------------------
+   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2
+   Note     : modal de réimpression depuis l'historique. Le bloc papier
+   `#receiptModal .modal-dialog #print` reste INTACT (zone fiscale NF525 :
+   monospace + dashed borders légaux). Seul le chrome modal est retouché V5.
+   ============================================================================= */
+:deep(#receiptModal .modal-dialog) {
+    border-radius: var(--pos-v5-radius-xl) !important;
+    box-shadow: var(--pos-v5-shadow-modal) !important;
+    background: var(--pos-v5-bg-panel) !important;
+    border: 1px solid var(--pos-v5-border) !important;
+    overflow: hidden;
+}
+
+/* Aperçu papier ticket reçoit une matière warm */
+:deep(#print) {
+    background: var(--pos-v5-bg-receipt);
+    padding: var(--pos-v5-space-4);
+}
+</style>

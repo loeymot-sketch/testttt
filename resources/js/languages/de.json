@@ -49,6 +49,8 @@
         "order": "Auftrag",
         "item": "Güter",
         "items": "Güter",
+        "catalog": "Katalog",
+        "stock_rupture": "Lager-Dashboard",
         "product_list": "Produktliste",
         "taxes": "Steuern",
         "currencies": "Währungen",
@@ -121,12 +123,16 @@
         "o_s_s": "O.S.S",
         "chefs": "Köche",
         "waiters": "Kellner",
-        "kiosk_machines": "Kiosk Machines"
+        "kiosk_machines": "Kiosk Machines",
+        "ingredients": "Zutaten",
+        "advanced_tools": "Erweiterte Werkzeuge",
+        "demo_wizard_advanced": "Demo erweiterter Wizard"
     },
     "label": {
         "previous": "Vorherige",
         "next": "Nächste",
         "default": "Verzug",
+        "dismiss": "Schließen",
         "configure_wizard": "Wizard konfigurieren",
         "composer": {
             "product_context": "Produkt",
@@ -161,6 +167,12 @@
             "inactive": "Inaktiv",
             "reorder_page": "Neu ordnen",
             "all_source_options": "Alle Optionen",
+            "preview_steps_title": "Kunden-Kaufreise",
+            "preview_no_steps": "Kein Schritt — der Kunde kauft das Produkt direkt.",
+            "preview_step_unnamed": "Unbenannter Schritt",
+            "preview_optional_one": "Optional — max. 1 Auswahl",
+            "preview_required_n": "Pflicht — {n} Auswahl",
+            "preview_min_max": "{min} bis {max} Auswahlen",
             "loading_product": "Produkt wird geladen",
             "template_simple": "Einfach",
             "template_sandwich": "Sandwich",
@@ -168,7 +180,18 @@
             "template_assiette": "Assiette",
             "template_snacking": "Snacking",
             "template_menu": "Menue",
-            "template_custom": "Custom"
+            "template_custom": "Custom",
+            "source_type_human": "Woher kommen die Auswahlmöglichkeiten?",
+            "source_type_help": "Legt die Grundlage fest: 'Produktattribut' = deine Attribute (Fleisch, Saucen usw.). 'Extras-Gruppe' = deine Extras. 'Add-on' = deine Katalog-Add-ons.",
+            "source_ref_human": "Auf eine bestimmte Gruppe begrenzen (optional)",
+            "source_ref_help": "Standardmaessig werden alle Optionen der Quelle angeboten. Waehle eine bestimmte Gruppe, um nur einen Teil anzuzeigen.",
+            "min_select_help": "Wie viele Artikel der Kunde mindestens auswaehlen muss. 0 = optional, 1+ = verpflichtend.",
+            "max_select_help": "Wie viele Artikel der Kunde hoechstens auswaehlen kann.",
+            "visible_on_help": "Auf welchen Kanaelen dieser Schritt erscheint (interne POS-Kasse und/oder Kundenkiosk).",
+            "is_active_help": "Wenn du einen Schritt deaktivierst, wird er vor Kunden verborgen, ohne ihn zu loeschen.",
+            "min_max_summary_optional_one": "= Optional, der Kunde kann maximal 1 Artikel auswaehlen.",
+            "min_max_summary_required_n": "= Pflicht, der Kunde muss genau {n} Artikel auswaehlen.",
+            "min_max_summary_range": "= Der Kunde kann zwischen {min} und {max} Artikeln auswaehlen."
         },
         "wizard_configured": "Wizard konfiguriert",
         "view_product": "Produkt anzeigen",
@@ -312,6 +335,7 @@
         "customer_id": "Kunde",
         "branch_id": "Zweig",
         "all": "Alle",
+        "all_options": "Alle Optionen",
         "single": "Einzel",
         "administrator": "Administrator",
         "delivery_boy": "Lieferjunge",
@@ -351,6 +375,7 @@
         "welcome_back": "Willkommen zurück",
         "remember_me": "Mich erinnern",
         "or": "Oder",
+        "optional": "Optional",
         "our_menu": "Unser Menü",
         "total_sales": "Gesamtumsatz",
         "total_orders": "Bestellungen insgesamt",
@@ -718,7 +743,32 @@
         "easypaisa_mode": "Easypaisa-Modus",
         "easypaisa_status": "Easypaisa-Status",
         "easypaisa_username": "Easypaisa-Benutzername",
-        "easypaisa_password": "Easypaisa-Passwort"
+        "easypaisa_password": "Easypaisa-Passwort",
+        "refresh": "Aktualisieren",
+        "ingredient": {
+            "title": "Zutaten",
+            "subtitle": "Fleisch, Saucen, Extras und Add-ons verwalten",
+            "tab_all": "Alle",
+            "tab_attribute": "Fleisch & Attribute",
+            "tab_extra": "Extras",
+            "tab_addon": "Add-ons",
+            "column_name": "Name",
+            "column_type": "Typ",
+            "column_status": "Status",
+            "column_usage": "Nutzung",
+            "column_actions": "Aktionen",
+            "toggle_available": "Verfügbar",
+            "toggle_unavailable": "Nicht verfügbar",
+            "toggle_prompt_reason": "Warum ist diese Zutat nicht verfügbar?",
+            "usage_count": "In {count} Wizard-Schritten verwendet",
+            "empty": "Keine Zutaten für diesen Filter gefunden.",
+            "loading": "Wird geladen…",
+            "error": "Zutaten konnten nicht geladen werden.",
+            "retry": "Erneut versuchen",
+            "usage_drawer_title": "Zutatennutzung",
+            "usage_drawer_close": "Schließen",
+            "view_details": "Details anzeigen"
+        }
     },
     "button": {
         "add": "Hinzufügen",
@@ -813,7 +863,11 @@
         "add_waiter": "Kellner hinzufügen",
         "add_chef": "Chef hinzufügen",
         "add_kiosk_machine": "Kiosk Machine Toevoegen",
-        "confirm_and_print": "Bevestig en druk ontvangstbewijs af"
+        "confirm_and_print": "Bevestig en druk ontvangstbewijs af",
+        "composer": {
+            "choose_template_v2": "Template waehlen",
+            "add_page_manual": "Seite manuell hinzufuegen"
+        }
     },
     "number": {
         "10": "10",
@@ -839,6 +893,12 @@
             "publish_failed": "Veroeffentlichung fehlgeschlagen.",
             "publish_confirm_body": "Diese Aenderung ist sofort auf POS und Kiosk fuer den Filialscope sichtbar.",
             "template_applied": "Template angewendet.",
+            "apply_template_empty_response": "Der Server hat das aktualisierte Profil nicht zurueckgegeben. Versuchen Sie es erneut oder kontaktieren Sie den Support.",
+            "apply_template_no_steps": "Das Template wurde angewendet, aber es wurden keine Schritte erstellt. Das ist unerwartet.",
+            "apply_template_validation_error": "Ungueltige Daten wurden an den Server gesendet.",
+            "apply_template_auth_error": "Ihre Sitzung ist abgelaufen. Laden Sie die Seite neu und melden Sie sich erneut an.",
+            "apply_template_server_error": "Serverfehler. Versuchen Sie es gleich noch einmal.",
+            "apply_template_unknown_error": "Unerwarteter Fehler beim Anwenden des Templates.",
             "template_picker_hint": "Waehlen Sie einen Startpunkt und passen Sie die Seiten an.",
             "step_deleted": "Seite entfernt.",
             "delete_confirm": "Diese Seite wird aus dem Produkt-Wizard entfernt.",
@@ -851,7 +911,11 @@
             "template_assiette": "Assiette: Fleisch, Sauce und Garnituren, ohne Menue-Seite.",
             "template_snacking": "Snacking: schnelle Optionen und Extras.",
             "template_menu": "Menue: komplette Formel mit Getraenk und Beilage.",
-            "template_custom": "Custom: leer starten und Seiten manuell komponieren."
+            "template_custom": "Custom: leer starten und Seiten manuell komponieren.",
+            "guidance_zero_steps_title": "Wie funktioniert der Wizard?",
+            "guidance_zero_steps_intro": "Der Wizard ist der Weg, den dein Kunde nutzt, um dieses Produkt zu personalisieren (Fleisch, Sauce, Groesse usw.). Jede Seite ist ein Auswahlschritt.",
+            "guidance_zero_steps_option_template": "Empfohlen: Waehle ein Template (Tacos, Sandwich usw.), um mit einer fertigen Basis zu starten.",
+            "guidance_zero_steps_option_manual": "Oder: Fuege manuell eine Seite hinzu, um deinen eigenen Ablauf zu konfigurieren."
         },
         "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
         "password_update": "Passwort erfolgreich aktualisiert.",
@@ -912,7 +976,11 @@
         "no_items_found": "Er zijn geen items gevonden die aan uw zoekopdracht voldoen! Probeer andere zoekwoorden.",
         "no_data_available": "Geen gegevens beschikbaar.",
         "payment_method": "De betaalmethode is vereist.",
-        "special_instructions_limit": "De limiet voor speciale instructies is 190 tekens."
+        "special_instructions_limit": "De limiet voor speciale instructies is 190 tekens.",
+        "ingredient": {
+            "toggle_success": "Status aktualisiert.",
+            "toggle_error": "Aktualisierung fehlgeschlagen. Bitte erneut versuchen."
+        }
     },
     "kiosk": {
         "welcome": "Bienvenue !",
@@ -1576,6 +1644,52 @@
         "menu_refreshed_recheck_selection": "Bitte prüfen Sie Ihre Auswahl.",
         "review_cart": "Warenkorb prüfen"
     },
+    "studio": {
+        "eyebrow": "Katalog-Steuerung",
+        "title": "Katalog",
+        "subtitle": "Kategorien, Produkte, Wizards und Lager",
+        "all_categories": "Alle Kategorien",
+        "products_count": "{n} Produkte",
+        "advanced_settings": "Erweiterte Einstellungen",
+        "stock_link": "Lager-Dashboard",
+        "quick_create_product": "Produkt schnell hinzufügen",
+        "stock_parallel_title": "Lager & Verfügbarkeit",
+        "daily_quota_hint": "Tageskontingent: standardmäßig unbegrenzt",
+        "stock_parallel_hint": "Synchronisiert mit zentralem Lager und Kiosk",
+        "composer_drawer_eyebrow": "Produkt-Wizard",
+        "composer_drawer_title": "Schritte konfigurieren",
+        "open_full_page": "Vollbild öffnen",
+        "select_category_first": "Wähle zuerst eine Kategorie",
+        "composer": {
+            "diff": {
+                "title": "Ausstehende Änderungen",
+                "added": "Hinzugefügt",
+                "removed": "Entfernt",
+                "modified": "Geändert",
+                "no_changes": "Keine ausstehenden Änderungen",
+                "confirm_publish": "Jetzt veröffentlichen",
+                "cancel": "Abbrechen",
+                "loading": "Diff wird berechnet…",
+                "error": "Diff kann nicht berechnet werden",
+                "retry": "Erneut versuchen"
+            },
+            "conflict": {
+                "title": "Versionskonflikt",
+                "message": "Ein anderer Benutzer hat diesen Wizard geändert. Lade neu, um die Änderungen zu sehen.",
+                "reload": "Neu laden"
+            }
+        },
+        "image": {
+            "upload_idle": "Bild ziehen oder klicken",
+            "upload_drag_over": "Jetzt ablegen",
+            "upload_uploading": "Wird hochgeladen…",
+            "upload_success": "Bild hochgeladen",
+            "upload_error": "Upload-Fehler",
+            "upload_retry": "Erneut versuchen",
+            "upload_invalid_mime": "Format nicht unterstützt (JPG/PNG/WEBP)",
+            "upload_oversize": "Bild zu groß (max. 4 MB)"
+        }
+    },
     "warning": {
         "catalog": {
             "region_label": "Kataloghinweise für diesen Artikel",
@@ -1610,5 +1724,14 @@
                 "action": "Filialbestand prüfen"
             }
         }
+    },
+    "demo_wizard_advanced": {
+        "title": "Erweiterter Wizard (Demo V2 — nicht fuer Produktion)",
+        "warning": "Diese Oberflaeche passt den Wizard eines einzelnen Produkts an. Sie umgeht den Kategorie-Wizard. Nur fuer Tests und Demos.",
+        "product_label": "Produkt zum Anpassen",
+        "product_placeholder": "Produkt suchen oder auswaehlen",
+        "open_button": "Erweiterten Wizard oeffnen",
+        "back_to_studio": "Zurueck zum Catalog Studio",
+        "load_error": "Produktliste konnte nicht geladen werden."
     }
 }

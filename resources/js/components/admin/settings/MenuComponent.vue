@@ -38,7 +38,7 @@
                 <i class="lab lab-loyalty text-sm"></i>
                 {{ $t("menu.loyalty_setup") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.otp' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('otp')" :to="{ name: 'admin.settings.otp' }" class="db-tab-btn">
                 <i class="lab lab-otp text-sm"></i>
                 {{ $t("menu.otp") }}
             </router-link>
@@ -46,19 +46,19 @@
                 <i class="lab lab-notification text-sm"></i>
                 {{ $t("menu.notification") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.notificationAlert' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('notificationAlert')" :to="{ name: 'admin.settings.notificationAlert' }" class="db-tab-btn">
                 <i class="lab lab-license text-sm"></i>
                 {{ $t("menu.notification_alert") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.socialMedia' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('socialMedia')" :to="{ name: 'admin.settings.socialMedia' }" class="db-tab-btn">
                 <i class="lab lab-social-media text-sm"></i>
                 {{ $t("menu.social_media") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.cookies' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('cookies')" :to="{ name: 'admin.settings.cookies' }" class="db-tab-btn">
                 <i class="lab lab-cookies text-sm"></i>
                 {{ $t("menu.cookies") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.analytic' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('analytics')" :to="{ name: 'admin.settings.analytic' }" class="db-tab-btn">
                 <i class="lab lab-analytics text-sm"></i>
                 {{ $t("menu.analytics") }}
             </router-link>
@@ -66,11 +66,11 @@
                 <i class="lab lab-theme text-sm"></i>
                 {{ $t("menu.theme") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.timeSlot' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('timeSlots')" :to="{ name: 'admin.settings.timeSlot' }" class="db-tab-btn">
                 <i class="lab lab-time-slots text-sm"></i>
                 {{ $t("menu.time_slots") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.slider' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('sliders')" :to="{ name: 'admin.settings.slider' }" class="db-tab-btn">
                 <i class="lab lab-sliders text-sm"></i>
                 {{ $t("menu.sliders") }}
             </router-link>
@@ -78,42 +78,51 @@
                 <i class="lab lab-currencies text-sm"></i>
                 {{ $t("menu.currencies") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.itemCategory' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('itemCategories')" :to="{ name: 'admin.settings.itemCategory' }" class="db-tab-btn">
                 <i class="lab lab-item-categories text-sm"></i>
                 {{ $t("menu.item_categories") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.itemAttribute' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('itemAttributes')" :to="{ name: 'admin.settings.itemAttribute' }" class="db-tab-btn">
                 <i class="lab lab-item-attributes text-sm"></i>
                 {{ $t("menu.item_attributes") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.tax' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('tax')" :to="{ name: 'admin.settings.tax' }" class="db-tab-btn">
                 <i class="lab lab-taxes text-sm"></i>
                 {{ $t("menu.taxes") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.page' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('pages')" :to="{ name: 'admin.settings.page' }" class="db-tab-btn">
                 <i class="lab lab-pages text-sm"></i>
                 {{ $t("menu.pages") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.role' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('role')" :to="{ name: 'admin.settings.role' }" class="db-tab-btn">
                 <i class="lab lab-role-permissions text-sm"></i>
                 {{ $t("menu.role_permissions") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.language' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('languages')" :to="{ name: 'admin.settings.language' }" class="db-tab-btn">
                 <i class="lab lab-languages text-sm"></i>
                 {{ $t("menu.languages") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.smsGateway' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('smsGateway')" :to="{ name: 'admin.settings.smsGateway' }" class="db-tab-btn">
                 <i class="lab lab-sms text-sm"></i>
                 {{ $t("menu.sms_gateway") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.paymentGateway' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('paymentGateway')" :to="{ name: 'admin.settings.paymentGateway' }" class="db-tab-btn">
                 <i class="lab lab-payment-gateway text-sm"></i>
                 {{ $t("menu.payment_gateway") }}
             </router-link>
-            <router-link :to="{ name: 'admin.settings.license' }" class="db-tab-btn">
+            <router-link v-if="!isSettingHidden('license')" :to="{ name: 'admin.settings.license' }" class="db-tab-btn">
                 <i class="lab lab-license text-sm"></i>
                 {{ $t("menu.license") }}
             </router-link>
+            <div v-if="wizardPerItemDemoEnabled" class="border-t mt-3 pt-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                    {{ $t("menu.advanced_tools") }}
+                </p>
+                <router-link :to="{ name: 'admin.demo.wizard-launcher' }" class="db-tab-btn">
+                    <i class="lab lab-items text-sm"></i>
+                    {{ $t("menu.demo_wizard_advanced") }}
+                </router-link>
+            </div>
         </nav>
     </div>
 </template>
@@ -133,6 +142,26 @@ const HIDDEN_KEY_TO_LOCAL_SETTING = Object.freeze({
     'settings.loyalty-setup': 'loyaltySetup',
     'settings.notification': 'notification',
     'settings.theme': 'theme',
+    'settings.item-categories': 'itemCategories',
+    'settings.item-attributes': 'itemAttributes',
+    'settings.permission': 'permission',
+    'settings.role': 'role',
+    'settings.tax': 'tax',
+    'settings.charge': 'charge',
+    'settings.translation': 'translation',
+    'settings.activity-log': 'activityLog',
+    'settings.languages': 'languages',
+    'settings.otp': 'otp',
+    'settings.notification-alert': 'notificationAlert',
+    'settings.social-media': 'socialMedia',
+    'settings.cookies': 'cookies',
+    'settings.analytics': 'analytics',
+    'settings.time-slots': 'timeSlots',
+    'settings.sliders': 'sliders',
+    'settings.pages': 'pages',
+    'settings.sms-gateway': 'smsGateway',
+    'settings.payment-gateway': 'paymentGateway',
+    'settings.license': 'license',
 });
 
 const HIDDEN_LOCAL_SETTINGS = new Set(
@@ -143,6 +172,12 @@ const HIDDEN_LOCAL_SETTINGS = new Set(
 
 export default {
     name: "MenuComponent",
+    computed: {
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
+        },
+    },
     methods: {
         openSettingMenu: function (event) {
             return appService.openSettingMenu(event);

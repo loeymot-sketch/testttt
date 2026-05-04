@@ -11,6 +11,7 @@ class ComposerProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'item_id' => $this->item_id,
+            'item_category_id' => $this->item_category_id,
             'template' => $this->template,
             'version' => $this->version,
             'is_published' => $this->is_published,

@@ -239,7 +239,7 @@
                                     </span>
                                     <span :data-testid="`admin-item-configure-wizard-${item.id}`">
                                         <router-link
-                                            v-if="permissionChecker('items_edit')"
+                                            v-if="permissionChecker('items_edit') && wizardPerItemDemoEnabled"
                                             :to="{ name: 'admin.items.composer', params: { id: item.id } }"
                                             class="db-table-action view"
                                             :title="$t('label.configure_wizard')"
@@ -418,6 +418,11 @@ export default {
         this.list();
         this.loading.isActive = true;
         this.props.search.page = 1;
+        const routeCategoryId = Number(this.$route?.query?.item_category_id || 0);
+        if (Number.isInteger(routeCategoryId) && routeCategoryId > 0) {
+            this.props.form.item_category_id = routeCategoryId;
+            this.props.search.item_category_id = routeCategoryId;
+        }
         this.$store.dispatch('itemCategory/lists', this.categoryProps.search).then(res => {
             this.loading.isActive = false;
         }).catch((err) => {
@@ -450,6 +455,10 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';

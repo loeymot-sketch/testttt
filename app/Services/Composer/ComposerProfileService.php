@@ -5,8 +5,10 @@ namespace App\Services\Composer;
 use App\Events\ComposerProfilePublished;
 use App\Events\ComposerProfileChanged;
 use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 use App\Models\ItemWizardStep;
+use App\Models\ItemWizardStepVersion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -40,6 +42,7 @@ class ComposerProfileService
         return DB::transaction(function () use ($item, $payload): ItemWizardProfile {
             $profile = ItemWizardProfile::query()->create([
                 'item_id' => $item->id,
+                'item_category_id' => null,
                 'template' => $payload['template'],
                 'branch_id_scope' => $payload['branch_id_scope'] ?? null,
                 'version' => 1,
@@ -54,8 +57,64 @@ class ComposerProfileService
         });
     }
 
+    public function showForCategory(ItemCategory $category, ?int $branchIdScope = null): ?ItemWizardProfile
+    {
+        return ItemWizardProfile::query()
+            ->with('steps')
+            ->where('item_category_id', $category->id)
+            ->when(
+                $branchIdScope !== null,
+                fn ($query) => $query->where('branch_id_scope', $branchIdScope),
+                fn ($query) => $query->whereNull('branch_id_scope')
+            )
+            ->latest('id')
+            ->first();
+    }
+
+    public function createForCategory(ItemCategory $category, array $payload): ItemWizardProfile
+    {
+        return DB::transaction(function () use ($category, $payload): ItemWizardProfile {
+            $profile = ItemWizardProfile::query()->create([
+                'item_id' => null,
+                'item_category_id' => $category->id,
+                'template' => $payload['template'],
+                'branch_id_scope' => $payload['branch_id_scope'] ?? null,
+                'version' => 1,
+                'is_published' => false,
+            ]);
+
+            $category->update(['wizard_profile_id' => $profile->id]);
+
+            foreach (($payload['steps'] ?? []) as $step) {
+                $this->stepService->create($profile, $step, false);
+            }
+
+            return $profile->fresh('steps');
+        });
+    }
+
+    public function resolveForItem(Item $item, ?int $branchIdScope = null): ?ItemWizardProfile
+    {
+        if ($item->item_category_id) {
+            $category = $item->relationLoaded('category')
+                ? $item->category
+                : ItemCategory::query()->find($item->item_category_id);
+
+            if ($category) {
+                $profile = $this->showForCategory($category, $branchIdScope);
+                if ($profile) {
+                    return $profile;
+                }
+            }
+        }
+
+        return $this->showForItem($item, $branchIdScope);
+    }
+
     public function update(ItemWizardProfile $profile, array $payload): ItemWizardProfile
     {
+        $this->assertVersionMatches($profile, $payload);
+
         return DB::transaction(function () use ($profile, $payload): ItemWizardProfile {
             $profile->update([
                 'template' => $payload['template'],
@@ -79,12 +138,25 @@ class ComposerProfileService
         });
     }
 
-    public function publish(ItemWizardProfile $profile): ItemWizardProfile
+    public function publish(ItemWizardProfile $profile, array $payload = []): ItemWizardProfile
     {
+        $this->assertVersionMatches($profile, $payload);
+
         return DB::transaction(function () use ($profile): ItemWizardProfile {
             $this->assertPublishable($profile);
             $profile->publish();
             $fresh = $profile->fresh('steps');
+            ItemWizardStepVersion::create([
+                'profile_id' => $fresh->id,
+                'version' => $fresh->version,
+                'snapshot' => $fresh->steps
+                    ->sortBy('position')
+                    ->map(fn (ItemWizardStep $step): array => $step->toArray())
+                    ->values()
+                    ->all(),
+                'published_at' => now(),
+                'published_by_id' => auth()->id() ?: null,
+            ]);
             ComposerProfilePublished::dispatch((int) $fresh->id);
             ComposerProfileChanged::dispatch(...$this->composerChangedPayload($fresh, 'published'));
 
@@ -94,16 +166,11 @@ class ComposerProfileService
 
     private function assertPublishable(ItemWizardProfile $profile): void
     {
-        $fresh = $profile->fresh([
-            'steps',
-            'item.variations.itemAttribute',
-            'item.extras',
-            'item.addons.addonItem',
-        ]);
+        $fresh = $profile->fresh(['steps', 'item']);
 
-        if (! $fresh || ! $fresh->item) {
+        if (! $fresh) {
             throw ValidationException::withMessages([
-                'steps' => 'Composer profile cannot be published without an item.',
+                'steps' => 'Composer profile not found.',
             ]);
         }
 
@@ -129,21 +196,29 @@ class ComposerProfileService
                     'steps' => 'Composer profile contains an invalid selection range.',
                 ]);
             }
+        }
 
-            if ((int) $step->min_select > 0 && ! $this->requiredStepHasChoices($fresh, $step)) {
-                throw ValidationException::withMessages([
-                    'steps' => 'Composer profile contains a required step without available choices.',
-                ]);
+        if ($fresh->item_id && $fresh->item) {
+            $fullItem = $fresh
+                ->fresh(['steps', 'item.variations.itemAttribute', 'item.extras', 'item.addons.addonItem'])
+                ->item;
+
+            foreach ($activeSteps as $step) {
+                if ((int) $step->min_select > 0 && ! $this->requiredStepHasChoicesForItem($fresh, $fullItem, $step)) {
+                    throw ValidationException::withMessages([
+                        'steps' => 'Composer profile contains a required step without available choices.',
+                    ]);
+                }
             }
         }
     }
 
-    private function requiredStepHasChoices(ItemWizardProfile $profile, ItemWizardStep $step): bool
+    private function requiredStepHasChoicesForItem(ItemWizardProfile $profile, Item $item, ItemWizardStep $step): bool
     {
         $surfaces = $step->visible_on ?: ['pos', 'kiosk', 'web'];
 
         foreach ((array) $surfaces as $surface) {
-            $projected = $this->projection->project($profile, $profile->item, (string) $surface, $profile->branch_id_scope);
+            $projected = $this->projection->project($profile, $item, (string) $surface, $profile->branch_id_scope);
             $projectedStep = collect($projected['steps'] ?? [])->firstWhere('id', (int) $step->id);
 
             if ($projectedStep && count($projectedStep['choices'] ?? []) > 0) {
@@ -172,10 +247,22 @@ class ComposerProfileService
             $changeType,
             $profile->branch_id_scope !== null ? (int) $profile->branch_id_scope : null,
             [
-                'item_id' => (int) $profile->item_id,
+                'item_id' => $profile->item_id ? (int) $profile->item_id : null,
+                'item_category_id' => $profile->item_category_id ? (int) $profile->item_category_id : null,
                 'version' => (int) $profile->version,
                 'is_published' => (bool) $profile->is_published,
             ],
         ];
+    }
+
+    private function assertVersionMatches(ItemWizardProfile $profile, array $payload): void
+    {
+        if (array_key_exists('version', $payload) && (int) $payload['version'] !== (int) $profile->version) {
+            abort(response()->json([
+                'message' => 'Profile version conflict',
+                'expected' => (int) $profile->version,
+                'got' => (int) $payload['version'],
+            ], 409));
+        }
     }
 }

@@ -22,7 +22,7 @@ class ItemCategory extends Model implements HasMedia
         'parent_id',
         'name', 'slug', 'description', 'status', 'sort',
         // [PLAN_11 ARCH-01] Config wizard
-        'wizard_template', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
+        'wizard_template', 'wizard_profile_id', 'has_menu', 'default_menu_kiosk', 'sauce_included_menu',
         'kiosk_upsell_include', 'kiosk_upsell_skip_after_cart',
         // [V1 SECTION 5] Dual-channel projections
         'channels', 'kiosk_sort', 'pos_sort', 'kiosk_label',
@@ -35,6 +35,7 @@ class ItemCategory extends Model implements HasMedia
         'description'         => 'string',
         'status'              => 'integer',
         // [PLAN_11 ARCH-01] Config wizard
+        'wizard_profile_id'   => 'integer',
         'has_menu'            => 'boolean',
         'default_menu_kiosk'  => 'boolean',
         'sauce_included_menu' => 'boolean',
@@ -119,6 +120,16 @@ class ItemCategory extends Model implements HasMedia
     public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Item::class)->where(['status' => Status::ACTIVE]);
+    }
+
+    public function wizardProfile(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ItemWizardProfile::class, 'wizard_profile_id');
+    }
+
+    public function getEffectiveWizardProfile(): ?ItemWizardProfile
+    {
+        return $this->wizardProfile;
     }
 
     /**

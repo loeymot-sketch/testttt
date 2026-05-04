@@ -379,9 +379,90 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   PosOrderListComponent — POS V5 Design Convergence (touches légères 2026-05-02)
+   -----------------------------------------------------------------------------
+   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2
+   Doc plan : §3.8
+   Approche : pass design léger sur la card admin standard (db-card pattern
+   conservé pour cohérence backoffice). On adopte les tokens V5 sur les surfaces
+   visibles (card radius/shadow, header gradient, table head, row hover, status
+   badges). Aucun template touché — overrides ciblés via :deep() + scoped.
+   ============================================================================= */
 @media print {
-    .hidden-print {
-        display: none !important;
-    }
+    .hidden-print { display: none !important; }
+}
+
+/* Card container */
+:deep(.db-card) {
+    border-radius: var(--pos-v5-radius-lg);
+    box-shadow: var(--pos-v5-shadow-md);
+    border: 1px solid var(--pos-v5-border);
+    background: var(--pos-v5-bg-panel);
+    overflow: hidden;
+}
+
+/* Card header */
+:deep(.db-card-header) {
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
+    border-bottom: 1px solid var(--pos-v5-border);
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
+}
+:deep(.db-card-title) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h5);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+    letter-spacing: var(--pos-v5-tracking-tight);
+}
+
+/* Table head */
+:deep(.db-table-head) {
+    background: var(--pos-v5-bg-subtle);
+}
+:deep(.db-table-head-th) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-ink-soft);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+}
+
+/* Table body row hover */
+:deep(.db-table-body-tr) {
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+:deep(.db-table-body-tr:hover) {
+    background: var(--pos-v5-brand-red-faint);
+}
+:deep(.db-table-body-td) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body);
+    color: var(--pos-v5-ink);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+
+/* Search button — adopt V5 brand */
+:deep(.db-btn.bg-primary) {
+    background: var(--pos-v5-brand-red) !important;
+    border-radius: var(--pos-v5-radius-md);
+    font-weight: var(--pos-v5-weight-bold);
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+:deep(.db-btn.bg-primary:hover) {
+    background: var(--pos-v5-brand-red-dark) !important;
+}
+:deep(.db-btn.bg-gray-600) {
+    background: var(--pos-v5-bg-subtle) !important;
+    color: var(--pos-v5-ink) !important;
+    border-radius: var(--pos-v5-radius-md);
+    font-weight: var(--pos-v5-weight-semibold);
+}
+:deep(.db-btn.bg-gray-600:hover) {
+    background: var(--pos-v5-border-strong) !important;
 }
 </style>

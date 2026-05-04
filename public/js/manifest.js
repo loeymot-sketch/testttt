@@ -107,7 +107,7 @@
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames not based on template
-/******/ 			if ({"pos-shell":1,"admin-shell":1,"admin-reports":1,"admin-kds":1,"admin-oss":1,"kiosk-shell":1,"kiosk-wizard":1,"kiosk-errors":1,"kiosk-wizard-step":1}[chunkId]) return "js/" + chunkId + ".js";
+/******/ 			if ({"pos-shell":1,"admin-shell":1,"resources_js_components_admin_ingredients_IngredientListComponent_vue":1,"admin-reports":1,"admin-kds":1,"admin-oss":1,"kiosk-shell":1,"kiosk-wizard":1,"kiosk-errors":1,"kiosk-wizard-step":1}[chunkId]) return "js/" + chunkId + ".js";
 /******/ 			// return url for filenames based on template
 /******/ 			return undefined;
 /******/ 		};

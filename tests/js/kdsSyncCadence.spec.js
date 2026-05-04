@@ -30,6 +30,7 @@ describe('KdsSyncService cadence', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         vi.useRealTimers();
+        delete window.foodkingConfig;
     });
 
     it('pauses polling when ws is CONNECTED and resumes near 10s when DISCONNECTED', () => {
@@ -59,5 +60,28 @@ describe('KdsSyncService cadence', () => {
 
         expect(spy).toHaveBeenCalled();
         expect(spy.mock.calls.at(-1)[0].reason).toBe('ws_degraded');
+    });
+
+    it('uses runtime kdsFallbackPolling overrides when provided', () => {
+        window.foodkingConfig = {
+            kdsFallbackPolling: {
+                degradedBaseMs: 7000,
+                degradedJitterMs: 0,
+                disconnectedBaseMs: 12000,
+                disconnectedJitterMs: 0,
+                highActivityBaseMs: 4000,
+                highActivityJitterMs: 0,
+            },
+        };
+
+        const ws = makeWsService('DISCONNECTED');
+        const service = new KdsSyncService({ wsService: ws, fetchFn: vi.fn() });
+        service.start(1);
+
+        expect(service.currentIntervalMs).toBe(12000);
+
+        ws.state = 'RECONNECTING';
+        ws.emit('state_change', { from: 'DISCONNECTED', to: 'RECONNECTING' });
+        expect(service.currentIntervalMs).toBe(7000);
     });
 });

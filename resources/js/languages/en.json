@@ -189,6 +189,8 @@
         "order": "Order",
         "item": "Item",
         "items": "Items",
+        "catalog": "Catalog",
+        "stock_rupture": "Stock dashboard",
         "product_list": "Product List",
         "taxes": "Taxes",
         "currencies": "Currencies",
@@ -263,12 +265,16 @@
         "o_s_s": "O.S.S",
         "chefs": "Chefs",
         "waiters": "Waiters",
-        "kiosk_machines": "Kiosk Machines"
+        "kiosk_machines": "Kiosk Machines",
+        "ingredients": "Ingredients",
+        "advanced_tools": "Advanced tools",
+        "demo_wizard_advanced": "Advanced Wizard Demo"
     },
     "label": {
         "previous": "Previous",
         "next": "Next",
         "default": "Default",
+        "dismiss": "Dismiss",
         "configure_wizard": "Configure wizard",
         "composer": {
             "product_context": "Product",
@@ -303,6 +309,12 @@
             "inactive": "Inactive",
             "reorder_page": "Reorder",
             "all_source_options": "All options",
+            "preview_steps_title": "Customer purchase journey",
+            "preview_no_steps": "No step — customer buys product directly.",
+            "preview_step_unnamed": "Unnamed step",
+            "preview_optional_one": "Optional — 1 choice max",
+            "preview_required_n": "Required — {n} choices",
+            "preview_min_max": "{min} to {max} choices",
             "loading_product": "Loading product",
             "template_simple": "Simple",
             "template_sandwich": "Sandwich",
@@ -310,7 +322,18 @@
             "template_assiette": "Assiette",
             "template_snacking": "Snacking",
             "template_menu": "Menu",
-            "template_custom": "Custom"
+            "template_custom": "Custom",
+            "source_type_human": "Where do the choices come from?",
+            "source_type_help": "Defines the base: 'Product attribute' = your attributes (meats, sauces, etc.). 'Extra group' = your extras. 'Add-on' = your catalog add-ons.",
+            "source_ref_human": "Limit to a specific group (optional)",
+            "source_ref_help": "By default, all options from the source are offered. Choose a specific group to show only a subset.",
+            "min_select_help": "How many items the customer must choose at minimum. 0 = optional, 1+ = required.",
+            "max_select_help": "How many items the customer can choose at most.",
+            "visible_on_help": "Which channels show this step (internal POS and/or customer kiosk).",
+            "is_active_help": "Disabling a step hides it from customers without deleting it.",
+            "min_max_summary_optional_one": "= Optional, the customer can choose at most 1 item.",
+            "min_max_summary_required_n": "= Required, the customer must choose exactly {n} items.",
+            "min_max_summary_range": "= The customer can choose between {min} and {max} items."
         },
         "wizard_configured": "Wizard configured",
         "view_product": "View product",
@@ -318,6 +341,7 @@
         "availability": "Availability",
         "available": "Available",
         "unavailable": "Unavailable",
+        "refresh": "Refresh",
         "out_of_stock": "Out of stock",
         "toggle_unavailable": "Mark unavailable",
         "toggle_available": "Mark available",
@@ -480,6 +504,7 @@
         "customer_id": "Customer",
         "branch_id": "Branch",
         "all": "All",
+        "all_options": "All options",
         "single": "Single",
         "administrator": "Administrator",
         "delivery_boy": "Delivery Boy",
@@ -519,6 +544,7 @@
         "welcome_back": "Welcome Back",
         "remember_me": "Remember Me",
         "or": "Or",
+        "optional": "Optional",
         "our_menu": "Our Menu",
         "total_sales": "Total Sales",
         "total_orders": "Total Orders",
@@ -934,7 +960,31 @@
         "kds_allergens_for_item": "{item_name}: {allergens}",
         "kds_allergens_modal_none": "No allergens declared for this item.",
         "ws_session_invalid_text": "Session expired — your session has ended. Reload the page.",
-        "ws_session_invalid_action": "Reload"
+        "ws_session_invalid_action": "Reload",
+        "ingredient": {
+            "title": "Ingredients",
+            "subtitle": "Manage meats, sauces, extras and add-ons",
+            "tab_all": "All",
+            "tab_attribute": "Meats & Attributes",
+            "tab_extra": "Extras",
+            "tab_addon": "Add-ons",
+            "column_name": "Name",
+            "column_type": "Type",
+            "column_status": "Status",
+            "column_usage": "Usage",
+            "column_actions": "Actions",
+            "toggle_available": "Available",
+            "toggle_unavailable": "Out of stock",
+            "toggle_prompt_reason": "Why is this ingredient out of stock?",
+            "usage_count": "Used in {count} wizard steps",
+            "empty": "No ingredients found for this filter.",
+            "loading": "Loading…",
+            "error": "Unable to load ingredients.",
+            "retry": "Retry",
+            "usage_drawer_title": "Ingredient usage",
+            "usage_drawer_close": "Close",
+            "view_details": "View details"
+        }
     },
     "button": {
         "add": "Add",
@@ -1036,7 +1086,11 @@
         "release_table": "Release table",
         "kds_bump": "Bump",
         "kds_recall": "Recall",
-        "kds_allergens_modal_close": "Close"
+        "kds_allergens_modal_close": "Close",
+        "composer": {
+            "choose_template_v2": "Choose a template",
+            "add_page_manual": "Add a page manually"
+        }
     },
     "number": {
         "10": "10",
@@ -1063,6 +1117,12 @@
             "publish_failed": "Unable to publish.",
             "publish_confirm_body": "This change will be visible immediately on POS and Kiosk for the scoped branch.",
             "template_applied": "Template applied.",
+            "apply_template_empty_response": "The server did not return the updated profile. Try again or contact support.",
+            "apply_template_no_steps": "The template was applied but no steps were created. This is unexpected.",
+            "apply_template_validation_error": "Invalid data was sent to the server.",
+            "apply_template_auth_error": "Your session expired. Reload the page and sign in again.",
+            "apply_template_server_error": "Server error. Try again in a moment.",
+            "apply_template_unknown_error": "Unexpected failure while applying the template.",
             "template_picker_hint": "Pick a starting point, then customize the pages.",
             "step_deleted": "Page removed.",
             "delete_confirm": "This page will be removed from this product wizard.",
@@ -1075,7 +1135,11 @@
             "template_assiette": "Assiette: meat, sauce, and toppings, without menu page.",
             "template_snacking": "Snacking: quick options and supplements.",
             "template_menu": "Menu: full formula with drink and side.",
-            "template_custom": "Custom: start empty and compose pages manually."
+            "template_custom": "Custom: start empty and compose pages manually.",
+            "guidance_zero_steps_title": "How does the wizard work?",
+            "guidance_zero_steps_intro": "The wizard is the path your customer follows to customize this product (meat, sauce, size, etc.). Each page is one choice step.",
+            "guidance_zero_steps_option_template": "Best option: choose a template (Tacos, Sandwich, etc.) to start from a ready-made base.",
+            "guidance_zero_steps_option_manual": "Otherwise: add a manual page to configure your own flow."
         },
         "kds_recall_grace_expired": "Recall unavailable: the 60-second undo window has passed.",
         "kds_status_conflict": "This order was changed elsewhere. The list was refreshed—check the status before you act.",
@@ -1143,7 +1207,11 @@
         "no_data_available": "No data available.",
         "payment_method": "The payment method is required.",
         "special_instructions_limit": "Special instructions limit is 190 characters.",
-        "confirm_transfer": "Enter the target table id to confirm the transfer."
+        "confirm_transfer": "Enter the target table id to confirm the transfer.",
+        "ingredient": {
+            "toggle_success": "Status updated.",
+            "toggle_error": "Update failed. Please try again."
+        }
     },
     "kiosk": {
         "welcome": "Welcome!",
@@ -1814,6 +1882,52 @@
         "menu_refreshed_recheck_selection": "Please check your choices.",
         "review_cart": "Review my cart"
     },
+    "studio": {
+        "eyebrow": "Catalog control center",
+        "title": "Catalog",
+        "subtitle": "Categories, products, wizards and stock",
+        "all_categories": "All categories",
+        "products_count": "{n} products",
+        "advanced_settings": "Advanced settings",
+        "stock_link": "Stock dashboard",
+        "quick_create_product": "Quick add product",
+        "stock_parallel_title": "Stock & availability",
+        "daily_quota_hint": "Daily quota: unlimited by default",
+        "stock_parallel_hint": "Synced with central stock and kiosk",
+        "composer_drawer_eyebrow": "Product wizard",
+        "composer_drawer_title": "Configure steps",
+        "open_full_page": "Open full page",
+        "select_category_first": "Choose a category first",
+        "composer": {
+            "diff": {
+                "title": "Pending changes",
+                "added": "Added",
+                "removed": "Removed",
+                "modified": "Modified",
+                "no_changes": "No pending changes",
+                "confirm_publish": "Publish now",
+                "cancel": "Cancel",
+                "loading": "Computing diff…",
+                "error": "Could not compute diff",
+                "retry": "Retry"
+            },
+            "conflict": {
+                "title": "Version conflict",
+                "message": "Another user has modified this wizard. Reload to see the changes.",
+                "reload": "Reload"
+            }
+        },
+        "image": {
+            "upload_idle": "Drag image or click",
+            "upload_drag_over": "Drop now",
+            "upload_uploading": "Uploading…",
+            "upload_success": "Image uploaded",
+            "upload_error": "Upload error",
+            "upload_retry": "Retry",
+            "upload_invalid_mime": "Unsupported format (JPG/PNG/WEBP)",
+            "upload_oversize": "Image too large (max 4 MB)"
+        }
+    },
     "warning": {
         "catalog": {
             "region_label": "Catalog notices for this product",
@@ -1848,5 +1962,14 @@
                 "action": "Review branch stock"
             }
         }
+    },
+    "demo_wizard_advanced": {
+        "title": "Advanced wizard (Demo V2 — not for production)",
+        "warning": "This interface customizes the wizard for one individual product. It bypasses the category wizard. Reserved for tests and demonstrations.",
+        "product_label": "Product to customize",
+        "product_placeholder": "Search or choose a product",
+        "open_button": "Open advanced wizard",
+        "back_to_studio": "Back to Catalog Studio",
+        "load_error": "Could not load the product list."
     }
 }

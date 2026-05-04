@@ -22,12 +22,22 @@
 /**
  * KsButton — CTA primaire Kiosk (aligné FkButton React).
  *
- * Variants : primary (rouge) | secondary (surface bord) | ghost | danger | dark.
- * Sizes    : lg (110 px CTA plein écran) | md (82) | sm (60).
+ * Variants :
+ *   - primary | secondary | ghost | danger | dark           (V1 baseline)
+ *   - hero | ghost-bold | pop                               (V1.5 Bold Appétissant)
+ *     hero       : CTA hero (Fraunces, ombre cta-bold, scale spring, light/dark)
+ *     ghost-bold : border 2px warm dark, hover fill warm
+ *     pop        : micro-anim succès post-tap (scale spring + ombre flash)
+ *
+ * Sizes :
+ *   - lg (110 px CTA plein écran) | md (82) | sm (60)
+ *   - hero-xl (variant hero only — 128 px hero CTA panier/idle)
+ *
  * Accessibilité :
  *  - min-height respecte --kiosk-touch-* selon size
  *  - aria-busy quand loading, disabled bloque click
  *  - focus-visible ring (WCAG 2.4.7)
+ *  - Spring transition neutralisée si reduced-motion
  */
 export default {
     name: 'KsButton',
@@ -35,12 +45,15 @@ export default {
         variant: {
             type: String,
             default: 'primary',
-            validator: (v) => ['primary', 'secondary', 'ghost', 'danger', 'dark'].includes(v),
+            validator: (v) => [
+                'primary', 'secondary', 'ghost', 'danger', 'dark',
+                'hero', 'ghost-bold', 'pop',
+            ].includes(v),
         },
         size: {
             type: String,
             default: 'lg',
-            validator: (v) => ['lg', 'md', 'sm'].includes(v),
+            validator: (v) => ['lg', 'md', 'sm', 'hero-xl'].includes(v),
         },
         disabled: { type: Boolean, default: false },
         loading: { type: Boolean, default: false },
@@ -152,6 +165,81 @@ export default {
 .ks-btn--dark {
     background: var(--kiosk-text);
     color: var(--kiosk-text-on-red);
+}
+
+/* ---------- Bold Appétissant variants (V1.5) ---------- */
+/* Consomment --kiosk-bold-* (light + dark via [data-kiosk-theme]).
+   Coexistent avec les variants legacy : aucun écran existant impacté. */
+
+.ks-btn--hero {
+    font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+    font-weight: var(--kiosk-display-weight-black, 900);
+    letter-spacing: -0.01em;
+    text-transform: none;
+    background: var(--kiosk-bold-primary);
+    color: var(--kiosk-bold-text-on-primary);
+    border-radius: var(--kiosk-radius-3xl, 48px);
+    box-shadow: var(--kiosk-shadow-cta-bold);
+    transition: transform var(--kiosk-duration-tap) var(--kiosk-motion-spring),
+                box-shadow var(--kiosk-duration-card) var(--kiosk-motion-smooth),
+                background-color var(--kiosk-duration-tap) var(--kiosk-motion-smooth);
+}
+.ks-btn--hero:hover:not(:disabled) {
+    background: var(--kiosk-bold-primary-hover);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: var(--kiosk-shadow-cta-bold-hover);
+}
+.ks-btn--hero:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: var(--kiosk-shadow-cta-bold);
+}
+
+.ks-btn--ghost-bold {
+    background: transparent;
+    color: var(--kiosk-bold-text-primary);
+    border: 2px solid var(--kiosk-bold-border-strong);
+    border-radius: var(--kiosk-radius-pill);
+    font-weight: var(--kiosk-font-weight-bold, 700);
+    transition: background var(--kiosk-duration-tap) var(--kiosk-motion-smooth),
+                color var(--kiosk-duration-tap) var(--kiosk-motion-smooth),
+                transform var(--kiosk-duration-tap) var(--kiosk-motion-spring);
+}
+.ks-btn--ghost-bold:hover:not(:disabled) {
+    background: var(--kiosk-bold-text-primary);
+    color: var(--kiosk-bold-text-inverse);
+}
+
+.ks-btn--pop {
+    background: var(--kiosk-bold-primary);
+    color: var(--kiosk-bold-text-on-primary);
+    border-radius: var(--kiosk-radius-pill);
+    box-shadow: var(--kiosk-shadow-pop);
+    transition: transform var(--kiosk-duration-tap) var(--kiosk-motion-spring),
+                box-shadow var(--kiosk-duration-card) var(--kiosk-motion-smooth);
+}
+.ks-btn--pop:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: var(--kiosk-shadow-cta-bold);
+}
+.ks-btn--pop:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+/* ---------- New size hero-xl (Bold) ---------- */
+.ks-btn--hero-xl {
+    height: 128px;
+    min-height: 128px;
+    padding: 0 var(--kiosk-space-12);
+    font-size: calc(36px * var(--kiosk-text-scale, 1));
+    border-radius: var(--kiosk-radius-3xl, 48px);
+}
+
+/* ---------- Reduced motion guard pour les nouveaux variants ---------- */
+[data-kiosk-reduced-motion='true'] .ks-btn--hero,
+[data-kiosk-reduced-motion='true'] .ks-btn--ghost-bold,
+[data-kiosk-reduced-motion='true'] .ks-btn--pop {
+    transition: none;
+    transform: none !important;
 }
 
 /* ---------- Loading ---------- */

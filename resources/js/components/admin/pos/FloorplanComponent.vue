@@ -1,56 +1,58 @@
 <template>
-    <div class="db-card p-4 md:p-6">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+    <!-- [POS-V5] Floorplan refondu en namespace warm cohérent avec le POS shell. -->
+    <section class="pos-v5-shell pos-v5-floorplan">
+        <header class="pos-v5-floorplan__head">
             <div>
-                <h2 class="text-lg font-semibold text-heading">{{ $t('label.floorplan') }}</h2>
-                <p class="text-sm text-[#6E7191]">
-                    {{ tables.length }} tables
+                <p class="pos-v5-floorplan__eyebrow">Caisse FoodKing · Plan de salle</p>
+                <h2 class="pos-v5-floorplan__title">{{ $t('label.floorplan') }}</h2>
+                <p class="pos-v5-floorplan__meta">
+                    <span class="pos-v5-tabular">{{ tables.length }}</span> tables
                 </p>
             </div>
-        <div class="flex items-center gap-2">
-            <button
-                type="button"
-                class="db-btn py-2 px-4 text-sm text-white bg-[#B0004D] rounded-lg hover:bg-[#8E003E] hover:text-white"
-                :disabled="loading"
-                @click="fetchState"
-            >
-                {{ loading ? '...' : $t('button.search') }}
-            </button>
+            <div class="pos-v5-floorplan__actions">
+                <button
+                    type="button"
+                    class="pos-v5-floorplan-btn pos-v5-floorplan-btn--primary"
+                    :disabled="loading"
+                    @click="fetchState"
+                >
+                    {{ loading ? '...' : $t('button.search') }}
+                </button>
                 <router-link
                     :to="{ name: 'admin.pos' }"
-                    class="db-btn py-2 px-4 text-sm rounded-lg border border-[#D9DBE9] text-heading"
+                    class="pos-v5-floorplan-btn pos-v5-floorplan-btn--ghost"
                 >
-                    {{ $t('label.back') }}
+                    ← {{ $t('label.back') }}
                 </router-link>
             </div>
-        </div>
+        </header>
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div v-if="errorMessage" class="pos-v5-floorplan__error" role="alert">
             {{ errorMessage }}
         </div>
 
-        <div class="grid gap-3 floorplan-grid">
+        <div class="pos-v5-floorplan-grid floorplan-grid">
             <button
                 v-for="table in tables"
                 :key="table.id"
                 type="button"
-                class="text-left rounded-2xl border p-4 transition shadow-sm"
+                class="pos-v5-floorplan-table"
                 :class="cardClass(table)"
                 @click="handleTableClick(table)"
             >
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <h3 class="text-base font-semibold">{{ table.name }}</h3>
-                        <p class="text-xs opacity-80">{{ table.size || 0 }} seats</p>
+                        <h3 class="pos-v5-floorplan-table__name">{{ table.name }}</h3>
+                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} seats</p>
                     </div>
-                    <span class="text-[11px] uppercase tracking-wide">
+                    <span class="pos-v5-floorplan-table__status">
                         {{ statusLabel(table.occupancy_status) }}
                     </span>
                 </div>
 
                 <div class="mt-4 text-sm">
                     <template v-if="isOccupied(table)">
-                        <p class="font-medium">Order #{{ table.occupied_order_id }}</p>
+                        <p class="font-bold">Order #<span class="pos-v5-tabular">{{ table.occupied_order_id }}</span></p>
                         <p class="text-xs opacity-80">{{ elapsedLabel(table.occupied_at) }}</p>
                     </template>
                     <template v-else>
@@ -61,21 +63,21 @@
                 <div v-if="isOccupied(table)" class="mt-4 flex flex-wrap gap-2" @click.stop>
                     <button
                         type="button"
-                        class="rounded-lg bg-white/80 px-3 py-1.5 text-xs font-medium text-heading"
+                        class="pos-v5-floorplan-table-btn"
                         @click="openOrder(table)"
                     >
                         Open order
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg bg-white/80 px-3 py-1.5 text-xs font-medium text-heading"
+                        class="pos-v5-floorplan-table-btn"
                         @click="releaseTable(table)"
                     >
                         {{ $t('button.release_table') }}
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg bg-white/80 px-3 py-1.5 text-xs font-medium text-heading"
+                        class="pos-v5-floorplan-table-btn"
                         @click="transferTable(table)"
                     >
                         {{ $t('button.transfer_table') }}
@@ -83,7 +85,7 @@
                 </div>
             </button>
         </div>
-    </div>
+    </section>
 </template>
 
 <script>
@@ -147,6 +149,12 @@ export default {
             const status = table?.occupancy_status || 'free';
 
             return {
+                // [POS-V5] tones — adopt warm V5 palette pour cohérence
+                'is-free': status === 'free',
+                'is-occupied': status === 'occupied',
+                'is-reserved': status === 'reserved',
+                'is-cleaning': status === 'cleaning',
+                // legacy classes Tailwind conservées pour compat
                 'border-green-200 bg-green-50 text-green-900': status === 'free',
                 'border-red-200 bg-red-50 text-red-900': status === 'occupied',
                 'border-orange-200 bg-orange-50 text-orange-900': status === 'reserved',
@@ -278,7 +286,191 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   FloorplanComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001 / Doc plan §3.7
+   ============================================================================= */
+.pos-v5-floorplan {
+    background: var(--pos-v5-bg-app);
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
+    border-radius: var(--pos-v5-radius-lg);
+    border: 1px solid var(--pos-v5-border);
+    border-left: 4px solid var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-md);
+    font-family: var(--pos-v5-font-sans);
+}
+
+.pos-v5-floorplan__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pos-v5-space-3);
+    margin-bottom: var(--pos-v5-space-4);
+}
+@media (min-width: 768px) {
+    .pos-v5-floorplan__head {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+.pos-v5-floorplan__eyebrow {
+    margin: 0;
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-brand-red);
+    line-height: 1;
+}
+.pos-v5-floorplan__title {
+    margin: 4px 0 6px;
+    font-size: var(--pos-v5-text-h4);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+}
+.pos-v5-floorplan__meta {
+    margin: 0;
+    font-size: var(--pos-v5-text-caption);
+    color: var(--pos-v5-ink-soft);
+}
+
+.pos-v5-floorplan__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pos-v5-space-2);
+}
+.pos-v5-floorplan-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--pos-v5-space-2) var(--pos-v5-space-4);
+    border-radius: var(--pos-v5-radius-md);
+    border: 1px solid transparent;
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body);
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+    min-height: 40px;
+}
+.pos-v5-floorplan-btn--primary {
+    background: var(--pos-v5-brand-red);
+    color: var(--pos-v5-ink-on-red);
+    box-shadow: var(--pos-v5-shadow-cta-soft);
+}
+.pos-v5-floorplan-btn--primary:hover:not(:disabled) {
+    background: var(--pos-v5-brand-red-dark);
+}
+.pos-v5-floorplan-btn--ghost {
+    background: var(--pos-v5-bg-panel);
+    color: var(--pos-v5-ink);
+    border-color: var(--pos-v5-border);
+}
+.pos-v5-floorplan-btn--ghost:hover {
+    background: var(--pos-v5-bg-subtle);
+    border-color: var(--pos-v5-border-strong);
+}
+
+.pos-v5-floorplan__error {
+    margin-bottom: var(--pos-v5-space-4);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+    border: 1px solid var(--pos-v5-danger);
+    background: var(--pos-v5-danger-soft);
+    color: var(--pos-v5-danger-dark);
+    border-radius: var(--pos-v5-radius-md);
+    font-size: var(--pos-v5-text-body);
+    font-weight: var(--pos-v5-weight-semibold);
+}
+
+.pos-v5-floorplan-grid,
 .floorplan-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--pos-v5-space-3);
+}
+
+.pos-v5-floorplan-table {
+    text-align: left;
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-lg);
+    padding: var(--pos-v5-space-4);
+    background: var(--pos-v5-bg-panel);
+    color: var(--pos-v5-ink);
+    cursor: pointer;
+    transition: all var(--pos-v5-duration-base) var(--pos-v5-ease-bounce);
+    box-shadow: var(--pos-v5-shadow-sm);
+    aspect-ratio: 1 / 1.1;
+    display: flex;
+    flex-direction: column;
+}
+.pos-v5-floorplan-table:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--pos-v5-shadow-lift);
+}
+
+/* Tones par status (override Tailwind legacy via spécificité) */
+.pos-v5-floorplan-table.is-free {
+    border-color: var(--pos-v5-success);
+    background: var(--pos-v5-success-soft);
+    color: var(--pos-v5-success-dark);
+}
+.pos-v5-floorplan-table.is-occupied {
+    border-color: var(--pos-v5-brand-red);
+    background: var(--pos-v5-brand-red-soft);
+    color: var(--pos-v5-brand-red);
+}
+.pos-v5-floorplan-table.is-reserved {
+    border-color: var(--pos-v5-warning);
+    background: var(--pos-v5-warning-soft);
+    color: var(--pos-v5-warning-dark);
+}
+.pos-v5-floorplan-table.is-cleaning {
+    border-color: var(--pos-v5-border-strong);
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink-soft);
+}
+
+.pos-v5-floorplan-table__name {
+    margin: 0;
+    font-size: var(--pos-v5-text-h6);
+    font-weight: var(--pos-v5-weight-extrabold);
+    line-height: var(--pos-v5-leading-tight);
+}
+.pos-v5-floorplan-table__seats {
+    margin: 2px 0 0;
+    font-size: var(--pos-v5-text-caption);
+    opacity: 0.8;
+}
+.pos-v5-floorplan-table__status {
+    font-size: 10px;
+    font-weight: var(--pos-v5-weight-extrabold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: var(--pos-v5-radius-pill);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.pos-v5-floorplan-table-btn {
+    background: rgba(255, 255, 255, 0.86);
+    color: inherit;
+    padding: 6px 10px;
+    border-radius: var(--pos-v5-radius-sm);
+    border: 0;
+    font-family: var(--pos-v5-font-sans);
+    font-size: 11px;
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.pos-v5-floorplan-table-btn:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-v5-floorplan-table { transition: none; }
+    .pos-v5-floorplan-table:hover { transform: none; }
 }
 </style>

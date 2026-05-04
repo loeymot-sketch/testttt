@@ -1,0 +1,140 @@
+/* =============================================================================
+   FoodKing Kiosk — Typography "Bold Appétissant" (V1.2)
+   -----------------------------------------------------------------------------
+   Plan : plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md §1.3
+
+   Stack typographique :
+     - Display : Fraunces (Google Fonts variable, SIL OFL, libre)
+                 → titres écran, brand mark, totaux hero, numéro commande
+     - Body    : Inter (déjà chargée par master.blade.php)
+                 → libellés, descriptions, hints, microcopy
+     - Mono    : JetBrains Mono (déjà chargée)
+                 → montants tabulaires, codes commande
+     - Arabic  : Noto Sans Arabic (déjà chargée)
+                 → toutes surfaces RTL (Fraunces n'a pas d'arabic)
+
+   Source Fraunces :
+     - V1 (this) : Google Fonts CDN (link dans master.blade.php)
+                   ⚠ TODO V1.2.1 : self-hosting woff2 sous public/fonts/fraunces/
+                   pour CSP strict + offline kiosk + perf LCP
+     - Licence   : SIL Open Font License (OFL) — libre, redistribuable
+
+   Discipline :
+     - Aucune hardcode font-family dans les composants (toujours via tokens)
+     - Inter conservé pour body (jamais display) — préserve lisibilité 1m
+     - Échelle display indépendante de --kiosk-font-size-* (qui restent body-oriented)
+     - text-rendering: optimizeLegibility activé pour display (kerning + ligatures)
+   ============================================================================= */
+
+:root {
+    /* Stack font (déclaration sémantique pour atoms bold) */
+    --kiosk-font-display:        'Fraunces', 'Recoleta', 'DM Serif Display', Georgia, ui-serif, serif;
+    --kiosk-font-body-bold:      'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --kiosk-font-mono-bold:      'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+    /* Échelle display — pour titres bold uniquement.
+       Distinct de --kiosk-font-size-hero (64px, body-oriented).
+       Le hero brand mark (idle) atteint 144px en portrait 1080×1920. */
+    --kiosk-display-size-hero:   144px;  /* idle brand mark */
+    --kiosk-display-size-xl:     80px;   /* écran title (e.g. "Choisis tes viandes") */
+    --kiosk-display-size-l:      56px;   /* total panel, recap titles */
+    --kiosk-display-size-m:      36px;   /* card hero name */
+    --kiosk-display-size-s:      24px;   /* sub-titles, hero strip product name */
+
+    /* Weights display */
+    --kiosk-display-weight-bold:    700;
+    --kiosk-display-weight-black:   900;
+
+    /* Line height + letter-spacing display */
+    --kiosk-display-leading-tight:  1.0;     /* hero brand mark */
+    --kiosk-display-leading-snug:   1.1;     /* large titles */
+    --kiosk-display-leading-normal: 1.2;     /* small display */
+    --kiosk-display-tracking-tight: -0.04em; /* hero brand mark */
+    --kiosk-display-tracking-snug:  -0.02em; /* xl + l + m */
+    --kiosk-display-tracking-normal: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Classes utilitaires — appliquées par les atoms bold (KsHero, KsPriceLine
+   variant total-hero, KsButton variant hero, etc.) et par les écrans refondus
+   en V2-V4.
+
+   Pattern : `.kiosk-display-{size}` — taille + weight + leading + tracking.
+   Combinable avec text-scale `--kiosk-text-scale` pour PMR/AAA.
+   ----------------------------------------------------------------------------- */
+.kiosk-display-hero {
+    font-family: var(--kiosk-font-display);
+    font-weight: var(--kiosk-display-weight-black);
+    font-size: calc(var(--kiosk-display-size-hero) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-display-leading-tight);
+    letter-spacing: var(--kiosk-display-tracking-tight);
+    font-variation-settings: 'opsz' 144;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.kiosk-display-xl {
+    font-family: var(--kiosk-font-display);
+    font-weight: var(--kiosk-display-weight-black);
+    font-size: calc(var(--kiosk-display-size-xl) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-display-leading-snug);
+    letter-spacing: var(--kiosk-display-tracking-snug);
+    font-variation-settings: 'opsz' 80;
+    text-rendering: optimizeLegibility;
+}
+
+.kiosk-display-l {
+    font-family: var(--kiosk-font-display);
+    font-weight: var(--kiosk-display-weight-bold);
+    font-size: calc(var(--kiosk-display-size-l) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-display-leading-snug);
+    letter-spacing: var(--kiosk-display-tracking-snug);
+    font-variation-settings: 'opsz' 56;
+    text-rendering: optimizeLegibility;
+}
+
+.kiosk-display-m {
+    font-family: var(--kiosk-font-display);
+    font-weight: var(--kiosk-display-weight-bold);
+    font-size: calc(var(--kiosk-display-size-m) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-display-leading-normal);
+    letter-spacing: var(--kiosk-display-tracking-snug);
+    font-variation-settings: 'opsz' 36;
+    text-rendering: optimizeLegibility;
+}
+
+.kiosk-display-s {
+    font-family: var(--kiosk-font-display);
+    font-weight: var(--kiosk-display-weight-bold);
+    font-size: calc(var(--kiosk-display-size-s) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-display-leading-normal);
+    letter-spacing: var(--kiosk-display-tracking-normal);
+    font-variation-settings: 'opsz' 24;
+    text-rendering: optimizeLegibility;
+}
+
+/* -----------------------------------------------------------------------------
+   Mono utility — pour montants tabulaires (decimals alignées) dans les
+   écrans bold. Préserve --kiosk-text-scale pour PMR/AAA.
+   ----------------------------------------------------------------------------- */
+.kiosk-mono-tabular {
+    font-family: var(--kiosk-font-mono-bold);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+}
+
+/* -----------------------------------------------------------------------------
+   RTL fallback — Fraunces n'a pas de glyphs arabes. Sur surfaces RTL,
+   les classes display tombent automatiquement sur Noto Sans Arabic via
+   --kiosk-font-arabic défini dans tokens.css (cascade [dir="rtl"]).
+   ----------------------------------------------------------------------------- */
+[dir='rtl'] .kiosk-display-hero,
+[dir='rtl'] .kiosk-display-xl,
+[dir='rtl'] .kiosk-display-l,
+[dir='rtl'] .kiosk-display-m,
+[dir='rtl'] .kiosk-display-s {
+    font-family: var(--kiosk-font-arabic);
+    /* Fraunces variation-settings ignorés sur Noto Sans Arabic — comportement attendu */
+    font-variation-settings: normal;
+}

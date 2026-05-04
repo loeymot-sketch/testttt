@@ -49,6 +49,8 @@
         "order": "অর্ডার",
         "item": "পন্য",
         "items": "পন্য",
+        "catalog": "ক্যাটালগ",
+        "stock_rupture": "স্টক ড্যাশবোর্ড",
         "product_list": "পন্যের তালিকা",
         "taxes": "কর",
         "currencies": "মুদ্রা",
@@ -121,12 +123,16 @@
         "o_s_s": "সি.ডি.এস",
         "chefs": "শেফ",
         "waiters": "ওয়েটার",
-        "kiosk_machines": "কিয়স্ক মেশিন"
+        "kiosk_machines": "কিয়স্ক মেশিন",
+        "ingredients": "উপকরণ",
+        "advanced_tools": "উন্নত টুল",
+        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
     },
     "label": {
         "previous": "আগের",
         "next": "পরবর্তী",
         "default": "ডিফল্ট",
+        "dismiss": "বন্ধ করুন",
         "configure_wizard": "উইজার্ড কনফিগার করুন",
         "composer": {
             "product_context": "পণ্য",
@@ -161,6 +167,12 @@
             "inactive": "নিষ্ক্রিয়",
             "reorder_page": "ক্রম বদলান",
             "all_source_options": "সব বিকল্প",
+            "preview_steps_title": "গ্রাহক ক্রয় যাত্রা",
+            "preview_no_steps": "কোনো ধাপ নেই — গ্রাহক সরাসরি পণ্যটি কিনবেন।",
+            "preview_step_unnamed": "নামহীন ধাপ",
+            "preview_optional_one": "ঐচ্ছিক — সর্বোচ্চ ১টি পছন্দ",
+            "preview_required_n": "আবশ্যিক — {n}টি পছন্দ",
+            "preview_min_max": "{min} থেকে {max}টি পছন্দ",
             "loading_product": "পণ্য লোড হচ্ছে",
             "template_simple": "সাধারণ",
             "template_sandwich": "স্যান্ডউইচ",
@@ -168,7 +180,18 @@
             "template_assiette": "প্লেট",
             "template_snacking": "স্ন্যাকিং",
             "template_menu": "মেনু",
-            "template_custom": "কাস্টম"
+            "template_custom": "কাস্টম",
+            "source_type_human": "পছন্দগুলি কোথা থেকে আসে?",
+            "source_type_help": "ভিত্তি নির্ধারণ করে: ‘পণ্য অ্যাট্রিবিউট’ = আপনার অ্যাট্রিবিউট (মাংস, সস ইত্যাদি)। ‘এক্সট্রা গ্রুপ’ = আপনার এক্সট্রা। ‘অ্যাড-অন’ = আপনার ক্যাটালগ অ্যাড-অন।",
+            "source_ref_human": "নির্দিষ্ট গ্রুপে সীমাবদ্ধ করুন (ঐচ্ছিক)",
+            "source_ref_help": "ডিফল্টভাবে উৎসের সব বিকল্প দেখানো হয়। শুধু একটি অংশ দেখাতে নির্দিষ্ট গ্রুপ বেছে নিন।",
+            "min_select_help": "গ্রাহককে ন্যূনতম কতটি আইটেম বেছে নিতে হবে। 0 = ঐচ্ছিক, 1+ = আবশ্যিক।",
+            "max_select_help": "গ্রাহক সর্বোচ্চ কতটি আইটেম বেছে নিতে পারবেন।",
+            "visible_on_help": "কোন চ্যানেলে এই ধাপ দেখা যাবে (ইন্টারনাল POS এবং/অথবা গ্রাহক কিয়স্ক)।",
+            "is_active_help": "কোনো ধাপ নিষ্ক্রিয় করলে সেটি মুছে যায় না, শুধু গ্রাহকের কাছ থেকে লুকানো থাকে।",
+            "min_max_summary_optional_one": "= ঐচ্ছিক, গ্রাহক সর্বোচ্চ ১টি আইটেম বেছে নিতে পারবেন।",
+            "min_max_summary_required_n": "= আবশ্যিক, গ্রাহককে ঠিক {n}টি আইটেম বেছে নিতে হবে।",
+            "min_max_summary_range": "= গ্রাহক {min} থেকে {max}টি আইটেম বেছে নিতে পারবেন।"
         },
         "wizard_configured": "উইজার্ড কনফিগার করা",
         "view_product": "পণ্য দেখুন",
@@ -312,6 +335,7 @@
         "customer_id": "গ্রাহক",
         "branch_id": "শাখা",
         "all": "সব",
+        "all_options": "সব বিকল্প",
         "single": "একক",
         "administrator": "প্রশাসক",
         "delivery_boy": "ডেলিভারি বয়",
@@ -351,6 +375,7 @@
         "welcome_back": "আবার স্বাগতম",
         "remember_me": "আমাকে মনে রেখো",
         "or": "অথবা",
+        "optional": "ঐচ্ছিক",
         "our_menu": "আমাদের মেনু",
         "total_sales": "মোট বিক্রয়",
         "total_orders": "মোট অর্ডার",
@@ -718,7 +743,32 @@
         "easypaisa_mode": "ইজি-পাইসা মোড",
         "easypaisa_status": "ইজি-পাইসা স্ট্যাটাস",
         "easypaisa_username": "ইজি-পাইসা ইউজারনেম",
-        "easypaisa_password": "ইজি-পাইসা পাসওয়ার্ড"
+        "easypaisa_password": "ইজি-পাইসা পাসওয়ার্ড",
+        "refresh": "রিফ্রেশ",
+        "ingredient": {
+            "title": "উপকরণ",
+            "subtitle": "মাংস, সস, অতিরিক্ত ও অ্যাড-অন পরিচালনা",
+            "tab_all": "সব",
+            "tab_attribute": "মাংস ও অ্যাট্রিবিউট",
+            "tab_extra": "অতিরিক্ত",
+            "tab_addon": "অ্যাড-অন",
+            "column_name": "নাম",
+            "column_type": "ধরন",
+            "column_status": "স্ট্যাটাস",
+            "column_usage": "ব্যবহার",
+            "column_actions": "অ্যাকশন",
+            "toggle_available": "উপলভ্য",
+            "toggle_unavailable": "স্টক নেই",
+            "toggle_prompt_reason": "এই উপকরণটি কেন স্টকে নেই?",
+            "usage_count": "{count}টি উইজার্ড ধাপে ব্যবহৃত",
+            "empty": "এই ফিল্টারের জন্য কোনো উপকরণ পাওয়া যায়নি।",
+            "loading": "লোড হচ্ছে…",
+            "error": "উপকরণ লোড করা যায়নি।",
+            "retry": "আবার চেষ্টা করুন",
+            "usage_drawer_title": "উপকরণের ব্যবহার",
+            "usage_drawer_close": "বন্ধ করুন",
+            "view_details": "বিস্তারিত দেখুন"
+        }
     },
     "button": {
         "add": "যোগ করুন",
@@ -813,7 +863,11 @@
         "add_waiter": "ওয়েটার যোগ করুন",
         "add_chef": "শেফ যোগ করুন",
         "add_kiosk_machine": "কিয়স্ক মেশিন যোগ করুন",
-        "confirm_and_print": "রসিদ নিশ্চিত করুন এবং মুদ্রণ করুন"
+        "confirm_and_print": "রসিদ নিশ্চিত করুন এবং মুদ্রণ করুন",
+        "composer": {
+            "choose_template_v2": "একটি টেমপ্লেট বেছে নিন",
+            "add_page_manual": "ম্যানুয়ালি পৃষ্ঠা যোগ করুন"
+        }
     },
     "number": {
         "10": "10",
@@ -839,6 +893,12 @@
             "publish_failed": "প্রকাশ করা যায়নি।",
             "publish_confirm_body": "এই পরিবর্তন scoped শাখার POS এবং Kiosk-এ সঙ্গে সঙ্গে দেখা যাবে।",
             "template_applied": "টেমপ্লেট প্রয়োগ হয়েছে।",
+            "apply_template_empty_response": "সার্ভার আপডেট করা প্রোফাইল ফেরত দেয়নি। আবার চেষ্টা করুন বা সহায়তার সাথে যোগাযোগ করুন।",
+            "apply_template_no_steps": "টেমপ্লেট প্রয়োগ হয়েছে, কিন্তু কোনো ধাপ তৈরি হয়নি। এটি অপ্রত্যাশিত।",
+            "apply_template_validation_error": "সার্ভারে অবৈধ ডেটা পাঠানো হয়েছে।",
+            "apply_template_auth_error": "আপনার সেশন শেষ হয়েছে। পৃষ্ঠা রিলোড করে আবার সাইন ইন করুন।",
+            "apply_template_server_error": "সার্ভার ত্রুটি। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+            "apply_template_unknown_error": "টেমপ্লেট প্রয়োগ করার সময় অপ্রত্যাশিত ব্যর্থতা।",
             "template_picker_hint": "একটি শুরু বেছে নিন, তারপর পৃষ্ঠাগুলো কাস্টমাইজ করুন।",
             "step_deleted": "পৃষ্ঠা সরানো হয়েছে।",
             "delete_confirm": "এই পৃষ্ঠাটি এই পণ্যের উইজার্ড থেকে সরানো হবে।",
@@ -851,7 +911,11 @@
             "template_assiette": "প্লেট: মাংস, সস ও টপিং, মেনু পৃষ্ঠা ছাড়া।",
             "template_snacking": "স্ন্যাকিং: দ্রুত বিকল্প ও সাপ্লিমেন্ট।",
             "template_menu": "মেনু: পানীয় ও সাইডসহ পূর্ণ ফর্মুলা।",
-            "template_custom": "কাস্টম: খালি থেকে শুরু করে পৃষ্ঠা তৈরি করুন।"
+            "template_custom": "কাস্টম: খালি থেকে শুরু করে পৃষ্ঠা তৈরি করুন।",
+            "guidance_zero_steps_title": "উইজার্ড কীভাবে কাজ করে?",
+            "guidance_zero_steps_intro": "উইজার্ড হলো এই পণ্যটি কাস্টমাইজ করার জন্য গ্রাহকের ধাপে ধাপে পথ (মাংস, সস, সাইজ ইত্যাদি)। প্রতিটি পৃষ্ঠা = একটি পছন্দের ধাপ।",
+            "guidance_zero_steps_option_template": "ভালো উপায়: প্রস্তুত বেস থেকে শুরু করতে একটি টেমপ্লেট (টাকোস, স্যান্ডউইচ ইত্যাদি) বেছে নিন।",
+            "guidance_zero_steps_option_manual": "অন্যথায়: নিজের ফ্লো কনফিগার করতে ম্যানুয়ালি একটি পৃষ্ঠা যোগ করুন।"
         },
         "pagination_label": "{total} টি এন্ট্রির মধ্যে {from} থেকে {to} পর্যন্ত দেখানো হচ্ছে",
         "password_update": "পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে।",
@@ -912,7 +976,11 @@
         "no_items_found": "আপনার অনুসন্ধানের সাথে কোনও আইটেম মেলেনি! ভিন্ন কীওয়ার্ড ব্যবহার করে দেখুন।",
         "no_data_available": "কোনও তথ্য উপলব্ধ নেই।",
         "payment_method": "পেমেন্ট পদ্ধতিটি প্রয়োজনীয়।",
-        "special_instructions_limit": "বিশেষ নির্দেশাবলীর সীমা ১৯০টি অক্ষর।"
+        "special_instructions_limit": "বিশেষ নির্দেশাবলীর সীমা ১৯০টি অক্ষর।",
+        "ingredient": {
+            "toggle_success": "স্ট্যাটাস আপডেট হয়েছে।",
+            "toggle_error": "আপডেট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।"
+        }
     },
     "kiosk": {
         "welcome": "Bienvenue !",
@@ -1576,6 +1644,52 @@
         "menu_refreshed_recheck_selection": "আপনার পছন্দগুলো যাচাই করুন।",
         "review_cart": "আমার কার্ট যাচাই করুন"
     },
+    "studio": {
+        "eyebrow": "ক্যাটালগ নিয়ন্ত্রণ",
+        "title": "ক্যাটালগ",
+        "subtitle": "ক্যাটাগরি, পণ্য, উইজার্ড এবং স্টক",
+        "all_categories": "সব ক্যাটাগরি",
+        "products_count": "{n} পণ্য",
+        "advanced_settings": "উন্নত সেটিংস",
+        "stock_link": "স্টক ড্যাশবোর্ড",
+        "quick_create_product": "দ্রুত পণ্য যোগ করুন",
+        "stock_parallel_title": "স্টক এবং প্রাপ্যতা",
+        "daily_quota_hint": "দৈনিক কোটা: ডিফল্টভাবে সীমাহীন",
+        "stock_parallel_hint": "কেন্দ্রীয় স্টক এবং কিয়স্কের সাথে সিঙ্ক",
+        "composer_drawer_eyebrow": "পণ্য উইজার্ড",
+        "composer_drawer_title": "ধাপ কনফিগার করুন",
+        "open_full_page": "পূর্ণ পৃষ্ঠায় খুলুন",
+        "select_category_first": "প্রথমে একটি ক্যাটাগরি নির্বাচন করুন",
+        "composer": {
+            "diff": {
+                "title": "অমীমাংসিত পরিবর্তন",
+                "added": "যোগ করা হয়েছে",
+                "removed": "সরানো হয়েছে",
+                "modified": "পরিবর্তিত",
+                "no_changes": "কোনো অমীমাংসিত পরিবর্তন নেই",
+                "confirm_publish": "এখন প্রকাশ করুন",
+                "cancel": "বাতিল",
+                "loading": "ডিফ গণনা করা হচ্ছে…",
+                "error": "ডিফ গণনা করা যায়নি",
+                "retry": "আবার চেষ্টা করুন"
+            },
+            "conflict": {
+                "title": "সংস্করণ দ্বন্দ্ব",
+                "message": "অন্য ব্যবহারকারী এই উইজার্ডটি পরিবর্তন করেছেন। পরিবর্তন দেখতে পুনরায় লোড করুন।",
+                "reload": "পুনরায় লোড"
+            }
+        },
+        "image": {
+            "upload_idle": "ছবি টেনে আনুন বা ক্লিক করুন",
+            "upload_drag_over": "এখন ছেড়ে দিন",
+            "upload_uploading": "আপলোড হচ্ছে…",
+            "upload_success": "ছবি আপলোড হয়েছে",
+            "upload_error": "আপলোড ত্রুটি",
+            "upload_retry": "আবার চেষ্টা করুন",
+            "upload_invalid_mime": "অসমর্থিত ফরম্যাট (JPG/PNG/WEBP)",
+            "upload_oversize": "ছবি খুব বড় (সর্বোচ্চ ৪ MB)"
+        }
+    },
     "warning": {
         "catalog": {
             "region_label": "এই পণ্যের জন্য ক্যাটালোগ সতর্কতা",
@@ -1610,5 +1724,14 @@
                 "action": "শাখার স্টক পর্যালোচনা করুন"
             }
         }
+    },
+    "demo_wizard_advanced": {
+        "title": "উন্নত উইজার্ড (Demo V2 — প্রোডাকশনের জন্য নয়)",
+        "warning": "এই ইন্টারফেস একটি নির্দিষ্ট পণ্যের উইজার্ড কাস্টমাইজ করে। এটি ক্যাটাগরি উইজার্ডকে বাইপাস করে। শুধু পরীক্ষা ও ডেমোর জন্য।",
+        "product_label": "কাস্টমাইজ করার পণ্য",
+        "product_placeholder": "পণ্য খুঁজুন বা নির্বাচন করুন",
+        "open_button": "উন্নত উইজার্ড খুলুন",
+        "back_to_studio": "Catalog Studio-তে ফিরুন",
+        "load_error": "পণ্যের তালিকা লোড করা যায়নি।"
     }
 }

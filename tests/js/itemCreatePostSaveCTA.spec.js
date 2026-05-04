@@ -10,7 +10,7 @@
  * Closes audit gap A.3 #8 (post-create UX guidance).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { shallowMount, flushPromises } from '@vue/test-utils';
 
 const alertServiceMock = vi.hoisted(() => ({
@@ -124,6 +124,11 @@ const mountComponent = ({
 describe('ItemCreateComponent — post-save CTA (T-WC-AFTER-CREATE-01)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        window.foodkingConfig = { features: { wizard_per_item_demo: true } };
+    });
+
+    afterEach(() => {
+        delete window.foodkingConfig;
     });
 
     it('save() opens the CTA modal and captures item id on CREATE success', async () => {

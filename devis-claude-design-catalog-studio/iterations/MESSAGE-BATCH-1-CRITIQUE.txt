@@ -1,0 +1,63 @@
+Itère sur le design pour combler 5 angles morts critiques avant intégration :
+
+1) DRAG & DROP REORDER — Sur Screen 3 (Wizard Editor, colonne steps list),
+   ajoute un artboard montrant l'état de réordonnancement. Spec attendue :
+   - poignée de drag visible au hover (icône `drag` à gauche de la pastille
+     position) avec curseur `grab`
+   - état drag-active : la step row prend l'élévation `--studio-elev-2` et
+     une rotation 1deg, opacity 0.95
+   - drop indicator : ligne 2px bleue (`--cv1-border-emphasis`) entre les
+     deux rows cibles
+   - état keyboard reorder : focus visible 3px sur la row, et un live region
+     `aria-live="polite"` qui annonce "Étape 'Sauce' déplacée à la position 4
+     sur 6"
+   - persistance après drop : sauvegarde optimiste + toast undo 5s
+
+2) BRANCH OVERRIDES — Crée un nouvel artboard "Inspecteur · onglet
+   Disponibilité par filiale". Quand un produit est sélectionné dans Screen 1,
+   l'inspecteur de droite a un onglet "Disponibilité" qui affiche une matrice
+   par filiale :
+   - liste filiales (3-N rows)
+   - par row : toggle disponibilité, raison si 86, dernière modification,
+     "synchroniser sur toutes les filiales" en sticky bottom
+   - chip rouge "86" et chip orange "quota épuisé" alignés sur tokens
+     existants `--studio-pill-86-*`
+   - état "scope = Toutes les filiales" (multi-toggle) vs "scope = Filiale #1"
+     (toggle simple)
+
+3) IMAGE UPLOAD — Sur Screen 2 (Quick Create), détaille la zone photo :
+   - état idle : drop-zone pointillée, icône image, "Glisser une photo ou
+     cliquer (PNG/JPG, max 4Mo, ratio 4:3 conseillé)"
+   - état drag-over : bordure pleine bleue, fond bleu très clair
+   - état uploading : barre de progression linéaire (0→100%), bouton annuler
+   - état success : preview image + bouton remplacer + bouton recadrer
+   - état error : message rouge "Échec de l'upload — Réessayer" + bouton
+   - fallback si pas de photo : initial du produit en grand sur fond
+     `--studio-pill-neutral-bg`
+   - Donne aussi l'état dans ProductCard (Screen 1) quand la photo manque :
+     placeholder identique, badge "Photo manquante" sur le coin
+
+4) DIFF MODAL — Spec d'algorithme + cas réels. Sur Screen 4, ajoute :
+   - une section "Cas couverts" listant : step ajouté, step supprimé, step
+     déplacé (changement position), step renommé (label change), changement
+     de min/max, changement de visible_on, changement de addon_role,
+     changement de stockable_choices
+   - un mini-diagramme : "diff = compare(profile_published_v(n).steps,
+     draft_v(n+1).steps) avec clé stable = step_key"
+   - un cas concret : "Étape 'sauce' modifiée — max_select 1 → 2" doit
+     apparaître en `--studio-diff-mod-*` avec l'avant/après visible
+   - état conflict : si v(n) serveur a changé pendant l'édition, header de
+     la modal devient rouge "Conflit de version — recharge nécessaire" avec
+     bouton "Recharger v(n+1) serveur" qui ferme la modal sans publier
+
+5) CONFLICT BANNER — Crée un artboard montrant l'état Conflict :
+   - top-bar du Wizard Editor passe en rose `--cv1-status-blocker-bg` avec
+     un texte "Une autre session a publié v5 — votre brouillon v4 ne peut
+     plus être publié tel quel"
+   - 2 actions : "Recharger v5 et perdre mes modifs" (destructif, rouge) /
+     "Voir le diff serveur d'abord" (secondaire)
+   - le bouton Publier de la TopBar est désactivé tant que le conflit n'est
+     pas résolu
+
+Renvoie ces 5 itérations dans le canvas existant comme nouveaux artboards
+(ne casse pas les anciens). Garde le mapping screen → fichier Vue à jour.

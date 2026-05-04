@@ -31,6 +31,9 @@
 const SUPPORTED_LOCALES = ['fr', 'en', 'ar'];
 const RTL_LOCALES = new Set(['ar']);
 const SUPPORTED_CONTRASTS = ['aa', 'aaa'];
+// CV1-KIOSK-VISUAL-REDESIGN-001 V1.3 — Bold Appétissant theme switching.
+// 'auto' suit prefers-color-scheme via composable useKioskTheme.
+const SUPPORTED_THEMES = ['light', 'dark', 'auto'];
 
 /**
  * Phase 5.3 — Idle timeouts configurables.
@@ -70,6 +73,12 @@ function coerceContrast(value) {
     return SUPPORTED_CONTRASTS.includes(normalized) ? normalized : 'aa';
 }
 
+function coerceTheme(value) {
+    if (typeof value !== 'string') return 'auto';
+    const normalized = value.trim().toLowerCase();
+    return SUPPORTED_THEMES.includes(normalized) ? normalized : 'auto';
+}
+
 function coerceBool(value, fallback = false) {
     if (typeof value === 'boolean') return value;
     if (value === 'true' || value === 1 || value === '1') return true;
@@ -82,6 +91,10 @@ export const kioskSettings = {
     state: () => ({
         locale: 'fr',
         contrast: 'aa',
+        // CV1-KIOSK-VISUAL-REDESIGN-001 V1.3 — Bold Appétissant theme.
+        // 'auto' (défaut) suit prefers-color-scheme via composable useKioskTheme.
+        // 'light' / 'dark' = override manuel utilisateur (depuis KsA11ySettings).
+        theme: 'auto',
         pmr: false,
         audio: false,
         keyboardEnabled: true,
@@ -115,6 +128,9 @@ export const kioskSettings = {
     getters: {
         locale: (state) => state.locale,
         contrast: (state) => state.contrast,
+        theme: (state) => state.theme,
+        isDarkPreferred: (state) => state.theme === 'dark',
+        isAutoTheme: (state) => state.theme === 'auto',
         pmr: (state) => !!state.pmr,
         audio: (state) => !!state.audio,
         audioDescription: (state) => !!state.audioDescription,
@@ -154,6 +170,9 @@ export const kioskSettings = {
         },
         SET_CONTRAST(state, value) {
             state.contrast = coerceContrast(value);
+        },
+        SET_THEME(state, value) {
+            state.theme = coerceTheme(value);
         },
         SET_PMR(state, value) {
             state.pmr = coerceBool(value, false);
@@ -214,6 +233,7 @@ export const kioskSettings = {
         RESET_PREFERENCES(state) {
             state.locale = 'fr';
             state.contrast = 'aa';
+            state.theme = 'auto';
             state.pmr = false;
             state.audio = false;
             state.keyboardEnabled = true;
@@ -233,6 +253,9 @@ export const kioskSettings = {
         },
         setContrast({ commit }, value) {
             commit('SET_CONTRAST', value);
+        },
+        setTheme({ commit }, value) {
+            commit('SET_THEME', value);
         },
         setPmr({ commit }, value) {
             commit('SET_PMR', value);
@@ -282,6 +305,7 @@ export const KIOSK_SETTINGS_CONSTANTS = {
     SUPPORTED_LOCALES: SUPPORTED_LOCALES.slice(),
     RTL_LOCALES: Array.from(RTL_LOCALES),
     SUPPORTED_CONTRASTS: SUPPORTED_CONTRASTS.slice(),
+    SUPPORTED_THEMES: SUPPORTED_THEMES.slice(),
     IDLE_DEFAULTS: { ...IDLE_DEFAULTS },
     IDLE_BOUNDS: { ...IDLE_BOUNDS },
 };

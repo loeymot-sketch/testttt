@@ -21,7 +21,8 @@ test.describe('Kiosk explicit order type contract', () => {
         expect(idleSource).toContain('data-testid="kiosk-order-type-chooser"');
         expect(idleSource).toContain('data-testid="kiosk-order-type-dine-in"');
         expect(idleSource).toContain('data-testid="kiosk-order-type-takeaway"');
-        expect(idleSource).toContain("this.$store.dispatch('kioskCart/setOrderType', orderType)");
+        expect(idleSource).toContain("this.$emit('start-order', orderType)");
+        expect(idleSource).toContain('KioskAppComponent.startOrder');
         expect(idleSource).not.toContain('@click="handleIdleClick"');
 
         expect(categoriesSource).toContain('ensureOrderTypeSelected()');

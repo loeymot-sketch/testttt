@@ -68,7 +68,8 @@ final class ChoiceAvailabilityResolver
 
             $extras = collect($item->extras ?? [])
                 ->mapWithKeys(fn ($extra): array => [
-                    (int) $extra->id => $this->availabilityFromLevel(
+                    (int) $extra->id => $this->availabilityForExtra(
+                        $extra,
                         $stockLevels->get($this->stockLevelKey(ItemExtra::class, (int) $extra->id))
                     ),
                 ])
@@ -158,7 +159,8 @@ final class ChoiceAvailabilityResolver
             $useRowLock
         );
         foreach ($extras as $extra) {
-            $state = $this->availabilityFromLevel(
+            $state = $this->availabilityForExtra(
+                $extra,
                 $extraLevels->get($this->stockLevelKey(ItemExtra::class, (int) $extra->id))
             );
             if (! $state['is_available']) {
@@ -272,6 +274,20 @@ final class ChoiceAvailabilityResolver
         return (int) $level->on_hand > 0
             ? ['is_available' => true, 'unavailable_reason' => null]
             : ['is_available' => false, 'unavailable_reason' => 'stock_rupture'];
+    }
+
+    /**
+     * @return array{is_available: bool, unavailable_reason: ?string}
+     */
+    private function availabilityForExtra(ItemExtra $extra, ?StockLevel $level): array
+    {
+        $ingredientAvailable = $extra->getRawOriginal('is_available') ?? $extra->is_available;
+
+        if ($ingredientAvailable !== null && ! (bool) $ingredientAvailable) {
+            return ['is_available' => false, 'unavailable_reason' => 'ingredient_rupture'];
+        }
+
+        return $this->availabilityFromLevel($level);
     }
 
     /**

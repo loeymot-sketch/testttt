@@ -1,148 +1,166 @@
 <template>
-    <section class="fk-pos-v4 pos-v4-shell" data-pos-v4-shell>
-    <a href="#pos-cart" class="sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
-    <div id="pos-a11y-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte design POS V5 "warm premium".
+      - Conserve la classe `fk-pos-v4` pour rollback éventuel via [data-pos-v4-disabled].
+      - Ajoute la classe `pos-v5-shell` qui active la typo Inter, le bg crème warm
+        et le système de tokens unifié défini dans foundations/pos-v5-tokens.css.
+      - Le wizard kiosk reste FROZEN (KioskWizardComponent + kiosk-wizard.css).
+      - Aucune logique métier touchée : pricing, OrderStatus, branch_id, dispatch
+        intacts. Cf. plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md.
+    -->
+    <section class="pos-v5-shell fk-pos-v4 pos-v4-shell" data-pos-v4-shell data-pos-v5-shell>
+    <a href="#pos-cart" class="pos-v5-skip-link sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
+    <div id="pos-a11y-live" class="sr-only pos-v5-sr-only" aria-live="polite" aria-atomic="true"></div>
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
-    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-346px)]">
-        <div class="pos-v4-operator-bar">
-            <div class="min-w-0 flex-1">
-                <p class="pos-v4-eyebrow">Caisse FoodKing</p>
-                <h1 class="pos-v4-title">Commande rapide</h1>
-                <div class="pos-v4-status-row">
-                    <span>{{ checkoutProps.form.branch_id ? ($t('label.branch') + ' #' + checkoutProps.form.branch_id) : $t('label.ready') }}</span>
-                    <span>{{ totalItems() }} {{ $t('label.items') }}</span>
+    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]">
+        <header class="pos-v5-operator-bar pos-v4-operator-bar" role="banner">
+            <div class="pos-v5-operator-bar__brand">
+                <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
+                <div class="pos-v5-operator-bar__identity min-w-0 flex-1">
+                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse FoodKing</p>
+                    <h1 class="pos-v5-operator-bar__title pos-v4-title">Commande rapide</h1>
+                    <div class="pos-v5-operator-bar__live pos-v4-status-row">
+                        <PosV5StatChip
+                            v-if="checkoutProps.form.branch_id"
+                            :label="$t('label.branch')"
+                            :value="`#${checkoutProps.form.branch_id}`"
+                            tone="neutral"
+                        />
+                        <PosV5StatChip
+                            v-else
+                            :label="$t('label.ready')"
+                            tone="ghost"
+                        />
+                        <PosV5StatChip
+                            :label="$t('label.items')"
+                            :value="totalItems()"
+                            :tone="totalItems() > 0 ? 'brand' : 'neutral'"
+                            :class="{ 'is-bumping': cartBumping }"
+                            data-testid="pos-cart-stat-chip"
+                        />
+                    </div>
                 </div>
             </div>
-            <div class="pos-v4-operator-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
-                <button
+            <nav class="pos-v5-operator-bar__actions pos-v4-operator-actions" aria-label="Actions caisse">
+                <PosV5Button
                     v-if="kioskCashOrders.length > 0"
-                    type="button"
-                    class="kiosk-cash-bar-btn"
+                    variant="kiosk-cash"
+                    size="md"
                     data-testid="kiosk-cash-open"
+                    :badge="kioskCashOrders.length"
                     :title="$t('pos.kiosk_counter_collect_hint')"
                     @click="showKioskCashPanel = true"
                 >
-                    <span class="kiosk-cash-bar-btn-icon" aria-hidden="true">🖥️</span>
-                    <span class="kiosk-cash-bar-btn-text">
-                        <span class="kiosk-cash-bar-btn-label">{{ $t('pos.kiosk_counter_collect_short') }}</span>
-                        <span class="kiosk-cash-bar-btn-sub">{{ $t('pos.kiosk_counter_collect_sub') }}</span>
-                    </span>
-                    <span class="kiosk-cash-bar-btn-badge">{{ kioskCashOrders.length }}</span>
-                </button>
+                    <template #icon>🖥️</template>
+                    <span class="hidden lg:inline">{{ $t('pos.kiosk_counter_collect_short') }}</span>
+                </PosV5Button>
                 <!--
-                  [POS-V4-ORDERS-TRACKER 2026-05-02] Bouton suivi commandes.
-                  - Toujours visible ; muet si aucune commande active (badge 0).
-                  - Vert + halo subtil dès qu'une commande passe à PREPARED — pas de
-                    popup, pas de toast, juste un signal visuel pour le caissier.
-                  - Le clic ouvre l'écran kanban dédié sans casser le panier en cours
-                    (router-link garde le state Vuex).
+                  [POS-V5] Bouton suivi commandes — variant tracker.
+                  Tone "ready" = halo vert pulsant dès qu'une commande passe à PREPARED.
+                  Aucun popup, aucun son — juste un signal visuel pour le caissier.
+                  [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
+                  réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
                 -->
-                <router-link
+                <PosV5Button
+                    variant="tracker"
+                    size="md"
+                    as="router-link"
                     :to="{ name: 'admin.pos-orders.tracker' }"
-                    :class="['pos-tracker-bar-btn', activeOrdersStats.ready > 0 ? 'is-ready' : '']"
+                    :tone="activeOrdersStats.ready > 0 ? 'ready' : 'neutral'"
+                    :badge="activeOrdersStats.active > 0 ? activeOrdersStats.active : null"
                     data-testid="pos-tracker-open"
                     :title="$t('pos.tracker.button_hint')"
                 >
-                    <span class="pos-tracker-bar-btn-icon" aria-hidden="true">📋</span>
-                    <span class="pos-tracker-bar-btn-text">
-                        <span class="pos-tracker-bar-btn-label">{{ $t('pos.tracker.button_label') }}</span>
-                        <span class="pos-tracker-bar-btn-sub" v-if="activeOrdersStats.ready > 0">
-                            {{ activeOrdersStats.ready }} {{ $t('pos.tracker.ready_short') }}
-                        </span>
-                        <span class="pos-tracker-bar-btn-sub" v-else>{{ $t('pos.tracker.button_sub') }}</span>
-                    </span>
-                    <span
-                        v-if="activeOrdersStats.active > 0"
-                        class="pos-tracker-bar-btn-badge"
-                    >{{ activeOrdersStats.active }}</span>
-                </router-link>
-                <router-link
+                    <template #icon>📋</template>
+                    <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
+                </PosV5Button>
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    as="router-link"
                     :to="{ name: 'admin.order-status-screen' }"
                     target="_blank"
                     rel="noopener"
-                    class="pos-tracker-bar-customer inline-flex items-center gap-2 rounded-lg border border-[#EFF0F6] bg-white px-3 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] hover:border-primary transition"
                     :title="$t('pos.tracker.customer_screen_hint')"
                 >
-                    <i class="fa-solid fa-display" aria-hidden="true"></i>
-                    <span class="hidden xl:inline">{{ $t('pos.tracker.customer_screen') }}</span>
-                </router-link>
-            <router-link :to="{ name: 'admin.pos.floorplan' }"
-                class="pos-v4-floorplan-link inline-flex items-center rounded-lg border border-[#EFF0F6] bg-white px-4 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] transition">
-                {{ $t('label.floorplan') }}
-            </router-link>
-            <!--
-              [POS-V4-CASHIER-OPS 2026-05-02] No-sale / open drawer.
-              - Discoverable in the operator bar but visually neutral (no badge, no glow)
-                so it never competes with payment / tracker actions.
-              - Calls the existing kioskHardware.openDrawer() bridge, which is a safe
-                no-op in dev (returns ok:true) — production hardware opens the till.
-              - Logs the event server-side via the bridge for audit trail.
-            -->
-            <button
-                type="button"
-                class="pos-v4-no-sale-btn inline-flex items-center gap-2 rounded-lg border border-[#EFF0F6] bg-white px-3 py-2 text-sm font-medium text-heading hover:bg-[#FFEDF4] hover:border-primary transition"
-                data-testid="pos-no-sale"
-                :title="$t('pos.no_sale_hint')"
-                :disabled="noSaleBusy"
-                :aria-busy="noSaleBusy"
-                @click="triggerNoSaleOpenDrawer"
-            >
-                <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
-                <span class="hidden xl:inline">{{ $t('pos.no_sale') }}</span>
-            </button>
-            </div>
-        </div>
-        <form @submit.prevent="search"
-            class="pos-v4-search flex items-center w-full h-[38px] leading-[38px] mb-2 rounded-lg bg-white border-[#EFF0F6] border-t border-l border-b">
-            <input type="text" :value="props.search.name" @input="onSearchInput"
-                :placeholder="$t('label.search_by_menu_item')"
-                :aria-label="$t('label.search_by_menu_item')"
-                class="w-full px-5 rounded-tl-lg rounded-bl-lg placeholder:text-xs placeholder:font-rubik placeholder:text-[#A0A3BD]">
-            <button @click="resetName" type="button" v-if="props.search.name"
-                :aria-label="$t('button.close')"
-                class="text-sm text-red-500 fa-regular fa-circle-xmark mr-4"></button>
-            <button type="submit"
-                :aria-label="$t('button.search')"
-                class="flex-shrink-0 w-[38px] h-full text-center ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg bg-[#B0004D]">
-                <i class="lab lab-search-normal text-white" aria-hidden="true"></i>
-            </button>
-        </form>
+                    <template #icon>🖥️</template>
+                    <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
+                </PosV5Button>
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    as="router-link"
+                    :to="{ name: 'admin.pos.floorplan' }"
+                    class="pos-v4-floorplan-link"
+                    :title="$t('label.floorplan')"
+                >
+                    <template #icon>🪑</template>
+                    <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
+                </PosV5Button>
+                <!--
+                  [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
+                  Discoverable mais ne compete jamais avec paiement / tracker.
+                  Backend bridge kioskHardware.openDrawer() inchangé.
+                -->
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    class="pos-v4-no-sale-btn"
+                    data-testid="pos-no-sale"
+                    :title="$t('pos.no_sale_hint')"
+                    :disabled="noSaleBusy"
+                    :loading="noSaleBusy"
+                    @click="triggerNoSaleOpenDrawer"
+                >
+                    <template #icon>💵</template>
+                    <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
+                </PosV5Button>
+            </nav>
+        </header>
+        <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
+        <PosV5SearchInput
+            class="pos-v4-search"
+            :model-value="props.search.name"
+            :placeholder="$t('label.search_by_menu_item')"
+            :aria-label="$t('label.search_by_menu_item')"
+            :clear-aria-label="$t('button.close')"
+            @input="onSearchInput"
+            @submit="search"
+            @clear="resetName"
+        />
 
-        <!-- Vue unifiée : bande de catégories (Toutes + …) toujours visible + grille produits -->
-        <!-- Native horizontal scroll (no Swiper) — avoids long animated slides between categories -->
         <!--
-          [POS-V4-DENSITY 2026-05-02] Compact pills (was w-28 / py-4 / gap-4 /
-          h-7 thumb). Saves ~28px of vertical space before the products grid.
-          The user explicitly asked for tighter category buttons + more room
-          for products — operator bar + tracker buttons stay untouched.
+          [POS-V5] Categories strip warm — pills avec photos rondes 56px
+          (mirror direct du stepper visual du wizard kiosk). L'active est marquée
+          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).
         -->
-        <div
+        <nav
             v-if="categories.length > 1"
-            class="pos-menu-category-scroll pos-v4-category-strip mb-2 flex flex-nowrap gap-2 overflow-x-auto pb-1"
+            class="pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip"
             ref="categoryScrollStrip"
             role="tablist"
-            :aria-label="$t('label.categories') || 'Categories'"
+            aria-label="Catégories"
         >
             <template v-for="(category, index) in categories" :key="category.id || index">
-                <div
-                    class="flex-shrink-0 w-24"
-                    :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''"
+                <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="(index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId) ? 'true' : 'false'"
+                    :class="['pos-v5-category', 'pos-v4-category-pill', {
+                        'is-active': (index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId)
+                    }]"
+                    @click="index === 0 ? allCategory() : setCategory(category.id)"
                 >
-                    <button v-if="index === 0" type="button" @click="allCategory"
-                        class="pos-v4-category-pill w-24 flex flex-col items-center text-center gap-1.5 py-2 px-2 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                        <img class="h-6 drop-shadow-category" :src="category.thumb" alt="">
-                        <h3 class="text-[11px] leading-[14px] font-medium font-rubik">{{ category.name }}</h3>
-                    </button>
-                    <button v-else type="button" @click="setCategory(category.id)"
-                        class="pos-v4-category-pill w-24 flex flex-col items-center text-center gap-1.5 py-2 px-2 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                        <img class="h-6 drop-shadow-category" :src="category.thumb" alt="">
-                        <h3 class="text-[11px] leading-[14px] font-medium font-rubik">{{ category.name }}</h3>
-                    </button>
-                </div>
+                    <span class="pos-v5-category__visual">
+                        <img v-if="category.thumb" :src="category.thumb" :alt="category.name || ''" loading="lazy" />
+                        <span v-else class="pos-v5-category__visual-fallback" aria-hidden="true">{{ (category.name || '?').charAt(0).toUpperCase() }}</span>
+                    </span>
+                    <span class="pos-v5-category__label">{{ category.name }}</span>
+                </button>
             </template>
-        </div>
+        </nav>
 
         <div aria-live="polite" aria-relevant="additions"
             :aria-busy="loadingItems ? 'true' : 'false'"
@@ -168,138 +186,160 @@
     </div>
 
 
-    <div id="pos-cart"
+    <!--
+      [POS-V5] Cart panel "ticket vivant" — segments verticaux clairs, header
+      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,
+      shortcuts park/parked, loyalty badge optionnel, type de commande en
+      segmented control, items list en cards verticales, footer avec totals
+      + CTA principal "Encaisser X €" (montant intégré au bouton, Q3 plan).
+    -->
+    <aside id="pos-cart"
         role="region"
         :aria-label="$t('a11y.cart_region')"
-        class="db-pos-cartDiv pos-v4-cart-panel fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[300px] lg:w-[290px] xl:w-[330px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
-        <div class="pos-v4-cart-head p-4 flex-shrink-0">
-            <div class="md:hidden text-right mb-3">
-                <button type="button" class="db-pos-cartCls" @click="closeCanvas('pos-cart')"
-                    :aria-label="$t('button.close')">
-                    <i class="lab-close-circle-line font-fill-danger lab-font-size-24" aria-hidden="true"></i>
-                </button>
+        class="db-pos-cartDiv pos-v4-cart-panel pos-v5-cart fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[340px] lg:w-[360px] xl:w-[400px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
+        <!-- Mobile-only close button -->
+        <div class="md:hidden text-right p-3 pb-0">
+            <button type="button" class="db-pos-cartCls pos-v5-modal__close" @click="closeCanvas('pos-cart')"
+                :aria-label="$t('button.close')">
+                <span aria-hidden="true">✕</span>
+            </button>
+        </div>
+
+        <!-- Cart header -->
+        <header class="pos-v5-cart__head pos-v4-cart-head flex-shrink-0">
+            <div class="pos-v5-cart__head-titles">
+                <p class="pos-v5-cart__eyebrow">Ticket caisse</p>
+                <h2 class="pos-v5-cart__title">Commande en cours</h2>
             </div>
-            <div class="pos-v4-ticket-title">
-                <div>
-                    <p>Ticket caisse</p>
-                    <h2>Commande en cours</h2>
-                </div>
-                <span>{{ totalItems() }} {{ $t('label.items') }}</span>
-            </div>
-            <div class="flex items-center w-full gap-4 mb-3">
-                <div class="db-field flex-grow">
-                    <vue-select
-                        class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]"
-                        id="customer" v-model="checkoutProps.form.customer_id" :options="customers"
-                        @update:modelValue="changingUser" label-by="name" value-by="id" :closeOnSelect="true"
-                        :searchable="true" :clearOnClose="true" :placeholder="$t('label.select_customer')"
-                        :search-placeholder="$t('label.search_customer')" />
-                </div>
-                <div data-modal="#addCustomer" @click.prevent="addCustomers"
-                    role="button"
-                    tabindex="0"
-                    :aria-label="$t('button.add_customer')"
-                    @keydown.enter.prevent="addCustomers"
-                    @keydown.space.prevent="addCustomers"
-                    class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-circle-plus text-white" aria-hidden="true"></i>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <button
-                    type="button"
-                    class="h-10 rounded-xl border border-[#EFF0F6] text-sm font-medium text-heading bg-[#F7F7FC] hover:bg-[#FFEDF4] transition"
-                    :disabled="parkingInFlight"
-                    @click="promptParkOrder"
+            <div class="pos-v5-stack-3 mt-3">
+                <PosV5Pill
+                    v-if="totalItems() > 0"
+                    variant="brand"
+                    size="md"
                 >
-                    {{ $t('pos.park') }}
-                </button>
-                <button
-                    type="button"
-                    class="h-10 rounded-xl border border-[#B0004D] text-sm font-medium text-white bg-[#B0004D] hover:bg-[#8E003E] hover:border-[#8E003E] transition"
-                    @click="openParkedOrders"
-                >
-                    {{ $t('pos.parked_orders') }} ({{ parkedOrdersCount }})
-                </button>
+                    {{ totalItems() }} {{ $t('label.items') }}
+                </PosV5Pill>
+
+                <!-- Customer selector + add CTA -->
+                <div class="flex items-center w-full gap-2">
+                    <div class="db-field flex-grow">
+                        <vue-select
+                            class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]"
+                            id="customer" v-model="checkoutProps.form.customer_id" :options="customers"
+                            @update:modelValue="changingUser" label-by="name" value-by="id" :closeOnSelect="true"
+                            :searchable="true" :clearOnClose="true" :placeholder="$t('label.select_customer')"
+                            :search-placeholder="$t('label.search_customer')" />
+                    </div>
+                    <PosV5Button
+                        variant="primary"
+                        size="md"
+                        :aria-label="$t('button.add_customer')"
+                        data-modal="#addCustomer"
+                        @click.prevent="addCustomers"
+                    >
+                        <template #icon>+</template>
+                    </PosV5Button>
+                </div>
+
+                <!-- Park / Parked shortcuts -->
+                <div class="grid grid-cols-2 gap-2">
+                    <PosV5Button
+                        variant="secondary"
+                        size="md"
+                        :disabled="parkingInFlight"
+                        :loading="parkingInFlight"
+                        @click="promptParkOrder"
+                    >
+                        <template #icon>⏸</template>
+                        {{ $t('pos.park') }}
+                    </PosV5Button>
+                    <PosV5Button
+                        variant="ghost-counter"
+                        size="md"
+                        :badge="parkedOrdersCount"
+                        @click="openParkedOrders"
+                    >
+                        <template #icon>📦</template>
+                        {{ $t('pos.parked_orders') }}
+                    </PosV5Button>
+                </div>
             </div>
             <!--
-              [POS-V4-CASHIER-OPS 2026-05-02] Cancel last cart line.
-              - Visible only when at least one line exists.
-              - Subtle styling: not a red destructive button — cashier should feel
-                this is a one-tap "oops" undo, not a heavyweight cancel.
-              - Confirms via a single OK alert (no native confirm()) to avoid a
-                double-click drag in fast-food rush hour.
+              [POS-V5] Cancel last cart line — undo subtil, pas destructif.
+              "Oops" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).
             -->
-            <div v-if="carts.length > 0" class="mb-3">
-                <button
-                    type="button"
-                    class="w-full h-9 rounded-lg border border-dashed border-[#D9DBE9] text-xs font-medium text-[#6E7191] bg-white hover:bg-[#FFEDF4] hover:border-primary hover:text-primary transition flex items-center justify-center gap-2"
+            <div v-if="carts.length > 0" class="mt-3">
+                <PosV5Button
+                    variant="ghost"
+                    size="sm"
+                    block
                     data-testid="pos-cancel-last-line"
                     @click="cancelLastCartLine"
                 >
-                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    <template #icon>↻</template>
                     {{ $t('pos.cancel_last_line') }}
-                </button>
+                </PosV5Button>
             </div>
 
-            <!-- Loyalty badge — shown when selected customer has a loyalty account -->
-            <div v-if="selectedCustomerLoyalty.code" class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
-                <i class="fa-solid fa-star text-amber-500 text-sm"></i>
-                <span class="text-xs font-medium text-amber-700">
+            <!-- [POS-V5] Loyalty badge — warm gold/amber chaleureux. -->
+            <div v-if="selectedCustomerLoyalty.code" class="pos-v5-loyalty mt-3" role="status">
+                <span class="pos-v5-loyalty__icon" aria-hidden="true">⭐</span>
+                <span>
                     <span v-if="selectedCustomerLoyalty.loading">...</span>
                     <template v-else>
-                        <span class="font-bold">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
-                        <span class="text-amber-500 ml-1">({{ selectedCustomerLoyalty.code }})</span>
+                        <span class="pos-v5-loyalty__points">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
+                        <span class="opacity-80 ml-1">({{ selectedCustomerLoyalty.code }})</span>
                     </template>
                 </span>
             </div>
 
-            <div class="p-3 pt-2 rounded-lg border border-[#D9DBE9]">
-                <h4 class="text-sm font-medium mb-3">{{ $t('label.select_order_type') }}</h4>
+            <!--
+              [POS-V5] Order type — segmented control V5 (mirror du wizard
+              "Sur place / À emporter" pattern). Le delivery inline form reste
+              identique pour ne pas casser la logique d'autocomplete d'adresse.
+            -->
+            <fieldset class="mt-3">
+                <legend class="pos-v5-cart__eyebrow mb-2">{{ $t('label.select_order_type') }}</legend>
 
-                <div class="db-field-radio-group gap-1 active-group">
-
-                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false).
-                         Enable via /api/admin/settings.pos.dine_in_enabled = 1 once floor-plan + table
-                         selector UX is validated. Logic kept live so flipping the flag is zero-code. -->
-                    <label v-if="dineInEnabled" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
-                        <div class="custom-radio sm">
-                            <input ref="dineInInput" type="radio" id="dinein" name="orderType"
-                                :value="orderTypeEnums.dineIn" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.dine_in') }}
-                        </h3>
-                    </label>
-                    <label ref="takeAway" @click="takeAwayOrder" for="takeway"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] active">
-                        <div class="custom-radio sm">
-                            <input ref="takeAwayInput" type="radio" id="takeway" name="orderType"
-                                :value="orderTypeEnums.takeAway" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.takeaway') }}
-                        </h3>
+                <div class="pos-v5-segmented" role="radiogroup">
+                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). -->
+                    <label
+                        v-if="dineInEnabled"
+                        ref="dineIn"
+                        for="dinein"
+                        data-dine="#dine"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.dineIn }]"
+                        @click="dineInOrder"
+                    >
+                        <input ref="dineInInput" type="radio" id="dinein" name="orderType"
+                            :value="orderTypeEnums.dineIn" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🍽️</span>
+                        <span>{{ $t('label.dine_in') }}</span>
                     </label>
 
+                    <label
+                        ref="takeAway"
+                        for="takeway"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.takeAway }]"
+                        @click="takeAwayOrder"
+                    >
+                        <input ref="takeAwayInput" type="radio" id="takeway" name="orderType"
+                            :value="orderTypeEnums.takeAway" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🥡</span>
+                        <span>{{ $t('label.takeaway') }}</span>
+                    </label>
 
-                    <label ref="deliveryOrderLabel" @click="deliveryOrder" for="delivery"
-                        data-orderdelivery="#orderdelivery" type="button"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
-                        <div class="custom-radio sm">
-                            <input ref="deliveryOrderInput" type="radio" id="delivery" name="orderType"
-                                :value="orderTypeEnums.delivery" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.delivery') }}
-                        </h3>
+                    <label
+                        ref="deliveryOrderLabel"
+                        for="delivery"
+                        data-orderdelivery="#orderdelivery"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.delivery }]"
+                        @click="deliveryOrder"
+                    >
+                        <input ref="deliveryOrderInput" type="radio" id="delivery" name="orderType"
+                            :value="orderTypeEnums.delivery" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🛵</span>
+                        <span>{{ $t('label.delivery') }}</span>
                     </label>
                 </div>
                 <!-- [P4] Inline delivery form — no separate modal, no map tab -->
@@ -395,174 +435,196 @@
                         </div>
                     </div>
                 </div>
+            </fieldset>
+        </header>
 
+        <!--
+          [POS-V5] Cart body — items list en cards verticales (densité optimale
+          + édition / qty stepper inline). Garde role="list" pour a11y.
+        -->
+        <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="list">
+            <article
+                v-for="(cart, index) in carts"
+                :key="`cart-${index}`"
+                role="listitem"
+                class="pos-v5-cart-item"
+            >
+                <button
+                    type="button"
+                    class="pos-v5-cart-item__visual"
+                    @click.prevent="editCartLine(index)"
+                    :title="$t('button.edit') || 'Modifier'"
+                    :aria-label="$t('button.edit')"
+                >
+                    <img v-if="cart.image" :src="cart.image" :alt="cart.name" />
+                    <span v-else class="pos-v5-cart-item__visual-fallback" aria-hidden="true">🍴</span>
+                </button>
+                <div class="pos-v5-cart-item__body">
+                    <h3 class="pos-v5-cart-item__name">
+                        <span>{{ cart.name }}</span>
+                        <button
+                            type="button"
+                            class="pos-v5-cart-item__edit"
+                            @click.prevent="editCartLine(index)"
+                            :title="$t('button.edit') || 'Modifier'"
+                            :aria-label="$t('button.edit')"
+                        >
+                            <span aria-hidden="true">✎</span>
+                        </button>
+                    </h3>
+
+                    <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) -->
+                    <p
+                        v-if="cart.cart_display && cart.cart_display.trim()"
+                        class="pos-v5-cart-item__detail"
+                    >{{ cart.cart_display }}</p>
+
+                    <!-- Fallback for non-wizard products: variations + extras -->
+                    <template v-else>
+                        <p v-if="formatCartVariationSummary(cart)" class="pos-v5-cart-item__detail">
+                            {{ formatCartVariationSummary(cart) }}
+                        </p>
+                        <p v-if="formatCartExtraSummary(cart)" class="pos-v5-cart-item__detail">
+                            {{ $t('label.extras') }}: {{ formatCartExtraSummary(cart) }}
+                        </p>
+                    </template>
+
+                    <!-- Menu bundled + extras menu (formules) -->
+                    <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="pos-v5-cart-item__bundled">
+                        <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi" class="pos-v5-cart-item__bundled-line">
+                            <span>+ {{ bundled.name }}</span>
+                            <span v-if="bundledLineUnitTotal(bundled) > 0" class="pos-v5-tabular">
+                                (+{{
+                                    currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
+                                        setting.site_digit_after_decimal_point,
+                                        setting.site_default_currency_symbol, setting.site_currency_position)
+                                }})
+                            </span>
+                            <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="w-full m-0 p-0 list-none ml-3 mt-0.5">
+                                <li
+                                    v-for="(extra, ei) in bundled.menu_extras"
+                                    :key="'me-' + index + '-' + bi + '-' + ei"
+                                    class="text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
+                                >
+                                    <span class="text-[color:var(--pos-v5-success)] font-bold" aria-hidden="true">↳</span>
+                                    <span>{{ extra }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="pos-v5-cart-item__price pos-v5-tabular">
+                    {{
+                        currencyFormat(cart.total, setting.site_digit_after_decimal_point,
+                            setting.site_default_currency_symbol, setting.site_currency_position)
+                    }}
+                </div>
+                <div class="pos-v5-cart-item__qty">
+                    <PosV5QtyStepper
+                        size="sm"
+                        :model-value="cart.quantity"
+                        :show-trash="cart.quantity === 1"
+                        :aria-label="cart.name"
+                        :increment-aria-label="$t('a11y.increase_qty', { item: cart.name })"
+                        :decrement-aria-label="$t('a11y.decrease_qty', { item: cart.name })"
+                        :remove-aria-label="$t('a11y.remove_item', { item: cart.name })"
+                        @increment="cartQuantityIncrement(index)"
+                        @decrement="cartQuantityDecrement(index)"
+                        @remove="cartQuantityDecrement(index)"
+                    />
+                </div>
+            </article>
+
+            <div v-if="carts.length === 0" class="pos-v5-cart__empty">
+                <span class="pos-v5-cart__empty-icon" aria-hidden="true">🍽️</span>
+                <p>Aucun article. Sélectionnez un produit dans la grille.</p>
             </div>
-
-
         </div>
-        <div class="flex-1 min-h-0 overflow-y-auto thin-scrolling border-t border-[#EFF0F6]">
-
-        <table class="pos-v4-cart-table w-full">
-            <thead class="bg-[#FFEDF4]">
-                <tr class="h-9">
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading pl-3">
-                        {{ $t('label.item') }}
-                    </th>
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
-                        {{ $t('label.qty') }}
-                    </th>
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
-                        {{ $t('label.price') }}
-                    </th>
-                </tr>
-            </thead>
-            <tbody role="list">
-                <tr v-for="(cart, index) in carts" role="listitem">
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <div class="flex gap-2 items-start">
-                            <img v-if="cart.image" :src="cart.image" class="w-10 h-10 rounded-md object-cover flex-shrink-0" />
-                            <div>
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
-                                    <button type="button" @click.prevent="editCartLine(index)"
-                                        class="shrink-0 text-primary hover:opacity-80"
-                                        :title="$t('button.edit') || 'Modifier'"
-                                        :aria-label="$t('button.edit')">
-                                        <i class="fa-regular fa-pen-to-square text-xs" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                                <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) — no instruction clutter -->
-                                <template v-if="cart.cart_display && cart.cart_display.trim()">
-                                    <p class="text-[11px] font-rubik text-[#5A5A78] leading-snug whitespace-pre-line mt-0.5">{{ cart.cart_display }}</p>
-                                </template>
-                                <!-- Fallback for non-wizard products: show raw variations/extras -->
-                                <template v-else>
-                                    <p v-if="formatCartVariationSummary(cart)" class="capitalize text-xs leading-4 font-rubik">
-                                        {{ formatCartVariationSummary(cart) }}
-                                    </p>
-                                    <ul v-if="formatCartExtraSummary(cart)">
-                                        <li class="leading-4">
-                                            <span class="capitalize text-xs leading-4 font-rubik text-heading">
-                                                {{ $t('label.extras') }}:
-                                            </span>
-                                            <p class="capitalize text-xs leading-4 font-rubik">
-                                                {{ formatCartExtraSummary(cart) }}
-                                            </p>
-                                        </li>
-                                    </ul>
-                                </template>
-
-                        <!-- Menu bundled + extras menu directement sous chaque ligne -->
-                        <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="mt-1.5 space-y-0.5">
-                            <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi">
-                                <div class="text-[11px] font-semibold font-rubik text-[#1AB759] leading-snug flex items-center gap-1 flex-wrap">
-                                    <span>+ {{ bundled.name }}</span>
-                                    <span v-if="bundledLineUnitTotal(bundled) > 0" class="font-rubik text-[#1AB759]">
-                                        (+{{
-                                            currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
-                                                setting.site_digit_after_decimal_point,
-                                                setting.site_default_currency_symbol, setting.site_currency_position)
-                                        }})
-                                    </span>
-                                </div>
-                                <!-- Extras menu directement sous cette ligne (sauce frites, grande portion, cheddar) -->
-                                <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="ml-3 mt-0.5 space-y-0.5">
-                                    <li v-for="(extra, ei) in bundled.menu_extras" :key="'me-' + index + '-' + bi + '-' + ei"
-                                        class="text-[10px] font-rubik text-[#8E8EA9] leading-snug flex items-center gap-1">
-                                        <span class="text-[#1AB759] font-bold">↳</span>
-                                        <span>{{ extra }}</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <div class="flex items-center indec-group">
-                            <button type="button" @click.prevent="cartQuantityDecrement(index)"
-                                :class="cart.quantity === 1 ? 'fa-trash-can' : 'fa-minus'"
-                                :aria-label="cart.quantity === 1 ? $t('a11y.remove_item', { item: cart.name }) : $t('a11y.decrease_qty', { item: cart.name })"
-                                class="fa-solid text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
-                            <input v-on:keypress="onlyNumber($event)" v-on:keyup="cartQuantityUp(index, $event)"
-                                type="number" :value="cart.quantity"
-                                class="text-center w-7 text-xs font-semibold text-heading indec-value">
-                            <button type="button" @click.prevent="cartQuantityIncrement(index)"
-                                :aria-label="$t('a11y.increase_qty', { item: cart.name })"
-                                class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
-                        </div>
-                    </td>
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6] text-xs font-rubik text-heading">
-                        {{
-                            currencyFormat(cart.total, setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position)
-                        }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        </div>
-        <div class="pos-v4-cart-footer p-4 flex-shrink-0 bg-white border-t border-[#EFF0F6] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-            <div class="flex h-[38px]" v-if="carts.length > 0">
+        <!--
+          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +
+          CTA principal "Encaisser X €" (Q3 plan : montant intégré au bouton).
+        -->
+        <footer class="pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0">
+            <!-- Discount block -->
+            <div v-if="carts.length > 0" class="flex h-9 mb-2">
                 <div class="dropdown-group">
                     <button
                         type="button"
-                        class="flex items-center justify-start w-[120px] h-full text-sm font-rubik rounded-tl rounded-bl appearance-none border pl-3 text-heading border-[#EFF0F6] dropdown-btn">
+                        class="flex items-center justify-start w-[100px] h-full text-xs font-medium rounded-l-md appearance-none border pl-3 text-[var(--pos-v5-ink)] border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] dropdown-btn"
+                    >
                         <span class="flex-1 text-start" v-if="discountType === discountTypeEnum.PERCENTAGE">{{
                             $t("label.percentage") }}</span>
                         <span class="flex-1 text-start" v-else>{{ $t("label.fixed") }}</span>
                         <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1"></i>
                     </button>
                     <ul
-                        class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full">
-                        <li class="flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100"
+                        class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+                    >
+                        <li
+                            class="flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-[var(--pos-v5-brand-red-soft)]"
                             v-for="option in [
                                 { name: $t('label.percentage'), value: discountTypeEnum.PERCENTAGE },
                                 { name: $t('label.fixed'), value: discountTypeEnum.FIXED }
-                            ]" :key="option" @click="selectDiscount(option.value)">
-                            <span class="text-heading capitalize text-sm">{{ option.name }}</span>
-
+                            ]"
+                            :key="option.value"
+                            @click="selectDiscount(option.value)"
+                        >
+                            <span class="text-[var(--pos-v5-ink)] capitalize text-sm">{{ option.name }}</span>
                         </li>
                     </ul>
                 </div>
-                <input v-on:keypress="floatNumber($event)" v-model="discount" type="text"
+                <input
+                    v-on:keypress="floatNumber($event)"
+                    v-model="discount"
+                    type="text"
                     :placeholder="$t('label.add_discount')"
                     data-testid="pos-discount-input"
-                    class="w-full h-full border-t border-b px-3 border-[#EFF0F6]">
+                    class="w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)]"
+                />
                 <!--
-                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button is disabled when a
+                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a
                   positive discount is set without a 3+ char reason. Backend
-                  enforces this (OrderService L2007-2011) — we mirror it client-side
-                  to keep UX immediate and prevent a wasted server round-trip in the
-                  fast-food rush hour. Empty discount stays applyable to clear it.
+                  enforces this (OrderService L2007-2011) — mirror client-side.
                 -->
-                <button @click.prevent="applyDiscount" type="button"
+                <button
+                    @click.prevent="applyDiscount"
+                    type="button"
                     :disabled="!isDiscountApplyable"
                     :aria-disabled="!isDiscountApplyable"
                     data-testid="pos-discount-apply"
-                    class="flex-shrink-0 w-16 h-full text-sm font-medium font-rubik capitalize ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg text-white bg-[#008BBA] disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
                     {{ $t('button.apply') }}
                 </button>
             </div>
-            <div class="mt-2" v-if="carts.length > 0">
-                <label for="pos-discount-reason" class="flex items-center justify-between mb-1 text-xs font-rubik capitalize text-[#2E2F38]">
+
+            <div v-if="carts.length > 0" class="mb-3">
+                <label
+                    for="pos-discount-reason"
+                    class="flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"
+                >
                     <span>
                         {{ $t('label.reason') }}
                         <span
                             v-if="discountReasonRequired"
-                            class="ml-1 text-[10px] font-medium text-[#FB4E4E] normal-case"
+                            class="ml-1 text-[10px] font-bold text-[var(--pos-v5-danger)] normal-case"
                             data-testid="pos-discount-reason-required-flag"
                         >({{ $t('pos.reason_required_short') }})</span>
                     </span>
-                    <span class="text-[10px] font-medium text-[#8E8EA9] normal-case">{{ (discountReason || '').length }}/255</span>
+                    <span class="text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case">{{ (discountReason || '').length }}/255</span>
                 </label>
-                <input id="pos-discount-reason" v-model="discountReason" type="text" maxlength="255"
+                <input
+                    id="pos-discount-reason"
+                    v-model="discountReason"
+                    type="text"
+                    maxlength="255"
                     :placeholder="$t('pos.reason_required_placeholder')"
                     data-testid="pos-discount-reason"
-                    :class="['w-full h-9 text-sm rounded-lg border px-3 text-heading transition', discountReasonInvalid ? 'border-[#FB4E4E] bg-[#FFF5F5]' : 'border-[#EFF0F6]']">
+                    :class="['w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)]', discountReasonInvalid ? 'border-[var(--pos-v5-danger)] bg-[var(--pos-v5-danger-soft)]' : 'border-[var(--pos-v5-border)]']"
+                />
                 <p
                     v-if="discountReasonInvalid"
-                    class="mt-1 text-[11px] font-medium text-[#FB4E4E]"
+                    class="mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]"
                     role="alert"
                     data-testid="pos-discount-reason-invalid"
                 >
@@ -570,69 +632,58 @@
                 </p>
             </div>
 
-            <div class="flex flex-col gap-1.5 mb-4 mt-4" role="status" aria-live="polite" aria-atomic="true">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{ $t("label.sub_total") }}
-                    </span>
-                    <span class="text-sm font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{
-                            currencyFormat(subtotal, setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position)
-                        }}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.discount") }}</span>
-                    <span class="text-sm font-rubik capitalize leading-6">{{
-                        currencyFormat(posDiscount,
-                            setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                            setting.site_currency_position)
-                    }}</span>
-                </div>
-                <div class="flex items-center justify-between" v-if="checkoutProps.form.delivery_charge">
-                    <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.delivery_charge") }}</span>
-                    <span class="text-sm font-rubik capitalize leading-6 font-medium text-[#1AB759]">{{
-                        currencyFormat(checkoutProps.form.delivery_charge,
-                            setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                            setting.site_currency_position)
-                    }}</span>
-                </div>
-                <div class="pos-v4-total-row flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
-                    <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{ $t("label.total") }}
-                        <!--
-                          [POS-V4-DENSITY 2026-05-02] The "(HT)" suffix was technically
-                          honest under the legacy assumption that catalog prices are
-                          stored ex-tax — but that very assumption is now contested
-                          (cf. GATE_POS_V4_VAT_HT_TTC_2026-05-02). Until the human
-                          gate decides whether catalog prices represent HT or TTC,
-                          we drop the suffix here: the receipt remains the fiscal
-                          authority and shows the proper TVA breakdown explicitly.
-                          This is purely a UI clarification — no pricing math changed.
-                        -->
-                    </span>
-                    <span class="text-base font-bold font-rubik leading-6 text-primary">
-                        {{
-                            currencyFormat((subtotal + checkoutProps.form.delivery_charge) - posDiscount,
-                                setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                                setting.site_currency_position)
-                        }}
-                    </span>
-                </div>
+            <!-- Totals block -->
+            <div role="status" aria-live="polite" aria-atomic="true" class="mb-3">
+                <PosV5TotalRow :label="$t('label.sub_total')" :value="subtotalDisplay" />
+                <PosV5TotalRow
+                    v-if="posDiscount"
+                    :label="$t('label.discount')"
+                    :value="posDiscountDisplay"
+                    tone="muted"
+                    sign="-"
+                />
+                <PosV5TotalRow
+                    v-if="checkoutProps.form.delivery_charge"
+                    :label="$t('label.delivery_charge')"
+                    :value="deliveryChargeDisplay"
+                    tone="info"
+                    sign="+"
+                />
+                <PosV5TotalRow
+                    :label="$t('label.total')"
+                    :value="grandTotalDisplay"
+                    tone="hero"
+                    :class="['pos-v4-total-row', { 'is-flashing': totalFlashing }]"
+                    data-testid="pos-grand-total"
+                />
             </div>
-            <div class="flex items-center justify-center gap-6" v-if="carts.length > 0">
-                <button type="button" @click.prevent="resetCart"
-                    class="pos-v4-action-cancel capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#FB4E4E]">
+
+            <!-- Action CTAs -->
+            <div v-if="carts.length > 0" class="flex flex-col gap-2">
+                <PosV5Button
+                    variant="primary-pay"
+                    size="xl"
+                    block
+                    @click.prevent="orderSubmit"
+                    data-testid="pos-v5-pay"
+                    class="pos-v4-action-pay"
+                >
+                    <template #icon>💳</template>
+                    {{ $t('button.order') }} · {{ grandTotalDisplay }}
+                </PosV5Button>
+                <PosV5Button
+                    variant="danger-ghost"
+                    size="sm"
+                    block
+                    @click.prevent="resetCart"
+                    class="pos-v4-action-cancel"
+                >
+                    <template #icon>↻</template>
                     {{ $t('button.cancel') }}
-                </button>
-                <button type="button" @click.prevent="orderSubmit"
-                    class="pos-v4-action-pay capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#1AB759]">
-                    {{ $t('button.order') }}
-                </button>
+                </PosV5Button>
             </div>
-        </div>
-    </div>
+        </footer>
+    </aside>
 
 
     <!--====================================
@@ -725,7 +776,10 @@
         :props="checkoutProps"
         @payment-form:patch="patchPaymentForm"
         @payment-form:reset="resetPaymentForm"
+        @order:confirmed="triggerSuccessFlash"
     />
+    <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
+    <div v-if="successFlashing" class="pos-v5-success-flash" aria-hidden="true"></div>
     <!--====================================
           PAYMENT MODAL PART END
       =====================================-->
@@ -926,6 +980,15 @@ import { normalizeRealtimeOrderEvent, shouldNotifyPosRealtimeOrder } from "../..
 import debounce from "lodash/debounce";
 import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
 import { calculateDeliveryChargeFromDistance } from "../../../helpers/deliveryCharge";
+// [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives unifiées POS V5.
+// Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md §4.
+import PosV5Button from "./v5/PosV5Button.vue";
+import PosV5Card from "./v5/PosV5Card.vue";
+import PosV5Pill from "./v5/PosV5Pill.vue";
+import PosV5StatChip from "./v5/PosV5StatChip.vue";
+import PosV5TotalRow from "./v5/PosV5TotalRow.vue";
+import PosV5QtyStepper from "./v5/PosV5QtyStepper.vue";
+import PosV5SearchInput from "./v5/PosV5SearchInput.vue";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -943,7 +1006,15 @@ export default {
         ItemComponent,
         SkeletonGrid,
         ParkedOrdersComponent,
-        PaymentComponent
+        PaymentComponent,
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives V5
+        PosV5Button,
+        PosV5Card,
+        PosV5Pill,
+        PosV5StatChip,
+        PosV5TotalRow,
+        PosV5QtyStepper,
+        PosV5SearchInput,
     },
     data() {
         return {
@@ -971,6 +1042,15 @@ export default {
             // take ~200-500ms to physically open).
             noSaleBusy: false,
             parkingInFlight: false,
+            // [POS-V5 WAVE 3 2026-05-02] Flags pour animations cart-bump et
+            // total-flash. Toggled via watcher sur totalItems()/subtotal et
+            // remis à false après ~320-700ms (durée animation CSS).
+            cartBumping: false,
+            totalFlashing: false,
+            successFlashing: false,
+            _cartBumpTimer: null,
+            _totalFlashTimer: null,
+            _successFlashTimer: null,
             /** [T12] Item grid skeleton while first POS menu fetch is in flight */
             posItemsFetchPending: false,
             _itemListFetchDepth: 0,
@@ -1242,6 +1322,52 @@ export default {
         parkedOrdersCount: function () {
             return Number(this.$store.getters['posParked/count'] || 0);
         },
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Total numérique + display
+        // formaté pour CTA "Encaisser X €" (Q3 plan §3.1.6).
+        grandTotal: function () {
+            const sub = Number(this.subtotal) || 0;
+            const delivery = Number(this.checkoutProps?.form?.delivery_charge) || 0;
+            const discount = Number(this.posDiscount) || 0;
+            return Math.max(0, sub + delivery - discount);
+        },
+        grandTotalDisplay: function () {
+            return this.currencyFormat(
+                this.grandTotal,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        subtotalDisplay: function () {
+            return this.currencyFormat(
+                this.subtotal,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        posDiscountDisplay: function () {
+            return this.currencyFormat(
+                this.posDiscount,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        deliveryChargeDisplay: function () {
+            return this.currencyFormat(
+                this.checkoutProps?.form?.delivery_charge || 0,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Wizard "active category" mirror.
+        // Permet de surligner la catégorie courante dans la nouvelle category strip V5.
+        currentCategoryId: function () {
+            const raw = this.props?.search?.item_category_id;
+            return raw === '' || raw === null || raw === undefined ? 0 : Number(raw);
+        },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
@@ -1280,6 +1406,10 @@ export default {
             } catch (_e) { /* defensive */ }
         }
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        // [POS-V5 WAVE 3] Cleanup animations timers
+        if (this._cartBumpTimer) { clearTimeout(this._cartBumpTimer); this._cartBumpTimer = null; }
+        if (this._totalFlashTimer) { clearTimeout(this._totalFlashTimer); this._totalFlashTimer = null; }
+        if (this._successFlashTimer) { clearTimeout(this._successFlashTimer); this._successFlashTimer = null; }
         PosSyncService.stop();
         this._posSyncBranchId = null;
         this._unsubscribeEcho();
@@ -1425,6 +1555,33 @@ export default {
 
     },
     methods: {
+        // [POS-V5 WAVE 3 2026-05-02] Animations triggers ─────────────────────
+        triggerCartBump() {
+            if (this._cartBumpTimer) clearTimeout(this._cartBumpTimer);
+            this.cartBumping = true;
+            this._cartBumpTimer = setTimeout(() => {
+                this.cartBumping = false;
+                this._cartBumpTimer = null;
+            }, 360);
+        },
+        triggerTotalFlash() {
+            if (this._totalFlashTimer) clearTimeout(this._totalFlashTimer);
+            this.totalFlashing = true;
+            this._totalFlashTimer = setTimeout(() => {
+                this.totalFlashing = false;
+                this._totalFlashTimer = null;
+            }, 360);
+        },
+        triggerSuccessFlash() {
+            if (this._successFlashTimer) clearTimeout(this._successFlashTimer);
+            this.successFlashing = true;
+            this._successFlashTimer = setTimeout(() => {
+                this.successFlashing = false;
+                this._successFlashTimer = null;
+            }, 720);
+        },
+        // ────────────────────────────────────────────────────────────────────
+
         authBranchId() {
             const authInfo = this.$store.getters['auth/authInfo'] || {};
             const candidates = [
@@ -2921,7 +3078,21 @@ export default {
             this.customerProps.form.password_confirmation = newValue;
         },
         carts: {
-            handler(newCarts) {
+            handler(newCarts, oldCarts) {
+                // [POS-V5 WAVE 3] Trigger cart-bump animation quand un item est ajouté.
+                // - Ne se déclenche QUE si la quantité totale a augmenté (pas sur retrait/édition)
+                // - Auto-reset après 320ms (durée de l'animation CSS pos-v5-bump).
+                const newCount = Array.isArray(newCarts)
+                    ? newCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
+                    : 0;
+                const oldCount = Array.isArray(oldCarts)
+                    ? oldCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
+                    : 0;
+                if (newCount > oldCount && newCount > 0) {
+                    this.triggerCartBump();
+                    this.triggerTotalFlash();
+                }
+
                 if (!newCarts || newCarts.length === 0) {
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
@@ -2944,658 +3115,357 @@ export default {
 </script>
 
 <style scoped>
-.fk-pos-v4 {
-  --pos-v4-ink: #141821;
-  --pos-v4-muted: #687083;
-  --pos-v4-panel: #ffffff;
-  --pos-v4-bg: #f3f5f8;
-  --pos-v4-red: #e8001c;
-  --pos-v4-blue: #0f7cff;
-  --pos-v4-green: #12965d;
-  --pos-v4-border: rgba(20, 24, 33, 0.1);
-  --pos-v4-shadow: 0 18px 48px rgba(20, 24, 33, 0.12);
-  /* [POS-V4-DENSITY 2026-05-02] Tightened to match the slimmer admin header
-     (.db-header now py-2 instead of p-4 -> ~64px). The previous 85px offset
-     left a ~21px dead band above the operator bar that ate vertical space
-     for nothing — cashier wants product grid taller, not whitespace. */
+/* =============================================================================
+   PosComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md
+   -----------------------------------------------------------------------------
+   - Le wizard kiosk (`KioskWizardComponent`) reste FROZEN.
+   - Les classes `.pos-v5-*` partagées vivent dans `resources/css/pos-v5.css`
+     (importé via app.css). Ce fichier scoped ne contient que :
+       1. Neutralisation des anciens styles `.fk-pos-v4` / `.pos-v4-*` qui
+          combattraient les nouvelles classes V5 (gradient sombre operator bar,
+          tickets head, total row, item tile :deep, etc.).
+       2. Styles UNIQUES à PosComponent : kiosk-cash-panel inline drawer,
+          add-customer modal inline.
+   - Rollback : poser `[data-pos-v4-disabled]` sur le shell désactive tout.
+   ============================================================================= */
+
+/* === 1. SHELL — laisser pos-v5-shell prendre le relais === */
+.fk-pos-v4.pos-v5-shell {
+  /* On supprime l'ancien gradient gris/froid hérité de pos-v4 ; le bg crème
+     warm vient de .pos-v5-shell (foundations/pos-v5-tokens.css). */
+  background: var(--pos-v5-bg-app);
+  color: var(--pos-v5-ink);
   min-height: calc(100dvh - 64px);
   margin: -4px -8px 0 -8px;
   padding: 4px 10px 12px 8px;
   box-sizing: border-box;
   max-width: 100vw;
   overflow-x: hidden;
-  background:
-    linear-gradient(180deg, rgba(20, 24, 33, 0.04), rgba(20, 24, 33, 0)),
-    var(--pos-v4-bg);
-  color: var(--pos-v4-ink);
 }
+
+/* Rollback kill-switch (héritage doctrine pos-v4.css §9) */
+[data-pos-v4-disabled].fk-pos-v4 { all: revert; }
 
 .pos-v4-main {
   padding: 0 8px 16px 0;
   min-height: 0;
 }
 
+/* === 2. NEUTRALISATION ancien gradient operator bar ===
+   La nouvelle classe .pos-v5-operator-bar (pos-v5.css) gère tout. On laisse
+   les anciennes classes legacy (.pos-v4-operator-bar, .pos-v4-eyebrow,
+   .pos-v4-title, .pos-v4-status-row) en passe-plat — pas de redéfinition. */
 .pos-v4-operator-bar {
-  min-height: 112px;
-  margin-bottom: 14px;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, #111827 0%, #23131a 58%, #e8001c 128%);
-  box-shadow: var(--pos-v4-shadow);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  /* Reset : le V5 prend le relais */
+  background: transparent;
+  color: inherit;
+  border: 0;
+  min-height: 0;
+}
+.pos-v4-eyebrow,
+.pos-v4-title,
+.pos-v4-status-row,
+.pos-v4-status-row span {
+  /* Reset legacy : les V5 classes prennent le relais */
+  color: inherit;
+  background: transparent;
 }
 
-.pos-v4-eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.68);
-}
+/* === 3. SEARCH — déjà géré par PosV5SearchInput, neutralisation legacy === */
+.pos-v4-search { background: transparent; border: 0; box-shadow: none; height: auto; }
+.pos-v4-search input,
+.pos-v4-search button[type="submit"] { all: unset; }
 
-.pos-v4-title {
-  margin: 0;
-  color: #ffffff !important;
-  font-size: clamp(24px, 2.4vw, 34px);
-  line-height: 1.04;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.pos-v4-status-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.pos-v4-status-row span,
-.pos-v4-ticket-title > span,
-.pos-v4-section-heading > span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.pos-v4-floorplan-link {
-  min-height: 46px;
-  border: 0 !important;
-  border-radius: 14px !important;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-  color: var(--pos-v4-ink) !important;
-  font-weight: 900 !important;
-  white-space: nowrap;
-}
-
-/* [POS-V4-CASHIER-OPS 2026-05-02] no-sale button — neutral, low-noise */
-.pos-v4-no-sale-btn {
-  min-height: 46px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.pos-v4-no-sale-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.pos-v4-no-sale-btn i {
-  color: var(--pos-v4-red, #FB4E4E);
-}
-
-/* [POS-V4-DENSITY 2026-05-02] Search bar slimmed from 48px back to its
-   declared 38px (the 48px override was a leftover from an earlier visual
-   pass and ate ~10px of product-grid real estate for no functional gain).
-   Margin-bottom reduced from mb-4 (16px) to mb-2 (8px) below via inline
-   class — cf. template. */
-.pos-v4-search {
-  height: 38px !important;
-  border: 1px solid var(--pos-v4-border) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 6px 14px rgba(20, 24, 33, 0.06);
-  overflow: hidden;
-}
-
-.pos-v4-search input {
-  height: 100%;
-  font-size: 14px;
-  color: var(--pos-v4-ink);
-}
-
-.pos-v4-search button[type="submit"] {
-  width: 52px !important;
-  background: var(--pos-v4-red) !important;
-}
-
-.pos-v4-category-grid {
-  align-items: stretch;
-}
-
-/* [POS-V4-DENSITY 2026-05-02] Pill height tightened from 108px to 76px;
-   shadow softened so the strip reads as a compact navigation row, not a
-   second hero band above the products. */
-.pos-v4-category-card,
-.pos-v4-category-pill {
-  min-height: 76px;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(20, 24, 33, 0.06);
-}
-
-.pos-v4-category-card:hover,
-.pos-v4-category-pill:hover,
-.pos-v4-category-strip .pos-group .pos-v4-category-pill {
-  background: #fff5f6 !important;
-  border-color: rgba(232, 0, 28, 0.26) !important;
-  box-shadow: 0 16px 34px rgba(232, 0, 28, 0.14);
-}
-
-.pos-v4-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* Category strip: native overflow scroll (replaced Swiper — no 1s slide animation) */
-.pos-menu-category-scroll {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scroll-behavior: auto;
-}
-
-.pos-menu-category-scroll::-webkit-scrollbar {
-  height: 6px;
-}
-
-.pos-menu-category-scroll::-webkit-scrollbar-thumb {
-  border-radius: 6px;
-  background: rgba(20, 24, 33, 0.22);
-}
-
-.pos-v4-section-heading > span {
-  background: rgba(18, 150, 93, 0.1);
-  color: var(--pos-v4-green);
-}
-
-.pos-v4-cart-panel {
-  border: 1px solid rgba(20, 24, 33, 0.1);
-  box-shadow: -18px 0 46px rgba(20, 24, 33, 0.13);
-}
-
+/* === 4. CART HEAD — neutralisation legacy === */
 .pos-v4-cart-head {
-  background:
-    linear-gradient(180deg, rgba(232, 0, 28, 0.05), rgba(255, 255, 255, 0)),
-    #fff;
+  background: transparent;
 }
-
-.pos-v4-ticket-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(20, 24, 33, 0.08);
-}
-
-.pos-v4-ticket-title p {
-  margin: 0 0 2px;
-  color: var(--pos-v4-muted);
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-.pos-v4-ticket-title h2 {
-  margin: 0;
-  color: var(--pos-v4-ink);
-  font-size: 19px;
-  line-height: 1.1;
-  font-weight: 900;
-}
-
-.pos-v4-ticket-title > span {
-  background: rgba(15, 124, 255, 0.1);
-  color: var(--pos-v4-blue);
-}
-
 .pos-v4-cart-table thead {
-  background: #111827 !important;
+  background: transparent !important;
 }
 
-.pos-v4-cart-table thead th {
-  color: rgba(255, 255, 255, 0.82) !important;
-  font-weight: 800 !important;
-}
-
-.pos-v4-cart-table tbody tr:hover {
-  background: rgba(15, 124, 255, 0.035);
-}
-
+/* === 5. CART FOOTER — neutralisation legacy === */
 .pos-v4-cart-footer {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), #fff),
-    var(--pos-v4-panel) !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
-
 .pos-v4-total-row {
-  min-height: 58px;
-  border: 1px solid rgba(232, 0, 28, 0.12);
-  background: linear-gradient(135deg, #fff5f6, #ffffff) !important;
+  /* Le hero V5 prend le relais */
+  background: transparent !important;
+  border: 0 !important;
+  min-height: 0 !important;
 }
 
-.pos-v4-total-row span:last-child {
-  color: var(--pos-v4-red) !important;
-  font-size: 22px !important;
-  font-weight: 900 !important;
-}
+/* === 6. PRODUCT TILES ===
+   [POS-V5 R2 2026-05-02] Les tiles produits (.pos-item-tile / .pos-v5-tile) sont
+   désormais entièrement gérées par le styling scoped d'ItemComponent.vue (photo
+   hero 4/3, body name+price+add, hover lift+scale image). On supprime les
+   :deep() overrides ici pour éviter une bataille de spécificité avec le
+   composant enfant — single source of truth = ItemComponent.vue. */
 
-.pos-v4-action-cancel,
-.pos-v4-action-pay {
-  min-height: 44px;
-  border-radius: 14px !important;
-  font-weight: 900 !important;
-  box-shadow: 0 10px 20px rgba(20, 24, 33, 0.1);
-}
-
-.pos-v4-action-pay {
-  background: var(--pos-v4-green) !important;
-}
-
-.pos-v4-mobile-cart {
-  height: 64px !important;
-  background: linear-gradient(135deg, #111827, var(--pos-v4-red)) !important;
-}
-
-:deep(.pos-item-tile) {
-  min-height: 112px !important;
-  border: 1px solid rgba(20, 24, 33, 0.08) !important;
-  border-radius: 18px !important;
-  background: #fff !important;
-  box-shadow: 0 10px 28px rgba(20, 24, 33, 0.08);
-}
-
-:deep(.pos-item-tile:hover) {
-  transform: translateY(-1px);
-  border-color: rgba(232, 0, 28, 0.25) !important;
-  box-shadow: 0 16px 34px rgba(232, 0, 28, 0.13);
-}
-
-:deep(.pos-item-tile h3) {
-  font-size: 13px !important;
-  line-height: 1.2 !important;
-}
-
-:deep(.pos-item-tile h4) {
-  color: var(--pos-v4-red) !important;
-  font-size: 12px !important;
-  font-weight: 900 !important;
-}
-
-:deep(.pos-item-tile button) {
-  width: 30px !important;
-  height: 30px !important;
-  background: #111827;
-  border-color: #111827 !important;
-  color: #fff !important;
-}
-
+/* === 7. RESPONSIVE === */
 @media (max-width: 767px) {
-  .fk-pos-v4 {
+  .fk-pos-v4.pos-v5-shell {
     margin: -8px;
     padding: 10px;
     padding-bottom: 76px;
   }
-
-  .pos-v4-main {
-    padding-right: 0;
-  }
-
-  .pos-v4-operator-bar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pos-v4-operator-actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .kiosk-cash-bar-btn {
-    width: 100%;
-    max-width: none;
-    justify-content: flex-start;
-  }
-
-  .pos-v4-floorplan-link {
-    width: 100%;
-    justify-content: center;
-  }
+  .pos-v4-main { padding-right: 0; }
 }
 
-/* ── Borne cash : bouton dans la barre opérateur (remplace l’ancien FAB bas-droite) ── */
-.kiosk-cash-bar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.85rem 0.5rem 0.65rem;
-  border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
-  max-width: min(100%, 320px);
-  text-align: left;
-  animation: kiosk-bar-pulse 2.2s ease-in-out infinite;
-}
-.kiosk-cash-bar-btn:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-@keyframes kiosk-bar-pulse {
-  0%, 100% { box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2); }
-  50% { box-shadow: 0 4px 22px rgba(255, 255, 255, 0.35); }
-}
-.kiosk-cash-bar-btn-icon {
-  font-size: 1.35rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-.kiosk-cash-bar-btn-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.1rem;
-  min-width: 0;
-}
-.kiosk-cash-bar-btn-label {
-  font-weight: 900;
-  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
-  letter-spacing: 0.02em;
-  line-height: 1.15;
-}
-.kiosk-cash-bar-btn-sub {
-  font-size: 0.68rem;
-  font-weight: 700;
-  opacity: 0.9;
-  line-height: 1.2;
-}
-.kiosk-cash-bar-btn-badge {
-  flex-shrink: 0;
-  min-width: 1.85rem;
-  height: 1.85rem;
-  padding: 0 0.35rem;
-  border-radius: 999px;
-  background: #fff;
-  color: #e8001c;
-  font-weight: 900;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ── Panel overlay ── */
+/* =============================================================================
+   8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)
+   -----------------------------------------------------------------------------
+   Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.
+   ============================================================================= */
 .kiosk-cash-panel-overlay {
-  position: fixed; inset: 0; z-index: 2000;
-  background: rgba(0,0,0,0.5);
-  display: flex; align-items: flex-end; justify-content: flex-end;
+  position: fixed;
+  inset: 0;
+  z-index: var(--pos-v5-z-modal);
+  background: rgba(26, 26, 26, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  backdrop-filter: blur(2px);
 }
 .kiosk-cash-panel {
-  background: #fff;
-  width: 380px; max-width: 100vw;
+  background: var(--pos-v5-bg-panel);
+  width: 420px;
+  max-width: 100vw;
   height: 100vh;
-  display: flex; flex-direction: column;
-  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 48px rgba(26, 26, 26, 0.20);
+  border-top-left-radius: var(--pos-v5-radius-xl);
+  border-bottom-left-radius: var(--pos-v5-radius-xl);
+  font-family: var(--pos-v5-font-sans);
 }
 .kiosk-cash-panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 700; font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
+  border-bottom: 1px solid var(--pos-v5-border);
+  background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 70%);
+  font-weight: var(--pos-v5-weight-extrabold);
+  font-size: var(--pos-v5-text-h6);
+  color: var(--pos-v5-ink);
 }
 .kiosk-cash-panel-header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--pos-v5-space-2);
 }
 .kiosk-cash-panel-history-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid #EFF0F6;
-  background: #ffffff;
-  color: #1F1F39;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
+  color: var(--pos-v5-ink);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-bold);
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
 .kiosk-cash-panel-history-link:hover {
-  background: #FFEDF4;
-  border-color: #B0004D;
-  color: #B0004D;
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
 }
 .kiosk-cash-panel-close {
-  background: none; border: none; font-size: 1.1rem;
-  cursor: pointer; color: #888; padding: 0.25rem;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--pos-v5-radius-pill);
+  background: var(--pos-v5-bg-subtle);
+  color: var(--pos-v5-ink-soft);
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-panel-close:hover {
+  background: var(--pos-v5-danger-soft);
+  color: var(--pos-v5-danger);
 }
 .kiosk-cash-detail-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 4px;
   padding: 5px 10px;
-  border-radius: 8px;
-  border: 1px solid #EFF0F6;
-  background: #ffffff;
-  color: #1F1F39;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
+  color: var(--pos-v5-ink);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-semibold);
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
 .kiosk-cash-detail-btn:hover {
-  background: #FFEDF4;
-  border-color: #B0004D;
-  color: #B0004D;
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
 }
 .kiosk-cash-panel-body {
-  flex: 1; overflow-y: auto;
-  padding: 1rem;
-  display: flex; flex-direction: column; gap: 0.75rem;
-}
-.kiosk-cash-loading, .kiosk-cash-empty {
-  display: flex; align-items: center; justify-content: center;
-  padding: 2rem; color: #888; font-size: 0.9rem;
-}
-.kiosk-cash-spinner {
-  width: 32px; height: 32px;
-  border: 3px solid #f0f0f0;
-  border-top-color: #e8001c;
-  border-radius: 50%;
-  animation: kiosk-spin 0.8s linear infinite;
-}
-@keyframes kiosk-spin { to { transform: rotate(360deg); } }
-.kiosk-cash-order-card {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-left: 4px solid #e8001c;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  display: flex; flex-direction: column; gap: 0.4rem;
-}
-.kiosk-cash-order-head {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.kiosk-cash-order-num { font-weight: 800; font-size: 1rem; }
-.kiosk-cash-order-total { font-weight: 700; color: #e8001c; font-size: 1rem; }
-.kiosk-cash-order-items { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.kiosk-cash-item-pill {
-  background: #f0f0f0; border-radius: 20px;
-  padding: 0.18rem 0.55rem; font-size: 0.78rem; color: #444;
-}
-.kiosk-cash-item-pill.more { background: #ffe4e4; color: #e8001c; }
-/* [GAP-25-2] Bouton Encaisser */
-.kiosk-cash-collect-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: none;
-  background: #16a34a;
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-  white-space: nowrap;
-}
-.kiosk-cash-collect-btn:hover { background: #15803d; }
-.kiosk-cash-collect-btn:disabled,
-.kiosk-cash-cancel-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.kiosk-cash-cancel-btn {
-  border: 0; background: #fee2e2; color: #991b1b; border-radius: 999px;
-  padding: 0.38rem 0.82rem; font-size: 0.74rem; font-weight: 800;
-}
-.kiosk-cash-cancel-btn:hover { background: #fecaca; }
-
-.kiosk-cash-order-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 0.78rem; color: #999;
-}
-.kiosk-cash-order-status { color: #16a34a; font-weight: 600; }
-.kiosk-cash-panel-footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #f0f0f0;
-}
-.kiosk-cash-refresh-btn {
-  width: 100%; padding: 0.6rem;
-  background: #f5f5f5; border: none; border-radius: 8px;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #444;
-}
-.kiosk-cash-refresh-btn:hover { background: #ebebeb; }
-/* Transitions */
-.slide-panel-enter-active, .slide-panel-leave-active { transition: opacity 0.25s; }
-.slide-panel-enter-from, .slide-panel-leave-to { opacity: 0; }
-.slide-panel-enter-active .kiosk-cash-panel,
-.slide-panel-leave-active .kiosk-cash-panel { transition: transform 0.3s ease; }
-.slide-panel-enter-from .kiosk-cash-panel,
-.slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
-
-/* ── [POS-V4-ORDERS-TRACKER 2026-05-02] Bouton suivi commandes ────────────
-   Discret par défaut (bord neutre), tourne vert avec halo respirant dès
-   qu'une commande passe à PREPARED. Aucun popup, aucun son — juste un
-   signal visuel pour que le caissier sache, sans être interrompu pendant
-   une prise de commande en cours. */
-.pos-tracker-bar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.4rem 0.8rem 0.4rem 0.6rem;
-  border-radius: 12px;
-  border: 1px solid #EFF0F6;
-  background: #ffffff;
-  color: #1F1F39;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-  position: relative;
-}
-
-.pos-tracker-bar-btn:hover {
-  background: #FFEDF4;
-  border-color: #B0004D;
-}
-
-.pos-tracker-bar-btn-icon {
-  font-size: 1.15rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.pos-tracker-bar-btn-text {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pos-v5-space-4);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.05rem;
-  min-width: 0;
+  gap: var(--pos-v5-space-3);
+  background: var(--pos-v5-bg-app);
 }
-
-.pos-tracker-bar-btn-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.pos-tracker-bar-btn-sub {
-  font-size: 0.65rem;
-  font-weight: 600;
-  opacity: 0.7;
-  line-height: 1.2;
-}
-
-.pos-tracker-bar-btn-badge {
-  flex-shrink: 0;
-  min-width: 1.6rem;
-  height: 1.6rem;
-  padding: 0 0.4rem;
-  border-radius: 999px;
-  background: #F1F5F9;
-  color: #1F1F39;
-  font-weight: 800;
-  font-size: 0.78rem;
-  display: inline-flex;
+.kiosk-cash-loading,
+.kiosk-cash-empty {
+  display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--pos-v5-space-8);
+  color: var(--pos-v5-ink-muted);
+  font-size: var(--pos-v5-text-body);
+  text-align: center;
 }
-
-.pos-tracker-bar-btn.is-ready {
-  background: #DCFCE7;
-  border-color: #1AB759;
-  color: #14532D;
-  animation: pos-tracker-bar-glow 2.6s ease-in-out infinite;
+.kiosk-cash-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--pos-v5-bg-subtle);
+  border-top-color: var(--pos-v5-brand-red);
+  border-radius: 50%;
+  animation: kiosk-cash-spin 0.8s linear infinite;
 }
-
-.pos-tracker-bar-btn.is-ready:hover {
-  background: #BBF7D0;
-  border-color: #15A151;
-}
-
-.pos-tracker-bar-btn.is-ready .pos-tracker-bar-btn-badge {
-  background: #1AB759;
-  color: #ffffff;
-}
-
-@keyframes pos-tracker-bar-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0); }
-  50%      { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.18); }
-}
-
+@keyframes kiosk-cash-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .pos-tracker-bar-btn.is-ready { animation: none; }
+  .kiosk-cash-spinner { animation: none; }
+}
+.kiosk-cash-order-card {
+  background: var(--pos-v5-bg-panel);
+  border: 1px solid var(--pos-v5-border);
+  border-left: 4px solid var(--pos-v5-brand-red);
+  border-radius: var(--pos-v5-radius-md);
+  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--pos-v5-shadow-sm);
+  transition: box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-order-card:hover {
+  box-shadow: var(--pos-v5-shadow-md);
+}
+.kiosk-cash-order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kiosk-cash-order-num {
+  font-weight: var(--pos-v5-weight-extrabold);
+  font-size: var(--pos-v5-text-body-lg);
+  color: var(--pos-v5-ink);
+}
+.kiosk-cash-order-total {
+  font-weight: var(--pos-v5-weight-extrabold);
+  color: var(--pos-v5-brand-red);
+  font-size: var(--pos-v5-text-body-lg);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+.kiosk-cash-order-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kiosk-cash-item-pill {
+  background: var(--pos-v5-bg-subtle);
+  border-radius: var(--pos-v5-radius-pill);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: var(--pos-v5-weight-semibold);
+  color: var(--pos-v5-ink-soft);
+}
+.kiosk-cash-item-pill.more {
+  background: var(--pos-v5-brand-red-soft);
+  color: var(--pos-v5-brand-red);
+}
+/* [GAP-25-2] Bouton Encaisser (kiosk-cash) */
+.kiosk-cash-collect-btn {
+  padding: 8px 14px;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 0;
+  background: var(--pos-v5-success);
+  color: var(--pos-v5-ink-on-dark);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-extrabold);
+  cursor: pointer;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+  white-space: nowrap;
+  box-shadow: var(--pos-v5-shadow-success);
+}
+.kiosk-cash-collect-btn:hover { background: var(--pos-v5-success-dark); }
+.kiosk-cash-collect-btn:disabled,
+.kiosk-cash-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.kiosk-cash-cancel-btn {
+  border: 0;
+  background: var(--pos-v5-danger-soft);
+  color: var(--pos-v5-danger-dark);
+  border-radius: var(--pos-v5-radius-pill);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: var(--pos-v5-weight-extrabold);
+  cursor: pointer;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-cancel-btn:hover { background: var(--pos-v5-danger-ghost); }
+.kiosk-cash-order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--pos-v5-text-caption);
+  color: var(--pos-v5-ink-muted);
+}
+.kiosk-cash-order-status {
+  color: var(--pos-v5-success-dark);
+  font-weight: var(--pos-v5-weight-semibold);
+}
+.kiosk-cash-panel-footer {
+  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+  border-top: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
+}
+.kiosk-cash-refresh-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--pos-v5-bg-subtle);
+  border: 1px solid var(--pos-v5-border);
+  border-radius: var(--pos-v5-radius-md);
+  font-size: var(--pos-v5-text-body);
+  font-weight: var(--pos-v5-weight-semibold);
+  cursor: pointer;
+  color: var(--pos-v5-ink);
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-refresh-btn:hover {
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
 }
 
-@media (max-width: 767px) {
-  .pos-tracker-bar-btn {
-    width: 100%;
-    justify-content: flex-start;
-  }
-  .pos-tracker-bar-btn-text { flex: 1; }
-}
+/* Slide-in panel transitions */
+.slide-panel-enter-active,
+.slide-panel-leave-active { transition: opacity var(--pos-v5-duration-base); }
+.slide-panel-enter-from,
+.slide-panel-leave-to { opacity: 0; }
+.slide-panel-enter-active .kiosk-cash-panel,
+.slide-panel-leave-active .kiosk-cash-panel { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard); }
+.slide-panel-enter-from .kiosk-cash-panel,
+.slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
 </style>

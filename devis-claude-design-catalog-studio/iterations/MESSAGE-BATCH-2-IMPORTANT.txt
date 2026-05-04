@@ -1,0 +1,62 @@
+Améliore les 7 points suivants dans le canvas :
+
+6) SOURCE PICKER CREATE-ON-THE-FLY — Sur Screen 3, dans le StepEditor, le
+   picker source_ref doit avoir un bouton "+ Nouveau…" en bas du dropdown.
+   Quand on clique, montre une mini side-sheet glissant à droite (350px)
+   avec un mini-formulaire selon le source_type courant :
+   - item_attribute : nom + valeurs (chips éditables) + "Créer"
+   - extra_group : nom du groupe + items (avec prix) + "Créer"
+   - addon : produit lié (autocomplete sur catalogue) + rôle (radio) + "Créer"
+   À la création réussie, la nouvelle source est sélectionnée
+   automatiquement dans le picker.
+
+7) AUTO-SAVE STATES — Différencie 4 états du pill auto-save dans la TopBar
+   du Wizard Editor (Screen 3) :
+   - idle "Auto-sauvegardé il y a 4s" (gris, pas d'icône)
+   - saving "Sauvegarde…" (pill bleue clair, spinner 12px)
+   - saved "Sauvegardé" (pill verte, icône check, fade en idle après 2s)
+   - error "Échec — Réessayer" (pill rouge, icône warning, cliquable)
+   - offline "Hors ligne — modifications conservées" (pill ambre, icône
+     wifi-off)
+
+8) EMPTY/LOADING/ERROR PER ÉCRAN — L'artboard actuel S6 agrège tout. Au
+   lieu, livre 3 mini-artboards par écran pertinent :
+   - Screen 1 vide : "Aucune catégorie — créez-en une pour commencer"
+   - Screen 1 loading : skeleton de la grille + skeleton de la sidebar
+   - Screen 1 error : panneau d'erreur central, recovery actions
+   - Screen 3 vide : "Aucune étape — choisissez un template ou ajoutez
+     manuellement"
+   - Screen 5 vide : "Stock à jour — aucune alerte"
+   Les états "no permission" (rôle sans publish ni delete) doivent aussi
+   être rendus : actions secondaires grisées avec tooltip "Permission
+   requise : catalog.publish".
+
+9) TOAST MICRO-SYSTEM — Crée un artboard dédié "Toast system" :
+   - position : bottom-right, stacking vertical, max 3 visibles
+   - durées : info 4s, warning 6s, blocker 0 (manuel)
+   - undo timer : barre fine en bas qui se vide en 5s, hover pause le timer
+   - tokens : info=cv1-status-info, warning=cv1-status-warning,
+     blocker=cv1-status-blocker
+   - aria-live polite, focus trap quand bouton action
+
+10) PERMISSION MATRIX — Petit panneau dans le README artboard :
+    - rôles : super_admin, branch_manager, kitchen_manager
+    - actions : create_category, edit_category, delete_category, create_item,
+      edit_item, delete_item, edit_wizard, publish_wizard, toggle_availability
+    - check / cross par cellule
+    Cela aide l'intégration côté permissionChecker.
+
+11) STOCK RESOLVE FLOW — Sur Screen 5, ajoute un artboard "Resolve interaction" :
+    - clic "Résoudre" sur un événement Auto-86 → mini-confirmation inline
+      (pas modal) "Marquer 'Le Méga' comme à nouveau disponible sur Filiale #1 ?"
+    - 2 actions : "Confirmer et resync" / "Annuler"
+    - après confirm : toast undo 5s, et l'événement disparaît de la liste
+
+12) SEARCH RESULTS — Sur Screen 1, montre l'état toolbar avec recherche
+    "tac" actif :
+    - dropdown live results sous l'input (max 6 résultats, "Voir tout")
+    - highlight de la séquence "tac" dans chaque résultat
+    - état no-results : "Aucun produit ne contient 'xyz' — vérifier
+      l'orthographe ou le filtre catégorie"
+
+Renvoie tout dans le canvas existant.

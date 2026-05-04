@@ -21,6 +21,7 @@ class ItemAttributeFactory extends Factory
             'min_select' => 0,
             'max_select' => 1,
             'allow_repeat' => false,
+            'is_available' => true,
         ];
     }
 }

@@ -150,6 +150,22 @@
         </div>
       </section>
 
+      <!-- CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — Sélection thème (Bold Appétissant) -->
+      <section class="ks-a11y-section" :aria-labelledby="themeHeadingId">
+        <div class="ks-a11y-toggle-row" style="display: flex; flex-direction: column; align-items: stretch; gap: 12px;">
+          <div class="ks-a11y-toggle-copy">
+            <span class="ks-a11y-section-title" :id="themeHeadingId">{{ $t('kiosk.a11y.theme', 'Thème') }}</span>
+            <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.theme_hint', 'Choisis l’apparence claire ou sombre, ou laisse le système décider.') }}</span>
+          </div>
+          <KsThemeToggle
+            :model-value="theme"
+            :aria-label="$t('kiosk.a11y.theme_aria', 'Sélection du thème')"
+            testid="kiosk-a11y-theme-toggle"
+            @update:modelValue="selectTheme"
+          />
+        </div>
+      </section>
+
       <!-- Footer : reset + close -->
       <div class="ks-a11y-footer">
         <button type="button"
@@ -196,8 +212,11 @@ const LOCALE_OPTIONS = [
     { code: 'ar', label: 'العربية',  flag: '🇸🇦' },
 ];
 
+import KsThemeToggle from './KsThemeToggle.vue';
+
 export default {
     name: 'KsA11ySettings',
+    components: { KsThemeToggle },
     props: {
         modelValue: { type: Boolean, default: false },
     },
@@ -212,12 +231,14 @@ export default {
             audioHeadingId: uid + '-audio',
             audioDescHeadingId: uid + '-audio-desc',
             reducedMotionHeadingId: uid + '-reduced-motion',
+            themeHeadingId: uid + '-theme',
             localeOptions: LOCALE_OPTIONS,
         };
     },
     computed: {
         locale() { return this.$store.state.kioskSettings?.locale || 'fr'; },
         contrast() { return this.$store.state.kioskSettings?.contrast || 'aa'; },
+        theme() { return this.$store.state.kioskSettings?.theme || 'auto'; },
         pmr() { return !!this.$store.state.kioskSettings?.pmr; },
         audio() { return !!this.$store.state.kioskSettings?.audio; },
         audioDescription() { return !!this.$store.state.kioskSettings?.audioDescription; },
@@ -265,6 +286,13 @@ export default {
             const next = !this.reducedMotion;
             this.$store.dispatch('kioskSettings/setReducedMotion', next);
             this.reportEvent('reduced_motion_toggle', { value: next });
+        },
+        selectTheme(value) {
+            // CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — propagation par useKioskTheme
+            // (composable monté à la racine kiosk) qui écoute le store et écrit
+            // data-kiosk-theme sur <html>.
+            this.$store.dispatch('kioskSettings/setTheme', value);
+            this.reportEvent('theme_change', { value });
         },
         reset() {
             this.$store.dispatch('kioskSettings/reset');

@@ -26,6 +26,8 @@ class ComposerTemplateApplyTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('catalog_v15.features.wizard_per_item_demo.enabled', true);
+
         $this->seedMinimalSettings();
         Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'sanctum']);
         $this->seed(ComposerPermissionsMinimalSeeder::class);

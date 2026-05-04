@@ -7,7 +7,6 @@ const CompanyComponent = () => import(/* webpackChunkName: "admin-shell" */ "../
 const SiteComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Site/SiteComponent");
 const ItemCategoryListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemCategory/ItemCateogryListComponent");
 const ItemCategoryComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemCategory/ItemCategoryComponent");
-const ItemCategoryShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemCategory/ItemCategoryShowComponent");
 const ItemAttributeComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemAttribute/ItemAttributeComponent");
 const ItemAttributeListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemAttribute/ItemAttributeListComponent");
 const SliderComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Slider/SliderComponent");
@@ -352,8 +351,11 @@ export default [
                     },
                     {
                         path: "show/:id",
-                        component: ItemCategoryShowComponent,
                         name: "admin.settings.itemCategory.show",
+                        redirect: (to) => ({
+                            name: "admin.items.studio",
+                            query: { item_category_id: to.params.id },
+                        }),
                         meta: {
                             isFrontend: false,
                             auth: true,

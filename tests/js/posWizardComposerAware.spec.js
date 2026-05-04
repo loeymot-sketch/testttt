@@ -33,6 +33,11 @@ describe('pos-wizard composer-aware path (T-WC-POS-RUNTIME-01)', () => {
         expect(SOURCE).toMatch(/Array\.isArray\(profile\.steps\)/);
     });
 
+    it('exposes normalizeComposerStep guard for malformed payloads', () => {
+        expect(SOURCE).toMatch(/function normalizeComposerStep/);
+        expect(SOURCE).toMatch(/if \(!step \|\| typeof step !== ['"]object['"]\)\s*\{\s*return null;/);
+    });
+
     it('exposes buildStepsFromComposerProfile helper with addon_role priority before step_key', () => {
         expect(SOURCE).toMatch(/function buildStepsFromComposerProfile/);
         // addon_role check must appear before step_key fallback
@@ -52,6 +57,12 @@ describe('pos-wizard composer-aware path (T-WC-POS-RUNTIME-01)', () => {
 
     it('buildStepsFromComposerProfile falls back to generic_choices when step has choices but no kind match', () => {
         expect(SOURCE).toMatch(/internalType\s*=\s*['"]generic_choices['"]/);
+    });
+
+    it('buildStepsFromComposerProfile normalizes raw step through adapter seam', () => {
+        expect(SOURCE).toMatch(/profile\.steps\.forEach\(function \(rawStep\)/);
+        expect(SOURCE).toMatch(/var step = normalizeComposerStep\(rawStep\);/);
+        expect(SOURCE).toMatch(/if \(!step\) return;/);
     });
 
     it('buildSteps has early-return composer-aware path before legacy logic', () => {

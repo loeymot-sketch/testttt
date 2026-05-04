@@ -661,6 +661,15 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
 @import './pos-a11y.css';
 
-/* KIOSK WIZARD - Styles tactiles pour borne */
+/* CV1 design tokens (sémantique admin — mission CV1-CATALOG-CONVERGENCE-001) */
+@import './foundations/cv1-tokens.css';
+
+/* POS V5 design tokens (warm premium — mission CV1-POS-DESIGN-CONVERGENCE-001) */
+@import './foundations/pos-v5-tokens.css';
+
+/* POS V5 composants partagés (consomme pos-v5-tokens) */
+@import './pos-v5.css';
+
+/* KIOSK WIZARD - Styles tactiles pour borne (FROZEN — wizard kiosk + POS) */
 @import './kiosk-wizard.css';
 @import './kiosk-fallback.css';

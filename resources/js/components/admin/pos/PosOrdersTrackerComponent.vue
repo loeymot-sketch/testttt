@@ -722,25 +722,36 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   PosOrdersTrackerComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.6
+   - Approche chirurgicale : on remappe les tokens scoped --pos-tracker-*
+     aux tokens V5 globaux. Tous les styles existants (excellents) prennent
+     automatiquement la palette warm V5 sans toucher la structure DOM.
+   - Bordure left colorée par status (Q4 plan : signal scan visuel rapide)
+   ============================================================================= */
 .pos-tracker-shell {
-    --pos-tracker-bg: #F7F7FC;
-    --pos-tracker-card-bg: #FFFFFF;
-    --pos-tracker-border: #EFF0F6;
-    --pos-tracker-text: #1F1F39;
-    --pos-tracker-muted: #6E7191;
-    --pos-tracker-primary: #B0004D;
-    --pos-tracker-primary-soft: #FFEDF4;
-    --pos-tracker-amber: #D97706;
-    --pos-tracker-amber-soft: #FEF3C7;
-    --pos-tracker-green: #1AB759;
-    --pos-tracker-green-soft: #DCFCE7;
-    --pos-tracker-muted-soft: #F1F5F9;
+    /* Remap scoped tokens → V5 globals */
+    --pos-tracker-bg: var(--pos-v5-bg-app);
+    --pos-tracker-card-bg: var(--pos-v5-bg-panel);
+    --pos-tracker-border: var(--pos-v5-border);
+    --pos-tracker-text: var(--pos-v5-ink);
+    --pos-tracker-muted: var(--pos-v5-ink-soft);
+    --pos-tracker-primary: var(--pos-v5-brand-red);
+    --pos-tracker-primary-soft: var(--pos-v5-brand-red-soft);
+    --pos-tracker-amber: var(--pos-v5-warning);
+    --pos-tracker-amber-soft: var(--pos-v5-warning-soft);
+    --pos-tracker-green: var(--pos-v5-success);
+    --pos-tracker-green-soft: var(--pos-v5-success-soft);
+    --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);
 
     min-height: 100dvh;
     background: var(--pos-tracker-bg);
-    padding: 16px 20px 24px;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-6);
     color: var(--pos-tracker-text);
-    font-family: 'Rubik', 'Inter', sans-serif;
+    font-family: var(--pos-v5-font-sans);
 }
 
 .pos-tracker-bar {
@@ -748,13 +759,14 @@ export default {
     flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 16px 24px;
-    padding: 12px 16px;
-    border-radius: 14px;
+    gap: var(--pos-v5-space-4) var(--pos-v5-space-6);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
+    border-radius: var(--pos-v5-radius-lg);
     background: var(--pos-tracker-card-bg);
     border: 1px solid var(--pos-tracker-border);
-    box-shadow: 0 2px 8px rgba(31, 31, 57, 0.04);
-    margin-bottom: 16px;
+    border-left: 4px solid var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-md);
+    margin-bottom: var(--pos-v5-space-4);
 }
 
 .pos-tracker-eyebrow {
@@ -1050,10 +1062,11 @@ export default {
     transform: translateY(-1px);
 }
 
-.pos-tracker-card--amber { border-left: 3px solid var(--pos-tracker-amber); }
-.pos-tracker-card--primary { border-left: 3px solid var(--pos-tracker-primary); }
-.pos-tracker-card--green { border-left: 3px solid var(--pos-tracker-green); }
-.pos-tracker-card--muted { border-left: 3px solid #cbd5e1; opacity: 0.85; }
+/* Q4 plan : bordure left 4px par status — scan visuel rapide pour caissier */
+.pos-tracker-card--amber { border-left: 4px solid var(--pos-tracker-amber); }
+.pos-tracker-card--primary { border-left: 4px solid var(--pos-tracker-primary); }
+.pos-tracker-card--green { border-left: 4px solid var(--pos-tracker-green); }
+.pos-tracker-card--muted { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85; }
 
 .pos-tracker-card.is-fresh { animation: pos-tracker-card-pop 1.2s ease-out 1; border-color: var(--pos-tracker-green); }
 

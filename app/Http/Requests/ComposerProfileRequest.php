@@ -14,7 +14,7 @@ class ComposerProfileRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'template' => ['required', 'string', 'in:simple,sandwich,tacos,assiette,snacking,menu,custom'],
             'branch_id_scope' => ['nullable', 'integer', 'exists:branches,id'],
             'price' => ['prohibited'],
@@ -23,6 +23,7 @@ class ComposerProfileRequest extends FormRequest
             'steps.*.label' => ['required_with:steps', 'string', 'max:191'],
             'steps.*.source_type' => ['required_with:steps', 'string', 'in:item_attribute,extra_group,addon'],
             'steps.*.source_ref' => ['nullable', 'string', 'max:191'],
+            'steps.*.source_item_attribute_id' => ['nullable', 'integer', 'exists:item_attributes,id'],
             'steps.*.min_select' => ['nullable', 'integer', 'min:0'],
             'steps.*.max_select' => ['nullable', 'integer', 'min:0'],
             'steps.*.allow_repeat' => ['nullable', 'boolean'],
@@ -34,6 +35,12 @@ class ComposerProfileRequest extends FormRequest
             'steps.*.addon_role' => ['nullable', 'string', 'in:drink,side,dessert,menu_component,upsell'],
             'steps.*.price' => ['prohibited'],
         ];
+
+        if ($this->expectsVersionField()) {
+            $rules['version'] = ['sometimes', 'integer', 'min:0'];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void
@@ -57,5 +64,15 @@ class ComposerProfileRequest extends FormRequest
         if ((int) $max < (int) $min) {
             $validator->errors()->add($errorKey, 'The max select must be greater than or equal to min select.');
         }
+    }
+
+    private function expectsVersionField(): bool
+    {
+        if ($this->isMethod('put') || $this->isMethod('patch')) {
+            return true;
+        }
+
+        return $this->isMethod('post')
+            && $this->is('api/admin/composer/profiles/*/publish');
     }
 }

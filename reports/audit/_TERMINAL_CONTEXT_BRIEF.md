@@ -1,6 +1,6 @@
 # Bref contexte FoodKing — alimentation terminal Claude Code
 
-Généré : 2026-05-02T09:42:57+02:00
+Généré : 2026-05-04T13:17:35+02:00
 
 ## .cursor/ACTIVE_CYCLE.md (extrait, 60 premières lignes)
 # Active Cycle – FoodKing
@@ -10,13 +10,17 @@ Généré : 2026-05-02T09:42:57+02:00
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `EXECUTE` |
-| **TASK_ID** | `CV1-CATALOG-CONVERGENCE-001` (Sprint 1 / Task 1.4 — Warning `channels=null`) |
-| **PLAN_FILE** | `plans/PLAN_CV1-CATALOG-CONVERGENCE-001_2026-05-02.md` |
-| **EXECUTION_TIER** | `routine` (S effort, hors invariants critiques — voir `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` §2) |
-| **EXECUTE_DELEGATION** | `foodking-routine-implementer` (Composer Max+thinking) |
-| **REPORT_FILE** | `reports/post_execute_latest.log` (append — preuve `EXECUTE_DELEGATION` / `AUDIT_*`) |
+| **PHASE** | `EXECUTE` (Master Pivot V1 démarré 2026-05-04 02:55 UTC+2 — 8 cycles séquentiels CV1-V1-PIVOT-*. Cycle 0 gates approuvés en délégation. Décisions Q1=V2 multi-filiale, Q2=plan complet, Q3=Demo V2 URL only.) |
+| **MASTER_TASK_ID** | `CV1-V1-PIVOT-MASTER` |
+| **TASK_ID** | `CV1-V1-PIVOT-FOUNDATIONS-001` (Cycle 1 in progress) |
+| **PLAN_FILE** | `plans/PLAN_CV1-V1-PIVOT-MASTER_2026-05-04.md` |
+| **REPORT_FILE** | `reports/audit/ULTRA_REVIEW_PIVOT_V1_2026-05-04.md` (source) |
+| **EXECUTION_TIER** | mixed (β-PRE-2/3 complex via foodking-complex-implementer ; β-PRE-4 + S1 routine via foodking-routine-implementer) |
+| **EXECUTE_DELEGATION** | sub-agents Cursor parallèles (4 lots indépendants, audit consolidé en sortie) |
+| **REPORT_FILE** | `reports/execution/RUN_CV1_V2_CATALOG_BETA1_FRONTEND_001_2026-05-04.md` (à créer post-cycle) |
+| **GATE_FILE** | `docs/gates/GATE_CV1-V2-CATALOG-REWORK-PUBLISHED-SNAPSHOT_2026-05-03.md` (R1, OPEN) |
 | **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
+| **PARENT_CYCLE** | `CV1-WIZARD-COMPOSABLE-001` CLOSED (9 PASS, 1 deferred, 16 gaps fermés). User a autorisé les 2 followups (DS XSS + CENTRAL-TREE) un par un avec MAX intelligence + double audit + double vérification + Playwright captures. |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
 > Cycles plus anciens en lecture seule = **archive** déplacée dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** (lecture humaine / forensique uniquement, **non requise** par le parcours obligatoire).
@@ -59,7 +63,6 @@ Tous les cycles **CLOSED / COMPLETED PASSED** (W4 → W9, NF525, etc.) ont été
 
 - **Lecture humaine** : ouvrir `.cursor/ACTIVE_CYCLE_ARCHIVE.md`.
 - **Lecture agent** : **non requise** sauf instruction explicite du plan ou du chat (ex. "reprend le rationale du cycle W9").
-- **Recherche** : `rg "CYCLE_W9_" .cursor/ACTIVE_CYCLE_ARCHIVE.md` ou `git log --follow .cursor/ACTIVE_CYCLE.md`.
 
 ## Dernières entrées — memory/episodes/12_decisions_log.jsonl
 {"name":"Channels NULL = visible everywhere — bombe à retardement multi-branche","source":"text","source_description":"app/Models/Item.php:83-85 + app/Models/ItemCategory.php:54-56 + docs/MENU_PROJECTIONS.md:30","episode_body":"Item::isVisibleOn et ItemCategory::isVisibleOn court-circuitent à TRUE quand channels === null. C'est la politique 'back-compat' documentée dans docs/MENU_PROJECTIONS.md §2. En V1 mono-branche c'est sans conséquence ; en multi-branches en prod, tout produit créé par un admin qui oublie de cocher channels apparaît automatiquement sur kiosk + POS + web ET sur toutes les branches. Mitigation Vague 1 : warning serveur log [catalog.channels-null] à la création/modification. Vague 3 : gate humain pour passer à channels=required avec migration backfill."}

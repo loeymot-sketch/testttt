@@ -24,29 +24,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.ws-reconnect-banner[data-v-3aa5d0ca
 
 /***/ }),
 
-/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
-// Imports
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.connection-status-banner[data-v-a9a07b76] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 9999;\n  width: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  padding: 8px 36px;\n  box-sizing: border-box;\n  color: #fff;\n  font-size: 13px;\n  font-weight: 600;\n  text-align: center;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n}\n.connection-status-banner--reconnecting[data-v-a9a07b76] {\n  background: #ca8a04;\n}\n.connection-status-banner--offline[data-v-a9a07b76] {\n  background: #b91c1c;\n}\n.connection-status-banner--session-invalid[data-v-a9a07b76] {\n  background: #7f1d1d;\n}\n.connection-status-banner__text[data-v-a9a07b76] {\n  flex: 1;\n}\n.connection-status-banner__close[data-v-a9a07b76] {\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: transparent;\n  border: none;\n  color: #fff;\n  font-size: 22px;\n  line-height: 1;\n  cursor: pointer;\n  padding: 4px 8px;\n  opacity: 0.85;\n}\n.connection-status-banner__close[data-v-a9a07b76]:hover {\n  opacity: 1;\n}\n.connection-status-banner__action[data-v-a9a07b76] {\n  background: #fff;\n  color: #7f1d1d;\n  border: none;\n  border-radius: 4px;\n  padding: 6px 14px;\n  font-weight: 700;\n  font-size: 13px;\n  cursor: pointer;\n  margin-left: auto;\n}\n.connection-status-banner__action[data-v-a9a07b76]:hover {\n  background: #fef2f2;\n}\n", ""]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue?vue&type=script&lang=js":
 /*!*********************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue?vue&type=script&lang=js ***!
@@ -161,12 +138,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
 /* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
 /* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
+/* harmony import */ var _services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/OssSyncService */ "./resources/js/services/OssSyncService.js");
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
 
 
 
@@ -187,9 +166,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       enums: {
         orderStatusEnum: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"]
       },
-      autoRefreshInterval: null,
       wsConnected: !!((_window$_wsService = window._wsService) !== null && _window$_wsService !== void 0 && _window$_wsService.isConnected()),
       _eventSub: null,
+      ossSyncUnsubscribers: [],
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
       newReadyIds: new Set(),
       newReadyFlash: false,
@@ -199,16 +178,16 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
   computed: {},
   mounted: function mounted() {
     this.list();
-    this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.list);
     this.subscribeEcho();
     this._bindWsService();
+    this.startOssSync();
   },
   beforeUnmount: function beforeUnmount() {
-    this.stopAutoRefresh();
     window.removeEventListener('realtime-order-update', this.list);
     this.unsubscribeEcho();
     this._unbindWsService();
+    this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
   },
   methods: {
@@ -234,11 +213,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this._onWsConnected = function () {
         _this.wsConnected = true;
         _this.list();
-        _this._restartPolling();
       };
       this._onWsDisconnected = function () {
         _this.wsConnected = false;
-        _this._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -249,26 +226,32 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (this._onWsConnected) ws.off('connected', this._onWsConnected);
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
-    _pollingInterval: function _pollingInterval() {
-      return this.wsConnected ? 60000 : 5000;
-    },
-    _restartPolling: function _restartPolling() {
-      this.stopAutoRefresh();
-      this.startAutoRefresh();
-    },
-    startAutoRefresh: function startAutoRefresh() {
+    startOssSync: function startOssSync() {
       var _this2 = this;
-      if (this.$route.path.includes('order-status-screen')) {
-        this.autoRefreshInterval = setInterval(function () {
-          return _this2.list();
-        }, this._pollingInterval());
-      }
+      this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('sync', function (_ref) {
+        var _ref$rows = _ref.rows,
+          rows = _ref$rows === void 0 ? [] : _ref$rows;
+        _this2._hydrateFromRows(rows);
+      }));
+      this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('ws_state', function (_ref2) {
+        var state = _ref2.state;
+        _this2.wsConnected = String(state || '').toLowerCase() === 'connected';
+      }));
+      _services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].start({
+        store: this.$store,
+        webSocketService: window._wsService
+      });
     },
-    stopAutoRefresh: function stopAutoRefresh() {
-      if (this.autoRefreshInterval) {
-        clearInterval(this.autoRefreshInterval);
-        this.autoRefreshInterval = null;
-      }
+    stopOssSync: function stopOssSync() {
+      try {
+        _services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].stop();
+      } catch (_) {}
+      (this.ossSyncUnsubscribers || []).forEach(function (u) {
+        try {
+          u && u();
+        } catch (_) {}
+      });
+      this.ossSyncUnsubscribers = [];
     },
     subscribeEcho: function subscribeEcho() {
       var _this3 = this;
@@ -352,154 +335,41 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         });
       } catch (_) {}
     },
-    list: function list() {
+    _hydrateFromRows: function _hydrateFromRows(rows) {
       var _this5 = this;
+      var prevPreparedIds = new Set(this.preparedItems.map(function (i) {
+        return i.id;
+      }));
+      this.preparingItems = rows.filter(function (i) {
+        return i.status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARING;
+      });
+      var newPrepared = rows.filter(function (i) {
+        return i.status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARED;
+      });
+
+      // Detect orders that just moved to PREPARED (not in previous list).
+      // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
+      var echoMarked = this._echoMarkedReady || new Set();
+      newPrepared.forEach(function (item) {
+        if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
+          _this5._markNewReady(item.id);
+        }
+      });
+      // Clear the echo-marked set after list() processes it (one-shot guard)
+      this._echoMarkedReady = new Set();
+      this.preparedItems = newPrepared;
+    },
+    list: function list() {
+      var _this6 = this;
       this.loading.isActive = true;
       this.$store.dispatch("orderStatusScreenOrder/lists").then(function (res) {
-        var prevPreparedIds = new Set(_this5.preparedItems.map(function (i) {
-          return i.id;
-        }));
-        _this5.preparingItems = res.data.data.filter(function (i) {
-          return i.status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARING;
-        });
-        var newPrepared = res.data.data.filter(function (i) {
-          return i.status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARED;
-        });
-
-        // Detect orders that just moved to PREPARED (not in previous list).
-        // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
-        var echoMarked = _this5._echoMarkedReady || new Set();
-        newPrepared.forEach(function (item) {
-          if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
-            _this5._markNewReady(item.id);
-          }
-        });
-        // Clear the echo-marked set after list() processes it (one-shot guard)
-        _this5._echoMarkedReady = new Set();
-        _this5.preparedItems = newPrepared;
-        _this5.loading.isActive = false;
+        _this6._hydrateFromRows(res.data.data || []);
+        _this6.loading.isActive = false;
       })["catch"](function (err) {
         var _err$response;
-        _this5.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this5.$t('message.something_wrong'));
+        _this6.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this6.$t('message.something_wrong'));
       });
-    }
-  }
-});
-
-/***/ }),
-
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js":
-/*!************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js ***!
-  \************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../services/WebSocketService */ "./resources/js/services/WebSocketService.js");
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  name: "ConnectionStatusBanner",
-  props: {
-    suppressTransient: {
-      type: Boolean,
-      "default": false
-    },
-    suppressSessionInvalid: {
-      type: Boolean,
-      "default": false
-    }
-  },
-  data: function data() {
-    return {
-      wsState: _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.INITIALIZED,
-      disconnectedSince: null,
-      bannerTick: 0,
-      dismissed: false,
-      _onStateChange: null,
-      _bannerInterval: null
-    };
-  },
-  computed: {
-    isSessionInvalid: function isSessionInvalid() {
-      return this.wsState === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID;
-    },
-    showTransientBanner: function showTransientBanner() {
-      if (this.bannerTick < 0) return false;
-      if (!this.disconnectedSince) return false;
-      return Date.now() - this.disconnectedSince > 5000;
-    },
-    isOffline: function isOffline() {
-      if (this.bannerTick < 0) return false;
-      if (!this.disconnectedSince) return false;
-      return Date.now() - this.disconnectedSince > 30000;
-    },
-    visible: function visible() {
-      // [F-12] session_invalid takes precedence and ignores the dismissal flag.
-      if (this.isSessionInvalid) return !this.suppressSessionInvalid;
-      if (this.suppressTransient) return false;
-      return this.showTransientBanner && !this.dismissed;
-    },
-    bannerClass: function bannerClass() {
-      if (this.isSessionInvalid) return "connection-status-banner--session-invalid";
-      return this.isOffline ? "connection-status-banner--offline" : "connection-status-banner--reconnecting";
-    },
-    bannerText: function bannerText() {
-      if (this.isSessionInvalid) {
-        return this.$te && this.$te("ws_session_invalid_text") ? this.$t("ws_session_invalid_text") : "Session expirée — votre session est terminée. Rechargez la page.";
-      }
-      return this.isOffline ? "Connexion perdue — hors ligne" : "Reconnexion en cours…";
-    },
-    reloadLabel: function reloadLabel() {
-      return this.$te && this.$te("ws_session_invalid_action") ? this.$t("ws_session_invalid_action") : "Recharger";
-    }
-  },
-  watch: {
-    visible: function visible(val) {
-      if (!val) this.dismissed = false;
-    }
-  },
-  mounted: function mounted() {
-    var _this = this;
-    this.wsState = _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.getState();
-    if (this.wsState !== _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED && this.wsState !== _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID) {
-      this.disconnectedSince = Date.now();
-    }
-    this._onStateChange = function (_ref) {
-      var previous = _ref.previous,
-        current = _ref.current;
-      _this.wsState = current;
-      if (current === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED) {
-        _this.disconnectedSince = null;
-        _this.dismissed = false;
-      } else if (current === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID) {
-        // session_invalid is terminal until reload — keep disconnectedSince as-is
-        _this.dismissed = false;
-      } else if (previous === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED) {
-        _this.disconnectedSince = Date.now();
-      }
-    };
-    _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.on("state_change", this._onStateChange);
-    this._bannerInterval = setInterval(function () {
-      _this.bannerTick += 1;
-    }, 1000);
-  },
-  beforeUnmount: function beforeUnmount() {
-    if (this._onStateChange) {
-      _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.off("state_change", this._onStateChange);
-    }
-    if (this._bannerInterval) {
-      clearInterval(this._bannerInterval);
-    }
-  },
-  methods: {
-    reloadPage: function reloadPage() {
-      if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function") {
-        window.location.reload();
-      }
     }
   }
 });
@@ -666,48 +536,6 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ }),
 
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true":
-/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true ***!
-  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* binding */ render)
-/* harmony export */ });
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-
-var _hoisted_1 = ["aria-live"];
-var _hoisted_2 = {
-  "class": "connection-status-banner__text"
-};
-function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return $options.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-    key: 0,
-    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["connection-status-banner", $options.bannerClass]),
-    role: "alert",
-    "aria-live": $options.isSessionInvalid ? 'assertive' : 'polite'
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerText), 1 /* TEXT */), $options.isSessionInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-    key: 0,
-    type: "button",
-    "class": "connection-status-banner__action",
-    onClick: _cache[0] || (_cache[0] = function () {
-      return $options.reloadPage && $options.reloadPage.apply($options, arguments);
-    })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.reloadLabel), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-    key: 1,
-    type: "button",
-    "class": "connection-status-banner__close",
-    "aria-label": "Fermer",
-    onClick: _cache[1] || (_cache[1] = function ($event) {
-      return $data.dismissed = true;
-    })
-  }, " × "))], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
-}
-
-/***/ }),
-
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue?vue&type=style&index=0&id=3aa5d0ca&scoped=true&lang=css":
 /*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue?vue&type=style&index=0&id=3aa5d0ca&scoped=true&lang=css ***!
@@ -734,35 +562,6 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PreparingAndReadyComponent_vue_vue_type_style_index_0_id_3aa5d0ca_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
-
-/***/ }),
-
-/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-
-            
-
-var options = {};
-
-options.insert = "head";
-options.singleton = false;
-
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
-
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -955,478 +754,402 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue":
-/*!*******************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue ***!
-  \*******************************************************************/
+/***/ "./resources/js/services/OssSyncService.js":
+/*!*************************************************!*\
+  !*** ./resources/js/services/OssSyncService.js ***!
+  \*************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DEFAULTS: () => (/* binding */ DEFAULTS),
+/* harmony export */   OssSyncService: () => (/* binding */ OssSyncService),
+/* harmony export */   STATE: () => (/* binding */ STATE),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true");
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=script&lang=js */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js");
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
-
-
-
-
-;
-
-
-const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-a9a07b76"],['__file',"resources/js/components/common/ConnectionStatusBanner.vue"]])
-/* hot reload */
-if (false) // removed by dead control flow
-{}
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js":
-/*!*******************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js ***!
-  \*******************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js");
- 
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!***************************************************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \***************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true":
-/*!*************************************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true ***!
-  \*************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true");
-
-
-/***/ }),
-
-/***/ "./resources/js/services/eventContract.js":
-/*!************************************************!*\
-  !*** ./resources/js/services/eventContract.js ***!
-  \************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   BROADCAST_MAP: () => (/* binding */ BROADCAST_MAP),
-/* harmony export */   EVENT_TYPES: () => (/* binding */ EVENT_TYPES),
-/* harmony export */   __flushCorrelationDedupePersistence: () => (/* binding */ __flushCorrelationDedupePersistence),
-/* harmony export */   __forceLoadCorrelationDedupe: () => (/* binding */ __forceLoadCorrelationDedupe),
-/* harmony export */   __getCorrelationDedupeSize: () => (/* binding */ __getCorrelationDedupeSize),
-/* harmony export */   __resetCorrelationDedupe: () => (/* binding */ __resetCorrelationDedupe),
-/* harmony export */   isDuplicateCorrelation: () => (/* binding */ isDuplicateCorrelation),
-/* harmony export */   onEvent: () => (/* binding */ onEvent),
-/* harmony export */   onEvents: () => (/* binding */ onEvents),
-/* harmony export */   parseEvent: () => (/* binding */ parseEvent),
-/* harmony export */   validateEnvelope: () => (/* binding */ validateEnvelope)
-/* harmony export */ });
-function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-var EVENT_TYPES = {
-  ORDER_CREATED: 'order.created',
-  ORDER_STATUS_CHANGED: 'order.status_changed',
-  ORDER_PAYMENT_CONFIRMED: 'order.payment_confirmed',
-  ORDER_ITEM_ADDED: 'order.item_added',
-  ORDER_CANCELLED: 'order.cancelled',
-  // [F-02] KDS table reassignment fan-out — keep in sync with PHP EventType.
-  ORDER_TABLE_CHANGED: 'order.table_changed',
-  MENU_ITEM_AVAILABILITY_CHANGED: 'menu.item_availability_changed',
-  CATALOG_CHANGED: 'catalog.changed',
-  STOCK_LOW: 'stock.low'
-};
-var BROADCAST_MAP = {
-  OrderCreated: EVENT_TYPES.ORDER_CREATED,
-  OrderStatusChanged: EVENT_TYPES.ORDER_STATUS_CHANGED,
-  OrderPaidAtCounter: EVENT_TYPES.ORDER_PAYMENT_CONFIRMED,
-  OrderTableChanged: EVENT_TYPES.ORDER_TABLE_CHANGED,
-  ItemAvailabilityChanged: EVENT_TYPES.MENU_ITEM_AVAILABILITY_CHANGED,
-  CatalogChanged: EVENT_TYPES.CATALOG_CHANGED
-};
-function warnValidation(reason, data) {
-  console.warn('[eventContract] Invalid envelope:', reason, data);
-}
-function validateEnvelope(data) {
-  if (!data || _typeof(data) !== 'object' || Array.isArray(data)) {
-    warnValidation('Envelope must be an object.', data);
-    return false;
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var STATE = Object.freeze({
+  IDLE: 'idle',
+  POLLING: 'polling',
+  BACKOFF: 'backoff',
+  STOPPED: 'stopped'
+});
+var DEFAULTS = Object.freeze({
+  intervalMsWhenConnected: 60000,
+  intervalMsWhenDisconnected: 5000,
+  backoffStartMs: 5000,
+  backoffCapMs: 30000,
+  jitterMaxMs: 500
+});
+var OssSyncService = /*#__PURE__*/function () {
+  function OssSyncService() {
+    _classCallCheck(this, OssSyncService);
+    this._state = STATE.IDLE;
+    this._timer = null;
+    this._abortController = null;
+    this._wsUnsubscribe = null;
+    this._wsState = 'unknown';
+    this._listeners = new Map();
+    this._started = false;
+    this._store = null;
+    this._opts = _objectSpread({}, DEFAULTS);
+    this._currentBackoffMs = DEFAULTS.backoffStartMs;
+    this._lastScheduledDelayMs = null;
   }
-  if (data.version !== 1) {
-    warnValidation('Envelope version must be 1.', data);
-    return false;
-  }
-  if (typeof data.type !== 'string' || data.type.length === 0) {
-    warnValidation('Envelope type must be a non-empty string.', data);
-    return false;
-  }
-  if (!data.payload || _typeof(data.payload) !== 'object' || Array.isArray(data.payload)) {
-    warnValidation('Envelope payload must be an object.', data);
-    return false;
-  }
-  return true;
-}
-function parseEvent(raw) {
-  var _raw$branch_id, _raw$occurred_at, _raw$correlation_id;
-  if (!validateEnvelope(raw)) {
-    throw new Error('Invalid event envelope.');
-  }
-  return {
-    version: raw.version,
-    type: raw.type,
-    aggregateId: raw.aggregate_id,
-    branchId: (_raw$branch_id = raw.branch_id) !== null && _raw$branch_id !== void 0 ? _raw$branch_id : null,
-    occurredAt: (_raw$occurred_at = raw.occurred_at) !== null && _raw$occurred_at !== void 0 ? _raw$occurred_at : null,
-    correlationId: (_raw$correlation_id = raw.correlation_id) !== null && _raw$correlation_id !== void 0 ? _raw$correlation_id : null,
-    payload: raw.payload
-  };
-}
-
-/**
- * Bounded set of correlation IDs already handled in this session.
- * Mitigates risk of double broadcast (worker race on dispatched_at) by
- * dropping duplicates before they reach UI handlers (toast spam, double
- * refresh, double cart prune).
- *
- * [NEW-01] Phase 1bis hardening:
- *   - Capacity raised from 512 → 2048 to absorb high-volume branches
- *     (>50 events/min) without false negatives.
- *   - Persisted to sessionStorage with a 10-minute TTL so a tab reload
- *     does NOT lose the dedupe window. Storage failure (quota, privacy
- *     mode) degrades gracefully to in-memory-only with one console.warn.
- *   - TTL eviction is lazy (no setInterval) — happens on each lookup.
- *   - Persistence is debounced (250ms) + flushed on `pagehide` to avoid
- *     I/O storm on bursty traffic without losing the last writes. (Audit G4.)
- *
- * Known limitations (Audit G5/G6/G7 — info-level, accepted by design):
- *   - sessionStorage is per-tab (W3C spec); dedupe is NOT shared across
- *     browser tabs. Each tab maintains its own window. Cross-tab dedup
- *     would require BroadcastChannel + localStorage and is out of scope.
- *   - The eviction policy is FIFO by insertion order, not strict LRU
- *     (lookups do NOT reposition entries). Functionally equivalent for
- *     our use case (a correlation id seen once must remain visible until
- *     TTL/capacity eviction).
- *   - Events without a `correlation_id` (null/undefined/empty) bypass
- *     dedup entirely — by design, a missing id cannot be matched.
- *     Producers MUST set correlation_id (already enforced by V1 contract).
- */
-var SEEN_CORRELATION_CAP = 2048;
-var CORRELATION_DEDUPE_TTL_MS = 10 * 60 * 1000;
-var CORRELATION_DEDUPE_STORAGE_KEY = 'foodking_correlation_dedupe_v1';
-var seenCorrelationIds = new Set();
-var seenCorrelationOrder = [];
-var correlationStorageWarningLogged = false;
-function warnCorrelationStorageOnce(error) {
-  if (correlationStorageWarningLogged || typeof console === 'undefined' || typeof console.warn !== 'function') {
-    return;
-  }
-  correlationStorageWarningLogged = true;
-  console.warn('[eventContract] correlation dedupe sessionStorage unavailable; using in-memory dedupe only', error);
-}
-function getCorrelationSessionStorage() {
-  if (typeof window === 'undefined' || !window.sessionStorage) {
-    return null;
-  }
-  return window.sessionStorage;
-}
-
-// [NEW-01 / Audit G4] Debounced storage write. At ≥50 events/min the previous
-// per-event setItem with full JSON serialisation became wasteful; coalesce
-// rapid bursts into a single write 250ms after the last mutation. A pagehide
-// listener flushes synchronously so the last-mutation-window is never lost
-// when the user closes/reloads the tab faster than the debounce timer.
-var PERSIST_DEBOUNCE_MS = 250;
-var persistTimer = null;
-var persistDirty = false;
-function flushCorrelationDedupeNow() {
-  persistDirty = false;
-  if (persistTimer !== null) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
-  }
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (!storage) {
-      return;
+  return _createClass(OssSyncService, [{
+    key: "start",
+    value: function start() {
+      var ctx = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      this._started = false;
+      this._cleanup({
+        unsubscribe: true
+      });
+      var runtimeConfig = this._runtimeConfig();
+      if (!runtimeConfig.enabled) {
+        this._state = STATE.IDLE;
+        return;
+      }
+      if (!ctx.store || typeof ctx.store.dispatch !== 'function') {
+        this._state = STATE.IDLE;
+        return;
+      }
+      this._opts = _objectSpread(_objectSpread({}, DEFAULTS), {}, {
+        intervalMsWhenConnected: runtimeConfig.intervalMsWhenConnected,
+        intervalMsWhenDisconnected: runtimeConfig.intervalMsWhenDisconnected
+      }, ctx.options || {});
+      this._currentBackoffMs = this._opts.backoffStartMs;
+      this._store = ctx.store;
+      this._webSocketService = ctx.webSocketService || null;
+      this._wsState = 'unknown';
+      this._started = true;
+      this._state = STATE.POLLING;
+      this._bindWebSocketState();
+      this._scheduleNext(this._jitter());
     }
-    storage.setItem(CORRELATION_DEDUPE_STORAGE_KEY, JSON.stringify(seenCorrelationOrder.map(function (entry) {
-      return {
-        id: entry.id,
-        ts: entry.ts
+  }, {
+    key: "stop",
+    value: function stop() {
+      this._started = false;
+      this._cleanup({
+        unsubscribe: true
+      });
+      this._state = STATE.STOPPED;
+    }
+  }, {
+    key: "on",
+    value: function on(eventName, handler) {
+      if (!this._listeners.has(eventName)) {
+        this._listeners.set(eventName, new Set());
+      }
+      var set = this._listeners.get(eventName);
+      set.add(handler);
+      return function () {
+        return set["delete"](handler);
       };
-    })));
-  } catch (error) {
-    warnCorrelationStorageOnce(error);
-  }
-}
-function persistCorrelationDedupe() {
-  persistDirty = true;
-  if (persistTimer !== null) {
-    return;
-  }
-  if (typeof setTimeout !== 'function') {
-    flushCorrelationDedupeNow();
-    return;
-  }
-  persistTimer = setTimeout(function () {
-    persistTimer = null;
-    if (persistDirty) {
-      flushCorrelationDedupeNow();
     }
-  }, PERSIST_DEBOUNCE_MS);
-}
-if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-  // Synchronous flush before the tab unloads / pagehide → guarantees no
-  // lost writes when the debounce timer hasn't fired yet.
-  window.addEventListener('pagehide', function () {
-    if (persistDirty) {
-      flushCorrelationDedupeNow();
+  }, {
+    key: "state",
+    value: function state() {
+      return this._state;
     }
-  });
-}
-function resetCorrelationMemory() {
-  seenCorrelationIds.clear();
-  seenCorrelationOrder.length = 0;
-}
-function loadCorrelationDedupeFromStorage() {
-  resetCorrelationMemory();
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (!storage) {
-      return;
+  }, {
+    key: "_runtimeConfig",
+    value: function _runtimeConfig() {
+      var _window$foodkingConfi;
+      var cfg = typeof window !== 'undefined' ? ((_window$foodkingConfi = window.foodkingConfig) === null || _window$foodkingConfi === void 0 ? void 0 : _window$foodkingConfi.ossFallbackPolling) || {} : {};
+      return {
+        enabled: cfg.enabled !== false && cfg.enabled !== 0 && cfg.enabled !== '0',
+        intervalMsWhenConnected: this._positiveInt(cfg.intervalMsWhenConnected, DEFAULTS.intervalMsWhenConnected),
+        intervalMsWhenDisconnected: this._positiveInt(cfg.intervalMsWhenDisconnected, DEFAULTS.intervalMsWhenDisconnected)
+      };
     }
-    var raw = storage.getItem(CORRELATION_DEDUPE_STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
-    var parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return;
-    }
-    var now = Date.now();
-    var _iterator = _createForOfIteratorHelper(parsed),
-      _step;
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var entry = _step.value;
-        if (!entry || typeof entry.id !== 'string' || typeof entry.ts !== 'number') {
-          continue;
-        }
-        if (now - entry.ts > CORRELATION_DEDUPE_TTL_MS) {
-          continue;
-        }
-        if (seenCorrelationIds.has(entry.id)) {
-          continue;
-        }
-        seenCorrelationIds.add(entry.id);
-        seenCorrelationOrder.push({
-          id: entry.id,
-          ts: entry.ts
-        });
+  }, {
+    key: "_bindWebSocketState",
+    value: function _bindWebSocketState() {
+      var _this = this;
+      var ws = this._webSocketService;
+      if (!ws || typeof ws.on !== 'function') {
+        this._wsState = 'disconnected';
+        return;
       }
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
-    }
-    while (seenCorrelationOrder.length > SEEN_CORRELATION_CAP) {
-      var evicted = seenCorrelationOrder.shift();
-      if (evicted) {
-        seenCorrelationIds["delete"](evicted.id);
-      }
-    }
-    persistCorrelationDedupe();
-  } catch (error) {
-    resetCorrelationMemory();
-    warnCorrelationStorageOnce(error);
-  }
-}
-function evictExpiredCorrelations(now) {
-  var mutated = false;
-  while (seenCorrelationOrder.length > 0) {
-    var oldest = seenCorrelationOrder[0];
-    if (!oldest || now - oldest.ts <= CORRELATION_DEDUPE_TTL_MS) {
-      break;
-    }
-    seenCorrelationOrder.shift();
-    seenCorrelationIds["delete"](oldest.id);
-    mutated = true;
-  }
-  if (mutated) {
-    persistCorrelationDedupe();
-  }
-}
-function evictCorrelationCapacity() {
-  var mutated = false;
-  while (seenCorrelationOrder.length > SEEN_CORRELATION_CAP) {
-    var evicted = seenCorrelationOrder.shift();
-    if (evicted) {
-      seenCorrelationIds["delete"](evicted.id);
-      mutated = true;
-    }
-  }
-  if (mutated) {
-    persistCorrelationDedupe();
-  }
-}
-loadCorrelationDedupeFromStorage();
-function correlationDedupeKey(correlationId) {
-  var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-  var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  var branchKey = branchId === null || branchId === undefined || branchId === '' ? null : "branch:".concat(branchId);
-  if (!eventType || typeof eventType !== 'string') {
-    return branchKey ? "".concat(branchKey, ":").concat(correlationId) : correlationId;
-  }
-  return branchKey ? "".concat(eventType, ":").concat(branchKey, ":").concat(correlationId) : "".concat(eventType, ":").concat(correlationId);
-}
-function isDuplicateCorrelation(correlationId) {
-  var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-  var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  if (!correlationId || typeof correlationId !== 'string') {
-    return false;
-  }
-  var dedupeKey = correlationDedupeKey(correlationId, eventType, branchId);
-  var now = Date.now();
-  evictExpiredCorrelations(now);
-  if (seenCorrelationIds.has(dedupeKey)) {
-    return true;
-  }
-  seenCorrelationIds.add(dedupeKey);
-  seenCorrelationOrder.push({
-    id: dedupeKey,
-    ts: now
-  });
-  evictCorrelationCapacity();
-  persistCorrelationDedupe();
-  return false;
-}
-
-// Test hook : reset the dedupe window between specs.
-function __resetCorrelationDedupe() {
-  if (persistTimer !== null) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
-  }
-  persistDirty = false;
-  resetCorrelationMemory();
-  correlationStorageWarningLogged = false;
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (storage) {
-      storage.removeItem(CORRELATION_DEDUPE_STORAGE_KEY);
-    }
-  } catch (error) {
-    warnCorrelationStorageOnce(error);
-  }
-}
-
-// Test hook : re-read sessionStorage to simulate a tab reload. Flushes any
-// pending debounced write first so the simulation observes the latest state.
-function __forceLoadCorrelationDedupe() {
-  if (persistDirty) {
-    flushCorrelationDedupeNow();
-  }
-  loadCorrelationDedupeFromStorage();
-}
-
-// Test hook : observe the in-memory dedupe size after lazy eviction.
-function __getCorrelationDedupeSize() {
-  evictExpiredCorrelations(Date.now());
-  return seenCorrelationOrder.length;
-}
-
-// Test hook : force-flush any pending debounced sessionStorage write.
-function __flushCorrelationDedupePersistence() {
-  flushCorrelationDedupeNow();
-}
-function onEvent(branchId, broadcastAs, handler) {
-  return onEvents(branchId, [{
-    broadcastAs: broadcastAs,
-    handler: handler
-  }]);
-}
-function onEvents(branchId, bindings) {
-  if (!window.Echo || !branchId || !Array.isArray(bindings) || bindings.length === 0) {
-    return {
-      unsubscribe: function unsubscribe() {}
-    };
-  }
-  var channelName = "branch.".concat(branchId);
-  var channel = window.Echo["private"](channelName);
-  var listeners = [];
-  bindings.forEach(function (_ref) {
-    var broadcastAs = _ref.broadcastAs,
-      handler = _ref.handler;
-    if (!broadcastAs || typeof handler !== 'function') {
-      return;
-    }
-    var rawHandler = function rawHandler(raw) {
-      try {
-        var parsed = parseEvent(raw);
-        var expectedType = BROADCAST_MAP[broadcastAs];
-        if (expectedType && parsed.type !== expectedType) {
-          console.warn('[eventContract] Event type mismatch for broadcast.', {
-            broadcastAs: broadcastAs,
-            expectedType: expectedType,
-            receivedType: parsed.type
-          });
-        }
-        if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId)) {
+      var unsubscribers = [];
+      var listen = function listen(eventName, callback) {
+        var unsubscribe = ws.on(eventName, callback);
+        if (typeof unsubscribe === 'function') {
+          unsubscribers.push(unsubscribe);
           return;
         }
-        handler(parsed);
-      } catch (error) {
-        console.warn("[eventContract] Failed to parse ".concat(broadcastAs, "."), error, raw);
-      }
-    };
-    channel.listen(".".concat(broadcastAs), rawHandler);
-    listeners.push({
-      broadcastAs: broadcastAs,
-      rawHandler: rawHandler
-    });
-  });
-  return {
-    unsubscribe: function unsubscribe() {
-      listeners.forEach(function (_ref2) {
-        var broadcastAs = _ref2.broadcastAs;
-        try {
-          channel.stopListening(".".concat(broadcastAs));
-        } catch (_) {}
+        if (typeof ws.off === 'function') {
+          unsubscribers.push(function () {
+            return ws.off(eventName, callback);
+          });
+        }
+      };
+      var handleState = function handleState(next) {
+        _this._wsState = next || 'unknown';
+        _this._emit('ws_state', {
+          state: _this._wsState
+        });
+        _this._state = STATE.POLLING;
+        _this._currentBackoffMs = _this._opts.backoffStartMs;
+        _this._scheduleNormalCadence();
+      };
+      listen('connected', function () {
+        return handleState('connected');
       });
-      try {
-        window.Echo.leave(channelName);
-      } catch (_) {}
+      listen('disconnected', function () {
+        return handleState('disconnected');
+      });
+      listen('reconnect_storm', function () {
+        return handleState('disconnected');
+      });
+      listen('state_change', function () {
+        var payload = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var next = payload.current || payload.to || payload.state || payload.next || null;
+        if (next) {
+          handleState(next);
+        }
+      });
+      this._wsUnsubscribe = function () {
+        unsubscribers.splice(0).forEach(function (unsubscribe) {
+          try {
+            unsubscribe();
+          } catch (_) {/* ignore cleanup errors */}
+        });
+      };
     }
-  };
-}
+  }, {
+    key: "_poll",
+    value: function () {
+      var _poll2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var controller, _result$data, result, status, rows, _status, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!(!this._started || !this._store)) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              this._abortInFlight();
+              controller = new AbortController();
+              this._abortController = controller;
+              _context.p = 2;
+              _context.n = 3;
+              return this._store.dispatch('orderStatusScreenOrder/lists');
+            case 3:
+              result = _context.v;
+              if (!(controller.signal.aborted || !this._started)) {
+                _context.n = 4;
+                break;
+              }
+              return _context.a(2);
+            case 4:
+              status = this._statusFromResult(result);
+              if (!(status >= 500 && status <= 599)) {
+                _context.n = 5;
+                break;
+              }
+              this._handle5xx();
+              return _context.a(2);
+            case 5:
+              rows = (result === null || result === void 0 || (_result$data = result.data) === null || _result$data === void 0 ? void 0 : _result$data.data) || [];
+              this._state = STATE.POLLING;
+              this._currentBackoffMs = this._opts.backoffStartMs;
+              this._emit('sync', {
+                rows: rows,
+                status: status
+              });
+              this._scheduleNormalCadence();
+              _context.n = 9;
+              break;
+            case 6:
+              _context.p = 6;
+              _t = _context.v;
+              if (!(controller.signal.aborted || (_t === null || _t === void 0 ? void 0 : _t.name) === 'AbortError' || (_t === null || _t === void 0 ? void 0 : _t.code) === 'ERR_CANCELED')) {
+                _context.n = 7;
+                break;
+              }
+              return _context.a(2);
+            case 7:
+              _status = this._statusFromError(_t);
+              if (!(_status >= 500 && _status <= 599)) {
+                _context.n = 8;
+                break;
+              }
+              this._handle5xx();
+              return _context.a(2);
+            case 8:
+              this._state = STATE.POLLING;
+              this._emit('error', {
+                status: _status,
+                error: _t
+              });
+              this._scheduleNormalCadence();
+            case 9:
+              _context.p = 9;
+              if (this._abortController === controller) {
+                this._abortController = null;
+              }
+              return _context.f(9);
+            case 10:
+              return _context.a(2);
+          }
+        }, _callee, this, [[2, 6, 9, 10]]);
+      }));
+      function _poll() {
+        return _poll2.apply(this, arguments);
+      }
+      return _poll;
+    }()
+  }, {
+    key: "_handle5xx",
+    value: function _handle5xx() {
+      if (!this._started) {
+        return;
+      }
+      this._state = STATE.BACKOFF;
+      var delay = this._currentBackoffMs;
+      this._currentBackoffMs = Math.min(this._currentBackoffMs * 2, this._opts.backoffCapMs);
+      this._emit('error', {
+        status: 500,
+        backoffMs: delay
+      });
+      this._scheduleNext(delay);
+    }
+  }, {
+    key: "_scheduleNormalCadence",
+    value: function _scheduleNormalCadence() {
+      var state = this._readWsState();
+      var isConnected = String(state || '').toLowerCase() === 'connected';
+      var base = isConnected ? this._opts.intervalMsWhenConnected : this._opts.intervalMsWhenDisconnected;
+      this._scheduleNext(base + this._jitter());
+    }
+  }, {
+    key: "_scheduleNext",
+    value: function _scheduleNext(delayMs) {
+      var _this2 = this;
+      this._clearTimer();
+      if (!this._started) {
+        return;
+      }
+      var delay = Math.max(0, this._positiveInt(delayMs, 0));
+      this._lastScheduledDelayMs = delay;
+      this._timer = setTimeout(function () {
+        _this2._timer = null;
+        _this2._poll()["catch"](function () {});
+      }, delay);
+    }
+  }, {
+    key: "_cleanup",
+    value: function _cleanup() {
+      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref$unsubscribe = _ref.unsubscribe,
+        unsubscribe = _ref$unsubscribe === void 0 ? false : _ref$unsubscribe;
+      this._clearTimer();
+      this._abortInFlight();
+      this._lastScheduledDelayMs = null;
+      this._store = null;
+      if (unsubscribe && this._wsUnsubscribe) {
+        this._wsUnsubscribe();
+        this._wsUnsubscribe = null;
+      }
+    }
+  }, {
+    key: "_clearTimer",
+    value: function _clearTimer() {
+      if (this._timer) {
+        clearTimeout(this._timer);
+        this._timer = null;
+      }
+    }
+  }, {
+    key: "_abortInFlight",
+    value: function _abortInFlight() {
+      if (this._abortController) {
+        this._abortController.abort();
+        this._abortController = null;
+      }
+    }
+  }, {
+    key: "_readWsState",
+    value: function _readWsState() {
+      if (this._wsState && this._wsState !== 'unknown') {
+        return this._wsState;
+      }
+      var ws = this._webSocketService;
+      if (ws && typeof ws.getState === 'function') {
+        return ws.getState();
+      }
+      if (ws && typeof ws.state !== 'undefined') {
+        return ws.state;
+      }
+      if (ws && typeof ws.isConnected === 'function') {
+        return ws.isConnected() ? 'connected' : 'disconnected';
+      }
+      return 'disconnected';
+    }
+  }, {
+    key: "_statusFromResult",
+    value: function _statusFromResult(result) {
+      var _result$response;
+      return Number((result === null || result === void 0 ? void 0 : result.status) || (result === null || result === void 0 || (_result$response = result.response) === null || _result$response === void 0 ? void 0 : _result$response.status) || 200);
+    }
+  }, {
+    key: "_statusFromError",
+    value: function _statusFromError(error) {
+      var _error$response;
+      return Number((error === null || error === void 0 || (_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status) || (error === null || error === void 0 ? void 0 : error.status) || 0);
+    }
+  }, {
+    key: "_positiveInt",
+    value: function _positiveInt(value, fallback) {
+      var parsed = parseInt(value, 10);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+    }
+  }, {
+    key: "_jitter",
+    value: function _jitter() {
+      return Math.floor(Math.random() * this._opts.jitterMaxMs);
+    }
+  }, {
+    key: "_emit",
+    value: function _emit(eventName, payload) {
+      var listeners = this._listeners.get(eventName);
+      if (!listeners) {
+        return;
+      }
+      listeners.forEach(function (handler) {
+        return handler(payload);
+      });
+    }
+  }], [{
+    key: "STATES",
+    get: function get() {
+      return STATE;
+    }
+  }, {
+    key: "DEFAULTS",
+    get: function get() {
+      return DEFAULTS;
+    }
+  }]);
+}();
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (new OssSyncService());
+
 
 /***/ })
 

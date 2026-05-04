@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\ComposerProfileRequest;
 use App\Http\Resources\ComposerProfileResource;
 use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
+use App\Services\Composer\ComposerDiffService;
 use App\Services\Composer\ComposerProfileService;
 use App\Services\Composer\ComposerTemplateService;
 use Illuminate\Http\JsonResponse;
@@ -45,6 +47,30 @@ class ComposerProfileController extends AdminController
         return new ComposerProfileResource($this->profiles->createForItem($item, $request->validated()));
     }
 
+    public function showForCategory(Request $request, ItemCategory $category)
+    {
+        $branchIdScope = $request->integer('branch_id_scope') ?: null;
+        $user = $request->user();
+        if ($branchIdScope === null && $user && ! $user->hasRole('Admin') && ! $user->hasRole('Tenant Admin')) {
+            $branchIdScope = (int) $user->branch_id ?: null;
+        }
+
+        $profile = $this->profiles->showForCategory($category, $branchIdScope);
+
+        abort_if(! $profile, 404);
+
+        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+
+        return new ComposerProfileResource($profile);
+    }
+
+    public function storeForCategory(ComposerProfileRequest $request, ItemCategory $category)
+    {
+        $this->authorizeWritableBranchScope($request, $request->integer('branch_id_scope') ?: null);
+
+        return new ComposerProfileResource($this->profiles->createForCategory($category, $request->validated()));
+    }
+
     public function update(ComposerProfileRequest $request, ItemWizardProfile $profile)
     {
         $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
@@ -65,6 +91,13 @@ class ComposerProfileController extends AdminController
         $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
 
         return new ComposerProfileResource($this->profiles->unpublish($profile));
+    }
+
+    public function diff(Request $request, ItemWizardProfile $profile): JsonResponse
+    {
+        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+
+        return response()->json(app(ComposerDiffService::class)->diff($profile));
     }
 
     /**
@@ -88,6 +121,29 @@ class ComposerProfileController extends AdminController
 
         $payload = $this->templates->buildPayload($data['template'], $item, $branchIdScope);
         $profile = $this->profiles->createForItem($item, $payload);
+
+        return response()->json([
+            'success' => true,
+            'data' => new ComposerProfileResource($profile->loadMissing('steps')),
+        ]);
+    }
+
+    public function applyTemplateToCategory(Request $request, ItemCategory $category): JsonResponse
+    {
+        $data = $request->validate([
+            'template' => ['required', 'string', Rule::in(ComposerTemplateService::TEMPLATES)],
+            'branch_id_scope' => ['nullable', 'integer', 'exists:branches,id'],
+        ]);
+
+        $branchIdScope = isset($data['branch_id_scope']) ? (int) $data['branch_id_scope'] : null;
+
+        $this->authorizeWritableBranchScope($request, $branchIdScope);
+
+        $firstItem = $category->items()->first();
+        abort_if(! $firstItem, 422, 'Category has no items yet - add at least one product before applying a template.');
+
+        $payload = $this->templates->buildPayload($data['template'], $firstItem, $branchIdScope);
+        $profile = $this->profiles->createForCategory($category, $payload);
 
         return response()->json([
             'success' => true,

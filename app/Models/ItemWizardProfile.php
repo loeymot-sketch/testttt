@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ItemWizardProfile extends Model
 {
@@ -11,6 +12,7 @@ class ItemWizardProfile extends Model
 
     protected $fillable = [
         'item_id',
+        'item_category_id',
         'template',
         'version',
         'is_published',
@@ -21,6 +23,7 @@ class ItemWizardProfile extends Model
     protected $casts = [
         'id' => 'integer',
         'item_id' => 'integer',
+        'item_category_id' => 'integer',
         'version' => 'integer',
         'is_published' => 'boolean',
         'published_at' => 'datetime',
@@ -32,6 +35,29 @@ class ItemWizardProfile extends Model
         return $this->belongsTo(Item::class);
     }
 
+    public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ItemCategory::class, 'item_category_id');
+    }
+
+    public function scopeForCategory($query, int $categoryId)
+    {
+        return $query->where('item_category_id', $categoryId);
+    }
+
+    public function ownerType(): string
+    {
+        if ($this->item_id) {
+            return 'item';
+        }
+
+        if ($this->item_category_id) {
+            return 'category';
+        }
+
+        return 'orphan';
+    }
+
     public function branchScope()
     {
         return $this->belongsTo(Branch::class, 'branch_id_scope');
@@ -40,6 +66,16 @@ class ItemWizardProfile extends Model
     public function steps()
     {
         return $this->hasMany(ItemWizardStep::class, 'profile_id')->orderBy('position');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ItemWizardStepVersion::class, 'profile_id');
+    }
+
+    public function latestVersion(): ?ItemWizardStepVersion
+    {
+        return $this->versions()->orderByDesc('version')->first();
     }
 
     public function publish(): void

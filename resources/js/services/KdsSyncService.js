@@ -17,6 +17,14 @@ const WS_RECONNECTING = 'RECONNECTING';
 const WS_DEGRADED = 'DEGRADED';
 const WS_DISCONNECTED = 'DISCONNECTED';
 const WS_SESSION_INVALID = 'SESSION_INVALID';
+const DEFAULT_CADENCE_OPTIONS = Object.freeze({
+    highActivityBaseMs: 3000,
+    highActivityJitterMs: 1000,
+    degradedBaseMs: 5000,
+    degradedJitterMs: 2000,
+    disconnectedBaseMs: 10000,
+    disconnectedJitterMs: 3000,
+});
 
 export class KdsSyncService {
     constructor({ wsService = (typeof window !== 'undefined' ? window._wsService : null), fetchFn, now } = {}) {
@@ -40,6 +48,7 @@ export class KdsSyncService {
         this._maxVersionEntries = 256;
         this._highActivityUntil = 0;
         this._consecutive5xx = 0;
+        this._cadenceOptions = this._runtimeCadenceOptions();
     }
 
     get state() {
@@ -267,6 +276,7 @@ export class KdsSyncService {
 
     _baseCadence() {
         const wsState = this.wsService?.state;
+        const cfg = this._cadenceOptions;
 
         if (wsState === WS_CONNECTED) {
             return { interval: Infinity, reason: 'ws_connected' };
@@ -274,19 +284,19 @@ export class KdsSyncService {
 
         if (wsState === WS_RECONNECTING || wsState === WS_DEGRADED) {
             if (this.now() < this._highActivityUntil) {
-                return { interval: 3000 + this._jitter(1000), reason: 'high_activity' };
+                return { interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs), reason: 'high_activity' };
             }
-            return { interval: 5000 + this._jitter(2000), reason: 'ws_degraded' };
+            return { interval: cfg.degradedBaseMs + this._jitter(cfg.degradedJitterMs), reason: 'ws_degraded' };
         }
 
         if (wsState === WS_DISCONNECTED || wsState === WS_SESSION_INVALID) {
             if (this.now() < this._highActivityUntil) {
-                return { interval: 3000 + this._jitter(1000), reason: 'high_activity' };
+                return { interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs), reason: 'high_activity' };
             }
-            return { interval: 10000 + this._jitter(3000), reason: 'ws_disconnected' };
+            return { interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs), reason: 'ws_disconnected' };
         }
 
-        return { interval: 10000 + this._jitter(3000), reason: 'ws_disconnected' };
+        return { interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs), reason: 'ws_disconnected' };
     }
 
     _recomputeCadence(reasonOverride = null) {
@@ -428,6 +438,26 @@ export class KdsSyncService {
 
     _jitter(max) {
         return Math.floor(Math.random() * (max + 1));
+    }
+
+    _runtimeCadenceOptions() {
+        const cfg = (typeof window !== 'undefined' && window.foodkingConfig?.kdsFallbackPolling)
+            ? window.foodkingConfig.kdsFallbackPolling
+            : {};
+
+        const toInt = (value, fallback) => {
+            const parsed = parseInt(value, 10);
+            return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+        };
+
+        return {
+            highActivityBaseMs: toInt(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+            highActivityJitterMs: toInt(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+            degradedBaseMs: toInt(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+            degradedJitterMs: toInt(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+            disconnectedBaseMs: toInt(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+            disconnectedJitterMs: toInt(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs),
+        };
     }
 }
 

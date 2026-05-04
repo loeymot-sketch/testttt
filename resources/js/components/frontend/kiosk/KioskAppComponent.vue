@@ -108,22 +108,24 @@
       </button>
     </transition>
 
-    <!-- Vue enfant (page courante) -->
-    <router-view
-      v-slot="{ Component }"
-      @add-to-cart="handleAddToCart"
-      @go-to-cart="goToCart"
-      @start-order="startOrder"
-      @reset-kiosk="resetKiosk"
-    >
-      <transition :name="transitionName" mode="out-in">
-        <!--
-          Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
-          catégorie refait toute la transition slide-left du shell (effet « toujours pareil »).
-          La liste produits anime alors localement dans KioskCategoriesComponent.
-        -->
-        <component :is="Component" :key="kioskRouterViewKey" />
-      </transition>
+    <!-- Vue enfant (page courante)
+         Pas de <transition> sur le router-view : en prod Playwright a montré des états
+         où le DOM sous .kiosk-app ne contenait plus que le bouton thème (vue routée
+         jamais montée / transition Vue bloquée) alors que l’URL était /kiosk/categories.
+         Les écrans gardent leurs transitions locales (wizard, paniers, etc.). -->
+    <router-view v-slot="{ Component }">
+      <!--
+        Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
+        catégorie remonterait tout le shell. Les @listeners sont sur <component>.
+      -->
+      <component
+        :is="Component"
+        :key="kioskRouterViewKey"
+        @add-to-cart="handleAddToCart"
+        @go-to-cart="goToCart"
+        @start-order="startOrder"
+        @reset-kiosk="resetKiosk"
+      />
     </router-view>
 
     <!-- Feedback tactile visuel -->
@@ -186,19 +188,6 @@ import kioskAnalytics from '../../../helpers/kioskAnalytics';
 const IDLE_FALLBACK_MS = 180000;
 const STILL_HERE_FALLBACK_MS = 30000;
 const HEALTHCHECK_INTERVAL_MS = 90000; // brief §5.2 — 90s
-// Ordre canonique pour l'animation de transition directionnelle
-const ROUTE_ORDER = [
-  'kiosk.idle',
-  'kiosk.categories',
-  'kiosk.products',
-  'kiosk.wizard',
-  'kiosk.cart',
-  'kiosk.loyalty',
-  'kiosk.upsell',
-  'kiosk.payment',
-  'kiosk.waiting',
-  'kiosk.confirmation',
-];
 
 export default {
   name: 'KioskAppComponent',
@@ -225,7 +214,6 @@ export default {
       idleTimer: null,
       stillHereTimer: null,
       showStillHere: false,
-      transitionName: 'slide-left',
       ripple: { show: false, x: 0, y: 0 },
       rippleTimer: null,
       branchLoading: true,
@@ -305,17 +293,7 @@ export default {
     },
   },
   watch: {
-    $route(to, from) {
-      if (to.meta?.kioskStableShell && from.meta?.kioskStableShell) {
-        this.transitionName = 'kiosk-shell-static';
-        this.resetIdleTimer();
-        return;
-      }
-      const toIdx   = ROUTE_ORDER.indexOf(to.name);
-      const fromIdx = ROUTE_ORDER.indexOf(from.name);
-      // Unknown routes (e.g. deep links): default forward
-      this.transitionName = (fromIdx === -1 || toIdx >= fromIdx) ? 'slide-left' : 'slide-right';
-      // Reset idle timer on every navigation
+    $route() {
       this.resetIdleTimer();
     },
   },
@@ -1357,29 +1335,6 @@ export default {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 9999;
-}
-
-/* Transitions entre pages */
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-left-enter-from { transform: translateX(100%); opacity: 0; }
-.slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
-.slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
-.slide-right-leave-to   { transform: translateX(100%); opacity: 0; }
-
-[dir="rtl"] .slide-left-enter-from { transform: translateX(-100%); opacity: 0; }
-[dir="rtl"] .slide-left-leave-to   { transform: translateX(100%); opacity: 0; }
-[dir="rtl"] .slide-right-enter-from { transform: translateX(100%); opacity: 0; }
-[dir="rtl"] .slide-right-leave-to   { transform: translateX(-100%); opacity: 0; }
-
-.kiosk-shell-static-enter-active,
-.kiosk-shell-static-leave-active {
-  transition: none;
 }
 
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }

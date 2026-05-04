@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
         $this->call(UserTableSeeder::class);
         $this->call(RolePermissionTableSeeder::class);
         $this->call(ComposerPermissionsMinimalSeeder::class);
+        $this->call(IngredientPermissionSeeder::class);
         $this->call(LeCayenneRoleLandingUrlSeeder::class);
         $this->call(MailTableSeeder::class);
         $this->call(OrderSetupTableSeeder::class);

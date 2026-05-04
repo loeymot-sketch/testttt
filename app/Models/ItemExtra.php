@@ -12,15 +12,17 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label'];
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
     protected $casts = [
-        'id'          => 'integer',
-        'item_id'     => 'integer',
-        'name'        => 'string',
-        'status'      => 'integer',
-        'price'       => 'decimal:6',
-        'visible_on'  => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
-        'group_label' => 'string',
+        'id'                 => 'integer',
+        'item_id'            => 'integer',
+        'name'               => 'string',
+        'status'             => 'integer',
+        'price'              => 'decimal:6',
+        'visible_on'         => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
+        'group_label'        => 'string',
+        'is_available'       => 'boolean',
+        'unavailable_reason' => 'string',
     ];
 
     /**

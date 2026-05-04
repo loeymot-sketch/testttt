@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="ks-stepper"
+    :class="['ks-stepper', `ks-stepper--${variant}`]"
     role="progressbar"
     :aria-valuemin="1"
     :aria-valuemax="steps.length"
@@ -8,54 +8,75 @@
     :aria-valuetext="currentAriaText"
     :aria-label="ariaLabel"
   >
-    <!-- Rangée icônes + labels (fenêtre glissante 5 éléments autour du current) -->
-    <ol class="ks-stepper__icons">
-      <li
-        v-for="(s, i) in visibleSteps"
-        :key="s.absIdx"
-        :class="[
-          'ks-stepper__icon-item',
-          {
-            'is-active': s.absIdx === current,
-            'is-done': s.absIdx < current,
-          }
-        ]"
-        :aria-current="s.absIdx === current ? 'step' : null"
-      >
-        <span class="ks-stepper__icon" aria-hidden="true">
-          <span class="ks-stepper__icon-glyph">{{ s.icon || '•' }}</span>
-          <span v-if="s.absIdx < current" class="ks-stepper__check">✓</span>
-        </span>
-        <span class="ks-stepper__label">{{ s.label }}</span>
-      </li>
-    </ol>
-
-    <!-- Rangée numérique segmentée (max 7 points visibles) -->
-    <ol
-      v-if="showNumeric"
-      class="ks-stepper__numeric"
-      aria-hidden="true"
-    >
-      <template v-for="(absIdx, localIdx) in numericWindow" :key="absIdx">
+    <!-- V1.9 Bold Appétissant : variant 'minimal-bar' (dots + connecting bars) -->
+    <ol v-if="variant === 'minimal-bar'" class="ks-stepper__bar" aria-hidden="true">
+      <template v-for="(s, i) in steps" :key="s.id || i">
         <li
           :class="[
-            'ks-stepper__dot',
+            'ks-stepper__bar-dot',
             {
-              'is-active': absIdx === current,
-              'is-done': absIdx < current,
+              'is-active': i === current,
+              'is-done': i < current,
             }
           ]"
-        >{{ absIdx + 1 }}</li>
+          :aria-current="i === current ? 'step' : null"
+        >{{ i < current ? '✓' : (i + 1) }}</li>
         <span
-          v-if="localIdx < numericWindow.length - 1"
-          class="ks-stepper__link"
-          :class="{ 'is-done': absIdx < current }"
+          v-if="i < steps.length - 1"
+          :class="['ks-stepper__bar-link', { 'is-done': i < current }]"
         />
       </template>
-      <li v-if="steps.length > 7" class="ks-stepper__counter">
-        {{ current + 1 }}/{{ steps.length }}
-      </li>
     </ol>
+
+    <!-- V1 baseline : full stepper avec icônes + labels (5-window) + numeric row -->
+    <template v-else>
+      <ol class="ks-stepper__icons">
+        <li
+          v-for="(s, i) in visibleSteps"
+          :key="s.absIdx"
+          :class="[
+            'ks-stepper__icon-item',
+            {
+              'is-active': s.absIdx === current,
+              'is-done': s.absIdx < current,
+            }
+          ]"
+          :aria-current="s.absIdx === current ? 'step' : null"
+        >
+          <span class="ks-stepper__icon" aria-hidden="true">
+            <span class="ks-stepper__icon-glyph">{{ s.icon || '•' }}</span>
+            <span v-if="s.absIdx < current" class="ks-stepper__check">✓</span>
+          </span>
+          <span class="ks-stepper__label">{{ s.label }}</span>
+        </li>
+      </ol>
+
+      <ol
+        v-if="showNumeric"
+        class="ks-stepper__numeric"
+        aria-hidden="true"
+      >
+        <template v-for="(absIdx, localIdx) in numericWindow" :key="absIdx">
+          <li
+            :class="[
+              'ks-stepper__dot',
+              {
+                'is-active': absIdx === current,
+                'is-done': absIdx < current,
+              }
+            ]"
+          >{{ absIdx + 1 }}</li>
+          <span
+            v-if="localIdx < numericWindow.length - 1"
+            class="ks-stepper__link"
+            :class="{ 'is-done': absIdx < current }"
+          />
+        </template>
+        <li v-if="steps.length > 7" class="ks-stepper__counter">
+          {{ current + 1 }}/{{ steps.length }}
+        </li>
+      </ol>
+    </template>
   </nav>
 </template>
 
@@ -93,6 +114,16 @@ export default {
         formatAriaValueText: {
             type: Function,
             default: ({ current, total, label }) => `Étape ${current} sur ${total} : ${label}`,
+        },
+        /**
+         * V1.9 Bold Appétissant — variant visuel.
+         *  - 'full'        : icônes + labels + dots numériques (V1 baseline, default)
+         *  - 'minimal-bar' : dots numérotés + bars de liaison (wizard bold V3)
+         */
+        variant: {
+            type: String,
+            default: 'full',
+            validator: (v) => ['full', 'minimal-bar'].includes(v),
         },
     },
     computed: {
@@ -270,5 +301,64 @@ export default {
     font-weight: var(--kiosk-font-weight-bold);
     color: var(--kiosk-text-mute);
     white-space: nowrap;
+}
+
+/* ---------- V1.9 Bold Appétissant — variant minimal-bar ---------- */
+.ks-stepper--minimal-bar {
+    padding: var(--kiosk-space-4) var(--kiosk-space-5);
+    background: var(--kiosk-bold-bg, var(--kiosk-bg));
+    border-bottom: 1px solid var(--kiosk-bold-border, var(--kiosk-border));
+}
+.ks-stepper__bar {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+.ks-stepper__bar-dot {
+    flex-shrink: 0;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--kiosk-radius-pill);
+    background: var(--kiosk-bold-surface-subtle);
+    color: var(--kiosk-bold-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(13px * var(--kiosk-text-scale, 1));
+    font-weight: var(--kiosk-font-weight-black, 900);
+    transition: all var(--kiosk-duration-card, 240ms) var(--kiosk-motion-spring, var(--kiosk-ease-bounce));
+    font-variant-numeric: tabular-nums;
+}
+.ks-stepper__bar-dot.is-done {
+    background: var(--kiosk-bold-success);
+    color: #FFF5E8;
+}
+.ks-stepper__bar-dot.is-active {
+    background: var(--kiosk-bold-primary);
+    color: var(--kiosk-bold-text-on-primary);
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px var(--kiosk-bold-primary-soft);
+}
+.ks-stepper__bar-link {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--kiosk-bold-surface-subtle);
+    transition: background var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, var(--kiosk-ease-standard));
+    min-width: 8px;
+}
+.ks-stepper__bar-link.is-done {
+    background: var(--kiosk-bold-success);
+}
+
+[data-kiosk-reduced-motion='true'] .ks-stepper__bar-dot,
+[data-kiosk-reduced-motion='true'] .ks-stepper__bar-link {
+    transition: none;
+    transform: none !important;
 }
 </style>

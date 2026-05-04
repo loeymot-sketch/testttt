@@ -24,29 +24,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-instruction[data-v-66aac04e] {\
 
 /***/ }),
 
-/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
-// Imports
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.connection-status-banner[data-v-a9a07b76] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 9999;\n  width: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  padding: 8px 36px;\n  box-sizing: border-box;\n  color: #fff;\n  font-size: 13px;\n  font-weight: 600;\n  text-align: center;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n}\n.connection-status-banner--reconnecting[data-v-a9a07b76] {\n  background: #ca8a04;\n}\n.connection-status-banner--offline[data-v-a9a07b76] {\n  background: #b91c1c;\n}\n.connection-status-banner--session-invalid[data-v-a9a07b76] {\n  background: #7f1d1d;\n}\n.connection-status-banner__text[data-v-a9a07b76] {\n  flex: 1;\n}\n.connection-status-banner__close[data-v-a9a07b76] {\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: transparent;\n  border: none;\n  color: #fff;\n  font-size: 22px;\n  line-height: 1;\n  cursor: pointer;\n  padding: 4px 8px;\n  opacity: 0.85;\n}\n.connection-status-banner__close[data-v-a9a07b76]:hover {\n  opacity: 1;\n}\n.connection-status-banner__action[data-v-a9a07b76] {\n  background: #fff;\n  color: #7f1d1d;\n  border: none;\n  border-radius: 4px;\n  padding: 6px 14px;\n  font-weight: 700;\n  font-size: 13px;\n  cursor: pointer;\n  margin-left: auto;\n}\n.connection-status-banner__action[data-v-a9a07b76]:hover {\n  background: #fef2f2;\n}\n", ""]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js":
 /*!***************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js ***!
@@ -975,123 +952,6 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     if (this._kdsSyncStampTimer) {
       clearInterval(this._kdsSyncStampTimer);
       this._kdsSyncStampTimer = null;
-    }
-  }
-});
-
-/***/ }),
-
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js":
-/*!************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js ***!
-  \************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../services/WebSocketService */ "./resources/js/services/WebSocketService.js");
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  name: "ConnectionStatusBanner",
-  props: {
-    suppressTransient: {
-      type: Boolean,
-      "default": false
-    },
-    suppressSessionInvalid: {
-      type: Boolean,
-      "default": false
-    }
-  },
-  data: function data() {
-    return {
-      wsState: _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.INITIALIZED,
-      disconnectedSince: null,
-      bannerTick: 0,
-      dismissed: false,
-      _onStateChange: null,
-      _bannerInterval: null
-    };
-  },
-  computed: {
-    isSessionInvalid: function isSessionInvalid() {
-      return this.wsState === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID;
-    },
-    showTransientBanner: function showTransientBanner() {
-      if (this.bannerTick < 0) return false;
-      if (!this.disconnectedSince) return false;
-      return Date.now() - this.disconnectedSince > 5000;
-    },
-    isOffline: function isOffline() {
-      if (this.bannerTick < 0) return false;
-      if (!this.disconnectedSince) return false;
-      return Date.now() - this.disconnectedSince > 30000;
-    },
-    visible: function visible() {
-      // [F-12] session_invalid takes precedence and ignores the dismissal flag.
-      if (this.isSessionInvalid) return !this.suppressSessionInvalid;
-      if (this.suppressTransient) return false;
-      return this.showTransientBanner && !this.dismissed;
-    },
-    bannerClass: function bannerClass() {
-      if (this.isSessionInvalid) return "connection-status-banner--session-invalid";
-      return this.isOffline ? "connection-status-banner--offline" : "connection-status-banner--reconnecting";
-    },
-    bannerText: function bannerText() {
-      if (this.isSessionInvalid) {
-        return this.$te && this.$te("ws_session_invalid_text") ? this.$t("ws_session_invalid_text") : "Session expirée — votre session est terminée. Rechargez la page.";
-      }
-      return this.isOffline ? "Connexion perdue — hors ligne" : "Reconnexion en cours…";
-    },
-    reloadLabel: function reloadLabel() {
-      return this.$te && this.$te("ws_session_invalid_action") ? this.$t("ws_session_invalid_action") : "Recharger";
-    }
-  },
-  watch: {
-    visible: function visible(val) {
-      if (!val) this.dismissed = false;
-    }
-  },
-  mounted: function mounted() {
-    var _this = this;
-    this.wsState = _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.getState();
-    if (this.wsState !== _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED && this.wsState !== _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID) {
-      this.disconnectedSince = Date.now();
-    }
-    this._onStateChange = function (_ref) {
-      var previous = _ref.previous,
-        current = _ref.current;
-      _this.wsState = current;
-      if (current === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED) {
-        _this.disconnectedSince = null;
-        _this.dismissed = false;
-      } else if (current === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.SESSION_INVALID) {
-        // session_invalid is terminal until reload — keep disconnectedSince as-is
-        _this.dismissed = false;
-      } else if (previous === _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.WS_STATE.CONNECTED) {
-        _this.disconnectedSince = Date.now();
-      }
-    };
-    _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.on("state_change", this._onStateChange);
-    this._bannerInterval = setInterval(function () {
-      _this.bannerTick += 1;
-    }, 1000);
-  },
-  beforeUnmount: function beforeUnmount() {
-    if (this._onStateChange) {
-      _services_WebSocketService__WEBPACK_IMPORTED_MODULE_0__.wsService.off("state_change", this._onStateChange);
-    }
-    if (this._bannerInterval) {
-      clearInterval(this._bannerInterval);
-    }
-  },
-  methods: {
-    reloadPage: function reloadPage() {
-      if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function") {
-        window.location.reload();
-      }
     }
   }
 });
@@ -2332,48 +2192,6 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ }),
 
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true":
-/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true ***!
-  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* binding */ render)
-/* harmony export */ });
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-
-var _hoisted_1 = ["aria-live"];
-var _hoisted_2 = {
-  "class": "connection-status-banner__text"
-};
-function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return $options.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-    key: 0,
-    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["connection-status-banner", $options.bannerClass]),
-    role: "alert",
-    "aria-live": $options.isSessionInvalid ? 'assertive' : 'polite'
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerText), 1 /* TEXT */), $options.isSessionInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-    key: 0,
-    type: "button",
-    "class": "connection-status-banner__action",
-    onClick: _cache[0] || (_cache[0] = function () {
-      return $options.reloadPage && $options.reloadPage.apply($options, arguments);
-    })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.reloadLabel), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-    key: 1,
-    type: "button",
-    "class": "connection-status-banner__close",
-    "aria-label": "Fermer",
-    onClick: _cache[1] || (_cache[1] = function ($event) {
-      return $data.dismissed = true;
-    })
-  }, " × "))], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
-}
-
-/***/ }),
-
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css":
 /*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css ***!
@@ -2400,35 +2218,6 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
-
-/***/ }),
-
-/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-
-            
-
-var options = {};
-
-options.insert = "head";
-options.singleton = false;
-
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
-
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -2501,79 +2290,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true");
-
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue":
-/*!*******************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue ***!
-  \*******************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true");
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=script&lang=js */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js");
-/* harmony import */ var _ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
-
-
-
-
-;
-
-
-const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-a9a07b76"],['__file',"resources/js/components/common/ConnectionStatusBanner.vue"]])
-/* hot reload */
-if (false) // removed by dead control flow
-{}
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js":
-/*!*******************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js ***!
-  \*******************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=script&lang=js");
- 
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css":
-/*!***************************************************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css ***!
-  \***************************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_style_index_0_id_a9a07b76_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=style&index=0&id=a9a07b76&scoped=true&lang=css");
-
-
-/***/ }),
-
-/***/ "./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true":
-/*!*************************************************************************************************************!*\
-  !*** ./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true ***!
-  \*************************************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ConnectionStatusBanner_vue_vue_type_template_id_a9a07b76_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/common/ConnectionStatusBanner.vue?vue&type=template&id=a9a07b76&scoped=true");
 
 
 /***/ }),
@@ -2897,6 +2613,14 @@ var WS_RECONNECTING = 'RECONNECTING';
 var WS_DEGRADED = 'DEGRADED';
 var WS_DISCONNECTED = 'DISCONNECTED';
 var WS_SESSION_INVALID = 'SESSION_INVALID';
+var DEFAULT_CADENCE_OPTIONS = Object.freeze({
+  highActivityBaseMs: 3000,
+  highActivityJitterMs: 1000,
+  degradedBaseMs: 5000,
+  degradedJitterMs: 2000,
+  disconnectedBaseMs: 10000,
+  disconnectedJitterMs: 3000
+});
 var KdsSyncService = /*#__PURE__*/function () {
   function KdsSyncService() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -2926,6 +2650,7 @@ var KdsSyncService = /*#__PURE__*/function () {
     this._maxVersionEntries = 256;
     this._highActivityUntil = 0;
     this._consecutive5xx = 0;
+    this._cadenceOptions = this._runtimeCadenceOptions();
   }
   return _createClass(KdsSyncService, [{
     key: "state",
@@ -3191,6 +2916,7 @@ var KdsSyncService = /*#__PURE__*/function () {
     value: function _baseCadence() {
       var _this$wsService;
       var wsState = (_this$wsService = this.wsService) === null || _this$wsService === void 0 ? void 0 : _this$wsService.state;
+      var cfg = this._cadenceOptions;
       if (wsState === WS_CONNECTED) {
         return {
           interval: Infinity,
@@ -3200,29 +2926,29 @@ var KdsSyncService = /*#__PURE__*/function () {
       if (wsState === WS_RECONNECTING || wsState === WS_DEGRADED) {
         if (this.now() < this._highActivityUntil) {
           return {
-            interval: 3000 + this._jitter(1000),
+            interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs),
             reason: 'high_activity'
           };
         }
         return {
-          interval: 5000 + this._jitter(2000),
+          interval: cfg.degradedBaseMs + this._jitter(cfg.degradedJitterMs),
           reason: 'ws_degraded'
         };
       }
       if (wsState === WS_DISCONNECTED || wsState === WS_SESSION_INVALID) {
         if (this.now() < this._highActivityUntil) {
           return {
-            interval: 3000 + this._jitter(1000),
+            interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs),
             reason: 'high_activity'
           };
         }
         return {
-          interval: 10000 + this._jitter(3000),
+          interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs),
           reason: 'ws_disconnected'
         };
       }
       return {
-        interval: 10000 + this._jitter(3000),
+        interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs),
         reason: 'ws_disconnected'
       };
     }
@@ -3380,412 +3106,28 @@ var KdsSyncService = /*#__PURE__*/function () {
     value: function _jitter(max) {
       return Math.floor(Math.random() * (max + 1));
     }
+  }, {
+    key: "_runtimeCadenceOptions",
+    value: function _runtimeCadenceOptions() {
+      var _window$foodkingConfi;
+      var cfg = typeof window !== 'undefined' && (_window$foodkingConfi = window.foodkingConfig) !== null && _window$foodkingConfi !== void 0 && _window$foodkingConfi.kdsFallbackPolling ? window.foodkingConfig.kdsFallbackPolling : {};
+      var toInt = function toInt(value, fallback) {
+        var parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+      };
+      return {
+        highActivityBaseMs: toInt(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+        highActivityJitterMs: toInt(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+        degradedBaseMs: toInt(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+        degradedJitterMs: toInt(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+        disconnectedBaseMs: toInt(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+        disconnectedJitterMs: toInt(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
+      };
+    }
   }]);
 }();
 var kdsSyncService = new KdsSyncService();
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (kdsSyncService);
-
-/***/ }),
-
-/***/ "./resources/js/services/eventContract.js":
-/*!************************************************!*\
-  !*** ./resources/js/services/eventContract.js ***!
-  \************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   BROADCAST_MAP: () => (/* binding */ BROADCAST_MAP),
-/* harmony export */   EVENT_TYPES: () => (/* binding */ EVENT_TYPES),
-/* harmony export */   __flushCorrelationDedupePersistence: () => (/* binding */ __flushCorrelationDedupePersistence),
-/* harmony export */   __forceLoadCorrelationDedupe: () => (/* binding */ __forceLoadCorrelationDedupe),
-/* harmony export */   __getCorrelationDedupeSize: () => (/* binding */ __getCorrelationDedupeSize),
-/* harmony export */   __resetCorrelationDedupe: () => (/* binding */ __resetCorrelationDedupe),
-/* harmony export */   isDuplicateCorrelation: () => (/* binding */ isDuplicateCorrelation),
-/* harmony export */   onEvent: () => (/* binding */ onEvent),
-/* harmony export */   onEvents: () => (/* binding */ onEvents),
-/* harmony export */   parseEvent: () => (/* binding */ parseEvent),
-/* harmony export */   validateEnvelope: () => (/* binding */ validateEnvelope)
-/* harmony export */ });
-function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-var EVENT_TYPES = {
-  ORDER_CREATED: 'order.created',
-  ORDER_STATUS_CHANGED: 'order.status_changed',
-  ORDER_PAYMENT_CONFIRMED: 'order.payment_confirmed',
-  ORDER_ITEM_ADDED: 'order.item_added',
-  ORDER_CANCELLED: 'order.cancelled',
-  // [F-02] KDS table reassignment fan-out — keep in sync with PHP EventType.
-  ORDER_TABLE_CHANGED: 'order.table_changed',
-  MENU_ITEM_AVAILABILITY_CHANGED: 'menu.item_availability_changed',
-  CATALOG_CHANGED: 'catalog.changed',
-  STOCK_LOW: 'stock.low'
-};
-var BROADCAST_MAP = {
-  OrderCreated: EVENT_TYPES.ORDER_CREATED,
-  OrderStatusChanged: EVENT_TYPES.ORDER_STATUS_CHANGED,
-  OrderPaidAtCounter: EVENT_TYPES.ORDER_PAYMENT_CONFIRMED,
-  OrderTableChanged: EVENT_TYPES.ORDER_TABLE_CHANGED,
-  ItemAvailabilityChanged: EVENT_TYPES.MENU_ITEM_AVAILABILITY_CHANGED,
-  CatalogChanged: EVENT_TYPES.CATALOG_CHANGED
-};
-function warnValidation(reason, data) {
-  console.warn('[eventContract] Invalid envelope:', reason, data);
-}
-function validateEnvelope(data) {
-  if (!data || _typeof(data) !== 'object' || Array.isArray(data)) {
-    warnValidation('Envelope must be an object.', data);
-    return false;
-  }
-  if (data.version !== 1) {
-    warnValidation('Envelope version must be 1.', data);
-    return false;
-  }
-  if (typeof data.type !== 'string' || data.type.length === 0) {
-    warnValidation('Envelope type must be a non-empty string.', data);
-    return false;
-  }
-  if (!data.payload || _typeof(data.payload) !== 'object' || Array.isArray(data.payload)) {
-    warnValidation('Envelope payload must be an object.', data);
-    return false;
-  }
-  return true;
-}
-function parseEvent(raw) {
-  var _raw$branch_id, _raw$occurred_at, _raw$correlation_id;
-  if (!validateEnvelope(raw)) {
-    throw new Error('Invalid event envelope.');
-  }
-  return {
-    version: raw.version,
-    type: raw.type,
-    aggregateId: raw.aggregate_id,
-    branchId: (_raw$branch_id = raw.branch_id) !== null && _raw$branch_id !== void 0 ? _raw$branch_id : null,
-    occurredAt: (_raw$occurred_at = raw.occurred_at) !== null && _raw$occurred_at !== void 0 ? _raw$occurred_at : null,
-    correlationId: (_raw$correlation_id = raw.correlation_id) !== null && _raw$correlation_id !== void 0 ? _raw$correlation_id : null,
-    payload: raw.payload
-  };
-}
-
-/**
- * Bounded set of correlation IDs already handled in this session.
- * Mitigates risk of double broadcast (worker race on dispatched_at) by
- * dropping duplicates before they reach UI handlers (toast spam, double
- * refresh, double cart prune).
- *
- * [NEW-01] Phase 1bis hardening:
- *   - Capacity raised from 512 → 2048 to absorb high-volume branches
- *     (>50 events/min) without false negatives.
- *   - Persisted to sessionStorage with a 10-minute TTL so a tab reload
- *     does NOT lose the dedupe window. Storage failure (quota, privacy
- *     mode) degrades gracefully to in-memory-only with one console.warn.
- *   - TTL eviction is lazy (no setInterval) — happens on each lookup.
- *   - Persistence is debounced (250ms) + flushed on `pagehide` to avoid
- *     I/O storm on bursty traffic without losing the last writes. (Audit G4.)
- *
- * Known limitations (Audit G5/G6/G7 — info-level, accepted by design):
- *   - sessionStorage is per-tab (W3C spec); dedupe is NOT shared across
- *     browser tabs. Each tab maintains its own window. Cross-tab dedup
- *     would require BroadcastChannel + localStorage and is out of scope.
- *   - The eviction policy is FIFO by insertion order, not strict LRU
- *     (lookups do NOT reposition entries). Functionally equivalent for
- *     our use case (a correlation id seen once must remain visible until
- *     TTL/capacity eviction).
- *   - Events without a `correlation_id` (null/undefined/empty) bypass
- *     dedup entirely — by design, a missing id cannot be matched.
- *     Producers MUST set correlation_id (already enforced by V1 contract).
- */
-var SEEN_CORRELATION_CAP = 2048;
-var CORRELATION_DEDUPE_TTL_MS = 10 * 60 * 1000;
-var CORRELATION_DEDUPE_STORAGE_KEY = 'foodking_correlation_dedupe_v1';
-var seenCorrelationIds = new Set();
-var seenCorrelationOrder = [];
-var correlationStorageWarningLogged = false;
-function warnCorrelationStorageOnce(error) {
-  if (correlationStorageWarningLogged || typeof console === 'undefined' || typeof console.warn !== 'function') {
-    return;
-  }
-  correlationStorageWarningLogged = true;
-  console.warn('[eventContract] correlation dedupe sessionStorage unavailable; using in-memory dedupe only', error);
-}
-function getCorrelationSessionStorage() {
-  if (typeof window === 'undefined' || !window.sessionStorage) {
-    return null;
-  }
-  return window.sessionStorage;
-}
-
-// [NEW-01 / Audit G4] Debounced storage write. At ≥50 events/min the previous
-// per-event setItem with full JSON serialisation became wasteful; coalesce
-// rapid bursts into a single write 250ms after the last mutation. A pagehide
-// listener flushes synchronously so the last-mutation-window is never lost
-// when the user closes/reloads the tab faster than the debounce timer.
-var PERSIST_DEBOUNCE_MS = 250;
-var persistTimer = null;
-var persistDirty = false;
-function flushCorrelationDedupeNow() {
-  persistDirty = false;
-  if (persistTimer !== null) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
-  }
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (!storage) {
-      return;
-    }
-    storage.setItem(CORRELATION_DEDUPE_STORAGE_KEY, JSON.stringify(seenCorrelationOrder.map(function (entry) {
-      return {
-        id: entry.id,
-        ts: entry.ts
-      };
-    })));
-  } catch (error) {
-    warnCorrelationStorageOnce(error);
-  }
-}
-function persistCorrelationDedupe() {
-  persistDirty = true;
-  if (persistTimer !== null) {
-    return;
-  }
-  if (typeof setTimeout !== 'function') {
-    flushCorrelationDedupeNow();
-    return;
-  }
-  persistTimer = setTimeout(function () {
-    persistTimer = null;
-    if (persistDirty) {
-      flushCorrelationDedupeNow();
-    }
-  }, PERSIST_DEBOUNCE_MS);
-}
-if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-  // Synchronous flush before the tab unloads / pagehide → guarantees no
-  // lost writes when the debounce timer hasn't fired yet.
-  window.addEventListener('pagehide', function () {
-    if (persistDirty) {
-      flushCorrelationDedupeNow();
-    }
-  });
-}
-function resetCorrelationMemory() {
-  seenCorrelationIds.clear();
-  seenCorrelationOrder.length = 0;
-}
-function loadCorrelationDedupeFromStorage() {
-  resetCorrelationMemory();
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (!storage) {
-      return;
-    }
-    var raw = storage.getItem(CORRELATION_DEDUPE_STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
-    var parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return;
-    }
-    var now = Date.now();
-    var _iterator = _createForOfIteratorHelper(parsed),
-      _step;
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var entry = _step.value;
-        if (!entry || typeof entry.id !== 'string' || typeof entry.ts !== 'number') {
-          continue;
-        }
-        if (now - entry.ts > CORRELATION_DEDUPE_TTL_MS) {
-          continue;
-        }
-        if (seenCorrelationIds.has(entry.id)) {
-          continue;
-        }
-        seenCorrelationIds.add(entry.id);
-        seenCorrelationOrder.push({
-          id: entry.id,
-          ts: entry.ts
-        });
-      }
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
-    }
-    while (seenCorrelationOrder.length > SEEN_CORRELATION_CAP) {
-      var evicted = seenCorrelationOrder.shift();
-      if (evicted) {
-        seenCorrelationIds["delete"](evicted.id);
-      }
-    }
-    persistCorrelationDedupe();
-  } catch (error) {
-    resetCorrelationMemory();
-    warnCorrelationStorageOnce(error);
-  }
-}
-function evictExpiredCorrelations(now) {
-  var mutated = false;
-  while (seenCorrelationOrder.length > 0) {
-    var oldest = seenCorrelationOrder[0];
-    if (!oldest || now - oldest.ts <= CORRELATION_DEDUPE_TTL_MS) {
-      break;
-    }
-    seenCorrelationOrder.shift();
-    seenCorrelationIds["delete"](oldest.id);
-    mutated = true;
-  }
-  if (mutated) {
-    persistCorrelationDedupe();
-  }
-}
-function evictCorrelationCapacity() {
-  var mutated = false;
-  while (seenCorrelationOrder.length > SEEN_CORRELATION_CAP) {
-    var evicted = seenCorrelationOrder.shift();
-    if (evicted) {
-      seenCorrelationIds["delete"](evicted.id);
-      mutated = true;
-    }
-  }
-  if (mutated) {
-    persistCorrelationDedupe();
-  }
-}
-loadCorrelationDedupeFromStorage();
-function correlationDedupeKey(correlationId) {
-  var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-  var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  var branchKey = branchId === null || branchId === undefined || branchId === '' ? null : "branch:".concat(branchId);
-  if (!eventType || typeof eventType !== 'string') {
-    return branchKey ? "".concat(branchKey, ":").concat(correlationId) : correlationId;
-  }
-  return branchKey ? "".concat(eventType, ":").concat(branchKey, ":").concat(correlationId) : "".concat(eventType, ":").concat(correlationId);
-}
-function isDuplicateCorrelation(correlationId) {
-  var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-  var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  if (!correlationId || typeof correlationId !== 'string') {
-    return false;
-  }
-  var dedupeKey = correlationDedupeKey(correlationId, eventType, branchId);
-  var now = Date.now();
-  evictExpiredCorrelations(now);
-  if (seenCorrelationIds.has(dedupeKey)) {
-    return true;
-  }
-  seenCorrelationIds.add(dedupeKey);
-  seenCorrelationOrder.push({
-    id: dedupeKey,
-    ts: now
-  });
-  evictCorrelationCapacity();
-  persistCorrelationDedupe();
-  return false;
-}
-
-// Test hook : reset the dedupe window between specs.
-function __resetCorrelationDedupe() {
-  if (persistTimer !== null) {
-    clearTimeout(persistTimer);
-    persistTimer = null;
-  }
-  persistDirty = false;
-  resetCorrelationMemory();
-  correlationStorageWarningLogged = false;
-  try {
-    var storage = getCorrelationSessionStorage();
-    if (storage) {
-      storage.removeItem(CORRELATION_DEDUPE_STORAGE_KEY);
-    }
-  } catch (error) {
-    warnCorrelationStorageOnce(error);
-  }
-}
-
-// Test hook : re-read sessionStorage to simulate a tab reload. Flushes any
-// pending debounced write first so the simulation observes the latest state.
-function __forceLoadCorrelationDedupe() {
-  if (persistDirty) {
-    flushCorrelationDedupeNow();
-  }
-  loadCorrelationDedupeFromStorage();
-}
-
-// Test hook : observe the in-memory dedupe size after lazy eviction.
-function __getCorrelationDedupeSize() {
-  evictExpiredCorrelations(Date.now());
-  return seenCorrelationOrder.length;
-}
-
-// Test hook : force-flush any pending debounced sessionStorage write.
-function __flushCorrelationDedupePersistence() {
-  flushCorrelationDedupeNow();
-}
-function onEvent(branchId, broadcastAs, handler) {
-  return onEvents(branchId, [{
-    broadcastAs: broadcastAs,
-    handler: handler
-  }]);
-}
-function onEvents(branchId, bindings) {
-  if (!window.Echo || !branchId || !Array.isArray(bindings) || bindings.length === 0) {
-    return {
-      unsubscribe: function unsubscribe() {}
-    };
-  }
-  var channelName = "branch.".concat(branchId);
-  var channel = window.Echo["private"](channelName);
-  var listeners = [];
-  bindings.forEach(function (_ref) {
-    var broadcastAs = _ref.broadcastAs,
-      handler = _ref.handler;
-    if (!broadcastAs || typeof handler !== 'function') {
-      return;
-    }
-    var rawHandler = function rawHandler(raw) {
-      try {
-        var parsed = parseEvent(raw);
-        var expectedType = BROADCAST_MAP[broadcastAs];
-        if (expectedType && parsed.type !== expectedType) {
-          console.warn('[eventContract] Event type mismatch for broadcast.', {
-            broadcastAs: broadcastAs,
-            expectedType: expectedType,
-            receivedType: parsed.type
-          });
-        }
-        if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId)) {
-          return;
-        }
-        handler(parsed);
-      } catch (error) {
-        console.warn("[eventContract] Failed to parse ".concat(broadcastAs, "."), error, raw);
-      }
-    };
-    channel.listen(".".concat(broadcastAs), rawHandler);
-    listeners.push({
-      broadcastAs: broadcastAs,
-      rawHandler: rawHandler
-    });
-  });
-  return {
-    unsubscribe: function unsubscribe() {
-      listeners.forEach(function (_ref2) {
-        var broadcastAs = _ref2.broadcastAs;
-        try {
-          channel.stopListening(".".concat(broadcastAs));
-        } catch (_) {}
-      });
-      try {
-        window.Echo.leave(channelName);
-      } catch (_) {}
-    }
-  };
-}
 
 /***/ })
 

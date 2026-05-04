@@ -112,6 +112,8 @@
         "order": "الطلب",
         "item": "العنصر",
         "items": "العناصر",
+        "catalog": "الكتالوج",
+        "stock_rupture": "لوحة المخزون",
         "product_list": "قائمة المنتجات",
         "taxes": "الضرائب",
         "currencies": "العملات",
@@ -184,12 +186,16 @@
         "o_s_s": "س.د.س",
         "chefs": "طهاة",
         "waiters": "نُدُل",
-        "kiosk_machines": "آلات الكشك"
+        "kiosk_machines": "آلات الكشك",
+        "ingredients": "المكونات",
+        "advanced_tools": "أدوات متقدمة",
+        "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
         "previous": "السابق",
         "next": "التالي",
         "default": "الافتراضي",
+        "dismiss": "إغلاق",
         "configure_wizard": "تكوين المعالج",
         "composer": {
             "product_context": "المنتج",
@@ -224,6 +230,12 @@
             "inactive": "غير نشط",
             "reorder_page": "إعادة ترتيب",
             "all_source_options": "كل الخيارات",
+            "preview_steps_title": "رحلة شراء العميل",
+            "preview_no_steps": "لا توجد خطوة — يشتري العميل المنتج مباشرة.",
+            "preview_step_unnamed": "خطوة بدون اسم",
+            "preview_optional_one": "اختياري — اختيار واحد كحد أقصى",
+            "preview_required_n": "إلزامي — {n} اختيار",
+            "preview_min_max": "{min} إلى {max} اختيارات",
             "loading_product": "تحميل المنتج",
             "template_simple": "بسيط",
             "template_sandwich": "ساندويتش",
@@ -231,7 +243,18 @@
             "template_assiette": "طبق",
             "template_snacking": "وجبات خفيفة",
             "template_menu": "قائمة",
-            "template_custom": "مخصص"
+            "template_custom": "مخصص",
+            "source_type_human": "من أين تأتي الخيارات؟",
+            "source_type_help": "يحدد الأساس: «سمة المنتج» = سماتك (لحوم، صلصات...). «مجموعة الإضافات» = إضافاتك. «إضافة» = إضافات الكتالوج.",
+            "source_ref_human": "التقييد بمجموعة محددة (اختياري)",
+            "source_ref_help": "افتراضيًا تُعرض كل خيارات المصدر. اختر مجموعة محددة لعرض جزء فقط منها.",
+            "min_select_help": "الحد الأدنى من العناصر التي يجب على العميل اختيارها. 0 = اختياري، 1+ = إلزامي.",
+            "max_select_help": "الحد الأقصى من العناصر التي يمكن للعميل اختيارها.",
+            "visible_on_help": "القنوات التي تظهر فيها هذه الخطوة (نقطة البيع الداخلية و/أو كشك العميل).",
+            "is_active_help": "تعطيل الخطوة يخفيها عن العملاء بدون حذفها.",
+            "min_max_summary_optional_one": "= اختياري، يمكن للعميل اختيار عنصر واحد كحد أقصى.",
+            "min_max_summary_required_n": "= إلزامي، يجب على العميل اختيار {n} عناصر بالضبط.",
+            "min_max_summary_range": "= يمكن للعميل اختيار بين {min} و{max} عناصر."
         },
         "wizard_configured": "تم تكوين المعالج",
         "view_product": "عرض المنتج",
@@ -390,6 +413,7 @@
         "customer_id": "معرف العميل",
         "branch_id": "معرف الفرع",
         "all": "الكل",
+        "all_options": "كل الخيارات",
         "single": "فردي",
         "administrator": "المسؤول",
         "delivery_boy": "فتى التوصيل",
@@ -429,6 +453,7 @@
         "welcome_back": "مرحبًا مرة أخرى",
         "remember_me": "تذكرني",
         "or": "أو",
+        "optional": "اختياري",
         "our_menu": "قائمتنا",
         "total_sales": "إجمالي المبيعات",
         "total_orders": "إجمالي الطلبات",
@@ -823,7 +848,32 @@
         "kds_allergens_for_item": "{item_name}: {allergens}",
         "kds_allergens_modal_none": "لا توجد مسببات حساسية معلنة لهذا الصنف.",
         "ws_session_invalid_text": "انتهت الجلسة — انتهت جلستك. أعد تحميل الصفحة.",
-        "ws_session_invalid_action": "إعادة التحميل"
+        "ws_session_invalid_action": "إعادة التحميل",
+        "refresh": "تحديث",
+        "ingredient": {
+            "title": "المكونات",
+            "subtitle": "إدارة اللحوم والصلصات والإضافات والملحقات",
+            "tab_all": "الكل",
+            "tab_attribute": "اللحوم والسمات",
+            "tab_extra": "الإضافات",
+            "tab_addon": "الملحقات",
+            "column_name": "الاسم",
+            "column_type": "النوع",
+            "column_status": "الحالة",
+            "column_usage": "الاستخدام",
+            "column_actions": "الإجراءات",
+            "toggle_available": "متاح",
+            "toggle_unavailable": "غير متوفر",
+            "toggle_prompt_reason": "لماذا هذا المكون غير متوفر؟",
+            "usage_count": "مستخدم في {count} خطوات من المعالج",
+            "empty": "لا توجد مكونات لهذا الفلتر.",
+            "loading": "جار التحميل…",
+            "error": "تعذر تحميل المكونات.",
+            "retry": "إعادة المحاولة",
+            "usage_drawer_title": "استخدام المكون",
+            "usage_drawer_close": "إغلاق",
+            "view_details": "عرض التفاصيل"
+        }
     },
     "button": {
         "add": "إضافة",
@@ -924,7 +974,11 @@
         "release_table": "تحرير الطاولة",
         "kds_bump": "جاهز",
         "kds_recall": "تراجع",
-        "kds_allergens_modal_close": "إغلاق"
+        "kds_allergens_modal_close": "إغلاق",
+        "composer": {
+            "choose_template_v2": "اختيار قالب",
+            "add_page_manual": "إضافة صفحة يدويًا"
+        }
     },
     "number": {
         "10": "10",
@@ -951,6 +1005,12 @@
             "publish_failed": "تعذر النشر.",
             "publish_confirm_body": "سيظهر هذا التغيير فوراً على POS والكشك لنطاق الفرع.",
             "template_applied": "تم تطبيق القالب.",
+            "apply_template_empty_response": "لم يُرجع الخادم الملف المحدث. حاول مرة أخرى أو تواصل مع الدعم.",
+            "apply_template_no_steps": "تم تطبيق القالب ولكن لم يتم إنشاء أي خطوات. هذا غير متوقع.",
+            "apply_template_validation_error": "تم إرسال بيانات غير صالحة إلى الخادم.",
+            "apply_template_auth_error": "انتهت جلستك. أعد تحميل الصفحة وسجّل الدخول مرة أخرى.",
+            "apply_template_server_error": "خطأ في الخادم. حاول مرة أخرى بعد قليل.",
+            "apply_template_unknown_error": "فشل غير متوقع أثناء تطبيق القالب.",
             "template_picker_hint": "اختر نقطة بداية ثم خصص الصفحات.",
             "step_deleted": "تم حذف الصفحة.",
             "delete_confirm": "ستتم إزالة هذه الصفحة من معالج هذا المنتج.",
@@ -963,7 +1023,11 @@
             "template_assiette": "طبق: لحم وصلصة وإضافات دون صفحة قائمة.",
             "template_snacking": "وجبات خفيفة: خيارات سريعة وإضافات.",
             "template_menu": "قائمة: تركيبة كاملة مع مشروب وجانب.",
-            "template_custom": "مخصص: ابدأ فارغاً وصمم الصفحات يدوياً."
+            "template_custom": "مخصص: ابدأ فارغاً وصمم الصفحات يدوياً.",
+            "guidance_zero_steps_title": "كيف يعمل المعالج؟",
+            "guidance_zero_steps_intro": "المعالج هو المسار الذي يتبعه العميل لتخصيص هذا المنتج (اللحم، الصلصة، الحجم، إلخ). كل صفحة = خطوة اختيار.",
+            "guidance_zero_steps_option_template": "الأفضل: اختر قالبًا (تاكوس، ساندويتش...) للبدء من قاعدة جاهزة.",
+            "guidance_zero_steps_option_manual": "أو أضف صفحة يدويًا لتكوين مسارك الخاص."
         },
         "kds_recall_grace_expired": "لا يمكن التراجع: انتهت مهلة الإلغاء (60 ثانية).",
         "kds_status_conflict": "تم تعديل الطلب في مكان آخر. تم تحديث القائمة — راجع الحالة قبل المتابعة.",
@@ -1029,7 +1093,11 @@
         "no_data_available": "لا توجد بيانات متاحة.",
         "payment_method": "طريقة الدفع مطلوبة.",
         "special_instructions_limit": "الحد الأقصى للتعليمات الخاصة هو 190 حرفًا.",
-        "confirm_transfer": "أدخل معرف الطاولة الهدف لتأكيد النقل."
+        "confirm_transfer": "أدخل معرف الطاولة الهدف لتأكيد النقل.",
+        "ingredient": {
+            "toggle_success": "تم تحديث الحالة.",
+            "toggle_error": "فشل التحديث. حاول مرة أخرى."
+        }
     },
     "kiosk": {
         "welcome": "مرحباً!",
@@ -1696,6 +1764,52 @@
         "menu_refreshed_recheck_selection": "يرجى التحقق من اختياراتك.",
         "review_cart": "مراجعة سلتي"
     },
+    "studio": {
+        "eyebrow": "مركز التحكم في الكتالوج",
+        "title": "الكتالوج",
+        "subtitle": "الفئات، المنتجات، المعالجات والمخزون",
+        "all_categories": "جميع الفئات",
+        "products_count": "{n} منتج",
+        "advanced_settings": "إعدادات متقدمة",
+        "stock_link": "لوحة المخزون",
+        "quick_create_product": "إضافة منتج سريعة",
+        "stock_parallel_title": "المخزون والتوفر",
+        "daily_quota_hint": "الحصة اليومية: غير محدودة افتراضيًا",
+        "stock_parallel_hint": "متزامن مع المخزون المركزي والكشك",
+        "composer_drawer_eyebrow": "معالج المنتج",
+        "composer_drawer_title": "تكوين الخطوات",
+        "open_full_page": "فتح الصفحة الكاملة",
+        "select_category_first": "اختر فئة أولاً",
+        "composer": {
+            "diff": {
+                "title": "التغييرات قيد النشر",
+                "added": "مضاف",
+                "removed": "محذوف",
+                "modified": "معدل",
+                "no_changes": "لا توجد تغييرات قيد النشر",
+                "confirm_publish": "نشر الآن",
+                "cancel": "إلغاء",
+                "loading": "جارٍ حساب الفروقات…",
+                "error": "تعذر حساب الفروقات",
+                "retry": "إعادة المحاولة"
+            },
+            "conflict": {
+                "title": "تعارض في الإصدار",
+                "message": "قام مستخدم آخر بتعديل هذا المعالج. أعد التحميل لمشاهدة التغييرات.",
+                "reload": "إعادة التحميل"
+            }
+        },
+        "image": {
+            "upload_idle": "اسحب صورة أو انقر",
+            "upload_drag_over": "أفلتها الآن",
+            "upload_uploading": "جارٍ التحميل…",
+            "upload_success": "تم تحميل الصورة",
+            "upload_error": "خطأ في التحميل",
+            "upload_retry": "إعادة المحاولة",
+            "upload_invalid_mime": "تنسيق غير مدعوم (JPG/PNG/WEBP)",
+            "upload_oversize": "الصورة كبيرة جدًا (4 ميجابايت كحد أقصى)"
+        }
+    },
     "warning": {
         "catalog": {
             "region_label": "تنبيهات الكتالوج لهذا الصنف",
@@ -1730,5 +1844,14 @@
                 "action": "مراجعة مخزون الفرع"
             }
         }
+    },
+    "demo_wizard_advanced": {
+        "title": "المعالج المتقدم (Demo V2 — غير مخصص للإنتاج)",
+        "warning": "تتيح هذه الواجهة تخصيص معالج منتج فردي. هذا يتجاوز معالج الفئة. مخصصة للاختبارات والعروض فقط.",
+        "product_label": "المنتج المراد تخصيصه",
+        "product_placeholder": "ابحث عن منتج أو اختره",
+        "open_button": "فتح المعالج المتقدم",
+        "back_to_studio": "العودة إلى Catalog Studio",
+        "load_error": "تعذر تحميل قائمة المنتجات."
     }
 }

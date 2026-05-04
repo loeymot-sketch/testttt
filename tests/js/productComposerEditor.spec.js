@@ -12,21 +12,23 @@ describe('product composer editor contract', () => {
     it('keeps editor payload price-free and calls composer APIs', () => {
         const source = read('resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue');
 
-        expect(source).toContain('/admin/composer/items/${this.itemId}/profile');
+        expect(source).toContain('/admin/composer/items/${this.resolvedEntityId}/profile');
+        expect(source).toContain('/admin/composer/categories/${this.resolvedEntityId}/profile');
         expect(source).toContain('/admin/composer/profiles/${this.profile.id}/publish');
         expect(source).not.toContain('v-model="form.price"');
         expect(source).not.toContain('price:');
     });
 
     it('defines a dedicated composer route guarded by catalog.compose', () => {
-        const source = read('resources/js/router/modules/adminRoutes.js');
+        const source = read('resources/js/router/modules/itemRoutes.js');
         const routerIndex = read('resources/js/router/index.js');
 
         expect(source).toContain("name: 'admin.items.composer'");
         expect(source).toContain("permissionUrl: 'catalog.compose'");
         expect(source).toContain('ProductComposerEditorComponent');
-        expect(routerIndex).toContain('import adminRoutes from "./modules/adminRoutes"');
-        expect(routerIndex).toContain('adminRoutes,');
+        expect(source).toContain('requireWizardPerItemDemo');
+        expect(routerIndex).toContain('import itemRoutes from "./modules/itemRoutes"');
+        expect(routerIndex).toContain('itemRoutes,');
     });
 
     it('exposes the composer editor from the product composition tab', () => {

@@ -32,14 +32,29 @@ export const item = {
         }
     },
     actions: {
-        lists: function (context, payload) {
+        lists: function (context, payload = {}) {
             return new Promise((resolve, reject) => {
+                const requestPayload = payload ? { ...payload } : {};
+                const hasExplicitBranchId = Object.prototype.hasOwnProperty.call(requestPayload, 'branch_id')
+                    || Object.prototype.hasOwnProperty.call(requestPayload, 'branchId');
+                const branchId = context.rootState?.auth?.authBranchId
+                    ?? context.rootGetters?.authBranchId
+                    ?? context.rootState?.auth?.authInfo?.branch_id
+                    ?? context.rootState?.auth?.authUser?.branch_id
+                    ?? context.rootState?.auth?.user?.branch_id
+                    ?? context.rootGetters?.['auth/authUserBranchId']
+                    ?? null;
+
+                if (!hasExplicitBranchId && branchId !== null && branchId !== undefined && branchId !== '' && Number(branchId) !== 0) {
+                    requestPayload.branch_id = branchId;
+                }
+
                 let url = 'admin/item';
-                if (payload) {
-                    url = url + appService.requestHandler(payload);
+                if (Object.keys(requestPayload).length > 0) {
+                    url = url + appService.requestHandler(requestPayload);
                 }
                 axios.get(url).then((res) => {
-                    if(typeof payload.vuex === "undefined" || payload.vuex === true) {
+                    if(typeof requestPayload.vuex === "undefined" || requestPayload.vuex === true) {
                         context.commit('lists', res.data.data);
                         context.commit('page', res.data.meta);
                         context.commit('pagination', res.data);

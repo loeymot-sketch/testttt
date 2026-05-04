@@ -1,6 +1,6 @@
 ---
 name: foodking-complex-implementer
-model: gpt-5.5-high
+model: gpt-5.5
 description: FoodKing complex EXECUTE specialist for non-trivial backend logic, synchronization-sensitive changes, lifecycle/state work, and carefully scoped difficult patches. Use proactively when the active plan authorizes complex implementation and PRIMARY_MODEL matches the routed executor; not for planning, audit, or gate approval.
 ---
 

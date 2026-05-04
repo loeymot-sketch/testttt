@@ -472,3 +472,63 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+/* =============================================================================
+   PosOrderShowComponent — POS V5 Design Convergence (touches 2026-05-02 R2)
+   -----------------------------------------------------------------------------
+   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2
+   Doc plan : §3.9
+   Approche : pass design léger — db-card admin standard conservé pour cohérence
+   backoffice ; on adopte tokens V5 sur surfaces visibles (radius/shadow, badges,
+   dropdowns brand). Aucun template touché.
+   ============================================================================= */
+:deep(.db-card) {
+    border-radius: var(--pos-v5-radius-lg);
+    box-shadow: var(--pos-v5-shadow-md);
+    border: 1px solid var(--pos-v5-border);
+    background: var(--pos-v5-bg-panel);
+    overflow: hidden;
+}
+
+:deep(.db-card-header) {
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
+    border-bottom: 1px solid var(--pos-v5-border);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
+}
+:deep(.db-card-title) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h6);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+}
+
+/* Dropdowns brand (delivery boy / payment status / order status) */
+:deep(.dropdown-btn) {
+    border-radius: var(--pos-v5-radius-md) !important;
+    border-color: var(--pos-v5-brand-red) !important;
+    color: var(--pos-v5-brand-red) !important;
+    font-family: var(--pos-v5-font-sans);
+    font-weight: var(--pos-v5-weight-bold);
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+:deep(.dropdown-btn:hover) {
+    background: var(--pos-v5-brand-red-soft);
+}
+
+/* Print invoice button */
+:deep(button[v-print]),
+:deep(.shadow-db-card.bg-primary) {
+    background: var(--pos-v5-brand-red) !important;
+    border-radius: var(--pos-v5-radius-md);
+    box-shadow: var(--pos-v5-shadow-cta-soft);
+    font-family: var(--pos-v5-font-sans);
+    font-weight: var(--pos-v5-weight-bold);
+}
+
+/* Status badges adopt V5 palette */
+:deep(.bg-\[\#FFDADA\]) {
+    background: var(--pos-v5-danger-soft) !important;
+    color: var(--pos-v5-danger-dark) !important;
+}
+</style>

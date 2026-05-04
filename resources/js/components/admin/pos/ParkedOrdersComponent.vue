@@ -256,49 +256,69 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   ParkedOrdersComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : §3.5
+   - Drawer warm V5 — radius xl gauche, shadow modal, bordure border
+   - Header avec eyebrow rouge brand "EN ATTENTE" + title h5
+   - Cards avec hover lift + total monospace tabular
+   - Actions Reprendre (success vibrant) / Supprimer (danger ghost)
+   ============================================================================= */
 .parked-orders-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2100;
-    background: rgba(15, 23, 42, 0.35);
+    z-index: var(--pos-v5-z-modal);
+    background: rgba(26, 26, 26, 0.42);
     display: flex;
     justify-content: flex-end;
+    backdrop-filter: blur(2px);
 }
 
 .parked-orders-drawer {
-    width: min(380px, 100vw);
+    width: min(420px, 100vw);
     height: 100vh;
-    background: #fff;
-    box-shadow: -12px 0 32px rgba(15, 23, 42, 0.18);
+    background: var(--pos-v5-bg-panel);
+    box-shadow: -20px 0 48px rgba(26, 26, 26, 0.20);
     display: flex;
     flex-direction: column;
+    border-top-left-radius: var(--pos-v5-radius-xl);
+    border-bottom-left-radius: var(--pos-v5-radius-xl);
+    font-family: var(--pos-v5-font-sans);
 }
 
 .parked-orders-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 20px;
-    border-bottom: 1px solid #eff0f6;
+    gap: var(--pos-v5-space-3);
+    padding: var(--pos-v5-space-5);
+    border-bottom: 1px solid var(--pos-v5-border);
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
 }
 
 .parked-orders-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #2e2f38;
+    margin: 0;
+    font-size: var(--pos-v5-text-h5);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+    line-height: var(--pos-v5-leading-tight);
 }
 
 .parked-orders-subtitle {
-    font-size: 0.8125rem;
-    color: #6b7280;
-    margin-top: 4px;
+    margin: 4px 0 0;
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-brand-red);
 }
 
-/* [POS-V4-CASHIER-OPS 2026-05-02] Inline search input above the parked list. */
+/* Inline search */
 .parked-orders-search {
     position: relative;
-    margin: 14px 20px 4px;
+    margin: var(--pos-v5-space-3) var(--pos-v5-space-5) var(--pos-v5-space-1);
     display: flex;
     align-items: center;
 }
@@ -307,148 +327,194 @@ export default {
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: var(--pos-v5-ink-soft);
     font-size: 12px;
     pointer-events: none;
 }
 .parked-orders-search-input {
     width: 100%;
-    height: 38px;
+    height: 40px;
     padding: 0 36px 0 32px;
-    border: 1px solid #eff0f6;
-    border-radius: 10px;
-    font-size: 13px;
-    color: #2e2f38;
-    background: #f9fafb;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    border: 1px solid var(--pos-v5-border);
+    border-radius: var(--pos-v5-radius-md);
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body);
+    color: var(--pos-v5-ink);
+    background: var(--pos-v5-bg-panel);
+    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.parked-orders-search-input::placeholder {
+    color: var(--pos-v5-ink-muted);
+    font-weight: var(--pos-v5-weight-medium);
 }
 .parked-orders-search-input:focus {
     outline: none;
-    border-color: #b0004d;
-    background: #fff;
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);
 }
 .parked-orders-search-clear {
     position: absolute;
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    width: 22px;
-    height: 22px;
-    border-radius: 9999px;
-    background: #eff0f6;
-    color: #6b7280;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--pos-v5-radius-pill);
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink-soft);
     border: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 11px;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
 .parked-orders-search-clear:hover {
-    background: #b0004d;
-    color: #fff;
+    background: var(--pos-v5-danger-soft);
+    color: var(--pos-v5-danger);
 }
 
 .parked-orders-close {
     width: 36px;
     height: 36px;
-    border-radius: 9999px;
-    border: 1px solid #eff0f6;
-    color: #2e2f38;
+    border-radius: var(--pos-v5-radius-pill);
+    border: 0;
+    background: var(--pos-v5-bg-subtle);
+    color: var(--pos-v5-ink-soft);
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.parked-orders-close:hover {
+    background: var(--pos-v5-danger-soft);
+    color: var(--pos-v5-danger);
 }
 
 .parked-orders-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--pos-v5-space-3);
+    background: var(--pos-v5-bg-app);
 }
 
 .parked-orders-empty {
-    min-height: 120px;
+    min-height: 160px;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    color: #6b7280;
-    font-size: 0.875rem;
+    color: var(--pos-v5-ink-muted);
+    font-size: var(--pos-v5-text-body);
 }
 
 .parked-orders-card {
-    border: 1px solid #eff0f6;
-    border-radius: 14px;
-    padding: 14px;
+    background: var(--pos-v5-bg-panel);
+    border: 1px solid var(--pos-v5-border);
+    border-left: 4px solid var(--pos-v5-warning);
+    border-radius: var(--pos-v5-radius-md);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--pos-v5-space-3);
+    box-shadow: var(--pos-v5-shadow-sm);
+    transition: box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);
+}
+.parked-orders-card:hover {
+    box-shadow: var(--pos-v5-shadow-md);
+    transform: translateY(-1px);
 }
 
 .parked-orders-card-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--pos-v5-space-3);
 }
 
 .parked-orders-card-title {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #2e2f38;
+    margin: 0;
+    font-size: var(--pos-v5-text-body-lg);
+    font-weight: var(--pos-v5-weight-bold);
+    color: var(--pos-v5-ink);
+    line-height: var(--pos-v5-leading-tight);
 }
 
 .parked-orders-card-meta {
-    margin-top: 4px;
-    font-size: 0.75rem;
-    color: #8e8ea9;
+    margin: 4px 0 0;
+    font-size: var(--pos-v5-text-caption);
+    color: var(--pos-v5-ink-muted);
 }
 
 .parked-orders-total {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: #e8001c;
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body-lg);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-brand-red);
     white-space: nowrap;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
 }
 
 .parked-orders-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--pos-v5-space-2);
 }
 
 .parked-orders-action {
-    min-height: 38px;
-    border-radius: 9999px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    transition: opacity 0.2s ease;
+    min-height: 40px;
+    border: 0;
+    border-radius: var(--pos-v5-radius-md);
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-caption);
+    font-weight: var(--pos-v5-weight-extrabold);
+    cursor: pointer;
+    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+    padding: 0 var(--pos-v5-space-3);
 }
 
 .parked-orders-action:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 .parked-orders-action-primary {
-    background: #1ab759;
-    color: #fff;
+    background: var(--pos-v5-success);
+    color: var(--pos-v5-ink-on-dark);
+    box-shadow: var(--pos-v5-shadow-success);
+}
+.parked-orders-action-primary:hover:not(:disabled) {
+    background: var(--pos-v5-success-dark);
 }
 
 .parked-orders-action-danger {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: var(--pos-v5-danger-soft);
+    color: var(--pos-v5-danger-dark);
+    border: 1px solid transparent;
+}
+.parked-orders-action-danger:hover:not(:disabled) {
+    background: var(--pos-v5-danger-ghost);
+    border-color: var(--pos-v5-danger);
 }
 
+/* Slide-in transitions */
 .parked-orders-slide-enter-active,
 .parked-orders-slide-leave-active {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--pos-v5-duration-base);
 }
 
 .parked-orders-slide-enter-active .parked-orders-drawer,
 .parked-orders-slide-leave-active .parked-orders-drawer {
-    transition: transform 0.2s ease;
+    transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);
 }
 
 .parked-orders-slide-enter-from,
@@ -459,5 +525,13 @@ export default {
 .parked-orders-slide-enter-from .parked-orders-drawer,
 .parked-orders-slide-leave-to .parked-orders-drawer {
     transform: translateX(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .parked-orders-slide-enter-active,
+    .parked-orders-slide-leave-active,
+    .parked-orders-slide-enter-active .parked-orders-drawer,
+    .parked-orders-slide-leave-active .parked-orders-drawer { transition: none; }
+    .parked-orders-card { transition: none; }
 }
 </style>

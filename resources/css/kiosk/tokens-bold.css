@@ -1,0 +1,213 @@
+/* =============================================================================
+   FoodKing Kiosk — "Bold Appétissant" tokens layer (V1.1)
+   -----------------------------------------------------------------------------
+   Plan         : plans/PLAN_CV1-KIOSK-VISUAL-REDESIGN-001_2026-05-02.md §1.4
+   Maquette     : reports/design/KIOSK_REDESIGN_BOLD_PREVIEW_2026-05-02.html
+   Cible        : borne 1080×1920 portrait, identité bold appétissant
+   Modes        : light (default) + dark (via [data-kiosk-theme='dark'] sur <html>)
+
+   Discipline d'empilement (cf. bootstrap-kiosk.js) :
+     1. tokens.css            ← base AA (--kiosk-*)
+     2. tokens-aaa.css        ← escalation contraste
+     3. tokens-pmr.css        ← mobilité réduite
+     4. tokens-bold.css (ICI) ← nouvelle palette warm + dark + atoms variants
+     5. typography-bold.css   ← stack Fraunces + scale display
+     6. cv1-tokens.css        ← tokens CV1 sémantiques admin/kiosk
+
+   ⚠ ADDITIF UNIQUEMENT — n'override aucun `--kiosk-*` existant.
+   Les écrans actuels continuent de consommer la palette base (light) ; les
+   atoms ds/ avec NEW variants (hero, composition, total-hero…) consomment
+   `--kiosk-bold-*` et héritent automatiquement du switch light/dark.
+
+   Discipline a11y :
+     - Chaque combinaison texte/fond ≥ 4.5:1 AA (et ≥ 7:1 AAA via
+       [data-kiosk-contrast='aaa']).
+     - Reduced motion neutralise les nouvelles `--kiosk-duration-*` à 1ms.
+     - Touch targets ≥ 44px (V1 spec) consommés via `--kiosk-touch-*` existants.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   LIGHT MODE — palette warm appétissante (default)
+   ----------------------------------------------------------------------------- */
+:root {
+    /* Surfaces — jamais blanc/gris purs, toujours teinte warm */
+    --kiosk-bold-bg:                #FFF8F1; /* warm off-white */
+    --kiosk-bold-surface:           #FFFFFF; /* cards / modals */
+    --kiosk-bold-surface-subtle:    #FBF2E6; /* sections secondaires (sidebar) */
+    --kiosk-bold-surface-strong:    #1A1410; /* footer dramatique, ribbons */
+    --kiosk-bold-surface-overlay:   rgba(26, 20, 16, 0.65);
+
+    /* Texte — warm near-black (jamais #000), warm taupe pour secondary */
+    --kiosk-bold-text-primary:      #1A1410;
+    --kiosk-bold-text-secondary:    #6B5D52;
+    --kiosk-bold-text-tertiary:     #9C8C7E;
+    --kiosk-bold-text-inverse:      #FFF5E8;
+    --kiosk-bold-text-on-primary:   #FFF5E8;
+    --kiosk-bold-text-on-accent:    #1A1410;
+
+    /* Bordures warm */
+    --kiosk-bold-border:            #E8DDD4;
+    --kiosk-bold-border-strong:     #1A1410;
+    --kiosk-bold-border-emphasis:   #E63946;
+
+    /* Brand — rouge food saturé pour CTA principal */
+    --kiosk-bold-primary:           #E63946;
+    --kiosk-bold-primary-hover:     #C82333;
+    --kiosk-bold-primary-active:    #A91D2A;
+    --kiosk-bold-primary-soft:      #FFE5E8;
+    --kiosk-bold-primary-glow:      rgba(230, 57, 70, 0.32);
+
+    /* Accent — doré chaud pour highlights, fidélité, badges promo */
+    --kiosk-bold-accent:            #FFB627;
+    --kiosk-bold-accent-hover:      #E69F1F;
+    --kiosk-bold-accent-soft:       #FFF3D6;
+    --kiosk-bold-accent-glow:       rgba(255, 182, 39, 0.28);
+
+    /* Sémantiques — warm-aligned */
+    --kiosk-bold-success:           #2D6A4F;
+    --kiosk-bold-success-soft:      #D4F0E0;
+    --kiosk-bold-success-text:      #1A4A36;
+    --kiosk-bold-warning:           #F59E0B;
+    --kiosk-bold-warning-soft:      #FEF3C7;
+    --kiosk-bold-warning-text:      #92400E;
+    --kiosk-bold-danger:            #9A0E2A;
+    --kiosk-bold-danger-soft:       #FFE5E8;
+    --kiosk-bold-danger-text:       #6B0820;
+
+    /* Élévation — ombres warm (jamais cool / pure black) */
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(26, 20, 16, 0.08), 0 1px 4px rgba(26, 20, 16, 0.04);
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(26, 20, 16, 0.12), 0 2px 6px rgba(26, 20, 16, 0.06);
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(230, 57, 70, 0.32), 0 4px 12px rgba(230, 57, 70, 0.16);
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(230, 57, 70, 0.42), 0 6px 16px rgba(230, 57, 70, 0.20);
+    --kiosk-shadow-hero:            0 24px 64px rgba(26, 20, 16, 0.18), 0 8px 24px rgba(26, 20, 16, 0.10);
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(26, 20, 16, 0.06);
+    --kiosk-shadow-pop:             0 8px 24px rgba(26, 20, 16, 0.12);
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(26, 20, 16, 0.28), 0 12px 32px rgba(26, 20, 16, 0.12);
+
+    /* Backdrop blur — pour modals premium */
+    --kiosk-backdrop-blur-bold:     blur(16px) saturate(180%);
+    --kiosk-backdrop-overlay-bold:  rgba(26, 20, 16, 0.55);
+}
+
+/* -----------------------------------------------------------------------------
+   DARK MODE — toggle via [data-kiosk-theme='dark'] propagé par useKioskTheme
+   ----------------------------------------------------------------------------- */
+[data-kiosk-theme='dark'] {
+    --kiosk-bold-bg:                #0E0A07; /* deep warm dark */
+    --kiosk-bold-surface:           #1F1611; /* lifted dark warm */
+    --kiosk-bold-surface-subtle:    #150F0B; /* between */
+    --kiosk-bold-surface-strong:    #FFF5E8; /* inversion (rare ribbons clairs) */
+    --kiosk-bold-surface-overlay:   rgba(0, 0, 0, 0.75);
+
+    --kiosk-bold-text-primary:      #FFF5E8; /* warm white */
+    --kiosk-bold-text-secondary:    #B8A99A; /* warm taupe */
+    --kiosk-bold-text-tertiary:     #8A7B6E;
+    --kiosk-bold-text-inverse:      #1A1410;
+    --kiosk-bold-text-on-primary:   #FFF5E8;
+    --kiosk-bold-text-on-accent:    #1A1410;
+
+    --kiosk-bold-border:            #2A1F18;
+    --kiosk-bold-border-strong:     #FFF5E8;
+    --kiosk-bold-border-emphasis:   #FF6B6B;
+
+    /* Brand — slightly desaturated pour préserver contraste AAA en dark */
+    --kiosk-bold-primary:           #FF6B6B;
+    --kiosk-bold-primary-hover:     #FF8585;
+    --kiosk-bold-primary-active:    #FF4D4D;
+    --kiosk-bold-primary-soft:      #2D1518;
+    --kiosk-bold-primary-glow:      rgba(255, 107, 107, 0.40);
+
+    --kiosk-bold-accent:            #FFC857; /* doré plus brillant en dark */
+    --kiosk-bold-accent-hover:      #FFD571;
+    --kiosk-bold-accent-soft:       #2D2418;
+    --kiosk-bold-accent-glow:       rgba(255, 200, 87, 0.36);
+
+    --kiosk-bold-success:           #4ADE80;
+    --kiosk-bold-success-soft:      #1A2D22;
+    --kiosk-bold-success-text:      #86EFAC;
+    --kiosk-bold-warning:           #FBBF24;
+    --kiosk-bold-warning-soft:      #2D2418;
+    --kiosk-bold-warning-text:      #FCD34D;
+    --kiosk-bold-danger:            #F87171;
+    --kiosk-bold-danger-soft:       #2D1A1D;
+    --kiosk-bold-danger-text:       #FCA5A5;
+
+    /* Élévation — ombres plus profondes en dark */
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(0, 0, 0, 0.50), 0 1px 4px rgba(0, 0, 0, 0.30);
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(0, 0, 0, 0.60), 0 2px 6px rgba(0, 0, 0, 0.40);
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(255, 107, 107, 0.40), 0 4px 12px rgba(255, 107, 107, 0.20);
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(255, 107, 107, 0.50), 0 6px 16px rgba(255, 107, 107, 0.25);
+    --kiosk-shadow-hero:            0 24px 64px rgba(0, 0, 0, 0.60), 0 8px 24px rgba(0, 0, 0, 0.40);
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(0, 0, 0, 0.40);
+    --kiosk-shadow-pop:             0 8px 24px rgba(0, 0, 0, 0.50);
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(0, 0, 0, 0.70), 0 12px 32px rgba(0, 0, 0, 0.40);
+
+    --kiosk-backdrop-overlay-bold:  rgba(0, 0, 0, 0.75);
+
+    /* Mode `auto` (résolu en dark par useKioskTheme) hérite de la même cascade. */
+}
+
+/* -----------------------------------------------------------------------------
+   AAA escalation pour le mode bold (combinaison [data-kiosk-contrast='aaa'])
+   ----------------------------------------------------------------------------- */
+[data-kiosk-contrast='aaa'] {
+    --kiosk-bold-text-secondary:    #4A3E36; /* warmer dark pour ratio ≥ 7:1 */
+    --kiosk-bold-text-tertiary:     #6B5D52;
+    --kiosk-bold-border:            #C4B6A8;
+    --kiosk-bold-border-strong:     #1A1410;
+}
+[data-kiosk-theme='dark'][data-kiosk-contrast='aaa'] {
+    --kiosk-bold-text-secondary:    #E0D2C2;
+    --kiosk-bold-text-tertiary:     #C4B6A8;
+    --kiosk-bold-border:            #4A3E36;
+    --kiosk-bold-border-strong:     #FFF5E8;
+}
+
+/* -----------------------------------------------------------------------------
+   MOTION LIBRARY — durées sémantiques + spring confiant
+   ----------------------------------------------------------------------------- */
+:root {
+    /* Durées sémantiques — utilisées par les NEW variants atoms (V1.5+) et
+       par les écrans refondus (V2-V4). Distinctes des --kiosk-duration-*
+       existantes (fast/base/slow) pour ne pas casser les transitions actuelles. */
+    --kiosk-duration-tap:        120ms;  /* micro-interaction tap */
+    --kiosk-duration-card:       240ms;  /* card hover, selection */
+    --kiosk-duration-step:       320ms;  /* step transition wizard */
+    --kiosk-duration-ceremony:   480ms;  /* confirmation finale (max — uniquement V4.7) */
+
+    /* Easings sémantiques — alias clairs sur les easings existants */
+    --kiosk-motion-spring:       cubic-bezier(0.34, 1.56, 0.64, 1); /* alias --kiosk-ease-bounce */
+    --kiosk-motion-smooth:       cubic-bezier(0.4, 0, 0.2, 1);       /* alias --kiosk-ease-standard */
+    --kiosk-motion-emphasis:     cubic-bezier(0.2, 0, 0, 1);         /* alias CV1 cv1-motion-easing */
+    --kiosk-motion-decelerate:   cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* -----------------------------------------------------------------------------
+   RADII étendus — generous rounding pour identité bold
+   ----------------------------------------------------------------------------- */
+:root {
+    --kiosk-radius-3xl:          48px;   /* hero CTA, total panel */
+    /* --kiosk-radius-2xl déjà défini à 32px dans tokens.css — réutilisé tel quel */
+}
+
+/* -----------------------------------------------------------------------------
+   REDUCED MOTION — neutralise les NOUVELLES durées (les anciennes sont déjà
+   gérées par tokens.css @media + tokens-aaa.css). Double protection :
+   - système : prefers-reduced-motion
+   - utilisateur : data-kiosk-reduced-motion='true' (toggle KsA11ySettings)
+   ----------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --kiosk-duration-tap:        1ms;
+        --kiosk-duration-card:       1ms;
+        --kiosk-duration-step:       1ms;
+        --kiosk-duration-ceremony:   1ms;
+    }
+}
+
+[data-kiosk-reduced-motion='true'] {
+    --kiosk-duration-tap:        1ms;
+    --kiosk-duration-card:       1ms;
+    --kiosk-duration-step:       1ms;
+    --kiosk-duration-ceremony:   1ms;
+}

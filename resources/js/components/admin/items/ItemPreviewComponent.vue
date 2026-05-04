@@ -82,6 +82,44 @@
                 <p v-else class="text-sm text-slate-400">
                     {{ loading ? $t('admin.item_preview.loading') : $t('admin.item_preview.no_pos_data') }}
                 </p>
+
+                <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-3">
+                    <h5 class="mb-3 text-sm font-semibold text-slate-800">
+                        {{ $t('label.composer.preview_steps_title') }}
+                    </h5>
+                    <p v-if="!stepsForChannel('pos').length" class="text-sm italic text-slate-500">
+                        {{ $t('label.composer.preview_no_steps') }}
+                    </p>
+                    <ol v-else class="space-y-3">
+                        <li
+                            v-for="(step, idx) in stepsForChannel('pos')"
+                            :key="step.id || step._uid || step.step_key || idx"
+                            class="flex items-start gap-3 text-sm"
+                        >
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
+                                {{ idx + 1 }}
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-800">
+                                    {{ step.label || step.step_key || $t('label.composer.preview_step_unnamed') }}
+                                </div>
+                                <div class="mt-0.5 text-xs text-slate-600">
+                                    {{ stepChoiceLabel(step) }}
+                                    <span v-if="sourceTypeLabel(step)" class="ml-1">
+                                        - {{ $t('label.source') }}: {{ sourceTypeLabel(step) }}
+                                    </span>
+                                </div>
+                                <div v-if="sourceOptionsPreview(step).length" class="mt-1 text-xs text-slate-500">
+                                    {{ sourceOptionsPreview(step).join(', ') }}{{ sourceOptionsCount(step) > 4 ? '...' : '' }}
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-1 text-[11px] font-semibold">
+                                    <span :class="visibilityBadgeClass(step, 'pos')">POS</span>
+                                    <span :class="visibilityBadgeClass(step, 'kiosk')">Kiosk</span>
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
             </article>
 
             <article
@@ -110,6 +148,44 @@
                 <p v-else class="text-sm text-slate-400">
                     {{ loading ? $t('admin.item_preview.loading') : $t('admin.item_preview.no_kiosk_data') }}
                 </p>
+
+                <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-3">
+                    <h5 class="mb-3 text-sm font-semibold text-slate-800">
+                        {{ $t('label.composer.preview_steps_title') }}
+                    </h5>
+                    <p v-if="!stepsForChannel('kiosk').length" class="text-sm italic text-slate-500">
+                        {{ $t('label.composer.preview_no_steps') }}
+                    </p>
+                    <ol v-else class="space-y-3">
+                        <li
+                            v-for="(step, idx) in stepsForChannel('kiosk')"
+                            :key="step.id || step._uid || step.step_key || idx"
+                            class="flex items-start gap-3 text-sm"
+                        >
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
+                                {{ idx + 1 }}
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-800">
+                                    {{ step.label || step.step_key || $t('label.composer.preview_step_unnamed') }}
+                                </div>
+                                <div class="mt-0.5 text-xs text-slate-600">
+                                    {{ stepChoiceLabel(step) }}
+                                    <span v-if="sourceTypeLabel(step)" class="ml-1">
+                                        - {{ $t('label.source') }}: {{ sourceTypeLabel(step) }}
+                                    </span>
+                                </div>
+                                <div v-if="sourceOptionsPreview(step).length" class="mt-1 text-xs text-slate-500">
+                                    {{ sourceOptionsPreview(step).join(', ') }}{{ sourceOptionsCount(step) > 4 ? '...' : '' }}
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-1 text-[11px] font-semibold">
+                                    <span :class="visibilityBadgeClass(step, 'pos')">POS</span>
+                                    <span :class="visibilityBadgeClass(step, 'kiosk')">Kiosk</span>
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
             </article>
         </div>
 
@@ -144,6 +220,7 @@
  * Props:
  *   item: Object       The item being edited (must contain id and branch_ids[]).
  *   branches: Array    [{id, name}] available branches for the dropdown.
+ *   steps: Array       Wizard steps shown in the live customer journey preview.
  *
  * Emits:
  *   parity-warning(message: string) — non-blocking divergence indicator.
@@ -157,6 +234,7 @@ export default {
     props: {
         item: { type: Object, required: true },
         branches: { type: Array, default: () => [] },
+        steps: { type: Array, default: () => [] },
     },
     data() {
         return {
@@ -274,6 +352,57 @@ export default {
         formatPrice(value) {
             if (value === null || value === undefined) return '';
             return value;
+        },
+        stepsForChannel(channelKey) {
+            if (!Array.isArray(this.steps)) return [];
+            return this.steps.filter((step) => {
+                const visibleOn = step.visible_on || ['pos', 'kiosk'];
+                return Array.isArray(visibleOn) ? visibleOn.includes(channelKey) : true;
+            });
+        },
+        stepMin(step) {
+            return Number(step.min_select ?? step.min ?? 0);
+        },
+        stepMax(step) {
+            const min = this.stepMin(step);
+            const max = Number(step.max_select ?? step.max ?? min);
+            return Math.max(max, min);
+        },
+        stepChoiceLabel(step) {
+            const min = this.stepMin(step);
+            const max = this.stepMax(step);
+            if (min === 0 && max === 1) {
+                return this.$t('label.composer.preview_optional_one');
+            }
+            if (min === max) {
+                return this.$t('label.composer.preview_required_n', { n: min });
+            }
+            return this.$t('label.composer.preview_min_max', { min, max });
+        },
+        sourceTypeLabel(step) {
+            const labels = {
+                item_attribute: this.$t('label.composer.source_item_attribute'),
+                extra_group: this.$t('label.composer.source_extra_group'),
+                addon: this.$t('label.composer.source_addon'),
+            };
+            return labels[step.source_type] || step.source_type || '';
+        },
+        sourceOptionsCount(step) {
+            return Array.isArray(step.source_options_preview) ? step.source_options_preview.length : 0;
+        },
+        sourceOptionsPreview(step) {
+            if (!Array.isArray(step.source_options_preview)) return [];
+            return step.source_options_preview.slice(0, 4);
+        },
+        isStepVisibleOn(step, channelKey) {
+            const visibleOn = step.visible_on || ['pos', 'kiosk'];
+            return Array.isArray(visibleOn) ? visibleOn.includes(channelKey) : true;
+        },
+        visibilityBadgeClass(step, channelKey) {
+            const base = 'rounded-full border px-2 py-0.5';
+            return this.isStepVisibleOn(step, channelKey)
+                ? `${base} border-emerald-200 bg-emerald-50 text-emerald-700`
+                : `${base} border-slate-200 bg-white text-slate-400`;
         },
     },
 };

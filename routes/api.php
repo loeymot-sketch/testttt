@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\ChefController;
 use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\ItemPhotoController;
 use App\Http\Controllers\Admin\MailController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\RoleController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\ComposerProfileController;
 use App\Http\Controllers\Admin\ComposerStepController;
 use App\Http\Controllers\Admin\CookiesController;
+use App\Http\Controllers\Admin\IngredientController;
 use App\Http\Controllers\Admin\LicenseController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\AnalyticController;
@@ -642,16 +644,33 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/addon/{item}', [ItemAddonController::class, 'store']);
         Route::delete('/addon/{item}/{itemAddon}', [ItemAddonController::class, 'destroy']);
     });
+    Route::post('/items/{item}/photo', [ItemPhotoController::class, 'store'])->name('items.photo.store');
+
+    Route::prefix('ingredients')->name('ingredients.')->middleware('permission:ingredients_manage')->group(function () {
+        Route::get('/', [IngredientController::class, 'index'])->name('index');
+        Route::get('/{globalId}', [IngredientController::class, 'show'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('show');
+        Route::match(['put', 'patch'], '/{globalId}/availability', [IngredientController::class, 'toggleAvailability'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('availability.toggle');
+    });
 
     Route::prefix('composer')->name('composer.')->group(function () {
         Route::middleware('permission:catalog.compose')->group(function () {
-            Route::get('/items/{item}/profile', [ComposerProfileController::class, 'show']);
-            Route::post('/items/{item}/profile', [ComposerProfileController::class, 'store']);
-            // [CV1-WIZARD-COMPOSABLE-001 T-WC-TEMPLATES-01] Apply named starter template
-            Route::post('/items/{item}/apply-template', [ComposerProfileController::class, 'applyTemplate']);
-            // [CV1-WIZARD-COMPOSABLE-001 T-WC-SOURCE-PICKER-01] Available source candidates for picker
-            Route::get('/items/{item}/available-sources', [ComposerProfileController::class, 'availableSources']);
+            Route::middleware('wizard.per_item_demo')->group(function () {
+                Route::get('/items/{item}/profile', [ComposerProfileController::class, 'show']);
+                Route::post('/items/{item}/profile', [ComposerProfileController::class, 'store']);
+                // [CV1-WIZARD-COMPOSABLE-001 T-WC-TEMPLATES-01] Apply named starter template
+                Route::post('/items/{item}/apply-template', [ComposerProfileController::class, 'applyTemplate']);
+                // [CV1-WIZARD-COMPOSABLE-001 T-WC-SOURCE-PICKER-01] Available source candidates for picker
+                Route::get('/items/{item}/available-sources', [ComposerProfileController::class, 'availableSources']);
+            });
+            Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
+            Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
+            Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
             Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
+            Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
             Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
             Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
             Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);

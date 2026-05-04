@@ -63,6 +63,27 @@ return [
         'interval_ms_when_disconnected' => env('FK_CATALOG_POS_FALLBACK_INTERVAL_MS', 30_000),
     ],
 
+    'oss_fallback_polling' => [
+        // OSS (client screen) keeps polling even when websocket is connected,
+        // but at a low cadence. In disconnected state, cadence is tightened.
+        // This hardens the "orders in preparation/ready" display during WS drift.
+        'enabled' => env('FK_CATALOG_OSS_FALLBACK_POLLING_ENABLED', true),
+        'interval_ms_when_connected' => env('FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS', 60_000),
+        'interval_ms_when_disconnected' => env('FK_CATALOG_OSS_FALLBACK_DISCONNECTED_INTERVAL_MS', 5_000),
+    ],
+
+    'kds_fallback_polling' => [
+        // KDS cadence tuning (defaults preserve existing behavior).
+        // CONNECTED remains Infinity in KdsSyncService; these values apply
+        // to degraded/disconnected windows and high-activity mode.
+        'high_activity_base_ms' => env('FK_CATALOG_KDS_HIGH_ACTIVITY_BASE_MS', 3_000),
+        'high_activity_jitter_ms' => env('FK_CATALOG_KDS_HIGH_ACTIVITY_JITTER_MS', 1_000),
+        'degraded_base_ms' => env('FK_CATALOG_KDS_DEGRADED_BASE_MS', 5_000),
+        'degraded_jitter_ms' => env('FK_CATALOG_KDS_DEGRADED_JITTER_MS', 2_000),
+        'disconnected_base_ms' => env('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', 10_000),
+        'disconnected_jitter_ms' => env('FK_CATALOG_KDS_DISCONNECTED_JITTER_MS', 3_000),
+    ],
+
     'pos_wizard_composer_aware' => [
         // [T-WC-POS-RUNTIME-01] When true, public/js/pos-wizard.js builds wizard
         // pages from the published composer profile (item.composer_profile.steps)
@@ -135,6 +156,12 @@ return [
         // Throttle: do not re-alert for the same (branch_id, stockable)
         // pair within this window (seconds).
         'throttle_seconds' => env('FK_CATALOG_STOCK_LOW_ALERT_THROTTLE', 3600),
+    ],
+
+    'features' => [
+        'wizard_per_item_demo' => [
+            'enabled' => env('FEATURE_WIZARD_PER_ITEM_DEMO', false),
+        ],
     ],
 
 ];

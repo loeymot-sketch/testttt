@@ -1,5 +1,12 @@
 <template>
     <section class="min-h-[calc(100vh-120px)] bg-[#f5f7f6] pb-24" data-testid="admin-composer-root">
+        <ComposerVersionConflictBanner
+            :is-visible="conflictDetected"
+            :current-version="version"
+            :expected-version="expectedVersion"
+            @reload="reloadProfile"
+        />
+
         <div class="mx-auto max-w-[1760px] space-y-4 px-3 py-4 sm:px-5">
             <header class="rounded-lg border border-[#d9dfdc] bg-white p-4 shadow-sm">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -18,10 +25,10 @@
                         </div>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-[0.08em] text-[#587065]">
-                                {{ t('label.composer.product_context', 'Produit') }}
+                                {{ composerContextLabel }}
                             </p>
                             <h1 class="truncate text-2xl font-semibold text-[#202824]" data-testid="admin-composer-product-name">
-                                {{ itemName }}
+                                {{ composerHeaderTitle }}
                             </h1>
                             <p class="mt-1 text-sm text-[#66756e]" data-testid="admin-composer-product-category">
                                 {{ itemCategory }}
@@ -79,15 +86,36 @@
                 {{ loadError }}
             </div>
 
+            <div
+                v-if="applyTemplateError"
+                role="alert"
+                class="flex items-start gap-3 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+                data-testid="admin-composer-apply-template-error"
+            >
+                <span class="flex-1 leading-relaxed">{{ applyTemplateError }}</span>
+                <button
+                    type="button"
+                    class="font-semibold text-rose-900 hover:underline"
+                    @click="applyTemplateError = null"
+                >
+                    {{ t('label.dismiss', 'Fermer') }}
+                </button>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)_390px]">
                 <aside class="space-y-3 rounded-lg border border-[#d9dfdc] bg-white p-3 shadow-sm">
                     <button
                         type="button"
                         class="db-btn h-[42px] w-full justify-center bg-[#334238] text-white"
                         data-testid="admin-composer-template"
+                        :disabled="applyingTemplate"
                         @click="templateModalOpen = true"
                     >
-                        <i class="lab lab-document-text" aria-hidden="true"></i>
+                        <i
+                            class="lab"
+                            :class="applyingTemplate ? 'lab-refresh animate-spin' : 'lab-document-text'"
+                            aria-hidden="true"
+                        ></i>
                         {{ t('label.composer.choose_template', 'Choisir un template') }}
                     </button>
                     <button
@@ -137,18 +165,49 @@
                         @change="schedulePreviewRefresh"
                     />
                     <div
-                        v-else
-                        class="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-[#ccd5d0] bg-[#f8faf9] p-6 text-center"
+                        v-if="steps.length === 0"
+                        class="mx-auto my-8 max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-6"
                         data-testid="admin-composer-empty-state"
                     >
-                        <div>
-                            <p class="text-lg font-semibold text-[#405149]">
-                                {{ t('message.composer.no_steps', 'Ajoutez une page pour commencer.') }}
-                            </p>
-                            <button type="button" class="db-btn mt-4 bg-[#1ab759] text-white" @click="addStep">
-                                <i class="lab lab-add-circle" aria-hidden="true"></i>
-                                {{ t('label.composer.add_page', 'Ajouter une page') }}
-                            </button>
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="mb-2 text-base font-semibold text-amber-900">
+                                    {{ t('message.composer.guidance_zero_steps_title', 'Comment fonctionne le wizard ?') }}
+                                </h3>
+                                <p class="mb-3 text-sm leading-relaxed text-amber-900">
+                                    {{ t('message.composer.guidance_zero_steps_intro', 'Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.') }}
+                                </p>
+                                <ol class="mb-4 list-decimal space-y-2 pl-5 text-sm text-amber-900">
+                                    <li>
+                                        {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.") }}
+                                    </li>
+                                    <li>
+                                        {{ t('message.composer.guidance_zero_steps_option_manual', 'Sinon : ajoute une page manuelle pour configurer ton propre parcours.') }}
+                                    </li>
+                                </ol>
+                                <div class="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+                                        :disabled="applyingTemplate"
+                                        @click="templateModalOpen = true"
+                                    >
+                                        {{ t('button.composer.choose_template_v2', 'Choisir un template') }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-2 rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+                                        @click="addStep"
+                                    >
+                                        {{ t('button.composer.add_page_manual', 'Ajouter une page manuellement') }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </main>
@@ -174,6 +233,7 @@
                         ref="livePreview"
                         :item="item"
                         :branches="previewBranches"
+                        :steps="steps"
                         data-testid="admin-composer-live-preview"
                     />
                     <div
@@ -201,9 +261,18 @@
                 </button>
                 <button
                     type="button"
+                    class="db-btn-outline h-[44px] justify-center !border-[#99a69f] !text-[#405149]"
+                    data-testid="admin-composer-show-diff"
+                    :disabled="!profile || !profile.id || publishing"
+                    @click="diffModalOpen = true"
+                >
+                    {{ t('studio.composer.diff.title', 'Differences a publier') }}
+                </button>
+                <button
+                    type="button"
                     class="db-btn h-[44px] justify-center bg-[#1ab759] text-white"
                     data-testid="admin-composer-publish"
-                    :disabled="publishing"
+                    :disabled="conflictDetected || publishing"
                     @click="publishConfirmOpen = true"
                 >
                     <i class="lab lab-tick-circle-2" aria-hidden="true"></i>
@@ -224,7 +293,7 @@
                     {{ t('label.composer.publish_confirm_title', 'Publier ce wizard') }}
                 </h3>
                 <p class="mt-2 text-sm text-[#5f6f67]">
-                    {{ t('message.composer.publish_confirm_body', 'Cette modification sera visible immediatement sur POS et Kiosk pour la branche scope.') }}
+                    {{ publishConfirmBody }}
                 </p>
                 <div class="mt-5 flex justify-end gap-2">
                     <button type="button" class="db-btn-outline" data-testid="composer-publish-cancel" @click="publishConfirmOpen = false">
@@ -237,6 +306,14 @@
                 </div>
             </div>
         </div>
+
+        <ComposerPublishDiffModal
+            v-if="profile && profile.id"
+            :profile-id="profile.id"
+            :is-open="diffModalOpen"
+            @update:is-open="diffModalOpen = $event"
+            @confirm-publish="publish"
+        />
 
         <div v-if="pendingDeleteStep" class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4" data-testid="composer-delete-confirm-modal">
             <div class="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl">
@@ -265,6 +342,8 @@ import axios from 'axios';
 import alertService from '../../../../services/alertService';
 import ItemPreviewComponent from '../ItemPreviewComponent.vue';
 import ComposerTemplatePickerModal from './ComposerTemplatePickerModal.vue';
+import ComposerPublishDiffModal from './ComposerPublishDiffModal.vue';
+import ComposerVersionConflictBanner from './ComposerVersionConflictBanner.vue';
 import ComposerStepListSidebar from './ComposerStepListSidebar.vue';
 import ComposerStepFormPanel from './ComposerStepFormPanel.vue';
 
@@ -275,13 +354,24 @@ export default {
     components: {
         ItemPreviewComponent,
         ComposerTemplatePickerModal,
+        ComposerPublishDiffModal,
+        ComposerVersionConflictBanner,
         ComposerStepListSidebar,
         ComposerStepFormPanel,
     },
     props: {
         itemId: {
             type: [Number, String],
-            required: true,
+            default: null,
+        },
+        entityId: {
+            type: [Number, String],
+            default: null,
+        },
+        entityType: {
+            type: String,
+            default: 'item',
+            validator: (value) => ['item', 'category'].includes(value),
         },
     },
     data() {
@@ -303,6 +393,12 @@ export default {
             branches: [],
             templateModalOpen: false,
             publishConfirmOpen: false,
+            diffModalOpen: false,
+            applyingTemplate: false,
+            applyTemplateError: null,
+            version: 0,
+            conflictDetected: false,
+            expectedVersion: null,
             pendingDeleteStep: null,
             previewRefreshKey: 0,
             previewTimer: null,
@@ -310,10 +406,90 @@ export default {
         };
     },
     computed: {
+        resolvedEntityType() {
+            const route = this.currentRoute();
+            const routeType = route.meta?.entityType || route.query?.entityType || route.query?.entity_type;
+            if (routeType === 'category' || route.name === 'admin.categories.composer' || String(route.path || '').includes('/admin/categories/')) {
+                return 'category';
+            }
+            if (routeType === 'item' || route.name === 'admin.items.composer' || String(route.path || '').includes('/admin/items/')) {
+                return 'item';
+            }
+
+            const searchParams = this.locationSearchParams();
+            const queryType = searchParams.get('entityType') || searchParams.get('entity_type');
+            if (queryType === 'category' || queryType === 'item') {
+                return queryType;
+            }
+
+            return this.entityType;
+        },
+        resolvedEntityId() {
+            const route = this.currentRoute();
+            const routeParams = route.params || {};
+            const routeQuery = route.query || {};
+            const searchParams = this.locationSearchParams();
+            const candidate = this.entityId
+                || this.itemId
+                || routeParams.id
+                || routeParams.itemId
+                || routeParams.categoryId
+                || routeQuery.entityId
+                || routeQuery.entity_id
+                || routeQuery.itemId
+                || routeQuery.item_id
+                || routeQuery.categoryId
+                || routeQuery.category_id
+                || searchParams.get('entityId')
+                || searchParams.get('entity_id')
+                || searchParams.get('itemId')
+                || searchParams.get('item_id')
+                || searchParams.get('categoryId')
+                || searchParams.get('category_id');
+
+            return candidate == null ? null : candidate;
+        },
+        isCategoryComposer() {
+            return this.resolvedEntityType === 'category';
+        },
+        composerContextLabel() {
+            return this.isCategoryComposer
+                ? this.t('label.composer.category_context', 'Wizard de la catégorie')
+                : this.t('label.composer.product_context', 'Wizard du produit');
+        },
+        composerHeaderTitle() {
+            return this.isCategoryComposer
+                ? `${this.t('label.composer.category_context', 'Wizard de la catégorie')} : ${this.itemName}`
+                : this.itemName;
+        },
+        profileEndpoint() {
+            return this.isCategoryComposer
+                ? `/admin/composer/categories/${this.resolvedEntityId}/profile`
+                : `/admin/composer/items/${this.resolvedEntityId}/profile`;
+        },
+        createProfileEndpoint() {
+            return this.profileEndpoint;
+        },
+        applyTemplateEndpoint() {
+            return this.isCategoryComposer
+                ? `/admin/composer/categories/${this.resolvedEntityId}/apply-template`
+                : `/admin/composer/items/${this.resolvedEntityId}/apply-template`;
+        },
+        publishConfirmBody() {
+            return this.isCategoryComposer
+                ? this.categoryPublishWarning()
+                : this.t('message.composer.publish_confirm_body', 'Cette modification sera visible immediatement sur POS et Kiosk pour la branche scope.');
+        },
         itemName() {
+            if (this.isCategoryComposer) {
+                return this.item?.name || this.t('label.composer.loading_category', 'Chargement catégorie');
+            }
             return this.item?.name || this.t('label.composer.loading_product', 'Chargement produit');
         },
         itemCategory() {
+            if (this.isCategoryComposer) {
+                return this.t('message.composer.category_inheritance_scope', 'Tous les produits de cette catégorie héritent de ce wizard.');
+            }
             return this.item?.category_name || this.item?.category?.name || this.t('label.category', 'Categorie');
         },
         itemPhoto() {
@@ -368,14 +544,34 @@ export default {
     },
     methods: {
         t(key, fallback) {
-            return typeof this.$t === 'function' ? this.$t(key) : fallback;
+            if (typeof this.$t !== 'function') {
+                return fallback;
+            }
+            const translated = this.$t(key);
+            return translated === key ? fallback : translated;
+        },
+        currentRoute() {
+            const routerRoute = this.$router?.currentRoute;
+            if (routerRoute?.value) {
+                return routerRoute.value;
+            }
+            if (routerRoute) {
+                return routerRoute;
+            }
+            return Object.prototype.hasOwnProperty.call(this, '$route') ? this.$route : {};
+        },
+        locationSearchParams() {
+            if (typeof window === 'undefined' || !window.location?.search) {
+                return new URLSearchParams('');
+            }
+            return new URLSearchParams(window.location.search);
         },
         async load() {
             this.loading = true;
             this.loadError = '';
             try {
                 await Promise.all([
-                    this.loadItem(),
+                    this.loadEntity(),
                     this.loadAvailableSources(),
                     this.loadBranches(),
                 ]);
@@ -386,8 +582,18 @@ export default {
                 this.loading = false;
             }
         },
+        async loadEntity() {
+            if (this.isCategoryComposer) {
+                return this.loadCategory();
+            }
+            return this.loadItem();
+        },
         async loadItem() {
-            const response = await axios.get(`/admin/item/show/${this.itemId}`);
+            const response = await axios.get(`/admin/item/show/${this.resolvedEntityId}`);
+            this.item = response.data?.data || response.data || null;
+        },
+        async loadCategory() {
+            const response = await axios.get(`admin/setting/item-category/show/${this.resolvedEntityId}`);
             this.item = response.data?.data || response.data || null;
         },
         async loadBranches() {
@@ -407,12 +613,15 @@ export default {
         async loadProfile() {
             try {
                 const config = this.branchIdScope ? { params: { branch_id_scope: this.branchIdScope } } : undefined;
-                const response = await axios.get(`/admin/composer/items/${this.itemId}/profile`, config);
+                const response = await axios.get(this.profileEndpoint, config);
                 this.hydrateProfile(response.data?.data || null);
             } catch (error) {
                 if (error?.response?.status === 404) {
                     this.profile = null;
                     this.template = 'custom';
+                    this.version = 0;
+                    this.conflictDetected = false;
+                    this.expectedVersion = null;
                     this.steps = [];
                     this.selectedStepKey = null;
                     return;
@@ -421,7 +630,16 @@ export default {
             }
         },
         async loadAvailableSources() {
-            const response = await axios.get(`/admin/composer/items/${this.itemId}/available-sources`);
+            if (this.isCategoryComposer) {
+                this.availableSources = {
+                    item_attribute: [],
+                    extra_group: [],
+                    addon: [],
+                };
+                return;
+            }
+
+            const response = await axios.get(`/admin/composer/items/${this.resolvedEntityId}/available-sources`);
             const data = response.data?.data || response.data || {};
             this.availableSources = {
                 item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
@@ -432,6 +650,9 @@ export default {
         hydrateProfile(profile) {
             this.profile = profile;
             this.template = profile?.template || 'custom';
+            this.version = profile?.version ?? 0;
+            this.conflictDetected = false;
+            this.expectedVersion = null;
             this.branchIdScope = profile?.branch_id_scope ?? this.branchIdScope ?? null;
             this.steps = (profile?.steps || []).map((step, index) => this.normalizeStep(step, index));
             this.selectedStepKey = this.steps[0]?._uid || null;
@@ -561,32 +782,105 @@ export default {
         async saveDraft() {
             this.savingDraft = true;
             try {
-                const payload = this.profilePayload();
+                const payload = {
+                    ...this.profilePayload(),
+                    version: this.version,
+                };
                 const response = this.profile?.id
                     ? await axios.put(`/admin/composer/profiles/${this.profile.id}`, payload)
-                    : await axios.post(`/admin/composer/items/${this.itemId}/profile`, payload);
+                    : await axios.post(this.createProfileEndpoint, payload);
                 this.hydrateProfile(response.data?.data || null);
                 alertService.success(this.t('message.composer.draft_saved', 'Brouillon sauvegarde.'));
             } catch (error) {
+                if (error?.response?.status === 409) {
+                    this.conflictDetected = true;
+                    this.expectedVersion = error.response.data?.expected ?? null;
+                    return;
+                }
                 alertService.error(error?.response?.data?.message || this.t('message.composer.save_failed', 'Sauvegarde impossible.'));
                 throw error;
             } finally {
                 this.savingDraft = false;
             }
         },
+        reloadProfile() {
+            this.conflictDetected = false;
+            this.expectedVersion = null;
+            return this.loadProfile();
+        },
         async applyTemplate(template) {
-            const payload = { template };
-            if (this.branchIdScope) {
-                payload.branch_id_scope = this.branchIdScope;
+            if (!template) return;
+            this.applyingTemplate = true;
+            this.applyTemplateError = null;
+            try {
+                const payload = { template };
+                if (this.branchIdScope) {
+                    payload.branch_id_scope = this.branchIdScope;
+                }
+                const response = await axios.post(
+                    this.applyTemplateEndpoint,
+                    payload
+                );
+                const profileData = response.data?.data || null;
+
+                if (!profileData) {
+                    this.applyTemplateError = this.t(
+                        'message.composer.apply_template_empty_response',
+                        "Le serveur n'a pas renvoyé le profil mis à jour. Réessaye ou contacte le support."
+                    );
+                    this.templateModalOpen = false;
+                    return;
+                }
+
+                this.templateModalOpen = false;
+                this.hydrateProfile(profileData);
+
+                if (template !== 'custom' && Array.isArray(profileData.steps) && profileData.steps.length === 0) {
+                    this.applyTemplateError = this.t(
+                        'message.composer.apply_template_no_steps',
+                        "Le template a été appliqué mais aucune étape n'a été créée. C'est inattendu."
+                    );
+                }
+
+                await this.loadProfile();
+                alertService.success(this.t('message.composer.template_applied', 'Template applique.'));
+            } catch (error) {
+                const status = error?.response?.status;
+                const serverMessage = error?.response?.data?.message;
+                this.templateModalOpen = false;
+                if (status === 422) {
+                    this.applyTemplateError = serverMessage || this.t(
+                        'message.composer.apply_template_validation_error',
+                        'Données invalides envoyées au serveur.'
+                    );
+                } else if (status === 401 || status === 419) {
+                    this.applyTemplateError = this.t(
+                        'message.composer.apply_template_auth_error',
+                        'Session expirée. Recharge la page et reconnecte-toi.'
+                    );
+                } else if (status === 500) {
+                    this.applyTemplateError = this.t(
+                        'message.composer.apply_template_server_error',
+                        'Erreur serveur. Réessaye dans un instant.'
+                    );
+                } else {
+                    this.applyTemplateError = serverMessage || this.t(
+                        'message.composer.apply_template_unknown_error',
+                        "Échec inattendu lors de l'application du template."
+                    );
+                }
+                console.error('[applyTemplate] failed', { status, error });
+            } finally {
+                this.applyingTemplate = false;
             }
-            const response = await axios.post(`/admin/composer/items/${this.itemId}/apply-template`, payload);
-            this.templateModalOpen = false;
-            this.hydrateProfile(response.data?.data || null);
-            alertService.success(this.t('message.composer.template_applied', 'Template applique.'));
         },
         async publish() {
             this.publishing = true;
             try {
+                if (this.isCategoryComposer && !this.confirmCategoryPublish()) {
+                    this.publishConfirmOpen = false;
+                    return;
+                }
                 if (!this.profile?.id) {
                     await this.saveDraft();
                 }
@@ -630,8 +924,22 @@ export default {
         },
         returnToItem() {
             if (this.$router?.push) {
-                this.$router.push({ name: 'admin.item.show', params: { id: this.itemId } });
+                if (this.isCategoryComposer) {
+                    this.$router.push({ name: 'admin.items.studio', query: { item_category_id: this.resolvedEntityId } });
+                    return;
+                }
+                this.$router.push({ name: 'admin.item.show', params: { id: this.resolvedEntityId } });
             }
+        },
+        categoryPublishWarning() {
+            const count = this.item?.product_count || this.item?.products_count || this.item?.items_count || 'N';
+            return `Cette opération va remplacer les wizards personnalisés de ${count} produits dans cette catégorie. Continuer ?`;
+        },
+        confirmCategoryPublish() {
+            if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
+                return true;
+            }
+            return window.confirm(this.categoryPublishWarning());
         },
     },
 };

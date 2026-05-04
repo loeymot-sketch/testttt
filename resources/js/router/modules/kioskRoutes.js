@@ -1,13 +1,14 @@
 import store from "../../store/index.js";
 import { trackLegacyRouteHit } from "../../helpers/kioskAnalytics.js";
+// Shell borne + idle + catalogue : imports synchrones. Le trio lazy-only provoquait des
+// navigations où l’URL changeait sans montage de vue (DOM vide jusqu’à F5) et des cold-load
+// /kiosk/categories avant résolution du chunk parent. Voir tests/e2e/kiosk-spa-black-screen-guard.spec.js
+import KioskAppComponent from "../../components/frontend/kiosk/KioskAppComponent.vue";
+import KioskIdleScreenComponent from "../../components/frontend/kiosk/KioskIdleScreenComponent.vue";
+import KioskCategoriesComponent from "../../components/frontend/kiosk/KioskCategoriesComponent.vue";
 
-// [C4] Lazy-load all kiosk components into a dedicated "kiosk" webpack chunk.
-// This keeps the initial app.js lighter for non-kiosk surfaces (admin, POS, KDS, OSS).
-// The kiosk chunk is prefetched on the idle screen so navigation feels instant.
-const KioskAppComponent          = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskAppComponent.vue");
+// [C4] Lazy-load les autres écrans kiosk dans des chunks dédiés.
 const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
-const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
-const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
 const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
 const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
 const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCartComponent.vue");

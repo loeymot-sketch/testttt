@@ -196,6 +196,7 @@
             </p>
             <div class="flex flex-wrap gap-2 mt-4">
                 <button
+                    v-if="wizardPerItemDemoEnabled"
                     type="button"
                     class="db-btn py-2 text-white bg-primary"
                     data-testid="cta-configure-wizard"
@@ -273,6 +274,10 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
         }
     },
     mounted() {
@@ -400,6 +405,10 @@ export default {
         },
         // [T-WC-AFTER-CREATE-01] Post-save CTA handlers — wizard / product detail / dismiss.
         goToWizard: function () {
+            if (!this.wizardPerItemDemoEnabled) {
+                return;
+            }
+
             const id = this.savedItemId;
             this.dismissCta();
             if (id) {

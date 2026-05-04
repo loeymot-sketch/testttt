@@ -8,7 +8,9 @@ use App\Events\SendOrderDeliveryBoySms;
 use App\Events\CategoryCreated;
 use App\Events\CategoryDeleted;
 use App\Events\CategoryUpdated;
+use App\Events\CatalogChanged;
 use App\Events\ComposerProfileChanged;
+use App\Events\IngredientAvailabilityChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
@@ -34,6 +36,7 @@ use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
 use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
+use App\Listeners\InvalidateMenuProjectionOnIngredientChange;
 use App\Listeners\PersistCatalogChangedToOutbox;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
@@ -146,6 +149,12 @@ class EventServiceProvider extends ServiceProvider
             InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
             PersistCatalogChangedToOutbox::class,
             PersistItemAvailabilityChangedToOutbox::class,
+        ],
+        IngredientAvailabilityChanged::class => [
+            InvalidateMenuProjectionOnIngredientChange::class,
+        ],
+        CatalogChanged::class => [
+            PersistCatalogChangedToOutbox::class,
         ],
         ItemCreated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,

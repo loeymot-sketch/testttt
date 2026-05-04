@@ -46,6 +46,7 @@ import LoadingContentComponent from "../components/LoadingContentComponent";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import alertService from "../../../services/alertService";
 import { onEvents } from "../../../services/eventContract";
+import ossSyncService from "../../../services/OssSyncService";
 
 export default {
   name: "PreparingAndReadyComponent",
@@ -56,9 +57,9 @@ export default {
       preparedItems: [],
       preparingItems: [],
       enums: { orderStatusEnum },
-      autoRefreshInterval: null,
       wsConnected: !!(window._wsService?.isConnected()),
       _eventSub: null,
+      ossSyncUnsubscribers: [],
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
       newReadyIds: new Set(),
       newReadyFlash: false,
@@ -68,16 +69,16 @@ export default {
   computed: {},
   mounted() {
     this.list();
-    this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.list);
     this.subscribeEcho();
     this._bindWsService();
+    this.startOssSync();
   },
   beforeUnmount() {
-    this.stopAutoRefresh();
     window.removeEventListener('realtime-order-update', this.list);
     this.unsubscribeEcho();
     this._unbindWsService();
+    this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
   },
   methods: {
@@ -107,11 +108,9 @@ export default {
       this._onWsConnected = () => {
         this.wsConnected = true;
         this.list();
-        this._restartPolling();
       };
       this._onWsDisconnected = () => {
         this.wsConnected = false;
-        this._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -122,23 +121,28 @@ export default {
       if (this._onWsConnected) ws.off('connected', this._onWsConnected);
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
-    _pollingInterval() {
-      return this.wsConnected ? 60000 : 5000;
+    startOssSync() {
+      this.ossSyncUnsubscribers.push(
+        ossSyncService.on('sync', ({ rows = [] }) => {
+          this._hydrateFromRows(rows);
+        })
+      );
+      this.ossSyncUnsubscribers.push(
+        ossSyncService.on('ws_state', ({ state }) => {
+          this.wsConnected = String(state || '').toLowerCase() === 'connected';
+        })
+      );
+      ossSyncService.start({
+        store: this.$store,
+        webSocketService: window._wsService,
+      });
     },
-    _restartPolling() {
-      this.stopAutoRefresh();
-      this.startAutoRefresh();
-    },
-    startAutoRefresh() {
-      if (this.$route.path.includes('order-status-screen')) {
-        this.autoRefreshInterval = setInterval(() => this.list(), this._pollingInterval());
-      }
-    },
-    stopAutoRefresh() {
-      if (this.autoRefreshInterval) {
-        clearInterval(this.autoRefreshInterval);
-        this.autoRefreshInterval = null;
-      }
+    stopOssSync() {
+      try { ossSyncService.stop(); } catch (_) {}
+      (this.ossSyncUnsubscribers || []).forEach((u) => {
+        try { u && u(); } catch (_) {}
+      });
+      this.ossSyncUnsubscribers = [];
     },
     subscribeEcho() {
       if (!window.Echo) return;
@@ -220,27 +224,30 @@ export default {
         });
       } catch (_) {}
     },
+    _hydrateFromRows(rows) {
+      const prevPreparedIds = new Set(this.preparedItems.map(i => i.id));
+      this.preparingItems = rows.filter(i => i.status === orderStatusEnum.PREPARING);
+      const newPrepared = rows.filter(i => i.status === orderStatusEnum.PREPARED);
+
+      // Detect orders that just moved to PREPARED (not in previous list).
+      // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
+      const echoMarked = this._echoMarkedReady || new Set();
+      newPrepared.forEach(item => {
+        if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
+          this._markNewReady(item.id);
+        }
+      });
+      // Clear the echo-marked set after list() processes it (one-shot guard)
+      this._echoMarkedReady = new Set();
+
+      this.preparedItems = newPrepared;
+    },
     list() {
       this.loading.isActive = true;
       this.$store
         .dispatch("orderStatusScreenOrder/lists")
         .then((res) => {
-          const prevPreparedIds = new Set(this.preparedItems.map(i => i.id));
-          this.preparingItems = res.data.data.filter(i => i.status === orderStatusEnum.PREPARING);
-          const newPrepared    = res.data.data.filter(i => i.status === orderStatusEnum.PREPARED);
-
-          // Detect orders that just moved to PREPARED (not in previous list).
-          // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
-          const echoMarked = this._echoMarkedReady || new Set();
-          newPrepared.forEach(item => {
-            if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
-              this._markNewReady(item.id);
-            }
-          });
-          // Clear the echo-marked set after list() processes it (one-shot guard)
-          this._echoMarkedReady = new Set();
-
-          this.preparedItems = newPrepared;
+          this._hydrateFromRows(res.data.data || []);
           this.loading.isActive = false;
         })
         .catch((err) => {

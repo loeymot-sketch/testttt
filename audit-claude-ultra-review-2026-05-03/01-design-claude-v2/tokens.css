@@ -1,0 +1,275 @@
+/* =============================================================================
+   Catalog Studio — design tokens
+   Extends FoodKing CV1 (resources/css/foundations/cv1-tokens.css) and Kiosk
+   tokens (borne/kiosk-ds/tokens.css). Nothing here redefines an existing
+   token — these are *additions* scoped to the new Studio surface.
+   ============================================================================= */
+
+:root {
+  /* --- CV1 baseline (mirror, do not override) --- */
+  --cv1-status-info-bg: #f1f5f9;
+  --cv1-status-info-border: #cbd5e1;
+  --cv1-status-info-text: #334155;
+  --cv1-status-warning-bg: #fffbeb;
+  --cv1-status-warning-border: #fcd34d;
+  --cv1-status-warning-text: #92400e;
+  --cv1-status-blocker-bg: #fff1f2;
+  --cv1-status-blocker-border: #fda4af;
+  --cv1-status-blocker-text: #9f1239;
+  --cv1-surface-default: #ffffff;
+  --cv1-surface-subtle: #f8fafc;
+  --cv1-surface-strong: #0f172a;
+  --cv1-border-default: #e2e8f0;
+  --cv1-border-strong: #94a3b8;
+  --cv1-border-emphasis: #2563eb;
+  --cv1-focus-ring-width: 3px;
+  --cv1-focus-ring-color: #2563eb;
+  --cv1-focus-ring-offset: 2px;
+  --cv1-motion-default: 200ms;
+  --cv1-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Kiosk brand (mirror) --- */
+  --fk-red: #E8001C;
+  --fk-red-dark: #B8001A;
+  --fk-red-soft: #FFE6E9;
+  --fk-bg: #FFF9F5;
+  --fk-surface-alt: #FFF2EA;
+  --fk-text: #1A1A1A;
+  --fk-text-soft: #4A4540;
+  --fk-text-mute: #8A807A;
+  --fk-border-strong: #D9C9B8;
+
+  /* --- ADDITIONS proposed for cv1-tokens.css ---------------------------- */
+  /* Studio shell */
+  --studio-canvas: #f6f7f9;        /* admin page background */
+  --studio-rail: #fbfcfd;
+  --studio-card: #ffffff;
+  --studio-ink: #0b1220;           /* primary text */
+  --studio-ink-soft: #475467;
+  --studio-ink-mute: #667085;
+  --studio-line: #e6eaf0;
+  --studio-line-strong: #d3d9e2;
+
+  /* Status pills (admin-side, distinct from cv1-status-* warnings) */
+  --studio-pill-active-bg: #ecfdf5;
+  --studio-pill-active-fg: #047857;
+  --studio-pill-active-dot: #10b981;
+  --studio-pill-draft-bg: #fef3c7;
+  --studio-pill-draft-fg: #92400e;
+  --studio-pill-draft-dot: #f59e0b;
+  --studio-pill-86-bg: #fff1f2;
+  --studio-pill-86-fg: #9f1239;
+  --studio-pill-86-dot: #e11d48;
+  --studio-pill-neutral-bg: #f1f5f9;
+  --studio-pill-neutral-fg: #334155;
+
+  /* Source-type chips (wizard) */
+  --studio-src-attr-bg: #eef2ff;
+  --studio-src-attr-fg: #3730a3;
+  --studio-src-extra-bg: #ecfeff;
+  --studio-src-extra-fg: #155e75;
+  --studio-src-addon-bg: #fdf4ff;
+  --studio-src-addon-fg: #86198f;
+  --studio-src-fixed-bg: #f1f5f9;
+  --studio-src-fixed-fg: #334155;
+
+  /* Channel chips */
+  --studio-ch-pos-bg: #0f172a;
+  --studio-ch-pos-fg: #ffffff;
+  --studio-ch-kiosk-bg: var(--fk-red);
+  --studio-ch-kiosk-fg: #ffffff;
+
+  /* Diff colors */
+  --studio-diff-add-bg: #f0fdf4;
+  --studio-diff-add-fg: #166534;
+  --studio-diff-add-bar: #22c55e;
+  --studio-diff-rem-bg: #fef2f2;
+  --studio-diff-rem-fg: #991b1b;
+  --studio-diff-rem-bar: #ef4444;
+  --studio-diff-mod-bg: #fffbeb;
+  --studio-diff-mod-fg: #92400e;
+  --studio-diff-mod-bar: #f59e0b;
+
+  /* Elevation — flat-with-restraint */
+  --studio-elev-1: 0 1px 0 rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --studio-elev-2: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.06);
+
+  /* Radii */
+  --studio-r-sm: 6px;
+  --studio-r-md: 10px;
+  --studio-r-lg: 14px;
+
+  /* Type */
+  --studio-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --studio-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ===== Base resets / shared utility classes used across artboards ===== */
+.studio {
+  font-family: var(--studio-font);
+  color: var(--studio-ink);
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+.studio *, .studio *::before, .studio *::after { box-sizing: border-box; }
+
+.studio-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--studio-ink-mute);
+}
+
+.studio-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: var(--studio-pill-neutral-bg);
+  color: var(--studio-pill-neutral-fg);
+  white-space: nowrap;
+}
+.studio-pill .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: 0.85; }
+.studio-pill[data-status="active"] { background: var(--studio-pill-active-bg); color: var(--studio-pill-active-fg); }
+.studio-pill[data-status="active"] .dot { background: var(--studio-pill-active-dot); }
+.studio-pill[data-status="draft"] { background: var(--studio-pill-draft-bg); color: var(--studio-pill-draft-fg); }
+.studio-pill[data-status="draft"] .dot { background: var(--studio-pill-draft-dot); }
+.studio-pill[data-status="86"] { background: var(--studio-pill-86-bg); color: var(--studio-pill-86-fg); }
+.studio-pill[data-status="86"] .dot { background: var(--studio-pill-86-dot); }
+
+.studio-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 20px; padding: 0 7px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+  background: var(--studio-pill-neutral-bg);
+  color: var(--studio-pill-neutral-fg);
+}
+.studio-chip[data-src="item_attribute"] { background: var(--studio-src-attr-bg); color: var(--studio-src-attr-fg); }
+.studio-chip[data-src="extra_group"] { background: var(--studio-src-extra-bg); color: var(--studio-src-extra-fg); }
+.studio-chip[data-src="addon"] { background: var(--studio-src-addon-bg); color: var(--studio-src-addon-fg); }
+.studio-chip[data-src="fixed"] { background: var(--studio-src-fixed-bg); color: var(--studio-src-fixed-fg); }
+.studio-chip[data-channel="pos"] { background: var(--studio-ch-pos-bg); color: var(--studio-ch-pos-fg); }
+.studio-chip[data-channel="kiosk"] { background: var(--studio-ch-kiosk-bg); color: var(--studio-ch-kiosk-fg); }
+
+/* Buttons */
+.studio-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  background: #fff; color: var(--studio-ink);
+  border: 1px solid var(--studio-line-strong);
+  cursor: pointer;
+  transition: background var(--cv1-motion-default) var(--cv1-motion-easing),
+              border-color var(--cv1-motion-default) var(--cv1-motion-easing);
+}
+.studio-btn:hover { background: #f9fafb; border-color: #b8c0cc; }
+.studio-btn:focus-visible {
+  outline: var(--cv1-focus-ring-width) solid var(--cv1-focus-ring-color);
+  outline-offset: var(--cv1-focus-ring-offset);
+}
+.studio-btn--primary {
+  background: var(--cv1-surface-strong); color: #fff; border-color: var(--cv1-surface-strong);
+}
+.studio-btn--primary:hover { background: #1e293b; border-color: #1e293b; }
+.studio-btn--brand {
+  background: var(--fk-red); color: #fff; border-color: var(--fk-red);
+}
+.studio-btn--brand:hover { background: var(--fk-red-dark); border-color: var(--fk-red-dark); }
+.studio-btn--ghost { border-color: transparent; background: transparent; }
+.studio-btn--ghost:hover { background: #f1f5f9; }
+.studio-btn--sm { height: 26px; padding: 0 8px; font-size: 12px; gap: 4px; }
+.studio-btn--lg { height: 38px; padding: 0 16px; font-size: 14px; }
+.studio-btn--block { width: 100%; justify-content: center; }
+.studio-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Inputs */
+.studio-input {
+  height: 32px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--studio-line-strong); background: #fff;
+  font-size: 13px; color: var(--studio-ink); width: 100%;
+  font-family: var(--studio-font);
+  transition: border-color var(--cv1-motion-default) var(--cv1-motion-easing),
+              box-shadow var(--cv1-motion-default) var(--cv1-motion-easing);
+}
+.studio-input:focus {
+  outline: none;
+  border-color: var(--cv1-border-emphasis);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+.studio-input::placeholder { color: #98a2b3; }
+.studio-label {
+  display: block; font-size: 12px; font-weight: 600; color: var(--studio-ink-soft);
+  margin-bottom: 6px;
+}
+
+/* Card */
+.studio-card {
+  background: var(--studio-card);
+  border: 1px solid var(--studio-line);
+  border-radius: var(--studio-r-lg);
+  box-shadow: var(--studio-elev-1);
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #eef1f5 0%, #f5f7fa 50%, #eef1f5 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+  border-radius: 6px;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .studio * { transition: none !important; animation: none !important; }
+}
+
+/* Focus ring helper */
+.studio-focusable:focus-visible {
+  outline: var(--cv1-focus-ring-width) solid var(--cv1-focus-ring-color);
+  outline-offset: var(--cv1-focus-ring-offset);
+  border-radius: 4px;
+}
+
+/* Switch */
+.studio-switch {
+  position: relative; width: 34px; height: 20px;
+  background: #cbd5e1; border-radius: 999px;
+  display: inline-block; cursor: pointer;
+  transition: background var(--cv1-motion-default) var(--cv1-motion-easing);
+}
+.studio-switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; background: #fff; border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform var(--cv1-motion-default) var(--cv1-motion-easing);
+}
+.studio-switch[data-on="true"] { background: #10b981; }
+.studio-switch[data-on="true"]::after { transform: translateX(14px); }
+.studio-switch[data-on="false"][data-reason] { background: #f43f5e; }
+
+/* Skeleton & spinner ------------------------------------------------------ */
+.studio-skel {
+  background: linear-gradient(90deg, #eef0f4 0%, #e2e6ee 50%, #eef0f4 100%);
+  background-size: 200% 100%;
+  animation: studioShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes studioShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes studioSpin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-skel { animation: none; background: #e2e6ee; }
+  .studio *, .studio *::before, .studio *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

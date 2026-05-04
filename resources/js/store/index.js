@@ -46,6 +46,7 @@ import { employeeAddress } from './modules/employeeAddress';
 import { itemExtra } from './modules/itemExtra';
 import { itemAddon } from './modules/itemAddon';
 import { itemAvailability } from './modules/itemAvailability';
+import { ingredients } from './modules/ingredients';
 import { language } from './modules/language';
 import { frontendBranch } from "./modules/frontend/frontendBranch";
 import { frontendLanguage } from "./modules/frontend/frontendLanguage";
@@ -167,6 +168,7 @@ export default new createStore({
         itemExtra,
         itemAddon,
         itemAvailability,
+        ingredients,
         language,
         globalState,
         frontendBranch,
