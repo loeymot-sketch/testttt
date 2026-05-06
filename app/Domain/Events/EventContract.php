@@ -42,6 +42,8 @@ final class EventContract
         'ItemAvailabilityChanged'   => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
         'CatalogChanged'            => EventType::CATALOG_CHANGED,
         'StockLow'                  => EventType::STOCK_LOW,
+        // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
+        'CouponChanged'             => EventType::COUPON_CHANGED,
     ];
 
     /**
@@ -59,6 +61,8 @@ final class EventContract
         EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status'],
         EventType::CATALOG_CHANGED                => ['entity_type', 'entity_id', 'change_type', 'snapshot_version'],
         EventType::STOCK_LOW                      => ['item_id'],
+        // [PROMO-DASH-2026-05-06] Minimum coupon-changed payload — see PersistCouponChangedToOutbox.
+        EventType::COUPON_CHANGED                 => ['coupon_id', 'change_type'],
     ];
 
     /**

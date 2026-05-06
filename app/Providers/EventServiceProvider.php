@@ -10,6 +10,7 @@ use App\Events\CategoryDeleted;
 use App\Events\CategoryUpdated;
 use App\Events\CatalogChanged;
 use App\Events\ComposerProfileChanged;
+use App\Events\CouponChanged;
 use App\Events\IngredientAvailabilityChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
@@ -38,6 +39,7 @@ use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
 use App\Listeners\InvalidateMenuProjectionOnIngredientChange;
 use App\Listeners\PersistCatalogChangedToOutbox;
+use App\Listeners\PersistCouponChangedToOutbox;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\DecrementStockOnOrderCreated;
@@ -184,6 +186,10 @@ class EventServiceProvider extends ServiceProvider
             InvalidateKioskMenuCacheOnCatalogChange::class,
             PersistCatalogChangedToOutbox::class,
             NotifyStockLowOnStockLevelChanged::class,
+        ],
+        // [PROMO-DASH-2026-05-06] Coupon mutations -> outbox per active branch.
+        CouponChanged::class => [
+            PersistCouponChangedToOutbox::class,
         ],
     ];
 

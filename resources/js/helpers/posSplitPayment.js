@@ -1,0 +1,242 @@
+/**
+ * posSplitPayment.js
+ *
+ * Mission : CV1-POS-SPLIT-PAYMENT-001
+ * Doc plan : docs/audit/SPLIT_PAYMENT_IMPLEMENTATION_2026-05-06.md
+ *
+ * Pure helpers (zero Vue / Vuex dependency) for the multi-tender (split)
+ * payment surface in PaymentComponent.vue.
+ *
+ * Money is handled in INTEGER CENTS internally to avoid float drift
+ * (the canonical 30.01 € → 10/10/10.01 split is impossible with binary
+ * floats). The public surface accepts and returns euros (Number) but the
+ * math always round-trips through Math.round(x * 100).
+ *
+ * Public API
+ * ──────────
+ *  - toCents(amount)               → integer cents (rounded half-up)
+ *  - fromCents(cents)              → Number with 2 decimals
+ *  - validateTranche(tranche)      → { valid, errors: { ... } }
+ *  - computeChange(tranche)        → cents (>=0; only for CASH with tendered)
+ *  - sumCovered(tranches)          → cents (sum of valid tranche.amount)
+ *  - remainingCents(totalCents, tranches)
+ *  - canConfirm(totalCents, tranches) → boolean
+ *  - splitEqually(totalCents, n)   → array of N tranche-stub objects with
+ *                                     integer-cent amounts that sum exactly
+ *                                     to totalCents (last tranche carries
+ *                                     the remainder cent(s)).
+ *  - serializeTranches(tranches)   → array safe for JSON / payload
+ *
+ * Tranche shape
+ * ─────────────
+ *  {
+ *    id:       string,         // local UUID-ish, for v-for keys
+ *    mode:     number,         // posPaymentMethodEnum (1=CASH, 2=CARD, ...)
+ *    amount:   number,         // EUR, 2 decimals (kept as Number for UI)
+ *    tendered: number | null,  // EUR; only for CASH; null for non-cash
+ *    note:     string | null,  // card last-4 / reference, optional
+ *  }
+ *
+ * Note on cents :
+ *   - toCents(0.1 + 0.2) === 30  // float drift handled
+ *   - splitEqually(toCents(30.01), 3) → [1000, 1000, 1001]
+ *   - splitEqually(toCents(30), 3)    → [1000, 1000, 1000]
+ */
+
+import posPaymentMethodEnum from '../enums/modules/posPaymentMethodEnum';
+
+const CASH_MODES = new Set([posPaymentMethodEnum.CASH]);
+const VALID_MODES = new Set([
+    posPaymentMethodEnum.CASH,
+    posPaymentMethodEnum.CARD,
+    posPaymentMethodEnum.MOBILE_BANKING,
+    posPaymentMethodEnum.OTHER,
+    posPaymentMethodEnum.TICKET_RESTAURANT,
+]);
+
+export function toCents(amount) {
+    const num = Number(amount);
+    if (!Number.isFinite(num)) return 0;
+    return Math.round(num * 100);
+}
+
+export function fromCents(cents) {
+    const c = Number(cents) || 0;
+    return Math.round(c) / 100;
+}
+
+export function isCashMode(mode) {
+    return CASH_MODES.has(Number(mode));
+}
+
+export function isValidMode(mode) {
+    return VALID_MODES.has(Number(mode));
+}
+
+/**
+ * Validate one tranche.
+ * Returns { valid: boolean, errors: { mode?, amount?, tendered? } }.
+ */
+export function validateTranche(tranche) {
+    const errors = {};
+    if (!tranche || typeof tranche !== 'object') {
+        return { valid: false, errors: { tranche: 'invalid_tranche' } };
+    }
+    const mode = Number(tranche.mode);
+    if (!isValidMode(mode)) {
+        errors.mode = 'invalid_mode';
+    }
+    const amount = Number(tranche.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        errors.amount = 'amount_required';
+    }
+    if (isCashMode(mode)) {
+        if (tranche.tendered === null || tranche.tendered === undefined || tranche.tendered === '') {
+            errors.tendered = 'tendered_required';
+        } else {
+            const tendered = Number(tranche.tendered);
+            if (!Number.isFinite(tendered) || tendered <= 0) {
+                errors.tendered = 'tendered_invalid';
+            } else if (toCents(tendered) < toCents(amount)) {
+                errors.tendered = 'tendered_below_amount';
+            }
+        }
+    }
+    return { valid: Object.keys(errors).length === 0, errors };
+}
+
+/**
+ * Change for a CASH tranche, in cents. 0 if non-cash, missing tendered, or
+ * tendered < amount. Caller decides what to render.
+ */
+export function computeChangeCents(tranche) {
+    if (!tranche || !isCashMode(tranche.mode)) return 0;
+    const amountCents = toCents(tranche.amount);
+    const tenderedCents = toCents(tranche.tendered);
+    if (tenderedCents <= 0 || amountCents <= 0) return 0;
+    if (tenderedCents < amountCents) return 0;
+    return tenderedCents - amountCents;
+}
+
+/**
+ * Sum of tranche.amount across all VALID tranches, in cents.
+ * Invalid tranches contribute 0 (so the cashier visibly cannot confirm
+ * until they fix them).
+ */
+export function sumCoveredCents(tranches) {
+    if (!Array.isArray(tranches)) return 0;
+    return tranches.reduce((acc, t) => {
+        const { valid } = validateTranche(t);
+        if (!valid) return acc;
+        return acc + toCents(t.amount);
+    }, 0);
+}
+
+export function remainingCents(totalCents, tranches) {
+    return Number(totalCents || 0) - sumCoveredCents(tranches);
+}
+
+/**
+ * canConfirm — every tranche valid AND remaining ≤ 1 cent slack.
+ * The 1-cent slack absorbs UI-rounding noise; the backend will perform a
+ * strict sum check at persist time.
+ */
+export function canConfirm(totalCents, tranches) {
+    if (!Array.isArray(tranches) || tranches.length === 0) return false;
+    for (const t of tranches) {
+        if (!validateTranche(t).valid) return false;
+    }
+    const remaining = remainingCents(totalCents, tranches);
+    return remaining <= 1 && remaining >= -100; // up to 1 € overpay tolerated
+}
+
+/**
+ * splitEqually(totalCents, n)
+ *
+ * Distributes totalCents across n tranches such that:
+ *   - sum(parts) === totalCents (exact, no float drift)
+ *   - first (n-1) parts are floor(totalCents / n)
+ *   - last  part absorbs the remainder cents
+ *
+ * Returns an array of CENT integers; caller maps to tranche objects.
+ */
+export function splitEquallyCents(totalCents, n) {
+    const total = Math.round(Number(totalCents) || 0);
+    const count = Math.max(1, Math.floor(Number(n) || 0));
+    if (count === 1) return [total];
+    const base = Math.floor(total / count);
+    const remainder = total - base * count;
+    const parts = new Array(count).fill(base);
+    parts[count - 1] += remainder;
+    return parts;
+}
+
+/**
+ * splitEqually(totalEur, n) → array of tranche stubs with EUR amounts.
+ * Default mode is CASH (cashier will pick the actual mode per tranche).
+ */
+export function splitEqually(totalEur, n, defaultMode = posPaymentMethodEnum.CASH) {
+    const partsCents = splitEquallyCents(toCents(totalEur), n);
+    return partsCents.map((cents, idx) => ({
+        id: makeTrancheId(idx),
+        mode: defaultMode,
+        amount: fromCents(cents),
+        tendered: null,
+        note: null,
+    }));
+}
+
+let _trancheCounter = 0;
+export function makeTrancheId(seed) {
+    _trancheCounter += 1;
+    const ts = Date.now().toString(36);
+    const ctr = _trancheCounter.toString(36);
+    return `tr_${ts}_${ctr}_${seed ?? ''}`;
+}
+
+/**
+ * Build the API payload field expected by the backend (PLAN_P12).
+ * Frozen-zone backend currently ignores payment_breakdown[]; the field is
+ * forward-compatible — the front-end attaches it on every multi-tender
+ * submit so backend rollout is a server-only flip.
+ */
+export function serializeTranches(tranches) {
+    if (!Array.isArray(tranches)) return [];
+    return tranches.map((t) => {
+        const cents = toCents(t.amount);
+        const tenderedCents = isCashMode(t.mode) ? toCents(t.tendered) : null;
+        return {
+            mode: Number(t.mode),
+            amount: fromCents(cents),
+            tendered: tenderedCents != null ? fromCents(tenderedCents) : null,
+            change: isCashMode(t.mode) ? fromCents(computeChangeCents(t)) : 0,
+            note: t.note ?? null,
+        };
+    });
+}
+
+/**
+ * Total change (cents) summed across all CASH tranches. Card/non-cash
+ * contribute 0.
+ */
+export function totalChangeCents(tranches) {
+    if (!Array.isArray(tranches)) return 0;
+    return tranches.reduce((acc, t) => acc + computeChangeCents(t), 0);
+}
+
+export default {
+    toCents,
+    fromCents,
+    isCashMode,
+    isValidMode,
+    validateTranche,
+    computeChangeCents,
+    sumCoveredCents,
+    remainingCents,
+    canConfirm,
+    splitEqually,
+    splitEquallyCents,
+    serializeTranches,
+    totalChangeCents,
+    makeTrancheId,
+};

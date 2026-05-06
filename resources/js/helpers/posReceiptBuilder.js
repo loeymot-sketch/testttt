@@ -57,6 +57,57 @@ export function formatPaymentsBreakdown(order) {
 }
 
 /**
+ * [CV1-POS-SPLIT-PAYMENT-001] Format LIVE multi-tender breakdown for the
+ * pre-confirmation receipt preview (PaymentComponent split block).
+ *
+ * Input  : array of in-flight tranches { mode, amount, tendered, change?, note? }
+ * Output : array of {label, amountText, changeText?} ready to render in the
+ *          preview panel. The persisted receipt uses formatPaymentsBreakdown()
+ *          (above) which reads from the API resource — this helper is for the
+ *          UI-side pre-payment ticket only.
+ *
+ * Why a dedicated helper? formatPaymentsBreakdown() is shaped for a saved
+ * Order resource (currency_amount strings, change_amount on the row); the
+ * LIVE tranches are JS-side numbers with a different field shape.
+ */
+export function buildPaymentBreakdownLines(tranches, options = {}) {
+    if (!Array.isArray(tranches) || tranches.length === 0) {
+        return [];
+    }
+    const labelFor = options.labelFor || ((mode) => `Mode ${mode}`);
+    const fmt = options.formatAmount || ((n) => `${Number(n).toFixed(2)} €`);
+    return tranches.map((t) => {
+        const mode = t.mode ?? t.payment_method;
+        const amount = Number(t.amount) || 0;
+        const tendered = t.tendered != null ? Number(t.tendered) : null;
+        const change = Number(t.change ?? t.change_amount ?? 0) || 0;
+        const line = {
+            mode,
+            label: labelFor(mode),
+            amount,
+            amountText: fmt(amount),
+        };
+        if (tendered != null && tendered > 0) {
+            line.tendered = tendered;
+            line.tenderedText = fmt(tendered);
+        }
+        if (change > 0) {
+            line.change = change;
+            line.changeText = fmt(change);
+        }
+        return line;
+    });
+}
+
+/**
+ * Sum total of a tranche array (EUR), ignoring change.
+ */
+export function sumPaymentBreakdownTotal(tranches) {
+    if (!Array.isArray(tranches)) return 0;
+    return tranches.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+}
+
+/**
  * NF525 footer lines (ticket #, audit fingerprint, legal footer).
  */
 export function buildNf525Footer(order) {
