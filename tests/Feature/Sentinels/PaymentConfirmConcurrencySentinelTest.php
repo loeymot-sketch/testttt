@@ -64,8 +64,10 @@ class PaymentConfirmConcurrencySentinelTest extends TestCase
             'payment_method' => PaymentGateway::CARD,
         ];
 
-        $this->postJson('/api/frontend/order/' . $firstOrder->id . '/payment-confirm', $payload)->assertOk();
-        $secondResponse = $this->postJson('/api/frontend/order/' . $secondOrder->id . '/payment-confirm', $payload);
+        $this->withHeaders(['X-Idempotency-Key' => 'sentinel-pcc-1-' . uniqid()])
+            ->postJson('/api/frontend/order/' . $firstOrder->id . '/payment-confirm', $payload)->assertOk();
+        $secondResponse = $this->withHeaders(['X-Idempotency-Key' => 'sentinel-pcc-2-' . uniqid()])
+            ->postJson('/api/frontend/order/' . $secondOrder->id . '/payment-confirm', $payload);
 
         Event::assertDispatchedTimes(OrderStatusChanged::class, 1);
         $this->assertContains($secondResponse->status(), [409, 422], 'The same TPE transaction_id must not pay two orders.');

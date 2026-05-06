@@ -136,7 +136,7 @@ Convention : `{NN}-{slug}-{state}.png` dans `tests/e2e/screenshots/audit-pos-202
 |---|---|---|
 | F-VERIFY-09-06 (idempotency scope sans branch) | ✅ **RESOLVED** | commit `096aaab7d` 4/26, sentinel PASS |
 | F-VERIFY-09-01 (changePaymentStatus sans guard) | 🟡 **PARTIAL** | no-op guard ajouté, manque Rule::in / transaction / event |
-| F-VERIFY-09-02 (idempotency middleware HTTP absent) | 🔴 **OPEN** | toujours pas de middleware réutilisable |
+| F-VERIFY-09-02 (idempotency middleware HTTP absent) | ✅ **RESOLVED** | `IdempotencyKeyMiddleware` (alias `idempotency`) + 8 routes opt-in + 13 tests + sentinel `IdempotencyMiddlewareSentinelTest` ; flag `IDEMPOTENCY_MIDDLEWARE_ENABLED` (default OFF). Plan : `docs/audit/plans/PLAN_P11_IDEMPOTENCY_KEY_MIDDLEWARE_2026-05-06.md`. Contrat : `docs/IDEMPOTENCY.md`. |
 | F-VERIFY-09-03 (outbox non transactionnel strict) | 🔴 **OPEN** | insert hors txn d'origine |
 | F-VERIFY-08-01 (Z.open ne vérifie pas signature Z-1) | 🔴 **OPEN** | pas de chain validation au runtime |
 | F-VERIFY-08-02 (changeStatus → RETURNED post-Z fermé) | 🔴 **OPEN** | pas de guard explicite sealed |

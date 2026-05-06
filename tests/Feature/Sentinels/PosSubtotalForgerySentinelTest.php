@@ -69,6 +69,7 @@ class PosSubtotalForgerySentinelTest extends TestCase
 
         $response = $this->actingAs($cashier, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', 'sentinel-psf-' . uniqid())
             ->postJson('/api/admin/pos', array_merge($payload, [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],

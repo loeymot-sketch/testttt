@@ -51,11 +51,12 @@ class PaymentConfirmCrossBranchSentinelTest extends TestCase
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
 
-        $response = $this->postJson('/api/frontend/order/' . $foreignOrder->id . '/payment-confirm', [
-            'transaction_id' => 'FK-SENTINEL-CROSS-BRANCH',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-        ]);
+        $response = $this->withHeaders(['X-Idempotency-Key' => 'sentinel-pcb-' . uniqid()])
+            ->postJson('/api/frontend/order/' . $foreignOrder->id . '/payment-confirm', [
+                'transaction_id' => 'FK-SENTINEL-CROSS-BRANCH',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+            ]);
 
         $response->assertStatus(403);
         $this->assertSame(

@@ -59,11 +59,12 @@ class CleanupVsConfirmRaceSentinelTest extends TestCase
         (new CleanupStalePendingKioskOrders())->handle();
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
-        $response = $this->postJson('/api/frontend/order/' . $order->id . '/payment-confirm', [
-            'transaction_id' => 'FK-SENTINEL-LATE-TPE',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-        ]);
+        $response = $this->withHeaders(['X-Idempotency-Key' => 'sentinel-cvcr-' . uniqid()])
+            ->postJson('/api/frontend/order/' . $order->id . '/payment-confirm', [
+                'transaction_id' => 'FK-SENTINEL-LATE-TPE',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+            ]);
 
         $response->assertStatus(422);
         $this->assertDatabaseHas(ActionLog::class, [

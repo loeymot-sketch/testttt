@@ -43,6 +43,7 @@ class PaymentConfirmAbilitySentinelTest extends TestCase
         ]);
 
         $response = $this->actingAs($cashier, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'sentinel-pca-' . uniqid()])
             ->postJson('/api/frontend/order/' . $order->id . '/payment-confirm', [
                 'transaction_id' => 'FK-SENTINEL-NON-KIOSK',
                 'card_type' => 'visa',

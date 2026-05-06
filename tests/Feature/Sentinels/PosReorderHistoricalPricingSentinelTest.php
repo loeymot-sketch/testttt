@@ -132,6 +132,7 @@ class PosReorderHistoricalPricingSentinelTest extends TestCase
 
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', 'sentinel-prhp-' . uniqid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($operator, $payload, 10.00))
             ->assertCreated();
 

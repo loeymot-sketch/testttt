@@ -39,6 +39,15 @@ class AppServiceProvider extends ServiceProvider
         // (correlation cache, etc.) consistent across the call stack and avoids
         // re-instantiating the service for every metric write.
         $this->app->singleton(SyncMetricsRecorder::class);
+
+        // [F-VERIFY-09-02 / PLAN_P11] HTTP idempotency repository.
+        // Backed by Cache::store() — uses redis NX EX in prod, array in tests.
+        $this->app->bind(
+            \App\Services\Idempotency\IdempotencyKeyRepository::class,
+            fn ($app) => new \App\Services\Idempotency\RedisIdempotencyKeyRepository(
+                cacheStore: config('idempotency.cache_store'),
+            ),
+        );
     }
 
     /**

@@ -595,6 +595,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::match(['post', 'put', 'patch'], '/{coupon}', [CouponController::class, 'update']);
         Route::delete('/{coupon}', [CouponController::class, 'destroy']);
         Route::get('/export', [CouponController::class, 'export']);
+        // [PROMO-DASH-2026-05-06] Toggle status ACTIVE <-> INACTIVE
+        Route::post('/toggle-status/{coupon}', [CouponController::class, 'toggleStatus'])->name('toggleStatus');
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {
@@ -648,6 +650,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
     Route::prefix('ingredients')->name('ingredients.')->middleware('permission:ingredients_manage')->group(function () {
         Route::get('/', [IngredientController::class, 'index'])->name('index');
+        Route::get('/{globalId}/usage', [IngredientController::class, 'usage'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('usage');
         Route::get('/{globalId}', [IngredientController::class, 'show'])
             ->where('globalId', '[a-z]+:[0-9]+')
             ->name('show');
@@ -669,22 +674,27 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
-            Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
-            Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
-            Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
-            Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
-            Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
-            Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
+            Route::middleware('wizard.per_item_profile_guard')->group(function () {
+                Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
+                Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
+                Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
+                Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
+                Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
+                Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
+            });
         });
         Route::post('/profiles/{profile}/publish', [ComposerProfileController::class, 'publish'])
             ->middleware('permission:catalog.publish');
     });
 
     Route::prefix('pos')->name('pos.')->group(function () {
+        Route::get('/walk-in-customer', [PosController::class, 'walkInCustomer'])
+            ->middleware('throttle:pos-quote')
+            ->name('walk-in-customer');
         Route::post('/quote', [PosController::class, 'quote'])
-            ->middleware('throttle:pos-order-create')
+            ->middleware('throttle:pos-quote')
             ->name('quote');
-        Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
+        Route::post('/', [PosController::class, 'store'])->middleware(['throttle:pos-order-create', 'idempotency']);
         Route::get('/counter-collect/pending', function () {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -790,9 +800,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
             ->middleware('throttle:pos-order-update');
         Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency']);
         Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency']);
         // [SPRINT-5] Quick re-order — returns structured cart payload for rapid re-import
         Route::get('/reorder-items/{order}', [PosOrderController::class, 'reorderItems'])->name('reorderItems');
     });
@@ -804,8 +814,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
         Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus']);
-        Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy']);
+        Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
+        Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy'])->middleware('idempotency');
     });
 
     Route::prefix('table-order')->name('tableOrder.')->group(function () {
@@ -814,7 +824,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
         Route::get('/export', [AdminTableOrderController::class, 'export']);
         Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus']);
+        Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
 
@@ -1014,10 +1024,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:kiosk-orders');
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
-        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
+        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {

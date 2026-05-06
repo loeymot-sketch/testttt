@@ -89,5 +89,9 @@ class Kernel extends HttpKernel
         // testttt-kiosk-p93 reference worktree.
         'kiosk.locale' => \App\Http\Middleware\ValidateKioskLocale::class,
         'wizard.per_item_demo' => \App\Http\Middleware\EnsureWizardPerItemDemoEnabled::class,
+        'wizard.per_item_profile_guard' => \App\Http\Middleware\EnsureProfileNotItemOwnedUnlessDemoEnabled::class,
+        // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
+        // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
+        'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
     ];
 }
