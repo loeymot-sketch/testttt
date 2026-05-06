@@ -28,6 +28,14 @@ class PosOrderRequest extends FormRequest
                     ->fromDistanceKm($this->input('delivery_distance_km')),
             ]);
         }
+
+        // [F-SPLIT-PAYMENT-001] When the multi-tender feature flag is OFF,
+        // strip `payment_breakdown` from the payload BEFORE validation runs.
+        // This way an older deployment that still receives the field from a
+        // newer frontend silently falls back to single-tender (legacy path).
+        if (! config('split_payment.enabled', false)) {
+            $this->offsetUnset('payment_breakdown');
+        }
     }
 
     /**
@@ -93,6 +101,17 @@ class PosOrderRequest extends FormRequest
             'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
+            // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
+            // When the feature flag is OFF, prepareForValidation() strips this field
+            // BEFORE these rules run, so they only fire on flag-enabled deployments.
+            'payment_breakdown' => ['nullable', 'array', 'max:12'],
+            'payment_breakdown.*' => ['array'],
+            'payment_breakdown.*.mode' => ['required_with:payment_breakdown', 'integer', 'in:1,2,3,4,5'],
+            'payment_breakdown.*.amount' => ['required_with:payment_breakdown', 'numeric', 'min:0.01'],
+            'payment_breakdown.*.tendered' => ['nullable', 'numeric', 'min:0'],
+            'payment_breakdown.*.change' => ['nullable', 'numeric', 'min:0'],
+            'payment_breakdown.*.note' => ['nullable', 'string', 'max:191'],
+            'payment_breakdown.*.reference' => ['nullable', 'string', 'max:64'],
         ];
     }
 

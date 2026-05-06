@@ -369,6 +369,34 @@ Order créé via `Order::create([...])` direct (tinker) : **0 fiscal_sequence_no
 
 ---
 
+## 8. Cycle 7C — F-SPLIT-PAYMENT-001 BACKEND ✅ RESOLVED (2026-05-06)
+
+**Référence plan** : `docs/audit/plans/PLAN_P12_SPLIT_PAYMENT_BACKEND_2026-05-06.md`
+**Surface modifiée** (frozen-zone gate clear par user) :
+- `app/Services/OrderService.php` — bloc additif post-discount-audit (15 lignes), insert dans la même `DB::transaction` que la création de l'order.
+- `app/Http/Requests/PosOrderRequest.php` — règles `payment_breakdown.*` + `prepareForValidation()` strip when flag OFF.
+- `app/Models/Order.php` — relation `payments()`.
+
+**Surface créée** :
+- `database/migrations/2026_05_06_180000_create_order_payments_table.php` (additive, idempotent rollback).
+- `app/Models/OrderPayment.php` (relation BelongsTo Order, accessors `method`/`payment_method`).
+- `app/Services/Payments/SplitPaymentService.php` (validation + persist + audit-log NF525 par tranche).
+- `config/split_payment.php` (`SPLIT_PAYMENT_ENABLED` default false).
+
+**Tests** :
+- `tests/Unit/Services/Payment/SplitPaymentServiceTest.php` — **11/11 PASS** (validation, atomicité, max-tranches, flag-off no-op).
+- `tests/Feature/Pos/SplitPaymentEndToEndTest.php` — **6/6 PASS** (POST /api/admin/pos avec breakdown, fallback legacy, 422 sum mismatch, 422 cash sans tendered, GET show retourne breakdown, flag-off silent fallback).
+- `tests/Feature/Sentinels/SplitPaymentSentinelTest.php` — **3/3 PASS** (sum mismatch 422, branch isolation par tranche, flag-off silent ignore).
+
+**Régression** :
+- Suite phpunit complète : **1523 passed, 24 skipped, 0 FAIL** (baseline 7B 1503 → 1523 ; +20 = 11 unit + 6 feature + 3 sentinel).
+- Sentinels : **36/36 → 39/39 PASS**.
+- `PaymentService.php`, `FrontendOrderService.php`, `app/Services/Pricing/*` : **100% intacts** (`git diff --stat` empty sur ces zones).
+
+**Frontend cycle 6** : `PaymentComponent.vue` envoie déjà `payment_breakdown[]` dans POST /api/admin/pos. Backend cycle 7C **complète le contrat** côté serveur — frontend + backend désormais alignés. La relation `Order::payments()` rend automatiquement `OrderDetailsResource::buildPaymentsBreakdown()` opérant sans patch (le helper lit `$order->payments` ligne 107).
+
+---
+
 **Auteur** : Claude Opus 4.7 — orchestrateur audit
 **Evidence cycle 1+2** :
 - `tests/e2e/audit-pos-cycle-2026-05-06.spec.js` (cycle 1 — 11 tests)
@@ -382,4 +410,5 @@ Order créé via `Order::create([...])` direct (tinker) : **0 fiscal_sequence_no
 - `docs/audit/plans/PLAN_P11_IDEMPOTENCY_KEY_MIDDLEWARE_2026-05-06.md`
 - `docs/audit/plans/PLAN_P13_PAYMENT_STATUS_STATE_MACHINE_2026-05-06.md`
 - `docs/audit/plans/PLAN_P11_FISCAL_Z_OPEN_HARDENING_2026-05-06.md`
+- `docs/audit/plans/PLAN_P12_SPLIT_PAYMENT_BACKEND_2026-05-06.md` (cycle 7C)
 - Code review direct : `app/Http/Controllers/Admin/PosController.php`, `app/Services/OrderService.php` (`posOrderStore`, `changePaymentStatus`)

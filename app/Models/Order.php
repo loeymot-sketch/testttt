@@ -143,6 +143,19 @@ class Order extends Model implements BroadcastableOrder
         return $this->hasOne(OrderCoupon::class);
     }
 
+    /**
+     * [F-SPLIT-PAYMENT-001] Multi-tender breakdown.
+     *
+     * `OrderDetailsResource::buildPaymentsBreakdown()` lit cette relation
+     * pour rendre le receipt avec la liste des tranches (mode/amount/
+     * change/reference). Quand vide, le resource retombe sur le path
+     * legacy single-tender (`pos_payment_method` + `pos_received_amount`).
+     */
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrderPayment::class, 'order_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', OrderStatus::PENDING);

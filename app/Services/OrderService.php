@@ -961,6 +961,21 @@ class OrderService
                     ]);
                 }
 
+                // [F-SPLIT-PAYMENT-001] Persist multi-tender breakdown when provided.
+                //
+                // - Strictly additive : legacy `pos_payment_method` + `pos_received_amount`
+                //   restent autoritaires pour les receipts/reports tant que le flag est OFF.
+                // - Tourne à L'INTÉRIEUR de la `DB::transaction` parente : si le service
+                //   throw une `ValidationException` (somme < total ou tranche malformée),
+                //   la création de la commande est rollback (atomicité).
+                // - Le total utilisé pour la validation est `$this->order->total` (SSOT
+                //   serveur), JAMAIS la valeur client.
+                $breakdown = (array) $request->input('payment_breakdown', []);
+                if (! empty($breakdown) && config('split_payment.enabled', false)) {
+                    app(\App\Services\Payments\SplitPaymentService::class)
+                        ->persistTranches($this->order, $breakdown);
+                }
+
                 $order = $this->order;
             });
             
