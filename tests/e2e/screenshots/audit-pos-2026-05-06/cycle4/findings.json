@@ -1,0 +1,65 @@
+[
+  {
+    "step": "C4-01",
+    "slug": "print-receipt",
+    "state": "1st",
+    "severity": "P1",
+    "note": "status=429, is_duplicata=undefined, count=undefined",
+    "screenshot": "",
+    "ts": "2026-05-06T16:39:52.721Z"
+  },
+  {
+    "step": "C4-02",
+    "slug": "print-receipt",
+    "state": "2nd-duplicata",
+    "severity": "P1",
+    "note": "status=429, is_duplicata=undefined, count=undefined (must be >= 2 + duplicata=true)",
+    "screenshot": "",
+    "ts": "2026-05-06T16:40:00.749Z"
+  },
+  {
+    "step": "C4-03",
+    "slug": "pusher-websocket",
+    "state": "no-ws",
+    "severity": "P2",
+    "note": "WebSockets: 0, subscribe events: 0",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle4/03-tracker-pusher-live.png",
+    "ts": "2026-05-06T16:40:12.712Z"
+  },
+  {
+    "step": "C4-03",
+    "slug": "pusher-subscribe",
+    "state": "absent",
+    "severity": "INFO",
+    "note": "Pusher subscribe frames captured: false",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle4/03-tracker-pusher-live.png",
+    "ts": "2026-05-06T16:40:12.712Z"
+  },
+  {
+    "step": "C4-04",
+    "slug": "drawer-api",
+    "state": "not-called",
+    "severity": "P2",
+    "note": "Aucun appel /api/pos/cash-drawer/open — bouton no-sale peut-être ouvre un confirm modal d'abord",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle4/04-no-sale-after-click.png",
+    "ts": "2026-05-06T16:40:23.710Z"
+  },
+  {
+    "step": "C4-05",
+    "slug": "pos-orders-list",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Historique POS orders: page chargée OK",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle4/05-pos-orders-list.png",
+    "ts": "2026-05-06T16:40:39.460Z"
+  },
+  {
+    "step": "C4-05",
+    "slug": "pos-orders-show",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Show order #188: détail chargé",
+    "screenshot": "tests/e2e/screenshots/audit-pos-2026-05-06/cycle4/05-pos-orders-show-188.png",
+    "ts": "2026-05-06T16:40:44.960Z"
+  }
+]

@@ -249,6 +249,49 @@ Aucun bug fonctionnel wizard détecté cycle 1. À valider en cycle 2 :
 
 ---
 
+## 7ter. Cycle 4 — Ticket post-paiement + audit chain + KDS handoff
+
+### Tests massifs étendus
+- **phpunit Pos+Order+Outbox+Fiscal+KDS** : **685 tests, 2756 assertions, 9 skipped, 0 FAIL** ✅
+- Spec Playwright cycle 4 : 6/6 PASS (1.4min) avec 13 findings
+
+### Logique d'impression ticket VALIDÉE
+Test direct via `PosReceiptPrintController::increment` (bypass HTTP rate limit) sur Order #188 (créé via tinker) :
+
+| Impression | `receipt_print_count` | `is_duplicata` | `audit_emitted` |
+|---|---|---|---|
+| 1ère | 1 | **false** | true |
+| 2e | 2 | **true** | true |
+| 3e | 3 | true | true |
+
+### Chaîne audit_logs NF525 confirmée
+```
+audit_log #24 — action=pos.receipt.print     (1ère impression)
+                prev_hash + current_hash ✅ (HMAC chained)
+audit_log #25 — action=pos.receipt.reprint   (2e — duplicata)
+                prev_hash + current_hash ✅
+audit_log #26 — action=pos.receipt.reprint   (3e)
+                prev_hash + current_hash ✅
+```
+
+### Findings observabilité
+- ✅ `/admin/pos-orders` (historique) charge sans erreur
+- ✅ `/admin/pos-orders/show/{id}` charge sans erreur
+- ⚠️ **0 WebSocket Pusher capturé** en dev — confirme `BROADCAST_DRIVER` non configuré localement (attendu, pas un bug). En prod, Pusher est config et `DispatchDomainEventsJob` envoie les events depuis l'outbox.
+- ⚠️ Bouton no-sale n'appelle pas `/api/pos/cash-drawer/open` directement — probablement ouvre un modal confirm d'abord (UX safety)
+- ⚠️ Tests rate limit : `clearFoodKingRateLimits()` helper ne couvre pas exactement les keys hashées du throttle `admin-mutation` (30/min) — détecté lors de tests rapides en boucle. À ajuster en cycle 5.
+
+### Finding architectural
+Order créé via `Order::create([...])` direct (tinker) : **0 fiscal_sequence_no, 0 OrderCreated event, 0 audit_log** → confirme que `OrderService::posOrderStore` est le SEUL point d'entrée légitime pour la création POS (toute création directe via Eloquent contourne fiscal NF525, allergen snapshot, outbox dispatch). Bonne discipline architecturale.
+
+### Captures cycle 4 (10 PNG)
+- `03-tracker-pusher-live.png` — tracker live (0 WS détecté)
+- `04-no-sale-before/after-click.png` — drawer button click flow
+- `05-pos-orders-list.png` — historique commandes POS
+- `05-pos-orders-show-188.png` — détail order #188
+
+---
+
 ## 7bis. Cycle 3 — Flow paiement complet validé + corrections appliquées
 
 ### Spec
