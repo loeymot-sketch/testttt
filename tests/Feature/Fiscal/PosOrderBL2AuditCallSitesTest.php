@@ -205,12 +205,19 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
     public function test_change_payment_status_writes_payment_status_changed_audit(): void
     {
+        // [P13 — F-VERIFY-09-01] Under Option B (D1), PAID is terminal and
+        // PAID → UNPAID is rejected by PaymentStateMachine::assertCanTransition.
+        // To exercise the audit-write call site we use the legal transition
+        // UNPAID → PAID instead. The audit-log invariant being tested
+        // (one row written, chain intact) is the same.
         $order = $this->createPaidOrder();
+        $order->payment_status = PaymentStatus::UNPAID;
+        $order->save();
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
-                'payment_status' => PaymentStatus::UNPAID,
+                'payment_status' => PaymentStatus::PAID,
             ])->assertStatus(200);
 
         $audit = AuditLog::where('action', 'order.payment_status_changed')
@@ -218,7 +225,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
             ->first();
 
         $this->assertNotNull($audit, 'Expected an order.payment_status_changed audit entry.');
-        $this->assertSame((int) PaymentStatus::UNPAID, (int) $audit->payload['to_payment_status']);
+        $this->assertSame((int) PaymentStatus::PAID, (int) $audit->payload['to_payment_status']);
+        $this->assertSame((int) PaymentStatus::UNPAID, (int) $audit->payload['from_payment_status']);
 
         $this->assertNull(
             app(\App\Services\Fiscal\AuditLogService::class)->verifyChain($this->branch->id),

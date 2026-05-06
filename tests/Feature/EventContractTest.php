@@ -38,6 +38,10 @@ class EventContractTest extends TestCase
             'menu.item_availability_changed',
             'catalog.changed',
             'stock.low',
+            // [PROMO-DASH-2026-05-06] cycle-6 Dashboard promo broadcast
+            'promo.coupon_changed',
+            // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
+            'order.payment_status_changed',
         ];
         $actual = EventType::all();
 

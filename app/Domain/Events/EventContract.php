@@ -44,6 +44,8 @@ final class EventContract
         'StockLow'                  => EventType::STOCK_LOW,
         // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
         'CouponChanged'             => EventType::COUPON_CHANGED,
+        // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
+        'OrderPaymentStatusChanged' => EventType::ORDER_PAYMENT_STATUS_CHANGED,
     ];
 
     /**
@@ -63,6 +65,8 @@ final class EventContract
         EventType::STOCK_LOW                      => ['item_id'],
         // [PROMO-DASH-2026-05-06] Minimum coupon-changed payload — see PersistCouponChangedToOutbox.
         EventType::COUPON_CHANGED                 => ['coupon_id', 'change_type'],
+        // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transition payload.
+        EventType::ORDER_PAYMENT_STATUS_CHANGED   => ['order_id', 'branch_id', 'old_status', 'new_status', 'total', 'fiscal_sequence_no'],
     ];
 
     /**

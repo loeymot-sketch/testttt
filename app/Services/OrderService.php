@@ -124,12 +124,12 @@ class OrderService
 
             return Order::with([
                 'transaction',
-                'orderItems.item.media',
-                'orderItems.item.category',
+                'orderItems.orderItem.media',
+                'orderItems.orderItem.category',
                 'branch',
                 'user'
             ])->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
@@ -315,7 +315,7 @@ class OrderService
                         'user_id'          => Auth::user()->id,
                         'status'           => OrderStatus::PENDING,
                         'order_datetime'   => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'            => 0,
                         'subtotal'         => 0,
                         'discount'         => 0,
@@ -604,7 +604,7 @@ class OrderService
                         'token' => $request->token,
                         'payment_status' => PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'    => 0,
                         'subtotal' => 0,
                         'discount' => 0,
@@ -1027,7 +1027,7 @@ class OrderService
                         'user_id' => $request->customer_id,
                         'status' => OrderStatus::PENDING,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total' => 0,
                         'subtotal' => 0,
                         'discount' => 0,
@@ -1654,6 +1654,7 @@ class OrderService
             $targetPaymentStatus = (int) $request->payment_status;
 
             if ($auth) {
+                // Branche customer self-service — INCHANGÉE (out of scope V1).
                 if ($order->user_id == Auth::user()->id) {
                     if ((int) $order->payment_status === $targetPaymentStatus) {
                         return $order;
@@ -1664,20 +1665,59 @@ class OrderService
                 } else {
                     abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
-            } else {
-                // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify their branch's orders.
-                // Use abort() so the 403 bubbles through the generic catch as a real HttpException.
-                if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-                    $userBranch = Auth::user()->branch_id ?? null;
-                    if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
-                        abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
-                    }
-                }
+            }
 
-                if ((int) $order->payment_status === $targetPaymentStatus) {
-                    return $order;
+            // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff
+            // can only modify their branch's orders. abort() so the 403 bubbles
+            // through the generic catch as a real HttpException.
+            if (Auth::check() && !Auth::user()->hasRole('Admin')) {
+                $userBranch = Auth::user()->branch_id ?? null;
+                if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
+                    abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
                 }
+            }
 
+            // [F-VERIFY-09-01 P13] Idempotency-Key replay protection (defense-
+            // in-depth — the HTTP IdempotencyKeyMiddleware short-circuits at
+            // the route layer when `idempotency.enabled=true`). The service-
+            // level cache covers the flag=false rollout window without
+            // re-applying ActionLog / AuditLog / domain-event side effects.
+            $idempotencyKey = request()?->header('X-Idempotency-Key');
+            $cacheKey       = null;
+            if (is_string($idempotencyKey) && $idempotencyKey !== '') {
+                $cacheKey = sprintf(
+                    'change_payment_status:%d:%d:%s',
+                    (int) $order->branch_id,
+                    (int) $order->id,
+                    substr($idempotencyKey, 0, 64)
+                );
+                if (Cache::get($cacheKey) !== null) {
+                    return $order->fresh();
+                }
+            }
+
+            $oldPaymentStatus = (int) $order->payment_status;
+            if ($oldPaymentStatus === $targetPaymentStatus) {
+                return $order; // No-op early-return.
+            }
+
+            // [F-VERIFY-09-01 P13] State machine guard. Throws
+            // \InvalidArgumentException(422) for illegal transitions
+            // (e.g. PAID → anything under Option B).
+            \App\Domain\Order\PaymentStateMachine::assertCanTransition(
+                $oldPaymentStatus,
+                $targetPaymentStatus
+            );
+
+            // [F-VERIFY-09-01 P13] Atomic Order save + ActionLog + AuditLog +
+            // domain event dispatch. DispatchableAfterCommit defers the actual
+            // event firing until COMMIT (gate C9 — KI-001).
+            DB::transaction(function () use (
+                $order,
+                $request,
+                $oldPaymentStatus,
+                $targetPaymentStatus
+            ): void {
                 $order->payment_status = $request->payment_status;
                 $order->save();
 
@@ -1686,16 +1726,18 @@ class OrderService
                     'action'   => 'Statut paiement modifié',
                     'resource' => 'Commande #' . $order->order_serial_no,
                     'details'  => sprintf(
-                        'Statut paiement: %s | Par: %s (branch_id=%s)',
-                        $request->payment_status,
+                        'Statut paiement: %d → %d | Par: %s (branch_id=%s)',
+                        $oldPaymentStatus,
+                        $targetPaymentStatus,
                         Auth::check() ? Auth::user()->name : 'Système',
                         Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
                     ),
                 ]);
 
                 // [POS-9.4.BL.2] NF525 audit trail on payment_status change.
-                // Change of payment status is financially sensitive (especially
-                // PAID→UNPAID or PAID→REFUNDED, which impacts Z report totals).
+                // Financially sensitive (PAID→UNPAID / PAID→REFUNDED would
+                // impact Z report totals — but blocked under Option B by the
+                // state machine guard above).
                 app(AuditLogService::class)->write([
                     'branch_id'   => (int) $order->branch_id,
                     'user_id'     => Auth::check() ? (int) Auth::id() : null,
@@ -1703,17 +1745,36 @@ class OrderService
                     'resource'    => 'order',
                     'resource_id' => (int) $order->id,
                     'payload'     => [
-                        'order_serial_no'    => $order->order_serial_no,
-                        'to_payment_status'  => (int) $request->payment_status,
-                        'total'              => round((float) $order->total, 2),
-                        'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                        'order_serial_no'      => $order->order_serial_no,
+                        'from_payment_status'  => $oldPaymentStatus,
+                        'to_payment_status'    => $targetPaymentStatus,
+                        'total'                => round((float) $order->total, 2),
+                        'fiscal_sequence_no'   => $order->fiscal_sequence_no,
                     ],
                 ]);
 
-                return $order;
+                // [F-VERIFY-09-10 P13] Domain event for outbox / KDS / Z-report.
+                // DispatchableAfterCommit defers the dispatch until commit, so
+                // a rollback of any earlier statement above drops the event.
+                \App\Events\OrderPaymentStatusChanged::dispatch(
+                    $order,
+                    $oldPaymentStatus,
+                    $targetPaymentStatus
+                );
+            });
+
+            // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
+            if ($cacheKey !== null) {
+                Cache::put($cacheKey, $order->id, now()->addHours(24));
             }
+
+            return $order;
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
             throw $http;
+        } catch (\InvalidArgumentException $invalid) {
+            // [F-VERIFY-09-01 P13] State machine guard rejects illegal
+            // transitions — surface as proper HTTP 422.
+            throw new Exception($invalid->getMessage(), 422);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1897,7 +1958,7 @@ class OrderService
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(

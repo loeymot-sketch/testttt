@@ -18,6 +18,7 @@ use App\Events\ItemDeleted;
 use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
 use App\Events\OrderPaidAtCounter;
+use App\Events\OrderPaymentStatusChanged;
 use App\Events\OrderStatusChanged;
 use App\Events\OrderTableChanged;
 use App\Events\RefundCreated;
@@ -49,6 +50,7 @@ use App\Listeners\ReleaseStockOnOrderCanceled;
 use App\Listeners\ReleaseStockOnRefundCreated;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderPaidAtCounterToOutbox;
+use App\Listeners\PersistOrderPaymentStatusChangedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\PersistOrderTableChangedToOutbox;
 use App\Listeners\NotifyStockLowOnStockLevelChanged;
@@ -128,6 +130,10 @@ class EventServiceProvider extends ServiceProvider
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,
+        ],
+        // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
+        OrderPaymentStatusChanged::class => [
+            PersistOrderPaymentStatusChangedToOutbox::class,
         ],
         // [F-01 + NEW-05] Compensating release of stock counters on cancel / refund.
         // Idempotent via order_items.released_qty ledger inside AvailabilityService.

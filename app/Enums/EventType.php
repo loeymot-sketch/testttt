@@ -20,6 +20,10 @@ class EventType
     // branche concernée par le scope du coupon (toutes branches actives si
     // branch_scope est null/empty).
     const COUPON_CHANGED = 'promo.coupon_changed';
+    // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions on
+    // an order. Used by KDS, Z-report aggregation, and outbox fan-out so any
+    // `payment_status` mutation is observable as a first-class domain event.
+    const ORDER_PAYMENT_STATUS_CHANGED = 'order.payment_status_changed';
 
     public static function all(): array
     {
@@ -34,6 +38,8 @@ class EventType
             self::CATALOG_CHANGED,
             self::STOCK_LOW,
             self::COUPON_CHANGED,
+            // [P13]
+            self::ORDER_PAYMENT_STATUS_CHANGED,
         ];
     }
 }

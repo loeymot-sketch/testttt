@@ -135,12 +135,12 @@ Convention : `{NN}-{slug}-{state}.png` dans `tests/e2e/screenshots/audit-pos-202
 | Finding | Status delta | Note |
 |---|---|---|
 | F-VERIFY-09-06 (idempotency scope sans branch) | ✅ **RESOLVED** | commit `096aaab7d` 4/26, sentinel PASS |
-| F-VERIFY-09-01 (changePaymentStatus sans guard) | 🟡 **PARTIAL** | no-op guard ajouté, manque Rule::in / transaction / event |
+| F-VERIFY-09-01 (changePaymentStatus sans guard) | ✅ **RESOLVED** | cycle 7B P13 : `Rule::in` PaymentStatusRequest + `DB::transaction` atomique (Order+ActionLog+AuditLog+event) + lecture `X-Idempotency-Key` (cache replay TTL 24 h) + `PaymentStateMachine::assertCanTransition` câblé. Plan : `docs/audit/plans/PLAN_P13_PAYMENT_STATUS_STATE_MACHINE_2026-05-06.md`. Sentinel : `PaymentStatusStateMachineSentinelTest` (3/3 PASS). |
 | F-VERIFY-09-02 (idempotency middleware HTTP absent) | ✅ **RESOLVED** | `IdempotencyKeyMiddleware` (alias `idempotency`) + 8 routes opt-in + 13 tests + sentinel `IdempotencyMiddlewareSentinelTest` ; flag `IDEMPOTENCY_MIDDLEWARE_ENABLED` (default OFF). Plan : `docs/audit/plans/PLAN_P11_IDEMPOTENCY_KEY_MIDDLEWARE_2026-05-06.md`. Contrat : `docs/IDEMPOTENCY.md`. |
 | F-VERIFY-09-03 (outbox non transactionnel strict) | 🔴 **OPEN** | insert hors txn d'origine |
 | F-VERIFY-08-01 (Z.open ne vérifie pas signature Z-1) | 🔴 **OPEN** | pas de chain validation au runtime |
 | F-VERIFY-08-02 (changeStatus → RETURNED post-Z fermé) | 🔴 **OPEN** | pas de guard explicite sealed |
-| F-VERIFY-09-10 (event PaymentStatusChanged absent) | 🔴 **OPEN** | toujours aucun listener Outbox |
+| F-VERIFY-09-10 (event PaymentStatusChanged absent) | ✅ **RESOLVED** | cycle 7B P13 : `OrderPaymentStatusChanged` event (DispatchableAfterCommit) + `PersistOrderPaymentStatusChangedToOutbox` listener + entry `EventType::ORDER_PAYMENT_STATUS_CHANGED` + `BROADCAST_MAP`/`REQUIRED_PAYLOAD_KEYS` dans `EventContract`. Sentinel + `ChangePaymentStatusOutboxTest` PASS, `assertEnvelopeValid` accepte le payload. |
 | F-VERIFY-10-1 (fiscal routes sans middleware group-level) | 🔴 **OPEN** | guard in-method seulement |
 | F-VERIFY-13-01 (transactions sans branch_id ni FK order_id) | 🔴 **OPEN** | schema DB inchangé |
 | F-VERIFY-18-03 (legacy pricing path persistant) | 🔴 **OPEN** | flag `pricing.use_ssot_service=false` reste un risque |
