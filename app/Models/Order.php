@@ -47,6 +47,8 @@ class Order extends Model implements BroadcastableOrder
         'source_surface',
         // [AUDIT-P50-BUG1] Idempotency key must be fillable so POS orders can be deduplicated
         'idempotency_key',
+        // [P11-FZH / F-VERIFY-08-02] parent_order_id pour refund-with-counter-entry mirror orders
+        'parent_order_id',
         // [FIX-53-6] loyalty_points_awarded must be fillable for atomic sentinel updates via Eloquent
         'loyalty_points_awarded',
     ];

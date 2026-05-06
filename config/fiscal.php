@@ -79,6 +79,49 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | [P11-FZH / F-VERIFY-08-01] Chain validation extension
+    |----------------------------------------------------------------------
+    |
+    | When true, ZReportService::open() asserts BOTH chains intact:
+    |   - Z chain (existing, via verifyChain)
+    |   - audit_logs chain TAIL (bounded window) via FiscalChainValidator
+    |
+    | Bounded tail (default 500 rows) keeps O(window) under the 4s
+    | z_report_b{N} cache lock — no full-table walk under load.
+    |
+    | Override via FISCAL_CHAIN_VALIDATION_ENABLED=false to fall back to
+    | Z-only legacy check (emergency rollback if HMAC rotation false-positives).
+    */
+    'chain_validation_enabled' => filter_var(
+        env('FISCAL_CHAIN_VALIDATION_ENABLED', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE
+    ) ?? true,
+
+    'audit_chain_tail_window' => (int) env('FISCAL_AUDIT_CHAIN_TAIL_WINDOW', 500),
+
+    /*
+    |----------------------------------------------------------------------
+    | [P11-FZH / F-VERIFY-08-02] Sealed-Z guard
+    |----------------------------------------------------------------------
+    |
+    | When true, OrderService::changeStatus → RETURNED and
+    | changePaymentStatus → REFUNDED are refused (HTTP 409) when the
+    | order is contained in a closed Z report window. The cashier MUST
+    | use POST /api/admin/pos-order/{order}/refund-with-counter-entry
+    | which creates a mirror order traceable in the current Z window.
+    |
+    | The predicate is identical to OrderService::destroy()'s sealed
+    | check (opened_at, closed_at] — no semantic drift.
+    */
+    'sealed_z_guard_enabled' => filter_var(
+        env('SEALED_Z_GUARD_ENABLED', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE
+    ) ?? true,
+
+    /*
+    |----------------------------------------------------------------------
     | Archive retention (NF525 = 6 years)
     |----------------------------------------------------------------------
     */

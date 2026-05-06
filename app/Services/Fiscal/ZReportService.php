@@ -34,6 +34,7 @@ class ZReportService
     private const LOCK_ACQUIRE_SECONDS = 4;
 
     private FiscalSealingService $sealing;
+    private ?FiscalChainValidator $chainValidator = null;
 
     public function __construct(
         private ?ConnectionInterface $connection = null,
@@ -41,6 +42,27 @@ class ZReportService
     ) {
         $this->connection = $connection ?? DB::connection();
         $this->sealing = $sealing ?? app(FiscalSealingService::class);
+        // [P11-FZH] FiscalChainValidator NOT injected via constructor to avoid
+        // container resolution cycle (validator → service → validator). Lazy
+        // resolved through chainValidator() helper instead.
+    }
+
+    /**
+     * [P11-FZH] Allow tests to override the validator without touching the
+     * container (avoids cycle). Production resolves through app() lazily.
+     */
+    public function setChainValidator(FiscalChainValidator $validator): void
+    {
+        $this->chainValidator = $validator;
+    }
+
+    /**
+     * [P11-FZH] Lazy-resolve the chain validator. Avoids a constructor-cycle
+     * with FiscalChainValidator (which itself depends on ZReportService).
+     */
+    private function chainValidator(): FiscalChainValidator
+    {
+        return $this->chainValidator ??= app(FiscalChainValidator::class);
     }
 
     /**
@@ -64,6 +86,16 @@ class ZReportService
             // [W8.C-P1 / P-MEGA-22 Pilier 1]
             // Validate the historical chain before reserving a new sequence.
             $this->verifyChain($branchId);
+
+            // [P11-FZH / F-VERIFY-08-01] Extended chain validation:
+            // re-run Z chain in strict mode + bounded audit_logs tail walk.
+            // Feature flag fiscal.chain_validation_enabled (default true) gates
+            // the audit-chain extension; the legacy Z chain check above is
+            // always executed.
+            $this->chainValidator()->assertChainIntegrity($branchId);
+
+            // [P11-FZH] Detect stuck Z STATUS_CLOSING state (recovery hint).
+            $this->assertNoPendingClose($branchId);
 
             return $this->connection->transaction(function () use ($branchId, $openedById) {
                 $existingOpen = ZReport::query()
@@ -101,6 +133,43 @@ class ZReportService
             });
         } finally {
             try { $lock->release(); } catch (\Throwable $e) {}
+        }
+    }
+
+    /**
+     * [P11-FZH] Detect a Z report stuck in a transitional CLOSING state for
+     * more than 15s (i.e. crash mid-close). Throws so a new open() refuses
+     * to compete on a half-closed branch — manual operator inspection.
+     *
+     * STATUS_CLOSING is reserved for a future plan (write path not yet
+     * activated). This method is a no-op until then.
+     */
+    private function assertNoPendingClose(int $branchId): void
+    {
+        if (!defined(ZReport::class . '::STATUS_CLOSING')) {
+            return;
+        }
+
+        $staleClosing = ZReport::query()
+            ->where('branch_id', $branchId)
+            ->where('status', ZReport::STATUS_CLOSING)
+            ->where('updated_at', '<', \Illuminate\Support\Carbon::now()->subSeconds(15))
+            ->first();
+
+        if ($staleClosing) {
+            Log::channel('fiscal')->error('z_report.stuck_closing', [
+                'event'        => 'fiscal.z_report.stuck_closing',
+                'z_report_id'  => $staleClosing->id,
+                'branch_id'    => $branchId,
+                'stuck_since'  => $staleClosing->updated_at?->toIso8601String(),
+            ]);
+
+            throw new RuntimeException(sprintf(
+                'ZReportService: branch %d has Z (id=%d) stuck CLOSING >15s. '
+                . 'Manual operator intervention required.',
+                $branchId,
+                $staleClosing->id
+            ));
         }
     }
 

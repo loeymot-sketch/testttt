@@ -805,6 +805,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware(['throttle:pos-order-update', 'idempotency']);
         // [SPRINT-5] Quick re-order — returns structured cart payload for rapid re-import
         Route::get('/reorder-items/{order}', [PosOrderController::class, 'reorderItems'])->name('reorderItems');
+        // [P11-FZH / F-VERIFY-08-02] NF525 counter-entry refund — creates a mirror order
+        // in the current Z window (parent stays immutable). Use this instead of
+        // changeStatus → RETURNED for orders sealed by a closed Z report.
+        Route::post('/{order}/refund-with-counter-entry', [PosOrderController::class, 'refundWithCounterEntry'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('refundWithCounterEntry');
     });
 
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {

@@ -1562,6 +1562,37 @@ class OrderService
                         $request->validate([
                             'reason' => 'required|max:700',
                         ]);
+
+                        // [P11-FZH / F-VERIFY-08-02] Sealed-Z guard for RETURNED only.
+                        // RETURNED is the fiscal counter-entry transition (CANCELED
+                        // & REJECTED are operational pre-payment). Refuse if order
+                        // is contained in closed Z window — caller must use
+                        // POST /api/admin/pos-order/{order}/refund-with-counter-entry.
+                        if ($toStatus === OrderStatus::RETURNED) {
+                            try {
+                                app(\App\Services\Order\SealedOrderGuard::class)
+                                    ->assertMutable($order, 'changeStatus → RETURNED');
+                            } catch (\App\Exceptions\OrderSealedException $sealedEx) {
+                                try {
+                                    app(\App\Services\Fiscal\AuditLogService::class)->write([
+                                        'branch_id'   => (int) $order->branch_id,
+                                        'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                                        'action'      => 'pos.refund.post_z_blocked',
+                                        'resource'    => 'order',
+                                        'resource_id' => (int) $order->id,
+                                        'payload'     => [
+                                            'attempted_transition' => 'RETURNED',
+                                            'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
+                                            'reason_supplied'      => (string) $request->input('reason'),
+                                        ],
+                                    ]);
+                                } catch (\Throwable) {
+                                    // best-effort audit; never block on audit failure
+                                }
+                                throw $sealedEx;
+                            }
+                        }
+
                         if ($request->reason) {
                             $order->reason = $request->reason;
                         }
@@ -1714,6 +1745,33 @@ class OrderService
             $oldPaymentStatus = (int) $order->payment_status;
             if ($oldPaymentStatus === $targetPaymentStatus) {
                 return $order; // No-op early-return.
+            }
+
+            // [P11-FZH / F-VERIFY-08-02] Sealed-Z guard for REFUNDED only.
+            // REFUNDED is a fiscal counter-entry — refused if order is in a
+            // closed Z window. Caller must use refund-with-counter-entry.
+            if ($targetPaymentStatus === \App\Enums\PaymentStatus::REFUNDED) {
+                try {
+                    app(\App\Services\Order\SealedOrderGuard::class)
+                        ->assertMutable($order, 'changePaymentStatus → REFUNDED');
+                } catch (\App\Exceptions\OrderSealedException $sealedEx) {
+                    try {
+                        app(\App\Services\Fiscal\AuditLogService::class)->write([
+                            'branch_id'   => (int) $order->branch_id,
+                            'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                            'action'      => 'pos.refund.post_z_blocked',
+                            'resource'    => 'order',
+                            'resource_id' => (int) $order->id,
+                            'payload'     => [
+                                'attempted_transition' => 'REFUNDED',
+                                'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
+                            ],
+                        ]);
+                    } catch (\Throwable) {
+                        // best-effort audit
+                    }
+                    throw $sealedEx;
+                }
             }
 
             // [F-VERIFY-09-01 P13] State machine guard. Throws
