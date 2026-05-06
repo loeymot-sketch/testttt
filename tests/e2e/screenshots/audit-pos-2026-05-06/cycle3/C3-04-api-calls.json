@@ -1,0 +1,58 @@
+[
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos-category?paginate=0&order_column=sort&order_type=asc&status=5&surface=pos",
+    "status": 200,
+    "ts": 1778080819153
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/counter-collect/pending",
+    "status": 200,
+    "ts": 1778080819153
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080819154
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080819154
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080819404
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080819444
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/counter-collect/pending",
+    "status": 200,
+    "ts": 1778080824147
+  },
+  {
+    "method": "POST",
+    "url": "http://localhost:8000/api/admin/pos/quote",
+    "status": 200,
+    "body": "{\"branch_id\":1,\"subtotal\":3,\"token\":\"1\",\"customer_id\":28,\"discount\":0,\"delivery_charge\":0,\"delivery_distance_km\":null,\"delivery_time\":null,\"total\":\"3.00\",\"order_type\":10,\"is_advance_order\":10,\"pos_payment_method\":1,\"pos_payment_note\":\"\",\"source\":15,\"address_id\":null,\"coupon_id\":null,\"items\":\"[{\\\"item_id\\\":360,\\\"item_price\\\":3,\\\"branch_id\\\":1,\\\"instruction\\\":\\\"MENU (FRITES + BOISSON)\\\",\\\"quantity\\\":1,\\\"discount\\\":0,\\\"total_price\\\":3,\\\"item_variation_total\\\":0,\\\"item_extra_total\\\":0,\\\"item_variati",
+    "ts": 1778080826667
+  },
+  {
+    "method": "POST",
+    "url": "http://localhost:8000/api/admin/pos",
+    "status": 429,
+    "body": "{\"branch_id\":1,\"subtotal\":3,\"token\":\"1\",\"customer_id\":28,\"discount\":0,\"delivery_charge\":0,\"delivery_distance_km\":null,\"delivery_time\":null,\"total\":23,\"order_type\":10,\"is_advance_order\":10,\"pos_payment_method\":1,\"pos_payment_note\":\"\",\"source\":15,\"address_id\":null,\"coupon_id\":null,\"items\":\"[{\\\"item_id\\\":360,\\\"item_price\\\":3,\\\"branch_id\\\":1,\\\"instruction\\\":\\\"MENU (FRITES + BOISSON)\\\",\\\"quantity\\\":1,\\\"discount\\\":0,\\\"total_price\\\":3,\\\"item_variation_total\\\":0,\\\"item_extra_total\\\":0,\\\"item_variations\\",
+    "ts": 1778080826717
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos-category?paginate=0&order_column=sort&order_type=asc&status=5&surface=pos",
+    "status": 200,
+    "ts": 1778080778595
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/counter-collect/pending",
+    "status": 200,
+    "ts": 1778080778595
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080778595
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080778595
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080779063
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/walk-in-customer",
+    "status": 200,
+    "ts": 1778080779116
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8000/api/admin/pos/counter-collect/pending",
+    "status": 200,
+    "ts": 1778080783587
+  }
+]
