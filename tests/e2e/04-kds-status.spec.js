@@ -3,7 +3,7 @@
 // Credentials : chef@lecayenne.fr / 123456
 
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers/login');
+const { loginAsChefOperator } = require('./helpers/login');
 
 const CHEF_EMAIL    = 'chef@lecayenne.fr';
 const CHEF_PASSWORD = '123456';
@@ -24,7 +24,8 @@ test.describe('KDS — interface cuisine', () => {
   });
 
   test('login chef via /login → redirection vers surface chef', async ({ page }) => {
-    await login(page, CHEF_EMAIL, CHEF_PASSWORD);
+    // Le rôle chef atterrit souvent sur /admin/dashboard ; loginAsChefOperator force la surface KDS (cf. autres E2E).
+    await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
 
     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
 
@@ -35,7 +36,7 @@ test.describe('KDS — interface cuisine', () => {
   });
 
   test('KDS surface loads order list without crash', async ({ page }) => {
-    await login(page, CHEF_EMAIL, CHEF_PASSWORD);
+    await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
 
     // Wait for Vue to mount

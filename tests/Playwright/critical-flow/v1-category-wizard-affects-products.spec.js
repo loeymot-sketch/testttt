@@ -16,7 +16,7 @@ test.describe('Pivot V1 — category wizard affects products', () => {
   test.skip(!BACKEND_AVAILABLE, 'Backend live required: set E2E_BACKEND_AVAILABLE=1');
   test.setTimeout(120_000);
 
-  test('opens the category composer drawer and removes per-product wizard buttons', async ({ page }) => {
+  test('opens the category composer drawer; product cards keep per-item composer entry', async ({ page }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const targetUrl = CATEGORY_ID
@@ -32,7 +32,11 @@ test.describe('Pivot V1 — category wizard affects products', () => {
     }
 
     await expect(page.getByTestId('catalog-studio-category-wizard-entry')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('[data-testid^="catalog-studio-product-wizard-"]')).toHaveCount(0);
+    const productCards = page.locator('article.catalog-studio__product');
+    const productCount = await productCards.count();
+    if (productCount > 0) {
+      await expect(page.locator('[data-testid^="catalog-studio-product-wizard-"]')).toHaveCount(productCount);
+    }
 
     await page.getByTestId('catalog-studio-category-wizard-button').click();
     await expect(page.getByTestId('catalog-studio-composer-overlay')).toBeVisible({ timeout: 25_000 });

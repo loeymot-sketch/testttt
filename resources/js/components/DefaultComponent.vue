@@ -49,6 +49,8 @@ import TableFooterComponent from "./layouts/table/TableFooterComponent.vue";
 import TableCartComponent from "./layouts/table/TableCartComponent.vue";
 import displayModeEnum from "../enums/modules/displayModeEnum";
 import env from "../config/env";
+import appService from "../services/appService";
+import { routes } from "../router";
 
 export default {
   name: "DefaultComponent",
@@ -106,6 +108,9 @@ export default {
         if (res.data.status === false && (this.theme == "frontend" || this.theme == "backend")) {
           // [STAFF-ONLY-V1] Session expirée : retour au login staff si staffOnlyMode, sinon home vitrine.
           this.$router.push({ name: this.staffOnlyMode ? "auth.login" : "frontend.home" });
+        } else if (res.data.status !== false && res.data.permission) {
+          // F5 / onglet : réaligner les routes sur les permissions renvoyées par authcheck.
+          appService.recursiveRouter(routes, res.data.permission);
         }
       }).catch();
     }

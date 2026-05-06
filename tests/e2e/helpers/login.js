@@ -1,4 +1,5 @@
 const { expect } = require('@playwright/test');
+const { clearFoodKingRateLimits } = require('./rate-limit');
 
 /**
  * Login FoodKing — cible les ids du LoginComponent (évite le champ recherche header type="text").
@@ -11,15 +12,70 @@ async function login(page, email, password) {
   await page.locator('#formEmail').fill(email);
   await page.locator('#formPassword').fill(password);
   const submit = page.getByRole('button', { name: /^(login|connexion)$/i });
-  await submit.click();
 
-  // The SPA login submit can occasionally be swallowed while the page is still
-  // hydrating in the local E2E harness. Retry once only if the form is still
-  // visible on /login; invalid credentials still fail in the caller's URL assert.
-  await page.waitForTimeout(750);
-  if (/\/login(?:$|\?)/.test(page.url()) && await submit.isVisible().catch(() => false)) {
+  const clickAndAwaitApi = async () => {
+    const loginResponse = page.waitForResponse(
+      (res) =>
+        res.request().method() === 'POST' &&
+        /\/api\/auth\/login/i.test(res.url()),
+      { timeout: 25_000 },
+    );
     await submit.click();
+    return loginResponse;
+  };
+
+  let resp = await clickAndAwaitApi();
+  if (resp.status() !== 201) {
+    await page.waitForTimeout(750);
+    if (/\/login(?:$|\?)/.test(page.url()) && (await submit.isVisible().catch(() => false))) {
+      resp = await clickAndAwaitApi();
+    }
   }
+  if (resp.status() !== 201) {
+    const body = await resp.text().catch(() => '');
+    throw new Error(`Login API failed: HTTP ${resp.status()} ${body.slice(0, 400)}`);
+  }
+
+  // Token + router.push run after axios resolves — do not navigate away before that.
+  await page.waitForURL((url) => !url.pathname.endsWith('/login'), { timeout: 25_000 });
+}
+
+/**
+ * Caissier : l’auth réussit souvent sur `/admin/dashboard` (landing role) — forcer la surface POS pour les E2E.
+ */
+async function loginAsPosOperator(
+  page,
+  email = process.env.E2E_POS_USER || 'pos@lecayenne.fr',
+  password = process.env.E2E_POS_PASS || '123456',
+) {
+  clearFoodKingRateLimits();
+  await login(page, email, password);
+  // LoginComponent applique recursiveRouter(routes, permission) avec setTimeout(1000)
+  // après router.push — un goto immédiat vers /admin/pos peut charger la SPA avant meta.access OK.
+  await page.waitForTimeout(1200);
+  if (!/\/admin\/pos(\/|$|\?)/.test(page.url())) {
+    await page.goto('/admin/pos', { waitUntil: 'domcontentloaded' });
+  }
+  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 25_000 });
+}
+
+const KDS_PATH_RE = /\/(kds|admin\/kitchen-display-system)(\/?|$|\?)/i;
+
+/**
+ * Chef / KDS : après auth la SPA peut atterrir sur le dashboard — ouvrir la surface KDS attendue par les E2E.
+ */
+async function loginAsChefOperator(
+  page,
+  email = process.env.E2E_CHEF_USER || 'chef@lecayenne.fr',
+  password = process.env.E2E_CHEF_PASS || '123456',
+) {
+  clearFoodKingRateLimits();
+  await login(page, email, password);
+  await page.waitForTimeout(1200);
+  if (!KDS_PATH_RE.test(page.url())) {
+    await page.goto('/admin/kitchen-display-system', { waitUntil: 'domcontentloaded' });
+  }
+  await expect(page).toHaveURL(KDS_PATH_RE, { timeout: 25_000 });
 }
 
 async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kiosk123') {
@@ -41,8 +97,9 @@ async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kios
     const submitBtn = page.getByRole('button', { name: /login|connexion|enter/i });
     if (await submitBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await submitBtn.click();
+      await page.waitForURL((u) => !u.pathname.includes('/kiosk/login'), { timeout: 25_000 }).catch(() => {});
     }
   }
 }
 
-module.exports = { login, loginAsKiosk };
+module.exports = { login, loginAsKiosk, loginAsPosOperator, loginAsChefOperator };

@@ -23,7 +23,7 @@
                                 <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">{{ log.action }}</span>
                             </td>
                             <td class="px-6 py-4">{{ log.resource || '-' }}</td>
-                            <td class="px-6 py-4 text-gray-400">{{ log.time }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ log.time }}</td>
                         </tr>
                         <tr v-if="auditLogs.length === 0">
                             <td colspan="4" class="px-6 py-8 text-center text-gray-500">Aucun historique récent.</td>

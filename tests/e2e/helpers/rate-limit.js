@@ -19,7 +19,7 @@ function clearFoodKingRateLimits() {
       'chef@lecayenne.fr|127.0.0.1',
       'admin@lecayenne.fr|127.0.0.1',
     ]));
-    foreach (['api', 'admin-mutation', 'pos-order-create', 'pos-order-update', 'login-lockout'] as $name) {
+    foreach (['api', 'admin-mutation', 'pos-quote', 'pos-order-create', 'pos-order-update', 'login-lockout'] as $name) {
       foreach ($keys as $key) {
         $limiter->clear(md5($name.$key));
       }

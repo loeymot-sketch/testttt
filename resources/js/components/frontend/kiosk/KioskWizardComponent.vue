@@ -143,6 +143,18 @@
           />
         </transition>
       </div>
+      <div v-if="currentStep?.type === 'recap'" class="kiosk-note-block">
+        <label class="kiosk-note-label" for="kiosk-note-input">{{ $t('label.special_instructions') }}</label>
+        <textarea
+          id="kiosk-note-input"
+          v-model.trim="selections.instruction"
+          class="kiosk-note-input"
+          :placeholder="$t('message.add_note')"
+          maxlength="190"
+          rows="2"
+        />
+        <p class="kiosk-note-hint">{{ $t('message.special_instructions_limit') }}</p>
+      </div>
 
       <div class="kiosk-nav" :class="{ 'kiosk-nav--recap': currentStep?.type === 'recap' }">
         <div class="kiosk-nav-actions">
@@ -1909,8 +1921,11 @@ export default {
       });
 
       const joined = parts.join('. ');
-      if (!joined) return null;
-      return sanitizeKioskCustomerFacingText(joined);
+      const manualNote = sanitizeKioskCustomerFacingText(String(this.selections.instruction || '').trim()).slice(0, 190);
+      const labeledNote = manualNote ? `${this.$t('label.note')}: ${manualNote}` : '';
+      const payload = [joined, labeledNote].filter(Boolean).join('. ');
+      if (!payload) return null;
+      return sanitizeKioskCustomerFacingText(payload);
     },
     addToCart() {
       const cartItem = this.buildCartItem();
@@ -2584,6 +2599,47 @@ export default {
 }
 
 .kiosk-step-content::-webkit-scrollbar { display: none; }
+
+.kiosk-note-block {
+  margin: 0 18px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--kiosk-border, #e7e7e7);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.kiosk-note-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--kiosk-text, #1a1a1a);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kiosk-note-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 58px;
+  border: 1px solid var(--kiosk-border, #dedede);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--kiosk-text, #1a1a1a);
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.kiosk-note-input:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 1px;
+}
+
+.kiosk-note-hint {
+  margin: 6px 0 0;
+  color: var(--kiosk-text-muted, #7a7a7a);
+  font-size: 11px;
+  font-weight: 600;
+}
 
 .kiosk-nav {
   display: grid;

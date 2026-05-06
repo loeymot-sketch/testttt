@@ -25,16 +25,20 @@ class ComposerProfileService
 
     public function showForItem(Item $item, ?int $branchIdScope = null): ?ItemWizardProfile
     {
-        return ItemWizardProfile::query()
+        $base = fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
             ->with('steps')
-            ->where('item_id', $item->id)
-            ->when(
-                $branchIdScope !== null,
-                fn ($query) => $query->where('branch_id_scope', $branchIdScope),
-                fn ($query) => $query->whereNull('branch_id_scope')
-            )
-            ->latest('id')
-            ->first();
+            ->where('item_id', $item->id);
+
+        if ($branchIdScope !== null) {
+            $scoped = $base()->where('branch_id_scope', $branchIdScope)->latest('id')->first();
+            if ($scoped !== null) {
+                return $scoped;
+            }
+
+            return $base()->whereNull('branch_id_scope')->latest('id')->first();
+        }
+
+        return $base()->whereNull('branch_id_scope')->latest('id')->first();
     }
 
     public function createForItem(Item $item, array $payload): ItemWizardProfile
@@ -59,16 +63,20 @@ class ComposerProfileService
 
     public function showForCategory(ItemCategory $category, ?int $branchIdScope = null): ?ItemWizardProfile
     {
-        return ItemWizardProfile::query()
+        $base = fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
             ->with('steps')
-            ->where('item_category_id', $category->id)
-            ->when(
-                $branchIdScope !== null,
-                fn ($query) => $query->where('branch_id_scope', $branchIdScope),
-                fn ($query) => $query->whereNull('branch_id_scope')
-            )
-            ->latest('id')
-            ->first();
+            ->where('item_category_id', $category->id);
+
+        if ($branchIdScope !== null) {
+            $scoped = $base()->where('branch_id_scope', $branchIdScope)->latest('id')->first();
+            if ($scoped !== null) {
+                return $scoped;
+            }
+
+            return $base()->whereNull('branch_id_scope')->latest('id')->first();
+        }
+
+        return $base()->whereNull('branch_id_scope')->latest('id')->first();
     }
 
     public function createForCategory(ItemCategory $category, array $payload): ItemWizardProfile

@@ -70,6 +70,14 @@ let _401Handling = false;
 axios.interceptors.response.use(
     response => response,
     error => {
+        if (
+            axios.isCancel?.(error)
+            || error?.code === 'ERR_CANCELED'
+            || error?.message === 'canceled'
+        ) {
+            return new Promise(() => {});
+        }
+
         const status = error?.response?.status;
         if (status !== 401) {
             return Promise.reject(error);

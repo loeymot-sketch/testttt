@@ -139,6 +139,24 @@ class ComposerAuthzMinimalTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_branch_admin_can_show_global_item_profile_when_no_branch_scoped_profile_exists(): void
+    {
+        $user = User::factory()->create(['branch_id' => $this->branchA->id]);
+        $user->assignRole('Branch Admin');
+
+        $globalProfile = ItemWizardProfile::factory()->create([
+            'item_id' => $this->item->id,
+            'branch_id_scope' => null,
+        ]);
+        ItemWizardStep::factory()->create(['profile_id' => $globalProfile->id]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson($this->profileUrl())
+            ->assertSuccessful()
+            ->assertJsonPath('data.id', $globalProfile->id)
+            ->assertJsonPath('data.branch_id_scope', null);
+    }
+
     public function test_tenant_admin_show_defaults_to_global_profile_not_branch_latest(): void
     {
         $user = User::factory()->create(['branch_id' => $this->branchA->id]);

@@ -53,8 +53,10 @@ class ItemExtra extends Model
             $sauces = Config::get('menu_images.sauces', []);
             $filename = $sauces[$sauceName] ?? null;
         } else {
+            // Crudités atomiques (MenuSeeder : extras « Salade », « Tomate », « Oignon » — pas le préfixe « Sauce »).
+            $cruditeExtras = Config::get('menu_images.crudite_extras', []);
             $supplements = Config::get('menu_images.supplements', []);
-            $filename = $supplements[$this->name] ?? null;
+            $filename = $cruditeExtras[$this->name] ?? $supplements[$this->name] ?? null;
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {

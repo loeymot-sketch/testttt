@@ -4,7 +4,7 @@
         <h4 class="font-semibold text-[22px] leading-[34px] mb-3 capitalize">{{ $t("menu.overview") }}</h4>
         <div class="row">
             <div class="col-12 sm:col-6 xl:col-4">
-                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#FF4F99]">
+                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#C81E63]">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center bg-white">
                         <i class="lab lab-total-sale lab-font-size-24 lab-color-pink"></i>
                     </div>
@@ -15,7 +15,7 @@
                 </div>
             </div>
             <div class="col-12 sm:col-6 xl:col-4">
-                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#8262FE]">
+                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#4F35C8]">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center bg-white">
                         <i class="lab lab-total-orders lab-font-size-24 lab-color-portage"></i>
                     </div>
@@ -26,7 +26,7 @@
                 </div>
             </div>
             <div class="col-12 sm:col-6 xl:col-4">
-                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#A953FF]">
+                <div class="p-4 rounded-lg flex items-center gap-4 bg-[#6B21A8]">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center bg-white">
                         <i class="lab lab-total-menu-items lab-font-size-24 lab-color-heliotrope"></i>
                     </div>

@@ -19,6 +19,7 @@ class SimpleOrderResource extends JsonResource
         return [
             'id'                           => $this->id,
             'order_serial_no'              => $this->order_serial_no,
+            'queue_number'                 => $this->queue_number,
             'order_datetime'               => AppLibrary::datetime($this->order_datetime),
             "total_currency_price"         => AppLibrary::currencyAmountFormat($this->total),
             "total_amount_price"           => AppLibrary::flatAmountFormat($this->total),
@@ -29,6 +30,7 @@ class SimpleOrderResource extends JsonResource
             'transaction'                  => $this->transaction ? strtoupper($this->transaction?->payment_method) : null,
             'order_type'                   => $this->order_type,
             'source'                       => $this->source,
+            'source_surface'               => $this->source_surface,
             'pos_payment_method'           => $this->pos_payment_method,
             'status'                       => $this->status,
             'status_name'                  => trans('orderStatus.' . $this->status),

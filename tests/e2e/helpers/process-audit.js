@@ -1,7 +1,7 @@
 const { expect } = require('@playwright/test');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { login } = require('./login');
+const { loginAsPosOperator, loginAsChefOperator } = require('./login');
 const { clearFoodKingRateLimits } = require('./rate-limit');
 
 const repoRoot = path.resolve(__dirname, '../../..');
@@ -10,8 +10,6 @@ const POS_EMAIL = process.env.E2E_POS_USER || 'pos@lecayenne.fr';
 const POS_PASSWORD = process.env.E2E_POS_PASS || '123456';
 const CHEF_EMAIL = process.env.E2E_CHEF_USER || 'chef@lecayenne.fr';
 const CHEF_PASSWORD = process.env.E2E_CHEF_PASS || '123456';
-
-const KDS_SURFACE_RE = /\/(kds|admin\/kitchen-display-system)/;
 
 function artisan(code) {
   return execFileSync('php', ['artisan', 'tinker', '--execute', code], {
@@ -96,10 +94,13 @@ function createProcessOrder(options = {}) {
       ? ($kioskOperator ?? $posOperator ?? App\\Models\\User::query()->firstOrFail())
       : ($posOperator ?? $kioskOperator ?? App\\Models\\User::query()->firstOrFail());
     $branchId = (int) ($operator->branch_id ?: ($machine?->branch_id ?? 0));
-    if ($branchId <= 0) {
-      $branchId = (int) (App\\Models\\Branch::query()->value('id') ?? App\\Models\\Branch::factory()->create()->id);
-      $operator->forceFill(['branch_id' => $branchId])->save();
+    if ($branchId <= 0 || ! App\\Models\\Branch::query()->whereKey($branchId)->exists()) {
+      $branchId = (int) (App\\Models\\Branch::query()->orderBy('id')->value('id') ?: 0);
     }
+    if ($branchId <= 0) {
+      $branchId = (int) App\\Models\\Branch::factory()->create()->id;
+    }
+    $operator->forceFill(['branch_id' => $branchId])->save();
 
     $tax = App\\Models\\Tax::query()->first() ?? App\\Models\\Tax::factory()->create([
       'tax_rate' => 0,
@@ -267,15 +268,11 @@ function inspectOrder(orderId) {
 }
 
 async function loginAsPOS(page) {
-  clearFoodKingRateLimits();
-  await login(page, POS_EMAIL, POS_PASSWORD);
-  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
+  await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
 }
 
 async function loginAsChef(page) {
-  clearFoodKingRateLimits();
-  await login(page, CHEF_EMAIL, CHEF_PASSWORD);
-  await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
+  await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
 }
 
 async function expectNoCriticalBrowserErrors(page, action) {

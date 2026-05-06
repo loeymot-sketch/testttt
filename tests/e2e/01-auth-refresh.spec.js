@@ -3,15 +3,17 @@
 // Credentials : pos@lecayenne.fr / 123456
 
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers/login');
+const { loginAsPosOperator } = require('./helpers/login');
+const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
 const POS_EMAIL    = 'pos@lecayenne.fr';
 const POS_PASSWORD = '123456';
 
 test.describe('Auth Refresh — F5 sur POS', () => {
   test('login POS → F5 → reste sur /admin/pos', async ({ page }) => {
-    // 1. Login
-    await login(page, POS_EMAIL, POS_PASSWORD);
+    clearFoodKingRateLimits();
+    // 1. Login — landing rôle = dashboard : forcer surface POS comme les autres specs caisse.
+    await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
 
     // 2. Redirection Vue (SPA) — expect poll l’URL sans attendre un « load » complet.
     await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
@@ -28,7 +30,8 @@ test.describe('Auth Refresh — F5 sur POS', () => {
   });
 
   test('user info preserved after F5', async ({ page }) => {
-    await login(page, POS_EMAIL, POS_PASSWORD);
+    clearFoodKingRateLimits();
+    await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
     await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
 
     // Store some page state before reload

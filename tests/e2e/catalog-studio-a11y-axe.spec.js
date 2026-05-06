@@ -62,7 +62,12 @@ test.describe('Catalog Studio a11y (axe-core)', () => {
       await catRow.locator('button.catalog-studio__category').first().click();
 
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
-      expect(results.violations.filter((v) => v.impact === 'serious').length).toBe(0);
+      const serious = results.violations.filter((v) => v.impact === 'serious');
+      if (serious.length && process.env.DEBUG_AXE === '1') {
+        // eslint-disable-next-line no-console -- debug only
+        console.error(JSON.stringify(serious.map((v) => ({ id: v.id, help: v.help, html: v.nodes?.[0]?.html })), null, 2));
+      }
+      expect(serious.length).toBe(0);
     });
   });
 

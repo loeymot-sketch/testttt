@@ -1,4 +1,4 @@
-# Compact Snapshot — 2026-05-04 12:40:17
+# Compact Snapshot — 2026-05-06 06:40:05
 
 ## Active Cycle
 TASK_ID: none
@@ -12,9 +12,6 @@ GATE_FILE: none
 No completion rows found.
 
 ## Last Post-Execute Hook
-[post-execute] tests: PASSED
-[post-execute] lint: SKIPPED — no lint script in package.json
-[post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] tests: PASSED
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan

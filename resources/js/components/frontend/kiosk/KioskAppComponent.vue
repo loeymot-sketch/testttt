@@ -332,6 +332,12 @@ export default {
         if (getPendingCount() > 0) {
           startAutoSync((url, data, config) => axios.post(url, data, config || {}), syncCb);
         }
+        // [V1.5C R2] After a WebSocket reconnect, Pusher may have missed catalog events
+        // during the gap — force a fresh menu fetch for the active branch.
+        const bid = this.$store?.state?.kioskMenu?.branchId;
+        if (bid) {
+          this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId: bid }).catch(() => {});
+        }
       };
       window._wsService.on('connected', this._onWsReconnect);
     }

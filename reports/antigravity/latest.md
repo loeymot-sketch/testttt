@@ -1,4 +1,13 @@
-# Playwright — dernier run (kiosk SPA black screen)
+# Playwright — dernier run
+
+> **2026-05-04 — Rapport consolidé unique (tout E2E + synthèse échecs)**  
+> **SSOT** : [`reports/e2e-massive/RAPPORT_CONSOLIDE_E2E_COMPLET_2026-05-04.md`](../e2e-massive/RAPPORT_CONSOLIDE_E2E_COMPLET_2026-05-04.md) (run massif 76 tests + correctifs sidebar / rupture / global-setup + tableau des 9 échecs restants).  
+> Archive P0→P5 : [`reports/e2e-massive/20260504_1956_E2E_MASSIVE/RAPPORT_CONSOLIDE_P0_P5.md`](../e2e-massive/20260504_1956_E2E_MASSIVE/RAPPORT_CONSOLIDE_P0_P5.md) · manifeste : [`manifest.md`](../e2e-massive/20260504_1956_E2E_MASSIVE/manifest.md)  
+> **Verdict run massif** : 63 passed / 11 failed / 1 flaky / 1 skipped (~17,9 min) — log : `reports/e2e-massive/FINAL_2026-05-04/logs/playwright_full.log`. **Reprise** : sidebar + rupture ingrédient **PASS** après correctifs (voir SSOT).
+
+---
+
+# Playwright — run archivé (kiosk SPA black screen)
 
 **Spec** : `tests/e2e/kiosk-spa-black-screen-guard.spec.js`  
 **Date** : 2026-05-03  

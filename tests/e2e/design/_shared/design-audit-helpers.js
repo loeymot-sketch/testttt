@@ -1,7 +1,7 @@
 const { expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-const { login } = require('../../helpers/login');
+const { login, loginAsPosOperator, loginAsChefOperator } = require('../../helpers/login');
 
 const repoRoot = path.resolve(__dirname, '../../../..');
 const axeSourcePath = require.resolve('axe-core/axe.min.js', { paths: [repoRoot] });
@@ -41,14 +41,12 @@ function criticalConsole(events) {
 
 async function loginStaff(page, role) {
   if (role === 'pos') {
-    await login(page, 'pos@lecayenne.fr', '123456');
-    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
+    await loginAsPosOperator(page, 'pos@lecayenne.fr', '123456');
     return;
   }
 
   if (role === 'chef') {
-    await login(page, 'chef@lecayenne.fr', '123456');
-    await expect(page).toHaveURL(/\/(kds|admin\/kitchen-display-system)/, { timeout: 20_000 });
+    await loginAsChefOperator(page, 'chef@lecayenne.fr', '123456');
     return;
   }
 
@@ -66,6 +64,16 @@ async function runAxe(page) {
       },
     });
   });
+}
+
+function withTimeout(promise, ms, fallback) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
 }
 
 async function clearTransientUi(page) {
@@ -119,22 +127,33 @@ async function auditRoute(page, options) {
     domain,
     name,
     url,
+    initialUrl = url,
+    prepare,
     rootTestId,
     screenshotDir,
     viewport = { width: 1280, height: 800 },
     waitMs = 800,
+    fullPage = true,
   } = options;
 
   await page.setViewportSize(viewport);
   const consoleMonitor = await collectConsole(page);
   const consoleEvents = consoleMonitor.events;
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.goto(initialUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(waitMs);
+  if (typeof prepare === 'function') {
+    await prepare(page);
+    await page.waitForTimeout(waitMs);
+  }
   await clearTransientUi(page);
 
   const summary = await summarizePage(page);
   const critical = criticalConsole(consoleEvents);
-  const axe = await runAxe(page).catch((error) => ({ violations: [{ id: 'axe-runtime-error', impact: 'critical', help: error.message }] }));
+  const axe = await withTimeout(
+    runAxe(page),
+    options.axeTimeoutMs || 10_000,
+    { violations: [{ id: 'axe-timeout', impact: 'serious', help: 'Axe audit timed out on this surface.' }] },
+  ).catch((error) => ({ violations: [{ id: 'axe-runtime-error', impact: 'critical', help: error.message }] }));
   const seriousAxe = (axe.violations || []).filter((violation) => ['critical', 'serious'].includes(violation.impact));
 
   consoleMonitor.dispose();
@@ -153,7 +172,7 @@ async function auditRoute(page, options) {
   ensureDir(screenshotDir);
   const iterationSuffix = options.iteration !== undefined ? `-iter-${options.iteration + 1}` : '';
   const screenshotPath = path.join(screenshotDir, `${sanitizeName(domain)}-${sanitizeName(name)}${iterationSuffix}-${viewport.width}x${viewport.height}.png`);
-  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await page.screenshot({ path: screenshotPath, fullPage });
 
   return {
     domain,

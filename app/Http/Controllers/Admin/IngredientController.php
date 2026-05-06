@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\IngredientResource;
+use App\Http\Resources\IngredientUsageResource;
 use App\Services\Ingredients\IngredientAvailabilityService;
 use App\Services\Ingredients\IngredientService;
 use Illuminate\Http\JsonResponse;
@@ -39,6 +40,16 @@ class IngredientController extends AdminController
             'success' => true,
             'data' => new IngredientResource($found),
         ]);
+    }
+
+    public function usage(string $globalId): JsonResponse
+    {
+        $details = $this->ingredients->usageDetailsForGlobalId($globalId);
+        if ($details === null) {
+            return response()->json(['message' => 'Ingredient not found'], 404);
+        }
+
+        return (new IngredientUsageResource($details))->response();
     }
 
     public function toggleAvailability(Request $request, string $globalId): JsonResponse

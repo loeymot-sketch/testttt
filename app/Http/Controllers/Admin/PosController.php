@@ -6,6 +6,7 @@ use Exception;
 use App\Services\OrderService;
 use App\Http\Requests\PosOrderRequest;
 use App\Http\Resources\OrderDetailsResource;
+use Illuminate\Http\JsonResponse;
 use App\Rules\ValidJsonOrder;
 use App\Services\Delivery\DeliveryFeeService;
 use App\Services\Order\OrderQuoteService;
@@ -50,6 +51,25 @@ class PosController extends AdminController
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    /**
+     * Resolve the canonical walk-in customer (DB-first) for POS checkout when the
+     * operator lacks CustomerController create/list permissions.
+     */
+    public function walkInCustomer(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('pos'), 403);
+        $user = $this->walkInCustomerResolver->resolve();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
     }
 
     public function quote(Request $request): \Illuminate\Http\JsonResponse

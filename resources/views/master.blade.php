@@ -66,7 +66,7 @@
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
     <!-- PAGE TITLE -->
-    <title>{{ Settings::group('company')->get('company_name') }}</title>
+    <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'FoodKing') }}</title>
 
     <!-- FAV ICON -->
     <link rel="icon" type="image" href="{{ $favicon }}">
@@ -155,7 +155,7 @@
             staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
             features: {
-                wizard_per_item_demo: @json((bool) config('catalog_v15.features.wizard_per_item_demo.enabled', false)),
+                wizard_per_item_demo: @json(\App\Support\WizardPerItemDemo::enabled(request())),
             },
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle

@@ -16,12 +16,19 @@ import * as path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { clearFoodKingRateLimits } = require('../helpers/rate-limit');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { loginAsPosOperator } = require('../helpers/login');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { ensurePosTacosMenuForE2e } = require('../helpers/pos-tacos-fixture');
 
 const POS_EMAIL = process.env.E2E_POS_USER || 'pos@lecayenne.fr';
 const POS_PASSWORD = process.env.E2E_POS_PASS || '123456';
 
-/** Regex libellé item catalogue (ex. Tacos M) */
-const ITEM_CATALOG_RE = new RegExp(process.env.E2E_POS_TACOS_ITEM_RE || 'tacos\\s*l|tacos.*2', 'i');
+/** Regex libellé item catalogue (seed variable : Tacos M/L, wrap, etc.) */
+const ITEM_CATALOG_RE = new RegExp(
+  process.env.E2E_POS_TACOS_ITEM_RE || 'tacos|galette|wrap|kebab|tacos\\s*l|tacos.*2',
+  'i',
+);
 /** Sélection A — défaut aligné sur le seed local courant, surchargeable en CI. */
 const MEAT_A_RE = new RegExp(process.env.E2E_POS_MEAT_A_RE || 'merguez|jambon|dinde|steak|bœuf|boeuf', 'i');
 /** Sélection B — défaut aligné sur le seed local courant, surchargeable en CI. */
@@ -36,16 +43,8 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-/**
- * Même contrat que `tests/e2e/helpers/login.js` : `/login`, `#formEmail`, `#formPassword`.
- */
 async function loginAsPOS(page: Page) {
-  await page.goto('/login');
-  await expect(page.locator('#formEmail')).toBeVisible({ timeout: 20_000 });
-  await page.locator('#formEmail').fill(POS_EMAIL);
-  await page.locator('#formPassword').fill(POS_PASSWORD);
-  await page.getByRole('button', { name: /^(login|connexion)$/i }).click();
-  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 25_000 });
+  await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
 }
 
 /**
@@ -53,27 +52,32 @@ async function loginAsPOS(page: Page) {
  */
 function variationQuantityRow(page: Page, nameRe: RegExp) {
   return page
-    .locator('#item-variation-modal div.flex.items-center.gap-3.rounded-lg.border')
+    .locator('#item-variation-modal.active div.flex.items-center.gap-3.rounded-lg.border')
     .filter({ has: page.locator('h3').filter({ hasText: nameRe }) });
 }
 
 function wizardViandeRow(page: Page, nameRe: RegExp) {
   return page
-    .locator('#item-variation-modal .wizard-viande-row')
+    .locator('#item-variation-modal.active .wizard-viande-row')
     .filter({ has: page.locator('.viande-name').filter({ hasText: nameRe }) });
 }
 
 function extraQuantityRow(page: Page, nameRe: RegExp) {
   return page
-    .locator('#item-variation-modal div.flex.items-center.gap-3.rounded-lg.border')
+    .locator('#item-variation-modal.active div.flex.items-center.gap-3.rounded-lg.border')
     .filter({ has: page.locator('h3').filter({ hasText: nameRe }) });
 }
 
+/**
+ * Tuile catalogue POS V5 : bouton avec `aria-label` « Ajouter {item}, {price} »
+ * (voir ItemComponent.vue) — plus fiable que le seul `h3` si le DOM varie.
+ */
 function productTile(page: Page) {
-  return page
-    .locator('[data-pos-item-id]')
-    .filter({ has: page.locator('h3').filter({ hasText: ITEM_CATALOG_RE }) })
-    .first();
+  return page.getByRole('button', { name: ITEM_CATALOG_RE }).first();
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function closeBlockingPosPanels(page: Page) {
@@ -83,19 +87,28 @@ async function closeBlockingPosPanels(page: Page) {
   }
 }
 
-async function openTacosProductModal(page: Page) {
+async function openTacosProductModal(page: Page, seededItemName?: string) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     await closeBlockingPosPanels(page);
 
     let tile = productTile(page);
     if (!await tile.isVisible({ timeout: 10_000 }).catch(() => false)) {
       const tacosCategory = page
-        .getByRole('button', { name: /category\s+Nos Tacos|Nos Tacos/i })
+        .getByRole('button', { name: /category\s+(Nos Tacos|PW-E2E Tacos)|Nos Tacos|PW-E2E Tacos/i })
         .first();
 
       if (await tacosCategory.isVisible({ timeout: 3_000 }).catch(() => false)) {
         await tacosCategory.click();
         tile = productTile(page);
+      }
+    }
+
+    if (!await tile.isVisible({ timeout: 5_000 }).catch(() => false) && seededItemName) {
+      const searchBox = page.getByRole('searchbox', { name: /rechercher un article|search/i }).first();
+      if (await searchBox.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await searchBox.fill(seededItemName);
+        await page.waitForTimeout(800);
+        tile = page.getByRole('button', { name: new RegExp(escapeRegex(seededItemName), 'i') }).first();
       }
     }
 
@@ -155,19 +168,32 @@ async function selectViande(page: Page, nameRe: RegExp, times: number, label: st
     return;
   }
 
-  const legacyRow = variationQuantityRow(page, nameRe);
+  const legacyRow = variationQuantityRow(page, nameRe).first();
   await expect(legacyRow, `${label} introuvable — adapter regex / seed`).toBeVisible({ timeout: 5_000 });
   await clickPlusInRow(legacyRow, times);
 }
 
 async function selectExtra(page: Page, nameRe: RegExp) {
-  const wizardChip = page.locator('#item-variation-modal .sauce-chip').filter({ hasText: nameRe }).first();
-  if (await wizardChip.isVisible({ timeout: 1_000 }).catch(() => false)) {
+  const modal = page.locator('#item-variation-modal');
+  const wizardChip = modal.locator('.sauce-chip').filter({ hasText: nameRe }).first();
+  if (await wizardChip.isVisible({ timeout: 1_500 }).catch(() => false)) {
     await wizardChip.click();
     return;
   }
 
-  const legacyExtra = extraQuantityRow(page, nameRe);
+  // Single-page wizard: paid extras live under a collapsed « Suppléments » panel (pos-wizard.js).
+  const supplToggle = modal.locator('.suppl-toggle').first();
+  if (await supplToggle.isVisible({ timeout: 1_500 }).catch(() => false)) {
+    await supplToggle.click();
+  }
+
+  const supplementOpt = modal.locator('.supplement-opt').filter({ hasText: nameRe }).first();
+  if (await supplementOpt.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await supplementOpt.click();
+    return;
+  }
+
+  const legacyExtra = extraQuantityRow(page, nameRe).first();
   await expect(legacyExtra, 'Extra introuvable — adapter E2E_POS_EXTRA_RE / seed').toBeVisible({ timeout: 5_000 });
   await clickPlusInRow(legacyExtra, 1);
 }
@@ -177,7 +203,8 @@ async function selectExtra(page: Page, nameRe: RegExp) {
  * Pas de data-testid `pos-cart-total` — sélecteur structurel documenté pour ops.
  */
 function posCartTotalLocator(page: Page) {
-  return page.locator('#pos-cart li').filter({ hasText: /^Total\b/i }).locator('span.text-primary').first();
+  // POS V5: totals live in footer `PosV5TotalRow` (not legacy `#pos-cart li`).
+  return page.locator('#pos-cart [data-testid="pos-grand-total"] .pos-v5-total-row__amount').first();
 }
 
 function parseAmount(text: string): number {
@@ -197,10 +224,16 @@ test.describe('POS — Tacos seed-adapted mix → espèces → reçu (T22 partie
   });
 
   test('flux: tacos + sélections + extra + paiement espèces + composition reçu', async ({ page }) => {
+    const seeded = ensurePosTacosMenuForE2e(POS_EMAIL);
+    if (!seeded.ok) {
+      test.skip(true, `Fixture POS tacos indisponible (${seeded.reason || 'unknown'}) — seed menu ou compte E2E_POS_USER.`);
+    }
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#pos-cart')).toBeVisible({ timeout: 25_000 });
     await page.waitForTimeout(2_000);
 
     // 1. Catalogue — tuile item (landing best sellers ou catégorie Tacos).
-    await openTacosProductModal(page);
+    await openTacosProductModal(page, seeded.name);
 
     // 2. Sélections configurables (compteurs +). Le seed local par défaut expose
     // Tacos L avec deux choix; les seeds 4 viandes peuvent surcharger A_QTY=3/B_QTY=1.
@@ -220,37 +253,57 @@ test.describe('POS — Tacos seed-adapted mix → espèces → reçu (T22 partie
 
     const totalEl = posCartTotalLocator(page);
     await expect(totalEl).toBeVisible();
-    const totalNumber = parseAmount(await totalEl.innerText());
-    expect(totalNumber, 'Total panier illisible').toBeGreaterThan(0);
+    const cartTotalNumber = parseAmount(await totalEl.innerText());
+    expect(cartTotalNumber, 'Total panier illisible').toBeGreaterThan(0);
 
-    // 6. Commande → paiement
-    await page.getByRole('button', { name: /^(commande|order)$/i }).click();
+    // 6. Commande → paiement (POS V5 CTA includes amount: "Order · 12,50 €")
+    await page.getByTestId('pos-v5-pay').click();
     await expect(page.locator('#orderpayment')).toBeVisible({ timeout: 10_000 });
 
     await page.locator('[data-tab="#cash"]').click();
     await expect(page.locator('#cashInput')).toBeVisible();
-    const received = String(Math.ceil(totalNumber + 5));
+    // Montant encaissé = SSOT affiché dans le modal (évite décalage panier vs form.total si régression).
+    const modalTotalEl = page.locator('#orderpayment .pos-v5-payment-total-value').first();
+    await expect(modalTotalEl).toBeVisible({ timeout: 5_000 });
+    await page.waitForTimeout(400);
+    const payTotalNumber = parseAmount(await modalTotalEl.innerText());
+    expect(payTotalNumber, 'Total modal paiement illisible').toBeGreaterThan(0);
+    const due = Math.max(payTotalNumber, cartTotalNumber);
+    const received = String(Math.ceil(due + 5));
     await page.locator('#cashInput').fill(received);
 
     const confirmPayment = page.locator('#orderpayment button').filter({ hasText: /confirmer|confirm/i }).last();
     await expect(confirmPayment).toBeVisible({ timeout: 10_000 });
-    await Promise.all([
-      page.waitForResponse((response) => (
-        response.request().method() === 'POST' && /\/api\/admin\/pos$/.test(response.url())
-      ), { timeout: 15_000 }).catch(() => null),
-      confirmPayment.click(),
-    ]);
+    let saveResp;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      clearFoodKingRateLimits();
+      const saveRespPromise = page.waitForResponse(
+        (response) => response.request().method() === 'POST' && /\/api\/admin\/pos$/.test(response.url()),
+        { timeout: 25_000 },
+      );
+      await confirmPayment.click();
+      saveResp = await saveRespPromise;
+      if (saveResp.status() !== 429) {
+        break;
+      }
+      await page.waitForTimeout(2000);
+    }
+    expect(
+      saveResp.status(),
+      `POST /api/admin/pos doit réussir (reçu=${received}, statut API)`,
+    ).toBeLessThan(400);
 
     // 7. Reçu — composition + pied fiscal (si seed branch fiscal)
     const receipt = page.locator('#receiptModal');
     await expect(receipt).toBeVisible({ timeout: 20_000 });
 
-    const receiptBody = receipt.locator('#print');
-    // Ligne variations / instruction wizard : les quantités dépendent du seed.
-    await expect(receiptBody.getByText(MEAT_A_RE).first()).toBeVisible();
-    await expect(receiptBody.getByText(MEAT_B_RE).first()).toBeVisible();
+    // POS V5: viandes / extras peuvent n'apparaître que sur le ticket cuisine (bloc Instruction),
+    // pas sur le ticket client (ligne article seule + TVA). On valide sur les deux panneaux.
+    const receiptPrint = receipt.locator('#print-receipt-kitchen, #print-receipt-client');
+    await expect(receiptPrint.getByText(MEAT_A_RE).first()).toBeVisible({ timeout: 10_000 });
+    await expect(receiptPrint.getByText(MEAT_B_RE).first()).toBeVisible({ timeout: 10_000 });
 
-    await expect(receiptBody.getByText(/NF525|SIRET|TVA/i).first()).toBeVisible();
+    await expect(receipt.locator('#print-receipt-client').getByText(/NF525|SIRET|TVA/i).first()).toBeVisible();
 
     await page.screenshot({ path: 'reports/e2e/pos-tacos-4-viandes-cash-end.png', fullPage: true });
   });

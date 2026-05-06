@@ -8,8 +8,6 @@ use App\Libraries\AppLibrary;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-use function PHPUnit\Framework\isNull;
-
 class ItemAddonResource extends JsonResource
 {
 
@@ -41,7 +39,7 @@ class ItemAddonResource extends JsonResource
                 return $offer;
             }
         });
-        if (isNull($offer)) {
+        if ($offer === null) {
             $offer = [];
         }
         $total = $this->variation?->price + (count($offer) ? $offer[0]->convert_price : $this->addonItem?->price);
@@ -85,8 +83,10 @@ class ItemAddonResource extends JsonResource
             return [$variation->id => $variation];
         });
         if ($this->addon_item_variation) {
-            $decoded = json_decode($this->addon_item_variation, true);
-            if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+            $decoded = is_array($this->addon_item_variation)
+                ? $this->addon_item_variation
+                : json_decode((string) $this->addon_item_variation, true);
+            if (! is_array($decoded)) {
                 return (object) ['price' => 0, 'name' => []];
             }
             $variations = (object) $decoded;
@@ -111,12 +111,15 @@ class ItemAddonResource extends JsonResource
     }
 
     /**
-     * Safely decode JSON with error checking
+     * Normalize addon_item_variation for API output (DB JSON string or Eloquent array cast).
      */
-    private function safeJsonDecode(?string $json): mixed
+    private function safeJsonDecode(array|string|null $json): mixed
     {
-        if (empty($json)) {
+        if ($json === null || $json === '' || $json === []) {
             return [];
+        }
+        if (is_array($json)) {
+            return $json;
         }
         $decoded = json_decode($json);
         return json_last_error() === JSON_ERROR_NONE ? $decoded : [];

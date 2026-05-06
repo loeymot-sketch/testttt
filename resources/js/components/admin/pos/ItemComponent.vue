@@ -400,6 +400,14 @@ export default {
             return Boolean(this.item) && !this.catalogItemAvailable;
         },
         canAddToCart: function () {
+            const modal = this.$refs?.itemVariationModal;
+            const wizardBridged = parseFloat(modal?.dataset?.wizardTotal || 0) || 0;
+            // Single-page pos-wizard submits via dataset + instruction; legacy <select> sync often
+            // does not run on POS V5 (no viande dropdowns), so Vue temp.item_variations can lag while
+            // the wizard state is authoritative — do not block on hasSelectionErrors in that case.
+            if (wizardBridged > 0) {
+                return this.catalogItemAvailable;
+            }
             return this.temp.total_price > 0 && !this.hasSelectionErrors() && this.catalogItemAvailable;
         },
         /**
@@ -1455,9 +1463,8 @@ export default {
         const modal = this.$refs.itemVariationModal;
         if (modal) {
             modal.addEventListener('wizard:add-to-cart', () => {
-                // Ensure total_price is set from wizard total if Vue hasn't computed it yet
                 const wizardTotal = parseFloat(modal.dataset?.wizardTotal || 0);
-                if (wizardTotal > 0 && this.temp.total_price <= 0) {
+                if (wizardTotal > 0) {
                     this.temp.total_price = wizardTotal;
                 }
                 if (!this.canAddToCart) return;

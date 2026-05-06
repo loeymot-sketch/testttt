@@ -153,6 +153,9 @@ export default {
                     this.loading.isActive = false;
                     alertService.success(res.data.message);
 
+                    // Avant router.push : aligner meta.access (sinon ancien refus / race 1s avec setTimeout).
+                    appService.recursiveRouter(routes, res.data.permission);
+
                     // [LOGIN-02] Redirection intelligente selon le profil
                     // [STAFF-ONLY-V1] En staff-only mode : le fallback va au dashboard admin (plus de frontend.home).
                     const defaultPermission = res.data?.defaultPermission;
@@ -170,10 +173,6 @@ export default {
                     } else {
                         router.push({ name: "frontend.home" });
                     }
-
-                    setTimeout(() => {
-                        appService.recursiveRouter(routes, this.permission);
-                    }, 1000);
                 }).catch((err) => {
                     this.loading.isActive = false;
                     const data = err.response?.data;

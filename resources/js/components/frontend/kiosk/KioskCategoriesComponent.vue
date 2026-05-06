@@ -151,16 +151,12 @@
                     'is-loading': loadingItemId === product.id,
                     'kiosk-product-card--filtered-out': !isProductCatalogAllowed(product),
                   }"
-                  role="button"
-                  :tabindex="isProductCatalogAllowed(product) ? 0 : -1"
+                  role="listitem"
                   :aria-disabled="!isProductCatalogAllowed(product) ? 'true' : 'false'"
-                  :aria-label="sanitizeItemName(product.name)"
                   :aria-busy="loadingItemId === product.id ? 'true' : 'false'"
                   :data-testid="`kiosk-product-card-${product.id}`"
                   :title="productFilteredOutTooltip(product)"
                   @click="onProductCardActivate(product, $event)"
-                  @keydown.enter.prevent="onProductCardActivate(product, $event)"
-                  @keydown.space.prevent="onProductCardActivate(product, $event)"
                 >
                   <div class="kiosk-product-media">
                     <img
@@ -801,9 +797,9 @@ export default {
   height: auto;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--kiosk-primary);
-  background: var(--kiosk-primary);
-  color: var(--kiosk-text-on-red);
+  border: 2px solid var(--kiosk-primary-dark, #B8000F);
+  background: var(--kiosk-primary-dark, #B8000F);
+  color: #FFFFFF;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.02em;
@@ -942,8 +938,8 @@ export default {
 }
 
 .kiosk-sidebar-item.active {
-  border-color: var(--kiosk-primary);
-  background: var(--kiosk-primary-soft);
+  border-color: var(--kiosk-primary-dark, #B8000F);
+  background: var(--kiosk-primary-dark, #B8000F);
   box-shadow: var(--kiosk-shadow-card);
 }
 
@@ -986,7 +982,7 @@ export default {
 }
 
 .kiosk-sidebar-item.active .kiosk-sidebar-name {
-  color: var(--kiosk-primary);
+  color: #FFFFFF;
 }
 
 .kiosk-product-zone {
@@ -1027,6 +1023,13 @@ export default {
   color: var(--kiosk-text);
   text-transform: uppercase;
   letter-spacing: 0;
+  line-height: 1.04;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .kiosk-zone-subtitle {
@@ -1154,6 +1157,12 @@ export default {
   line-height: 1.15;
   color: var(--kiosk-text);
   text-transform: uppercase;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .kiosk-product-desc {
@@ -1328,9 +1337,9 @@ export default {
 
 /* TOP CHIP — compte client */
 .kiosk-top-chip {
-  border-color: var(--kiosk-bold-primary, #E63946);
-  background: var(--kiosk-bold-primary, #E63946);
-  color: var(--kiosk-bold-text-on-primary, #FFF5E8);
+  border-color: var(--kiosk-bold-primary-dark, #B8000F);
+  background: var(--kiosk-bold-primary-dark, #B8000F);
+  color: #FFFFFF;
   font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
   font-weight: var(--kiosk-font-weight-bold, 700);
   letter-spacing: 0.04em;
@@ -1341,7 +1350,7 @@ export default {
 }
 .kiosk-top-chip--active:hover,
 .kiosk-top-chip--active:focus-visible {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #97000D);
   box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
   transform: translateY(-2px) scale(1.03);
 }

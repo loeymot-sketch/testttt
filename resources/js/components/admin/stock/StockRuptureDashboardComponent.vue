@@ -27,7 +27,7 @@
                 <h2 class="text-lg font-semibold text-slate-800">
                     {{ $t('admin.stock_rupture.title') }}
                 </h2>
-                <p class="mt-1 text-sm text-slate-500">
+                <p class="mt-1 text-sm text-slate-600">
                     {{ $t('admin.stock_rupture.subtitle') }}
                 </p>
             </div>
@@ -41,7 +41,7 @@
                 </span>
                 <button
                     type="button"
-                    class="db-btn db-btn-secondary text-sm"
+                    class="db-btn db-btn-secondary text-sm !text-slate-800"
                     :disabled="loading || runningManually"
                     data-testid="stock-rupture-run-now"
                     @click="runScanNow"
@@ -62,19 +62,19 @@
             </h3>
             <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
                 <div>
-                    <dt class="text-xs text-slate-500">{{ $t('admin.stock_rupture.last_run_at') }}</dt>
+                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.last_run_at') }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.ran_at_human }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-500">{{ $t('admin.stock_rupture.items_flipped') }}</dt>
+                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.items_flipped') }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.items_flipped }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-500">{{ $t('admin.stock_rupture.items_skipped') }}</dt>
+                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.items_skipped') }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.items_skipped }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-500">{{ $t('admin.stock_rupture.duration_ms') }}</dt>
+                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.duration_ms') }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.duration_ms }} ms</dd>
                 </div>
             </dl>
@@ -87,7 +87,7 @@
             <h3 class="text-sm font-semibold text-slate-800">
                 {{ $t('admin.stock_rupture.currently_86') }} ({{ currentlyUnavailable.length }})
             </h3>
-            <p v-if="currentlyUnavailable.length === 0" class="mt-3 text-sm text-slate-400">
+            <p v-if="currentlyUnavailable.length === 0" class="mt-3 text-sm text-slate-600">
                 {{ $t('admin.stock_rupture.none_unavailable') }}
             </p>
             <ul v-else class="mt-3 space-y-2">
@@ -99,7 +99,7 @@
                 >
                     <div>
                         <p class="text-sm font-semibold text-slate-800">{{ row.item_name }}</p>
-                        <p class="text-xs text-slate-500">
+                        <p class="text-xs text-slate-600">
                             {{ row.branch_name }} · {{ $t('admin.stock_rupture.flipped_at') }} {{ row.flipped_at_human }}
                         </p>
                     </div>
@@ -117,7 +117,7 @@
             <h3 class="text-sm font-semibold text-slate-800">
                 {{ $t('admin.stock_rupture.low_alerts') }} ({{ lowAlerts.length }})
             </h3>
-            <p v-if="lowAlerts.length === 0" class="mt-3 text-sm text-slate-400">
+            <p v-if="lowAlerts.length === 0" class="mt-3 text-sm text-slate-600">
                 {{ $t('admin.stock_rupture.no_low_alerts') }}
             </p>
             <ul v-else class="mt-3 space-y-2">

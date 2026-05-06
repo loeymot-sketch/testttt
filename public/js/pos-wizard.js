@@ -264,7 +264,20 @@
         if (byName > 0) return byName;
         var byDesc = extractViandeCountFromText(data.description || '');
         if (byDesc > 0) return byDesc;
-        if (hasViandeAttribute(data)) return 1;
+        if (hasViandeAttribute(data)) {
+            var viandeAttrs = (data.itemAttributes || []).filter(function (attr) {
+                var n = normalizeStr(attr.name || '');
+                return n.includes('viande') || n.includes('meat') || n.includes('proteine');
+            });
+            if (viandeAttrs.length > 1) {
+                return viandeAttrs.length;
+            }
+            if (viandeAttrs.length === 1) {
+                var mx = parseInt(viandeAttrs[0].max_select, 10);
+                if (isFinite(mx) && mx > 0) return mx;
+            }
+            return 1;
+        }
         return 0;
     }
 

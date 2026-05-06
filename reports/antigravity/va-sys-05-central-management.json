@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-04-30T15:18:37.560Z",
+  "generated_at": "2026-05-05T19:57:01.091Z",
   "verdict": "PASS_RUNTIME_LOCAL",
   "results": [
     {
       "scenario": "central_management_to_runtime_projection_and_order",
       "pass": true,
-      "item_id": 662,
-      "order_id": 685,
-      "queue_number": "A0001",
-      "total": 13,
+      "item_id": 264,
+      "order_id": 137,
+      "queue_number": "A86243275",
+      "total": 33,
       "stock_on_hand": 7,
       "composition_lines": 1,
       "composition_extras": 1,

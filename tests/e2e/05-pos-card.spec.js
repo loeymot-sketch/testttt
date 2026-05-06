@@ -1,15 +1,14 @@
 // FoodKing E2E — Flow 5 : POS Card Payment
 // Login caissier → POS surface → card payment flow
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers/login');
+const { loginAsPosOperator } = require('./helpers/login');
 
-const POS_EMAIL    = 'pos@lecayenne.fr';
-const POS_PASSWORD = '123456';
+const POS_EMAIL    = process.env.E2E_POS_USER || 'pos@lecayenne.fr';
+const POS_PASSWORD = process.env.E2E_POS_PASS || '123456';
 
 test.describe('POS Card — payment flow', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, POS_EMAIL, POS_PASSWORD);
-    await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
+    await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
   });
 
   test('POS surface loads for card payment scenario', async ({ page }) => {

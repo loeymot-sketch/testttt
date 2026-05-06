@@ -153,7 +153,7 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         expect(wrapper.findAll('[data-testid^="kiosk-categories-sidebar-item-"]')).toHaveLength(2);
     });
 
-    it('product cards expose role=button + aria-label + testid', () => {
+    it('product cards expose list semantics and an accessible add button', () => {
         const categories = [{ id: 1, name: 'Tacos', kioskRowKey: 't' }];
         const items = [{ id: 42, name: 'Tacos Classic', convert_price: 8.5 }];
         const store = makeStore({
@@ -166,9 +166,9 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         const wrapper = mount(KioskCategoriesComponent, mountOpts(store));
         const card = wrapper.find('[data-testid="kiosk-product-card-42"]');
         expect(card.exists()).toBe(true);
-        expect(card.attributes('role')).toBe('button');
-        expect(card.attributes('tabindex')).toBe('0');
-        expect(card.attributes('aria-label')).toContain('Tacos Classic');
+        expect(card.attributes('role')).toBe('listitem');
+        expect(card.attributes('tabindex')).toBeUndefined();
+        expect(card.attributes('aria-label')).toBeUndefined();
         const add = wrapper.find('[data-testid="kiosk-product-add-42"]');
         expect(add.exists()).toBe(true);
         expect(add.attributes('aria-label')).toContain('Tacos Classic');

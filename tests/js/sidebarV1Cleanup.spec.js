@@ -35,7 +35,7 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).not.toContain('menu.license');
     });
 
-    it('renders only the four V1 primary sidebar entries', () => {
+    it('renders dashboard + POS + V1 primary band (virtual catalogue children under items)', () => {
         const wrapper = mount(BackendMenuComponent, {
             global: {
                 stubs: { RouterLink },
@@ -59,6 +59,7 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).toContain('menu.catalog');
         expect(text).toContain('menu.ingredients');
         expect(text).toContain('menu.pos_orders');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(4);
+        // buildMergedSidebarMenus: dashboard, pos, rupture, items→studio+attrs, ingredients, pos-orders = 7 rows
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(7);
     });
 });

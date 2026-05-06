@@ -83,13 +83,13 @@ function profile(overrides = {}) {
 
 function primeAxios({ profilePayload = profile() } = {}) {
     axios.get.mockImplementation((url) => {
-        if (url === '/admin/item/show/7') {
+        if (url === 'admin/item/show/7') {
             return Promise.resolve({ data: { data: item } });
         }
-        if (url === '/admin/composer/items/7/profile') {
+        if (url === 'admin/composer/items/7/profile') {
             return Promise.resolve({ data: { data: profilePayload } });
         }
-        if (url === '/admin/composer/items/7/available-sources') {
+        if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
         return Promise.reject(new Error(`unexpected GET ${url}`));
@@ -142,7 +142,7 @@ describe('ProductComposerEditorComponent version conflict', () => {
         await flushPromises();
 
         expect(axios.put).toHaveBeenCalledWith(
-            '/admin/composer/profiles/55',
+            'admin/composer/profiles/55',
             expect.objectContaining({ version: 2 })
         );
     });
@@ -178,6 +178,6 @@ describe('ProductComposerEditorComponent version conflict', () => {
 
         expect(wrapper.vm.conflictDetected).toBe(false);
         expect(wrapper.vm.expectedVersion).toBeNull();
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/items/7/profile', undefined);
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/profile', undefined);
     });
 });

@@ -334,7 +334,7 @@
     box-shadow: 0 0 0 4px var(--pos-v5-brand-red-soft), var(--pos-v5-shadow-cta-soft);
 }
 .pos-v5-category.is-active .pos-v5-category__label {
-    color: var(--pos-v5-brand-red);
+    color: var(--pos-v5-brand-red-dark);
     font-weight: var(--pos-v5-weight-extrabold);
 }
 
@@ -637,7 +637,7 @@
 .pos-v5-cart__empty {
     text-align: center;
     padding: var(--pos-v5-space-8) var(--pos-v5-space-4);
-    color: var(--pos-v5-ink-muted);
+    color: var(--pos-v5-ink-soft);
     font-size: var(--pos-v5-text-body);
 }
 .pos-v5-cart__empty-icon {

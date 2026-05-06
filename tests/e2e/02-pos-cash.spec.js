@@ -3,14 +3,13 @@
 // Credentials : pos@lecayenne.fr / 123456
 
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers/login');
+const { loginAsPosOperator } = require('./helpers/login');
 
-const POS_EMAIL    = 'pos@lecayenne.fr';
-const POS_PASSWORD = '123456';
+const POS_EMAIL    = process.env.E2E_POS_USER || 'pos@lecayenne.fr';
+const POS_PASSWORD = process.env.E2E_POS_PASS || '123456';
 
 async function loginAsPOS(page) {
-  await login(page, POS_EMAIL, POS_PASSWORD);
-  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
+  await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
 }
 
 test.describe('POS Cash — commande complète', () => {

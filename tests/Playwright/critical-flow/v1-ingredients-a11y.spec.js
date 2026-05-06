@@ -33,12 +33,14 @@ test.describe('Pivot V1 — Ingredients a11y', () => {
     }
   });
 
-  test('has no serious or critical WCAG violations on /admin/ingredients', async ({ page }) => {
-    test.skip(!AxeBuilder, '@axe-core/playwright not installed');
-
+  async function openIngredientsPage(page) {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await page.goto('/admin/ingredients', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('ingredient-list')).toBeVisible({ timeout: 30_000 });
+  }
+
+  async function expectNoBlockingViolations(page) {
+    test.skip(!AxeBuilder, '@axe-core/playwright not installed');
 
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const blockingViolations = results.violations.filter((violation) =>
@@ -46,5 +48,66 @@ test.describe('Pivot V1 — Ingredients a11y', () => {
     );
 
     expect(blockingViolations).toHaveLength(0);
+  }
+
+  test('has no serious or critical WCAG violations on /admin/ingredients', async ({ page }) => {
+    await openIngredientsPage(page);
+    await expectNoBlockingViolations(page);
+  });
+
+  test('has no serious or critical WCAG violations with the usage drawer open', async ({ page }) => {
+    await openIngredientsPage(page);
+
+    await page.getByRole('button', { name: /voir les détails|view details/i }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    await expectNoBlockingViolations(page);
+  });
+
+  test('toggles the first ingredient switch from the keyboard', async ({ page }) => {
+    await openIngredientsPage(page);
+
+    const toggle = page.getByTestId('ingredient-list').getByRole('switch').first();
+    await expect(toggle).toBeVisible({ timeout: 25_000 });
+
+    const before = await toggle.getAttribute('aria-checked');
+    // `window.prompt` can fire on each unavailable toggle; handle every dialog (not `once`).
+    const onDialog = (dialog) => {
+      void dialog.accept('A11y keyboard test');
+    };
+    page.on('dialog', onDialog);
+    try {
+      await toggle.focus();
+      await toggle.press('Space');
+      await expect
+        .poll(async () =>
+          page.getByTestId('ingredient-list').getByRole('switch').first().getAttribute('aria-checked'),
+          { timeout: 15_000 },
+        )
+        .not.toBe(before || '');
+    } finally {
+      page.off('dialog', onDialog);
+    }
+  });
+
+  test('has no serious or critical WCAG violations on the empty state', async ({ page }) => {
+    await page.route('**/admin/ingredients**', async (route) => {
+      const request = route.request();
+      if (['fetch', 'xhr'].includes(request.resourceType()) && request.method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: [] }),
+        });
+        return;
+      }
+
+      await route.continue();
+    });
+
+    await openIngredientsPage(page);
+    await expect(page.getByTestId('ingredient-empty')).toBeVisible();
+
+    await expectNoBlockingViolations(page);
   });
 });

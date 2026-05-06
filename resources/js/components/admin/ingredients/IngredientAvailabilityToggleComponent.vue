@@ -3,11 +3,16 @@
         <button
             type="button"
             role="switch"
-            class="inline-flex items-center justify-between gap-2 rounded border px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex items-center justify-between gap-2 rounded border px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             :class="displayIsAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'"
             :aria-checked="displayIsAvailable ? 'true' : 'false'"
+            :aria-label="labelText"
+            :aria-busy="isPending ? 'true' : 'false'"
+            :aria-describedby="displayReason ? reasonId : null"
             :disabled="isPending"
             @click="toggle"
+            @keydown.space.prevent="toggle"
+            @keydown.enter.prevent="toggle"
         >
             <span
                 class="h-2.5 w-2.5 rounded-full"
@@ -16,7 +21,7 @@
             ></span>
             <span>{{ displayIsAvailable ? $t('label.ingredient.toggle_available') : $t('label.ingredient.toggle_unavailable') }}</span>
         </button>
-        <span v-if="!displayIsAvailable && displayReason" class="text-xs text-slate-500">
+        <span v-if="!displayIsAvailable && displayReason" :id="reasonId" class="text-xs text-slate-500">
             {{ displayReason }}
         </span>
     </div>
@@ -40,6 +45,14 @@ export default {
     computed: {
         isPending() {
             return this.$store?.state?.ingredients?.lastTogglingGlobalId === this.globalId;
+        },
+        labelText() {
+            return this.displayIsAvailable
+                ? this.$t('label.ingredient.toggle_available')
+                : this.$t('label.ingredient.toggle_unavailable');
+        },
+        reasonId() {
+            return `ingredient-toggle-reason-${this.globalId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
         },
     },
     watch: {

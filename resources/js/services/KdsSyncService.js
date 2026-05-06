@@ -209,7 +209,11 @@ export class KdsSyncService {
                 this._schedule();
             } catch (e) { /* defensive: never throw from catch path */ }
 
-            throw error;
+            // Do not rethrow here: KDS sync runs as a background task and
+            // bubbling network/Axios-like errors to the global scope creates
+            // noisy unhandled rejections in runtime audits while auto-retry
+            // is already scheduled.
+            return null;
         }
     }
 

@@ -1,6 +1,6 @@
 {
   "verdict": "PASS_LOCAL_D3_SMOKE",
-  "generated_at": "2026-04-30T23:37:11.279Z",
+  "generated_at": "2026-05-05T21:28:31.365Z",
   "results": [
     {
       "domain": "kds",
@@ -13,10 +13,12 @@
         "height": 1080
       },
       "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-1-1920x1080.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
+      "textLength": 5455,
+      "testIds": [
+        "kds-sync-mode-banner"
+      ],
+      "interactiveCount": 101,
+      "smallTargetCount": 87,
       "smallTargets": [
         {
           "tag": "a",
@@ -26,31 +28,25 @@
         },
         {
           "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
+          "text": "Écran cuisine",
+          "width": 109,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "",
-          "width": 48,
+          "text": "Bonjour Chef E2E",
+          "width": 133,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
+          "text": "Masquer",
+          "width": 49,
           "height": 16
         },
         {
           "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
+          "text": "Tous les postesBarCuisine chaudeCuisine froide",
           "width": 160,
           "height": 40
         },
@@ -74,15 +70,27 @@
         },
         {
           "tag": "input",
-          "text": "Search",
+          "text": "Rechercher",
           "width": 229,
           "height": 42
         },
         {
           "tag": "button",
-          "text": "Close",
+          "text": "Fermer",
           "width": 18,
           "height": 18
+        },
+        {
+          "tag": "button",
+          "text": "21:58, 05-05-2026",
+          "width": 289,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "Imprimer ticket",
+          "width": 289,
+          "height": 32
         }
       ],
       "seriousAxeCount": 0,
@@ -99,10 +107,10 @@
         "height": 1080
       },
       "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-1-1920x1080.png",
-      "textLength": 458,
+      "textLength": 589,
       "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
+      "interactiveCount": 12,
+      "smallTargetCount": 4,
       "smallTargets": [
         {
           "tag": "a",
@@ -118,20 +126,14 @@
         },
         {
           "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
+          "text": "Suivi client",
+          "width": 96,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
+          "text": "Bonjour Chef E2E",
+          "width": 133,
           "height": 36
         }
       ],
@@ -149,10 +151,12 @@
         "height": 2160
       },
       "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-1-3840x2160.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
+      "textLength": 5455,
+      "testIds": [
+        "kds-sync-mode-banner"
+      ],
+      "interactiveCount": 101,
+      "smallTargetCount": 87,
       "smallTargets": [
         {
           "tag": "a",
@@ -162,31 +166,25 @@
         },
         {
           "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
+          "text": "Écran cuisine",
+          "width": 109,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "",
-          "width": 48,
+          "text": "Bonjour Chef E2E",
+          "width": 133,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
+          "text": "Masquer",
+          "width": 49,
           "height": 16
         },
         {
           "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
+          "text": "Tous les postesBarCuisine chaudeCuisine froide",
           "width": 160,
           "height": 40
         },
@@ -210,15 +208,27 @@
         },
         {
           "tag": "input",
-          "text": "Search",
+          "text": "Rechercher",
           "width": 229,
           "height": 42
         },
         {
           "tag": "button",
-          "text": "Close",
+          "text": "Fermer",
           "width": 18,
           "height": 18
+        },
+        {
+          "tag": "button",
+          "text": "21:58, 05-05-2026",
+          "width": 649,
+          "height": 24
+        },
+        {
+          "tag": "button",
+          "text": "Imprimer ticket",
+          "width": 649,
+          "height": 32
         }
       ],
       "seriousAxeCount": 0,
@@ -235,10 +245,10 @@
         "height": 2160
       },
       "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-1-3840x2160.png",
-      "textLength": 458,
+      "textLength": 589,
       "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
+      "interactiveCount": 12,
+      "smallTargetCount": 4,
       "smallTargets": [
         {
           "tag": "a",
@@ -254,564 +264,14 @@
         },
         {
           "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
+          "text": "Suivi client",
+          "width": 96,
           "height": 36
         },
         {
           "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "kds",
-      "name": "kds-grid",
-      "iteration": 1,
-      "url": "http://localhost:8000/admin/kitchen-display-system",
-      "expectedUrl": "/admin/kitchen-display-system",
-      "viewport": {
-        "width": 1920,
-        "height": 1080
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-2-1920x1080.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
-          "height": 16
-        },
-        {
-          "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
-          "width": 160,
-          "height": 40
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "Volume",
-          "width": 112,
-          "height": 16
-        },
-        {
-          "tag": "input",
-          "text": "Search",
-          "width": 229,
-          "height": 42
-        },
-        {
-          "tag": "button",
-          "text": "Close",
-          "width": 18,
-          "height": 18
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "oss",
-      "name": "oss-public",
-      "iteration": 1,
-      "url": "http://localhost:8000/admin/order-status-screen",
-      "expectedUrl": "/admin/order-status-screen",
-      "viewport": {
-        "width": 1920,
-        "height": 1080
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-2-1920x1080.png",
-      "textLength": 241,
-      "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "button",
-          "text": "Plein écran",
-          "width": 36,
-          "height": 36
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "kds",
-      "name": "kds-grid",
-      "iteration": 1,
-      "url": "http://localhost:8000/admin/kitchen-display-system",
-      "expectedUrl": "/admin/kitchen-display-system",
-      "viewport": {
-        "width": 3840,
-        "height": 2160
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-2-3840x2160.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
-          "height": 16
-        },
-        {
-          "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
-          "width": 160,
-          "height": 40
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "Volume",
-          "width": 112,
-          "height": 16
-        },
-        {
-          "tag": "input",
-          "text": "Search",
-          "width": 229,
-          "height": 42
-        },
-        {
-          "tag": "button",
-          "text": "Close",
-          "width": 18,
-          "height": 18
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "oss",
-      "name": "oss-public",
-      "iteration": 1,
-      "url": "http://localhost:8000/admin/order-status-screen",
-      "expectedUrl": "/admin/order-status-screen",
-      "viewport": {
-        "width": 3840,
-        "height": 2160
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-2-3840x2160.png",
-      "textLength": 241,
-      "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "button",
-          "text": "Plein écran",
-          "width": 36,
-          "height": 36
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "kds",
-      "name": "kds-grid",
-      "iteration": 2,
-      "url": "http://localhost:8000/admin/kitchen-display-system",
-      "expectedUrl": "/admin/kitchen-display-system",
-      "viewport": {
-        "width": 1920,
-        "height": 1080
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-3-1920x1080.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
-          "height": 16
-        },
-        {
-          "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
-          "width": 160,
-          "height": 40
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "Volume",
-          "width": 112,
-          "height": 16
-        },
-        {
-          "tag": "input",
-          "text": "Search",
-          "width": 229,
-          "height": 42
-        },
-        {
-          "tag": "button",
-          "text": "Close",
-          "width": 18,
-          "height": 18
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "oss",
-      "name": "oss-public",
-      "iteration": 2,
-      "url": "http://localhost:8000/admin/order-status-screen",
-      "expectedUrl": "/admin/order-status-screen",
-      "viewport": {
-        "width": 1920,
-        "height": 1080
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-3-1920x1080.png",
-      "textLength": 241,
-      "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "button",
-          "text": "Plein écran",
-          "width": 36,
-          "height": 36
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "kds",
-      "name": "kds-grid",
-      "iteration": 2,
-      "url": "http://localhost:8000/admin/kitchen-display-system",
-      "expectedUrl": "/admin/kitchen-display-system",
-      "viewport": {
-        "width": 3840,
-        "height": 2160
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/kds/kds-kds-grid-iter-3-3840x2160.png",
-      "textLength": 791,
-      "testIds": [],
-      "interactiveCount": 27,
-      "smallTargetCount": 11,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Dismiss",
-          "width": 43,
-          "height": 16
-        },
-        {
-          "tag": "select",
-          "text": "All stationsBarHot kitchenCold kitchen",
-          "width": 160,
-          "height": 40
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "",
-          "width": 13,
-          "height": 13
-        },
-        {
-          "tag": "input",
-          "text": "Volume",
-          "width": 112,
-          "height": 16
-        },
-        {
-          "tag": "input",
-          "text": "Search",
-          "width": 229,
-          "height": 42
-        },
-        {
-          "tag": "button",
-          "text": "Close",
-          "width": 18,
-          "height": 18
-        }
-      ],
-      "seriousAxeCount": 0,
-      "seriousAxe": []
-    },
-    {
-      "domain": "oss",
-      "name": "oss-public",
-      "iteration": 2,
-      "url": "http://localhost:8000/admin/order-status-screen",
-      "expectedUrl": "/admin/order-status-screen",
-      "viewport": {
-        "width": 3840,
-        "height": 2160
-      },
-      "screenshotPath": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/oss/oss-oss-public-iter-3-3840x2160.png",
-      "textLength": 241,
-      "testIds": [],
-      "interactiveCount": 15,
-      "smallTargetCount": 5,
-      "smallTargets": [
-        {
-          "tag": "a",
-          "text": "",
-          "width": 128,
-          "height": 43
-        },
-        {
-          "tag": "button",
-          "text": "Plein écran",
-          "width": 36,
-          "height": 36
-        },
-        {
-          "tag": "a",
-          "text": "Dashboard",
-          "width": 110,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "",
-          "width": 48,
-          "height": 36
-        },
-        {
-          "tag": "button",
-          "text": "Hello Chef Le Cayenne..",
-          "width": 191,
+          "text": "Bonjour Chef E2E",
+          "width": 133,
           "height": 36
         }
       ],

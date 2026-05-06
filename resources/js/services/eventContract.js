@@ -9,6 +9,8 @@ export const EVENT_TYPES = {
     MENU_ITEM_AVAILABILITY_CHANGED: 'menu.item_availability_changed',
     CATALOG_CHANGED: 'catalog.changed',
     STOCK_LOW: 'stock.low',
+    // [PROMO-DASH-2026-05-06] Coupon mutations broadcast (Dashboard cycle 6).
+    COUPON_CHANGED: 'promo.coupon_changed',
 };
 
 export const BROADCAST_MAP = {
@@ -18,6 +20,8 @@ export const BROADCAST_MAP = {
     OrderTableChanged: EVENT_TYPES.ORDER_TABLE_CHANGED,
     ItemAvailabilityChanged: EVENT_TYPES.MENU_ITEM_AVAILABILITY_CHANGED,
     CatalogChanged: EVENT_TYPES.CATALOG_CHANGED,
+    // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
+    CouponChanged: EVENT_TYPES.COUPON_CHANGED,
 };
 
 function warnValidation(reason, data) {

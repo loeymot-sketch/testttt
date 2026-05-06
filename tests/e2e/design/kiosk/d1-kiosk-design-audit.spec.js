@@ -1,6 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 const { auditRoute, writeJsonReport } = require('../_shared/design-audit-helpers');
+const { loginAsKiosk } = require('../../helpers/login');
+const { clearFoodKingRateLimits } = require('../../helpers/rate-limit');
 
 const screenshotDir = path.resolve(__dirname, '../../__screenshots__/kiosk');
 const reportPath = path.resolve(__dirname, '../../../../reports/antigravity/d1-kiosk-design-audit.json');
@@ -8,7 +10,38 @@ const iterations = Number(process.env.DESIGN_AUDIT_ITERATIONS || 3);
 
 const screens = [
   { name: 'idle', url: '/kiosk/idle', rootTestId: 'kiosk-idle-root' },
-  { name: 'categories', url: '/kiosk/categories', rootTestId: 'kiosk-categories-root' },
+  {
+    name: 'categories',
+    initialUrl: '/kiosk/idle',
+    url: '/kiosk/categories',
+    rootTestId: 'kiosk-categories-root',
+    prepare: async (page) => {
+      clearFoodKingRateLimits();
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      await loginAsKiosk(page);
+      await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded' });
+      await page.getByTestId('kiosk-order-type-takeaway').click();
+      await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 10_000 });
+      const categories = page.locator('[data-testid^="kiosk-categories-sidebar-item-"]');
+      const categoryCount = await categories.count();
+      let targetCategory = categoryCount > 0 ? categories.first() : null;
+      for (let i = 0; i < categoryCount; i += 1) {
+        const candidate = categories.nth(i);
+        const label = (await candidate.innerText()).trim();
+        if (!/(^|\\b)(E2E|PW-|PLAYWRIGHT|DASH|SYS|COUNTER)(\\b|[-_])/i.test(label)) {
+          targetCategory = candidate;
+          break;
+        }
+      }
+      if (targetCategory) {
+        await targetCategory.click();
+        await expect(page.getByTestId('kiosk-categories-products')).toBeVisible({ timeout: 10_000 });
+      }
+    },
+  },
   { name: 'cart', url: '/kiosk/cart', rootTestId: 'kiosk-cart-root' },
   { name: 'payment-empty-guard', url: '/kiosk/payment' },
   { name: 'cash-instruction', url: '/kiosk/cash-instruction?number=D1A001&total=8', rootTestId: 'kiosk-cash-title' },
@@ -24,13 +57,14 @@ const viewports = [
 ];
 
 test.describe('D1 kiosk design audit', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   test('kiosk screens render without critical design/runtime blockers', async ({ page }) => {
     const results = [];
     for (let pass = 0; pass < iterations; pass++) {
       for (const viewport of viewports) {
         for (const screen of screens) {
+          clearFoodKingRateLimits();
           results.push(await auditRoute(page, {
             domain: 'kiosk',
             screenshotDir,

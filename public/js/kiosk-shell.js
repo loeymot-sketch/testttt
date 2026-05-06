@@ -185,6 +185,52 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-waiting[data-v-0f435cc1] {\n 
 
 /***/ }),
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css":
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-consent-backdrop[data-v-04b6acfa] {\n  position: fixed;\n  inset: 0;\n  z-index: 220;\n  background: var(--kiosk-overlay-modal, rgba(26,26,26,0.65));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 40px 24px;\n}\n.ks-consent-card[data-v-04b6acfa] {\n  width: min(560px, 100%);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  border-radius: 20px;\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 32px 32px 28px;\n  display: flex;\n  flex-direction: column;\n  gap: 18px;\n  outline: none;\n  max-height: 90vh;\n  overflow-y: auto;\n}\n.ks-consent-header[data-v-04b6acfa] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ks-consent-title[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 26px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n}\n.ks-consent-subtitle[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 15px;\n  color: var(--kiosk-text-muted);\n  font-weight: 600;\n}\n.ks-consent-description[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 15px;\n  line-height: 1.5;\n  color: var(--kiosk-text);\n}\n.ks-consent-check[data-v-04b6acfa] {\n  display: flex;\n  align-items: flex-start;\n  gap: 12px;\n  padding: 12px 14px;\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt);\n  cursor: pointer;\n  font-size: 15px;\n  font-weight: 600;\n  color: var(--kiosk-text);\n  min-height: var(--kiosk-tap-min, 56px);\n  transition: background 0.15s ease, border-color 0.15s ease;\n}\n.ks-consent-check[data-v-04b6acfa]:hover { background: var(--kiosk-primary-soft);\n}\n.ks-consent-check input[type=\"checkbox\"][data-v-04b6acfa] {\n  margin-top: 3px;\n  width: 22px;\n  height: 22px;\n  accent-color: var(--kiosk-primary);\n  flex-shrink: 0;\n}\n.ks-consent-error[data-v-04b6acfa] {\n  margin: -6px 0 0;\n  font-size: 13px;\n  color: var(--kiosk-error);\n  font-weight: 700;\n}\n.ks-consent-privacy[data-v-04b6acfa] {\n  align-self: flex-start;\n  padding: 8px 0;\n  background: transparent;\n  border: none;\n  color: var(--kiosk-primary);\n  font-size: 14px;\n  font-weight: 700;\n  cursor: pointer;\n  text-decoration: underline;\n}\n.ks-consent-privacy[data-v-04b6acfa]:hover { color: var(--kiosk-primary-dark);\n}\n.ks-consent-privacy[data-v-04b6acfa]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-consent-actions[data-v-04b6acfa] {\n  display: flex;\n  gap: 12px;\n  margin-top: 8px;\n}\n.ks-consent-btn[data-v-04b6acfa] {\n  flex: 1;\n  min-height: var(--kiosk-tap-min, 60px);\n  padding: 14px 20px;\n  border-radius: 14px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: background 0.15s ease, transform 0.08s ease;\n  border: 1.5px solid transparent;\n}\n.ks-consent-btn--ghost[data-v-04b6acfa] {\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border-color: var(--kiosk-border);\n}\n.ks-consent-btn--ghost[data-v-04b6acfa]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-consent-btn--primary[data-v-04b6acfa] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red, #ffffff);\n  box-shadow: var(--kiosk-shadow-cta);\n}\n.ks-consent-btn--primary[data-v-04b6acfa]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-consent-btn--primary[data-v-04b6acfa]:active { transform: scale(0.98);\n}\n.ks-consent-btn--primary[disabled][data-v-04b6acfa] { opacity: 0.7; cursor: not-allowed;\n}\n.ks-consent-btn[data-v-04b6acfa]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n\n/* Privacy overlay */\n.ks-consent-privacy-overlay[data-v-04b6acfa] {\n  position: fixed;\n  inset: 0;\n  z-index: 230;\n  background: var(--kiosk-overlay-modal, rgba(26,26,26,0.75));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 40px 24px;\n}\n.ks-consent-privacy-card[data-v-04b6acfa] {\n  width: min(620px, 100%);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  border-radius: 18px;\n  padding: 28px 28px 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 18px;\n  max-height: 80vh;\n  overflow-y: auto;\n  box-shadow: var(--kiosk-shadow-modal);\n}\n.ks-consent-privacy-title[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 22px;\n  font-weight: 900;\n}\n.ks-consent-privacy-body[data-v-04b6acfa] {\n  font-size: 15px;\n  line-height: 1.55;\n  color: var(--kiosk-text);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css":
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-vkeyb[data-v-9b4f461c] {\n  position: fixed;\n  inset-inline: 0;\n  bottom: 0;\n  z-index: 150;\n  background: var(--kiosk-surface);\n  border-top: 1.5px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 16px 20px 22px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  /* Les chiffres 1080x1920 : le clavier occupe ~30% de la hauteur borne. */\n  max-height: 36vh;\n  font-family: var(--kiosk-font-sans, system-ui);\n  color: var(--kiosk-text);\n}\n.ks-vkeyb--rtl[data-v-9b4f461c] {\n  direction: rtl;\n}\n.ks-vkeyb__preview[data-v-9b4f461c] {\n  min-height: 44px;\n  padding: 10px 16px;\n  background: var(--kiosk-surface-alt);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  font-size: 20px;\n  font-weight: 700;\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n.ks-vkeyb__preview-value[data-v-9b4f461c] { flex: 1;\n}\n.ks-vkeyb__row[data-v-9b4f461c] {\n  display: grid;\n  grid-template-columns: repeat(10, 1fr);\n  gap: 8px;\n}\n.ks-vkeyb__row--actions[data-v-9b4f461c] {\n  grid-template-columns: 1fr 4fr 1fr 2fr;\n}\n.ks-vkeyb__key[data-v-9b4f461c] {\n  height: 62px;\n  min-width: 0;\n  min-height: var(--kiosk-tap-min, 56px);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 0.12s ease, transform 0.08s ease, border-color 0.12s ease;\n  touch-action: manipulation;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.ks-vkeyb__key[data-v-9b4f461c]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:active {\n  transform: scale(0.96);\n  background: var(--kiosk-primary-soft);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-vkeyb__key--wide[data-v-9b4f461c] { font-size: 16px;\n}\n.ks-vkeyb__key--action[data-v-9b4f461c] {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.02em;\n}\n.ks-vkeyb__key--active[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:active { background: var(--kiosk-primary-dark);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js":
 /*!****************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js ***!
@@ -3024,6 +3070,480 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js":
+/*!***************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * KsConsentModal — dialogue RGPD pour opt-in loyalty + analytics.
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 5.4.
+ *
+ * Règles RGPD (article 7 & 32, brief §1) :
+ *  - Checkboxes NON pré-cochées par défaut (pas de dark pattern).
+ *  - Séparation stricte loyalty vs analytics — deux consentements distincts.
+ *  - Lien vers politique de confidentialité accessible AVANT validation.
+ *  - Pas de "×" discret — refus explicite via CTA visible.
+ *  - Aucune PII en props/retour — le caller est responsable de fournir
+ *    phone/email séparément si nécessaire (ex. KioskApp dédié).
+ *  - L'événement `consent_given` est émis via /api/frontend/kiosk-event
+ *    à la validation (accept ou decline) — jamais avant.
+ *
+ * Props :
+ *  - modelValue          : boolean v-model open/close.
+ *  - privacyNoticeVersion: string (audit trail LoyaltyConsent).
+ *  - phone               : string optional — si fourni, on appelle
+ *                          /loyalty/opt-in dès accept. Sinon le parent
+ *                          gère la persistance (ex. collecte plus tard).
+ *  - email               : string optional.
+ *  - name                : string optional.
+ *
+ * Émissions :
+ *  - update:modelValue   : ferme le dialog.
+ *  - accepted (payload)  : { loyalty, analytics, apiResult? }.
+ *  - declined            : aucun argument.
+ *  - error (err)         : echec appel opt-in (réseau ou 500).
+ */
+
+var UID = function UID() {
+  return 'ks-consent-' + Math.random().toString(36).slice(2, 10);
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KsConsentModal',
+  props: {
+    modelValue: {
+      type: Boolean,
+      "default": false
+    },
+    privacyNoticeVersion: {
+      type: String,
+      "default": '2026-04-18'
+    },
+    phone: {
+      type: String,
+      "default": ''
+    },
+    email: {
+      type: String,
+      "default": ''
+    },
+    name: {
+      type: String,
+      "default": ''
+    },
+    // Si false, on ne fait aucun POST — pur opt-in client (analytics only).
+    persistLoyalty: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['update:modelValue', 'accepted', 'declined', 'error'],
+  data: function data() {
+    var uid = UID();
+    return {
+      titleId: uid + '-title',
+      descId: uid + '-desc',
+      loyaltyErrorId: uid + '-loyalty-err',
+      loyaltyChecked: false,
+      analyticsChecked: false,
+      mobileTransferChecked: false,
+      privacyOpen: false,
+      submitting: false,
+      showLoyaltyError: false
+    };
+  },
+  computed: {
+    privacyBody: function privacyBody() {
+      return this.$te('kiosk.consent.privacy_body') ? this.$t('kiosk.consent.privacy_body') : ['FoodKing collecte uniquement les données nécessaires à votre programme fidélité : nom, téléphone, email, préférences alimentaires, allergènes déclarés.', 'Vos préférences peuvent être supprimées sur demande (contact indiqué en caisse ou via le site officiel).', 'Aucune donnée personnelle n\'est partagée avec des partenaires commerciaux.', 'Les analyses d\'utilisation, si acceptées, sont anonymes et agrégées — sans lien avec votre identité.'].join(' ');
+    }
+  },
+  watch: {
+    modelValue: function modelValue(next) {
+      var _this = this;
+      if (next) {
+        this.loyaltyChecked = false;
+        this.analyticsChecked = false;
+        this.mobileTransferChecked = false;
+        this.showLoyaltyError = false;
+        this.privacyOpen = false;
+        this.submitting = false;
+        this.$nextTick(function () {
+          try {
+            var _this$$refs$cardRef;
+            (_this$$refs$cardRef = _this.$refs.cardRef) === null || _this$$refs$cardRef === void 0 || _this$$refs$cardRef.focus();
+          } catch (_) {}
+        });
+        this.reportEvent('modal_open');
+      }
+    }
+  },
+  methods: {
+    toggleLoyalty: function toggleLoyalty(e) {
+      this.loyaltyChecked = !!e.target.checked;
+      if (this.loyaltyChecked) this.showLoyaltyError = false;
+    },
+    toggleAnalytics: function toggleAnalytics(e) {
+      this.analyticsChecked = !!e.target.checked;
+    },
+    toggleMobileTransfer: function toggleMobileTransfer(e) {
+      this.mobileTransferChecked = !!e.target.checked;
+    },
+    openPrivacy: function openPrivacy() {
+      this.privacyOpen = true;
+    },
+    closePrivacy: function closePrivacy() {
+      this.privacyOpen = false;
+    },
+    handleBackdrop: function handleBackdrop() {
+      // Pas de fermeture "silencieuse" par backdrop — RGPD exige
+      // un choix explicite. Redirige vers decline.
+      this.handleDecline();
+    },
+    handleAccept: function handleAccept() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _this2$$store, _this2$$store$dispatc, _this2$$store2, _this2$$store2$dispat, _this2$$store3, _this2$$store3$dispat, outcome, axios, res, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!_this2.submitting) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              if (!(!_this2.loyaltyChecked && !_this2.analyticsChecked && !_this2.mobileTransferChecked)) {
+                _context.n = 2;
+                break;
+              }
+              _this2.showLoyaltyError = true;
+              return _context.a(2);
+            case 2:
+              // Synchronise les trois consents dans le store (source of truth).
+              try {
+                (_this2$$store = _this2.$store) === null || _this2$$store === void 0 || (_this2$$store$dispatc = _this2$$store.dispatch) === null || _this2$$store$dispatc === void 0 || _this2$$store$dispatc.call(_this2$$store, 'kioskSettings/setConsentLoyalty', !!_this2.loyaltyChecked);
+                (_this2$$store2 = _this2.$store) === null || _this2$$store2 === void 0 || (_this2$$store2$dispat = _this2$$store2.dispatch) === null || _this2$$store2$dispat === void 0 || _this2$$store2$dispat.call(_this2$$store2, 'kioskSettings/setConsentAnalytics', !!_this2.analyticsChecked);
+                (_this2$$store3 = _this2.$store) === null || _this2$$store3 === void 0 || (_this2$$store3$dispat = _this2$$store3.dispatch) === null || _this2$$store3$dispat === void 0 || _this2$$store3$dispat.call(_this2$$store3, 'kioskSettings/setConsentMobileTransfer', !!_this2.mobileTransferChecked);
+              } catch (_) {}
+              outcome = {
+                loyalty: _this2.loyaltyChecked,
+                analytics: _this2.analyticsChecked,
+                mobileTransfer: _this2.mobileTransferChecked,
+                apiResult: null
+              }; // Persist loyalty opt-in côté backend si loyalty=true et persistLoyalty=true.
+              if (!(_this2.loyaltyChecked && _this2.persistLoyalty)) {
+                _context.n = 9;
+                break;
+              }
+              if (_this2.phone) {
+                _context.n = 3;
+                break;
+              }
+              // Mode "consent sans collecte" — on skip simplement le POST.
+              outcome.apiResult = {
+                skipped: 'no_phone'
+              };
+              _context.n = 9;
+              break;
+            case 3:
+              _this2.submitting = true;
+              _context.p = 4;
+              axios = window.axios;
+              if (!(axios !== null && axios !== void 0 && axios.post)) {
+                _context.n = 6;
+                break;
+              }
+              _context.n = 5;
+              return axios.post('frontend/loyalty/opt-in', {
+                phone: _this2.phone,
+                email: _this2.email || null,
+                name: _this2.name || null,
+                consent_accepted: true,
+                privacy_notice_version: _this2.privacyNoticeVersion
+              });
+            case 5:
+              res = _context.v;
+              outcome.apiResult = (res === null || res === void 0 ? void 0 : res.data) || {
+                status: true
+              };
+            case 6:
+              _context.n = 8;
+              break;
+            case 7:
+              _context.p = 7;
+              _t = _context.v;
+              _this2.$emit('error', _t);
+              _this2.reportEvent('opt_in_error');
+              _this2.submitting = false;
+              return _context.a(2);
+            case 8:
+              _this2.submitting = false;
+            case 9:
+              _this2.reportEvent('accept', {
+                loyalty: _this2.loyaltyChecked,
+                analytics: _this2.analyticsChecked,
+                mobile_transfer: _this2.mobileTransferChecked
+              });
+
+              // Event analytics (spec : consent_given avec consent_type+granted).
+              _this2.trackAnalyticsConsent('loyalty_scan', _this2.loyaltyChecked);
+              _this2.trackAnalyticsConsent('heatmap', _this2.analyticsChecked);
+              _this2.trackAnalyticsConsent('mobile_transfer', _this2.mobileTransferChecked);
+              _this2.$emit('accepted', outcome);
+              _this2.$emit('update:modelValue', false);
+            case 10:
+              return _context.a(2);
+          }
+        }, _callee, null, [[4, 7]]);
+      }))();
+    },
+    handleDecline: function handleDecline() {
+      if (this.submitting) return;
+      try {
+        var _this$$store, _this$$store$dispatch, _this$$store2, _this$$store2$dispatc, _this$$store3, _this$$store3$dispatc;
+        (_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store$dispatch = _this$$store.dispatch) === null || _this$$store$dispatch === void 0 || _this$$store$dispatch.call(_this$$store, 'kioskSettings/setConsentLoyalty', false);
+        (_this$$store2 = this.$store) === null || _this$$store2 === void 0 || (_this$$store2$dispatc = _this$$store2.dispatch) === null || _this$$store2$dispatc === void 0 || _this$$store2$dispatc.call(_this$$store2, 'kioskSettings/setConsentAnalytics', false);
+        (_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3$dispatc = _this$$store3.dispatch) === null || _this$$store3$dispatc === void 0 || _this$$store3$dispatc.call(_this$$store3, 'kioskSettings/setConsentMobileTransfer', false);
+      } catch (_) {}
+      this.reportEvent('decline');
+      this.trackAnalyticsConsent('loyalty_scan', false);
+      this.trackAnalyticsConsent('heatmap', false);
+      this.trackAnalyticsConsent('mobile_transfer', false);
+      this.$emit('declined');
+      this.$emit('update:modelValue', false);
+    },
+    /**
+     * Log observabilité vers /api/frontend/kiosk-event.
+     * Non-bloquant, silencieux en cas d'échec.
+     */
+    reportEvent: function reportEvent(subtype) {
+      var meta = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      try {
+        var axios = window.axios;
+        if (!(axios !== null && axios !== void 0 && axios.post)) return;
+        var details = subtype + (Object.keys(meta).length ? ' | ' + JSON.stringify(meta) : '');
+        axios.post('frontend/kiosk-event', {
+          type: 'consent_event',
+          details: details.slice(0, 490)
+        })["catch"](function () {});
+      } catch (_) {}
+    },
+    /**
+     * Émet un event analytics `consent_given` côté observabilité
+     * (distinct du `consent_event` d'observabilité purement technique).
+     */
+    trackAnalyticsConsent: function trackAnalyticsConsent(consent_type, granted) {
+      try {
+        var axios = window.axios;
+        if (!(axios !== null && axios !== void 0 && axios.post)) return;
+        axios.post('frontend/kiosk-event', {
+          type: 'analytics',
+          event_name: 'consent_given',
+          payload: {
+            consent_type: consent_type,
+            granted: !!granted
+          }
+        })["catch"](function () {});
+      } catch (_) {}
+    }
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js":
+/*!******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/**
+ * KsVirtualKeyboard — clavier virtuel maison (pas de dépendance externe).
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 4.6.
+ *
+ * Pourquoi maison :
+ *  - Windows kiosk mode désactive TabTip (clavier tactile natif) → besoin d'un
+ *    fallback in-app.
+ *  - Aucune lib UI lourde autorisée (DS maison uniquement — cf. brief).
+ *
+ * Props :
+ *  - modelValue     : v-model de la valeur saisie.
+ *  - layout         : 'fr' | 'en' | 'ar' (défaut = useKioskSettings.locale).
+ *  - visible        : boolean contrôlé par le parent (show/hide).
+ *  - maxLength      : contraintes de saisie (défaut 200).
+ *  - allowSpace     : bool (défaut true) — désactive espaces sur champs emails.
+ *  - showPreview    : bool (défaut true) — affiche la valeur en haut.
+ *
+ * Émissions :
+ *  - update:modelValue (chaque keystroke)
+ *  - submit   (touche ✓ ou Enter)
+ *  - close    (touche Esc virtuelle — non implémentée ici, géré par parent)
+ *
+ * A11y :
+ *  - role="group" + aria-label
+ *  - Chaque touche : élément HTML `button` natif — focus + Enter/Space OK d'office.
+ *  - aria-label custom pour ⌫ / ✓ / espace (lecteurs d'écran).
+ *
+ * Invariants :
+ *  - N'envoie RIEN au backend — c'est une pure UI primitive.
+ *  - Ne modifie pas l'a11y globale (ni lang ni dir) — elle les consomme.
+ *  - Aucun state interne à part `shift` (toggle maj). La valeur est
+ *    contrôlée par le parent via v-model pour éviter les divergences.
+ */
+
+// Kiosk Phase 9.1.7 — rangée numérique (0-9) partagée par tous les layouts.
+// Les champs loyalty (phone + email) ont besoin de chiffres ; sans cette
+// rangée, le KsVirtualKeyboard n'était utilisable que pour des saisies
+// alphabétiques strictes et les bornes Windows sans TabTip n'offraient
+// aucun moyen de saisir un numéro de téléphone.
+var DIGITS_ROW = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+var ROW_DEFS = {
+  // Layout AZERTY simplifié (FR borne)
+  fr: {
+    normal: [DIGITS_ROW, ['a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], ['q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'], ['w', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@']],
+    shift: [DIGITS_ROW, ['A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], ['Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'], ['W', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@']]
+  },
+  // QWERTY (EN)
+  en: {
+    normal: [DIGITS_ROW, ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'], ['z', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@']],
+    shift: [DIGITS_ROW, ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'], ['Z', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@']]
+  },
+  // Layout arabe simplifié (sous-ensemble des lettres les plus communes).
+  // Les lettres n'ont pas de casse — "shift" affiche harakat (tashkeel).
+  ar: {
+    normal: [DIGITS_ROW, ['ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح'], ['ش', 'س', 'ي', 'ب', 'ل', 'ا', 'ت', 'ن', 'م', 'ك'], ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'ى', 'ة', 'و', 'ز', 'ظ']],
+    shift: [DIGITS_ROW, ['ّ', 'َ', 'ً', 'ُ', 'ٌ', 'ِ', 'ٍ', 'ْ', 'ٰ', 'ٓ'], ['ش', 'س', 'ي', 'ب', 'ل', 'أ', 'ت', 'ن', 'م', 'ك'], ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'آ', 'إ', 'و', 'ز', 'ظ']]
+  }
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KsVirtualKeyboard',
+  props: {
+    modelValue: {
+      type: String,
+      "default": ''
+    },
+    layout: {
+      type: String,
+      "default": 'fr',
+      validator: function validator(v) {
+        return ['fr', 'en', 'ar'].includes(v);
+      }
+    },
+    visible: {
+      type: Boolean,
+      "default": true
+    },
+    maxLength: {
+      type: Number,
+      "default": 200
+    },
+    allowSpace: {
+      type: Boolean,
+      "default": true
+    },
+    showPreview: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['update:modelValue', 'submit', 'close'],
+  data: function data() {
+    return {
+      shift: false
+    };
+  },
+  computed: {
+    isRtl: function isRtl() {
+      return this.layout === 'ar';
+    },
+    rows: function rows() {
+      var _this = this;
+      var map = ROW_DEFS[this.layout] || ROW_DEFS.fr;
+      var src = this.shift && map.shift ? map.shift : map.normal;
+      // Ajoute la row shift-toggle en dessous des 3 rangées principales,
+      // représentée comme une rangée séparée (la rangée shift-toggle est
+      // ajoutée dans le template via .ks-vkeyb__row--actions).
+      return src.map(function (row) {
+        return row.map(function (_char) {
+          return {
+            label: _char,
+            "char": _char,
+            testid: _this.safeTestid(_char)
+          };
+        });
+      });
+    },
+    displayValue: function displayValue() {
+      return this.modelValue || '';
+    }
+  },
+  methods: {
+    safeTestid: function safeTestid(s) {
+      // Les caractères arabes / spéciaux ne conviennent pas en testid — on
+      // fallback sur le code UTF.
+      if (/^[a-zA-Z0-9@._-]$/.test(s)) return s;
+      return 'u' + s.codePointAt(0).toString(16);
+    },
+    displayLabel: function displayLabel(key) {
+      return key.label;
+    },
+    pressKey: function pressKey(key) {
+      if (key.action) {
+        if (key.action === 'backspace') return this.backspace();
+        if (key.action === 'submit') return this.submit();
+        if (key.action === 'shift') return this.shift = !this.shift;
+        return;
+      }
+      if (key["char"]) this.pressChar(key["char"]);
+    },
+    pressChar: function pressChar(ch) {
+      if (!ch) return;
+      if (!this.allowSpace && ch === ' ') return;
+      var next = (this.modelValue || '') + ch;
+      if (next.length > this.maxLength) return;
+      this.$emit('update:modelValue', next);
+      // Auto-désactiver shift après une frappe majuscule unique.
+      if (this.shift && this.layout !== 'ar') this.shift = false;
+    },
+    backspace: function backspace() {
+      var cur = this.modelValue || '';
+      if (!cur) return;
+      // Supporte la suppression d'un point de code Unicode complet
+      // (important en AR où une lettre peut être composée).
+      var arr = Array.from(cur);
+      arr.pop();
+      this.$emit('update:modelValue', arr.join(''));
+    },
+    clearAll: function clearAll() {
+      if (!this.modelValue) return;
+      this.$emit('update:modelValue', '');
+    },
+    submit: function submit() {
+      this.$emit('submit', this.modelValue || '');
+    },
+    toggleShift: function toggleShift() {
+      this.shift = !this.shift;
+    }
+  }
+});
+
+/***/ }),
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true":
 /*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true ***!
@@ -5177,6 +5697,251 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true":
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-labelledby", "aria-describedby"];
+var _hoisted_2 = {
+  "class": "ks-consent-card",
+  tabindex: "-1",
+  ref: "cardRef"
+};
+var _hoisted_3 = {
+  "class": "ks-consent-header"
+};
+var _hoisted_4 = ["id"];
+var _hoisted_5 = ["id"];
+var _hoisted_6 = {
+  "class": "ks-consent-description"
+};
+var _hoisted_7 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-loyalty-label"
+};
+var _hoisted_8 = ["checked", "aria-describedby"];
+var _hoisted_9 = ["id"];
+var _hoisted_10 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-analytics-label"
+};
+var _hoisted_11 = ["checked"];
+var _hoisted_12 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-mobile-transfer-label"
+};
+var _hoisted_13 = ["checked"];
+var _hoisted_14 = {
+  "class": "ks-consent-actions"
+};
+var _hoisted_15 = ["disabled"];
+var _hoisted_16 = ["aria-busy", "disabled"];
+var _hoisted_17 = ["aria-label"];
+var _hoisted_18 = {
+  "class": "ks-consent-privacy-card"
+};
+var _hoisted_19 = {
+  "class": "ks-consent-privacy-title"
+};
+var _hoisted_20 = {
+  "class": "ks-consent-privacy-body"
+};
+var _hoisted_21 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $props.modelValue ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "ks-consent-backdrop",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": $data.titleId,
+    "aria-describedby": $data.descId,
+    "data-testid": "kiosk-consent-modal",
+    onClick: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.handleBackdrop && $options.handleBackdrop.apply($options, arguments);
+    }, ["self"])),
+    onKeydown: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.handleDecline && $options.handleDecline.apply($options, arguments);
+    }, ["esc"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
+    id: $data.titleId,
+    "class": "ks-consent-title",
+    "data-testid": "kiosk-consent-title"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.title')), 9 /* TEXT, PROPS */, _hoisted_4), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
+    "class": "ks-consent-subtitle",
+    id: $data.descId
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.subtitle')), 9 /* TEXT, PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.description')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loyalty checkbox (opt-in strict, non pré-cochée, §1.6 RGPD) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.loyaltyChecked,
+    onChange: _cache[0] || (_cache[0] = function () {
+      return $options.toggleLoyalty && $options.toggleLoyalty.apply($options, arguments);
+    }),
+    "aria-describedby": $data.loyaltyErrorId,
+    "data-testid": "kiosk-consent-loyalty"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_loyalty')), 1 /* TEXT */)]), $data.showLoyaltyError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", {
+    key: 0,
+    id: $data.loyaltyErrorId,
+    "class": "ks-consent-error",
+    role: "alert",
+    "data-testid": "kiosk-consent-loyalty-error"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.required_loyalty')), 9 /* TEXT, PROPS */, _hoisted_9)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Analytics checkbox (séparée — distinct consent legal) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.analyticsChecked,
+    onChange: _cache[1] || (_cache[1] = function () {
+      return $options.toggleAnalytics && $options.toggleAnalytics.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-consent-analytics"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_11), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_analytics')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile transfer checkbox (Phase 8.11 — 3ème type consent) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.mobileTransferChecked,
+    onChange: _cache[2] || (_cache[2] = function () {
+      return $options.toggleMobileTransfer && $options.toggleMobileTransfer.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-consent-mobile-transfer"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_mobile_transfer')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Privacy link "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-privacy",
+    "data-testid": "kiosk-consent-privacy-link",
+    onClick: _cache[3] || (_cache[3] = function () {
+      return $options.openPrivacy && $options.openPrivacy.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_link')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--ghost",
+    "data-testid": "kiosk-consent-decline",
+    onClick: _cache[4] || (_cache[4] = function () {
+      return $options.handleDecline && $options.handleDecline.apply($options, arguments);
+    }),
+    disabled: $data.submitting
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.cta_decline')), 9 /* TEXT, PROPS */, _hoisted_15), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--primary",
+    "data-testid": "kiosk-consent-accept",
+    "aria-busy": $data.submitting,
+    disabled: $data.submitting,
+    onClick: _cache[5] || (_cache[5] = function () {
+      return $options.handleAccept && $options.handleAccept.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? '…' : _ctx.$t('kiosk.consent.cta_accept')), 9 /* TEXT, PROPS */, _hoisted_16)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Nested privacy subdialog "), $data.privacyOpen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
+    "class": "ks-consent-privacy-overlay",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": _ctx.$t('kiosk.consent.privacy_link'),
+    "data-testid": "kiosk-consent-privacy-modal",
+    onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.closePrivacy && $options.closePrivacy.apply($options, arguments);
+    }, ["self"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_link')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.privacyBody), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--primary",
+    "aria-label": _ctx.$t('kiosk.consent.privacy_close'),
+    "data-testid": "kiosk-consent-privacy-close",
+    onClick: _cache[6] || (_cache[6] = function () {
+      return $options.closePrivacy && $options.closePrivacy.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_close')), 9 /* TEXT, PROPS */, _hoisted_21)])], 8 /* PROPS */, _hoisted_17)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = {
+  key: 0,
+  "class": "ks-vkeyb__preview",
+  "aria-hidden": "true",
+  "data-testid": "kiosk-vkeyb-preview"
+};
+var _hoisted_3 = {
+  "class": "ks-vkeyb__preview-value"
+};
+var _hoisted_4 = ["aria-label", "data-testid", "onClick"];
+var _hoisted_5 = {
+  "class": "ks-vkeyb__row ks-vkeyb__row--actions"
+};
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = ["aria-label"];
+var _hoisted_8 = ["aria-label"];
+var _hoisted_9 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $props.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["ks-vkeyb", ['ks-vkeyb--' + $props.layout, $data.shift ? 'ks-vkeyb--shift' : '', $options.isRtl ? 'ks-vkeyb--rtl' : '']]),
+    role: "group",
+    "aria-label": _ctx.$t('kiosk.a11y.virtual_keyboard_label'),
+    "data-testid": "kiosk-vkeyb"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Preview de la valeur (affiché pour feedback visuel, masqué SR) "), $props.showPreview ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayValue), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Rangées de touches "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.rows, function (row, rIdx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: 'row-' + rIdx,
+      "class": "ks-vkeyb__row"
+    }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(row, function (key, kIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        type: "button",
+        key: 'k-' + rIdx + '-' + kIdx,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["ks-vkeyb__key", [key.wide ? 'ks-vkeyb__key--wide' : '', key.action ? 'ks-vkeyb__key--action' : '', key.toggle && key.toggle === 'shift' && $data.shift ? 'ks-vkeyb__key--active' : '']]),
+        "aria-label": key.ariaLabel || key.label,
+        "data-testid": 'kiosk-vkeyb-key-' + (key.testid || key.label.toLowerCase()),
+        onClick: function onClick($event) {
+          return $options.pressKey(key);
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayLabel(key)), 11 /* TEXT, CLASS, PROPS */, _hoisted_4);
+    }), 128 /* KEYED_FRAGMENT */))]);
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions globales "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_clear'),
+    "data-testid": "kiosk-vkeyb-clear",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.clearAll && $options.clearAll.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_clear_short')), 9 /* TEXT, PROPS */, _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--wide",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_space'),
+    "data-testid": "kiosk-vkeyb-space",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return $options.pressChar(' ');
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_space_short')), 9 /* TEXT, PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_backspace'),
+    "data-testid": "kiosk-vkeyb-backspace",
+    onClick: _cache[2] || (_cache[2] = function () {
+      return $options.backspace && $options.backspace.apply($options, arguments);
+    })
+  }, "⌫", 8 /* PROPS */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--submit",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_submit'),
+    "data-testid": "kiosk-vkeyb-submit",
+    onClick: _cache[3] || (_cache[3] = function () {
+      return $options.submit && $options.submit.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_submit_short')), 9 /* TEXT, PROPS */, _hoisted_9)])], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ }),
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css":
 /*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css ***!
@@ -5406,6 +6171,64 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css":
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -5989,6 +6812,152 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue":
+/*!**********************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true");
+/* harmony import */ var _KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js");
+/* harmony import */ var _KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-04b6acfa"],['__file',"resources/js/components/frontend/kiosk/ds/KsConsentModal.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js":
+/*!**********************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css":
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \******************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true":
+/*!****************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true ***!
+  \****************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue":
+/*!*************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue ***!
+  \*************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true");
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js");
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-9b4f461c"],['__file',"resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js":
+/*!*************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js ***!
+  \*************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css":
+/*!*********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \*********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true":
+/*!*******************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true ***!
+  \*******************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true");
 
 
 /***/ }),

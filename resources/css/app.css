@@ -346,7 +346,7 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .db-card-filter-btn { @apply flex items-center justify-start gap-1.5 pt-2 pb-1.5 px-2.5 text-sm leading-none capitalize rounded-md transition border text-paragraph border-primary bg-white hover:text-primary hover:border-primary/10 hover:bg-primary/5 }
     .db-card-filter-select { @apply cursor-pointer h-9 ltr:pl-2.5 ltr:pr-7 rtl:pr-2.5 rtl:pl-7 text-sm leading-none capitalize appearance-none rounded-md transition border text-primary border-primary bg-white }
     .db-card-filter-btn i { @apply text-sm text-primary}
-    .db-card-filter-btn span { @apply ltr:pr-1 rtl:pl-1 text-primary }
+    .db-card-filter-btn span { @apply ltr:pr-1 rtl:pl-1 text-heading }
     .db-card-filter .db-field-down-arrow { @apply text-primary }
     .db-card-filter-dropdown-list { @apply absolute top-10 right-0 z-20 p-2 rounded-md bg-white shadow-lg }
     .db-card-filter-dropdown-menu { @apply flex items-center whitespace-nowrap justify-start gap-2.5 px-3 py-1.5 text-sm rounded-md capitalize transition text-gray-500 hover:text-primary hover:bg-primary/5 }

@@ -9,10 +9,10 @@
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
                 </h4>
-                <span class="text-sm font-medium bg-red-100 text-red-600 px-3 py-1 rounded-full">{{ alerts.length }} Alerte(s)</span>
+                <span class="text-sm font-medium bg-red-100 text-red-900 px-3 py-1 rounded-full">{{ alerts.length }} Alerte(s)</span>
             </div>
 
-            <div v-if="alerts.length === 0" class="flex flex-col items-center justify-center p-8 text-gray-400">
+            <div v-if="alerts.length === 0" class="flex flex-col items-center justify-center p-8 text-gray-600">
                 <i class="lab lab-check-circle text-4xl mb-2 text-green-400"></i>
                 <p>Aucune alerte SLA. Flux de cuisine optimal.</p>
             </div>

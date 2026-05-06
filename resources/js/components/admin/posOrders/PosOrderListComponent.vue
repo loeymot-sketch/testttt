@@ -51,12 +51,13 @@
                         </div>
 
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchStartDate" class="db-field-title after:hidden">
+                            <label for="dp-input-searchStartDate" class="db-field-title after:hidden">
                                 {{ $t('label.date') }}
                             </label>
-                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                            <Datepicker uid="searchStartDate" name="searchStartDate" hideInputIcon autoApply :enableTimePicker="false" utc="false"
                                 @update:modelValue="handleDate" v-model="props.form.date" range
-                                :preset-ranges="presetRanges">
+                                :preset-ranges="presetRanges"
+                                :aria-labels="{ input: $t('label.date') }">
                                 <template #yearly="{ label, range, presetDateRange }">
                                     <span @click="presetDateRange(range)">{{ label }}</span>
                                 </template>
@@ -84,6 +85,7 @@
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
+                            <th class="db-table-head-th">N° file</th>
                             <th class="db-table-head-th">{{ $t('label.order_type') }}</th>
                             <th class="db-table-head-th">{{ $t('label.customer') }}</th>
                             <th class="db-table-head-th">{{ $t('label.amount') }}</th>
@@ -97,6 +99,12 @@
                         <tr class="db-table-body-tr" v-for="order in orders" :key="order">
                             <td class="db-table-body-td">
                                 {{ order.order_serial_no }}
+                            </td>
+                            <td class="db-table-body-td">
+                                <span v-if="order.queue_number" class="pos-order-queue-chip">
+                                    N°{{ order.queue_number }}
+                                </span>
+                                <span v-else class="text-[#6E7191]">—</span>
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(order.order_type)">
@@ -125,7 +133,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" colspan="8">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'"
@@ -195,15 +203,15 @@ export default {
         const date = ref();
 
         const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+            { label: 'Aujourd’hui', range: [new Date(), new Date()] },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
             },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
             {
-                label: 'This year (slot)',
+                label: 'Cette année',
                 range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },
@@ -444,6 +452,18 @@ export default {
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
+}
+.pos-order-queue-chip {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    border: 1px solid #fed7aa;
+    border-radius: 9999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-weight: var(--pos-v5-weight-extrabold);
+    padding: 0.2rem 0.65rem;
+    white-space: nowrap;
 }
 
 /* Search button — adopt V5 brand */

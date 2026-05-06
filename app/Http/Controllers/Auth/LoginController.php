@@ -9,6 +9,7 @@ use App\Http\Resources\MenuResource;
 use App\Http\Resources\PermissionResource;
 use App\Http\Resources\UserResource;
 use App\Libraries\AppLibrary;
+use App\Models\Branch;
 use App\Models\User;
 use App\Services\DefaultAccessService;
 use App\Services\MenuService;
@@ -61,9 +62,19 @@ class LoginController extends Controller
             ], 400);
         }
 
-        $branchId = Auth::user()->branch_id;
-        if (Auth::user()->branch_id == 0) {
-            $branchId = Settings::group('site')->get('site_default_branch');
+        $branchId = (int) Auth::user()->branch_id;
+        if ($branchId === 0) {
+            $branchId = (int) (Settings::group('site')->get('site_default_branch') ?: 0);
+        }
+        if ($branchId === 0) {
+            $branchId = (int) (Branch::query()->orderBy('id')->value('id') ?: 0);
+        }
+        if ($branchId === 0) {
+            Auth::guard('web')->logout();
+
+            return new JsonResponse([
+                'errors' => ['validation' => trans('all.message.composer.preview_unavailable')],
+            ], 422);
         }
         $this->defaultAccessService->storeOrUpdate(['branch_id' => $branchId]);
 

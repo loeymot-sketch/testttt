@@ -89,7 +89,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('thumb');
+            return file_exists($item->getPath('thumb')) ? $item->getUrl('thumb') : $item->getUrl();
         }
         // Fallback: images depuis config/menu_images.php (améliore visuel POS)
         $images = Config::get('menu_images.items', []) + Config::get('menu_images.addons', []);
@@ -107,7 +107,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('cover');
+            return file_exists($item->getPath('cover')) ? $item->getUrl('cover') : $item->getUrl();
         }
         return asset('images/item/cover.png');
     }
@@ -116,7 +116,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('preview');
+            return file_exists($item->getPath('preview')) ? $item->getUrl('preview') : $item->getUrl();
         }
         return asset('images/item/cover.png');
     }

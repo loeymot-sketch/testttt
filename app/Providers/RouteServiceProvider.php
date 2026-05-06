@@ -79,7 +79,17 @@ class RouteServiceProvider extends ServiceProvider
                 return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
             }
 
+            // POS quote + counter-collect = high-frequency cashier ops (SSOT preview / encaissement borne).
+            // Same 30/min bucket as CRUD caused 429 in E2E and under real peak load.
+            if ($request->is('api/admin/pos/quote', 'api/admin/pos/counter-collect/*')) {
+                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            }
+
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('pos-quote', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('pos-order-create', function (Request $request) {

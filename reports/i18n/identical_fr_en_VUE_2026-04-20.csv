@@ -1,5 +1,17 @@
 key,fr_value,en_value
+a11y.receipt_preview,Aperçu du ticket,Aperçu du ticket
+a11y.remove_item,Retirer {item} du panier,Retirer {item} du panier
+a11y.skip_to_cart,Aller au panier,Aller au panier
+admin.help.variation.title,Variation,Variation
 allergens.gluten,Gluten,Gluten
+button.cancel,Annuler,Annuler
+button.clear,Effacer,Effacer
+button.close,Fermer,Fermer
+button.export,Exporter,Exporter
+button.filter,Filtrer,Filtrer
+button.release_table,Libérer la table,Libérer la table
+button.search,Rechercher,Rechercher
+button.transfer_table,Transférer la table,Transférer la table
 kiosk.a11y.contrast_aa,Standard,Standard
 kiosk.admin_screen.section_app,Application,Application
 kiosk.loyalty_screen.placeholder_phone,06 12 34 56 78,06 12 34 56 78
@@ -13,14 +25,34 @@ kiosk.wizard.step.viande.fallback_merguez,Merguez,Merguez
 kiosk.wizard.step.viande.fallback_nuggets,Nuggets,Nuggets
 kiosk.wizard.summary.sauces,Sauces,Sauces
 label.action,Action,Action
+label.amount,Montant,Montant
+label.back,Retour,Retour
+label.composer.inactive,Inactive,Inactive
+label.composer.is_active,Active,Active
+label.composer.max_select,Maximum,Maximum
+label.composer.min_select,Minimum,Minimum
+label.composer.source_type,Source,Source
+label.composer.template_assiette,Assiette,Assiette
+label.composer.template_custom,Custom,Custom
+label.composer.template_sandwich,Sandwich,Sandwich
+label.composer.template_simple,Simple,Simple
+label.composer.template_snacking,Snacking,Snacking
 label.copyright,Copyright,Copyright
 label.coupon,Coupon,Coupon
+label.customer,Client,Client
+label.delivery,Livraison,Livraison
 label.description,Description,Description
+label.dine_in,Sur place,Sur place
 label.extras,Extras,Extras
 label.facebook,Facebook,Facebook
+label.floorplan,Plan de salle,Plan de salle
+label.hello,Bonjour,Bonjour
 label.images,Images,Images
+label.ingredient.column_actions,Actions,Actions
+label.ingredient.tab_addon,Add-ons,Add-ons
 label.instagram,Instagram,Instagram
 label.instruction,Instruction,Instruction
+label.items,Articles,Articles
 label.kds_volume,Volume,Volume
 label.kiosk_tap_hint_placeholder,Touchez l'écran pour commander,Touchez l'écran pour commander
 label.kiosk_welcome_subtitle_placeholder,Commandez en quelques touches,Commandez en quelques touches
@@ -31,14 +63,71 @@ label.message,Message,Message
 label.messages,Messages,Messages
 label.minute,minutes,minutes
 label.notification,Notification,Notification
+label.occupied,Occupée,Occupée
+label.order_type,Type de commande,Type de commande
+label.payment_status,Statut paiement,Statut paiement
 label.paypal,Paypal,Paypal
+label.received_amount,Montant reçu,Montant reçu
+label.reserved,Réservée,Réservée
 label.section,Section,Section
+label.select_customer,Sélectionner un client,Sélectionner un client
 label.source,Source,Source
+label.status,Statut,Statut
+label.takeaway,À emporter,À emporter
+label.total_amount,Montant total,Montant total
 label.twitter,Twitter,Twitter
+label.unpaid,Non payé,Non payé
 label.youtube,Youtube,Youtube
+menu.catalog,Catalogue,Catalogue
 menu.cookies,Cookies,Cookies
 menu.coupons,Coupons,Coupons
+menu.customers,Clients,Clients
 menu.extras,Extras,Extras
+menu.items,Articles,Articles
 menu.messages,Messages,Messages
 menu.notification,Notification,Notification
+menu.online_orders,Commandes en ligne,Commandes en ligne
+menu.pos_and_orders,Caisse et commandes,Caisse et commandes
+menu.pos_orders,Commandes caisse,Commandes caisse
 menu.transactions,Transactions,Transactions
+message.no_data_available,Aucune donnée disponible.,Aucune donnée disponible.
+pos.barcode_not_found,Aucun article trouvé pour ce code-barres.,Aucun article trouvé pour ce code-barres.
+pos.cancel_last_line,Annuler la dernière ligne,Annuler la dernière ligne
+pos.cancel_last_line_error,Impossible d'annuler la dernière ligne.,Impossible d'annuler la dernière ligne.
+pos.cancel_order,Annuler la commande,Annuler la commande
+pos.cancel_order_cancel,Garder la commande,Garder la commande
+pos.cancel_order_confirm,Confirmer l'annulation,Confirmer l'annulation
+pos.cancel_order_done,Commande annulée.,Commande annulée.
+pos.cancel_order_error,Impossible d'annuler cette commande.,Impossible d'annuler cette commande.
+pos.discard,Supprimer,Supprimer
+pos.kiosk_counter_collect_short,À encaisser,À encaisser
+pos.no_sale_done,Tiroir ouvert.,Tiroir ouvert.
+pos.no_sale_error,Impossible d'ouvrir le tiroir.,Impossible d'ouvrir le tiroir.
+pos.orders.history,Historique,Historique
+pos.orders.view_detail,Voir le détail de la commande,Voir le détail de la commande
+pos.park,Mettre en attente,Mettre en attente
+pos.park_restore_error,Impossible de restaurer cette commande.,Impossible de restaurer cette commande.
+pos.parked_order_fallback_label,Commande sans libellé,Commande sans libellé
+pos.parked_orders,Commandes en attente,Commandes en attente
+pos.print_ticket_client,Ticket client,Ticket client
+pos.print_ticket_kitchen,Ticket cuisine,Ticket cuisine
+pos.reason_required_hint,Saisissez un motif d'au moins 3 caractères pour appliquer la remise.,Saisissez un motif d'au moins 3 caractères pour appliquer la remise.
+pos.reason_required_short,obligatoire,obligatoire
+pos.receipt_kitchen_subtitle,Préparation — ne pas remettre au client,Préparation — ne pas remettre au client
+pos.receipt_kitchen_title,CUISINE,CUISINE
+pos.restore,Restaurer,Restaurer
+pos.tracker.active_orders,actives,actives
+pos.tracker.back_to_pos,Retour caisse,Retour caisse
+pos.tracker.button_hint,"Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête.","Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."
+pos.tracker.col_accept,À envoyer,À envoyer
+pos.tracker.col_preparing,En préparation,En préparation
+pos.tracker.customer_screen,Écran client,Écran client
+pos.tracker.empty_prepared,Aucune commande prête.,Aucune commande prête.
+pos.tracker.empty_preparing,Aucune commande en cuisine.,Aucune commande en cuisine.
+pos.tracker.history,Historique,Historique
+pos.tracker.loading,Chargement des commandes…,Chargement des commandes…
+pos.tracker.now,à l'instant,à l'instant
+pos.tracker.source_all,Toutes,Toutes
+pos.tracker.source_online,En ligne,En ligne
+pos.tracker.source_pos,Caisse,Caisse
+pos.tracker.today_total,aujourd'hui,aujourd'hui

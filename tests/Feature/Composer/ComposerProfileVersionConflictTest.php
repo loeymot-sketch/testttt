@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Composer;
 
-use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 use App\Models\User;
 use Database\Seeders\ComposerPermissionsMinimalSeeder;
@@ -73,8 +73,11 @@ class ComposerProfileVersionConflictTest extends TestCase
 
     private function profile(array $overrides = []): ItemWizardProfile
     {
+        $category = ItemCategory::factory()->create();
+
         return ItemWizardProfile::factory()->create(array_merge([
-            'item_id' => Item::factory(),
+            'item_id' => null,
+            'item_category_id' => $category->id,
             'template' => 'custom',
             'branch_id_scope' => null,
             'version' => 1,

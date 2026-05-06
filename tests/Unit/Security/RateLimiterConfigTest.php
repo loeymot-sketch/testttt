@@ -30,6 +30,7 @@ class RateLimiterConfigTest extends TestCase
      */
     private const EXPECTED_LIMITERS = [
         'admin-mutation' => [30, true],
+        'pos-quote' => [120, true],
         'pos-order-create' => [60, true],
         'pos-order-update' => [120, true],
     ];
@@ -63,6 +64,31 @@ class RateLimiterConfigTest extends TestCase
                 $limit->maxAttempts
             )
         );
+    }
+
+    public function test_admin_mutation_elevates_cap_for_pos_quote_preview(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        $quoteRequest = Request::create('/api/admin/pos/quote', 'POST');
+        $quoteLimit = $resolver($quoteRequest);
+        $this->assertInstanceOf(Limit::class, $quoteLimit);
+        $this->assertSame(
+            120,
+            $quoteLimit->maxAttempts,
+            'POS quote preview must not share the 30/min CRUD ceiling (E2E + busy checkout)'
+        );
+
+        $counterRequest = Request::create('/api/admin/pos/counter-collect/1/confirm', 'POST');
+        $counterLimit = $resolver($counterRequest);
+        $this->assertInstanceOf(Limit::class, $counterLimit);
+        $this->assertSame(120, $counterLimit->maxAttempts);
+
+        $crudRequest = Request::create('/api/admin/items', 'POST');
+        $crudLimit = $resolver($crudRequest);
+        $this->assertInstanceOf(Limit::class, $crudLimit);
+        $this->assertSame(30, $crudLimit->maxAttempts);
     }
 
     public function test_api_limiter_cap_matches_config(): void

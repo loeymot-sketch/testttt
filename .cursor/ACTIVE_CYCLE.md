@@ -5,21 +5,21 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `CLOSED` (Master Pivot V1 — clôturé 2026-05-04 ~13:05 UTC+2 — AUDIT_VERDICT: PASS via Claude terminal après 1 round de REWORK healing-only — 8 cycles livrés, baselines préservées Vitest 1149 / PHPUnit 1407, 5 specs Playwright critical-flow ajoutés.) |
-| **MASTER_TASK_ID** | `CV1-V1-PIVOT-MASTER` (CLOSED PASS) |
-| **TASK_ID** | (none — prêt pour nouveau cycle) |
-| **PLAN_FILE** | `plans/PLAN_CV1-V1-PIVOT-MASTER_2026-05-04.md` (archivé CLOSED) |
-| **REPORT_FILE** | 7× `reports/execution/RUN_CV1-V1-PIVOT-*_2026-05-04.md` + `reports/audit/ULTRA_REVIEW_PIVOT_V1_2026-05-04.md` |
-| **EXECUTION_TIER** | complex (8 sub-agents Cursor `foodking-complex-implementer` séquentiels + parallèles selon DAG) |
-| **EXECUTE_DELEGATION** | `foodking-complex-implementer` — tracé dans 7/7 RUN reports |
-| **AUDIT_CHANNEL** | `terminal-claude` (Claude Code CLI, Opus 4.7 high — 2 passes : REWORK initial → PASS après healing) |
-| **AUDIT_VERDICT** | `PASS` (2026-05-04, terminal Claude — 4 invariants tenus, 12 risques ultra-review levés/documentés, 0 régression) |
-| **GATE_FILE** | 2× `docs/gates/GATE_CV1-V1-PIVOT-{WIZARD-CATEGORY-OWNER,INGREDIENT-AVAILABILITY-COLUMNS}_2026-05-04.md` (cleared) |
-| **MULTI_AGENT_LOOP** | `docs/orchestration/MULTI_AGENT_LOOP_2026-05-02.md` (SSOT du pivot 2026-05-02) |
-| **PARENT_CYCLE** | `CV1-WIZARD-COMPOSABLE-001` CLOSED. Pivot V1 a remplacé la complexité wizard per-item par un wizard category-owned + Demo V2 isolé feature flag. |
+| **PHASE** | `(none)` |
+| **MASTER_TASK_ID** | |
+| **TASK_ID** | |
+| **PLAN_FILE** | |
+| **REPORT_FILE** | |
+| **AUDIT_SOURCE** | |
+| **PARENT_CYCLE** | |
+| **SUBSYSTEMS_TOUCHED** | |
+| **INVARIANTS_AT_RISK** | |
+| **GATE_CONDITIONS** | |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
-> Cycles plus anciens en lecture seule = **archive** déplacée dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** (lecture humaine / forensique uniquement, **non requise** par le parcours obligatoire).
+> Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`
+
+---
 
 ## CYCLE_W10_EXECUTION_CLOSEOUT (READ_ONLY_SECONDARY — mémoire 180 + MCP global + commit + CI + prod)
 

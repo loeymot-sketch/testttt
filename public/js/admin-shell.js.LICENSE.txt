@@ -1,4 +1,10 @@
 /*!
+  * vue-draggable-next v2.3.0
+  * (c) 2025 Anish George
+  * @license MIT
+  */
+
+/*!
  * Quill Editor v1.3.7
  * https://quilljs.com/
  * Copyright (c) 2014, Jason Chen

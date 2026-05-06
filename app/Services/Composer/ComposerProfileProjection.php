@@ -83,8 +83,8 @@ final class ComposerProfileProjection
                 ->filter(fn ($variation): bool => (int) $variation->status === Status::ACTIVE
                     && $variation->isVisibleOn($surface)
                     && $this->matchesAttributeRef($variation->itemAttribute, $sourceRef))
-                ->map(function ($variation) use ($choiceAvailability, $usesStockableChoices): array {
-                    $availability = $usesStockableChoices
+                ->map(function ($variation) use ($choiceAvailability): array {
+                    $availability = $choiceAvailability !== null
                         ? ($choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null])
                         : ['is_available' => true, 'unavailable_reason' => null];
 
@@ -107,8 +107,8 @@ final class ComposerProfileProjection
                 ->filter(fn ($extra): bool => (int) $extra->status === Status::ACTIVE
                     && $extra->isVisibleOn($surface)
                     && ($sourceRef === '' || mb_strtolower((string) $extra->group_label) === $sourceRef))
-                ->map(function ($extra) use ($choiceAvailability, $usesStockableChoices): array {
-                    $availability = $usesStockableChoices
+                ->map(function ($extra) use ($choiceAvailability): array {
+                    $availability = $choiceAvailability !== null
                         ? ($choiceAvailability['extras'][(int) $extra->id] ?? ['is_available' => true, 'unavailable_reason' => null])
                         : ['is_available' => true, 'unavailable_reason' => null];
 

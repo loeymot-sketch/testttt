@@ -119,8 +119,9 @@ describe('kioskRuptureUx', () => {
     const openProduct = vi.spyOn(wrapper.vm, 'openProduct');
 
     expect(card.exists()).toBe(true);
+    expect(card.attributes('role')).toBe('listitem');
     expect(card.attributes('aria-disabled')).toBe('true');
-    expect(card.attributes('tabindex')).toBe('-1');
+    expect(card.attributes('tabindex')).toBeUndefined();
     expect(addBtn.attributes('disabled')).toBeDefined();
     expect(badge.exists()).toBe(true);
     expect(badge.text()).toContain('Épuisé');

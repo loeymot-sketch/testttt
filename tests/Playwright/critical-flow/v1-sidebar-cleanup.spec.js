@@ -17,12 +17,21 @@ test.describe('Pivot V1 — admin sidebar cleanup', () => {
 
   test('shows only V1 core navigation and hides legacy back-office links', async ({ page }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+    // `/admin` alone is not a registered SPA route — backend shell lives under `/admin/dashboard`.
+    await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' });
+    await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' });
 
     const sidebar = page.locator('.db-sidebar');
     await expect(sidebar).toBeVisible({ timeout: 30_000 });
-
-    for (const expected of [/Stock/i, /Catalogue/i, /Ingrédients/i, /Commandes/i]) {
+    // Labels follow `menu.*` i18n (FR vs EN after login / locale cookie).
+    for (const expected of [
+      /Stock|Tableau de bord stock/i,
+      /Catalogue|Catalog/i,
+      /Ingrédients|Ingredients/i,
+      /Commandes|POS Orders/i,
+    ]) {
+      await expect(sidebar.getByText(expected).first()).toBeVisible({ timeout: 15_000 });
+      await expect(sidebar.getByText(expected).first()).toBeVisible();
       await expect(sidebar.getByText(expected).first()).toBeVisible();
     }
 

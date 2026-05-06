@@ -1,11 +1,11 @@
 <template>
     <div class="flex flex-col gap-1 items-start max-w-[200px]">
         <div v-if="!displayIsAvailable" class="text-xs">
-            <span class="db-badge db-table-badge text-red-600 bg-red-100">{{ $t('label.out_of_stock') }}</span>
+            <span class="db-badge db-table-badge text-red-900 bg-red-100">{{ $t('label.out_of_stock') }}</span>
             <span v-if="unavailableReason" class="block text-gray-600 mt-0.5">{{ unavailableReason }}</span>
         </div>
         <button type="button" class="db-btn py-1 px-2 text-sm whitespace-normal text-left"
-            :class="displayIsAvailable ? 'text-white bg-gray-600' : 'text-white bg-primary'" :disabled="isPending"
+            :class="displayIsAvailable ? 'text-white bg-gray-600' : 'text-white bg-rose-700'" :disabled="isPending"
             @click.prevent="toggle">
             {{ displayIsAvailable ? $t('label.toggle_unavailable') : $t('label.toggle_available') }}
         </button>

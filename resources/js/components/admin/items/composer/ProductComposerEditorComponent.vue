@@ -464,16 +464,16 @@ export default {
         },
         profileEndpoint() {
             return this.isCategoryComposer
-                ? `/admin/composer/categories/${this.resolvedEntityId}/profile`
-                : `/admin/composer/items/${this.resolvedEntityId}/profile`;
+                ? `admin/composer/categories/${this.resolvedEntityId}/profile`
+                : `admin/composer/items/${this.resolvedEntityId}/profile`;
         },
         createProfileEndpoint() {
             return this.profileEndpoint;
         },
         applyTemplateEndpoint() {
             return this.isCategoryComposer
-                ? `/admin/composer/categories/${this.resolvedEntityId}/apply-template`
-                : `/admin/composer/items/${this.resolvedEntityId}/apply-template`;
+                ? `admin/composer/categories/${this.resolvedEntityId}/apply-template`
+                : `admin/composer/items/${this.resolvedEntityId}/apply-template`;
         },
         publishConfirmBody() {
             return this.isCategoryComposer
@@ -589,7 +589,7 @@ export default {
             return this.loadItem();
         },
         async loadItem() {
-            const response = await axios.get(`/admin/item/show/${this.resolvedEntityId}`);
+            const response = await axios.get(`admin/item/show/${this.resolvedEntityId}`);
             this.item = response.data?.data || response.data || null;
         },
         async loadCategory() {
@@ -639,7 +639,7 @@ export default {
                 return;
             }
 
-            const response = await axios.get(`/admin/composer/items/${this.resolvedEntityId}/available-sources`);
+            const response = await axios.get(`admin/composer/items/${this.resolvedEntityId}/available-sources`);
             const data = response.data?.data || response.data || {};
             this.availableSources = {
                 item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
@@ -687,7 +687,12 @@ export default {
                 .replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9]+/g, '_')
                 .replace(/^_+|_+$/g, '');
-            return slug || `page_${index + 1}`;
+            let key = slug || `page_${index + 1}`;
+            // "New page" / "Nouvelle page" slug identically for every new row → DB unique (profile_id, step_key).
+            if (key === 'new_page' || key === 'nouvelle_page') {
+                key = `page_${index + 1}`;
+            }
+            return key;
         },
         selectStep(step) {
             this.selectedStepKey = step?._uid || null;
@@ -714,7 +719,8 @@ export default {
                 const next = this.normalizeStep({
                     ...step,
                     ...value,
-                    step_key: value.step_key || this.makeStepKey(value.label, index),
+                    // Form panel edits label only — always derive key from label so slug tracks renames.
+                    step_key: this.makeStepKey(value.label || '', index),
                     position: index,
                 }, index);
                 return { ...next, _uid: step._uid };
@@ -733,7 +739,7 @@ export default {
             if (!this.profile?.id) return;
             const requests = this.steps
                 .filter((step) => step.id)
-                .map((step) => axios.patch(`/admin/composer/steps/${step.id}`, this.payloadForStep(step)));
+                .map((step) => axios.patch(`admin/composer/steps/${step.id}`, this.payloadForStep(step)));
             if (requests.length) {
                 await Promise.all(requests);
             }
@@ -745,7 +751,7 @@ export default {
             const step = this.pendingDeleteStep;
             if (!step) return;
             if (step.id) {
-                await axios.delete(`/admin/composer/steps/${step.id}`);
+                await axios.delete(`admin/composer/steps/${step.id}`);
             }
             this.steps = this.steps.filter((candidate) => candidate._uid !== step._uid)
                 .map((candidate, index) => this.normalizeStep({ ...candidate, position: index }, index));
@@ -765,7 +771,17 @@ export default {
             const minSelect = Number(step.min_select || 0);
             const maxSelect = Math.max(Number(step.max_select || 0), minSelect);
             return {
-                step_key: step.step_key || this.makeStepKey(step.label, step.position || 0),
+                step_key: (() => {
+                    const pos = Number(step.position || 0);
+                    const fromLabel = this.makeStepKey(step.label || '', pos);
+                    if (fromLabel && !['new_page', 'nouvelle_page'].includes(fromLabel)) {
+                        return fromLabel;
+                    }
+                    if (step.step_key && !['new_page', 'nouvelle_page'].includes(step.step_key)) {
+                        return step.step_key;
+                    }
+                    return `page_${pos + 1}`;
+                })(),
                 label: step.label || this.t('label.composer.new_page', 'Nouvelle page'),
                 source_type: SOURCE_TYPES.includes(step.source_type) ? step.source_type : 'item_attribute',
                 source_ref: step.source_ref == null ? '' : String(step.source_ref),
@@ -787,7 +803,7 @@ export default {
                     version: this.version,
                 };
                 const response = this.profile?.id
-                    ? await axios.put(`/admin/composer/profiles/${this.profile.id}`, payload)
+                    ? await axios.put(`admin/composer/profiles/${this.profile.id}`, payload)
                     : await axios.post(this.createProfileEndpoint, payload);
                 this.hydrateProfile(response.data?.data || null);
                 alertService.success(this.t('message.composer.draft_saved', 'Brouillon sauvegarde.'));
@@ -884,7 +900,7 @@ export default {
                 if (!this.profile?.id) {
                     await this.saveDraft();
                 }
-                const response = await axios.post(`/admin/composer/profiles/${this.profile.id}/publish`);
+                const response = await axios.post(`admin/composer/profiles/${this.profile.id}/publish`);
                 this.hydrateProfile(response.data?.data || null);
                 this.publishConfirmOpen = false;
                 alertService.success(this.t('message.composer.published', 'Wizard publie.'));
@@ -897,7 +913,7 @@ export default {
         },
         async unpublish() {
             if (!this.profile?.id) return;
-            const response = await axios.post(`/admin/composer/profiles/${this.profile.id}/unpublish`);
+            const response = await axios.post(`admin/composer/profiles/${this.profile.id}/unpublish`);
             this.hydrateProfile(response.data?.data || null);
         },
         onBranchScopeChange() {

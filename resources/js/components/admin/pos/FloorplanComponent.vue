@@ -52,7 +52,7 @@
 
                 <div class="mt-4 text-sm">
                     <template v-if="isOccupied(table)">
-                        <p class="font-bold">Order #<span class="pos-v5-tabular">{{ table.occupied_order_id }}</span></p>
+                        <p class="font-bold">Commande n°<span class="pos-v5-tabular">{{ table.occupied_order_id }}</span></p>
                         <p class="text-xs opacity-80">{{ elapsedLabel(table.occupied_at) }}</p>
                     </template>
                     <template v-else>
@@ -66,7 +66,7 @@
                         class="pos-v5-floorplan-table-btn"
                         @click="openOrder(table)"
                     >
-                        Open order
+                        Ouvrir la commande
                     </button>
                     <button
                         type="button"
@@ -138,7 +138,7 @@ export default {
             try {
                 await this.$store.dispatch("posFloorplan/fetchState");
             } catch (error) {
-                this.errorMessage = error?.response?.data?.message || "Unable to load floorplan.";
+                this.errorMessage = error?.response?.data?.message || "Impossible de charger le plan de salle.";
             } finally {
                 if (!silent) {
                     this.loading = false;
@@ -182,7 +182,7 @@ export default {
             const diffMinutes = Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
 
             if (diffMinutes < 1) {
-                return "Started just now";
+                return "Démarrée à l'instant";
             }
 
             if (diffMinutes < 60) {
@@ -207,7 +207,7 @@ export default {
             if (this.inFlight.assign[table.id]) { return; }
 
             const defaultOrderId = this.currentOrderId();
-            const raw = window.prompt("Order ID", defaultOrderId ? String(defaultOrderId) : "");
+            const raw = window.prompt("N° commande", defaultOrderId ? String(defaultOrderId) : "");
 
             if (raw === null) {
                 return;
@@ -215,7 +215,7 @@ export default {
 
             const orderId = Number(raw);
             if (!Number.isInteger(orderId) || orderId <= 0) {
-                alertService.error("A valid order id is required.");
+                alertService.error("Un numéro de commande valide est requis.");
                 return;
             }
 
@@ -225,9 +225,9 @@ export default {
                     tableId: table.id,
                     orderId,
                 });
-                alertService.success(`Table ${table.name} assigned.`);
+                alertService.success(`Table ${table.name} assignée.`);
             } catch (error) {
-                alertService.error(error?.response?.data?.message || "Unable to assign table.");
+                alertService.error(error?.response?.data?.message || "Impossible d'assigner la table.");
             } finally {
                 delete this.inFlight.assign[table.id];
             }
@@ -237,9 +237,9 @@ export default {
             this.inFlight.release[table.id] = true;
             try {
                 await this.$store.dispatch("posFloorplan/release", table.id);
-                alertService.success(`Table ${table.name} released.`);
+                alertService.success(`Table ${table.name} libérée.`);
             } catch (error) {
-                alertService.error(error?.response?.data?.message || "Unable to release table.");
+                alertService.error(error?.response?.data?.message || "Impossible de libérer la table.");
             } finally {
                 delete this.inFlight.release[table.id];
             }
@@ -253,7 +253,7 @@ export default {
 
             const targetId = Number(raw);
             if (!Number.isInteger(targetId) || targetId <= 0) {
-                alertService.error("A valid target table id is required.");
+                alertService.error("Une table cible valide est requise.");
                 return;
             }
 
@@ -263,9 +263,9 @@ export default {
                     sourceId: table.id,
                     targetId,
                 });
-                alertService.success(`Table ${table.name} transferred.`);
+                alertService.success(`Table ${table.name} transférée.`);
             } catch (error) {
-                alertService.error(error?.response?.data?.message || "Unable to transfer table.");
+                alertService.error(error?.response?.data?.message || "Impossible de transférer la table.");
             } finally {
                 delete this.inFlight.transfer[table.id];
             }

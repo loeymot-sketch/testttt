@@ -50,7 +50,7 @@ describe('ComposerPublishDiffModal', () => {
         await flushPromises();
 
         expect(axios.get).toHaveBeenCalledTimes(1);
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/profiles/77/diff');
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/profiles/77/diff');
     });
 
     it('test_modal_shows_no_changes_when_is_clean_true', async () => {

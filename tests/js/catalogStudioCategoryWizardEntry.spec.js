@@ -111,10 +111,11 @@ describe('CatalogStudio category wizard entry', () => {
         expect(wrapper.text()).toContain("Ce wizard s'applique à TOUS les produits de cette catégorie.");
     });
 
-    it('does not expose per-product wizard buttons on product cards', async () => {
+    it('exposes per-product composer buttons on product cards when catalog compose is allowed', async () => {
         const { wrapper } = mountStudio(42);
         await flushPromises();
 
-        expect(wrapper.findAll('[data-testid^="catalog-studio-product-wizard-"]')).toHaveLength(0);
+        const productWizardButtons = wrapper.findAll('[data-testid^="catalog-studio-product-wizard-"]');
+        expect(productWizardButtons.length).toBe(products.length);
     });
 });

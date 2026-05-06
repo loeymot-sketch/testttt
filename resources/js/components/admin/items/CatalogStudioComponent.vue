@@ -8,13 +8,13 @@
                 <p class="catalog-studio__subtitle">{{ $t("studio.subtitle") }}</p>
             </div>
             <div class="catalog-studio__header-actions">
-                <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-primary text-white"
+                <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
                     <i class="lab lab-add-line"></i>
                     <span>{{ $t("button.add_item_category") }}</span>
                 </button>
-                <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-600 text-white"
+                <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-700 text-white"
                     data-testid="catalog-studio-add-product"
                     @click="onAddProductClick">
                     <i class="lab lab-add-line"></i>
@@ -42,7 +42,7 @@
                         <strong>{{ selectedCategoryName }}</strong>
                         <small>{{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}</small>
                     </div>
-                    <button type="button" class="db-btn py-2 bg-primary text-white"
+                    <button type="button" class="db-btn py-2 bg-rose-700 text-white"
                         data-testid="catalog-studio-category-wizard-button"
                         @click="openCategoryComposerDrawer">
                         <i class="lab lab-cog"></i>
@@ -84,7 +84,7 @@
                     <label class="db-field-title">{{ $t("label.name") }}</label>
                     <input ref="categoryQuickFormNameInput" v-model.trim="categoryQuickForm.name" type="text"
                         class="db-field-control" required />
-                    <button type="submit" class="db-btn py-2 bg-primary text-white">{{ $t("button.save") }}</button>
+                    <button type="submit" class="db-btn py-2 bg-rose-700 text-white">{{ $t("button.save") }}</button>
                 </form>
             </aside>
 
@@ -122,7 +122,7 @@
                         <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input type="file" class="db-field-control" accept="image/png, image/jpeg, image/jpg"
                             data-testid="catalog-studio-product-image-upload" @change="changeQuickProductImage" />
-                        <button type="submit" class="db-btn py-2 bg-green-600 text-white">{{ $t("button.save") }}</button>
+                        <button type="submit" class="db-btn py-2 bg-green-700 text-white">{{ $t("button.save") }}</button>
                     </form>
 
                     <article v-for="item in filteredProducts" :key="item.id" class="catalog-studio__product">
@@ -150,6 +150,17 @@
                             </div>
                         </div>
                         <div class="catalog-studio__product-actions">
+                            <button
+                                v-if="canComposeCatalog"
+                                type="button"
+                                class="db-table-action view"
+                                :title="t('studio.product_composer_button', 'Composer / wizard')"
+                                :aria-label="t('studio.product_composer_button', 'Composer / wizard')"
+                                :data-testid="`catalog-studio-product-wizard-${item.id}`"
+                                @click="openComposerDrawer(item)"
+                            >
+                                <i class="lab lab-cog"></i>
+                            </button>
                             <router-link v-if="canViewItem" :to="{ name: 'admin.item.show', params: { id: item.id } }"
                                 class="db-table-action view" :title="$t('label.view')"
                                 :data-testid="`catalog-studio-product-view-${item.id}`">
@@ -183,7 +194,7 @@
                         </small>
                     </div>
                     <div class="catalog-studio__composer-actions">
-                        <router-link class="db-btn py-2 bg-primary text-white"
+                        <router-link class="db-btn py-2 bg-rose-700 text-white"
                             :to="composerDrawerRoute"
                             :data-testid="'catalog-studio-composer-open-full'">
                             <i class="lab lab-export"></i>
@@ -280,6 +291,9 @@ export default {
         },
         canDeleteItem() {
             return appService.permissionChecker("items_delete");
+        },
+        canComposeCatalog() {
+            return appService.permissionChecker("catalog.compose");
         },
         canEditCategory() {
             return appService.permissionChecker("settings");
@@ -717,7 +731,8 @@ export default {
 }
 
 .catalog-studio__counter {
-    background: #f1f5f9;
+    background: #e2e8f0;
+    color: #0f172a;
     border-radius: 999px;
     padding: 3px 8px;
     font-size: 12px;
@@ -741,6 +756,7 @@ export default {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     background: #f8fafc;
+    color: #0f172a;
     text-align: left;
     padding: 10px;
     display: grid;
@@ -750,15 +766,29 @@ export default {
 
 .catalog-studio__category strong {
     font-size: 13px;
+    color: #0f172a;
 }
 
 .catalog-studio__category small {
-    color: #64748b;
+    color: #475569;
 }
 
 .catalog-studio__category--active {
     border-color: #dc2626;
     background: #fff1f2;
+    color: #7f1d1d;
+}
+
+.catalog-studio__category--active strong {
+    color: #450a0a;
+}
+
+.catalog-studio__category--active small {
+    color: #991b1b;
+}
+
+.catalog-studio__category-wizard strong {
+    color: #7f1d1d;
 }
 
 .catalog-studio__category-wizard {

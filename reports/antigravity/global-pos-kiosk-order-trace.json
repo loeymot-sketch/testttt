@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-01T17:42:08.892Z",
+  "generated_at": "2026-05-05T21:33:16.937Z",
   "verdict": "PASS_GLOBAL_POS_KIOSK_TRACE",
   "scope": {
     "surfaces": [
@@ -27,27 +27,27 @@
     {
       "pass": true,
       "fixture": {
-        "run": "B03D54BC",
+        "run": "3714F23E",
         "branch_id": 1,
-        "item_id": 768,
-        "item_name": "PW-GLOBAL-TRACE Assiette B03D54BC",
-        "variation_id": 838,
-        "extra_id": 596,
-        "addon_id": 246,
+        "item_id": 280,
+        "item_name": "PW-GLOBAL-TRACE Assiette 3714F23E",
+        "variation_id": 202,
+        "extra_id": 141,
+        "addon_id": 56,
         "expected_total": 12.5
       },
-      "pos_order_id": 739,
-      "kiosk_order_id": 740,
-      "pos_queue_number": "A0001",
-      "kiosk_queue_number": "A0002",
+      "pos_order_id": 156,
+      "kiosk_order_id": 157,
+      "pos_queue_number": "A86243276",
+      "kiosk_queue_number": "A86243277",
       "audit": {
         "orders": [
           {
-            "id": 739,
+            "id": 156,
             "branch_id": 1,
-            "business_date": "2026-05-01",
-            "queue_number": "A0001",
-            "token": "PW-GLOBAL-TRACE-POS-B03D54BC-1777657323552",
+            "business_date": "2026-05-05",
+            "queue_number": "A86243276",
+            "token": "PW-GLOBAL-TRACE-POS-3714F23E-1778016788740",
             "source_surface": "pos",
             "order_type": 10,
             "status": 8,
@@ -57,7 +57,7 @@
             "total": 12.5,
             "subtotal": 12.5,
             "discount": 0,
-            "fiscal_sequence_no": 5,
+            "fiscal_sequence_no": 25,
             "transaction_id": null,
             "order_items_count": 1,
             "composition_snapshot": {
@@ -66,33 +66,33 @@
                   "quantity": 1,
                   "line_total": 1,
                   "unit_price": 1,
-                  "attribute_id": 89,
-                  "variation_id": 838,
-                  "attribute_name": "PW-GLOBAL-TRACE Taille B03D54BC",
-                  "variation_name": "PW-GLOBAL-TRACE XL B03D54BC"
+                  "attribute_id": 247,
+                  "variation_id": 202,
+                  "attribute_name": "PW-GLOBAL-TRACE Taille 3714F23E",
+                  "variation_name": "PW-GLOBAL-TRACE XL 3714F23E"
                 }
               ],
               "addons": [
                 {
                   "role": "drink",
-                  "addon_id": 246,
+                  "addon_id": 56,
                   "quantity": 1,
-                  "addon_name": "PW-GLOBAL-TRACE Boisson B03D54BC",
+                  "addon_name": "PW-GLOBAL-TRACE Boisson 3714F23E",
                   "line_total": 2,
                   "unit_price": 2,
-                  "addon_item_id": 769
+                  "addon_item_id": 281
                 }
               ],
               "extras": [
                 {
-                  "extra_id": 596,
+                  "extra_id": 141,
                   "quantity": 1,
-                  "extra_name": "PW-GLOBAL-TRACE Sauce B03D54BC",
+                  "extra_name": "PW-GLOBAL-TRACE Sauce 3714F23E",
                   "line_total": 0.5,
                   "unit_price": 0.5
                 }
               ],
-              "captured_at": "2026-05-01T19:42:03+02:00",
+              "captured_at": "2026-05-05T23:33:08+02:00",
               "schema_version": 1
             },
             "domain_events": [
@@ -113,18 +113,18 @@
               "count": 4,
               "delta_sum": -4,
               "stockables": [
-                "Item#768:-1",
-                "ItemVariation#838:-1",
-                "ItemExtra#596:-1",
-                "Item#769:-1"
+                "Item#280:-1",
+                "ItemVariation#202:-1",
+                "ItemExtra#141:-1",
+                "Item#281:-1"
               ]
             }
           },
           {
-            "id": 740,
+            "id": 157,
             "branch_id": 1,
-            "business_date": "2026-05-01",
-            "queue_number": "A0002",
+            "business_date": "2026-05-05",
+            "queue_number": "A86243277",
             "token": null,
             "source_surface": "kiosk",
             "order_type": 25,
@@ -136,7 +136,7 @@
             "subtotal": 12.5,
             "discount": 0,
             "fiscal_sequence_no": null,
-            "transaction_id": "PW-GLOBAL-TRACE-TPE-SIM-B03D54BC-1777657323850",
+            "transaction_id": "PW-GLOBAL-TRACE-TPE-SIM-3714F23E-1778016789018",
             "order_items_count": 1,
             "composition_snapshot": {
               "lines": [
@@ -144,33 +144,33 @@
                   "quantity": 1,
                   "line_total": 1,
                   "unit_price": 1,
-                  "attribute_id": 89,
-                  "variation_id": 838,
-                  "attribute_name": "PW-GLOBAL-TRACE Taille B03D54BC",
-                  "variation_name": "PW-GLOBAL-TRACE XL B03D54BC"
+                  "attribute_id": 247,
+                  "variation_id": 202,
+                  "attribute_name": "PW-GLOBAL-TRACE Taille 3714F23E",
+                  "variation_name": "PW-GLOBAL-TRACE XL 3714F23E"
                 }
               ],
               "addons": [
                 {
                   "role": "drink",
-                  "addon_id": 246,
+                  "addon_id": 56,
                   "quantity": 1,
-                  "addon_name": "PW-GLOBAL-TRACE Boisson B03D54BC",
+                  "addon_name": "PW-GLOBAL-TRACE Boisson 3714F23E",
                   "line_total": 2,
                   "unit_price": 2,
-                  "addon_item_id": 769
+                  "addon_item_id": 281
                 }
               ],
               "extras": [
                 {
-                  "extra_id": 596,
+                  "extra_id": 141,
                   "quantity": 1,
-                  "extra_name": "PW-GLOBAL-TRACE Sauce B03D54BC",
+                  "extra_name": "PW-GLOBAL-TRACE Sauce 3714F23E",
                   "line_total": 0.5,
                   "unit_price": 0.5
                 }
               ],
-              "captured_at": "2026-05-01T19:42:03+02:00",
+              "captured_at": "2026-05-05T23:33:08+02:00",
               "schema_version": 1
             },
             "domain_events": [
@@ -196,10 +196,10 @@
               "count": 4,
               "delta_sum": -4,
               "stockables": [
-                "Item#768:-1",
-                "ItemVariation#838:-1",
-                "ItemExtra#596:-1",
-                "Item#769:-1"
+                "Item#280:-1",
+                "ItemVariation#202:-1",
+                "ItemExtra#141:-1",
+                "Item#281:-1"
               ]
             }
           }
@@ -211,67 +211,67 @@
           "addon_item": 18
         },
         "queue_counts": {
-          "A0001": 1,
-          "A0002": 1
+          "A86243276": 1,
+          "A86243277": 1
         }
       },
       "timeline": [
         {
-          "at": "2026-05-01T17:42:02.699Z",
+          "at": "2026-05-05T21:33:08.157Z",
           "label": "surfaces_authenticated",
           "pos_url": "http://localhost:8000/admin/pos",
-          "kiosk_url": "http://localhost:8000/kiosk/categories?cat=662",
+          "kiosk_url": "http://localhost:8000/kiosk/categories?cat=238",
           "kds_url": "http://localhost:8000/admin/kitchen-display-system",
           "admin_url": "http://localhost:8000/admin/items"
         },
         {
-          "at": "2026-05-01T17:42:03.537Z",
+          "at": "2026-05-05T21:33:08.733Z",
           "label": "central_projection_visible",
           "pos_steps": 3,
           "kiosk_steps": 3
         },
         {
-          "at": "2026-05-01T17:42:03.549Z",
+          "at": "2026-05-05T21:33:08.735Z",
           "label": "kiosk_catalog_card_visible",
-          "item_id": 768
+          "item_id": 280
         },
         {
-          "at": "2026-05-01T17:42:03.722Z",
+          "at": "2026-05-05T21:33:08.890Z",
           "label": "pos_order_created",
-          "order_id": 739,
-          "queue_number": "A0001",
+          "order_id": 156,
+          "queue_number": "A86243276",
           "total": 12.5
         },
         {
-          "at": "2026-05-01T17:42:03.915Z",
+          "at": "2026-05-05T21:33:09.070Z",
           "label": "kiosk_order_created_and_payment_confirmed",
-          "order_id": 740,
-          "queue_number": "A0002",
+          "order_id": 157,
+          "queue_number": "A86243277",
           "total": 12.5,
           "payment_confirm_status": true
         },
         {
-          "at": "2026-05-01T17:42:07.811Z",
+          "at": "2026-05-05T21:33:13.974Z",
           "label": "kds_received_both_orders",
-          "pos_kds_ms": 3887,
+          "pos_kds_ms": 4891,
           "kiosk_kds_ms": 4,
           "addon_visible_ms": 4
         },
         {
-          "at": "2026-05-01T17:42:07.985Z",
+          "at": "2026-05-05T21:33:16.172Z",
           "label": "kds_marked_both_orders_prepared",
           "status": 8
         },
         {
-          "at": "2026-05-01T17:42:08.709Z",
+          "at": "2026-05-05T21:33:16.642Z",
           "label": "backend_audit_passed",
           "order_ids": [
-            739,
-            740
+            156,
+            157
           ],
           "queues": [
-            "A0001",
-            "A0002"
+            "A86243276",
+            "A86243277"
           ],
           "stock": {
             "main_item": 18,

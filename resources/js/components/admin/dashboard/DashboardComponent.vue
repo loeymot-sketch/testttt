@@ -9,6 +9,25 @@
         <h3 class="font-semibold text-[26px] leading-10 capitalize text-primary">{{ visitorMessage() }}</h3>
         <h4 class="font-medium text-[22px] leading-[34px] capitalize">{{ authInfo.name }}</h4>
     </div>
+
+    <nav v-if="quickAccessLinks.length" class="mb-8" :aria-label="$t('label.quick_access')">
+        <h3 class="font-semibold text-[18px] leading-7 mb-3 text-heading">{{ $t('label.quick_access') }}</h3>
+        <div class="flex flex-wrap gap-2">
+            <template v-for="link in quickAccessLinks" :key="link.to">
+                <a v-if="link.external" :href="link.to"
+                    class="inline-flex items-center gap-2 rounded-xl border border-[#EFF0F6] bg-white px-4 py-2.5 text-sm font-medium text-heading shadow-xs transition hover:border-primary/40 hover:bg-primary/5">
+                    <i :class="link.icon" class="text-primary" aria-hidden="true"></i>
+                    <span>{{ link.label }}</span>
+                </a>
+                <router-link v-else :to="link.to"
+                    class="inline-flex items-center gap-2 rounded-xl border border-[#EFF0F6] bg-white px-4 py-2.5 text-sm font-medium text-heading shadow-xs transition hover:border-primary/40 hover:bg-primary/5">
+                    <i :class="link.icon" class="text-primary" aria-hidden="true"></i>
+                    <span>{{ link.label }}</span>
+                </router-link>
+            </template>
+        </div>
+    </nav>
+
     <ErrorBoundary><OverviewComponent/></ErrorBoundary>
 
     <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
@@ -75,9 +94,52 @@ export default {
     computed: {
         authInfo: function () {
             return this.$store.getters.authInfo;
-        }
+        },
+        quickAccessLinks() {
+            const perms = this.normalizedPermissions();
+            const has = (permissionUrl) => {
+                if (!permissionUrl) {
+                    return true;
+                }
+                if (!perms.length) {
+                    return true;
+                }
+                const entry = perms.find((p) => p && p.url === permissionUrl);
+                if (!entry) {
+                    return true;
+                }
+                return entry.access === true;
+            };
+            const links = [];
+            const push = (to, label, icon, permUrl, external = false) => {
+                if (!has(permUrl)) {
+                    return;
+                }
+                links.push({ to, label, icon, external });
+            };
+            push('/admin/pos', this.$t('menu.pos'), 'lab lab-pos-bold', 'pos', false);
+            push('/admin/pos-v4', this.$t('label.pos_dedicated_shell'), 'lab lab-pos-bold', 'pos', true);
+            push('/admin/pos-orders', this.$t('menu.pos_orders'), 'lab lab-pos-orders', 'pos-orders', false);
+            push('/admin/pos-orders-tracker', this.$t('menu.pos_orders_tracker'), 'lab lab-pos-orders', 'pos-orders', false);
+            push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);
+            push('/admin/order-status-screen', this.$t('menu.o_s_s'), 'lab lab-cds', 'order-status-screen', false);
+            push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);
+            push('/admin/ingredients', this.$t('menu.ingredients'), 'lab lab-item-attributes', 'ingredients_manage', false);
+            push('/admin/stock/rupture', this.$t('menu.stock_rupture'), 'lab lab-stock', 'items', false);
+            return links;
+        },
     },
     methods: {
+        normalizedPermissions() {
+            const p = this.$store.getters.authPermission;
+            if (Array.isArray(p)) {
+                return p;
+            }
+            if (p && Array.isArray(p.data)) {
+                return p.data;
+            }
+            return [];
+        },
         visitorMessage: function () {
             let greet;
             let myDate = new Date();

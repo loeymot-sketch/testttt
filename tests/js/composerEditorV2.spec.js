@@ -25,16 +25,8 @@ vi.mock('vue-draggable-next', () => ({
         name: 'draggable',
         props: ['modelValue'],
         emits: ['update:modelValue', 'end'],
-        template: `
-            <div data-testid="draggable">
-                <slot
-                    v-for="(element, index) in modelValue"
-                    name="item"
-                    :element="element"
-                    :index="index"
-                />
-            </div>
-        `,
+        // Real component uses default slot + v-for; pass through for tests.
+        template: '<div data-testid="draggable"><slot /></div>',
     },
 }));
 
@@ -106,13 +98,13 @@ const t = (key) => ({
 
 function primeAxios({ profilePayload = profile() } = {}) {
     axios.get.mockImplementation((url) => {
-        if (url === '/admin/item/show/7') {
+        if (url === 'admin/item/show/7') {
             return Promise.resolve({ data: { data: item } });
         }
-        if (url === '/admin/composer/items/7/profile') {
+        if (url === 'admin/composer/items/7/profile') {
             return Promise.resolve({ data: { data: profilePayload } });
         }
-        if (url === '/admin/composer/items/7/available-sources') {
+        if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
         return Promise.reject(new Error(`unexpected GET ${url}`));
@@ -173,7 +165,7 @@ describe('ProductComposerEditorComponent V2', () => {
     it('affiche la liste steps depuis API GET profile', async () => {
         const { wrapper } = await mountEditor();
 
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/items/7/profile', undefined);
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/profile', undefined);
         expect(wrapper.find('[data-testid="composer-step-row-101"]').text()).toContain('Viande');
         expect(wrapper.find('[data-testid="composer-step-row-102"]').text()).toContain('Boisson');
     });
@@ -186,8 +178,8 @@ describe('ProductComposerEditorComponent V2', () => {
         sidebar.vm.$emit('reorder', reordered);
         await flushPromises();
 
-        expect(axios.patch).toHaveBeenCalledWith('/admin/composer/steps/102', expect.objectContaining({ position: 0 }));
-        expect(axios.patch).toHaveBeenCalledWith('/admin/composer/steps/101', expect.objectContaining({ position: 1 }));
+        expect(axios.patch).toHaveBeenCalledWith('admin/composer/steps/102', expect.objectContaining({ position: 0 }));
+        expect(axios.patch).toHaveBeenCalledWith('admin/composer/steps/101', expect.objectContaining({ position: 1 }));
     });
 
     it('bouton Ajouter page ouvre le formulaire nouveau step', async () => {
@@ -204,13 +196,13 @@ describe('ProductComposerEditorComponent V2', () => {
     it('bouton Supprimer page demande confirmation puis DELETE step endpoint', async () => {
         const { wrapper } = await mountEditor();
 
-        await wrapper.find('[data-testid="composer-step-remove-101"]').trigger('click');
+        await wrapper.find('[data-testid="composer-step-remove-0"]').trigger('click');
         expect(wrapper.find('[data-testid="composer-delete-confirm-modal"]').exists()).toBe(true);
 
         await wrapper.find('[data-testid="composer-delete-confirm"]').trigger('click');
         await flushPromises();
 
-        expect(axios.delete).toHaveBeenCalledWith('/admin/composer/steps/101');
+        expect(axios.delete).toHaveBeenCalledWith('admin/composer/steps/101');
         expect(wrapper.find('[data-testid="composer-step-row-101"]').exists()).toBe(false);
     });
 
@@ -225,7 +217,7 @@ describe('ProductComposerEditorComponent V2', () => {
         await wrapper.find('[data-testid="composer-template-tacos"]').trigger('click');
         await flushPromises();
 
-        expect(axios.post).toHaveBeenCalledWith('/admin/composer/items/7/apply-template', { template: 'tacos' });
+        expect(axios.post).toHaveBeenCalledWith('admin/composer/items/7/apply-template', { template: 'tacos' });
     });
 
     it('picker source_ref affiche les options disponibles depuis available-sources', async () => {
@@ -247,6 +239,6 @@ describe('ProductComposerEditorComponent V2', () => {
         await wrapper.find('[data-testid="composer-publish-confirm"]').trigger('click');
         await flushPromises();
 
-        expect(axios.post).toHaveBeenCalledWith('/admin/composer/profiles/55/publish');
+        expect(axios.post).toHaveBeenCalledWith('admin/composer/profiles/55/publish');
     });
 });

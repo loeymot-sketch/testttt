@@ -60,7 +60,8 @@ final class ChoiceAvailabilityResolver
         return $items->mapWithKeys(function (Item $item) use ($branchAvailability, $stockLevels, $surface): array {
             $variations = collect($item->variations ?? [])
                 ->mapWithKeys(fn ($variation): array => [
-                    (int) $variation->id => $this->availabilityFromLevel(
+                    (int) $variation->id => $this->availabilityForVariation(
+                        $variation,
                         $stockLevels->get($this->stockLevelKey(ItemVariation::class, (int) $variation->id))
                     ),
                 ])
@@ -140,7 +141,8 @@ final class ChoiceAvailabilityResolver
             $useRowLock
         );
         foreach ($variations as $variation) {
-            $state = $this->availabilityFromLevel(
+            $state = $this->availabilityForVariation(
+                $variation,
                 $variationLevels->get($this->stockLevelKey(ItemVariation::class, (int) $variation->id))
             );
             if (! $state['is_available']) {
@@ -285,6 +287,24 @@ final class ChoiceAvailabilityResolver
 
         if ($ingredientAvailable !== null && ! (bool) $ingredientAvailable) {
             return ['is_available' => false, 'unavailable_reason' => 'ingredient_rupture'];
+        }
+
+        return $this->availabilityFromLevel($level);
+    }
+
+    /**
+     * @return array{is_available: bool, unavailable_reason: ?string}
+     */
+    private function availabilityForVariation(ItemVariation $variation, ?StockLevel $level): array
+    {
+        $attribute = $variation->itemAttribute;
+
+        if ($attribute !== null) {
+            $ingredientAvailable = $attribute->getRawOriginal('is_available') ?? $attribute->is_available;
+
+            if ($ingredientAvailable === false || $ingredientAvailable === 0 || $ingredientAvailable === '0') {
+                return ['is_available' => false, 'unavailable_reason' => 'ingredient_rupture'];
+            }
         }
 
         return $this->availabilityFromLevel($level);

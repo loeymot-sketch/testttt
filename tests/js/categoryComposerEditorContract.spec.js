@@ -67,16 +67,16 @@ function primeAxios() {
         if (url === 'admin/setting/item-category/show/42') {
             return Promise.resolve({ data: { data: category } });
         }
-        if (url === '/admin/composer/categories/42/profile') {
+        if (url === 'admin/composer/categories/42/profile') {
             return Promise.resolve({ data: { data: categoryProfile } });
         }
-        if (url === '/admin/item/show/7') {
+        if (url === 'admin/item/show/7') {
             return Promise.resolve({ data: { data: item } });
         }
-        if (url === '/admin/composer/items/7/profile') {
+        if (url === 'admin/composer/items/7/profile') {
             return Promise.resolve({ data: { data: itemProfile } });
         }
-        if (url === '/admin/composer/items/7/available-sources') {
+        if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
         return Promise.reject(new Error(`unexpected GET ${url}`));
@@ -130,7 +130,7 @@ describe('ProductComposerEditorComponent category contract', () => {
     it('loads the category composer profile endpoint', async () => {
         await mountEditor({ entityType: 'category', entityId: 42 });
 
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/categories/42/profile', undefined);
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/categories/42/profile', undefined);
     });
 
     it('renders the category wizard header', async () => {
@@ -146,13 +146,13 @@ describe('ProductComposerEditorComponent category contract', () => {
         await wrapper.vm.applyTemplate('tacos');
         await flushPromises();
 
-        expect(axios.post).toHaveBeenCalledWith('/admin/composer/categories/42/apply-template', { template: 'tacos' });
+        expect(axios.post).toHaveBeenCalledWith('admin/composer/categories/42/apply-template', { template: 'tacos' });
     });
 
     it('keeps item composer endpoints unchanged', async () => {
         await mountEditor({ itemId: 7 });
 
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/items/7/profile', undefined);
-        expect(axios.get).toHaveBeenCalledWith('/admin/composer/items/7/available-sources');
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/profile', undefined);
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/available-sources');
     });
 });

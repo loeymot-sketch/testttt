@@ -64,4 +64,17 @@ class WizardPerItemDemoMiddlewareTest extends TestCase
             ->getJson("/api/admin/composer/categories/{$category->id}/profile")
             ->assertNotFound();
     }
+
+    public function test_playwright_header_does_not_bypass_in_testing_env(): void
+    {
+        config()->set('catalog_v15.features.wizard_per_item_demo.enabled', false);
+        config()->set('app.debug', true);
+
+        $item = Item::factory()->create();
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->withHeader('X-Foodking-Playwright-E2e', '1')
+            ->getJson("/api/admin/composer/items/{$item->id}/profile")
+            ->assertNotFound();
+    }
 }

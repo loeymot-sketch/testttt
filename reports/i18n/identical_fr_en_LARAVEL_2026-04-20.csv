@@ -1,4 +1,14 @@
 key,fr_value,en_value
+all.label.all_items,Toutes les catégories,Toutes les catégories
+all.label.composer.is_active,Active,Active
+all.label.composer.max_select,Maximum,Maximum
+all.label.composer.min_select,Minimum,Minimum
+all.label.composer.source_type,Source,Source
+all.label.composer.template_assiette,Assiette,Assiette
+all.label.composer.template_custom,Custom,Custom
+all.label.composer.template_sandwich,Sandwich,Sandwich
+all.label.composer.template_simple,Simple,Simple
+all.label.composer.template_snacking,Snacking,Snacking
 all.label.description,Description,Description
 auth.failed,These credentials do not match our records.,These credentials do not match our records.
 auth.password,The provided password is incorrect.,The provided password is incorrect.

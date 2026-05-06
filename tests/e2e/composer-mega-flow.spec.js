@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { login } = require('./helpers/login');
+const { login, loginAsPosOperator, loginAsChefOperator } = require('./helpers/login');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 const orderStatusEnum = require('../../resources/js/enums/modules/orderStatusEnum.js').default;
 const paymentStatusEnum = require('../../resources/js/enums/modules/paymentStatusEnum.js').default;
@@ -11,7 +11,6 @@ const POS_EMAIL = 'pos@lecayenne.fr';
 const POS_PASSWORD = '123456';
 const CHEF_EMAIL = 'chef@lecayenne.fr';
 const CHEF_PASSWORD = '123456';
-const KDS_SURFACE_RE = /\/(kds|admin\/kitchen-display-system)/;
 
 function artisan(code) {
   return execFileSync('php', ['artisan', 'tinker', '--execute', code], {
@@ -106,13 +105,11 @@ function inspectOrder(orderId) {
 }
 
 async function loginAsPOS(page) {
-  await login(page, POS_EMAIL, POS_PASSWORD);
-  await expect(page).toHaveURL(/\/admin\/pos/, { timeout: 20_000 });
+  await loginAsPosOperator(page, POS_EMAIL, POS_PASSWORD);
 }
 
 async function loginAsChef(page) {
-  await login(page, CHEF_EMAIL, CHEF_PASSWORD);
-  await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
+  await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
 }
 
 async function waitForPendingOrderInPosApi(page, orderId) {
@@ -193,8 +190,12 @@ test.describe('Product Composer B9 — cash-at-counter E2E', () => {
 
       await kdsPage.reload();
       await expect(kdsPage.getByText(confirmOrder.queue_number, { exact: false }).first()).toBeVisible({ timeout: 20_000 });
-      const kdsTextAfterPayment = await kdsPage.locator('body').innerText();
-      expect(kdsTextAfterPayment).not.toMatch(/PAIEMENT COMPTOIR/i);
+      const confirmKdsCard = kdsPage
+        .locator('.w-full.rounded-lg.border')
+        .filter({ hasText: confirmOrder.queue_number })
+        .first();
+      await expect(confirmKdsCard).toBeVisible({ timeout: 10_000 });
+      await expect(confirmKdsCard).not.toContainText(/PAIEMENT COMPTOIR/i);
 
       const cancelOrder = createPendingCounterOrder('cancel');
       await posPage.locator('.kiosk-cash-refresh-btn').click();

@@ -490,14 +490,26 @@ async function waitForBodyText(page, text, timeout = 20_000) {
 }
 
 async function kdsChangeStatus(page, orderId, expectedStatus, nextStatus) {
+  clearFoodKingRateLimits();
   const result = await page.evaluate(async ({ orderId, expectedStatus, nextStatus }) => {
-    const response = await window.axios.post(`admin/kds-order/change-status/${orderId}`, {
-      expected_status: expectedStatus,
-      status: nextStatus,
-    });
-    return { ok: response.status >= 200 && response.status < 300, status: response.status };
+    try {
+      const response = await window.axios.post(`admin/kds-order/change-status/${orderId}`, {
+        expected_status: expectedStatus,
+        status: nextStatus,
+      });
+      window.dispatchEvent(new CustomEvent('realtime-order-update', {
+        detail: { id: orderId, status: nextStatus },
+      }));
+      return { ok: response.status >= 200 && response.status < 300, status: response.status };
+    } catch (error) {
+      return {
+        ok: false,
+        status: error?.response?.status ?? null,
+        message: error?.response?.data?.message || error?.message || String(error),
+      };
+    }
   }, { orderId, expectedStatus, nextStatus });
-  expect(result.ok).toBe(true);
+  expect(result).toMatchObject({ ok: true });
 }
 
 async function openKioskCategoryAsCustomer(page, categoryId) {

@@ -1,0 +1,380 @@
+{
+  "fixture": {
+    "tacos": {
+      "ok": true,
+      "item_id": 427,
+      "name": "Tacos L E2E Menu DC65",
+      "branch_id": 1
+    },
+    "simple": {
+      "ok": true,
+      "run": "2034A1",
+      "branch_id": 1,
+      "category_id": 323,
+      "item_id": 428,
+      "name": "AUDIT-POS-MULTI Burger 2034A1",
+      "expected_price": 7.5
+    },
+    "instructionA": "AUDIT-POS-MULTI cuisine tacos 2034A1: sans oignon, bien gratine",
+    "instructionB": "AUDIT-POS-MULTI cuisine burger 2034A1: sauce a part, cuisson rapide",
+    "kdsIdentity": {
+      "expected_queue_number": "A0001",
+      "queue_number_visible": true,
+      "order_serial_no": "060526186",
+      "order_serial_visible": true,
+      "backend_id_visible": true,
+      "visual_source_labels": [
+        "POS",
+        "Sur place",
+        "À emporter",
+        "Borne"
+      ],
+      "excerpt": "Écran Cuisine Bonjour Chef Cuisine Chef Cuisine chef@lecayenne.fr +330600000003 0.00€ Edit Profile Change Password Logout Mode secours actif — actualisation automatique toutes les 5s. Les marques prêt sont enregistrées sur ce poste uniquement ; elles ne se synchronisent pas entre plusieurs écrans cuisine. Masquer Préparations Articles à produire pour les commandes confirmées ou en préparation. Tacos L E2E Menu DC65 TACOS L E2E MENU DC65 Viandes : Merguez, Kefta Supplément : Ketchup (+€0.50) [AUDIT-POS-MULTI cuisine tacos 2034A1: sans oignon, bien gratine] 1 AUDIT-POS-MULTI Burger 2034A1 AUDIT-POS-MULTI BURGER 2034A1 [AUDIT-POS-MULTI cuisine burger 2034A1: sauce a part, cuisson rapide] 1 Poste cuisine Tous les postes Bar Cuisine chaude Cuisine froide Regrouper par table Son nouvelle commande Son nouvelle commande Volume Toutes Confirmées En Préparation Terminées Sur place Aucune commande sur place en cours. En ligne Aucune commande en ligne en cours. À emporter #060526186 N°A0001 Confir"
+    },
+    "runtimeErrors": []
+  },
+  "orderResponse": {
+    "id": 186,
+    "order_serial_no": "060526186",
+    "queue_number": "A0001",
+    "token": "1",
+    "subtotal": 19.5,
+    "discount": 0,
+    "total_tax": 0,
+    "total": 19.5,
+    "subtotal_currency_price": "19.50€",
+    "subtotal_without_tax_currency_price": "19.50€",
+    "discount_currency_price": "0.00€",
+    "delivery_charge_currency_price": "0.00€",
+    "total_currency_price": "19.50€",
+    "total_tax_currency_price": "0.00€",
+    "order_type": 10,
+    "created_at": "2026-05-06T06:56:03+02:00",
+    "order_datetime": "06:56 AM, 06-05-2026",
+    "order_date": "06-05-2026",
+    "order_time": "06:56 AM",
+    "delivery_date": "06-05-2026",
+    "delivery_time": "06:56 AM - 06:56 AM",
+    "payment_method": null,
+    "payment_status": 5,
+    "payment_pending_counter": false,
+    "is_advance_order": 10,
+    "preparation_time": 15,
+    "status": 4,
+    "status_name": "Accept",
+    "reason": null,
+    "user": {
+      "id": 28,
+      "name": "Client Comptoir",
+      "first_name": "Client",
+      "last_name": "Comptoir",
+      "phone": null,
+      "email": "walkingcustomer@example.com",
+      "username": "client_comptoir",
+      "balance": "0.00",
+      "currency_balance": "0.00€",
+      "image": "http://localhost:8000/images/default/profile.png",
+      "role_id": null,
+      "country_code": "+33",
+      "create_date": "05-05-2026",
+      "update_date": "05-05-2026"
+    },
+    "order_address": null,
+    "branch": {
+      "id": 1,
+      "name": "Pfannerstill, Moore and Schmitt Branch",
+      "email": "kody21@kirlin.com",
+      "phone": "+1-954-654-5404",
+      "latitude": "-76.174049",
+      "longitude": "86.137836",
+      "city": "East Marielle",
+      "state": "Maine",
+      "zip_code": "41434",
+      "address": "10995 Erdman Valleys Suite 516",
+      "status": 1,
+      "zone": ""
+    },
+    "delivery_boy": null,
+    "coupon": null,
+    "transaction": null,
+    "order_items": [
+      {
+        "id": 187,
+        "order_id": 186,
+        "branch_id": 1,
+        "item_id": 427,
+        "item_name": "Tacos L E2E Menu DC65",
+        "item_image": "http://localhost:8000/images/menu/item-default.svg",
+        "quantity": 1,
+        "discount": "0.00€",
+        "price": "12.00€",
+        "item_variations": [],
+        "item_extras": [],
+        "item_addons": [],
+        "composition_snapshot": {
+          "lines": [],
+          "addons": [],
+          "extras": [],
+          "captured_at": "2026-05-06T06:56:03+02:00",
+          "schema_version": 1
+        },
+        "allergens_snapshot": [],
+        "item_variation_currency_total": "0.00€",
+        "item_extra_currency_total": "0.00€",
+        "total_convert_price": 12,
+        "total_currency_price": "12.00€",
+        "instruction": "TACOS L E2E MENU DC65\nViandes : Merguez, Kefta Supplément : Ketchup (+€0.50)\n[AUDIT-POS-MULTI cuisine tacos 2034A1: sans oignon, bien gratine]",
+        "kds_station": "none",
+        "tax_type": "%",
+        "tax_rate": "0.000000",
+        "tax_currency_rate": "0.00",
+        "tax_name": "PW E2E ZERO TAX",
+        "tax_currency_amount": "0.00€",
+        "total_without_tax_currency_price": "12.00€"
+      },
+      {
+        "id": 188,
+        "order_id": 186,
+        "branch_id": 1,
+        "item_id": 428,
+        "item_name": "AUDIT-POS-MULTI Burger 2034A1",
+        "item_image": "http://localhost:8000/images/menu/item-default.svg",
+        "quantity": 1,
+        "discount": "0.00€",
+        "price": "7.50€",
+        "item_variations": [],
+        "item_extras": [],
+        "item_addons": [],
+        "composition_snapshot": {
+          "lines": [],
+          "addons": [],
+          "extras": [],
+          "captured_at": "2026-05-06T06:56:03+02:00",
+          "schema_version": 1
+        },
+        "allergens_snapshot": [],
+        "item_variation_currency_total": "0.00€",
+        "item_extra_currency_total": "0.00€",
+        "total_convert_price": 7.5,
+        "total_currency_price": "7.50€",
+        "instruction": "AUDIT-POS-MULTI BURGER 2034A1\n[AUDIT-POS-MULTI cuisine burger 2034A1: sauce a part, cuisson rapide]",
+        "kds_station": "none",
+        "tax_type": "%",
+        "tax_rate": "0.000000",
+        "tax_currency_rate": "0.00",
+        "tax_name": "PW E2E ZERO TAX",
+        "tax_currency_amount": "0.00€",
+        "total_without_tax_currency_price": "7.50€"
+      }
+    ],
+    "table_name": null,
+    "pos_payment_method": 1,
+    "pos_payment_note": null,
+    "source": 15,
+    "pos_received_amount": "30.000000",
+    "pos_received_currency_amount": "30.00€",
+    "cash_back_amount": 10.5,
+    "cash_back_currency_amount": "10.50€",
+    "tax_lines": [
+      {
+        "tax_name": "PW E2E ZERO TAX",
+        "tax_rate": "0",
+        "tax_type": 10,
+        "base_ht": 19.5,
+        "base_ht_currency": "19.50€",
+        "tax": 0,
+        "tax_currency": "0.00€"
+      }
+    ],
+    "fiscal_sequence_no": 1,
+    "audit_chain_fingerprint": null,
+    "pos_register_id": null,
+    "pos_siret": null,
+    "pos_vat_intra": null,
+    "pos_legal_footer": null,
+    "operator_name": "Client Comptoir",
+    "payments_breakdown": [
+      {
+        "method": 1,
+        "amount": 30,
+        "currency_amount": "30.00€",
+        "change_amount": 10.5,
+        "reference": null
+      }
+    ]
+  },
+  "trace": {
+    "order": {
+      "id": 186,
+      "branch_id": 1,
+      "business_date": "2026-05-06",
+      "queue_number": "A0001",
+      "source_surface": "pos",
+      "status": 8,
+      "payment_status": 5,
+      "pos_payment_method": 1,
+      "subtotal": 19.5,
+      "total": 19.5,
+      "order_items_count": 2,
+      "fiscal_sequence_no": 1
+    },
+    "items": [
+      {
+        "item_id": 427,
+        "item_name": null,
+        "quantity": 1,
+        "total": 0,
+        "instruction": "TACOS L E2E MENU DC65\nViandes : Merguez, Kefta Supplément : Ketchup (+€0.50)\n[AUDIT-POS-MULTI cuisine tacos 2034A1: sans oignon, bien gratine]",
+        "composition_snapshot": {
+          "lines": [],
+          "addons": [],
+          "extras": [],
+          "captured_at": "2026-05-06T06:56:03+02:00",
+          "schema_version": 1
+        }
+      },
+      {
+        "item_id": 428,
+        "item_name": null,
+        "quantity": 1,
+        "total": 0,
+        "instruction": "AUDIT-POS-MULTI BURGER 2034A1\n[AUDIT-POS-MULTI cuisine burger 2034A1: sauce a part, cuisson rapide]",
+        "composition_snapshot": {
+          "lines": [],
+          "addons": [],
+          "extras": [],
+          "captured_at": "2026-05-06T06:56:03+02:00",
+          "schema_version": 1
+        }
+      }
+    ],
+    "transitions": [
+      {
+        "from": 4,
+        "to": 7
+      },
+      {
+        "from": 7,
+        "to": 8
+      }
+    ],
+    "domain_events": [
+      "OrderCreated",
+      "OrderStatusChanged"
+    ],
+    "stock_movement": {
+      "count": 2,
+      "delta_sum": -2
+    },
+    "queue_count_same_day": 1,
+    "fixture": {
+      "tacos": {
+        "ok": true,
+        "item_id": 427,
+        "name": "Tacos L E2E Menu DC65",
+        "branch_id": 1
+      },
+      "simple": {
+        "ok": true,
+        "run": "2034A1",
+        "branch_id": 1,
+        "category_id": 323,
+        "item_id": 428,
+        "name": "AUDIT-POS-MULTI Burger 2034A1",
+        "expected_price": 7.5
+      },
+      "instructionA": "AUDIT-POS-MULTI cuisine tacos 2034A1: sans oignon, bien gratine",
+      "instructionB": "AUDIT-POS-MULTI cuisine burger 2034A1: sauce a part, cuisson rapide"
+    }
+  },
+  "screenshots": [
+    {
+      "slug": "01-pos-caisse-chargee",
+      "file": "01-pos-caisse-chargee.png",
+      "label": "surface caisse POS chargee",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "351315e051ef1db9a3668ae3c770e8d9874fbf2d7badceeb3516d76e08719d6c",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 0 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "02-pos-produit-1-configure",
+      "file": "02-pos-produit-1-configure.png",
+      "label": "produit 1 configure avant ajout panier",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "58f493d4965e7d6a9528a975761aba2487ab00ebb137fcf826a049d3dd787540",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 0 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "03-pos-panier-apres-produit-1",
+      "file": "03-pos-panier-apres-produit-1.png",
+      "label": "panier contient le produit 1",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "e4e963c5499b24bfc8820da19353e6e587ba61fd15c234ddfeb67f8a684b7dc0",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 1 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "04-pos-produit-2-configure",
+      "file": "04-pos-produit-2-configure.png",
+      "label": "produit 2 configure avant ajout panier",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "1e53f53e570bf44ef9c1b3a3334ac1f5d699965359aa6ad6bd62c847c650cf56",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 1 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "05-pos-panier-multi-produits",
+      "file": "05-pos-panier-multi-produits.png",
+      "label": "panier contient deux produits distincts",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "4f9825439bb47b6afd0ff52e2ec61e70221df4ad60c9fef8b6642849e0e12786",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 2 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "06-pos-modal-paiement-espece",
+      "file": "06-pos-modal-paiement-espece.png",
+      "label": "modal paiement espece avec total coherent",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "d4690a3af9923201d0efdca3ec8113dc46ce98aa4095663607b4d31ad5250363",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 2 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "07-pos-recu-apres-paiement",
+      "file": "07-pos-recu-apres-paiement.png",
+      "label": "recu affiche apres paiement confirme",
+      "url": "http://localhost:8000/admin/pos",
+      "sha256": "c6708a1d9eff498a54f6b69efe554fd87ab5ee97712a541b26c64a40ecc2ebda",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Site #1 Articles 0 📋 Commandes 🖥️ Écran clie"
+    },
+    {
+      "slug": "08-pos-backoffice-commande-visible",
+      "file": "08-pos-backoffice-commande-visible.png",
+      "label": "commande visible dans commandes caisse",
+      "url": "http://localhost:8000/admin/pos-orders",
+      "sha256": "e834e1dc8f4b2a5194c4c27b7b2a0aa711a36046b1de3df968c23093773bc33b",
+      "text": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Edit Profile Change Password Logout Accueil Caisse Ingredients Commandes Caisse Accueil Commandes Caisse Commandes Caisse Filtrer Exporter Print XLS N° COMMANDE STATUT CLIENT DA"
+    },
+    {
+      "slug": "09-kds-commande-recue-instructions",
+      "file": "09-kds-commande-recue-instructions.png",
+      "label": "KDS affiche la commande et les instructions cuisine",
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "sha256": "ab4dc4d67d638e6a17c5303eb445feba46aa58cf05033c36ac6b326bf38918c0",
+      "text": "Écran Cuisine Bonjour Chef Cuisine Chef Cuisine chef@lecayenne.fr +330600000003 0.00€ Edit Profile Change Password Logout Mode secours actif — actualisation automatique toutes les 5s. Les marques prêt sont enregistrées sur ce poste uniqueme"
+    },
+    {
+      "slug": "10-kds-commande-en-preparation",
+      "file": "10-kds-commande-en-preparation.png",
+      "label": "KDS passe la commande en preparation",
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "sha256": "9d9d50c38ffa02c444855c592053f8535fb6978aba87658d67b3be110b85038e",
+      "text": "Écran Cuisine Bonjour Chef Cuisine Chef Cuisine chef@lecayenne.fr +330600000003 0.00€ Edit Profile Change Password Logout Mode secours actif — actualisation automatique toutes les 5s. Les marques prêt sont enregistrées sur ce poste uniqueme"
+    },
+    {
+      "slug": "11-kds-commande-prete",
+      "file": "11-kds-commande-prete.png",
+      "label": "KDS passe la commande en pret",
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "sha256": "47b04a9b5f15ff4a04b1f3c037834941ca390bf31e5e5a5b482d7aaf1e354a4f",
+      "text": "Écran Cuisine Bonjour Chef Cuisine Chef Cuisine chef@lecayenne.fr +330600000003 0.00€ Edit Profile Change Password Logout Reconnexion en cours… × Mode secours actif — actualisation automatique toutes les 5s. Les marques prêt sont enregistré"
+    }
+  ]
+}

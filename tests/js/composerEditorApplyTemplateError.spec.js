@@ -69,13 +69,13 @@ const translations = {
 
 function primeAxios() {
     axios.get.mockImplementation((url) => {
-        if (url === '/admin/item/show/7') {
+        if (url === 'admin/item/show/7') {
             return Promise.resolve({ data: { data: item } });
         }
-        if (url === '/admin/composer/items/7/profile') {
+        if (url === 'admin/composer/items/7/profile') {
             return Promise.resolve({ data: { data: profile } });
         }
-        if (url === '/admin/composer/items/7/available-sources') {
+        if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
         return Promise.reject(new Error(`unexpected GET ${url}`));

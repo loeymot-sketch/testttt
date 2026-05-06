@@ -12,9 +12,10 @@ describe('product composer editor contract', () => {
     it('keeps editor payload price-free and calls composer APIs', () => {
         const source = read('resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue');
 
-        expect(source).toContain('/admin/composer/items/${this.resolvedEntityId}/profile');
-        expect(source).toContain('/admin/composer/categories/${this.resolvedEntityId}/profile');
-        expect(source).toContain('/admin/composer/profiles/${this.profile.id}/publish');
+        // Relative to axios baseURL (.../api) — no leading slash (avoids /api + /admin → wrong host path).
+        expect(source).toContain('admin/composer/items/${this.resolvedEntityId}/profile');
+        expect(source).toContain('admin/composer/categories/${this.resolvedEntityId}/profile');
+        expect(source).toContain('admin/composer/profiles/${this.profile.id}/publish');
         expect(source).not.toContain('v-model="form.price"');
         expect(source).not.toContain('price:');
     });
@@ -41,8 +42,8 @@ describe('product composer editor contract', () => {
     it('store module uses composer endpoints without pricing fields', () => {
         const source = read('resources/js/store/modules/composer.js');
 
-        expect(source).toContain('/admin/composer/items/${itemId}/profile');
-        expect(source).toContain('/admin/composer/profiles/${profileId}/publish');
+        expect(source).toContain('admin/composer/items/${itemId}/profile');
+        expect(source).toContain('admin/composer/profiles/${profileId}/publish');
         expect(source).not.toContain('delivery_charge');
         expect(source).not.toContain('total');
     });

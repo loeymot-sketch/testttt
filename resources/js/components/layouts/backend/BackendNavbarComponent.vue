@@ -41,12 +41,12 @@
                 <div class="flex items-center gap-4">
                     <div class="relative dropdown-group"
                         v-if="$route.path.includes('kitchen-display-system') || $route.path.includes('order-status-screen')">
-                        <router-link :to="{ path: '/admin/' + defaultMenu?.url }" @click="closeFullScreen"
+                        <router-link :to="{ path: '/admin/' + kdsHeaderMenu.url }" @click="closeFullScreen"
                             class="flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]">
-                            <i class="lab-font-size-17 text-primary" :class="defaultMenu?.icon"></i>
+                            <i class="lab-font-size-17 text-primary" :class="kdsHeaderMenu.icon"></i>
                             <span
                                 class=" md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">{{
-                                    $t('menu.' + defaultMenu?.language) }}</span>
+                                    kdsHeaderMenu.label }}</span>
                         </router-link>
                     </div>
                     <div class="flex items-center justify-between md:justify-center gap-4">
@@ -252,6 +252,20 @@ export default {
         defaultMenu: function () {
             return this.$store.getters.authDefaultMenu;
         },
+        kdsHeaderMenu: function () {
+            const menu = this.defaultMenu || {};
+            if (menu.url && menu.language) {
+                return {
+                    url: menu.url,
+                    icon: menu.icon || 'lab lab-dashboard',
+                    label: this.$t('menu.' + menu.language),
+                };
+            }
+            if (this.$route.path.includes('order-status-screen')) {
+                return { url: 'order-status-screen', icon: 'lab lab-monitor', label: 'Suivi client' };
+            }
+            return { url: 'kitchen-display-system', icon: 'lab lab-kitchen', label: 'Écran cuisine' };
+        },
         isPosV4Shell() {
             return typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/pos-v4');
         },
@@ -364,7 +378,7 @@ export default {
             }).catch();
         },
         posPermissionCheck: function () {
-            const permissions = this.$store.getters.authPermission;
+            const permissions = this.normalizedAuthPermissionList();
             if (permissions.length > 0) {
                 _.forEach(permissions, (permission) => {
                     if (permission.name === 'pos') {
@@ -375,6 +389,16 @@ export default {
                     }
                 });
             }
+        },
+        normalizedAuthPermissionList() {
+            const permissions = this.$store.getters.authPermission;
+            if (Array.isArray(permissions)) {
+                return permissions;
+            }
+            if (permissions && Array.isArray(permissions.data)) {
+                return permissions.data;
+            }
+            return [];
         },
         saveImage: function () {
             if (this.$refs.imageProperty.files[0]) {
@@ -403,7 +427,7 @@ export default {
             }
         },
         orderPermissionCheck: function () {
-            const permissions = this.$store.getters.authPermission;
+            const permissions = this.normalizedAuthPermissionList();
             if (permissions.length > 0) {
                 _.forEach(permissions, (permission) => {
                     if (permission.name === 'online-orders') {

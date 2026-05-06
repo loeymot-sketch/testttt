@@ -101,7 +101,9 @@ describe("catalog studio routing", () => {
         expect(source).toContain("data-testid=\"catalog-studio-composer-overlay\"");
         expect(source).toContain("data-testid=\"catalog-studio-composer-frame\"");
         expect(source).toContain("catalog-studio-composer-open-full");
-        expect(source).not.toMatch(/catalog-studio-product-wizard-/);
+        // Per-item composer entry on product cards (drawer) reuses a stable `catalog-studio-product-wizard-*`
+        // testid; category drawer is separate (`openCategoryComposerDrawer` + category route).
+        expect(source).toMatch(/catalog-studio-product-wizard-/);
     });
 
     it("[P1] exposes inline stock controls on each product card", () => {

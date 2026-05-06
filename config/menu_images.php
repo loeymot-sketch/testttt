@@ -8,9 +8,8 @@
  * Images stockées dans public/images/menu/
  * Utilisées par: Items, Addons, Sauces, Suppléments, Garnitures
  *
- * Sauces : SVG génératifs (scripts/generate-menu-sauce-svgs.php) — couleur = type de sauce.
- * Crudités / suppléments : sources Pexels — voir ATTRIBUTIONS.md et
- * scripts/fetch-royalty-free-sauces-crudites-supplements.sh
+ * Sauces / viandes / crudités / burgers : PNG studio (public/images/menu/) — mapping Le Cayenne.
+ * Fallback SVG : `item-default.svg`, sauces sans visuel dédié (ex. Sans Sauce).
  *
  * ============================================================================
  */
@@ -33,7 +32,7 @@ return [
     'categories' => [
         'nos-tacos'                 => 'tacos.png',
         'nos-sandwichs'             => 'sandwich_terminator.png',
-        'nos-burgers'               => 'cheeseburger.png',
+        'nos-burgers'               => 'cheeseburger.png', // visuel Cheese Burger (onglet POS / kiosk)
         'nos-assiettes'             => 'assiette_poulet.png',
         'ojja'                      => 'ojja.png',
         'omelettes'                 => 'omelette.png',
@@ -141,30 +140,30 @@ return [
     |--------------------------------------------------------------------------
     */
     'sauces' => [
-        'Algérienne' => 'sauce_algerienne.svg',
-        'Samouraï'   => 'sauce_samourai.svg',
-        'Samourai'   => 'sauce_samourai.svg',
-        'Big Burger' => 'sauce_burger.svg',
-        'Burger'     => 'sauce_burger.svg',
-        'Biggy'      => 'sauce_burger.svg',
-        'Mayo'       => 'sauce_mayo.svg',
-        'Mayonnaise' => 'sauce_mayo.svg',
-        'Ketchup'    => 'sauce_ketchup.svg',
-        'Harissa'    => 'sauce_harissa.svg',
-        'Blanche'    => 'sauce_blanche.svg',
-        'Andalouse'  => 'sauce_andalouse.svg',
-        'Fish'       => 'sauce_fish.svg',
+        'Algérienne' => 'sauce_algerienne.png',
+        'Samouraï' => 'sauce_samourai.png',
+        'Samourai' => 'sauce_samourai.png',
+        'Big Burger' => 'sauce_burger.png',
+        'Burger' => 'sauce_burger.png',
+        'Biggy' => 'sauce_burger.png',
+        'Mayo' => 'sauce_mayo.png',
+        'Mayonnaise' => 'sauce_mayonnaise.png',
+        'Ketchup' => 'sauce_ketchup.png',
+        'Harissa' => 'sauce_harissa.png',
+        'Blanche' => 'sauce_blanche.png',
+        'Andalouse' => 'sauce_andalouse.png',
+        'Fish' => 'sauce_mayonnaise.png',
         'Sans Sauce' => 'sauce_sans.svg',
-        'Curry'      => 'sauce_curry.svg',
-        'Poivre'     => 'sauce_poivre.svg',
-        'Sauce César'=> 'sauce_cesar.svg',
-        'Sauce Cesar'=> 'sauce_cesar.svg',
-        'Barbecue'   => 'sauce_barbecue.svg',
-        'BBQ'        => 'sauce_bbq.svg',
-        'Cocktail'   => 'sauce_cocktail.svg',
-        'Américaine' => 'sauce_americaine.svg',
-        'Americaine' => 'sauce_americaine.svg',
-        'Hannibal'   => 'sauce_hannibal.svg',
+        'Curry' => 'sauce_curry.png',
+        'Poivre' => 'sauce_poivre.png',
+        'Sauce César' => 'sauce_mayonnaise.png',
+        'Sauce Cesar' => 'sauce_mayonnaise.png',
+        'Barbecue' => 'sauce_barbecue.png',
+        'BBQ' => 'sauce_barbecue.png',
+        'Cocktail' => 'sauce_cocktail.png',
+        'Américaine' => 'sauce_americaine.png',
+        'Americaine' => 'sauce_americaine.png',
+        'Hannibal' => 'sauce_hannibal.png',
     ],
 
     /*
@@ -173,15 +172,34 @@ return [
     |--------------------------------------------------------------------------
     */
     'supplements' => [
-        'Supplément Cheddar'       => 'supplement_cheddar.png',
-        'Supplément Jambon'       => 'supplement_jambon.png',
-        'Supplément Poulet'       => 'supplement_poulet.png',
-        'Supplément Kebab'        => 'supplement_kebab.png',
-        'Supplément Viande Hachée'=> 'supplement_viande.png',
-        'Supplément Œuf'          => 'supplement_oeuf.png',
-        'Supplément Raclette'     => 'supplement_raclette.png',
-        'Supplément Boursin'      => 'supplement_boursin.png',
-        'Supplément Chèvre'      => 'supplement_chevre.png',
+        'Supplément Cheddar' => 'supplement_fromage.png',
+        'Supplément Jambon' => 'supplement_jambon_dinde.png',
+        'Supplément Poulet' => 'viande_escalope_poulet.png',
+        'Supplément Kebab' => 'viande_kebab.png',
+        'Supplément Viande Hachée' => 'viande_hachee.png',
+        'Supplément Œuf' => 'supplement_oeuf.png',
+        'Supplément Raclette' => 'supplement_raclette.png',
+        'Supplément Boursin' => 'supplement_boursin.png',
+        'Supplément Chèvre' => 'supplement_boursin.png',
+        // MenuSeeder config/menu.php (noms exacts des ItemExtra)
+        'Jambon de dinde' => 'supplement_jambon_dinde.png',
+        'Boursin' => 'supplement_boursin.png',
+        'Fromage a raclette' => 'supplement_raclette.png',
+        'Fromage à raclette' => 'supplement_raclette.png',
+        'Œuf' => 'supplement_oeuf.png',
+        'Fromage' => 'supplement_fromage.png',
+        'Galette pommes de terre' => 'supplement_galette.png',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Crudités en ItemExtra (Salade / Tomate / Oignon — pas de préfixe « Sauce »)
+    |--------------------------------------------------------------------------
+    */
+    'crudite_extras' => [
+        'Salade' => 'crudite_salade.png',
+        'Tomate' => 'crudite_tomate.png',
+        'Oignon' => 'crudite_oignon.png',
     ],
 
     /*
@@ -191,10 +209,13 @@ return [
     */
     'crudites' => [
         'Complet (Salade, Tomate, Oignon)' => 'crudites_complet.png',
-        'Sans Oignon'                      => 'crudites_sans_oignon.png',
-        'Sans Tomate'                      => 'crudites_sans_tomate.png',
-        'Sans Salade'                      => 'crudites_sans_salade.png',
-        'Aucune Crudité'                   => 'crudites_aucune.png',
+        'Sans Oignon' => 'crudites_sans_oignon.png',
+        'Sans Tomate' => 'crudites_sans_tomate.png',
+        'Sans Salade' => 'crudites_sans_salade.png',
+        'Aucune Crudité' => 'crudites_aucune.png',
+        'Salade' => 'crudite_salade.png',
+        'Tomate' => 'crudite_tomate.png',
+        'Oignon' => 'crudite_oignon.png',
     ],
 
     /*
@@ -203,13 +224,17 @@ return [
     |--------------------------------------------------------------------------
     */
     'viandes' => [
-        'Poulet'       => 'viande_poulet.png',
-        'Cordon Bleu'  => 'viande_cordon.png',
-        'Kebab'        => 'viande_kebab.png',
-        'Viande Hachée'=> 'viande_hachee.png',
-        'Merguez'      => 'viande_merguez.png',
-        'Nuggets'      => 'viande_nuggets.png',
-        'Tenders'      => 'viande_tenders.png',
+        'Poulet' => 'viande_escalope_poulet.png',
+        'Cordon Bleu' => 'viande_cordon.png',
+        'Kebab' => 'viande_kebab.png',
+        'Kefta' => 'viande_kefta.png',
+        'Mexicain' => 'viande_mexicain.png',
+        'Viande Hachée' => 'viande_hachee.png',
+        'Merguez' => 'viande_merguez.png',
+        'Nuggets' => 'viande_nuggets.png',
+        'Tenders' => 'viande_tenders.png',
+        'Escalope de poulet' => 'viande_escalope_poulet.png',
+        'Fricandelle' => 'viande_fricandelle.png',
     ],
 
     /*

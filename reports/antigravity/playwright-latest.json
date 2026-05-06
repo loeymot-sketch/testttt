@@ -4,7 +4,7 @@
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": null,
+    "globalSetup": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Playwright/global-setup.js",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
@@ -28,9 +28,10 @@
         "testIgnore": [],
         "testMatch": [
           "e2e/**/*.spec.{js,ts}",
+          "playwright/**/*.spec.{js,ts}",
           "Playwright/**/*.spec.{js,ts}"
         ],
-        "timeout": 30000
+        "timeout": 600000
       }
     ],
     "quiet": false,
@@ -61,270 +62,55 @@
   },
   "suites": [
     {
-      "title": "e2e/catalog-studio-a11y-axe.spec.js",
-      "file": "e2e/catalog-studio-a11y-axe.spec.js",
+      "title": "e2e/audit-menu-generated-images.spec.js",
+      "file": "e2e/audit-menu-generated-images.spec.js",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "Catalog Studio a11y (axe-core)",
-          "file": "e2e/catalog-studio-a11y-axe.spec.js",
-          "line": 29,
-          "column": 6,
-          "specs": [
+          "title": "audit visuel des photos generees POS et borne",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "should annotate focusable elements with visible focus ring",
-              "ok": false,
-              "tags": [],
-              "tests": [
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
                 {
-                  "timeout": 120000,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 16426,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-06T05:09:44.698Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 35219,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n\n    at openCatalogStudio (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:26:57)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:55:5",
-                        "location": {
-                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                          "column": 57,
-                          "line": 26
-                        },
-                        "snippet": "  24 |   await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);\n  25 |   await page.goto(`${BASE_URL}/admin/items/studio`, { waitUntil: 'domcontentloaded' });\n> 26 |   await expect(page.getByTestId('catalog-studio-page')).toBeVisible({ timeout: 30_000 });\n     |                                                         ^\n  27 | }\n  28 |\n  29 | test.describe('Catalog Studio a11y (axe-core)', () => {"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                            "column": 57,
-                            "line": 26
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n\n\n  24 |   await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);\n  25 |   await page.goto(`${BASE_URL}/admin/items/studio`, { waitUntil: 'domcontentloaded' });\n> 26 |   await expect(page.getByTestId('catalog-studio-page')).toBeVisible({ timeout: 30_000 });\n     |                                                         ^\n  27 | }\n  28 |\n  29 | test.describe('Catalog Studio a11y (axe-core)', () => {\n    at openCatalogStudio (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:26:57)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:55:5"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-05-03T19:44:37.064Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-catalog-studio-a11y-ax-98941-nts-with-visible-focus-ring-chromium/test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-catalog-studio-a11y-ax-98941-nts-with-visible-focus-ring-chromium/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                        "column": 57,
-                        "line": 26
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 35314,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n\n    at openCatalogStudio (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:26:57)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:55:5",
-                        "location": {
-                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                          "column": 57,
-                          "line": 26
-                        },
-                        "snippet": "  24 |   await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);\n  25 |   await page.goto(`${BASE_URL}/admin/items/studio`, { waitUntil: 'domcontentloaded' });\n> 26 |   await expect(page.getByTestId('catalog-studio-page')).toBeVisible({ timeout: 30_000 });\n     |                                                         ^\n  27 | }\n  28 |\n  29 | test.describe('Catalog Studio a11y (axe-core)', () => {"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                            "column": 57,
-                            "line": 26
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('catalog-studio-page')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('catalog-studio-page')\u001b[22m\n\n\n  24 |   await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);\n  25 |   await page.goto(`${BASE_URL}/admin/items/studio`, { waitUntil: 'domcontentloaded' });\n> 26 |   await expect(page.getByTestId('catalog-studio-page')).toBeVisible({ timeout: 30_000 });\n     |                                                         ^\n  27 | }\n  28 |\n  29 | test.describe('Catalog Studio a11y (axe-core)', () => {\n    at openCatalogStudio (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:26:57)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js:55:5"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-05-03T19:45:13.053Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-catalog-studio-a11y-ax-98941-nts-with-visible-focus-ring-chromium-retry1/test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-catalog-studio-a11y-ax-98941-nts-with-visible-focus-ring-chromium-retry1/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-catalog-studio-a11y-ax-98941-nts-with-visible-focus-ring-chromium-retry1/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                        "column": 57,
-                        "line": 26
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "attachments": []
                 }
               ],
-              "id": "cc92c985081cb4d2e6c0-59d86a2d1e597072a681",
-              "file": "e2e/catalog-studio-a11y-axe.spec.js",
-              "line": 54,
-              "column": 3
+              "status": "expected"
             }
           ],
-          "suites": [
-            {
-              "title": "violations axe (WCAG 2 A / AA tags)",
-              "file": "e2e/catalog-studio-a11y-axe.spec.js",
-              "line": 32,
-              "column": 8,
-              "specs": [
-                {
-                  "title": "should have no critical violations on default state",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "@axe-core/playwright not installed",
-                          "location": {
-                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                            "line": 34,
-                            "column": 12
-                          }
-                        }
-                      ],
-                      "expectedStatus": "skipped",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "skipped",
-                          "duration": 255,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-05-03T19:44:35.104Z",
-                          "annotations": [
-                            {
-                              "type": "skip",
-                              "description": "@axe-core/playwright not installed",
-                              "location": {
-                                "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                                "line": 34,
-                                "column": 12
-                              }
-                            }
-                          ],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "skipped"
-                    }
-                  ],
-                  "id": "cc92c985081cb4d2e6c0-c65f94878971dead79db",
-                  "file": "e2e/catalog-studio-a11y-axe.spec.js",
-                  "line": 33,
-                  "column": 5
-                },
-                {
-                  "title": "should have no serious violations on category-selected state",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "@axe-core/playwright not installed",
-                          "location": {
-                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                            "line": 42,
-                            "column": 12
-                          }
-                        }
-                      ],
-                      "expectedStatus": "skipped",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "skipped",
-                          "duration": 201,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-05-03T19:44:36.835Z",
-                          "annotations": [
-                            {
-                              "type": "skip",
-                              "description": "@axe-core/playwright not installed",
-                              "location": {
-                                "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/catalog-studio-a11y-axe.spec.js",
-                                "line": 42,
-                                "column": 12
-                              }
-                            }
-                          ],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "skipped"
-                    }
-                  ],
-                  "id": "cc92c985081cb4d2e6c0-03331bb1748c61605a7d",
-                  "file": "e2e/catalog-studio-a11y-axe.spec.js",
-                  "line": 41,
-                  "column": 5
-                }
-              ]
-            }
-          ]
+          "id": "7c09d7b697482804ef0d-67c295df04c483d4ec92",
+          "file": "e2e/audit-menu-generated-images.spec.js",
+          "line": 41,
+          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-05-03T19:44:34.384Z",
-    "duration": 75139.64199999999,
-    "expected": 0,
-    "skipped": 2,
-    "unexpected": 1,
+    "startTime": "2026-05-06T05:09:43.948Z",
+    "duration": 18017.568,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
     "flaky": 0
   }
 }

@@ -13,6 +13,7 @@
  */
 const { test, expect } = require('@playwright/test');
 const { login } = require('./helpers/login');
+const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_USER || 'admin@lecayenne.fr';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASS || '123456';
@@ -24,6 +25,7 @@ test.describe('Catalog Studio — create-product critical flow', () => {
   test.setTimeout(150_000);
 
   test('admin can open Studio, create a category, and open the wizard composer drawer on an existing product', async ({ page }) => {
+    clearFoodKingRateLimits();
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     await page.goto('/admin/items/studio', { waitUntil: 'domcontentloaded' });
@@ -35,7 +37,18 @@ test.describe('Catalog Studio — create-product critical flow', () => {
     await addCategoryBtn.click();
     await expect(categoryForm).toBeVisible({ timeout: 10_000 });
     await categoryForm.locator('input[type="text"]').first().fill(CATEGORY_NAME);
-    await categoryForm.locator('button[type="submit"]').click();
+    const categoryPost = page.waitForResponse(
+      (r) => {
+        if (r.request().method() !== 'POST') return false;
+        if (!/\/api\/admin\/setting\/item-category\/?($|\?)/.test(r.url())) return false;
+        const body = r.request().postData() || '';
+        return body.includes(CATEGORY_NAME);
+      },
+      { timeout: 30_000 },
+    );
+    await Promise.all([categoryPost, categoryForm.locator('button[type="submit"]').click()]);
+    const catResp = await categoryPost;
+    expect(catResp.ok(), `category POST failed: HTTP ${catResp.status()}`).toBeTruthy();
 
     const newCategoryRow = page.locator(
       `[data-testid^="catalog-studio-category-row-"]:has-text("${CATEGORY_NAME}")`,

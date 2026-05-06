@@ -7,6 +7,7 @@
  * avec borne auto-login configurée (kiosk idle joignable).
  */
 const { test, expect } = require('@playwright/test');
+const { loginAsKiosk } = require('./helpers/login');
 
 const ROUNDS = Number(process.env.KIOSK_SPA_GUARD_ROUNDS || 3);
 
@@ -69,7 +70,9 @@ test.describe('Kiosk SPA — pas d’écran noir après navigation client', () =
     });
 
     if (/\/kiosk\/login/i.test(page.url())) {
-      await page.waitForURL((u) => !/kiosk\/login/i.test(u.pathname), { timeout: 90_000 });
+      // Auto-login serveur absent sur certaines DB : connexion borne explicite (même creds que les autres E2E).
+      await loginAsKiosk(page);
+      await page.waitForURL((u) => !/kiosk\/login/i.test(u.pathname), { timeout: 30_000 }).catch(() => {});
     }
 
     await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded' });
@@ -110,6 +113,9 @@ test.describe('Kiosk SPA — pas d’écran noir après navigation client', () =
 
   test('deep-link /categories sans session commande → idle OU catalogue visible', async ({ page }) => {
     await page.goto('/kiosk/categories', { waitUntil: 'domcontentloaded' });
+    if (/\/kiosk\/login/i.test(page.url())) {
+      await loginAsKiosk(page);
+    }
     await waitBranchBoot(page);
 
     const idle = page.getByTestId('kiosk-idle-root');

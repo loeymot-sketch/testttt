@@ -15,7 +15,9 @@ const {
   loginAsPOS,
   loginAsChef,
   expectNoCriticalBrowserErrors,
+  POS_EMAIL,
 } = require('./helpers/process-audit');
+const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
 const PREFIX = 'PW-RKS';
 const ASK_NO = 10;
@@ -66,8 +68,20 @@ function cleanupPrefix(prefix = PREFIX) {
 
 function createRuntimeItem(label, stockOnHand = 20) {
   const escapedLabel = String(label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const posEmailEscaped = String(POS_EMAIL).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   return parseArtisanJson(artisan(`
-    $branchId = (int) (App\\Models\\User::query()->where('email', 'pos@lecayenne.fr')->value('branch_id') ?: 1);
+    $posEmail = '${posEmailEscaped}';
+    $branchId = (int) (App\\Models\\User::query()->where('email', $posEmail)->value('branch_id') ?: 0);
+    if ($branchId <= 0 || ! App\\Models\\Branch::query()->whereKey($branchId)->exists()) {
+      $branchId = (int) (App\\Models\\Branch::query()->orderBy('id')->value('id') ?: 0);
+    }
+    if ($branchId <= 0) {
+      $branchId = (int) App\\Models\\Branch::factory()->create()->id;
+    }
+    $posUser = App\\Models\\User::query()->where('email', $posEmail)->first();
+    if ($posUser) {
+      $posUser->forceFill(['branch_id' => $branchId])->save();
+    }
     $tax = App\\Models\\Tax::query()->first() ?? App\\Models\\Tax::factory()->create([
       'tax_rate' => 0,
       'type' => App\\Enums\\TaxType::PERCENTAGE,
@@ -94,6 +108,9 @@ function createRuntimeItem(label, stockOnHand = 20) {
       'on_hand' => ${Number(stockOnHand)},
       'reserved' => 0,
     ]);
+    if (Schema::hasTable('item_wizard_profiles')) {
+      DB::table('item_wizard_profiles')->where('item_id', $item->id)->delete();
+    }
     $customerId = (int) (App\\Models\\User::query()->where('email', 'walkingcustomer@example.com')->value('id')
       ?: App\\Models\\User::query()->where('branch_id', 0)->value('id')
       ?: App\\Models\\User::query()->value('id'));
@@ -109,39 +126,69 @@ function createRuntimeItem(label, stockOnHand = 20) {
 
 async function createPosOrderViaApi(page, fixture, label) {
   return page.evaluate(async ({ fixture, label, prefix, askNo }) => {
-    const items = [{
-      item_id: fixture.item_id,
-      quantity: 1,
-      item_variations: [],
-      item_extras: [],
-      instruction: `${prefix} ${label}`,
-    }];
-    const token = `${prefix}-${label}-${Date.now()}`;
-    const basePayload = {
-      branch_id: fixture.branch_id,
-      customer_id: fixture.customer_id,
-      token,
-      discount: 0,
-      order_type: 10,
-      is_advance_order: askNo,
-      source: 15,
-      pos_payment_method: 1,
-      pos_received_amount: 20,
-      items: JSON.stringify(items),
-    };
-    const quote = (await window.axios.post('admin/pos/quote', basePayload)).data.data;
-    const response = await window.axios.post('admin/pos', {
-      ...basePayload,
-      quote_token: quote.quote_token,
-      quote_signature: quote.signature,
-      subtotal: quote.subtotal,
-      discount: quote.discount,
-      delivery_charge: quote.delivery_charge,
-      total: quote.total_ttc,
-    }, {
-      headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
-    });
-    return response.data.data;
+    try {
+      const items = [{
+        item_id: fixture.item_id,
+        quantity: 1,
+        item_variations: [],
+        item_extras: [],
+        instruction: `${prefix} ${label}`,
+      }];
+      const token = `${prefix}-${label}-${Date.now()}`;
+      const basePayload = {
+        branch_id: fixture.branch_id,
+        customer_id: fixture.customer_id,
+        token,
+        discount: 0,
+        /** OrderType::POS (15) — comptoir ; 10=TAKEAWAY peut faire échouer le devis selon règles livraison. */
+        order_type: 15,
+        is_advance_order: askNo,
+        source: 15,
+        pos_payment_method: 1,
+        pos_received_amount: 20,
+        items: JSON.stringify(items),
+      };
+      const quoteResp = await window.axios.post('admin/pos/quote', basePayload);
+      if (!quoteResp.data?.status) {
+        return {
+          ok: false,
+          step: 'quote',
+          status: quoteResp.status,
+          body: quoteResp.data,
+        };
+      }
+      const quote = quoteResp.data.data;
+      const totalTtc = Number(quote.total_ttc);
+      const receivedAmount = Number.isFinite(totalTtc) && totalTtc > 0 ? Math.ceil(totalTtc + 5) : 50;
+      const response = await window.axios.post('admin/pos', {
+        ...basePayload,
+        pos_received_amount: receivedAmount,
+        quote_token: quote.quote_token,
+        quote_signature: quote.signature,
+        subtotal: quote.subtotal,
+        discount: quote.discount,
+        delivery_charge: quote.delivery_charge,
+        total: quote.total_ttc,
+      }, {
+        headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
+      });
+      const orderPayload = response.data?.data;
+      if (!orderPayload?.id) {
+        return { ok: false, step: 'pos_store', status: response.status, body: response.data };
+      }
+
+      return { ok: true, data: orderPayload };
+    } catch (e) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+
+      return {
+        ok: false,
+        step: 'axios',
+        status,
+        body: body ?? String(e?.message || e),
+      };
+    }
   }, { fixture, label, prefix: PREFIX, askNo: ASK_NO });
 }
 
@@ -163,6 +210,7 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
   });
 
   test('persisted instruction appears on KDS and matches pos-order show API', async ({ browser }) => {
+    clearFoodKingRateLimits();
     const fixture = createRuntimeItem('INST', 10);
     const kdsContext = await browser.newContext();
     const posContext = await browser.newContext();
@@ -174,12 +222,18 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
       await kdsPage.goto('/admin/kitchen-display-system');
 
       await loginAsPOS(posPage);
+      await posPage.goto('/admin/pos', { waitUntil: 'domcontentloaded' });
+      await posPage.locator('#pos-cart').waitFor({ state: 'visible', timeout: 25_000 });
 
-      let order;
+      let orderResult;
       await expectNoCriticalBrowserErrors(posPage, async () => {
-        order = await createPosOrderViaApi(posPage, fixture, 'INST');
+        clearFoodKingRateLimits();
+        await posPage.waitForTimeout(600);
+        orderResult = await createPosOrderViaApi(posPage, fixture, 'INST');
       });
 
+      expect(orderResult?.ok, JSON.stringify(orderResult)).toBe(true);
+      const order = orderResult.data;
       expect(order?.id).toBeTruthy();
       const marker = `${PREFIX} INST`;
 

@@ -439,14 +439,15 @@
         </header>
 
         <!--
-          [POS-V5] Cart body — items list en cards verticales (densité optimale
-          + édition / qty stepper inline). Garde role="list" pour a11y.
+          [POS-V5] Cart body — cart lines as vertical cards.
+          Avoid role="list" here: axe flags aria-required-children when the cart
+          is empty or mid-hydrate (list with no listitem). Region + item names
+          keep screen-reader context via headings / buttons.
         -->
-        <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="list">
+        <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="region" :aria-label="$t('a11y.cart_region')">
             <article
                 v-for="(cart, index) in carts"
                 :key="`cart-${index}`"
-                role="listitem"
                 class="pos-v5-cart-item"
             >
                 <button
@@ -1673,11 +1674,41 @@ export default {
             return true;
         },
 
+        /**
+         * Re-fetch customers if the store list is still empty (race: operator taps Pay
+         * before mounted()'s user/lists resolves). Avoids orderSubmit stalling on walk-in.
+         */
+        async ensureCustomersHydratedForCheckout() {
+            const have = Array.isArray(this.customers) ? this.customers.length : 0;
+            if (have > 0) return true;
+            try {
+                await this.$store.dispatch('user/lists', {
+                    order_column: 'id',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE,
+                    role_id: 2,
+                });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
         async ensureWalkInCustomer() {
             if (this.checkoutProps.form.customer_id) return true;
 
             const existing = this.findWalkInCustomer(this.customers);
             if (this.assignWalkInCustomer(existing)) return true;
+
+            try {
+                const res = await axios.get('/admin/pos/walk-in-customer');
+                const row = res.data?.data;
+                if (row && row.id && this.assignWalkInCustomer(row)) {
+                    return true;
+                }
+            } catch (e) {
+                /* fall through — operator may lack route access in exotic configs */
+            }
 
             if (this._walkInCustomerPromise) {
                 return this._walkInCustomerPromise;
@@ -1742,6 +1773,8 @@ export default {
             this._onWsConnected = () => {
                 this.loadKioskCashOrders();
                 this._restartKioskPolling();
+                // [V1.5C R2] Refresh catalogue after reconnect — Echo may have skipped pushes during outage.
+                try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             };
             this._onWsDisconnected = () => {
                 this._restartKioskPolling();
@@ -2523,6 +2556,7 @@ export default {
             }
             this.loading.isActive = true;
             if (this.checkoutProps.form.order_type !== orderTypeEnum.DELIVERY && !this.checkoutProps.form.customer_id) {
+                await this.ensureCustomersHydratedForCheckout();
                 const walkInReady = await this.ensureWalkInCustomer();
                 if (!walkInReady) {
                     this.loading.isActive = false;
@@ -2532,11 +2566,15 @@ export default {
             this.checkoutProps.form.subtotal = this.subtotal;
             // @pricing-allowed-block start
             // [POS-V4 W0+ DISCOVERY 2026-04-26] Pre-modal display total — backend remains SSOT and recomputes server-side.
+            // Must match `grandTotal` / footer CTA: raw `+ form.delivery_charge` can mis-add if charge is a string
+            // (e.g. "19.5" + number → wrong total) and `form.discount` can drift from Vuex `posCart/discount`.
             // Identical pattern to ItemComponent.totalPriceSetup (W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, decision D1).
             // signoff-pending — date_limit: 2026-05-10
             // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
             // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
-            this.checkoutProps.form.total = parseFloat(this.subtotal + this.checkoutProps.form.delivery_charge - this.checkoutProps.form.discount).toFixed(this.setting.site_digit_after_decimal_point);
+            this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
+            this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
+            this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
             // @pricing-allowed-block end
             this.checkoutProps.form.items = [];
             _.forEach(this.carts, (item) => {

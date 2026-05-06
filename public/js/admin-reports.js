@@ -1110,7 +1110,8 @@ var _hoisted_5 = {
   key: 0
 };
 var _hoisted_6 = {
-  key: 1
+  key: 1,
+  "class": "text-slate-800 font-medium"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_router_link = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("router-link");
@@ -1203,15 +1204,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       params: {
         id: this.$props.id
       }
-    }
+    },
+    "aria-label": _ctx.$t('button.view')
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "lab lab-view"
+        "class": "lab lab-view",
+        "aria-hidden": "true"
       }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.view')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["to"]);
+  }, 8 /* PROPS */, ["to", "aria-label"]);
 }
 
 /***/ }),

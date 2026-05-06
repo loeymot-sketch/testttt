@@ -103,6 +103,33 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     Object.freeze({ url: 'pos-orders', language: 'pos_orders', icon: 'lab lab-pos-orders' }),
 ]);
 
+/** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
+const MENU_URL_TO_PERMISSION_URL = Object.freeze({
+    ingredients: 'ingredients_manage',
+});
+
+function permissionUrlForSidebarPath(menuUrl) {
+    if (!menuUrl || menuUrl === '#') {
+        return null;
+    }
+    if (MENU_URL_TO_PERMISSION_URL[menuUrl]) {
+        return MENU_URL_TO_PERMISSION_URL[menuUrl];
+    }
+    if (menuUrl.startsWith('settings/')) {
+        return 'settings';
+    }
+    if (menuUrl.startsWith('stock/')) {
+        return 'items';
+    }
+    if (menuUrl.startsWith('items/')) {
+        return 'items';
+    }
+    if (menuUrl === 'pos-orders-tracker') {
+        return 'pos-orders';
+    }
+    return menuUrl;
+}
+
 export default {
     name: "BackendMenuComponent",
     data: function () {
@@ -166,9 +193,23 @@ export default {
         /**
          * Retire tout le bloc menu si URL legacy masquée sans enfants (sinon lien mort).
          * Les entrées comme `items` avec enfants virtuels restent avec le parent row caché.
+         *
+         * [V1-NAV-2026-05] Ne plus renvoyer uniquement V1_PRIMARY : cela masquait tout le menu
+         * rôle (POS sous « Pos & Orders », KDS, réglages, etc.). On garde l’accès rapide
+         * dashboard + POS en tête, la bande V1, puis le menu enrichi filtré + dédoublonné.
          */
         menusForSidebar() {
-            return V1_PRIMARY_SIDEBAR_MENUS;
+            return this.buildMergedSidebarMenus();
+        },
+        normalizedPermissions() {
+            const p = this.$store.getters.authPermission;
+            if (Array.isArray(p)) {
+                return p;
+            }
+            if (p && Array.isArray(p.data)) {
+                return p.data;
+            }
+            return [];
         },
         sidebar() {
             return this.$store.getters['globalState/lists'].topSidebar;
@@ -182,6 +223,106 @@ export default {
 
     },
     methods: {
+        userHasPermissionUrl(permissionUrl) {
+            if (!permissionUrl) {
+                return true;
+            }
+            const permissions = this.normalizedPermissions;
+            if (!permissions.length) {
+                return true;
+            }
+            const entry = permissions.find((x) => x && x.url === permissionUrl);
+            if (!entry) {
+                return true;
+            }
+            return entry.access === true;
+        },
+        menuPathAllowed(menuUrl) {
+            return this.userHasPermissionUrl(permissionUrlForSidebarPath(menuUrl));
+        },
+        applyVirtualChildrenToMenu(menu) {
+            if (menu.url && VIRTUAL_CHILDREN_BY_URL[menu.url]) {
+                return { ...menu, children: VIRTUAL_CHILDREN_BY_URL[menu.url] };
+            }
+            return menu;
+        },
+        filterMenuChildrenByPermission(menu) {
+            const m = this.applyVirtualChildrenToMenu(menu);
+            if (!m.children || !m.children.length) {
+                return m;
+            }
+            const children = m.children.filter((c) => c && c.url && this.menuPathAllowed(c.url));
+            return { ...m, children };
+        },
+        menuBlockIsRenderable(menu) {
+            if (!menu) {
+                return false;
+            }
+            if (menu.url === '#') {
+                const kids = menu.children || [];
+                return kids.some((c) => c && c.url && this.menuPathAllowed(c.url));
+            }
+            if (!this.menuPathAllowed(menu.url)) {
+                return false;
+            }
+            const withKids = this.filterMenuChildrenByPermission(menu);
+            if (withKids.children && withKids.children.length === 0 && menu.children && menu.children.length) {
+                return false;
+            }
+            return true;
+        },
+        buildMergedSidebarMenus() {
+            const out = [];
+            const seen = new Set();
+
+            const pushBlock = (menu) => {
+                if (!menu || !this.menuBlockIsRenderable(menu)) {
+                    return;
+                }
+                const filtered = this.filterMenuChildrenByPermission(menu);
+                if (filtered.url && filtered.url !== '#') {
+                    seen.add(filtered.url);
+                }
+                (filtered.children || []).forEach((c) => {
+                    if (c && c.url) {
+                        seen.add(c.url);
+                    }
+                });
+                out.push(filtered);
+            };
+
+            pushBlock({ url: 'dashboard', language: 'dashboard', icon: 'lab lab-dashboard' });
+            pushBlock({ url: 'pos', language: 'pos', icon: 'lab lab-pos-bold' });
+
+            V1_PRIMARY_SIDEBAR_MENUS.forEach((m) => {
+                pushBlock({ ...m });
+            });
+
+            this.enrichedVisibleMenus.forEach((menu) => {
+                if (menu.url === '#') {
+                    const kids = (menu.children || []).filter((c) => {
+                        if (!c || !c.url || this.hiddenMenuUrls.has(c.url)) {
+                            return false;
+                        }
+                        if (seen.has(c.url) || !this.menuPathAllowed(c.url)) {
+                            return false;
+                        }
+                        seen.add(c.url);
+                        return true;
+                    });
+                    if (kids.length) {
+                        out.push({ ...menu, children: kids });
+                    }
+                    return;
+                }
+                if (seen.has(menu.url)) {
+                    return;
+                }
+                pushBlock({ ...menu });
+            });
+
+            return out;
+        },
         sidebarActive: function (e) {
             const activeMenu = document.querySelector('.db-sidebar-nav-item.active');
             if (activeMenu) {

@@ -41,12 +41,13 @@
                 type="submit"
                 class="db-btn h-11 self-end text-white bg-primary"
                 :disabled="!selectedItemId || loading"
+                :aria-busy="loading ? 'true' : 'false'"
             >
                 {{ $t('demo_wizard_advanced.open_button') }}
             </button>
         </form>
 
-        <p v-if="loadError" class="text-sm text-danger mt-3" role="alert">
+        <p v-if="loadError" class="text-sm text-danger mt-3" role="alert" aria-live="polite">
             {{ loadError }}
         </p>
 

@@ -10,6 +10,7 @@ const {
   expectNoCriticalBrowserErrors,
 } = require('./helpers/process-audit');
 const { loginAsKiosk } = require('./helpers/login');
+const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
 const PREFIX = 'PW-C3';
 const ASK_NO = 10;
@@ -63,7 +64,13 @@ function cleanupRuntimeAudit(prefix = PREFIX) {
 function createRuntimeItem(label, stockOnHand = 20) {
   const escapedLabel = String(label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   return parseArtisanJson(artisan(`
-    $branchId = (int) (App\\Models\\User::query()->where('email', 'pos@lecayenne.fr')->value('branch_id') ?: 1);
+    $branchId = (int) (App\\Models\\User::query()->where('email', 'pos@lecayenne.fr')->value('branch_id') ?: 0);
+    if ($branchId <= 0 || ! App\\Models\\Branch::query()->whereKey($branchId)->exists()) {
+      $branchId = (int) (App\\Models\\Branch::query()->orderBy('id')->value('id') ?: 0);
+    }
+    if ($branchId <= 0) {
+      $branchId = (int) App\\Models\\Branch::factory()->create()->id;
+    }
     $tax = App\\Models\\Tax::query()->first() ?? App\\Models\\Tax::factory()->create([
       'tax_rate' => 0,
       'type' => App\\Enums\\TaxType::PERCENTAGE,
@@ -105,6 +112,8 @@ function createRuntimeItem(label, stockOnHand = 20) {
 }
 
 async function createPosOrderViaApi(page, fixture, label) {
+  // POS quote + submit share the `admin-mutation` bucket; long Playwright batches can exhaust it.
+  clearFoodKingRateLimits();
   return page.evaluate(async ({ fixture, label, prefix, askNo }) => {
     const items = [{
       item_id: fixture.item_id,
@@ -126,19 +135,40 @@ async function createPosOrderViaApi(page, fixture, label) {
       pos_received_amount: 20,
       items: JSON.stringify(items),
     };
-    const quote = (await window.axios.post('admin/pos/quote', basePayload)).data.data;
-    const response = await window.axios.post('admin/pos', {
-      ...basePayload,
-      quote_token: quote.quote_token,
-      quote_signature: quote.signature,
-      subtotal: quote.subtotal,
-      discount: quote.discount,
-      delivery_charge: quote.delivery_charge,
-      total: quote.total_ttc,
-    }, {
-      headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
-    });
-    return response.data.data;
+    const formatAxiosError = (err, step) => {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      const body = typeof data === 'string' ? data : JSON.stringify(data ?? {});
+      return new Error(`C3 POS ${step} HTTP ${status ?? 'n/a'}: ${body.slice(0, 800)}`);
+    };
+    let quote;
+    try {
+      quote = (await window.axios.post('admin/pos/quote', basePayload)).data.data;
+    } catch (e) {
+      throw formatAxiosError(e, 'quote');
+    }
+    const totalTtc = Number(quote.total_ttc);
+    const cashReceived = Math.max(
+      Number(basePayload.pos_received_amount) || 0,
+      Number.isFinite(totalTtc) ? totalTtc : 0,
+    );
+    try {
+      const response = await window.axios.post('admin/pos', {
+        ...basePayload,
+        pos_received_amount: cashReceived,
+        quote_token: quote.quote_token,
+        quote_signature: quote.signature,
+        subtotal: quote.subtotal,
+        discount: quote.discount,
+        delivery_charge: quote.delivery_charge,
+        total: quote.total_ttc,
+      }, {
+        headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
+      });
+      return response.data.data;
+    } catch (e) {
+      throw formatAxiosError(e, 'submit');
+    }
   }, { fixture, label, prefix: PREFIX, askNo: ASK_NO });
 }
 
@@ -263,6 +293,7 @@ test.describe('C3 runtime multi-surface sync', () => {
   });
 
   test.beforeEach(() => {
+    clearFoodKingRateLimits();
     cleanupRuntimeAudit();
   });
 

@@ -146,7 +146,7 @@ export default {
             this.diffPayload = null;
 
             try {
-                const response = await axios.get(`/admin/composer/profiles/${this.profileId}/diff`);
+                const response = await axios.get(`admin/composer/profiles/${this.profileId}/diff`);
                 this.diffPayload = response.data?.data ?? response.data;
             } catch (err) {
                 this.error = err.response?.data?.message ?? this.$t('studio.composer.diff.error');
