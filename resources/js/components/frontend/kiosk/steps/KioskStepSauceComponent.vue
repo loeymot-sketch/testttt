@@ -24,14 +24,15 @@
         class="kiosk-option-card"
         :class="{
           selected: !!localSelections[selectionKey(sauce)],
-          'kiosk-variation--disabled': !sauceFilterAllowed(sauce),
+          'kiosk-variation--disabled': !sauceFilterAllowed(sauce) || isSauceOos(sauce),
+          'is-out-of-stock': isSauceOos(sauce),
         }"
         role="checkbox"
-        :tabindex="sauceFilterAllowed(sauce) ? 0 : -1"
+        :tabindex="(sauceFilterAllowed(sauce) && !isSauceOos(sauce)) ? 0 : -1"
         :aria-checked="!!localSelections[selectionKey(sauce)]"
-        :aria-disabled="sauceFilterAllowed(sauce) ? 'false' : 'true'"
+        :aria-disabled="(sauceFilterAllowed(sauce) && !isSauceOos(sauce)) ? 'false' : 'true'"
         :aria-label="sauce.name"
-        :title="sauceFilterTooltip(sauce)"
+        :title="sauceOosTooltip(sauce) || sauceFilterTooltip(sauce)"
         @click="toggleSauce(sauce)"
         @keydown.enter.prevent="toggleSauce(sauce)"
         @keydown.space.prevent="toggleSauce(sauce)"
@@ -50,8 +51,14 @@
         </div>
         <span class="kiosk-sauce-name">{{ sauce.name }}</span>
         <span class="kiosk-sauce-price">{{ sauceUnitPriceLabel(sauce) }}</span>
+        <span
+          v-if="isSauceOos(sauce)"
+          class="kiosk-extra-oos-badge"
+          data-testid="kiosk-extra-oos-badge"
+          :aria-label="$t('pos.item_86_d')"
+        >{{ $t('pos.item_86_d') }}</span>
         <span v-if="getSauceOrder(sauceKey(sauce)) > 0" class="kiosk-sauce-order">{{ getSauceOrder(sauceKey(sauce)) }}</span>
-        <span v-else class="kiosk-sauce-add">+</span>
+        <span v-else-if="!isSauceOos(sauce)" class="kiosk-sauce-add">+</span>
       </div>
     </div>
 
@@ -222,8 +229,20 @@ export default {
       if (this.sauceFilterAllowed(sauce)) return '';
       return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS read on sauce variation — backend may extend
+    // is_available to variations later; until then this is a no-op (default
+    // available). Defensive guard mirrors ItemComponent.vue POS pattern.
+    isSauceOos(sauce) {
+      if (!sauce) return false;
+      return sauce?.raw?.is_available === false;
+    },
+    sauceOosTooltip(sauce) {
+      if (!this.isSauceOos(sauce)) return '';
+      return sauce?.raw?.unavailable_reason || this.$t('pos.item_86_d');
+    },
     toggleSauce(sauce) {
       if (!this.sauceFilterAllowed(sauce)) return;
+      if (this.isSauceOos(sauce) && !this.localSelections[this.selectionKey(sauce)]) return;
       const key = this.sauceKey(sauce);
       const selKey = String(key);
       const newSelections = { ...this.localSelections };
@@ -335,6 +354,27 @@ export default {
   opacity: 0.42;
   filter: grayscale(0.3);
   cursor: not-allowed;
+}
+
+/* [HEAL-A 2026-05-08] OOS marker — extra/sauce in rupture stock */
+.kiosk-option-card.is-out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+.kiosk-extra-oos-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
+  color: var(--kiosk-primary, #E8001C);
+  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kiosk-sauce-media {

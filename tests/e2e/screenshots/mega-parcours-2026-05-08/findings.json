@@ -1,0 +1,507 @@
+[
+  {
+    "order": "PRE",
+    "step": 0,
+    "slug": "bypass-on",
+    "severity": "OK",
+    "note": "Bypass payment=true printing=true queue=database env=local",
+    "screenshot": "",
+    "cfg": {
+      "payment": true,
+      "printing": true,
+      "queue": "database",
+      "env": "local"
+    },
+    "ts": "2026-05-07T16:35:58.832Z"
+  },
+  {
+    "order": "pos-1",
+    "step": 11,
+    "slug": "no-events-created",
+    "severity": "P0",
+    "note": "Aucun domain_event créé après UI+API submit (status=422). Body={\"status\":false,\"message\":\"Article 363 indisponible pour cette branche (mega-kiosk-4).\"}",
+    "screenshot": "",
+    "apiSubmitResult": {
+      "status": 422,
+      "body": {
+        "status": false,
+        "message": "Article 363 indisponible pour cette branche (mega-kiosk-4)."
+      },
+      "error": null,
+      "quoteFetched": false,
+      "quoteStatus": 422
+    },
+    "ts": "2026-05-07T16:36:13.221Z"
+  },
+  {
+    "order": "pos-1",
+    "step": 12,
+    "slug": "kds-reception",
+    "severity": "P2",
+    "note": "KDS no match within 7s polling (websockets DOWN expected)",
+    "screenshot": "pos-1-kds-reception.png",
+    "ts": "2026-05-07T16:36:28.062Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 11,
+    "slug": "no-events",
+    "severity": "P0",
+    "note": "UI added=3, UI events=0, API status=422, new events after API=0",
+    "screenshot": "",
+    "ts": "2026-05-07T16:36:47.244Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 12,
+    "slug": "kds-reception",
+    "severity": "P2",
+    "note": "no KDS match (websockets DOWN expected)",
+    "screenshot": "pos-2-kds-reception.png",
+    "ts": "2026-05-07T16:37:01.948Z"
+  },
+  {
+    "order": "pos-3",
+    "step": 11,
+    "slug": "api-fallback-ok-tr",
+    "severity": "OK",
+    "note": "TR mode submit via API, status=201, new events=1",
+    "screenshot": "",
+    "apiResult": {
+      "status": 201,
+      "body": {
+        "data": {
+          "id": 234,
+          "order_serial_no": "070526234",
+          "queue_number": "A0008",
+          "token": null,
+          "subtotal": 6.5,
+          "discount": 0,
+          "total_tax": 20,
+          "total": 26.5,
+          "subtotal_currency_price": "6.50€",
+          "subtotal_without_tax_currency_price": "-13.50€",
+          "discount_currency_price": "0.00€",
+          "delivery_charge_currency_price": "0.00€",
+          "total_currency_price": "26.50€",
+          "total_tax_currency_price": "20.00€",
+          "order_type": 15,
+          "created_at": "2026-05-07T18:37:16+02:00",
+          "order_datetime": "06:37 PM, 07-05-2026",
+          "order_date": "07-05-2026",
+          "order_time": "06:37 PM",
+          "delivery_date": "07-05-2026",
+          "delivery_time": "06:37 PM - 06:37 PM",
+          "payment_method": null,
+          "payment_status": 5,
+          "payment_pending_counter": false,
+          "is_advance_order": 10,
+          "preparation_time": 15,
+          "status": 4,
+          "status_name": "Acceptée",
+          "reason": null,
+          "user": {
+            "id": 28,
+            "name": "Client Comptoir",
+            "first_name": "Client",
+            "last_name": "Comptoir",
+            "phone": null,
+            "email": "walkingcustomer@example.com",
+            "username": "client_comptoir",
+            "balance": "0.00",
+            "currency_balance": "0.00€",
+            "image": "http://localhost:8000/images/default/profile.png",
+            "role_id": null,
+            "country_code": "+33",
+            "create_date": "05-05-2026",
+            "update_date": "05-05-2026"
+          },
+          "order_address": null,
+          "branch": {
+            "id": 1,
+            "name": "Pfannerstill, Moore and Schmitt Branch",
+            "email": "kody21@kirlin.com",
+            "phone": "+1-954-654-5404",
+            "latitude": "-76.174049",
+            "longitude": "86.137836",
+            "city": "East Marielle",
+            "state": "Maine",
+            "zip_code": "41434",
+            "address": "10995 Erdman Valleys Suite 516",
+            "status": 1,
+            "zone": ""
+          },
+          "delivery_boy": null,
+          "coupon": null,
+          "transaction": null,
+          "order_items": [
+            {
+              "id": 221,
+              "order_id": 234,
+              "branch_id": 1,
+              "item_id": 363,
+              "item_name": "Tacos M (1 Viande)",
+              "item_image": "http://localhost:8000/storage/18/tacos.png",
+              "quantity": 1,
+              "discount": "0.00€",
+              "price": "6.50€",
+              "item_variations": [],
+              "item_extras": [
+                {
+                  "extra_id": 172,
+                  "quantity": 1,
+                  "extra_name": "Salade",
+                  "line_total": 0,
+                  "unit_price": 0
+                }
+              ],
+              "item_addons": [],
+              "composition_snapshot": {
+                "lines": [],
+                "addons": [],
+                "extras": [
+                  {
+                    "extra_id": 172,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                  }
+                ],
+                "captured_at": "2026-05-07T18:37:16+02:00",
+                "schema_version": 1
+              },
+              "allergens_snapshot": [],
+              "item_variation_currency_total": "0.00€",
+              "item_extra_currency_total": "0.00€",
+              "total_convert_price": 6.5,
+              "total_currency_price": "6.50€",
+              "instruction": null,
+              "kds_station": "none",
+              "tax_type": "EUR",
+              "tax_rate": "20.000000",
+              "tax_currency_rate": "20.00",
+              "tax_name": "TVA 65%",
+              "tax_currency_amount": "20.00€",
+              "total_without_tax_currency_price": "-13.50€"
+            }
+          ],
+          "table_name": null,
+          "pos_payment_method": 11,
+          "pos_payment_note": null,
+          "source": 15,
+          "pos_received_amount": null,
+          "pos_received_currency_amount": "0.00€",
+          "cash_back_amount": -26.5,
+          "cash_back_currency_amount": "-26.50€",
+          "tax_lines": [
+            {
+              "tax_name": "TVA 65%",
+              "tax_rate": "20",
+              "tax_type": 5,
+              "base_ht": 0,
+              "base_ht_currency": "0.00€",
+              "tax": 20,
+              "tax_currency": "20.00€"
+            }
+          ],
+          "fiscal_sequence_no": 7,
+          "audit_chain_fingerprint": null,
+          "pos_register_id": null,
+          "pos_siret": null,
+          "pos_vat_intra": null,
+          "pos_legal_footer": null,
+          "operator_name": "Client Comptoir",
+          "payments_breakdown": [
+            {
+              "method": 11,
+              "amount": 26.5,
+              "currency_amount": "26.50€",
+              "change_amount": 0,
+              "reference": null
+            }
+          ]
+        }
+      },
+      "error": null,
+      "quoteFetched": true,
+      "quoteStatus": 200
+    },
+    "ts": "2026-05-07T16:37:17.691Z"
+  },
+  {
+    "order": "pos-3",
+    "step": 12,
+    "slug": "kds-reception",
+    "severity": "P2",
+    "note": "no KDS match",
+    "screenshot": "pos-3-kds-reception.png",
+    "ts": "2026-05-07T16:37:32.391Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 1,
+    "slug": "toggle-off",
+    "severity": "OK",
+    "note": "Toggle OFF 363 status=200 ms=32",
+    "screenshot": "",
+    "toggleOff": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "mega-pos-4"
+      },
+      "error": null,
+      "ms": 32
+    },
+    "ts": "2026-05-07T16:37:33.508Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 3,
+    "slug": "pos-ui-blocks-oos",
+    "severity": "OK",
+    "note": "POS UI bloque tuile 363 (disabled/86badge présent)",
+    "screenshot": "pos-4-step-03-tile-after-oos.png",
+    "tileProbe": [
+      {
+        "text": "Sold outTacos M (1 Viande)6.50€",
+        "disabled": true,
+        "ariaDisabled": "true",
+        "classes": "pos-v5-tile pos-item-tile is-unavailable",
+        "hasUnavailableClass": true,
+        "has86Badge": true
+      }
+    ],
+    "ts": "2026-05-07T16:37:42.299Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 5,
+    "slug": "backend-other-status",
+    "severity": "P2",
+    "note": "Status=429, body={\"message\":\"Too Many Attempts.\"}",
+    "screenshot": "",
+    "submitOos": {
+      "status": 429,
+      "body": {
+        "message": "Too Many Attempts."
+      },
+      "error": null,
+      "quoteFetched": false,
+      "quoteStatus": 422
+    },
+    "ts": "2026-05-07T16:37:43.004Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 6,
+    "slug": "toggle-on",
+    "severity": "P1",
+    "note": "Re-toggle ON status=429",
+    "screenshot": "",
+    "toggleOn": {
+      "status": 429,
+      "body": {
+        "message": "Too Many Attempts."
+      },
+      "error": null,
+      "ms": 17
+    },
+    "ts": "2026-05-07T16:37:43.022Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 1,
+    "slug": "extra-off",
+    "severity": "OK",
+    "note": "Extra 172 toggled OFF: {\"ok\":true}",
+    "screenshot": "",
+    "ts": "2026-05-07T16:37:44.344Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 3,
+    "slug": "extra-oos-not-marked-ui",
+    "severity": "P1",
+    "note": "Wizard ouvre mais extra OOS non marqué visuellement. Caissier peut sélectionner extra indispo.",
+    "screenshot": "pos-5-step-03-wizard-with-oos-extra.png",
+    "extraOosProbe": {
+      "found": true,
+      "totalExtras": 16,
+      "oosMarkedCount": 0,
+      "oosSamples": []
+    },
+    "ts": "2026-05-07T16:37:54.313Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 4,
+    "slug": "submit-without-oos-extra",
+    "severity": "P1",
+    "note": "Commande sans extra OOS: status=422",
+    "screenshot": "",
+    "submitWithoutExtra": {
+      "status": 422,
+      "body": {
+        "status": false,
+        "message": "Article 363 indisponible pour cette branche (mega-pos-4)."
+      },
+      "error": null,
+      "quoteFetched": false,
+      "quoteStatus": 422
+    },
+    "ts": "2026-05-07T16:37:55.023Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 5,
+    "slug": "backend-rejects-oos-extra",
+    "severity": "OK",
+    "note": "Backend rejette 422 commande avec extra OOS",
+    "screenshot": "",
+    "submitWithOosExtra": {
+      "status": 422,
+      "body": {
+        "status": false,
+        "message": "Article 363 indisponible pour cette branche (mega-pos-4)."
+      },
+      "error": null,
+      "quoteFetched": false,
+      "quoteStatus": 422
+    },
+    "ts": "2026-05-07T16:37:55.202Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 6,
+    "slug": "extra-restored",
+    "severity": "OK",
+    "note": "Extra 172 restored",
+    "screenshot": "",
+    "ts": "2026-05-07T16:37:55.480Z"
+  },
+  {
+    "order": "kiosk-1",
+    "step": 10,
+    "slug": "kiosk-ui-flow-ok",
+    "severity": "OK",
+    "note": "Kiosk UI flow: products=1, cart count=7, events created=2",
+    "screenshot": "",
+    "newEvents": 2,
+    "ts": "2026-05-07T16:38:17.285Z"
+  },
+  {
+    "order": "kiosk-1",
+    "step": 11,
+    "slug": "kds-reception",
+    "severity": "P2",
+    "note": "no KDS match",
+    "screenshot": "kiosk-1-kds-reception.png",
+    "ts": "2026-05-07T16:38:32.044Z"
+  },
+  {
+    "order": "kiosk-2",
+    "step": 7,
+    "slug": "pending-counter-text-ok",
+    "severity": "OK",
+    "note": "Ticket affiche bien la mention paiement comptoir",
+    "screenshot": "kiosk-2-step-07-ticket-state.png",
+    "ts": "2026-05-07T16:38:49.286Z"
+  },
+  {
+    "order": "kiosk-2",
+    "step": 8,
+    "slug": "events-counter",
+    "severity": "OK",
+    "note": "Cash counter flow: 2 events created",
+    "screenshot": "",
+    "ts": "2026-05-07T16:38:49.551Z"
+  },
+  {
+    "order": "kiosk-3",
+    "step": 9,
+    "slug": "kiosk-multi-events",
+    "severity": "P1",
+    "note": "multi-add result: added=1, cart count=0, events=0",
+    "screenshot": "",
+    "ts": "2026-05-07T16:40:50.324Z"
+  },
+  {
+    "order": "PRE",
+    "step": 0,
+    "slug": "bypass-on",
+    "severity": "OK",
+    "note": "Bypass payment=true printing=true queue=database env=local",
+    "screenshot": "",
+    "cfg": {
+      "payment": true,
+      "printing": true,
+      "queue": "database",
+      "env": "local"
+    },
+    "ts": "2026-05-07T16:41:22.673Z"
+  },
+  {
+    "order": "kiosk-4",
+    "step": 1,
+    "slug": "toggle-off",
+    "severity": "OK",
+    "note": "Toggle 363 OFF status=200",
+    "screenshot": "",
+    "ts": "2026-05-07T16:41:24.325Z"
+  },
+  {
+    "order": "kiosk-4",
+    "step": 2,
+    "slug": "tacos-filtered-from-kiosk",
+    "severity": "INFO",
+    "note": "Item Tacos M absent du kiosk catalog (filtré pré-affichage). totalCards=1",
+    "screenshot": "kiosk-4-step-02-kiosk-cat-after-oos.png",
+    "tacosOnKioskProbe": {
+      "totalCards": 1,
+      "tacosMatches": 0,
+      "firstMatch": null
+    },
+    "ts": "2026-05-07T16:41:33.283Z"
+  },
+  {
+    "order": "kiosk-4",
+    "step": 4,
+    "slug": "toggle-on",
+    "severity": "OK",
+    "note": "Re-toggle ON",
+    "screenshot": "",
+    "ts": "2026-05-07T16:41:33.315Z"
+  },
+  {
+    "order": "kiosk-5",
+    "step": 1,
+    "slug": "extra-off-kiosk",
+    "severity": "OK",
+    "note": "Extra 172 OFF: {\"ok\":true}",
+    "screenshot": "",
+    "ts": "2026-05-07T16:41:34.707Z"
+  },
+  {
+    "order": "kiosk-5",
+    "step": 3,
+    "slug": "no-wizard-opened",
+    "severity": "INFO",
+    "note": "Aucun wizard kiosk ouvert (items direct-add). pCount=1",
+    "screenshot": "kiosk-5-step-03-wizard-or-cart.png",
+    "ts": "2026-05-07T16:41:45.209Z"
+  },
+  {
+    "order": "kiosk-5",
+    "step": 4,
+    "slug": "kiosk-extra-restored",
+    "severity": "OK",
+    "note": "Extra 172 restored",
+    "screenshot": "",
+    "ts": "2026-05-07T16:41:45.472Z"
+  }
+]

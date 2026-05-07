@@ -21,14 +21,15 @@
         class="kiosk-supplement-row"
         :class="{
           selected: supplementCount(supplement.id) > 0,
-          'is-selectable': supplementFilterAllowed(supplement) && supplementCount(supplement.id) === 0,
-          'kiosk-variation--disabled': !supplementFilterAllowed(supplement),
+          'is-selectable': supplementFilterAllowed(supplement) && !isSupplementOos(supplement) && supplementCount(supplement.id) === 0,
+          'kiosk-variation--disabled': !supplementFilterAllowed(supplement) || isSupplementOos(supplement),
+          'is-out-of-stock': isSupplementOos(supplement),
         }"
         role="group"
-        :tabindex="supplementFilterAllowed(supplement) ? 0 : -1"
-        :aria-disabled="supplementFilterAllowed(supplement) ? 'false' : 'true'"
+        :tabindex="(supplementFilterAllowed(supplement) && !isSupplementOos(supplement)) ? 0 : -1"
+        :aria-disabled="(supplementFilterAllowed(supplement) && !isSupplementOos(supplement)) ? 'false' : 'true'"
         :aria-label="`${$t('kiosk.wizard.supplement_qty_label', { name: supplement.name })} ${formatPrice(supplement.price)} ${supplementCount(supplement.id)}`"
-        :title="supplementFilterTooltip(supplement)"
+        :title="supplementOosTooltip(supplement) || supplementFilterTooltip(supplement)"
         @click="selectFromCard(supplement.id)"
         @keydown.enter.prevent="selectFromCard(supplement.id)"
         @keydown.space.prevent="selectFromCard(supplement.id)"
@@ -47,6 +48,12 @@
         <div class="kiosk-supplement-details">
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
           <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
+          <span
+            v-if="isSupplementOos(supplement)"
+            class="kiosk-extra-oos-badge"
+            data-testid="kiosk-extra-oos-badge"
+            :aria-label="$t('pos.item_86_d')"
+          >{{ $t('pos.item_86_d') }}</span>
         </div>
         <span class="kiosk-supplement-price">
           {{ formatPrice(supplement.price) }}
@@ -74,7 +81,7 @@
           <button
             type="button"
             class="kiosk-supplement-qty-btn active"
-            :disabled="!supplementFilterAllowed(supplement)"
+            :disabled="!supplementFilterAllowed(supplement) || isSupplementOos(supplement)"
             :aria-label="$t('kiosk.wizard.supplement_increase', { name: supplement.name })"
             @click="incrementSupplement(supplement.id)"
           >+</button>
@@ -130,6 +137,10 @@ export default {
         thumb: kioskResolveImageSrc(s.raw),
         emoji: this.getEmojiForSupplement(s.name),
         raw: s.raw,
+        // [HEAL-A 2026-05-08] Surface OOS state for UI marker — order can still
+        // pass; we only block selection of this specific row.
+        is_available: s.is_available !== false,
+        unavailable_reason: s.unavailable_reason || null,
       }));
     },
     totalPrice() {
@@ -183,9 +194,23 @@ export default {
       if (this.supplementFilterAllowed(supplement)) return '';
       return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS helpers — read snapshot is_available propagated
+    // by partitionKioskExtras. Order can still submit; only the row is locked.
+    isSupplementOos(supplement) {
+      if (!supplement) return false;
+      if (supplement.is_available === false) return true;
+      return supplement?.raw?.is_available === false;
+    },
+    supplementOosTooltip(supplement) {
+      if (!this.isSupplementOos(supplement)) return '';
+      return supplement?.unavailable_reason || supplement?.raw?.unavailable_reason || this.$t('pos.item_86_d');
+    },
     setSupplementCount(id, count) {
       const s = this.supplementList.find((x) => x.id === id);
-      if (s && !this.supplementFilterAllowed(s)) return;
+      if (s && (!this.supplementFilterAllowed(s) || this.isSupplementOos(s))) {
+        const isDecrement = this.normalizeCount(count) < this.supplementCount(id);
+        if (!isDecrement) return;
+      }
       const next = { ...this.localSelections };
       const normalizedCount = this.normalizeCount(count);
       if (normalizedCount > 0) next[id] = normalizedCount;
@@ -313,6 +338,28 @@ export default {
   opacity: 0.42;
   filter: grayscale(0.3);
   cursor: not-allowed;
+}
+
+/* [HEAL-A 2026-05-08] OOS marker — visual signal that this extra is in rupture
+ * stock. The order can still pass; this row alone is locked. */
+.kiosk-supplement-row.is-out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+.kiosk-extra-oos-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
+  color: var(--kiosk-primary, #E8001C);
+  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kiosk-supplement-row.selected {

@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-garnitures[data-v-c58a99e8] {\n  padding: 6px 18px 26px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-c58a99e8] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-garnitures-info[data-v-c58a99e8] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 5px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-c58a99e8] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-text-muted, #7d7d7d);\n  padding: 0;\n  border-radius: 50px;\n  font-size: 11px;\n  font-weight: 600;\n}\n.kiosk-info-text[data-v-c58a99e8] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n}\n.kiosk-garnitures-list[data-v-c58a99e8] {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 24px 18px;\n  max-width: 980px;\n  margin: 0 auto;\n}\n.kiosk-garniture-row[data-v-c58a99e8] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 8px;\n  min-height: 196px;\n  padding: 10px 10px 14px;\n  border-radius: 20px;\n  border: 1px solid transparent;\n  background: var(--kiosk-surface, #fff);\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  position: relative;\n}\n.kiosk-garniture-row[data-v-c58a99e8]:active { transform: scale(0.99);\n}\n.kiosk-garniture-row[data-v-c58a99e8]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-step-empty[data-v-c58a99e8] {\n  text-align: center;\n  padding: 40px 20px;\n  color: var(--kiosk-text-muted, #666);\n  font-size: 14px;\n}\n.kiosk-garniture-row.selected[data-v-c58a99e8] {\n  border-color: var(--kiosk-primary, #e8001c);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));\n  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(232,0,28,0.06));\n}\n.kiosk-garniture-row.kiosk-variation--disabled[data-v-c58a99e8] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n.kiosk-garniture-visual[data-v-c58a99e8] {\n  width: 118px;\n  height: 118px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  position: relative;\n}\n.kiosk-garniture-img[data-v-c58a99e8] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-garniture-emoji[data-v-c58a99e8] {\n  font-size: 44px;\n  width: 118px;\n  height: 118px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  border-radius: 50%;\n}\n.kiosk-garniture-strike[data-v-c58a99e8] {\n  position: absolute;\n  width: 130px;\n  height: 2px;\n  background: var(--kiosk-primary, rgba(199, 62, 79, 0.7));\n  transform: rotate(-38deg);\n  border-radius: 2px;\n}\n.kiosk-garniture-name[data-v-c58a99e8] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n  line-height: 1.2;\n  min-height: 30px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-garniture-status[data-v-c58a99e8] {\n  font-size: 11px;\n  font-weight: 700;\n  padding: 2px 0;\n  border-radius: 50px;\n  background: transparent;\n  color: var(--kiosk-text-muted, #999);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.kiosk-garniture-row.selected .kiosk-garniture-status[data-v-c58a99e8] {\n  color: var(--kiosk-primary, #d7263d);\n}\n.kiosk-garniture-action[data-v-c58a99e8] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: var(--kiosk-shadow-card, 0 3px 10px rgba(215,38,61,0.2));\n  outline: 2px solid rgba(255,255,255,0.85);\n}\n.kiosk-garniture-action.active[data-v-c58a99e8] {\n  font-size: 13px;\n  font-weight: 800;\n}\n.kiosk-garnitures-summary[data-v-c58a99e8] {\n  text-align: center;\n  margin-top: 16px;\n  font-size: 13px;\n  color: var(--kiosk-text-muted, #999);\n  font-weight: 500;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-garnitures[data-v-c58a99e8] {\n  padding: 6px 18px 26px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-c58a99e8] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-garnitures-info[data-v-c58a99e8] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 5px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-c58a99e8] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-text-muted, #7d7d7d);\n  padding: 0;\n  border-radius: 50px;\n  font-size: 11px;\n  font-weight: 600;\n}\n.kiosk-info-text[data-v-c58a99e8] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n}\n.kiosk-garnitures-list[data-v-c58a99e8] {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 24px 18px;\n  max-width: 980px;\n  margin: 0 auto;\n}\n.kiosk-garniture-row[data-v-c58a99e8] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 8px;\n  min-height: 196px;\n  padding: 10px 10px 14px;\n  border-radius: 20px;\n  border: 1px solid transparent;\n  background: var(--kiosk-surface, #fff);\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  position: relative;\n}\n.kiosk-garniture-row[data-v-c58a99e8]:active { transform: scale(0.99);\n}\n.kiosk-garniture-row[data-v-c58a99e8]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-step-empty[data-v-c58a99e8] {\n  text-align: center;\n  padding: 40px 20px;\n  color: var(--kiosk-text-muted, #666);\n  font-size: 14px;\n}\n.kiosk-garniture-row.selected[data-v-c58a99e8] {\n  border-color: var(--kiosk-primary, #e8001c);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));\n  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(232,0,28,0.06));\n}\n.kiosk-garniture-row.kiosk-variation--disabled[data-v-c58a99e8] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n\n/* [HEAL-A 2026-05-08] OOS marker — garniture in rupture stock */\n.kiosk-garniture-row.is-out-of-stock[data-v-c58a99e8] {\n  opacity: 0.5;\n  filter: grayscale(0.4);\n  cursor: not-allowed;\n}\n.kiosk-extra-oos-badge[data-v-c58a99e8] {\n  display: inline-block;\n  margin-top: 4px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));\n  color: var(--kiosk-primary, #E8001C);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));\n  font-size: 10px;\n  font-weight: 800;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kiosk-garniture-visual[data-v-c58a99e8] {\n  width: 118px;\n  height: 118px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  position: relative;\n}\n.kiosk-garniture-img[data-v-c58a99e8] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-garniture-emoji[data-v-c58a99e8] {\n  font-size: 44px;\n  width: 118px;\n  height: 118px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  border-radius: 50%;\n}\n.kiosk-garniture-strike[data-v-c58a99e8] {\n  position: absolute;\n  width: 130px;\n  height: 2px;\n  background: var(--kiosk-primary, rgba(199, 62, 79, 0.7));\n  transform: rotate(-38deg);\n  border-radius: 2px;\n}\n.kiosk-garniture-name[data-v-c58a99e8] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n  line-height: 1.2;\n  min-height: 30px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-garniture-status[data-v-c58a99e8] {\n  font-size: 11px;\n  font-weight: 700;\n  padding: 2px 0;\n  border-radius: 50px;\n  background: transparent;\n  color: var(--kiosk-text-muted, #999);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.kiosk-garniture-row.selected .kiosk-garniture-status[data-v-c58a99e8] {\n  color: var(--kiosk-primary, #d7263d);\n}\n.kiosk-garniture-action[data-v-c58a99e8] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: var(--kiosk-shadow-card, 0 3px 10px rgba(215,38,61,0.2));\n  outline: 2px solid rgba(255,255,255,0.85);\n}\n.kiosk-garniture-action.active[data-v-c58a99e8] {\n  font-size: 13px;\n  font-weight: 800;\n}\n.kiosk-garnitures-summary[data-v-c58a99e8] {\n  text-align: center;\n  margin-top: 16px;\n  font-size: 13px;\n  color: var(--kiosk-text-muted, #999);\n  font-weight: 500;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -109,7 +109,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-sauce[data-v-780b2e6e] {\n  padding: 6px 18px 26px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-780b2e6e] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 10px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-sauce-info[data-v-780b2e6e] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 5px;\n  margin-bottom: 14px;\n}\n.kiosk-sauce-badge[data-v-780b2e6e] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-text-muted, #7d7d7d);\n  padding: 0;\n  border-radius: 50px;\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n}\n.kiosk-sauce-extra[data-v-780b2e6e] {\n  font-size: 12px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 600;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  padding: 6px 12px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.12));\n}\n.kiosk-sauce-grid[data-v-780b2e6e] {\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n  gap: 24px 18px;\n  max-width: 1040px;\n  margin: 0 auto;\n}\n.kiosk-option-card[data-v-780b2e6e] {\n  min-height: 188px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, transparent);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 10px 10px 14px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-option-card[data-v-780b2e6e]:active { transform: scale(0.95);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — tactile cards are now role=checkbox. */\n.kiosk-option-card[data-v-780b2e6e]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-option-card.selected[data-v-780b2e6e] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-option-card.kiosk-variation--disabled[data-v-780b2e6e] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n.kiosk-sauce-media[data-v-780b2e6e] {\n  width: 112px;\n  height: 112px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 6px 0 12px;\n}\n.kiosk-sauce-thumb[data-v-780b2e6e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-sauce-emoji[data-v-780b2e6e] {\n  width: 112px;\n  height: 112px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 46px;\n  transition: transform 0.2s;\n}\n.kiosk-option-card.selected .kiosk-sauce-emoji[data-v-780b2e6e] { transform: scale(1.08);\n}\n.kiosk-sauce-name[data-v-780b2e6e] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #3f3f3f);\n  text-align: center;\n  line-height: 1.2;\n  text-transform: uppercase;\n  min-height: 30px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-sauce-price[data-v-780b2e6e] {\n  margin-top: 2px;\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text-muted, #222);\n}\n.kiosk-sauce-order[data-v-780b2e6e] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 12px;\n  font-weight: 800;\n  animation: popIn-780b2e6e 0.2s cubic-bezier(0.34,1.56,0.64,1);\n}\n.kiosk-sauce-add[data-v-780b2e6e] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: 0 3px 10px rgba(215,38,61,0.2);\n  outline: 2px solid rgba(255,255,255,0.85);\n}\n@keyframes popIn-780b2e6e {\nfrom { transform: scale(0);\n}\nto   { transform: scale(1);\n}\n}\n.kiosk-validation-hint[data-v-780b2e6e] {\n  text-align: center;\n  margin-top: 16px;\n  font-size: 13px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 600;\n  padding: 8px 14px;\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));\n  border-radius: 10px;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-sauce[data-v-780b2e6e] {\n  padding: 6px 18px 26px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-780b2e6e] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 10px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-sauce-info[data-v-780b2e6e] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 5px;\n  margin-bottom: 14px;\n}\n.kiosk-sauce-badge[data-v-780b2e6e] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-text-muted, #7d7d7d);\n  padding: 0;\n  border-radius: 50px;\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n}\n.kiosk-sauce-extra[data-v-780b2e6e] {\n  font-size: 12px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 600;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  padding: 6px 12px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.12));\n}\n.kiosk-sauce-grid[data-v-780b2e6e] {\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n  gap: 24px 18px;\n  max-width: 1040px;\n  margin: 0 auto;\n}\n.kiosk-option-card[data-v-780b2e6e] {\n  min-height: 188px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, transparent);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 10px 10px 14px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-option-card[data-v-780b2e6e]:active { transform: scale(0.95);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — tactile cards are now role=checkbox. */\n.kiosk-option-card[data-v-780b2e6e]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-option-card.selected[data-v-780b2e6e] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-option-card.kiosk-variation--disabled[data-v-780b2e6e] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n\n/* [HEAL-A 2026-05-08] OOS marker — extra/sauce in rupture stock */\n.kiosk-option-card.is-out-of-stock[data-v-780b2e6e] {\n  opacity: 0.5;\n  filter: grayscale(0.4);\n  cursor: not-allowed;\n}\n.kiosk-extra-oos-badge[data-v-780b2e6e] {\n  display: inline-block;\n  margin-top: 4px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));\n  color: var(--kiosk-primary, #E8001C);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));\n  font-size: 10px;\n  font-weight: 800;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kiosk-sauce-media[data-v-780b2e6e] {\n  width: 112px;\n  height: 112px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 6px 0 12px;\n}\n.kiosk-sauce-thumb[data-v-780b2e6e] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-sauce-emoji[data-v-780b2e6e] {\n  width: 112px;\n  height: 112px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 46px;\n  transition: transform 0.2s;\n}\n.kiosk-option-card.selected .kiosk-sauce-emoji[data-v-780b2e6e] { transform: scale(1.08);\n}\n.kiosk-sauce-name[data-v-780b2e6e] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #3f3f3f);\n  text-align: center;\n  line-height: 1.2;\n  text-transform: uppercase;\n  min-height: 30px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-sauce-price[data-v-780b2e6e] {\n  margin-top: 2px;\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text-muted, #222);\n}\n.kiosk-sauce-order[data-v-780b2e6e] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 12px;\n  font-weight: 800;\n  animation: popIn-780b2e6e 0.2s cubic-bezier(0.34,1.56,0.64,1);\n}\n.kiosk-sauce-add[data-v-780b2e6e] {\n  position: absolute;\n  top: 12px;\n  inset-inline-end: 22px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: 0 3px 10px rgba(215,38,61,0.2);\n  outline: 2px solid rgba(255,255,255,0.85);\n}\n@keyframes popIn-780b2e6e {\nfrom { transform: scale(0);\n}\nto   { transform: scale(1);\n}\n}\n.kiosk-validation-hint[data-v-780b2e6e] {\n  text-align: center;\n  margin-top: 16px;\n  font-size: 13px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 600;\n  padding: 8px 14px;\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));\n  border-radius: 10px;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -132,7 +132,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-supplements[data-v-5f8e5e58] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-5f8e5e58] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-supplements-info[data-v-5f8e5e58] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-5f8e5e58] {\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.2));\n  color: var(--kiosk-primary, #E8001C);\n  padding: 6px 16px;\n  border-radius: 50px;\n  font-size: 12px;\n  font-weight: 700;\n}\n.kiosk-supplements-price[data-v-5f8e5e58] {\n  font-size: 16px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));\n  padding: 4px 12px;\n  border-radius: 50px;\n}\n.kiosk-empty-state[data-v-5f8e5e58] {\n  text-align: center;\n  padding: 40px 24px;\n  color: var(--kiosk-text-muted, #999);\n}\n.kiosk-empty-emoji[data-v-5f8e5e58] {\n  font-size: 48px;\n  display: block;\n  margin-bottom: 12px;\n}\n.kiosk-empty-state p[data-v-5f8e5e58] { font-size: 15px;\n}\n.kiosk-supplements-list[data-v-5f8e5e58] {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 22px 18px;\n  max-width: 860px;\n  margin: 0 auto;\n}\n.kiosk-supplement-row[data-v-5f8e5e58] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 8px;\n  min-height: 228px;\n  padding: 14px 12px 16px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  position: relative;\n}\n.kiosk-supplement-row[data-v-5f8e5e58]:active { transform: scale(0.99);\n}\n.kiosk-supplement-row[data-v-5f8e5e58]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-supplement-row.selected[data-v-5f8e5e58] {\n  border: 2px solid var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.05));\n  box-shadow: 0 0 0 3px var(--kiosk-primary-light, rgba(232, 0, 28, 0.1)), var(--kiosk-shadow-card, none);\n}\n.kiosk-supplement-row.kiosk-variation--disabled[data-v-5f8e5e58] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n.kiosk-supplement-row.selected[data-v-5f8e5e58] {\n  cursor: default;\n}\n.kiosk-supplement-visual[data-v-5f8e5e58] {\n  width: 126px;\n  height: 126px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-supplement-img[data-v-5f8e5e58] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-supplement-emoji[data-v-5f8e5e58] {\n  font-size: 46px;\n  width: 126px;\n  height: 126px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  border-radius: 50%;\n}\n.kiosk-supplement-details[data-v-5f8e5e58] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  align-items: center;\n}\n.kiosk-supplement-name[data-v-5f8e5e58] {\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n  line-height: 1.15;\n}\n.kiosk-supplement-desc[data-v-5f8e5e58] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n  text-align: center;\n}\n.kiosk-supplement-price[data-v-5f8e5e58] {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  font-size: 14px;\n  font-weight: 800;\n  color: var(--kiosk-text, #222);\n}\n.kiosk-supplement-multiplier[data-v-5f8e5e58] {\n  min-width: 34px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  font-size: 12px;\n}\n.kiosk-supplement-qty[data-v-5f8e5e58] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  margin-top: auto;\n  padding: 6px;\n  border-radius: 999px;\n  background: var(--kiosk-surface-alt, #f5f5f6);\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-supplement-select-hint[data-v-5f8e5e58] {\n  min-height: 44px;\n  min-width: 132px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: auto;\n  padding: 0 16px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));\n  font-size: 12px;\n  font-weight: 900;\n  text-transform: uppercase;\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58] {\n  width: 38px;\n  height: 38px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border-strong, #d8d8d8);\n  background: var(--kiosk-surface, #fff);\n  color: var(--kiosk-text-muted, #777);\n  font-size: 22px;\n  line-height: 1;\n  font-weight: 800;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  touch-action: manipulation;\n}\n.kiosk-supplement-qty-btn.active[data-v-5f8e5e58] {\n  border-color: var(--kiosk-primary, #e8001c);\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(232,0,28,0.24));\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58]:disabled {\n  opacity: 0.46;\n  cursor: not-allowed;\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-supplement-qty-value[data-v-5f8e5e58] {\n  min-width: 28px;\n  text-align: center;\n  font-size: 18px;\n  font-weight: 900;\n  color: var(--kiosk-text, #222);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-supplements[data-v-5f8e5e58] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-5f8e5e58] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-supplements-info[data-v-5f8e5e58] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-5f8e5e58] {\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.2));\n  color: var(--kiosk-primary, #E8001C);\n  padding: 6px 16px;\n  border-radius: 50px;\n  font-size: 12px;\n  font-weight: 700;\n}\n.kiosk-supplements-price[data-v-5f8e5e58] {\n  font-size: 16px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));\n  padding: 4px 12px;\n  border-radius: 50px;\n}\n.kiosk-empty-state[data-v-5f8e5e58] {\n  text-align: center;\n  padding: 40px 24px;\n  color: var(--kiosk-text-muted, #999);\n}\n.kiosk-empty-emoji[data-v-5f8e5e58] {\n  font-size: 48px;\n  display: block;\n  margin-bottom: 12px;\n}\n.kiosk-empty-state p[data-v-5f8e5e58] { font-size: 15px;\n}\n.kiosk-supplements-list[data-v-5f8e5e58] {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 22px 18px;\n  max-width: 860px;\n  margin: 0 auto;\n}\n.kiosk-supplement-row[data-v-5f8e5e58] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 8px;\n  min-height: 228px;\n  padding: 14px 12px 16px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  position: relative;\n}\n.kiosk-supplement-row[data-v-5f8e5e58]:active { transform: scale(0.99);\n}\n.kiosk-supplement-row[data-v-5f8e5e58]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-supplement-row.selected[data-v-5f8e5e58] {\n  border: 2px solid var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.05));\n  box-shadow: 0 0 0 3px var(--kiosk-primary-light, rgba(232, 0, 28, 0.1)), var(--kiosk-shadow-card, none);\n}\n.kiosk-supplement-row.kiosk-variation--disabled[data-v-5f8e5e58] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n\n/* [HEAL-A 2026-05-08] OOS marker — visual signal that this extra is in rupture\n * stock. The order can still pass; this row alone is locked. */\n.kiosk-supplement-row.is-out-of-stock[data-v-5f8e5e58] {\n  opacity: 0.5;\n  filter: grayscale(0.4);\n  cursor: not-allowed;\n}\n.kiosk-extra-oos-badge[data-v-5f8e5e58] {\n  display: inline-block;\n  margin-top: 2px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));\n  color: var(--kiosk-primary, #E8001C);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));\n  font-size: 10px;\n  font-weight: 800;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kiosk-supplement-row.selected[data-v-5f8e5e58] {\n  cursor: default;\n}\n.kiosk-supplement-visual[data-v-5f8e5e58] {\n  width: 126px;\n  height: 126px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-supplement-img[data-v-5f8e5e58] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-supplement-emoji[data-v-5f8e5e58] {\n  font-size: 46px;\n  width: 126px;\n  height: 126px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  border-radius: 50%;\n}\n.kiosk-supplement-details[data-v-5f8e5e58] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  align-items: center;\n}\n.kiosk-supplement-name[data-v-5f8e5e58] {\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n  line-height: 1.15;\n}\n.kiosk-supplement-desc[data-v-5f8e5e58] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n  text-align: center;\n}\n.kiosk-supplement-price[data-v-5f8e5e58] {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  font-size: 14px;\n  font-weight: 800;\n  color: var(--kiosk-text, #222);\n}\n.kiosk-supplement-multiplier[data-v-5f8e5e58] {\n  min-width: 34px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  font-size: 12px;\n}\n.kiosk-supplement-qty[data-v-5f8e5e58] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  margin-top: auto;\n  padding: 6px;\n  border-radius: 999px;\n  background: var(--kiosk-surface-alt, #f5f5f6);\n  border: 1px solid var(--kiosk-border, #ececec);\n}\n.kiosk-supplement-select-hint[data-v-5f8e5e58] {\n  min-height: 44px;\n  min-width: 132px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: auto;\n  padding: 0 16px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));\n  font-size: 12px;\n  font-weight: 900;\n  text-transform: uppercase;\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58] {\n  width: 38px;\n  height: 38px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border-strong, #d8d8d8);\n  background: var(--kiosk-surface, #fff);\n  color: var(--kiosk-text-muted, #777);\n  font-size: 22px;\n  line-height: 1;\n  font-weight: 800;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  touch-action: manipulation;\n}\n.kiosk-supplement-qty-btn.active[data-v-5f8e5e58] {\n  border-color: var(--kiosk-primary, #e8001c);\n  background: var(--kiosk-primary, #e8001c);\n  color: var(--kiosk-text-on-red, #fff);\n  box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(232,0,28,0.24));\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58]:disabled {\n  opacity: 0.46;\n  cursor: not-allowed;\n}\n.kiosk-supplement-qty-btn[data-v-5f8e5e58]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-supplement-qty-value[data-v-5f8e5e58] {\n  min-width: 28px;\n  text-align: center;\n  font-size: 18px;\n  font-weight: 900;\n  color: var(--kiosk-text, #222);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -178,7 +178,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-viande[data-v-1cf2e852] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-1cf2e852] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-viande-counter[data-v-1cf2e852] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  margin-bottom: 8px;\n}\n.kiosk-viande-instruction[data-v-1cf2e852] {\n  max-width: 720px;\n  margin: 0 auto 16px;\n  padding: 10px 16px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border, rgba(255,255,255,0.14));\n  background: var(--kiosk-surface-alt, rgba(255,255,255,0.06));\n  color: var(--kiosk-text-muted, #d4d4d8);\n  font-size: 13px;\n  font-weight: 800;\n  line-height: 1.25;\n  text-align: center;\n  text-wrap: balance;\n}\n.kiosk-counter-badge[data-v-1cf2e852] {\n  background: var(--kiosk-surface-alt, #F7F7F8);\n  border: 2px solid var(--kiosk-border, #E0E0E0);\n  padding: 8px 24px;\n  border-radius: 50px;\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--kiosk-text-muted, #555);\n  transition:\n    background-color 0.25s ease,\n    border-color 0.25s ease,\n    color 0.25s ease;\n}\n.kiosk-counter-badge.complete[data-v-1cf2e852] {\n  background: rgba(34,197,94,0.14);\n  border-color: var(--kiosk-success, #27ae60);\n  color: var(--kiosk-success, #27ae60);\n}\n.kiosk-complete-badge[data-v-1cf2e852] {\n  font-size: 14px;\n  font-weight: 700;\n  color: var(--kiosk-success, #27ae60);\n}\n.kiosk-paid-badge[data-v-1cf2e852] {\n  font-size: 13px;\n  font-weight: 800;\n  color: var(--kiosk-warning, #F59E0B);\n  padding: 7px 12px;\n  border-radius: 999px;\n  background: rgba(245, 158, 11, 0.14);\n  border: 1px solid rgba(245, 158, 11, 0.28);\n}\n.kiosk-viande-grid[data-v-1cf2e852] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 14px 18px;\n  max-width: 900px;\n  margin: 0 auto;\n}\n.kiosk-viande-card[data-v-1cf2e852] {\n  display: grid;\n  grid-template-columns: 116px minmax(0, 1fr);\n  grid-template-rows: auto auto auto;\n  align-items: center;\n  justify-content: initial;\n  -moz-column-gap: 16px;\n       column-gap: 16px;\n  row-gap: 8px;\n  min-height: 138px;\n  padding: 14px 18px;\n  border-radius: 22px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background:\n    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,245,0.98));\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  cursor: pointer;\n  touch-action: manipulation;\n  position: relative;\n}\n.kiosk-viande-card[data-v-1cf2e852]:active { transform: scale(0.97);\n}\n.kiosk-viande-card[data-v-1cf2e852]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-viande-card.is-paid[data-v-1cf2e852] {\n  border-color: rgba(245, 158, 11, 0.34);\n}\n.kiosk-viande-badge-paid[data-v-1cf2e852] {\n  position: absolute;\n  top: 10px;\n  inset-inline-end: 12px;\n  background: var(--kiosk-warning, #E86B00);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 11px;\n  font-weight: 800;\n  padding: 3px 8px;\n  border-radius: 20px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 6px rgba(232, 107, 0, 0.25);\n  z-index: 1;\n}\n.kiosk-step-empty[data-v-1cf2e852] {\n  text-align: center;\n  padding: 40px 20px;\n  color: var(--kiosk-text-muted, #666);\n  font-size: 14px;\n}\n.kiosk-viande-card.active[data-v-1cf2e852] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background:\n    linear-gradient(180deg, rgba(255,255,255,1), rgba(255,245,247,0.98));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-viande-card.is-selectable[data-v-1cf2e852]::after {\n  content: '';\n  position: absolute;\n  inset: 8px;\n  border-radius: 16px;\n  border: 1px solid transparent;\n  pointer-events: none;\n}\n.kiosk-viande-visual[data-v-1cf2e852] {\n  grid-row: 1 / 4;\n  width: 110px;\n  height: 96px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n  border-radius: 18px;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-viande-img[data-v-1cf2e852] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-viande-emoji[data-v-1cf2e852] {\n  width: 100%;\n  height: 100%;\n  border-radius: 18px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 44px;\n  line-height: 1;\n}\n.kiosk-viande-name[data-v-1cf2e852] {\n  justify-self: start;\n  align-self: end;\n  font-size: 16px;\n  font-weight: 950;\n  color: var(--kiosk-text, #444);\n  text-align: start;\n  margin: 0;\n  line-height: 1.12;\n  text-transform: uppercase;\n  overflow-wrap: anywhere;\n}\n.kiosk-viande-card.active .kiosk-viande-name[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-viande-meta[data-v-1cf2e852] {\n  justify-self: start;\n  min-height: 24px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n  padding: 4px 10px;\n  border-radius: 999px;\n  background: rgba(232,0,28,0.09);\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid rgba(232,0,28,0.12);\n  font-size: 11px;\n  font-weight: 900;\n  line-height: 1;\n  text-transform: uppercase;\n}\n.kiosk-viande-meta.is-selected[data-v-1cf2e852] {\n  background: rgba(34,197,94,0.12);\n  color: var(--kiosk-success, #27ae60);\n  border-color: rgba(34,197,94,0.16);\n  font-size: 11px;\n  font-weight: 900;\n  line-height: 1;\n  text-transform: uppercase;\n}\n.kiosk-viande-meta.is-paid[data-v-1cf2e852] {\n  background: rgba(245, 158, 11, 0.14);\n  color: var(--kiosk-warning, #F59E0B);\n}\n.kiosk-viande-card.kiosk-variation--disabled[data-v-1cf2e852] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n.kiosk-viande-controls[data-v-1cf2e852] {\n  justify-self: start;\n  display: flex;\n  align-items: center;\n  gap: 0;\n  background: var(--kiosk-surface-alt, #F7F7F8);\n  border: 1.5px solid var(--kiosk-border, #E0E0E0);\n  border-radius: 14px;\n  overflow: hidden;\n  margin-top: 0;\n}\n.kiosk-viande-select-hint[data-v-1cf2e852] {\n  justify-self: start;\n  min-height: 44px;\n  min-width: 132px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: 0;\n  padding: 0 16px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));\n  font-size: 12px;\n  font-weight: 900;\n  text-transform: uppercase;\n}\n.kiosk-viande-card.active .kiosk-viande-controls[data-v-1cf2e852] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.04));\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852] {\n  width: 44px;\n  height: 44px;\n  border: none;\n  background: transparent;\n  color: var(--kiosk-text-muted, #999);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  touch-action: manipulation;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition:\n    background-color 0.15s ease,\n    color 0.15s ease,\n    transform 0.15s ease;\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:active:not(:disabled) {\n  background: rgba(0,0,0,0.05);\n  color: var(--kiosk-text, #1A1A1A);\n}\n.kiosk-viande-qty-btn.plus[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-viande-qty-btn.plus[data-v-1cf2e852]:active:not(:disabled) {\n  background: var(--kiosk-primary, #E8001C);\n  color: var(--kiosk-text-on-red, #fff);\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:disabled {\n  color: var(--kiosk-text-mute, #b0b0b0);\n  cursor: not-allowed;\n}\n.kiosk-viande-qty-value[data-v-1cf2e852] {\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--kiosk-text, #1A1A1A);\n  min-width: 36px;\n  text-align: center;\n}\n.kiosk-viande-card.active .kiosk-viande-qty-value[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-validation-hint[data-v-1cf2e852] {\n  text-align: center;\n  margin-top: 20px;\n  font-size: 14px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 500;\n  padding: 10px 20px;\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));\n  border-radius: 10px;\n}\n@media (max-width: 760px) {\n.kiosk-viande-grid[data-v-1cf2e852] {\n    grid-template-columns: 1fr;\n}\n.kiosk-viande-card[data-v-1cf2e852] {\n    grid-template-columns: 96px minmax(0, 1fr);\n}\n.kiosk-viande-visual[data-v-1cf2e852] {\n    width: 92px;\n    height: 82px;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-viande[data-v-1cf2e852] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-1cf2e852] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-viande-counter[data-v-1cf2e852] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  margin-bottom: 8px;\n}\n.kiosk-viande-instruction[data-v-1cf2e852] {\n  max-width: 720px;\n  margin: 0 auto 16px;\n  padding: 10px 16px;\n  border-radius: 999px;\n  border: 1px solid var(--kiosk-border, rgba(255,255,255,0.14));\n  background: var(--kiosk-surface-alt, rgba(255,255,255,0.06));\n  color: var(--kiosk-text-muted, #d4d4d8);\n  font-size: 13px;\n  font-weight: 800;\n  line-height: 1.25;\n  text-align: center;\n  text-wrap: balance;\n}\n.kiosk-counter-badge[data-v-1cf2e852] {\n  background: var(--kiosk-surface-alt, #F7F7F8);\n  border: 2px solid var(--kiosk-border, #E0E0E0);\n  padding: 8px 24px;\n  border-radius: 50px;\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--kiosk-text-muted, #555);\n  transition:\n    background-color 0.25s ease,\n    border-color 0.25s ease,\n    color 0.25s ease;\n}\n.kiosk-counter-badge.complete[data-v-1cf2e852] {\n  background: rgba(34,197,94,0.14);\n  border-color: var(--kiosk-success, #27ae60);\n  color: var(--kiosk-success, #27ae60);\n}\n.kiosk-complete-badge[data-v-1cf2e852] {\n  font-size: 14px;\n  font-weight: 700;\n  color: var(--kiosk-success, #27ae60);\n}\n.kiosk-paid-badge[data-v-1cf2e852] {\n  font-size: 13px;\n  font-weight: 800;\n  color: var(--kiosk-warning, #F59E0B);\n  padding: 7px 12px;\n  border-radius: 999px;\n  background: rgba(245, 158, 11, 0.14);\n  border: 1px solid rgba(245, 158, 11, 0.28);\n}\n.kiosk-viande-grid[data-v-1cf2e852] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 14px 18px;\n  max-width: 900px;\n  margin: 0 auto;\n}\n.kiosk-viande-card[data-v-1cf2e852] {\n  display: grid;\n  grid-template-columns: 116px minmax(0, 1fr);\n  grid-template-rows: auto auto auto;\n  align-items: center;\n  justify-content: initial;\n  -moz-column-gap: 16px;\n       column-gap: 16px;\n  row-gap: 8px;\n  min-height: 138px;\n  padding: 14px 18px;\n  border-radius: 22px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background:\n    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,245,0.98));\n  transition:\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease,\n    transform 0.18s ease;\n  cursor: pointer;\n  touch-action: manipulation;\n  position: relative;\n}\n.kiosk-viande-card[data-v-1cf2e852]:active { transform: scale(0.97);\n}\n.kiosk-viande-card[data-v-1cf2e852]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-viande-card.is-paid[data-v-1cf2e852] {\n  border-color: rgba(245, 158, 11, 0.34);\n}\n.kiosk-viande-badge-paid[data-v-1cf2e852] {\n  position: absolute;\n  top: 10px;\n  inset-inline-end: 12px;\n  background: var(--kiosk-warning, #E86B00);\n  color: var(--kiosk-text-on-red, #fff);\n  font-size: 11px;\n  font-weight: 800;\n  padding: 3px 8px;\n  border-radius: 20px;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 6px rgba(232, 107, 0, 0.25);\n  z-index: 1;\n}\n.kiosk-step-empty[data-v-1cf2e852] {\n  text-align: center;\n  padding: 40px 20px;\n  color: var(--kiosk-text-muted, #666);\n  font-size: 14px;\n}\n.kiosk-viande-card.active[data-v-1cf2e852] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background:\n    linear-gradient(180deg, rgba(255,255,255,1), rgba(255,245,247,0.98));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-viande-card.is-selectable[data-v-1cf2e852]::after {\n  content: '';\n  position: absolute;\n  inset: 8px;\n  border-radius: 16px;\n  border: 1px solid transparent;\n  pointer-events: none;\n}\n.kiosk-viande-visual[data-v-1cf2e852] {\n  grid-row: 1 / 4;\n  width: 110px;\n  height: 96px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n  border-radius: 18px;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n}\n.kiosk-viande-img[data-v-1cf2e852] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-viande-emoji[data-v-1cf2e852] {\n  width: 100%;\n  height: 100%;\n  border-radius: 18px;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 44px;\n  line-height: 1;\n}\n.kiosk-viande-name[data-v-1cf2e852] {\n  justify-self: start;\n  align-self: end;\n  font-size: 16px;\n  font-weight: 950;\n  color: var(--kiosk-text, #444);\n  text-align: start;\n  margin: 0;\n  line-height: 1.12;\n  text-transform: uppercase;\n  overflow-wrap: anywhere;\n}\n.kiosk-viande-card.active .kiosk-viande-name[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-viande-meta[data-v-1cf2e852] {\n  justify-self: start;\n  min-height: 24px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n  padding: 4px 10px;\n  border-radius: 999px;\n  background: rgba(232,0,28,0.09);\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid rgba(232,0,28,0.12);\n  font-size: 11px;\n  font-weight: 900;\n  line-height: 1;\n  text-transform: uppercase;\n}\n.kiosk-viande-meta.is-selected[data-v-1cf2e852] {\n  background: rgba(34,197,94,0.12);\n  color: var(--kiosk-success, #27ae60);\n  border-color: rgba(34,197,94,0.16);\n  font-size: 11px;\n  font-weight: 900;\n  line-height: 1;\n  text-transform: uppercase;\n}\n.kiosk-viande-meta.is-paid[data-v-1cf2e852] {\n  background: rgba(245, 158, 11, 0.14);\n  color: var(--kiosk-warning, #F59E0B);\n}\n.kiosk-viande-card.kiosk-variation--disabled[data-v-1cf2e852] {\n  opacity: 0.42;\n  filter: grayscale(0.3);\n  cursor: not-allowed;\n}\n\n/* [HEAL-A 2026-05-08] OOS marker — viande in rupture stock */\n.kiosk-viande-card.is-out-of-stock[data-v-1cf2e852] {\n  opacity: 0.5;\n  filter: grayscale(0.4);\n  cursor: not-allowed;\n}\n.kiosk-extra-oos-badge[data-v-1cf2e852] {\n  display: inline-block;\n  margin-top: 4px;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));\n  color: var(--kiosk-primary, #E8001C);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));\n  font-size: 10px;\n  font-weight: 800;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kiosk-viande-controls[data-v-1cf2e852] {\n  justify-self: start;\n  display: flex;\n  align-items: center;\n  gap: 0;\n  background: var(--kiosk-surface-alt, #F7F7F8);\n  border: 1.5px solid var(--kiosk-border, #E0E0E0);\n  border-radius: 14px;\n  overflow: hidden;\n  margin-top: 0;\n}\n.kiosk-viande-select-hint[data-v-1cf2e852] {\n  justify-self: start;\n  min-height: 44px;\n  min-width: 132px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: 0;\n  padding: 0 16px;\n  border-radius: 999px;\n  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));\n  color: var(--kiosk-primary, #e8001c);\n  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));\n  font-size: 12px;\n  font-weight: 900;\n  text-transform: uppercase;\n}\n.kiosk-viande-card.active .kiosk-viande-controls[data-v-1cf2e852] {\n  border-color: var(--kiosk-primary, #E8001C);\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.04));\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852] {\n  width: 44px;\n  height: 44px;\n  border: none;\n  background: transparent;\n  color: var(--kiosk-text-muted, #999);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  touch-action: manipulation;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition:\n    background-color 0.15s ease,\n    color 0.15s ease,\n    transform 0.15s ease;\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:focus-visible {\n  outline: 3px solid rgba(232, 0, 28, 0.55);\n  outline-offset: 2px;\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:active:not(:disabled) {\n  background: rgba(0,0,0,0.05);\n  color: var(--kiosk-text, #1A1A1A);\n}\n.kiosk-viande-qty-btn.plus[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-viande-qty-btn.plus[data-v-1cf2e852]:active:not(:disabled) {\n  background: var(--kiosk-primary, #E8001C);\n  color: var(--kiosk-text-on-red, #fff);\n}\n.kiosk-viande-qty-btn[data-v-1cf2e852]:disabled {\n  color: var(--kiosk-text-mute, #b0b0b0);\n  cursor: not-allowed;\n}\n.kiosk-viande-qty-value[data-v-1cf2e852] {\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--kiosk-text, #1A1A1A);\n  min-width: 36px;\n  text-align: center;\n}\n.kiosk-viande-card.active .kiosk-viande-qty-value[data-v-1cf2e852] { color: var(--kiosk-primary, #E8001C);\n}\n.kiosk-validation-hint[data-v-1cf2e852] {\n  text-align: center;\n  margin-top: 20px;\n  font-size: 14px;\n  color: var(--kiosk-primary, #E8001C);\n  font-weight: 500;\n  padding: 10px 20px;\n  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));\n  border-radius: 10px;\n}\n@media (max-width: 760px) {\n.kiosk-viande-grid[data-v-1cf2e852] {\n    grid-template-columns: 1fr;\n}\n.kiosk-viande-card[data-v-1cf2e852] {\n    grid-template-columns: 96px minmax(0, 1fr);\n}\n.kiosk-viande-visual[data-v-1cf2e852] {\n    width: 92px;\n    height: 82px;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -275,7 +275,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           name: g.name,
           displayThumb: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__.kioskResolveImageSrc)(g.raw),
           emoji: _this2.getEmojiForGarniture(g.name),
-          raw: g.raw
+          raw: g.raw,
+          // [HEAL-A 2026-05-08] OOS state propagated from partitionKioskExtras
+          is_available: g.is_available !== false,
+          unavailable_reason: g.unavailable_reason || null
         };
       });
     }
@@ -311,11 +314,25 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         return _this3.$t("kiosk.filters.".concat(f));
       }).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS read on garniture extra (free).
+    isGarnitureOos: function isGarnitureOos(garniture) {
+      var _garniture$raw;
+      if (!garniture) return false;
+      if (garniture.is_available === false) return true;
+      return (garniture === null || garniture === void 0 || (_garniture$raw = garniture.raw) === null || _garniture$raw === void 0 ? void 0 : _garniture$raw.is_available) === false;
+    },
+    garnitureOosTooltip: function garnitureOosTooltip(garniture) {
+      var _garniture$raw2;
+      if (!this.isGarnitureOos(garniture)) return '';
+      return (garniture === null || garniture === void 0 ? void 0 : garniture.unavailable_reason) || (garniture === null || garniture === void 0 || (_garniture$raw2 = garniture.raw) === null || _garniture$raw2 === void 0 ? void 0 : _garniture$raw2.unavailable_reason) || this.$t('pos.item_86_d');
+    },
     toggleGarniture: function toggleGarniture(id) {
       var g = this.garnitureList.find(function (x) {
         return x.id === id;
       });
       if (g && !this.garnitureFilterAllowed(g)) return;
+      // OOS lock: allow remove (toggle off if currently on), block adding
+      if (g && this.isGarnitureOos(g) && !this.localSelections[id]) return;
       this.userInteracted = true;
       var newSelections = _objectSpread({}, this.localSelections);
       newSelections[id] = !newSelections[id];
@@ -1168,8 +1185,22 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         return _this2.$t("kiosk.filters.".concat(f));
       }).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS read on sauce variation — backend may extend
+    // is_available to variations later; until then this is a no-op (default
+    // available). Defensive guard mirrors ItemComponent.vue POS pattern.
+    isSauceOos: function isSauceOos(sauce) {
+      var _sauce$raw;
+      if (!sauce) return false;
+      return (sauce === null || sauce === void 0 || (_sauce$raw = sauce.raw) === null || _sauce$raw === void 0 ? void 0 : _sauce$raw.is_available) === false;
+    },
+    sauceOosTooltip: function sauceOosTooltip(sauce) {
+      var _sauce$raw2;
+      if (!this.isSauceOos(sauce)) return '';
+      return (sauce === null || sauce === void 0 || (_sauce$raw2 = sauce.raw) === null || _sauce$raw2 === void 0 ? void 0 : _sauce$raw2.unavailable_reason) || this.$t('pos.item_86_d');
+    },
     toggleSauce: function toggleSauce(sauce) {
       if (!this.sauceFilterAllowed(sauce)) return;
+      if (this.isSauceOos(sauce) && !this.localSelections[this.selectionKey(sauce)]) return;
       var key = this.sauceKey(sauce);
       var selKey = String(key);
       var newSelections = _objectSpread({}, this.localSelections);
@@ -1268,7 +1299,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           description: ((_s$raw = s.raw) === null || _s$raw === void 0 ? void 0 : _s$raw.description) || '',
           thumb: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__.kioskResolveImageSrc)(s.raw),
           emoji: _this.getEmojiForSupplement(s.name),
-          raw: s.raw
+          raw: s.raw,
+          // [HEAL-A 2026-05-08] Surface OOS state for UI marker — order can still
+          // pass; we only block selection of this specific row.
+          is_available: s.is_available !== false,
+          unavailable_reason: s.unavailable_reason || null
         };
       });
     },
@@ -1333,11 +1368,27 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         return _this4.$t("kiosk.filters.".concat(f));
       }).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS helpers — read snapshot is_available propagated
+    // by partitionKioskExtras. Order can still submit; only the row is locked.
+    isSupplementOos: function isSupplementOos(supplement) {
+      var _supplement$raw;
+      if (!supplement) return false;
+      if (supplement.is_available === false) return true;
+      return (supplement === null || supplement === void 0 || (_supplement$raw = supplement.raw) === null || _supplement$raw === void 0 ? void 0 : _supplement$raw.is_available) === false;
+    },
+    supplementOosTooltip: function supplementOosTooltip(supplement) {
+      var _supplement$raw2;
+      if (!this.isSupplementOos(supplement)) return '';
+      return (supplement === null || supplement === void 0 ? void 0 : supplement.unavailable_reason) || (supplement === null || supplement === void 0 || (_supplement$raw2 = supplement.raw) === null || _supplement$raw2 === void 0 ? void 0 : _supplement$raw2.unavailable_reason) || this.$t('pos.item_86_d');
+    },
     setSupplementCount: function setSupplementCount(id, count) {
       var s = this.supplementList.find(function (x) {
         return x.id === id;
       });
-      if (s && !this.supplementFilterAllowed(s)) return;
+      if (s && (!this.supplementFilterAllowed(s) || this.isSupplementOos(s))) {
+        var isDecrement = this.normalizeCount(count) < this.supplementCount(id);
+        if (!isDecrement) return;
+      }
       var next = _objectSpread({}, this.localSelections);
       var normalizedCount = this.normalizeCount(count);
       if (normalizedCount > 0) next[id] = normalizedCount;else delete next[id];
@@ -1713,11 +1764,24 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     canIncrement: function canIncrement(viande) {
       if (!viande || !this.variationFilterAllowed(viande)) return false;
+      // [HEAL-A 2026-05-08] Block adding an OOS viande (rupture). Decrement
+      // remains possible elsewhere via decrement() so client can correct.
+      if (this.isViandeOos(viande)) return false;
       var current = this.localSelections[viande.key] || 0;
       if (this.isPaidViande(viande) && this.hasIncludedViandeOptions) {
         return current < 9;
       }
       return this.includedQuotaSelected < this.maxViandes;
+    },
+    // [HEAL-A 2026-05-08] OOS read on viande — both extra-source (paid) and
+    // variation-source (free, defensive — backend may extend later).
+    isViandeOos: function isViandeOos(viande) {
+      if (!viande) return false;
+      return viande.is_available === false;
+    },
+    viandeOosTooltip: function viandeOosTooltip(viande) {
+      if (!this.isViandeOos(viande)) return '';
+      return viande.unavailable_reason || this.$t('pos.item_86_d');
     },
     canSelectFromCard: function canSelectFromCard(viande) {
       if (!viande || !this.variationFilterAllowed(viande)) return false;
@@ -1819,15 +1883,16 @@ var _hoisted_13 = {
 var _hoisted_14 = {
   "class": "kiosk-garniture-status"
 };
-var _hoisted_15 = {
-  key: 0,
-  "class": "kiosk-garniture-action active"
-};
+var _hoisted_15 = ["aria-label"];
 var _hoisted_16 = {
   key: 1,
-  "class": "kiosk-garniture-action"
+  "class": "kiosk-garniture-action active"
 };
 var _hoisted_17 = {
+  key: 2,
+  "class": "kiosk-garniture-action"
+};
+var _hoisted_18 = {
   "class": "kiosk-garnitures-summary"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -1837,14 +1902,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-garniture-row", {
         selected: $data.localSelections[garniture.id],
         removed: !$data.localSelections[garniture.id],
-        'kiosk-variation--disabled': !$options.garnitureFilterAllowed(garniture)
+        'kiosk-variation--disabled': !$options.garnitureFilterAllowed(garniture) || $options.isGarnitureOos(garniture),
+        'is-out-of-stock': $options.isGarnitureOos(garniture)
       }]),
       role: "checkbox",
-      tabindex: $options.garnitureFilterAllowed(garniture) ? 0 : -1,
+      tabindex: $options.garnitureFilterAllowed(garniture) && !$options.isGarnitureOos(garniture) ? 0 : -1,
       "aria-checked": !!$data.localSelections[garniture.id],
-      "aria-disabled": $options.garnitureFilterAllowed(garniture) ? 'false' : 'true',
+      "aria-disabled": $options.garnitureFilterAllowed(garniture) && !$options.isGarnitureOos(garniture) ? 'false' : 'true',
       "aria-label": garniture.name,
-      title: $options.garnitureFilterTooltip(garniture),
+      title: $options.garnitureOosTooltip(garniture) || $options.garnitureFilterTooltip(garniture),
       onClick: function onClick($event) {
         return $options.toggleGarniture(garniture.id);
       },
@@ -1862,8 +1928,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onGarnitureThumbError(garniture);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_10)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(garniture.emoji), 1 /* TEXT */)), !$data.localSelections[garniture.id] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_12)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(garniture.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.localSelections[garniture.id] ? _ctx.$t('kiosk.wizard.step.garnitures.with') : _ctx.$t('kiosk.wizard.step.garnitures.without')), 1 /* TEXT */), $data.localSelections[garniture.id] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8);
-  }), 128 /* KEYED_FRAGMENT */))])), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.garnituresSummaryText), 1 /* TEXT */)]);
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_10)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(garniture.emoji), 1 /* TEXT */)), !$data.localSelections[garniture.id] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_12)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(garniture.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.localSelections[garniture.id] ? _ctx.$t('kiosk.wizard.step.garnitures.with') : _ctx.$t('kiosk.wizard.step.garnitures.without')), 1 /* TEXT */), $options.isGarnitureOos(garniture) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kiosk-extra-oos-badge",
+      "data-testid": "kiosk-extra-oos-badge",
+      "aria-label": _ctx.$t('pos.item_86_d')
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 9 /* TEXT, PROPS */, _hoisted_15)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.localSelections[garniture.id] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8);
+  }), 128 /* KEYED_FRAGMENT */))])), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.garnituresSummaryText), 1 /* TEXT */)]);
 }
 
 /***/ }),
@@ -2490,15 +2561,16 @@ var _hoisted_13 = {
 var _hoisted_14 = {
   "class": "kiosk-sauce-price"
 };
-var _hoisted_15 = {
-  key: 0,
-  "class": "kiosk-sauce-order"
-};
+var _hoisted_15 = ["aria-label"];
 var _hoisted_16 = {
   key: 1,
-  "class": "kiosk-sauce-add"
+  "class": "kiosk-sauce-order"
 };
 var _hoisted_17 = {
+  key: 2,
+  "class": "kiosk-sauce-add"
+};
+var _hoisted_18 = {
   key: 2,
   "class": "kiosk-validation-hint",
   role: "status",
@@ -2518,14 +2590,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: sauce.rowKey || 'sauce-' + sIdx + '-' + String((_ref = (_sauce$id = sauce.id) !== null && _sauce$id !== void 0 ? _sauce$id : sauce.name) !== null && _ref !== void 0 ? _ref : 'x'),
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-option-card", {
         selected: !!$data.localSelections[$options.selectionKey(sauce)],
-        'kiosk-variation--disabled': !$options.sauceFilterAllowed(sauce)
+        'kiosk-variation--disabled': !$options.sauceFilterAllowed(sauce) || $options.isSauceOos(sauce),
+        'is-out-of-stock': $options.isSauceOos(sauce)
       }]),
       role: "checkbox",
-      tabindex: $options.sauceFilterAllowed(sauce) ? 0 : -1,
+      tabindex: $options.sauceFilterAllowed(sauce) && !$options.isSauceOos(sauce) ? 0 : -1,
       "aria-checked": !!$data.localSelections[$options.selectionKey(sauce)],
-      "aria-disabled": $options.sauceFilterAllowed(sauce) ? 'false' : 'true',
+      "aria-disabled": $options.sauceFilterAllowed(sauce) && !$options.isSauceOos(sauce) ? 'false' : 'true',
       "aria-label": sauce.name,
-      title: $options.sauceFilterTooltip(sauce),
+      title: $options.sauceOosTooltip(sauce) || $options.sauceFilterTooltip(sauce),
       onClick: function onClick($event) {
         return $options.toggleSauce(sauce);
       },
@@ -2543,8 +2616,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onSauceThumbError(sauce);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_11)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sauceUnitPriceLabel(sauce)), 1 /* TEXT */), $options.getSauceOrder($options.sauceKey(sauce)) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getSauceOrder($options.sauceKey(sauce))), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_9);
-  }), 128 /* KEYED_FRAGMENT */))])), $options.selectedCount === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.step.sauce.hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_11)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sauceUnitPriceLabel(sauce)), 1 /* TEXT */), $options.isSauceOos(sauce) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kiosk-extra-oos-badge",
+      "data-testid": "kiosk-extra-oos-badge",
+      "aria-label": _ctx.$t('pos.item_86_d')
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 9 /* TEXT, PROPS */, _hoisted_15)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.getSauceOrder($options.sauceKey(sauce)) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getSauceOrder($options.sauceKey(sauce))), 1 /* TEXT */)) : !$options.isSauceOos(sauce) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, "+")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_9);
+  }), 128 /* KEYED_FRAGMENT */))])), $options.selectedCount === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.step.sauce.hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
 }
 
 /***/ }),
@@ -2603,21 +2681,22 @@ var _hoisted_13 = {
 var _hoisted_14 = {
   "class": "kiosk-supplement-desc"
 };
-var _hoisted_15 = {
+var _hoisted_15 = ["aria-label"];
+var _hoisted_16 = {
   "class": "kiosk-supplement-price"
 };
-var _hoisted_16 = {
+var _hoisted_17 = {
   key: 0,
   "class": "kiosk-supplement-multiplier"
 };
-var _hoisted_17 = ["aria-label"];
-var _hoisted_18 = ["disabled", "aria-label", "onClick"];
-var _hoisted_19 = {
+var _hoisted_18 = ["aria-label"];
+var _hoisted_19 = ["disabled", "aria-label", "onClick"];
+var _hoisted_20 = {
   "class": "kiosk-supplement-qty-value",
   "aria-live": "polite"
 };
-var _hoisted_20 = ["disabled", "aria-label", "onClick"];
-var _hoisted_21 = {
+var _hoisted_21 = ["disabled", "aria-label", "onClick"];
+var _hoisted_22 = {
   key: 1,
   "class": "kiosk-supplement-select-hint"
 };
@@ -2629,16 +2708,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: supplement.id,
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-supplement-row", {
         selected: $options.supplementCount(supplement.id) > 0,
-        'is-selectable': $options.supplementFilterAllowed(supplement) && $options.supplementCount(supplement.id) === 0,
-        'kiosk-variation--disabled': !$options.supplementFilterAllowed(supplement)
+        'is-selectable': $options.supplementFilterAllowed(supplement) && !$options.isSupplementOos(supplement) && $options.supplementCount(supplement.id) === 0,
+        'kiosk-variation--disabled': !$options.supplementFilterAllowed(supplement) || $options.isSupplementOos(supplement),
+        'is-out-of-stock': $options.isSupplementOos(supplement)
       }]),
       role: "group",
-      tabindex: $options.supplementFilterAllowed(supplement) ? 0 : -1,
-      "aria-disabled": $options.supplementFilterAllowed(supplement) ? 'false' : 'true',
+      tabindex: $options.supplementFilterAllowed(supplement) && !$options.isSupplementOos(supplement) ? 0 : -1,
+      "aria-disabled": $options.supplementFilterAllowed(supplement) && !$options.isSupplementOos(supplement) ? 'false' : 'true',
       "aria-label": "".concat(_ctx.$t('kiosk.wizard.supplement_qty_label', {
         name: supplement.name
       }), " ").concat(_ctx.formatPrice(supplement.price), " ").concat($options.supplementCount(supplement.id)),
-      title: $options.supplementFilterTooltip(supplement),
+      title: $options.supplementOosTooltip(supplement) || $options.supplementFilterTooltip(supplement),
       onClick: function onClick($event) {
         return $options.selectFromCard(supplement.id);
       },
@@ -2656,7 +2736,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onSupplementThumbError(supplement);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_10)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.description || _ctx.$t('kiosk.wizard.supplement_default_desc')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(supplement.price)) + " ", 1 /* TEXT */), $options.supplementCount(supplement.id) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.supplementCount(supplement.id)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.supplementCount(supplement.id) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_10)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(supplement.description || _ctx.$t('kiosk.wizard.supplement_default_desc')), 1 /* TEXT */), $options.isSupplementOos(supplement) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kiosk-extra-oos-badge",
+      "data-testid": "kiosk-extra-oos-badge",
+      "aria-label": _ctx.$t('pos.item_86_d')
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 9 /* TEXT, PROPS */, _hoisted_15)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(supplement.price)) + " ", 1 /* TEXT */), $options.supplementCount(supplement.id) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.supplementCount(supplement.id)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.supplementCount(supplement.id) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: 0,
       "class": "kiosk-supplement-qty",
       role: "group",
@@ -2674,17 +2759,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.decrementSupplement(supplement.id);
       }
-    }, "−", 8 /* PROPS */, _hoisted_18), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.supplementCount(supplement.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, "−", 8 /* PROPS */, _hoisted_19), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.supplementCount(supplement.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "kiosk-supplement-qty-btn active",
-      disabled: !$options.supplementFilterAllowed(supplement),
+      disabled: !$options.supplementFilterAllowed(supplement) || $options.isSupplementOos(supplement),
       "aria-label": _ctx.$t('kiosk.wizard.supplement_increase', {
         name: supplement.name
       }),
       onClick: function onClick($event) {
         return $options.incrementSupplement(supplement.id);
       }
-    }, "+", 8 /* PROPS */, _hoisted_20)], 8 /* PROPS */, _hoisted_17)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.tap_to_choose')), 1 /* TEXT */))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8);
+    }, "+", 8 /* PROPS */, _hoisted_21)], 8 /* PROPS */, _hoisted_18)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.tap_to_choose')), 1 /* TEXT */))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8);
   }), 128 /* KEYED_FRAGMENT */))]))]);
 }
 
@@ -2825,29 +2910,30 @@ var _hoisted_10 = {
   key: 0,
   "class": "kiosk-viande-badge-paid"
 };
-var _hoisted_11 = {
+var _hoisted_11 = ["aria-label"];
+var _hoisted_12 = {
   "class": "kiosk-viande-visual"
 };
-var _hoisted_12 = ["src", "alt", "onError"];
-var _hoisted_13 = {
+var _hoisted_13 = ["src", "alt", "onError"];
+var _hoisted_14 = {
   key: 1,
   "class": "kiosk-viande-emoji"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   "class": "kiosk-viande-name"
 };
-var _hoisted_15 = ["aria-label"];
-var _hoisted_16 = ["onClick", "disabled", "aria-label"];
-var _hoisted_17 = {
+var _hoisted_16 = ["aria-label"];
+var _hoisted_17 = ["onClick", "disabled", "aria-label"];
+var _hoisted_18 = {
   "class": "kiosk-viande-qty-value",
   "aria-live": "polite"
 };
-var _hoisted_18 = ["onClick", "disabled", "aria-label"];
-var _hoisted_19 = {
-  key: 3,
+var _hoisted_19 = ["onClick", "disabled", "aria-label"];
+var _hoisted_20 = {
+  key: 4,
   "class": "kiosk-viande-select-hint"
 };
-var _hoisted_20 = {
+var _hoisted_21 = {
   key: 3,
   "class": "kiosk-validation-hint",
   role: "status",
@@ -2865,13 +2951,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         active: ($data.localSelections[viande.key] || 0) > 0,
         'is-paid': viande.price > 0,
         'is-selectable': $options.canSelectFromCard(viande),
-        'kiosk-variation--disabled': !$options.variationFilterAllowed(viande)
+        'kiosk-variation--disabled': !$options.variationFilterAllowed(viande) || $options.isViandeOos(viande),
+        'is-out-of-stock': $options.isViandeOos(viande)
       }]),
       role: "group",
-      tabindex: $options.variationFilterAllowed(viande) ? 0 : -1,
+      tabindex: $options.variationFilterAllowed(viande) && !$options.isViandeOos(viande) ? 0 : -1,
       "aria-label": $options.viandeCardAriaLabel(viande),
-      "aria-disabled": $options.variationFilterAllowed(viande) ? 'false' : 'true',
-      title: $options.variationFilterTooltip(viande),
+      "aria-disabled": $options.variationFilterAllowed(viande) && !$options.isViandeOos(viande) ? 'false' : 'true',
+      title: $options.viandeOosTooltip(viande) || $options.variationFilterTooltip(viande),
       onClick: function onClick($event) {
         return $options.selectFromCard(viande);
       },
@@ -2880,7 +2967,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.selectFromCard(viande);
       }, ["prevent"]), ["space"])]
-    }, [viande.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_10, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(viande.price)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [viande.thumb && !$data.brokenViandeThumbs[$options.viandeThumbKey(viande)] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [viande.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_10, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(viande.price)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isViandeOos(viande) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 1,
+      "class": "kiosk-extra-oos-badge",
+      "data-testid": "kiosk-extra-oos-badge",
+      "aria-label": _ctx.$t('pos.item_86_d')
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 9 /* TEXT, PROPS */, _hoisted_11)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [viande.thumb && !$data.brokenViandeThumbs[$options.viandeThumbKey(viande)] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: viande.thumb,
       alt: viande.name,
@@ -2889,14 +2981,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onViandeThumbError(viande);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_12)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(viande.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(viande.name), 1 /* TEXT */), $options.viandeCardMetaLabel(viande) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
-      key: 1,
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_13)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(viande.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(viande.name), 1 /* TEXT */), $options.viandeCardMetaLabel(viande) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 2,
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-viande-meta", {
         'is-paid': viande.price > 0,
         'is-selected': ($data.localSelections[viande.key] || 0) > 0 && viande.price <= 0
       }])
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.viandeCardMetaLabel(viande)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ($data.localSelections[viande.key] || 0) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-      key: 2,
+      key: 3,
       "class": "kiosk-viande-controls",
       role: "group",
       "aria-label": viande.name,
@@ -2911,7 +3003,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "aria-label": _ctx.$t('kiosk.wizard.step.viande.remove_one', {
         name: viande.name
       })
-    }, "−", 8 /* PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.localSelections[viande.key] || 0), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, "−", 8 /* PROPS */, _hoisted_17), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.localSelections[viande.key] || 0), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: function onClick($event) {
         return $options.increment(viande.key);
@@ -2921,8 +3013,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "aria-label": _ctx.$t('kiosk.wizard.step.viande.add_one', {
         name: viande.name
       })
-    }, "+", 8 /* PROPS */, _hoisted_18)], 8 /* PROPS */, _hoisted_15)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.step.viande.tap_to_choose')), 1 /* TEXT */))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_9);
-  }), 128 /* KEYED_FRAGMENT */))])), $options.viandeList.length > 0 && !$options.includedQuotaComplete ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.viandeHintRemaining), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }, "+", 8 /* PROPS */, _hoisted_19)], 8 /* PROPS */, _hoisted_16)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.step.viande.tap_to_choose')), 1 /* TEXT */))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_9);
+  }), 128 /* KEYED_FRAGMENT */))])), $options.viandeList.length > 0 && !$options.includedQuotaComplete ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.viandeHintRemaining), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
 }
 
 /***/ }),

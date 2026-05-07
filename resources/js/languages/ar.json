@@ -811,6 +811,7 @@
         "order_payment": "دفع الطلب",
         "total_amount": "إجمالي المبلغ",
         "select_payment_method": "اختيار طريقة الدفع",
+        "split_payment": "دفع متعدد",
         "dine_in": "Dine-In",
         "floorplan": "مخطط الصالة",
         "occupied": "مشغولة",

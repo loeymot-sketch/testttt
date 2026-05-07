@@ -73,7 +73,17 @@ export function partitionKioskExtras(item) {
   for (const e of list) {
     if (e == null) continue;
     const price = parseFloat(e.convert_price || e.price || 0) || 0;
-    const row = { id: e.id, name: e.name || '', price, raw: e };
+    // [HEAL-A 2026-05-08] Propagate is_available / unavailable_reason so step
+    // components can render the "Épuisé" marker without needing to crack open
+    // raw.* (defensive: e.is_available may be undefined → treat as available).
+    const row = {
+      id: e.id,
+      name: e.name || '',
+      price,
+      raw: e,
+      is_available: e?.is_available !== false,
+      unavailable_reason: e?.unavailable_reason || null,
+    };
 
     if (kioskIsSauceExtra(e)) continue;
 

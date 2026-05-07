@@ -16,7 +16,7 @@
             <form @submit.prevent="login">
                 <div class="mb-4">
                     <label for="formEmail" class="text-sm capitalize mb-1 text-heading">{{ $t('label.email') }}</label>
-                    <input type="text" :class="errors.email ? 'invalid' : ''" v-model="form.email"
+                    <input autocomplete="email" type="text" :class="errors.email ? 'invalid' : ''" v-model="form.email"
                         class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]" id="formEmail">
                     <small class="db-field-alert" v-if="errors.email">{{ errors.email[0] }}</small>
                 </div>

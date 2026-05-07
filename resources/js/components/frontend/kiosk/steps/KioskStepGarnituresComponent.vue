@@ -19,14 +19,15 @@
         :class="{
           selected: localSelections[garniture.id],
           removed: !localSelections[garniture.id],
-          'kiosk-variation--disabled': !garnitureFilterAllowed(garniture),
+          'kiosk-variation--disabled': !garnitureFilterAllowed(garniture) || isGarnitureOos(garniture),
+          'is-out-of-stock': isGarnitureOos(garniture),
         }"
         role="checkbox"
-        :tabindex="garnitureFilterAllowed(garniture) ? 0 : -1"
+        :tabindex="(garnitureFilterAllowed(garniture) && !isGarnitureOos(garniture)) ? 0 : -1"
         :aria-checked="!!localSelections[garniture.id]"
-        :aria-disabled="garnitureFilterAllowed(garniture) ? 'false' : 'true'"
+        :aria-disabled="(garnitureFilterAllowed(garniture) && !isGarnitureOos(garniture)) ? 'false' : 'true'"
         :aria-label="garniture.name"
-        :title="garnitureFilterTooltip(garniture)"
+        :title="garnitureOosTooltip(garniture) || garnitureFilterTooltip(garniture)"
         @click="toggleGarniture(garniture.id)"
         @keydown.enter.prevent="toggleGarniture(garniture.id)"
         @keydown.space.prevent="toggleGarniture(garniture.id)"
@@ -45,6 +46,12 @@
         </div>
         <span class="kiosk-garniture-name">{{ garniture.name }}</span>
         <span class="kiosk-garniture-status">{{ localSelections[garniture.id] ? $t('kiosk.wizard.step.garnitures.with') : $t('kiosk.wizard.step.garnitures.without') }}</span>
+        <span
+          v-if="isGarnitureOos(garniture)"
+          class="kiosk-extra-oos-badge"
+          data-testid="kiosk-extra-oos-badge"
+          :aria-label="$t('pos.item_86_d')"
+        >{{ $t('pos.item_86_d') }}</span>
         <span v-if="localSelections[garniture.id]" class="kiosk-garniture-action active">✓</span>
         <span v-else class="kiosk-garniture-action">+</span>
       </div>
@@ -118,6 +125,9 @@ export default {
         displayThumb: kioskResolveImageSrc(g.raw),
         emoji: this.getEmojiForGarniture(g.name),
         raw: g.raw,
+        // [HEAL-A 2026-05-08] OOS state propagated from partitionKioskExtras
+        is_available: g.is_available !== false,
+        unavailable_reason: g.unavailable_reason || null,
       }));
     }
   },
@@ -148,9 +158,21 @@ export default {
       if (this.garnitureFilterAllowed(garniture)) return '';
       return (this.activeFilters || []).map((f) => this.$t(`kiosk.filters.${f}`)).filter(Boolean).join(', ');
     },
+    // [HEAL-A 2026-05-08] OOS read on garniture extra (free).
+    isGarnitureOos(garniture) {
+      if (!garniture) return false;
+      if (garniture.is_available === false) return true;
+      return garniture?.raw?.is_available === false;
+    },
+    garnitureOosTooltip(garniture) {
+      if (!this.isGarnitureOos(garniture)) return '';
+      return garniture?.unavailable_reason || garniture?.raw?.unavailable_reason || this.$t('pos.item_86_d');
+    },
     toggleGarniture(id) {
       const g = this.garnitureList.find((x) => x.id === id);
       if (g && !this.garnitureFilterAllowed(g)) return;
+      // OOS lock: allow remove (toggle off if currently on), block adding
+      if (g && this.isGarnitureOos(g) && !this.localSelections[id]) return;
       this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
@@ -252,6 +274,27 @@ export default {
   opacity: 0.42;
   filter: grayscale(0.3);
   cursor: not-allowed;
+}
+
+/* [HEAL-A 2026-05-08] OOS marker — garniture in rupture stock */
+.kiosk-garniture-row.is-out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+.kiosk-extra-oos-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
+  color: var(--kiosk-primary, #E8001C);
+  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kiosk-garniture-visual {

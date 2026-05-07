@@ -974,6 +974,7 @@
         "order_payment": "Encaissement",
         "total_amount": "Montant total",
         "select_payment_method": "Mode de paiement",
+        "split_payment": "Multi-payment",
         "dine_in": "Sur place",
         "floorplan": "Plan de salle",
         "occupied": "Occupée",

@@ -27,13 +27,29 @@ function isKioskPath() {
 }
 
 /**
- * Locale initiale : KIOSK_LOCALE sur /kiosk, sinon langue du navigateur.
- * On ne lit PAS localStorage — une valeur "en" persistée ne doit jamais
- * forcer l'anglais sur la borne.
+ * [BLUE 2026-05-08 / B5-UX P1] Surfaces admin (POS, KDS, dashboard, etc.) :
+ * la caisse NF525 doit tourner en FR garantie, sinon un navigateur configuré
+ * en EN ferait basculer le POS en EN (cf. RED-R1 CS1 : aria-label "Add Customer"
+ * vs placeholder FR). Conséquence directe du bug detectLocale qui suivait
+ * navigator.language sans contexte de surface.
+ */
+function isAdminPath() {
+    return typeof window !== 'undefined' &&
+           /^\/admin/.test(window.location.pathname || '');
+}
+
+/**
+ * Locale initiale : KIOSK_LOCALE sur /kiosk, FR forcée sur /admin (POS NF525),
+ * sinon langue du navigateur. On ne lit PAS localStorage — une valeur "en"
+ * persistée ne doit jamais forcer l'anglais sur la borne ni en caisse.
  */
 function detectLocale() {
     if (isKioskPath()) {
         return KIOSK_LOCALE;
+    }
+    // [BLUE 2026-05-08 / B5-UX P1] FR forcée pour les surfaces admin (POS NF525 = FR obligatoire).
+    if (isAdminPath()) {
+        return 'fr';
     }
     if (typeof navigator !== 'undefined') {
         const lang = navigator.language?.split('-')[0];

@@ -239,6 +239,19 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
+// [BLUE 2026-05-08 / B3-S5 P1] Throttle séparé pour /menu/availability/toggle :
+// pendant rush, caissier toggle item OOS + submit commande peut hitter 429
+// self-DoS s'il partage le bucket admin-mutation (30/min) avec POST /admin/pos.
+// On extrait UNIQUEMENT le toggle availability avec un bucket dédié 60/min.
+// IMPORTANT : groupe sibling (PAS imbriqué) pour éviter le stacking — sinon
+// Laravel additionne les middlewares throttle et la limite effective devient
+// min(30, 60) = 30/min, ce qui ne résout PAS le self-DoS. Récurrent RED-R3
+// → ORCHESTRATOR → B3.
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:60,1'])->group(function () {
+    Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
+        ->name('menu.availability.toggle');
+});
+
 Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
@@ -248,8 +261,6 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [V1 SECTION 5] Dual-channel menu SSOT projection (read-only, admin-only).
     Route::get('/menu-projection', [MenuProjectionController::class, 'show'])
         ->name('menu-projection.show');
-    Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
-        ->name('menu.availability.toggle');
     // [CV1-V1-CLOSEOUT-001 T-DEEP-AVAIL-API-01] Endpoint admin pour AvailabilityService::setMaxDailyQty (M2 V2 task 2.5).
     Route::post('/menu/availability/max-daily-qty', [AvailabilityController::class, 'setMaxDailyQty'])
         ->name('menu.availability.max-daily-qty');

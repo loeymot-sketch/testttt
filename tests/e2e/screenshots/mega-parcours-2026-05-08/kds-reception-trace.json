@@ -1,0 +1,74 @@
+[
+  {
+    "order": "pos-1",
+    "label": "kds-result",
+    "payload": {
+      "appearedMs": null,
+      "expectedHint": "tacos",
+      "domSnapshot": {
+        "cardCount": 13,
+        "matchCount": 0,
+        "firstSample": [
+          " Mode secours actif — actualisation automatique toutes les 5s. ",
+          "#070526232 N°A0007 PAIEMENT COMPTOIR - NON REGLE ",
+          "#070526231 N°A0006"
+        ]
+      }
+    },
+    "ts": "2026-05-07T16:36:28.017Z"
+  },
+  {
+    "order": "pos-2",
+    "label": "kds-result",
+    "payload": {
+      "appearedMs": null,
+      "expectedHint": "tacos",
+      "domSnapshot": {
+        "cardCount": 13,
+        "matchCount": 0,
+        "firstSample": [
+          " Mode secours actif — actualisation automatique toutes les 5s. ",
+          "#070526232 N°A0007 PAIEMENT COMPTOIR - NON REGLE ",
+          "#070526231 N°A0006"
+        ]
+      }
+    },
+    "ts": "2026-05-07T16:37:01.904Z"
+  },
+  {
+    "order": "pos-3",
+    "label": "kds-result",
+    "payload": {
+      "appearedMs": null,
+      "expectedHint": "tacos",
+      "domSnapshot": {
+        "cardCount": 14,
+        "matchCount": 0,
+        "firstSample": [
+          " Mode secours actif — actualisation automatique toutes les 5s. ",
+          "#070526234 N°A0008",
+          "#070526232 N°A0007 PAIEMENT COMPTOIR - NON REGLE "
+        ]
+      }
+    },
+    "ts": "2026-05-07T16:37:32.353Z"
+  },
+  {
+    "order": "kiosk-1",
+    "label": "kds-result",
+    "payload": {
+      "appearedMs": null,
+      "expectedHint": "tacos",
+      "domSnapshot": {
+        "cardCount": 15,
+        "matchCount": 0,
+        "firstSample": [
+          " Mode secours actif — actualisation automatique toutes les 5s. ",
+          "#070526237 N°A0009",
+          "#070526234 N°A0008"
+        ]
+      }
+    },
+    "ts": "2026-05-07T16:38:32.001Z"
+  }
+]

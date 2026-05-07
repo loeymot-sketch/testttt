@@ -29,13 +29,14 @@
           active: (localSelections[viande.key] || 0) > 0,
           'is-paid': viande.price > 0,
           'is-selectable': canSelectFromCard(viande),
-          'kiosk-variation--disabled': !variationFilterAllowed(viande),
+          'kiosk-variation--disabled': !variationFilterAllowed(viande) || isViandeOos(viande),
+          'is-out-of-stock': isViandeOos(viande),
         }"
         role="group"
-        :tabindex="variationFilterAllowed(viande) ? 0 : -1"
+        :tabindex="(variationFilterAllowed(viande) && !isViandeOos(viande)) ? 0 : -1"
         :aria-label="viandeCardAriaLabel(viande)"
-        :aria-disabled="variationFilterAllowed(viande) ? 'false' : 'true'"
-        :title="variationFilterTooltip(viande)"
+        :aria-disabled="(variationFilterAllowed(viande) && !isViandeOos(viande)) ? 'false' : 'true'"
+        :title="viandeOosTooltip(viande) || variationFilterTooltip(viande)"
         @click="selectFromCard(viande)"
         @keydown.enter.prevent="selectFromCard(viande)"
         @keydown.space.prevent="selectFromCard(viande)"
@@ -43,6 +44,12 @@
         <span v-if="viande.price > 0" class="kiosk-viande-badge-paid">
           +{{ formatPrice(viande.price) }}
         </span>
+        <span
+          v-if="isViandeOos(viande)"
+          class="kiosk-extra-oos-badge"
+          data-testid="kiosk-extra-oos-badge"
+          :aria-label="$t('pos.item_86_d')"
+        >{{ $t('pos.item_86_d') }}</span>
 
         <div class="kiosk-viande-visual">
           <img
@@ -249,11 +256,24 @@ export default {
     },
     canIncrement(viande) {
       if (!viande || !this.variationFilterAllowed(viande)) return false;
+      // [HEAL-A 2026-05-08] Block adding an OOS viande (rupture). Decrement
+      // remains possible elsewhere via decrement() so client can correct.
+      if (this.isViandeOos(viande)) return false;
       const current = this.localSelections[viande.key] || 0;
       if (this.isPaidViande(viande) && this.hasIncludedViandeOptions) {
         return current < 9;
       }
       return this.includedQuotaSelected < this.maxViandes;
+    },
+    // [HEAL-A 2026-05-08] OOS read on viande — both extra-source (paid) and
+    // variation-source (free, defensive — backend may extend later).
+    isViandeOos(viande) {
+      if (!viande) return false;
+      return viande.is_available === false;
+    },
+    viandeOosTooltip(viande) {
+      if (!this.isViandeOos(viande)) return '';
+      return viande.unavailable_reason || this.$t('pos.item_86_d');
     },
     canSelectFromCard(viande) {
       if (!viande || !this.variationFilterAllowed(viande)) return false;
@@ -532,6 +552,27 @@ export default {
   opacity: 0.42;
   filter: grayscale(0.3);
   cursor: not-allowed;
+}
+
+/* [HEAL-A 2026-05-08] OOS marker — viande in rupture stock */
+.kiosk-viande-card.is-out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+
+.kiosk-extra-oos-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
+  color: var(--kiosk-primary, #E8001C);
+  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kiosk-viande-controls {
