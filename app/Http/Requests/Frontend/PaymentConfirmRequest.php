@@ -35,6 +35,12 @@ class PaymentConfirmRequest extends FormRequest
                 'integer',
                 Rule::in([PaymentGateway::CARD, PaymentGateway::TICKET_RESTAURANT]),
             ],
+            // [AUDIT-F-002] amount_cents echoed by TPE driver — MUST match order.total
+            // (within ±1 cent tolerance for floating rounding artefacts).
+            // Without this, a compromised TPE could approve any amount and the backend
+            // would mark PAID without detecting the discrepancy. NF525 + PCI-DSS.
+            // Echo verification happens in OrderController::paymentConfirm before any state mutation.
+            'amount_cents' => ['required', 'integer', 'min:1'],
         ];
     }
 }

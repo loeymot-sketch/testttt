@@ -46,6 +46,8 @@ class PaymentConfirmConcurrencySentinelTest extends TestCase
             'payment_status' => PaymentStatus::UNPAID,
             'status' => OrderStatus::PENDING,
             'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
         $secondOrder = Order::factory()->create([
             'user_id' => $kioskUser->id,
@@ -55,6 +57,8 @@ class PaymentConfirmConcurrencySentinelTest extends TestCase
             'payment_status' => PaymentStatus::UNPAID,
             'status' => OrderStatus::PENDING,
             'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
@@ -62,6 +66,7 @@ class PaymentConfirmConcurrencySentinelTest extends TestCase
             'transaction_id' => 'FK-SENTINEL-DUPLICATE-TPE',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => 5000, // [AUDIT-F-002] matches firstOrder/secondOrder total=50.00
         ];
 
         $this->withHeaders(['X-Idempotency-Key' => 'sentinel-pcc-1-' . uniqid()])

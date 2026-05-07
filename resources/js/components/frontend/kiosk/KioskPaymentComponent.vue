@@ -534,10 +534,22 @@ export default {
 
       // Step 3 — Confirm payment on backend (stores transaction_id)
       if (this._lastOrder?.id && paymentResult.transaction_id) {
+        // [AUDIT-F-002] Echo amount_cents to backend so the controller can verify
+        // that the TPE-approved amount matches order.total (±1 cent tolerance).
+        // Without this, a compromised TPE could approve an arbitrary amount and
+        // the backend would mark PAID without detecting the discrepancy.
+        // The amount source is `paymentResult.amount_cents_approved` if the bridge
+        // returned it (real TPE driver), else fallback on the locally computed
+        // cart total (stub mode + legacy bridges that don't echo amount).
+        const expectedCents = Math.round((this._lastOrder.total || this.cartTotal) * 100);
+        const echoedCents = Number.isInteger(paymentResult.amount_cents_approved)
+          ? paymentResult.amount_cents_approved
+          : expectedCents;
         await this.confirmBackendPayment(this._lastOrder.id, {
           transaction_id: paymentResult.transaction_id,
           card_type:      paymentResult.card_type || 'CARD',
           payment_method: this.method === 'tr' ? 5 : 4,
+          amount_cents:   echoedCents,
         });
       }
 
@@ -553,19 +565,30 @@ export default {
      * attendu par processCardPayment. En dev (stub), retourne un stub synthétique.
      *
      * Contrat `tpeCharge(amountCents, method)` du service :
-     *   → { ok: true, tx_ref, legacy?, data? } | { ok: false, error }
+     *   → { ok: true, tx_ref, amount_cents_approved?, legacy?, data? } | { ok: false, error }
+     *
+     * [AUDIT-F-002] amount_cents_approved est l'écho strict du montant approuvé.
+     * Le backend OrderController::paymentConfirm vérifie abs(amount_cents - order.total*100) ≤ 1.
+     * Stub mode : echo strict de amountCents (mirroir). Bridges Electron prod : driver TPE
+     * doit retourner amount_cents_approved depuis la trame ISO bancaire.
      *
      * Rétro-compat : si le bridge renvoie un shape legacy { status: 'approved', ... }
      * (vieux firmware Electron), runSafe encapsule déjà dans `data`.
      */
     async _invokeTpe(amountEuros, method = 'CB') {
+      const amountCents = Math.round(Number(amountEuros) * 100);
       // Pas de bridge réel → stub navigateur classique avec délai visuel.
       if (!kioskHardware.isKioskBridge()) {
         this.tpeMessage = this.$t('kiosk.pay_screen.tpe_browser_sim');
         await new Promise((r) => setTimeout(r, 2000));
-        return { approved: true, transaction_id: `STUB-${Date.now()}`, card_type: 'VISA' };
+        // [AUDIT-F-002] Stub echoes amountCents to honor backend echo verification contract.
+        return {
+          approved: true,
+          transaction_id: `STUB-${Date.now()}`,
+          card_type: 'VISA',
+          amount_cents_approved: amountCents,
+        };
       }
-      const amountCents = Math.round(Number(amountEuros) * 100);
       const result = await kioskHardware.tpeCharge(amountCents, method);
       if (!result?.ok) {
         return {
@@ -580,12 +603,19 @@ export default {
       const approved =
         result.ok !== false &&
         (raw.status === 'approved' || raw.approved === true || !!raw.transaction_id || !!raw.tx_ref);
+      // [AUDIT-F-002] amount_cents_approved : extracted from bridge response (real TPE
+      // drivers must echo it from ISO bancaire trame). Fallback sur amountCents si absent
+      // (rétro-compat firmware Electron legacy — but the backend will reject if mismatch).
+      const echoedAmount = Number.isInteger(raw.amount_cents_approved)
+        ? raw.amount_cents_approved
+        : (Number.isInteger(result.amount_cents_approved) ? result.amount_cents_approved : amountCents);
       return {
         approved,
         transaction_id: raw.transaction_id || raw.tx_ref || result.tx_ref || null,
         card_type: raw.card_type || raw.cardType || 'CARD',
         error: !approved ? (raw.error || result.error || 'declined') : null,
         error_code: raw.error_code || result.error_code || null,
+        amount_cents_approved: echoedAmount,
       };
     },
 

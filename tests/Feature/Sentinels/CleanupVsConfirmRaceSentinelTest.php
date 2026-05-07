@@ -50,6 +50,8 @@ class CleanupVsConfirmRaceSentinelTest extends TestCase
             'source_surface' => 'kiosk',
             'order_datetime' => now()->subMinutes(30),
             'created_at' => now()->subMinutes(30),
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
 
         Order::withoutGlobalScope(BranchScope::class)
@@ -64,6 +66,7 @@ class CleanupVsConfirmRaceSentinelTest extends TestCase
                 'transaction_id' => 'FK-SENTINEL-LATE-TPE',
                 'card_type' => 'visa',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 5000,
             ]);
 
         $response->assertStatus(422);

@@ -176,6 +176,7 @@ class KioskPaymentStateMachineTest extends TestCase
                 'transaction_id' => 'TXN-STATE-001',
                 'card_type' => 'VISA',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 1250,
             ]);
 
         $confirm->assertOk();
@@ -265,6 +266,7 @@ class KioskPaymentStateMachineTest extends TestCase
                 'transaction_id' => 'TXN-STATE-ALREADY',
                 'card_type' => 'VISA',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 1250,
             ]);
 
         $response->assertOk();

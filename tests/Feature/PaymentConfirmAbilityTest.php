@@ -46,6 +46,7 @@ class PaymentConfirmAbilityTest extends TestCase
             'transaction_id' => 'FK-M06-NO-ABILITY',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => 5000,
         ]);
 
         $response->assertStatus(403);

@@ -48,6 +48,7 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'transaction_id' => 'FK-M06-CROSS-BRANCH',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($foreignOrder->fresh()->total * 100),
         ])->assertStatus(403);
 
         $this->assertSame(PaymentStatus::UNPAID, (int) Order::withoutGlobalScopes()->findOrFail($foreignOrder->id)->payment_status);
@@ -75,6 +76,7 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'transaction_id' => 'FK-M06-CASH-AS-CARD',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertStatus(422);
 
         $fresh = Order::withoutGlobalScopes()->findOrFail($order->id);
@@ -98,6 +100,8 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'payment_status' => PaymentStatus::UNPAID,
             'status' => OrderStatus::PENDING,
             'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
         $secondOrder = Order::factory()->create([
             'user_id' => $kioskUser->id,
@@ -107,6 +111,8 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'payment_status' => PaymentStatus::UNPAID,
             'status' => OrderStatus::PENDING,
             'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
@@ -114,6 +120,7 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'transaction_id' => 'FK-M06-DUPLICATE-TPE',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => 5000, // [AUDIT-F-002] matches order.total=50.00
         ];
 
         $this->withToken($token)->postJson('/api/frontend/order/'.$firstOrder->id.'/payment-confirm', $payload)->assertOk();
@@ -144,6 +151,7 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'transaction_id' => 'FK-M06-NON-PENDING',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertStatus(422);
 
         $fresh = Order::withoutGlobalScopes()->findOrFail($order->id);
@@ -174,12 +182,14 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'transaction_id' => 'FK-M06-PAID-ORIGINAL',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertOk();
 
         $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
             'transaction_id' => 'FK-M06-PAID-DIFFERENT',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertStatus(409);
     }
 }

@@ -49,6 +49,7 @@ class PaymentConfirmMachineResolverTest extends TestCase
             'transaction_id' => 'FK-M06-MACHINE-BRANCH',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertOk();
 
         $this->assertDatabaseHas('orders', [

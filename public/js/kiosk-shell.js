@@ -2065,7 +2065,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
         var _this3$_lastOrder2;
-        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this3$_lastOrder;
+        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this3$_lastOrder, expectedCents, echoedCents;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.n) {
             case 0:
@@ -2129,11 +2129,21 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context3.n = 3;
                 break;
               }
+              // [AUDIT-F-002] Echo amount_cents to backend so the controller can verify
+              // that the TPE-approved amount matches order.total (±1 cent tolerance).
+              // Without this, a compromised TPE could approve an arbitrary amount and
+              // the backend would mark PAID without detecting the discrepancy.
+              // The amount source is `paymentResult.amount_cents_approved` if the bridge
+              // returned it (real TPE driver), else fallback on the locally computed
+              // cart total (stub mode + legacy bridges that don't echo amount).
+              expectedCents = Math.round((_this3._lastOrder.total || _this3.cartTotal) * 100);
+              echoedCents = Number.isInteger(paymentResult.amount_cents_approved) ? paymentResult.amount_cents_approved : expectedCents;
               _context3.n = 3;
               return _this3.confirmBackendPayment(_this3._lastOrder.id, {
                 transaction_id: paymentResult.transaction_id,
                 card_type: paymentResult.card_type || 'CARD',
-                payment_method: _this3.method === 'tr' ? 5 : 4
+                payment_method: _this3.method === 'tr' ? 5 : 4,
+                amount_cents: echoedCents
               });
             case 3:
               _context3.n = 4;
@@ -2156,7 +2166,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
      * attendu par processCardPayment. En dev (stub), retourne un stub synthétique.
      *
      * Contrat `tpeCharge(amountCents, method)` du service :
-     *   → { ok: true, tx_ref, legacy?, data? } | { ok: false, error }
+     *   → { ok: true, tx_ref, amount_cents_approved?, legacy?, data? } | { ok: false, error }
+     *
+     * [AUDIT-F-002] amount_cents_approved est l'écho strict du montant approuvé.
+     * Le backend OrderController::paymentConfirm vérifie abs(amount_cents - order.total*100) ≤ 1.
+     * Stub mode : echo strict de amountCents (mirroir). Bridges Electron prod : driver TPE
+     * doit retourner amount_cents_approved depuis la trame ISO bancaire.
      *
      * Rétro-compat : si le bridge renvoie un shape legacy { status: 'approved', ... }
      * (vieux firmware Electron), runSafe encapsule déjà dans `data`.
@@ -2165,11 +2180,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _arguments = arguments,
         _this4 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var method, amountCents, result, raw, approved;
+        var method, amountCents, result, raw, approved, echoedAmount;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.n) {
             case 0:
               method = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : 'CB';
+              amountCents = Math.round(Number(amountEuros) * 100); // Pas de bridge réel → stub navigateur classique avec délai visuel.
               if (_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
                 _context4.n = 2;
                 break;
@@ -2183,10 +2199,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               return _context4.a(2, {
                 approved: true,
                 transaction_id: "STUB-".concat(Date.now()),
-                card_type: 'VISA'
+                card_type: 'VISA',
+                amount_cents_approved: amountCents
               });
             case 2:
-              amountCents = Math.round(Number(amountEuros) * 100);
               _context4.n = 3;
               return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].tpeCharge(amountCents, method);
             case 3:
@@ -2204,13 +2220,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // Le bridge peut renvoyer soit un shape direct `{tx_ref}`, soit une capsule
               // `{data: {status: 'approved', transaction_id, card_type, ...}}` (legacy).
               raw = result.data || result;
-              approved = result.ok !== false && (raw.status === 'approved' || raw.approved === true || !!raw.transaction_id || !!raw.tx_ref);
+              approved = result.ok !== false && (raw.status === 'approved' || raw.approved === true || !!raw.transaction_id || !!raw.tx_ref); // [AUDIT-F-002] amount_cents_approved : extracted from bridge response (real TPE
+              // drivers must echo it from ISO bancaire trame). Fallback sur amountCents si absent
+              // (rétro-compat firmware Electron legacy — but the backend will reject if mismatch).
+              echoedAmount = Number.isInteger(raw.amount_cents_approved) ? raw.amount_cents_approved : Number.isInteger(result.amount_cents_approved) ? result.amount_cents_approved : amountCents;
               return _context4.a(2, {
                 approved: approved,
                 transaction_id: raw.transaction_id || raw.tx_ref || result.tx_ref || null,
                 card_type: raw.card_type || raw.cardType || 'CARD',
                 error: !approved ? raw.error || result.error || 'declined' : null,
-                error_code: raw.error_code || result.error_code || null
+                error_code: raw.error_code || result.error_code || null,
+                amount_cents_approved: echoedAmount
               });
           }
         }, _callee4);

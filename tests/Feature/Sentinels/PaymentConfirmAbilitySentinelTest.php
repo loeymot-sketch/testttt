@@ -48,6 +48,7 @@ class PaymentConfirmAbilitySentinelTest extends TestCase
                 'transaction_id' => 'FK-SENTINEL-NON-KIOSK',
                 'card_type' => 'visa',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 5000,
             ]);
 
         $response->assertStatus(403);

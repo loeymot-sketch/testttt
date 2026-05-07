@@ -124,6 +124,33 @@ class OrderController extends Controller
                 return response(['status' => false, 'message' => 'Unauthorized'], 403);
             }
 
+            // [AUDIT-F-002] Pre-transaction branch check — préserve la priorité 403
+            // pour les rejets cross-branch AVANT le guard F-002 amount echo.
+            if ((int) $frontendOrder->branch_id !== (int) $kioskMachine->branch_id) {
+                return response(['status' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            // [AUDIT-F-002] TPE Amount Echo Verification — gate AVANT toute mutation state.
+            // NF525 + PCI-DSS exigent que le montant approuvé par le TPE corresponde à order.total.
+            // Tolérance ±1 centime pour absorber les arrondis flottants. Au-delà = anomalie.
+            // Error code stable AMOUNT_ECHO_MISMATCH utilisé par dashboards ops — NE PAS CHANGER.
+            $expectedCents = (int) round((float) $frontendOrder->total * 100);
+            $providedCents = (int) $request->input('amount_cents');
+            if (abs($providedCents - $expectedCents) > 1) {
+                \Illuminate\Support\Facades\Log::warning('[Kiosk Payment] amount echo mismatch', [
+                    'order_id'       => $frontendOrder->id,
+                    'expected_cents' => $expectedCents,
+                    'provided_cents' => $providedCents,
+                    'transaction_id' => $request->input('transaction_id'),
+                    'gate'           => 'AUDIT-F-002',
+                ]);
+                return response([
+                    'status'     => false,
+                    'message'    => 'Amount approved by TPE does not match order total',
+                    'error_code' => 'AMOUNT_ECHO_MISMATCH',
+                ], 422);
+            }
+
             $alreadyPaid = false;
             $lateAfterCleanup = false;
             $nonConfirmableStatus = null;

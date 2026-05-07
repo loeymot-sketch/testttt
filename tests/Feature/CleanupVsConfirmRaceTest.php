@@ -57,6 +57,9 @@ class CleanupVsConfirmRaceTest extends TestCase
             'transaction_id' => 'FK-M06-LATE-TPE',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            // [AUDIT-F-002] amount matches order total so the F-002 echo guard passes
+            // and the test reaches the late-after-cleanup detection (CANCELED status).
+            'amount_cents' => (int) round($order->fresh()->total * 100),
         ])->assertStatus(422);
 
         $this->assertDatabaseHas(ActionLog::class, [

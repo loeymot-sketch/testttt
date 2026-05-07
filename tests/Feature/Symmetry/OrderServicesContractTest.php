@@ -182,6 +182,8 @@ class OrderServicesContractTest extends TestCase
             'payment_status' => PaymentStatus::PAID,
             'status' => OrderStatus::CANCELED,
             'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
 
         $payment = Mockery::mock(PaymentService::class);
@@ -220,6 +222,8 @@ class OrderServicesContractTest extends TestCase
             'source_surface' => 'kiosk',
             'transaction_id' => null,
             'card_type' => null,
+            'total' => 50.00,
+            'subtotal' => 50.00,
         ]);
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
@@ -227,6 +231,7 @@ class OrderServicesContractTest extends TestCase
             'transaction_id' => 'FK-M10-GOLDEN-TPE',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,
+            'amount_cents' => 5000, // [AUDIT-F-002] matches order.total=50.00
         ];
 
         $this->withToken($token)

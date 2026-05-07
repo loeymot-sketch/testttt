@@ -159,6 +159,7 @@ class IdempotencyMiddlewareSentinelTest extends TestCase
                 'transaction_id' => 'FK-SENTINEL-IDEMP-MISSING',
                 'card_type'      => 'visa',
                 'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 5000,
             ]);
 
         $response->assertStatus(422)->assertJson([
