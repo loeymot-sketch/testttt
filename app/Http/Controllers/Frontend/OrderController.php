@@ -94,6 +94,14 @@ class OrderController extends Controller
      */
     public function paymentConfirm(FrontendOrder $frontendOrder, PaymentConfirmRequest $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [BYPASS-P2] Audit-log structuré si payment.bypass.enabled — invariants
+        // (sealing fiscal, Outbox, audit, idempotency) restent intacts ci-dessous.
+        \App\Services\Bypass\BypassAuditLogger::paymentBypassed([
+            'controller' => 'Frontend\\OrderController::paymentConfirm',
+            'order_id' => $frontendOrder->id,
+            'transaction_id' => $request->input('transaction_id'),
+        ]);
+
         try {
             $authenticatedUserId = $request->user('sanctum')?->id
                 ?? $request->user()?->id

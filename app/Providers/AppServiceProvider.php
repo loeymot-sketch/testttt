@@ -28,7 +28,11 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(PrinterTransportInterface::class, function () {
-            if ($this->app->environment('testing')) {
+            // [BYPASS-P3 / GATE_BYPASS_PRINTING_2026-05-08] NullPrinterTransport
+            // also when printing.bypass.enabled — short-circuits TCP/IP send for
+            // E2E flow validation. Production guard in boot() prevents activation
+            // in APP_ENV=production.
+            if ($this->app->environment('testing') || (bool) config('printing.bypass.enabled', false)) {
                 return new NullPrinterTransport();
             }
 
@@ -72,6 +76,25 @@ class AppServiceProvider extends ServiceProvider
         $this->registerSqliteRegexpIfNeeded();
 
         if (app()->environment('production')) {
+            // [BYPASS-P1 / GATE_BYPASS_MODE_2026-05-08] Production guard — refuse
+            // boot if any bypass flag is enabled in production. Bypass mode is
+            // strictly for local dev / staging E2E flow validation. Activating
+            // it in prod would skip TPE validation and TCP/IP printer spool.
+            if ((bool) config('payment.bypass.enabled', false)) {
+                throw new \RuntimeException(
+                    'PAYMENT_BYPASS_MODE=true is forbidden in production: bypass mode '
+                    . 'short-circuits TPE validation. Set PAYMENT_BYPASS_MODE=false in '
+                    . 'your .env file or unset it. See docs/runbooks/BYPASS_MODE_OPERATIONAL.md.'
+                );
+            }
+            if ((bool) config('printing.bypass.enabled', false)) {
+                throw new \RuntimeException(
+                    'PRINTING_BYPASS_MODE=true is forbidden in production: bypass mode '
+                    . 'short-circuits TCP/IP send to thermal printer. Set PRINTING_BYPASS_MODE=false '
+                    . 'in your .env file or unset it. See docs/runbooks/BYPASS_MODE_OPERATIONAL.md.'
+                );
+            }
+
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
                 throw new \RuntimeException(
                     'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '

@@ -122,6 +122,14 @@ class PaymentService
 
     public function confirmCounterPayment(Order $order, int $mode, ?float $received = null, ?string $note = null): Order
     {
+        // [BYPASS-P2] Audit-log structuré si payment.bypass.enabled — invariants
+        // (sealing fiscal, Outbox OrderPaidAtCounter, audit log) restent intacts.
+        \App\Services\Bypass\BypassAuditLogger::paymentBypassed([
+            'service' => 'PaymentService::confirmCounterPayment',
+            'order_id' => $order->id,
+            'mode' => $mode,
+        ]);
+
         $allowedModes = [
             PosPaymentMethod::CASH,
             PosPaymentMethod::CARD,

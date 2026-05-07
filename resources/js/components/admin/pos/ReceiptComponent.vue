@@ -6,6 +6,15 @@
     -->
     <div id="receiptModal" class="modal pos-v5-receipt-modal" role="document" :aria-label="$t('a11y.receipt_preview')">
         <div class="modal-dialog pos-v5-receipt-dialog rounded-none w-full max-w-md">
+            <!-- [BYPASS-P3] Marqueur visible UI quand PRINTING_BYPASS_MODE=true.
+                 hidden-print = ne s'imprime pas, juste pour validation E2E à l'écran. -->
+            <div v-if="bypassPrintingActive"
+                 class="hidden-print bg-amber-100 border border-amber-400 text-amber-900 px-3 py-2 text-xs font-semibold text-center"
+                 data-testid="bypass-printing-marker"
+                 role="status"
+                 aria-live="polite">
+                {{ bypassPrintingMarker }}
+            </div>
             <div class="modal-header pos-v5-receipt-toolbar hidden-print flex flex-wrap items-center justify-end gap-2">
                 <button type="button" @click="reset"
                     class="modal-close pos-v5-receipt-btn pos-v5-receipt-btn--ghost"
@@ -366,6 +375,14 @@ export default {
         }
     },
     computed: {
+        // [BYPASS-P3] Lit window.foodkingConfig.bypassMode injecté par master.blade.php.
+        bypassPrintingActive: function () {
+            return !!(typeof window !== 'undefined' && window.foodkingConfig?.bypassMode?.printing);
+        },
+        bypassPrintingMarker: function () {
+            return (typeof window !== 'undefined' && window.foodkingConfig?.bypassMode?.printingScreenMarker)
+                || '🔧 MODE TEST — IMPRESSION BYPASSÉE';
+        },
         company: function () {
             return this.$store.getters['company/lists'];
         },
