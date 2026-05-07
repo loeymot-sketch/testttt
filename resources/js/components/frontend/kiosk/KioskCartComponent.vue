@@ -222,6 +222,7 @@
         class="kiosk-cart-summary"
         role="region"
         :aria-label="$t('kiosk.subtotal')"
+        aria-live="polite"
         data-testid="kiosk-cart-summary"
       >
         <div class="kiosk-cart-summary-row">

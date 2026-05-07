@@ -8,7 +8,7 @@
     @keydown="resetIdleTimer"
   >
 
-    <ConnectionStatusBanner suppress-transient suppress-session-invalid />
+    <ConnectionStatusBanner suppress-transient />
 
     <CatalogChangeToastComponent
       :visible="catalogChangeToastVisible"

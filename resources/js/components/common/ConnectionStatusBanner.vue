@@ -52,6 +52,8 @@ export default {
       dismissed: false,
       _onStateChange: null,
       _bannerInterval: null,
+      _onOffline: null,
+      _onOnline: null,
     };
   },
   computed: {
@@ -121,6 +123,15 @@ export default {
     };
     wsService.on("state_change", this._onStateChange);
 
+    // [RED-R1 O1] navigator.onLine fallback: si réseau coupe sans que Pusher déconnecte,
+    // on amorce le timer banner. wsService reste seule autorité pour clear (CONNECTED).
+    this._onOffline = () => { if (!this.disconnectedSince) this.disconnectedSince = Date.now(); };
+    this._onOnline = () => { /* no-op : laisse wsService.CONNECTED clear */ };
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("offline", this._onOffline);
+      window.addEventListener("online", this._onOnline);
+    }
+
     this._bannerInterval = setInterval(() => {
       this.bannerTick += 1;
     }, 1000);
@@ -131,6 +142,10 @@ export default {
     }
     if (this._bannerInterval) {
       clearInterval(this._bannerInterval);
+    }
+    if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+      if (this._onOffline) window.removeEventListener("offline", this._onOffline);
+      if (this._onOnline) window.removeEventListener("online", this._onOnline);
     }
   },
   methods: {

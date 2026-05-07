@@ -50,6 +50,19 @@ class ItemController extends AdminController
             $this->authorizeBranchScope($request, $branchId);
         }
 
+        // [CV1-POS-AVAILABILITY-LIVE-001] surface=pos sans branch_id ⇒ overlay
+        // availability inopérant ; refuser la requête plutôt que projeter is_available
+        // global (false-positive cliquabilité tile = perte argent + 422 au checkout).
+        // Restreint aux callers ayant la perm `pos` pour éviter de casser tooling admin
+        // (ex : éditeur catalogue filtré "POS-visible") qui appellerait surface=pos sans branch.
+        // Cf docs/audit/CV1-POS-AVAILABILITY-LIVE-001_INVESTIGATION_2026-05-08.md §5.3.
+        $surface = strtolower(trim((string) $request->get('surface', '')));
+        if ($surface === 'pos'
+            && ($branchId === null || $branchId < 1)
+            && $request->user() && $request->user()->can('pos')) {
+            return response(['status' => false, 'message' => 'POS catalog requires branch_id'], 422);
+        }
+
         // CV1 catalog convergence (audit CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_1 §A.1 #3):
         // POS-only runtime callers (permission `pos` without catalog `items_show`) must get
         // `?surface=pos` semantics by default so `/api/admin/item` never leaks kiosk-only SKUs.

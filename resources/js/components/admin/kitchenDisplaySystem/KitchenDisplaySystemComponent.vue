@@ -201,7 +201,19 @@
                   </button>
                 </div>
                 <div v-show="!groupByTable || isTableGroupOpen(dineinTableKey(dineinOrder))">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="[kdsWaitClass(dineinOrder), flashTableChangeIds[dineinOrder.id] ? 'kds-table-flash' : '']">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="[kdsWaitClass(dineinOrder), flashTableChangeIds[dineinOrder.id] ? 'kds-table-flash' : '']"
+                role="article"
+                :aria-labelledby="'order-' + dineinOrder.id + '-title'"
+                data-kds-order-card="dinein">
+                <!-- [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge -->
+                <span
+                  v-if="kdsHasOosWarning(dineinOrder)"
+                  class="kds-oos-warning-badge"
+                  data-testid="kds-oos-warning-badge"
+                  :title="$t('label.kds_oos_warning_tooltip')"
+                  :aria-label="$t('label.kds_oos_warning_aria')"
+                  role="img"
+                >&#9888; OOS</span>
                 <button
                   v-if="orderHasAllergens(dineinOrder)"
                   type="button"
@@ -212,7 +224,7 @@
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
                   <div class="flex items-center gap-1 text-[#0084FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#0084FF]"></i>
-                    <span class="text-sm font-normal">#{{ dineinOrder.order_serial_no }}</span>
+                    <span :id="'order-' + dineinOrder.id + '-title'" class="text-sm font-normal">#{{ dineinOrder.order_serial_no }}</span>
                     <span v-if="dineinOrder.queue_number" class="kds-source-pill kds-source-pill--queue">
                       N°{{ dineinOrder.queue_number }}
                     </span>
@@ -325,7 +337,19 @@
               Aucune commande en ligne en cours.
             </div>
             <div v-if="filteredOnlineOrders.length > 0" class="p-3" v-for="onlineOrder in filteredOnlineOrders" :key="onlineOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(onlineOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(onlineOrder)"
+                role="article"
+                :aria-labelledby="'order-' + onlineOrder.id + '-title'"
+                data-kds-order-card="online">
+                <!-- [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge -->
+                <span
+                  v-if="kdsHasOosWarning(onlineOrder)"
+                  class="kds-oos-warning-badge"
+                  data-testid="kds-oos-warning-badge"
+                  :title="$t('label.kds_oos_warning_tooltip')"
+                  :aria-label="$t('label.kds_oos_warning_aria')"
+                  role="img"
+                >&#9888; OOS</span>
                 <button
                   v-if="orderHasAllergens(onlineOrder)"
                   type="button"
@@ -336,7 +360,7 @@
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]">
                   <div class="flex items-center gap-1 text-[#FF8C1A]">
                     <i class="lab lab-processing lab-font-size-16 text-[#FF8C1A]"></i>
-                    <span class="text-sm font-normal">#{{ onlineOrder.order_serial_no }}</span>
+                    <span :id="'order-' + onlineOrder.id + '-title'" class="text-sm font-normal">#{{ onlineOrder.order_serial_no }}</span>
                     <span v-if="onlineOrder.queue_number" class="kds-source-pill kds-source-pill--queue">
                       N°{{ onlineOrder.queue_number }}
                     </span>
@@ -447,7 +471,19 @@
             </div>
             <div v-if="filteredTakeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in filteredTakeawayOrders"
               :key="takeawayOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(takeawayOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(takeawayOrder)"
+                role="article"
+                :aria-labelledby="'order-' + takeawayOrder.id + '-title'"
+                data-kds-order-card="takeaway">
+                <!-- [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge -->
+                <span
+                  v-if="kdsHasOosWarning(takeawayOrder)"
+                  class="kds-oos-warning-badge"
+                  data-testid="kds-oos-warning-badge"
+                  :title="$t('label.kds_oos_warning_tooltip')"
+                  :aria-label="$t('label.kds_oos_warning_aria')"
+                  role="img"
+                >&#9888; OOS</span>
                 <button
                   v-if="orderHasAllergens(takeawayOrder)"
                   type="button"
@@ -458,7 +494,7 @@
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F7F0FF]">
                   <div class="kds-card-header-meta text-[#2D1263]">
                     <i class="lab lab-processing lab-font-size-16 text-[#2D1263]"></i>
-                    <span class="text-sm font-normal">#{{ takeawayOrder.order_serial_no }}</span>
+                    <span :id="'order-' + takeawayOrder.id + '-title'" class="text-sm font-normal">#{{ takeawayOrder.order_serial_no }}</span>
                     <span v-if="takeawayOrder.queue_number"
                       class="kds-source-pill kds-source-pill--queue">
                       N°{{ takeawayOrder.queue_number }}
@@ -576,7 +612,19 @@
               Aucune commande borne en cours.
             </div>
             <div v-if="filteredKioskOrders.length > 0" class="p-3" v-for="kioskOrder in filteredKioskOrders" :key="kioskOrder.id">
-              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(kioskOrder)">
+              <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(kioskOrder)"
+                role="article"
+                :aria-labelledby="'order-' + kioskOrder.id + '-title'"
+                data-kds-order-card="kiosk">
+                <!-- [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge -->
+                <span
+                  v-if="kdsHasOosWarning(kioskOrder)"
+                  class="kds-oos-warning-badge"
+                  data-testid="kds-oos-warning-badge"
+                  :title="$t('label.kds_oos_warning_tooltip')"
+                  :aria-label="$t('label.kds_oos_warning_aria')"
+                  role="img"
+                >&#9888; OOS</span>
                 <button
                   v-if="orderHasAllergens(kioskOrder)"
                   type="button"
@@ -587,7 +635,7 @@
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]">
                   <div class="kds-card-header-meta text-[#991B1B]">
                     <i class="lab lab-processing lab-font-size-16 text-[#991B1B]"></i>
-                    <span class="text-sm font-normal">#{{ kioskOrder.order_serial_no }}</span>
+                    <span :id="'order-' + kioskOrder.id + '-title'" class="text-sm font-normal">#{{ kioskOrder.order_serial_no }}</span>
                     <span v-if="kioskOrder.queue_number"
                       class="kds-source-pill kds-source-pill--queue">
                       N°{{ kioskOrder.queue_number }}
@@ -695,6 +743,17 @@
         </div>
       </div>
     </div>
+    <!-- [CV1-KDS-A11Y-RICH-001] Off-screen aria-live region for transition
+         announcements (ACCEPT → PREPARING → PREPARED). Polite politeness so
+         it does not interrupt the cuisinier's current focus, and visually
+         hidden so it never reflows the kitchen layout. -->
+    <div
+      class="sr-only kds-aria-live"
+      data-testid="kds-aria-live"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >{{ kdsAriaLiveMessage }}</div>
     <!-- [F-03 / Lot 1.C] Adaptive sync badge: reassures the kitchen that the
          board is up to date even when WebSocket is degraded. Color shifts to
          orange after 30s without sync. -->
@@ -845,6 +904,11 @@ export default {
       // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
       _kdsLastNewOrderSoundAt: 0,
       kdsOverflowDetected: false,
+      // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
+      // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
+      // Updated by `kdsAnnounceTransition`; rendered in the dedicated
+      // `<div role="status" aria-live="polite">` outside the cards.
+      kdsAriaLiveMessage: '',
     };
   },
   computed: {
@@ -1266,11 +1330,12 @@ export default {
           { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._debouncedRefresh(); } },
-          // [SYNC-001] KDS now also receives ItemAvailabilityChanged so the
-          // station can flag in-flight tickets that include a freshly 86'd item
-          // (rupture stock cuisine). Cheaper to refresh the active list than
-          // to maintain a per-item availability map on the KDS surface.
-          { broadcastAs: 'ItemAvailabilityChanged', handler: () => { this._debouncedRefresh(); } },
+          // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
+          // ItemAvailabilityChanged so the station can flag in-flight tickets
+          // that include a freshly 86'd item (rupture stock cuisine).
+          // _onItemAvailabilityChanged dispatches into kdsInflight Vuex module
+          // (lazy-purged 10min TTL), then triggers a debounced refresh.
+          { broadcastAs: 'ItemAvailabilityChanged', handler: (parsed) => { this._onItemAvailabilityChanged(parsed); } },
           // [F-02] Floor-plan transfer / occupy → update the table label in place
           // and flash the card briefly. Refresh re-fetches table_name from the
           // backend; flash provides the visual cue (gate G-2 decision).
@@ -1513,6 +1578,9 @@ export default {
             1,
             this.$t("label.status")
           );
+          // [CV1-KDS-A11Y-RICH-001] Announce the transition to screen readers
+          // via the aria-live region (does NOT steal focus, polite politeness).
+          this.kdsAnnounceTransition(order, status);
           // [AUDIT-P49-BUG7] Debounce refresh: list() triggers items update via store,
           // and Echo broadcast also triggers refresh. Use debounce to prevent triple API calls.
           this._debouncedRefresh();
@@ -1537,6 +1605,88 @@ export default {
         const msg = err?.response?.data?.message || err?.message || 'Erreur réseau';
         alertService.error(msg);
       }
+    },
+    /**
+     * [CV1-KDS-INFLIGHT-OOS-MARKER-001] Handle ItemAvailabilityChanged events.
+     *
+     * Per RED-R3 F3 + RED-R4 KD11 :
+     *   - Branch-scoped 86 (is_available === false): mark the item in
+     *     `kdsInflight.recentlyDeavailable` so any in-flight ticket card
+     *     that still contains this item gets a red OOS warning badge.
+     *   - Item became available again (is_available === true): clear the
+     *     flag so the badge disappears.
+     *   - Other event shapes (global price/structural change): just refresh.
+     *
+     * The OOS marker is independent from the existing chime watcher (KD5).
+     * Lazy TTL purge inside the Vuex getter ensures stale flags don't
+     * outlive the rupture window (10 min). No timer leaks across remounts.
+     */
+    _onItemAvailabilityChanged(parsed) {
+      try {
+        const payload = (parsed && parsed.payload) ? parsed.payload : {};
+        const itemId = payload.item_id ?? payload.itemId ?? null;
+        const isAvailable = payload.is_available ?? payload.isAvailable ?? null;
+        const branchId = payload.branch_id ?? payload.branchId ?? null;
+        const reason = payload.reason ?? null;
+        if (itemId !== null && itemId !== undefined) {
+          if (isAvailable === false) {
+            this.$store.dispatch('kdsInflight/markDeavailable', {
+              itemId,
+              branchId,
+              reason,
+              kdsBranchId: this.authBranchId(),
+            });
+          } else if (isAvailable === true) {
+            this.$store.dispatch('kdsInflight/clearItem', itemId);
+          }
+        }
+      } catch (e) {
+        // Defensive: never break KDS refresh because of a malformed payload.
+        console.warn('[KDS] _onItemAvailabilityChanged failed:', e?.message);
+      }
+      this._debouncedRefresh();
+    },
+    /**
+     * [CV1-KDS-INFLIGHT-OOS-MARKER-001] Card-level helper used by templates :
+     * returns true if the given order is in_preparation (or accepted) AND
+     * still references at least one item flagged in `kdsInflight`.
+     * Cards in PREPARED state are intentionally NOT marked — the warning
+     * is only useful while the cuisinier is still working on the ticket.
+     */
+    kdsHasOosWarning(order) {
+      if (!order) return false;
+      const status = Number(order.status);
+      const isInflight = status === orderStatusEnum.ACCEPT || status === orderStatusEnum.PREPARING;
+      if (!isInflight) return false;
+      const getter = this.$store.getters['kdsInflight/orderHasRecentlyDeavailableItem'];
+      return typeof getter === 'function' ? getter(order) : false;
+    },
+    /**
+     * [CV1-KDS-A11Y-RICH-001] Update the polite aria-live region with a
+     * one-line transition announcement. Screen readers pick it up without
+     * stealing focus. Used from `orderStatus` after a successful change.
+     * Falls back silently if the order has no serial number.
+     */
+    kdsAnnounceTransition(order, status) {
+      if (!order) return;
+      const serial = order.order_serial_no ?? order.id ?? '';
+      if (serial === '' || serial === null || serial === undefined) return;
+      let label = '';
+      if (status === orderStatusEnum.PREPARING) {
+        label = this.$t ? this.$t('label.kds_aria_live_preparing', { id: serial }) : `Order #${serial} preparing`;
+      } else if (status === orderStatusEnum.PREPARED) {
+        label = this.$t ? this.$t('label.kds_aria_live_ready', { id: serial }) : `Order #${serial} ready`;
+      } else if (status === orderStatusEnum.ACCEPT) {
+        label = this.$t ? this.$t('label.kds_aria_live_accepted', { id: serial }) : `Order #${serial} accepted`;
+      } else {
+        label = `Order #${serial}`;
+      }
+      // Vue reactivity : briefly clear before setting so identical successive
+      // transitions still trigger an aria-live announcement.
+      this.kdsAriaLiveMessage = '';
+      this.$nextTick(() => {
+        this.kdsAriaLiveMessage = label;
+      });
     },
     /**
      * [F-02] Handle OrderTableChanged events.
@@ -1892,5 +2042,41 @@ export default {
 .kds-allergens-modal-list-item span {
   color: #B91C1C;
   font-weight: 800;
+}
+/* [CV1-KDS-A11Y-RICH-001] WCAG 2.4.7 / 4.1.3 — visually hidden but available
+   to assistive technology. Used by the polite aria-live region. */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+/* [CV1-KDS-INFLIGHT-OOS-MARKER-001] In-flight OOS warning badge. Sits next
+   to (not on top of) the allergens badge so both can coexist on tickets
+   that have allergens AND a freshly 86'd item. */
+.kds-oos-warning-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 5.5rem;
+  z-index: 5;
+  border: 0;
+  border-radius: 9999px;
+  background: #DC2626;
+  color: #FFFFFF;
+  cursor: help;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  padding: 0.5rem 0.65rem;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 </style>

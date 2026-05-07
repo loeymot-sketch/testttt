@@ -3649,8 +3649,18 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     var bootstrapBranchId = this.authBranchId();
     if (bootstrapBranchId) {
       this.applyPosBranchScope(bootstrapBranchId);
+      this.itemList();
+    } else {
+      // [CV1-POS-AVAILABILITY-LIVE-001] Aucun branch_id côté auth (admin global
+      // sans DefaultAccess) → ne JAMAIS fetcher un catalogue POS sans branch
+      // scope. La projection availability per-branch (item_branch_availability)
+      // ne peut s'appliquer qu'avec branch_id côté requête (cf ItemService::
+      // applyBranchAvailabilityOverlay early-return $branchId<1). Sinon le store
+      // se remplit avec is_available global (col items.is_available toujours
+      // true), créant le bug R3-F2 : tile cliquable pour item OOS, rejet 422 au
+      // submit. Le defaultAccess/show ci-dessous secourra si branch dispo.
+      this.loading.isActive = false;
     }
-    this.itemList();
     this.loadKioskCashOrders();
     this.loadActiveOrdersStats();
     this._subscribeEcho();

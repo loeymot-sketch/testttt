@@ -1,0 +1,189 @@
+name: CI Sync Rupture Harness (Outbox + Pusher)
+
+# =============================================================================
+# Mission : CV1-CI-WEBSOCKETS-HARNESS-001
+# Source  : RED-R3 / RED-R5 adversarial sync rupture audit (2026-05-07)
+# =============================================================================
+#
+# Purpose
+# -------
+# Brings up a real Pusher-protocol broadcaster (soketi) on 127.0.0.1:6001 and
+# runs the OutboxPipelineHealthSentinel against it. RED-R3 found that the
+# default phpunit.xml env (BROADCAST_DRIVER=log, QUEUE_CONNECTION=sync) makes
+# every "sync rupture stock" test pass for the wrong reason — the actual
+# Pusher dispatch path is never exercised. This workflow is the only place
+# in CI where that path is end-to-end validated.
+#
+# Independence from phpunit.yml
+# -----------------------------
+# This workflow MUST NOT be merged into phpunit.yml. The two have
+# fundamentally different env contracts:
+#   - phpunit.yml uses log+sync (fast, in-memory, hermetic)
+#   - this workflow uses pusher+database (slower, real protocol)
+# Mixing them would either tank phpunit.yml runtime (1573 tests against MySQL
+# with a Pusher round-trip per event) or silently downgrade this workflow
+# back to the log driver.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      # Only trigger on changes that could regress the outbox pipeline.
+      # The full phpunit.yml still runs on every PR.
+      - 'app/Jobs/DispatchDomainEventsJob.php'
+      - 'app/Listeners/Persist*ToOutbox.php'
+      - 'app/Domain/Events/EventContract.php'
+      - 'app/Models/DomainEvent.php'
+      - 'app/Events/**'
+      - 'config/broadcasting.php'
+      - 'config/queue.php'
+      - 'tests/Feature/Sentinels/OutboxPipelineHealthSentinelTest.php'
+      - 'scripts/ci-bootstrap-websockets-harness.sh'
+      - 'scripts/ci-teardown-websockets-harness.sh'
+      - '.github/workflows/ci-sync-rupture-harness.yml'
+  push:
+    branches: [main, develop]
+  workflow_dispatch: {}
+
+jobs:
+  outbox-pipeline-harness:
+    name: Outbox pipeline (real Pusher protocol)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: foodking_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # ---------------------------------------------------------------------
+      # CRITICAL — these env vars override phpunit.xml defaults so the
+      # sentinel actually exercises the Pusher pipeline.
+      # If you remove any of them, OutboxPipelineHealthSentinelTest will
+      # fail LOUD with a self-check assertion (test 2). Do not paper over
+      # that failure by skipping the test — fix the env.
+      # ---------------------------------------------------------------------
+      CI_WEBSOCKETS_HARNESS: '1'
+      BROADCAST_DRIVER: pusher
+      QUEUE_CONNECTION: database
+
+      # Pusher creds MUST match soketi.json (id=app-id, key=app-key,
+      # secret=app-secret). Keep the two in sync if you ever rotate them.
+      PUSHER_APP_ID: app-id
+      PUSHER_APP_KEY: app-key
+      PUSHER_APP_SECRET: app-secret
+      PUSHER_HOST: 127.0.0.1
+      PUSHER_PORT: '6001'
+      PUSHER_SCHEME: http
+      PUSHER_APP_CLUSTER: mt1
+
+      # Database — MySQL service above.
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: foodking_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+      # Standard Foodking test env (mirrors phpunit.xml secrets).
+      APP_ENV: testing
+      BCRYPT_ROUNDS: '4'
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      MIX_API_KEY: test-api-key
+      FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+      FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, redis, bcmath, intl, mbstring, xml, zip, json
+          tools: composer:v2
+
+      - name: Setup Node (for soketi)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install soketi (Pusher-protocol broadcaster)
+        # The bootstrap script also accepts beyondcode/laravel-websockets
+        # (`php artisan websockets:serve`) if installed; soketi is the
+        # default since composer.json does NOT include beyondcode.
+        run: npm install -g @soketi/soketi@1
+
+      - name: Wait for MySQL
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h 127.0.0.1 -u root -proot --silent && exit 0
+            echo "waiting mysql ($i)..."
+            sleep 1
+          done
+          exit 1
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare .env (mirrors workflow env block — defense in depth)
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          # Force the harness env into .env so any subprocess that reads the
+          # file before phpunit.xml is applied sees the same values.
+          php -r "
+            \$f='.env';
+            \$c=file_get_contents(\$f);
+            \$c=preg_replace('/^DB_CONNECTION=.*/m','DB_CONNECTION=mysql',\$c);
+            \$c=preg_replace('/^DB_HOST=.*/m','DB_HOST=127.0.0.1',\$c);
+            \$c=preg_replace('/^DB_PORT=.*/m','DB_PORT=3306',\$c);
+            \$c=preg_replace('/^DB_DATABASE=.*/m','DB_DATABASE=foodking_test',\$c);
+            \$c=preg_replace('/^DB_USERNAME=.*/m','DB_USERNAME=root',\$c);
+            \$c=preg_replace('/^DB_PASSWORD=.*/m','DB_PASSWORD=root',\$c);
+            \$c=preg_replace('/^BROADCAST_DRIVER=.*/m','BROADCAST_DRIVER=pusher',\$c);
+            \$c=preg_replace('/^QUEUE_CONNECTION=.*/m','QUEUE_CONNECTION=database',\$c);
+            \$c=preg_replace('/^PUSHER_APP_ID=.*/m','PUSHER_APP_ID=app-id',\$c);
+            \$c=preg_replace('/^PUSHER_APP_KEY=.*/m','PUSHER_APP_KEY=app-key',\$c);
+            \$c=preg_replace('/^PUSHER_APP_SECRET=.*/m','PUSHER_APP_SECRET=app-secret',\$c);
+            \$c=preg_replace('/^PUSHER_HOST=.*/m','PUSHER_HOST=127.0.0.1',\$c);
+            \$c=preg_replace('/^PUSHER_PORT=.*/m','PUSHER_PORT=6001',\$c);
+            \$c=preg_replace('/^PUSHER_SCHEME=.*/m','PUSHER_SCHEME=http',\$c);
+            file_put_contents(\$f,\$c);
+          "
+
+      - name: Run migrations
+        run: php artisan migrate --no-interaction
+
+      - name: Bootstrap WebSockets harness (soketi up + drain queue)
+        run: |
+          chmod +x scripts/ci-bootstrap-websockets-harness.sh scripts/ci-teardown-websockets-harness.sh
+          ./scripts/ci-bootstrap-websockets-harness.sh
+
+      - name: Run OutboxPipelineHealthSentinel
+        # This is the actual gate. The sentinel asserts CI_WEBSOCKETS_HARNESS=1
+        # AND that broadcasting.default != 'log' AND queue.default != 'sync',
+        # so a future PR that strips one of the env exports above fails LOUD.
+        run: vendor/bin/phpunit --filter OutboxPipelineHealthSentinel --testdox
+
+      - name: Upload broadcaster log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: websockets-ci-log
+          path: storage/logs/websockets-ci.log
+          if-no-files-found: ignore
+
+      - name: Teardown WebSockets harness
+        if: always()
+        run: ./scripts/ci-teardown-websockets-harness.sh

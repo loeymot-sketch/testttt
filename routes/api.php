@@ -960,6 +960,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
             ->middleware('throttle:60,1')
             ->name('client-metrics');
+
+        // [CV1-OBSERVABILITY-OUTBOX-001] Outbox pipeline dashboard. Admin/Tenant
+        // Admin only — read aggregates the entire fleet (all branches), and
+        // retry / drain mutate the queue. Role gate is enforced inside the
+        // controller via `role:Admin|Tenant Admin` middleware (see __construct).
+        Route::get('/outbox', [SyncOverviewController::class, 'outboxOverview'])->name('outbox.index');
+        Route::post('/outbox/retry-failed', [SyncOverviewController::class, 'outboxRetryFailed'])
+            ->middleware('throttle:10,1')
+            ->name('outbox.retry');
+        Route::post('/outbox/drain-failed', [SyncOverviewController::class, 'outboxDrainFailed'])
+            ->middleware('throttle:5,1')
+            ->name('outbox.drain');
     });
     Route::prefix('oss-order')->name('ossOrder.')->group(function () {
         Route::get('/', [OrderStatusScreenController::class, 'index']);

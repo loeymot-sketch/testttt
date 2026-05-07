@@ -13,7 +13,12 @@ describe('user-reported runtime blockers', () => {
     const kds = read('resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue');
 
     expect(banner).toMatch(/suppressSessionInvalid/);
-    expect(kiosk).toMatch(/<ConnectionStatusBanner suppress-transient suppress-session-invalid \/>/);
+    // [BLUE 2026-05-08 RED-R2 doctrine] Kiosk public client n'a PLUS suppress-session-invalid
+    // — le banner session terminée DOIT s'afficher avec bouton reload (sinon
+    // utilisateur fait des actions sur session zombie sans le savoir).
+    // POS reste avec les 2 suppressors (caissier formé peut gérer transient).
+    expect(kiosk).toMatch(/<ConnectionStatusBanner suppress-transient \/>/);
+    expect(kiosk).not.toMatch(/suppress-session-invalid/);
     expect(pos).toMatch(/<ConnectionStatusBanner suppress-transient suppress-session-invalid \/>/);
     expect(kds).toMatch(/<ConnectionStatusBanner \/>/);
   });

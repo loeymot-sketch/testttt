@@ -102,6 +102,10 @@ import { tableOrder } from './modules/tableOrder';
 import { subscriber } from './modules/subscriber';
 import { kitchenDisplaySystemOrder } from './modules/kitchenDisplaySystemOrder';
 import { kds } from './modules/kds';
+// [CV1-KDS-INFLIGHT-OOS-MARKER-001] Tracks items just marked unavailable (86)
+// so the KDS surface can warn the kitchen about in-flight tickets that still
+// contain those items. Lazy TTL 10min purge; not persisted (runtime only).
+import { kdsInflight } from './modules/kdsInflight';
 import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
 import { kioskCart } from './modules/kioskCart';
@@ -224,6 +228,7 @@ export default new createStore({
         subscriber,
         kitchenDisplaySystemOrder,
         kds,
+        kdsInflight,
         orderStatusScreenOrder,
         kioskMachine,
         kioskCart,
