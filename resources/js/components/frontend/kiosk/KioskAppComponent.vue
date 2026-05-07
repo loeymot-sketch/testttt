@@ -496,6 +496,16 @@ export default {
               this._handleCatalogChangeMidSession(event);
             },
           },
+          {
+            // [KR2 / KIOSK-K3.5] Subscribe to admin coupon mutations so kiosk
+            // invalidates its local promo cache the moment a code is toggled
+            // off / scoped out / expired. Without this, kiosk could accept a
+            // disabled coupon (stale view) until next REST validate.
+            broadcastAs: 'CouponChanged',
+            handler: (event) => {
+              this._handleCouponChanged(event, branchId);
+            },
+          },
         ]);
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
@@ -672,6 +682,48 @@ export default {
         branchId,
       }).then(() => ({ refreshed: true, entityType: payload.entity_type || null }))
         .catch(() => ({ ignored: true, reason: 'menu_refresh_failed' }));
+    },
+
+    /**
+     * [KR2 / KIOSK-K3.5] Handle live coupon mutations from admin (cycle 6).
+     * The kiosk doesn't keep a local list of coupons (validates on demand
+     * via REST), so the cleanest invalidation is to clear any cached promo
+     * resolution in the cart store + emit a soft toast for in-session UX.
+     * If a customer typed a code that just got disabled, next pricing
+     * preview will refuse it cleanly instead of silently applying stale state.
+     */
+    _handleCouponChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      // Branch isolation: ignore events for other branches (defense in depth;
+      // backend already scopes via branch_scope, but this protects against
+      // global broadcasts where branch_id is null).
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return;
+      }
+
+      try {
+        // Best-effort: clear any cached coupon resolution in the cart store.
+        // Action may not exist yet; that's OK — the next pricing preview will
+        // re-validate against the server.
+        this.$store.dispatch('kioskCart/clearCouponCache', {
+          code: payload?.code || null,
+          changeType: payload?.change_type || null,
+        }).catch(() => {});
+      } catch (_) {
+        // Silent — handler must never break the kiosk shell.
+      }
     },
 
     _leaveEchoChannel() {

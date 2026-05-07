@@ -1,0 +1,74 @@
+[
+  {
+    "step": "K5-01",
+    "slug": "lockdown-admin-redirect",
+    "state": "redirected",
+    "severity": "OK",
+    "note": "/kiosk/admin → http://localhost:8000/kiosk/idle",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/01-lockdown-redirect-from-admin.png",
+    "ts": "2026-05-06T23:58:56.308Z"
+  },
+  {
+    "step": "K5-02",
+    "slug": "lockdown-admin-bundle",
+    "state": "status-404",
+    "severity": "OK",
+    "note": "/js/kiosk-admin.js status=404 (expected 404)",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/02-lockdown-kiosk-admin-js-404.png",
+    "ts": "2026-05-06T23:58:57.234Z"
+  },
+  {
+    "step": "K5-03",
+    "slug": "error-payment-refused",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Page error/payment-refused length=204",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/03-error-payment-refused-rendered.png",
+    "ts": "2026-05-06T23:59:00.581Z"
+  },
+  {
+    "step": "K5-04",
+    "slug": "error-menu-unavailable",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Length=176",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/04-error-menu-unavailable-rendered.png",
+    "ts": "2026-05-06T23:59:03.952Z"
+  },
+  {
+    "step": "K5-05",
+    "slug": "error-product-removed",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Length=196",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/05-error-product-removed-rendered.png",
+    "ts": "2026-05-06T23:59:07.295Z"
+  },
+  {
+    "step": "K5-06",
+    "slug": "sentinel-lockdown",
+    "state": "enforced",
+    "severity": "OK",
+    "note": "lint=true, test=true, policy=true",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/06-sentinel-lockdown-enforced.png",
+    "ts": "2026-05-06T23:59:07.949Z"
+  },
+  {
+    "step": "K5-07",
+    "slug": "auto-return-spec",
+    "state": "present",
+    "severity": "OK",
+    "note": "kiosk-post-payment-auto-return.spec.js exists=true",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/07-auto-return-spec-present.png",
+    "ts": "2026-05-06T23:59:08.532Z"
+  },
+  {
+    "step": "K5-08",
+    "slug": "sentinel-offline",
+    "state": "wired",
+    "severity": "OK",
+    "note": "kioskOfflineQueue=true, db=true, V2 spec=true",
+    "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/08-sentinel-offline-wired.png",
+    "ts": "2026-05-06T23:59:09.148Z"
+  }
+]
