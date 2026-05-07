@@ -1,0 +1,30 @@
+[
+  {
+    "slug": "cart-empty",
+    "phase": "before",
+    "ok": true,
+    "note": "empty visible=true, shot=tests/e2e/screenshots/audit-kiosk-ux-2026-05-07/before/02-cart-empty.png",
+    "ts": "2026-05-07T00:37:51.662Z"
+  },
+  {
+    "slug": "payment-screen",
+    "phase": "before",
+    "ok": false,
+    "note": "url=http://localhost:8000/kiosk/cart, isPaymentRoute=false, shot=tests/e2e/screenshots/audit-kiosk-ux-2026-05-07/before/03-payment-screen.png",
+    "ts": "2026-05-07T00:37:57.379Z"
+  },
+  {
+    "slug": "cash-instruction",
+    "phase": "before",
+    "ok": true,
+    "note": "title visible=true, shot=tests/e2e/screenshots/audit-kiosk-ux-2026-05-07/before/04-cash-instruction.png",
+    "ts": "2026-05-07T00:38:02.538Z"
+  },
+  {
+    "slug": "confirmation-screen",
+    "phase": "before",
+    "ok": false,
+    "note": "title visible=false, home CTA classes=\"\", shot=tests/e2e/screenshots/audit-kiosk-ux-2026-05-07/before/05-confirmation-screen.png",
+    "ts": "2026-05-07T00:41:03.003Z"
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "step": "D1-01",
+    "slug": "kds-surface-desktop",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Surface KDS desktop: chargée OK (length=893)",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/01-kds-surface-desktop-loaded.png",
+    "ts": "2026-05-07T01:10:49.935Z"
+  },
+  {
+    "step": "D1-02",
+    "slug": "a11y-axe",
+    "state": "analyzed",
+    "severity": "OK",
+    "note": "Violations: 0 (critical+serious=0). Passes: 27",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/02-a11y-axe-analyzed.png",
+    "ts": "2026-05-07T01:11:00.504Z"
+  },
+  {
+    "step": "D1-03",
+    "slug": "kanban-4-columns",
+    "state": "detected",
+    "severity": "OK",
+    "note": "Colonnes détectées: dine-in=true, online=true, takeaway=true, kiosk=true (4/4)",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/03-kanban-4-columns-check.png",
+    "ts": "2026-05-07T01:11:09.934Z"
+  },
+  {
+    "step": "D1-04",
+    "slug": "kds-controls",
+    "state": "detected",
+    "severity": "OK",
+    "note": "station-filter visible=true, sound-labels=3, total-checkboxes=2",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/04-kds-controls-check.png",
+    "ts": "2026-05-07T01:11:18.981Z"
+  },
+  {
+    "step": "D1-05",
+    "slug": "ws-badge",
+    "state": "check",
+    "severity": "P2",
+    "note": "sync-mode-banner-visible=true (banner=offline-mode), sync-stamp-visible=false (last-sync footer)",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/05-ws-badge-check.png",
+    "ts": "2026-05-07T01:11:27.968Z"
+  },
+  {
+    "step": "D1-06",
+    "slug": "cleanliness",
+    "state": "capture",
+    "severity": "OK",
+    "note": "JS errors=0 (critical=0), console errors=3, network 4xx/5xx=0",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/06-cleanliness-capture.png",
+    "ts": "2026-05-07T01:11:37.988Z"
+  },
+  {
+    "step": "D1-07",
+    "slug": "responsive-tablet",
+    "state": "1024x768",
+    "severity": "OK",
+    "note": "tablet 1024×768: fatal=false, content-length=893, JS-errors=0",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/07-responsive-tablet-1024x768.png",
+    "ts": "2026-05-07T01:11:47.204Z"
+  }
+]
