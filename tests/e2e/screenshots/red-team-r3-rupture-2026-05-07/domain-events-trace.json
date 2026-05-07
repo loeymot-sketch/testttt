@@ -1,0 +1,735 @@
+[
+  {
+    "label": "R3-01-config-snapshot",
+    "payload": {
+      "queue_default": "database",
+      "broadcast_default": "pusher",
+      "jobs_pending": 619,
+      "failed_jobs": 0,
+      "domain_events_total": 133,
+      "domain_events_dispatched": 0,
+      "domain_events_pending": 133,
+      "item_branch_availability_rows": 1,
+      "stock_levels_rows": 0
+    },
+    "ts": "2026-05-07T03:38:24.486Z"
+  },
+  {
+    "label": "R3-01-process-check",
+    "payload": {
+      "workerInfo": "NO worker / websockets running"
+    },
+    "ts": "2026-05-07T03:38:24.561Z"
+  },
+  {
+    "label": "R3-02-before",
+    "payload": {
+      "de_count": 67,
+      "latest_id": 381,
+      "branch_avail_363_b1": {
+        "id": 163,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": 1,
+        "unavailable_reason": null,
+        "unavailable_since": null,
+        "max_daily_qty": null,
+        "daily_consumed_qty": 0,
+        "daily_reset_at": "2026-05-07",
+        "created_at": "2026-05-07 05:11:52",
+        "updated_at": "2026-05-07 05:35:06"
+      }
+    },
+    "ts": "2026-05-07T03:38:26.221Z"
+  },
+  {
+    "label": "R3-02-toggle-OFF-response",
+    "payload": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "manual_admin"
+      },
+      "error": null,
+      "ms": 375
+    },
+    "ts": "2026-05-07T03:38:26.632Z"
+  },
+  {
+    "label": "R3-02-after",
+    "payload": {
+      "de_count": 68,
+      "latest_event": {
+        "id": 383,
+        "event_type": "menu.item_availability_changed",
+        "aggregate_type": "item",
+        "aggregate_id": 363,
+        "branch_id": 1,
+        "payload": "{\"type\": \"branch_availability\", \"price\": 0, \"reason\": \"manual_admin\", \"status\": 0, \"item_id\": 363, \"branch_id\": 1, \"is_available\": false}",
+        "channel": "[\"private-branch.1\"]",
+        "broadcast_as": "ItemAvailabilityChanged",
+        "correlation_id": "5ded0247-744b-4e64-a341-2f40e0a23cc4",
+        "occurred_at": "2026-05-07 05:38:26.000",
+        "dispatched_at": null,
+        "attempts": 0,
+        "last_error": null,
+        "created_at": "2026-05-07 05:38:26",
+        "updated_at": "2026-05-07 05:38:26"
+      },
+      "branch_avail_363_b1": {
+        "id": 163,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": 0,
+        "unavailable_reason": "manual_admin",
+        "unavailable_since": "2026-05-07 05:38:26",
+        "max_daily_qty": null,
+        "daily_consumed_qty": 0,
+        "daily_reset_at": "2026-05-07",
+        "created_at": "2026-05-07 05:11:52",
+        "updated_at": "2026-05-07 05:38:26"
+      }
+    },
+    "ts": "2026-05-07T03:38:27.754Z"
+  },
+  {
+    "label": "R3-03-toggle-response",
+    "payload": {
+      "toggle": {
+        "ok": false,
+        "status": 429,
+        "body": {
+          "message": "Too Many Attempts."
+        },
+        "error": null,
+        "ms": 340
+      },
+      "t0": 1778125121276
+    },
+    "ts": "2026-05-07T03:38:41.616Z"
+  },
+  {
+    "label": "R3-04-kiosk-toggle",
+    "payload": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "manual_admin"
+      },
+      "error": null,
+      "ms": 346
+    },
+    "ts": "2026-05-07T03:39:03.316Z"
+  },
+  {
+    "label": "R3-05-toggle-before-submit",
+    "payload": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "manual_admin"
+      },
+      "error": null,
+      "ms": 362
+    },
+    "ts": "2026-05-07T03:39:19.647Z"
+  },
+  {
+    "label": "R3-05-submit-while-OOS",
+    "payload": {
+      "ok": false,
+      "status": 422,
+      "body": {
+        "status": false,
+        "message": "Article 363 indisponible pour cette branche (manual_admin)."
+      },
+      "error": null
+    },
+    "ts": "2026-05-07T03:39:20.464Z"
+  },
+  {
+    "label": "R3-06-seed-stock",
+    "payload": {
+      "deleted": 0,
+      "created": {
+        "id": 549,
+        "on_hand": 1
+      }
+    },
+    "ts": "2026-05-07T03:39:22.474Z"
+  },
+  {
+    "label": "R3-06-quote",
+    "payload": {
+      "status": 200,
+      "body": {
+        "status": true,
+        "data": {
+          "quote_token": "5f9806b6-f521-4303-8783-5ed68a221bd1",
+          "signature": "6fec919d5a7c43549ee0895cd37e9acff145b5397f7f2e317c7914651620c77c",
+          "expires_at": "2026-05-07T05:40:23+02:00",
+          "ttl_seconds": 59,
+          "subtotal": 6.5,
+          "discount": 0,
+          "total_tax": 20,
+          "delivery_charge": 0,
+          "total_ttc": 26.5,
+          "currency": "EUR",
+          "consumed_at": null
+        }
+      }
+    },
+    "ts": "2026-05-07T03:39:23.623Z"
+  },
+  {
+    "label": "R3-06-parallel-submits",
+    "payload": {
+      "a": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 207,
+            "order_serial_no": "070526207",
+            "queue_number": "A0004",
+            "token": null,
+            "subtotal": 6.5,
+            "discount": 0,
+            "total_tax": 20,
+            "total": 26.5,
+            "subtotal_currency_price": "6.50€",
+            "subtotal_without_tax_currency_price": "-13.50€",
+            "discount_currency_price": "0.00€",
+            "delivery_charge_currency_price": "0.00€",
+            "total_currency_price": "26.50€",
+            "total_tax_currency_price": "20.00€",
+            "order_type": 15,
+            "created_at": "2026-05-07T05:39:24+02:00",
+            "order_datetime": "05:39 AM, 07-05-2026",
+            "order_date": "07-05-2026",
+            "order_time": "05:39 AM",
+            "delivery_date": "07-05-2026",
+            "delivery_time": "05:39 AM - 05:39 AM",
+            "payment_method": null,
+            "payment_status": 5,
+            "payment_pending_counter": false,
+            "is_advance_order": 10,
+            "preparation_time": 15,
+            "status": 4,
+            "status_name": "Acceptée",
+            "reason": null,
+            "user": {
+              "id": 28,
+              "name": "Client Comptoir",
+              "first_name": "Client",
+              "last_name": "Comptoir",
+              "phone": null,
+              "email": "walkingcustomer@example.com",
+              "username": "client_comptoir",
+              "balance": "0.00",
+              "currency_balance": "0.00€",
+              "image": "http://localhost:8000/images/default/profile.png",
+              "role_id": null,
+              "country_code": "+33",
+              "create_date": "05-05-2026",
+              "update_date": "05-05-2026"
+            },
+            "order_address": null,
+            "branch": {
+              "id": 1,
+              "name": "Pfannerstill, Moore and Schmitt Branch",
+              "email": "kody21@kirlin.com",
+              "phone": "+1-954-654-5404",
+              "latitude": "-76.174049",
+              "longitude": "86.137836",
+              "city": "East Marielle",
+              "state": "Maine",
+              "zip_code": "41434",
+              "address": "10995 Erdman Valleys Suite 516",
+              "status": 1,
+              "zone": ""
+            },
+            "delivery_boy": null,
+            "coupon": null,
+            "transaction": null,
+            "order_items": [
+              {
+                "id": 199,
+                "order_id": 207,
+                "branch_id": 1,
+                "item_id": 363,
+                "item_name": "Tacos M (1 Viande)",
+                "item_image": "http://localhost:8000/storage/18/tacos.png",
+                "quantity": 1,
+                "discount": "0.00€",
+                "price": "6.50€",
+                "item_variations": [],
+                "item_extras": [],
+                "item_addons": [],
+                "composition_snapshot": {
+                  "lines": [],
+                  "addons": [],
+                  "extras": [],
+                  "captured_at": "2026-05-07T05:39:24+02:00",
+                  "schema_version": 1
+                },
+                "allergens_snapshot": [],
+                "item_variation_currency_total": "0.00€",
+                "item_extra_currency_total": "0.00€",
+                "total_convert_price": 6.5,
+                "total_currency_price": "6.50€",
+                "instruction": null,
+                "kds_station": "none",
+                "tax_type": "EUR",
+                "tax_rate": "20.000000",
+                "tax_currency_rate": "20.00",
+                "tax_name": "TVA 65%",
+                "tax_currency_amount": "20.00€",
+                "total_without_tax_currency_price": "-13.50€"
+              }
+            ],
+            "table_name": null,
+            "pos_payment_method": 1,
+            "pos_payment_note": null,
+            "source": 15,
+            "pos_received_amount": "50.000000",
+            "pos_received_currency_amount": "50.00€",
+            "cash_back_amount": 23.5,
+            "cash_back_currency_amount": "23.50€",
+            "tax_lines": [
+              {
+                "tax_name": "TVA 65%",
+                "tax_rate": "20",
+                "tax_type": 5,
+                "base_ht": 0,
+                "base_ht_currency": "0.00€",
+                "tax": 20,
+                "tax_currency": "20.00€"
+              }
+            ],
+            "fiscal_sequence_no": 4,
+            "audit_chain_fingerprint": null,
+            "pos_register_id": null,
+            "pos_siret": null,
+            "pos_vat_intra": null,
+            "pos_legal_footer": null,
+            "operator_name": "Client Comptoir",
+            "payments_breakdown": [
+              {
+                "method": 1,
+                "amount": 50,
+                "currency_amount": "50.00€",
+                "change_amount": 23.5,
+                "reference": null
+              }
+            ]
+          }
+        }
+      },
+      "b": {
+        "status": 422,
+        "body": {
+          "status": false,
+          "message": "Article 363 indisponible pour cette branche (stock_rupture)."
+        }
+      },
+      "quoteToken": true
+    },
+    "ts": "2026-05-07T03:39:24.207Z"
+  },
+  {
+    "label": "R3-06-after-parallel",
+    "payload": {
+      "on_hand_after": 0,
+      "orders_count": 1
+    },
+    "ts": "2026-05-07T03:39:25.096Z"
+  },
+  {
+    "label": "R3-07-candidate-ingredients",
+    "payload": [
+      {
+        "name": "Œuf",
+        "c": 32
+      },
+      {
+        "name": "Galette pommes de terre",
+        "c": 32
+      },
+      {
+        "name": "Fromage",
+        "c": 32
+      }
+    ],
+    "ts": "2026-05-07T03:39:26.193Z"
+  },
+  {
+    "label": "R3-07-siblings-before",
+    "payload": [
+      {
+        "id": 178,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 201,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 224,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 247,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 270,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 293,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 316,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 339,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 362,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 385,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 408,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 431,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 454,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 477,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 500,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 523,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 546,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 569,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 589,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      },
+      {
+        "id": 595,
+        "is_available": true,
+        "name": "Œuf",
+        "group_label": null
+      }
+    ],
+    "ts": "2026-05-07T03:39:26.454Z"
+  },
+  {
+    "label": "R3-07-dispatch",
+    "payload": {
+      "ok": true
+    },
+    "ts": "2026-05-07T03:39:26.726Z"
+  },
+  {
+    "label": "R3-07-siblings-after",
+    "payload": {
+      "after": [
+        {
+          "id": 178,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 201,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 224,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 247,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 270,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 293,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 316,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 339,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 362,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 385,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 408,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 431,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 454,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 477,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 500,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 523,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 546,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 569,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 589,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        },
+        {
+          "id": 595,
+          "is_available": false,
+          "name": "Œuf",
+          "group_label": null
+        }
+      ],
+      "ingDe": {
+        "count": 0,
+        "latest": null
+      }
+    },
+    "ts": "2026-05-07T03:39:27.656Z"
+  },
+  {
+    "label": "R3-08-kds-source-analysis",
+    "payload": {
+      "exists": true,
+      "subscribesToItemAvailability": true,
+      "hasInflightHighlight": false,
+      "hasOrderItemFlag": false,
+      "srcLen": 91582
+    },
+    "ts": "2026-05-07T03:39:28.452Z"
+  },
+  {
+    "label": "R3-09-ux-reason-probes",
+    "payload": {
+      "pos-i18n": {
+        "missing": true
+      },
+      "pos-en": {
+        "missing": true
+      },
+      "pos-component": {
+        "hasReason": true,
+        "sample": "title=\"modifierUnavailableReason"
+      },
+      "kiosk-component": {
+        "hasReason": true,
+        "sample": "reason"
+      }
+    },
+    "ts": "2026-05-07T03:39:28.977Z"
+  },
+  {
+    "label": "R3-10-toggle",
+    "payload": {
+      "toggle": {
+        "ok": true,
+        "status": 200,
+        "body": {
+          "ok": true,
+          "item_id": 363,
+          "branch_id": 1,
+          "is_available": false,
+          "unavailable_reason": "manual_admin"
+        },
+        "error": null,
+        "ms": 393
+      },
+      "eventCreatedMs": 393
+    },
+    "ts": "2026-05-07T03:39:30.736Z"
+  },
+  {
+    "label": "R3-10-before-work",
+    "payload": {
+      "jobs_pending": 637,
+      "events_pending": 150
+    },
+    "ts": "2026-05-07T03:39:31.313Z"
+  },
+  {
+    "label": "R3-10-queue-work-output",
+    "payload": {
+      "workOutput": "  2026-05-07 05:39:31 Spatie\\MediaLibrary\\Conversions\\Jobs\\PerformConversionsJob  RUNNING\n  2026-05-07 05:39:31 Spatie\\MediaLibrary\\Conversions\\Jobs\\PerformConversionsJob  7.38ms DONE\n",
+      "workMs": 204
+    },
+    "ts": "2026-05-07T03:39:31.552Z"
+  },
+  {
+    "label": "R3-10-after-work",
+    "payload": {
+      "jobs_pending": 636,
+      "events_pending": 150,
+      "events_dispatched": 0,
+      "latest_event": {
+        "id": 398,
+        "event_type": "menu.item_availability_changed",
+        "aggregate_type": "item",
+        "aggregate_id": 363,
+        "branch_id": 1,
+        "payload": "{\"type\": \"branch_availability\", \"price\": 0, \"reason\": \"manual_admin\", \"status\": 0, \"item_id\": 363, \"branch_id\": 1, \"is_available\": false}",
+        "channel": "[\"private-branch.1\"]",
+        "broadcast_as": "ItemAvailabilityChanged",
+        "correlation_id": "60627991-ea96-43c4-b5d4-10a3931ff21d",
+        "occurred_at": "2026-05-07 05:39:30.000",
+        "dispatched_at": null,
+        "attempts": 0,
+        "last_error": null,
+        "created_at": "2026-05-07 05:39:30",
+        "updated_at": "2026-05-07 05:39:30"
+      }
+    },
+    "ts": "2026-05-07T03:39:31.812Z"
+  }
+]
