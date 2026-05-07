@@ -1016,7 +1016,15 @@ class FrontendOrderService
                 ->lockForUpdate()
                 ->first();
 
-            if ((int) $locked->status >= OrderStatus::ACCEPT) {
+            // [AUDIT-F-013] Whitelist explicit PENDING — only PENDING (1) may be
+            // promoted to ACCEPT here. The previous `>= ACCEPT` check was
+            // numerically equivalent today (PENDING=1 is the only status < 4) but
+            // would silently break if a future intermediate status (e.g. fraud
+            // hold) were inserted between PENDING and ACCEPT. Whitelist makes
+            // intent explicit and forces a deliberate state-machine review for
+            // any new intermediate status. See plan
+            // .claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md
+            if (! in_array((int) $locked->status, [OrderStatus::PENDING], true)) {
                 return;
             }
 
