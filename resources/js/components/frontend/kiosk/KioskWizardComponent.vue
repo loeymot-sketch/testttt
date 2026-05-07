@@ -1,5 +1,10 @@
 <template>
-  <div class="kiosk-wizard">
+  <div class="kiosk-wizard"
+       ref="kioskWizardRoot"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="kiosk-wizard-title"
+       tabindex="-1">
     <!-- Chargement item depuis route (mode edit) -->
     <div v-if="fetchLoading" class="kiosk-wizard-loading">
       <div class="kiosk-wizard-spinner"></div>
@@ -14,7 +19,7 @@
 
     <!-- Wizard complet -->
     <template v-else-if="resolvedItem">
-      <h1 class="kiosk-wizard-sr-only">{{ sanitizeItemName(resolvedItem.name) }}</h1>
+      <h1 id="kiosk-wizard-title" class="kiosk-wizard-sr-only">{{ sanitizeItemName(resolvedItem.name) }}</h1>
       <div class="kiosk-wizard-header">
         <div class="kiosk-item-info">
           <h2 class="kiosk-item-name">{{ sanitizeItemName(resolvedItem.name) }}</h2>
@@ -1994,6 +1999,37 @@ export default {
     });
     // Premier appel pour initialiser le total serveur dès que l'item est connu.
     this.$nextTick(() => this.refreshServerPreviewTotal());
+
+    // [RED-R2 BLUE] Wizard root a11y — sauvegarde le focus de retour, focus le
+    // wrapper dialog après transition, installe un Tab-trap au document. Mirror
+    // du fix POS R1 (commit 9ce2f2e6f) sur ItemComponent.vue.
+    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setTimeout(() => {
+      const root = this.$refs.kioskWizardRoot;
+      if (root && document.contains(root)) {
+        root.focus({ preventScroll: true });
+      }
+    }, 150);
+    this._wizardRootKeydown = (e) => {
+      if (e.key !== 'Tab') return;
+      if (this.showAbandonConfirm) return;
+      const root = this.$refs.kioskWizardRoot;
+      if (!root || !root.contains(document.activeElement)) return;
+      const focusables = [...root.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )];
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', this._wizardRootKeydown, true);
   },
   beforeUnmount() {
     if (this._abandonDocKeydown) {
@@ -2025,6 +2061,16 @@ export default {
     // La cart line originale est intacte (jamais supprimée à l'ouverture).
     if (this.$store?.getters?.['kioskCart/isEditingCart']) {
       this.$store.dispatch('kioskCart/cancelEditingCartItem');
+    }
+    // [RED-R2 BLUE] Cleanup root Tab-trap + restore focus.
+    if (this._wizardRootKeydown) {
+      document.removeEventListener('keydown', this._wizardRootKeydown, true);
+      this._wizardRootKeydown = null;
+    }
+    const returnFocusEl = this._wizardReturnFocusEl;
+    this._wizardReturnFocusEl = null;
+    if (returnFocusEl && typeof returnFocusEl.focus === 'function' && document.contains(returnFocusEl)) {
+      setTimeout(() => returnFocusEl.focus(), 0);
     }
   },
   watch: {

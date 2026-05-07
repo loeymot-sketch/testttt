@@ -1,0 +1,249 @@
+{
+  "01-login": {
+    "url": "http://localhost:8000/kiosk/idle",
+    "hasFormUsername": false,
+    "jsErrors": [
+      "The report-only Content Security Policy '\n            default-src 'self';\n            script-src 'self' 'unsafe-inline' 'unsafe-eval';\n            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;\n            font-src 'self' data: https://fonts.gstatic.com;\n            img-src 'self' data: blob: https:;\n            connect-src 'self' ws: wss: https:;\n            frame-ancestors 'none';\n            base-uri 'self';\n            form-action 'self';\n            object-src 'none';\n            report-uri /api/frontend/csp-report;\n        ' was delivered via a <meta> element, which is disallowed. The policy has been ignored.",
+      "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "ts": "2026-05-07T02:42:39.670Z"
+  },
+  "02-token-probe": {
+    "url": "http://localhost:8000/kiosk/idle",
+    "cookies": "XSRF-TOKEN=eyJpdiI6Ild0OU1XQ2VWRDhOTjhwbTFPeXoyVmc9PSIsInZhbHVlIjoidi82dVdBeDV5M2lTcEY2aVJ4OTdVSGlxRnp4bHN6cURPZzU5bTBFbElETHJid2s0T0FBcVdnTVJxcTN3NTU2dWJDVzFqZXJDLzRaOVhTc3o1REdkMDZ0RUdQbmhVTDFSdFJCVnI0aW5YMEFVcFF5dTJVWVZwSXBNRy9iVWlyekEiLCJtYWMiOiIwMjY0YmU2NWNkNzA3OTJlYTQxMjAwNjdlMjg1OTkzMWMyNjY4MTA5ZTQ1MzUwZWJlYzJiMTkwNDRhNTYxMjI3IiwidGFnIjoiIn0%3D",
+    "localStorageKeys": [
+      "vuex",
+      "kiosk_menu_snapshot_v1",
+      "correlation_id"
+    ],
+    "sessionStorageKeys": [],
+    "ls": {
+      "vuex": "{\"auth\":{\"authStatus\":false,\"authToken\":null,\"authBranchId\":\"\",\"authInfo\":{},\"authMenu\":[],\"resetInfo\":{\"email\":null,\"resetToken\":null},\"authPermission\":{},\"authDefaultPermission\":{},\"authDefaultMenu\"",
+      "kiosk_menu_snapshot_v1": "{\"categories\":[{\"id\":306,\"parent_id\":null,\"slug\":\"nos-tacos\",\"name\":\"Nos Tacos\",\"thumb\":\"http://localhost:8000/images/menu/tacos.png\",\"cover\":\"http://localhost:8000/images/category/cover.png\",\"image\":",
+      "correlation_id": "f3077c75-fa14-4057-a2d1-a892b7424ec4"
+    },
+    "ss": {},
+    "ts": "2026-05-07T02:42:43.208Z"
+  },
+  "03-idle": {
+    "url": "http://localhost:8000/kiosk/idle",
+    "rootClass": "kiosk-idle kiosk-idle--bold",
+    "fontFamily": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "fontReady": false,
+    "ctas": [
+      {
+        "text": "☀",
+        "w": 64,
+        "h": 64,
+        "tooSmall": false
+      },
+      {
+        "text": "",
+        "w": 56,
+        "h": 56,
+        "tooSmall": false
+      },
+      {
+        "text": "Sur placeJe mange ici",
+        "w": 400,
+        "h": 156,
+        "tooSmall": false
+      },
+      {
+        "text": "À emporterJe récupère ma commande",
+        "w": 400,
+        "h": 156,
+        "tooSmall": false
+      }
+    ],
+    "bodyHasIdleClass": "",
+    "ts": "2026-05-07T02:42:47.050Z"
+  },
+  "04-categories": {
+    "url": "http://localhost:8000/kiosk/categories?cat=324",
+    "catCount": 15,
+    "itemCount": 1,
+    "firstCat": "kiosk-categories-sidebar-item-306",
+    "firstItem": "kiosk-product-card-429",
+    "hasMainNav": true,
+    "ts": "2026-05-07T02:42:55.612Z"
+  },
+  "05-wizard": {
+    "found": true,
+    "url": "http://localhost:8000/kiosk/categories?cat=306",
+    "role": null,
+    "ariaModal": null,
+    "ariaLabel": null,
+    "ariaLabelledby": null,
+    "hasH1": true,
+    "hasFocusTrap": false,
+    "activeElInside": false,
+    "activeTag": "BODY",
+    "activeId": null,
+    "hasAllergenBadge": false,
+    "allergenVisible": false,
+    "activeItemAllergens": [],
+    "activeItemName": "Tacos M (1 Viande)",
+    "ts": "2026-05-07T02:43:06.526Z"
+  },
+  "05-wizard-focus-trap": {
+    "activeInside": false,
+    "activeTag": "BUTTON",
+    "activeText": "E2E_PLAYWRIGHT_STUDIO_CATEGORY",
+    "activeOutsideClass": "kiosk-sidebar-item",
+    "ts": "2026-05-07T02:43:06.604Z"
+  },
+  "06-fonts": {
+    "fontReady": {
+      "fraunces": false,
+      "frauncesBold": true,
+      "frauncesItalic": false
+    },
+    "computed": {
+      "fontFamily": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "actualFont": "unresolved-without-document.fonts"
+    },
+    "tokensBoldLoaded": true,
+    "cssVar": "'Fraunces', 'Recoleta', 'DM Serif Display', Georgia, ui-serif, serif",
+    "ts": "2026-05-07T02:43:17.351Z"
+  },
+  "07-cart": {
+    "rootFound": true,
+    "itemCount": 16,
+    "totalText": "€24,50",
+    "url": "http://localhost:8000/kiosk/cart",
+    "summaryLive": null,
+    "ts": "2026-05-07T02:43:27.783Z"
+  },
+  "08-payment": {
+    "url": "http://localhost:8000/kiosk/payment",
+    "buttonCount": 2,
+    "buttonsSample": [
+      "☀",
+      "Confirmer — €24,50"
+    ],
+    "navOnline": true,
+    "offlineBannerVisible": false,
+    "methodBtns": [
+      {
+        "method": "kiosk-payment-method-card",
+        "text": "Carte bancaireVisa · Mastercar"
+      },
+      {
+        "method": "kiosk-payment-method-cash",
+        "text": "€EspècesPaiement à la caisse"
+      },
+      {
+        "method": "kiosk-payment-method-tr",
+        "text": "Titre restaurantEdenred · Swil"
+      }
+    ],
+    "ts": "2026-05-07T02:43:38.135Z"
+  },
+  "09-inactivity-config": {
+    "idleMs": 180000,
+    "confirmMs": 30000,
+    "keys": [
+      "locale",
+      "contrast",
+      "theme",
+      "pmr",
+      "audio",
+      "keyboardEnabled",
+      "audioDescription",
+      "reducedMotion",
+      "settingsOpened",
+      "idleMs",
+      "confirmMs",
+      "receiptMs",
+      "consentAnalytics",
+      "consentLoyalty",
+      "consentMobileTransfer",
+      "customerProfile"
+    ],
+    "ts": "2026-05-07T02:43:45.088Z"
+  },
+  "10-offline-api": {
+    "navOnline": true,
+    "cartKeys": [
+      "items",
+      "orderRef",
+      "queueNumber",
+      "upsellShown",
+      "loyaltyCustomer",
+      "loyaltyDiscount",
+      "promoCode",
+      "promoDiscount",
+      "promoMeta",
+      "promoError",
+      "promoLoading",
+      "branchId",
+      "idempotencyKey",
+      "kioskToken",
+      "kioskMachineId",
+      "paymentMethod",
+      "orderType",
+      "orderQuote",
+      "editingCartIndex",
+      "editingCartSnapshot"
+    ],
+    "offlineRelated": [
+      "queueNumber"
+    ],
+    "machineKeys": [
+      "lists",
+      "page",
+      "pagination",
+      "show",
+      "temp"
+    ],
+    "bcSupported": true,
+    "idbSupported": true,
+    "ts": "2026-05-07T02:43:52.755Z"
+  },
+  "10-offline-state": {
+    "navOnline": false,
+    "offlineBanner": false,
+    "bodyClassOffline": false,
+    "visibleErrorScreen": false,
+    "ts": "2026-05-07T02:43:55.347Z"
+  },
+  "11-pusher": {
+    "echoPresent": true,
+    "pusherPresent": true,
+    "connectionState": "connecting",
+    "connectionKey": "app-key",
+    "connectionBanner": false,
+    "ts": "2026-05-07T02:44:04.870Z"
+  },
+  "12-branch-isolation": {
+    "machineBranchId": null,
+    "cartBranchId": 1,
+    "menuRes1": {
+      "status": 200,
+      "branchId": null
+    },
+    "menuRes2": {
+      "status": 200,
+      "branchId": null
+    },
+    "ts": "2026-05-07T02:44:11.900Z"
+  },
+  "13-lockdown": {
+    "navAdminBlocked": true,
+    "navLandingUrl": "http://localhost:8000/login",
+    "contextMenu": {
+      "prevented": false
+    },
+    "note": "Black-screen / Chromium kiosk flag = OS-level, non testable depuis la page (limitation honnête).",
+    "ts": "2026-05-07T02:44:22.019Z"
+  },
+  "14-confirmation": {
+    "url": "http://localhost:8000/kiosk/idle",
+    "bodyText": "☀\n🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nSur place\nJe mange ici\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+    "ts": "2026-05-07T02:44:32.373Z"
+  }
+}

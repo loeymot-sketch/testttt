@@ -66310,6 +66310,37 @@ function resolveExplicitStepType(step) {
     this.$nextTick(function () {
       return _this15.refreshServerPreviewTotal();
     });
+
+    // [RED-R2 BLUE] Wizard root a11y — sauvegarde le focus de retour, focus le
+    // wrapper dialog après transition, installe un Tab-trap au document. Mirror
+    // du fix POS R1 (commit 9ce2f2e6f) sur ItemComponent.vue.
+    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setTimeout(function () {
+      var root = _this15.$refs.kioskWizardRoot;
+      if (root && document.contains(root)) {
+        root.focus({
+          preventScroll: true
+        });
+      }
+    }, 150);
+    this._wizardRootKeydown = function (e) {
+      if (e.key !== 'Tab') return;
+      if (_this15.showAbandonConfirm) return;
+      var root = _this15.$refs.kioskWizardRoot;
+      if (!root || !root.contains(document.activeElement)) return;
+      var focusables = _toConsumableArray(root.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (focusables.length === 0) return;
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', this._wizardRootKeydown, true);
   },
   beforeUnmount: function beforeUnmount() {
     var _this$activeSteps, _this$$store9;
@@ -66343,6 +66374,18 @@ function resolveExplicitStepType(step) {
     // La cart line originale est intacte (jamais supprimée à l'ouverture).
     if ((_this$$store9 = this.$store) !== null && _this$$store9 !== void 0 && (_this$$store9 = _this$$store9.getters) !== null && _this$$store9 !== void 0 && _this$$store9['kioskCart/isEditingCart']) {
       this.$store.dispatch('kioskCart/cancelEditingCartItem');
+    }
+    // [RED-R2 BLUE] Cleanup root Tab-trap + restore focus.
+    if (this._wizardRootKeydown) {
+      document.removeEventListener('keydown', this._wizardRootKeydown, true);
+      this._wizardRootKeydown = null;
+    }
+    var returnFocusEl = this._wizardReturnFocusEl;
+    this._wizardReturnFocusEl = null;
+    if (returnFocusEl && typeof returnFocusEl.focus === 'function' && document.contains(returnFocusEl)) {
+      setTimeout(function () {
+        return returnFocusEl.focus();
+      }, 0);
     }
   },
   watch: {
@@ -77248,7 +77291,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
 var _hoisted_1 = {
-  "class": "kiosk-wizard"
+  "class": "kiosk-wizard",
+  ref: "kioskWizardRoot",
+  role: "dialog",
+  "aria-modal": "true",
+  "aria-labelledby": "kiosk-wizard-title",
+  tabindex: "-1"
 };
 var _hoisted_2 = {
   key: 0,
@@ -77258,6 +77306,7 @@ var _hoisted_3 = {
   "class": "kiosk-wizard-error"
 };
 var _hoisted_4 = {
+  id: "kiosk-wizard-title",
   "class": "kiosk-wizard-sr-only"
 };
 var _hoisted_5 = {
@@ -77534,7 +77583,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.abandon_continue')), 1 /* TEXT */)])], 512 /* NEED_PATCH */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
-  })], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+  })], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */);
 }
 
 /***/ }),
