@@ -24,7 +24,7 @@
                     <label for="formPassword" class="text-sm capitalize mb-1 text-heading">{{
                         $t('label.password')
                     }}</label>
-                    <input autocomplete="off" type="password" :class="errors.password ? 'invalid' : ''"
+                    <input autocomplete="current-password" type="password" :class="errors.password ? 'invalid' : ''"
                         v-model="form.password" class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]"
                         id="formPassword">
                     <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>

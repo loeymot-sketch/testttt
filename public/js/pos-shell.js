@@ -113,7 +113,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PaymentComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.3\n   - Hero \"À encaisser\" 48px monospace tabular = moment de vérité du flow\n   - Méthodes en segmented control V5\n   - Numpad partagé via PosV5Numpad\n   - CTA \"Confirmer & Imprimer\" full-width primary-pay\n   ============================================================================= */\n.pos-v5-payment-dialog[data-v-bda9bf46],\n.pos-v4-payment-dialog[data-v-bda9bf46] {\n    border: 1px solid var(--pos-v5-border) !important;\n    border-radius: var(--pos-v5-radius-xl) !important;\n    overflow: hidden;\n    box-shadow: var(--pos-v5-shadow-modal) !important;\n    background: var(--pos-v5-bg-panel) !important;\n    font-family: var(--pos-v5-font-sans);\n}\n\n/* Header — warm soft (pas de gradient sombre) */\n.pos-v5-payment-header[data-v-bda9bf46],\n.pos-v4-payment-header[data-v-bda9bf46] {\n    min-height: 64px;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;\n    border-bottom: 1px solid var(--pos-v5-border) !important;\n    color: var(--pos-v5-ink) !important;\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n}\n.pos-v5-payment-header h3[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    color: var(--pos-v5-ink) !important;\n    margin: 0;\n}\n.pos-v5-payment-close[data-v-bda9bf46] {\n    width: 36px;\n    height: 36px;\n    border: 0;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink-soft);\n    font-size: 14px;\n    font-weight: var(--pos-v5-weight-bold);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-payment-close[data-v-bda9bf46]:hover {\n    background: var(--pos-v5-danger-soft);\n    color: var(--pos-v5-danger);\n}\n\n/* Hero \"À encaisser\" — moment de vérité, display 48px */\n.pos-v5-payment-total-card[data-v-bda9bf46],\n.pos-v4-payment-total-card[data-v-bda9bf46] {\n    display: block !important;\n    width: 100%;\n    height: auto !important;\n    min-height: 110px !important;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;\n    border: 1px dashed var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-lg) !important;\n    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-receipt)) !important;\n    text-align: center;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.pos-v5-payment-total-label[data-v-bda9bf46] {\n    margin: 0 0 4px;\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n    line-height: 1;\n}\n.pos-v5-payment-total-value[data-v-bda9bf46] {\n    margin: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-display-lg);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-brand-red);\n    line-height: 1.1;\n    letter-spacing: var(--pos-v5-tracking-tight);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* Section title (Mode de paiement / Reçu / Carte) */\n.pos-v5-payment-section-title[data-v-bda9bf46] {\n    margin: 0 0 var(--pos-v5-space-2);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n}\n\n/* Méthodes paiement — segmented control 2 onglets */\n.pos-v5-payment-methods[data-v-bda9bf46],\n.pos-v4-payment-methods[data-v-bda9bf46] {\n    display: grid !important;\n    grid-template-columns: 1fr 1fr;\n    gap: var(--pos-v5-space-2) !important;\n    padding: 4px;\n    background: var(--pos-v5-bg-subtle);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-payment-method[data-v-bda9bf46],\n.pos-v4-payment-method[data-v-bda9bf46] {\n    min-height: 64px !important;\n    border-radius: var(--pos-v5-radius-sm) !important;\n    border: 1px solid transparent !important;\n    background: transparent !important;\n    color: var(--pos-v5-ink-soft);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n    display: flex !important;\n    align-items: center;\n    justify-content: center;\n    gap: var(--pos-v5-space-2);\n    flex-direction: row !important;\n    padding: var(--pos-v5-space-2) var(--pos-v5-space-3) !important;\n    cursor: pointer;\n    box-shadow: none;\n}\n.pos-v5-payment-method[data-v-bda9bf46]:hover {\n    background: var(--pos-v5-bg-panel) !important;\n    color: var(--pos-v5-ink) !important;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.pos-v5-payment-method.is-active[data-v-bda9bf46],\n.pos-v5-payment-method.active[data-v-bda9bf46],\n.pos-v4-payment-method.active[data-v-bda9bf46] {\n    background: var(--pos-v5-bg-panel) !important;\n    border-color: var(--pos-v5-brand-red) !important;\n    color: var(--pos-v5-brand-red) !important;\n    box-shadow: var(--pos-v5-shadow-md), 0 0 0 3px var(--pos-v5-brand-red-soft);\n    font-weight: var(--pos-v5-weight-extrabold);\n}\n.pos-v5-payment-method-icon[data-v-bda9bf46] {\n    font-size: 22px;\n    line-height: 1;\n}\n.pos-v5-payment-method-label[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n}\n\n/* Cash / card input */\n.pos-v5-payment-input-label[data-v-bda9bf46] {\n    display: block;\n    margin-bottom: var(--pos-v5-space-2);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-payment-input[data-v-bda9bf46] {\n    width: 100%;\n    height: 56px;\n    padding: 0 var(--pos-v5-space-4);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-bg-panel);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h4);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    text-align: center;\n    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-payment-input[data-v-bda9bf46]:focus {\n    outline: 0;\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n\n/* Change due — success vibrant */\n.pos-v5-payment-change[data-v-bda9bf46] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    margin-top: var(--pos-v5-space-3);\n    background: var(--pos-v5-success-soft);\n    border: 1px solid var(--pos-v5-success);\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-success);\n}\n.pos-v5-payment-change-label[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-success-dark);\n    display: inline-flex;\n    align-items: center;\n    gap: var(--pos-v5-space-2);\n}\n.pos-v5-payment-change-value[data-v-bda9bf46] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h4);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-success-dark);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* Numpad container */\n.pos-v5-payment-numpad-wrap[data-v-bda9bf46],\n.pos-v4-numpad[data-v-bda9bf46] {\n    background: transparent;\n    padding: 0;\n    border: 0;\n    margin-bottom: var(--pos-v5-space-4);\n}\n\n/* Confirm CTA — primary-pay full width */\n.pos-v5-payment-confirm[data-v-bda9bf46],\n.pos-v4-confirm-button[data-v-bda9bf46] {\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center;\n    gap: var(--pos-v5-space-2);\n    min-height: 56px;\n    width: 100%;\n    padding: 0 var(--pos-v5-space-5);\n    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;\n    color: var(--pos-v5-ink-on-red) !important;\n    border: 0 !important;\n    border-radius: var(--pos-v5-radius-lg) !important;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    cursor: pointer;\n    box-shadow: var(--pos-v5-shadow-cta);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:hover:not(:disabled),\n.pos-v4-confirm-button[data-v-bda9bf46]:hover:not(:disabled) {\n    transform: translateY(-1px);\n    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:disabled,\n.pos-v4-confirm-button[data-v-bda9bf46]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n    transform: none;\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:focus-visible,\n.pos-v4-confirm-button[data-v-bda9bf46]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-v5-payment-confirm[data-v-bda9bf46],\n    .pos-v4-confirm-button[data-v-bda9bf46] { transition: none !important;\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:hover:not(:disabled),\n    .pos-v4-confirm-button[data-v-bda9bf46]:hover:not(:disabled) { transform: none;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PaymentComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.3\n   - Hero \"À encaisser\" 48px monospace tabular = moment de vérité du flow\n   - Méthodes en segmented control V5\n   - Numpad partagé via PosV5Numpad\n   - CTA \"Confirmer & Imprimer\" full-width primary-pay\n   ============================================================================= */\n.pos-v5-payment-dialog[data-v-bda9bf46],\n.pos-v4-payment-dialog[data-v-bda9bf46] {\n    border: 1px solid var(--pos-v5-border) !important;\n    border-radius: var(--pos-v5-radius-xl) !important;\n    overflow: hidden;\n    box-shadow: var(--pos-v5-shadow-modal) !important;\n    background: var(--pos-v5-bg-panel) !important;\n    font-family: var(--pos-v5-font-sans);\n}\n\n/* Header — warm soft (pas de gradient sombre) */\n.pos-v5-payment-header[data-v-bda9bf46],\n.pos-v4-payment-header[data-v-bda9bf46] {\n    min-height: 64px;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;\n    border-bottom: 1px solid var(--pos-v5-border) !important;\n    color: var(--pos-v5-ink) !important;\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n}\n.pos-v5-payment-header h3[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    color: var(--pos-v5-ink) !important;\n    margin: 0;\n}\n.pos-v5-payment-close[data-v-bda9bf46] {\n    width: 36px;\n    height: 36px;\n    border: 0;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink-soft);\n    font-size: 14px;\n    font-weight: var(--pos-v5-weight-bold);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-payment-close[data-v-bda9bf46]:hover {\n    background: var(--pos-v5-danger-soft);\n    color: var(--pos-v5-danger);\n}\n\n/* Hero \"À encaisser\" — moment de vérité, display 48px */\n.pos-v5-payment-total-card[data-v-bda9bf46],\n.pos-v4-payment-total-card[data-v-bda9bf46] {\n    display: block !important;\n    width: 100%;\n    height: auto !important;\n    min-height: 110px !important;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) !important;\n    border: 1px dashed var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-lg) !important;\n    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-receipt)) !important;\n    text-align: center;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.pos-v5-payment-total-label[data-v-bda9bf46] {\n    margin: 0 0 4px;\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n    line-height: 1;\n}\n.pos-v5-payment-total-value[data-v-bda9bf46] {\n    margin: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-display-lg);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-brand-red);\n    line-height: 1.1;\n    letter-spacing: var(--pos-v5-tracking-tight);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* Section title (Mode de paiement / Reçu / Carte) */\n.pos-v5-payment-section-title[data-v-bda9bf46] {\n    margin: 0 0 var(--pos-v5-space-2);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n}\n\n/* Méthodes paiement — segmented control 2 ou 3 onglets */\n.pos-v5-payment-methods[data-v-bda9bf46],\n.pos-v4-payment-methods[data-v-bda9bf46] {\n    display: grid !important;\n    grid-template-columns: 1fr 1fr;\n    gap: var(--pos-v5-space-2) !important;\n    padding: 4px;\n    background: var(--pos-v5-bg-subtle);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n}\n/* [CV1-POS-SPLIT-PAYMENT-001] 3 onglets : cash | card | multi */\n.pos-v5-payment-methods--3col[data-v-bda9bf46] {\n    grid-template-columns: 1fr 1fr 1fr;\n}\n.pos-v5-payment-method[data-v-bda9bf46],\n.pos-v4-payment-method[data-v-bda9bf46] {\n    min-height: 64px !important;\n    border-radius: var(--pos-v5-radius-sm) !important;\n    border: 1px solid transparent !important;\n    background: transparent !important;\n    color: var(--pos-v5-ink-soft);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n    display: flex !important;\n    align-items: center;\n    justify-content: center;\n    gap: var(--pos-v5-space-2);\n    flex-direction: row !important;\n    padding: var(--pos-v5-space-2) var(--pos-v5-space-3) !important;\n    cursor: pointer;\n    box-shadow: none;\n}\n.pos-v5-payment-method[data-v-bda9bf46]:hover {\n    background: var(--pos-v5-bg-panel) !important;\n    color: var(--pos-v5-ink) !important;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.pos-v5-payment-method.is-active[data-v-bda9bf46],\n.pos-v5-payment-method.active[data-v-bda9bf46],\n.pos-v4-payment-method.active[data-v-bda9bf46] {\n    background: var(--pos-v5-bg-panel) !important;\n    border-color: var(--pos-v5-brand-red) !important;\n    color: var(--pos-v5-brand-red) !important;\n    box-shadow: var(--pos-v5-shadow-md), 0 0 0 3px var(--pos-v5-brand-red-soft);\n    font-weight: var(--pos-v5-weight-extrabold);\n}\n.pos-v5-payment-method-icon[data-v-bda9bf46] {\n    font-size: 22px;\n    line-height: 1;\n}\n.pos-v5-payment-method-label[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n}\n\n/* Cash / card input */\n.pos-v5-payment-input-label[data-v-bda9bf46] {\n    display: block;\n    margin-bottom: var(--pos-v5-space-2);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-payment-input[data-v-bda9bf46] {\n    width: 100%;\n    height: 56px;\n    padding: 0 var(--pos-v5-space-4);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-bg-panel);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h4);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    text-align: center;\n    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-payment-input[data-v-bda9bf46]:focus {\n    outline: 0;\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n\n/* Change due — success vibrant */\n.pos-v5-payment-change[data-v-bda9bf46] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    margin-top: var(--pos-v5-space-3);\n    background: var(--pos-v5-success-soft);\n    border: 1px solid var(--pos-v5-success);\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-success);\n}\n.pos-v5-payment-change-label[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-success-dark);\n    display: inline-flex;\n    align-items: center;\n    gap: var(--pos-v5-space-2);\n}\n.pos-v5-payment-change-value[data-v-bda9bf46] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h4);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-success-dark);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* Numpad container */\n.pos-v5-payment-numpad-wrap[data-v-bda9bf46],\n.pos-v4-numpad[data-v-bda9bf46] {\n    background: transparent;\n    padding: 0;\n    border: 0;\n    margin-bottom: var(--pos-v5-space-4);\n}\n\n/* Confirm CTA — primary-pay full width */\n.pos-v5-payment-confirm[data-v-bda9bf46],\n.pos-v4-confirm-button[data-v-bda9bf46] {\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center;\n    gap: var(--pos-v5-space-2);\n    min-height: 56px;\n    width: 100%;\n    padding: 0 var(--pos-v5-space-5);\n    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;\n    color: var(--pos-v5-ink-on-red) !important;\n    border: 0 !important;\n    border-radius: var(--pos-v5-radius-lg) !important;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    cursor: pointer;\n    box-shadow: var(--pos-v5-shadow-cta);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:hover:not(:disabled),\n.pos-v4-confirm-button[data-v-bda9bf46]:hover:not(:disabled) {\n    transform: translateY(-1px);\n    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:disabled,\n.pos-v4-confirm-button[data-v-bda9bf46]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n    transform: none;\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:focus-visible,\n.pos-v4-confirm-button[data-v-bda9bf46]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-v5-payment-confirm[data-v-bda9bf46],\n    .pos-v4-confirm-button[data-v-bda9bf46] { transition: none !important;\n}\n.pos-v5-payment-confirm[data-v-bda9bf46]:hover:not(:disabled),\n    .pos-v4-confirm-button[data-v-bda9bf46]:hover:not(:disabled) { transform: none;\n}\n}\n\n/* =============================================================================\n   [CV1-POS-SPLIT-PAYMENT-001] Multi-tender block\n   -----------------------------------------------------------------------------\n   - Sticky summary \"Couvert / Reste dû / Monnaie totale\"\n   - Liste de tranches éditables (PosV5TrancheRow)\n   - Diviser à parts égales (input N + bouton)\n   ============================================================================= */\n.pos-v5-split-block[data-v-bda9bf46] {\n    display: flex;\n    flex-direction: column;\n    gap: var(--pos-v5-space-3);\n    margin-bottom: var(--pos-v5-space-4);\n}\n.pos-v5-split-summary[data-v-bda9bf46] {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    background: var(--pos-v5-bg-subtle);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-split-summary__row[data-v-bda9bf46] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-split-summary__label[data-v-bda9bf46] {\n    color: var(--pos-v5-ink-soft);\n    text-transform: uppercase;\n    font-size: var(--pos-v5-text-eyebrow);\n    letter-spacing: var(--pos-v5-tracking-caps);\n}\n.pos-v5-split-summary__value[data-v-bda9bf46] {\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n.pos-v5-split-summary__row--remaining .pos-v5-split-summary__value[data-v-bda9bf46] {\n    color: var(--pos-v5-danger);\n    font-size: var(--pos-v5-text-h6);\n}\n.pos-v5-split-summary__row--ok .pos-v5-split-summary__value[data-v-bda9bf46] {\n    color: var(--pos-v5-success-dark);\n}\n.pos-v5-split-summary__row--change .pos-v5-split-summary__value[data-v-bda9bf46] {\n    color: var(--pos-v5-success-dark);\n}\n.pos-v5-split-divider[data-v-bda9bf46] {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    border: 1px dashed var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-split-divider__label[data-v-bda9bf46] {\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    text-transform: uppercase;\n    letter-spacing: var(--pos-v5-tracking-caps);\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-split-divider__row[data-v-bda9bf46] {\n    display: flex;\n    gap: var(--pos-v5-space-2);\n    align-items: stretch;\n}\n.pos-v5-split-divider__input[data-v-bda9bf46] {\n    width: 90px;\n    height: 44px;\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-sm);\n    background: var(--pos-v5-bg-panel);\n    text-align: center;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-split-divider__input[data-v-bda9bf46]:focus-visible {\n    outline: 0;\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n.pos-v5-split-divider__btn[data-v-bda9bf46] {\n    flex: 1 1 auto;\n    height: 44px;\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    border-radius: var(--pos-v5-radius-sm);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n    cursor: pointer;\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-split-divider__btn[data-v-bda9bf46]:hover:not(:disabled) {\n    background: var(--pos-v5-brand-red-soft);\n    border-color: var(--pos-v5-brand-red);\n    color: var(--pos-v5-brand-red);\n}\n.pos-v5-split-divider__btn[data-v-bda9bf46]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n.pos-v5-split-divider__btn[data-v-bda9bf46]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n.pos-v5-split-tranches[data-v-bda9bf46] {\n    display: flex;\n    flex-direction: column;\n    gap: var(--pos-v5-space-2);\n}\n.pos-v5-split-empty[data-v-bda9bf46] {\n    margin: 0;\n    padding: var(--pos-v5-space-3);\n    text-align: center;\n    color: var(--pos-v5-ink-soft);\n    font-size: var(--pos-v5-text-body);\n    border: 1px dashed var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-bg-subtle);\n}\n.pos-v5-split-add[data-v-bda9bf46] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    gap: 6px;\n    height: 48px;\n    padding: 0 var(--pos-v5-space-4);\n    border: 1px dashed var(--pos-v5-brand-red);\n    background: var(--pos-v5-brand-red-faint);\n    color: var(--pos-v5-brand-red);\n    border-radius: var(--pos-v5-radius-md);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n    cursor: pointer;\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-split-add[data-v-bda9bf46]:hover {\n    background: var(--pos-v5-brand-red-soft);\n    color: var(--pos-v5-brand-red-dark);\n}\n.pos-v5-split-add[data-v-bda9bf46]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -426,6 +426,30 @@ __webpack_require__.r(__webpack_exports__);
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-total-row[data-v-16cd6aff] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n    padding: var(--pos-v5-space-2) 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n    line-height: var(--pos-v5-leading-tight);\n}\n.pos-v5-total-row__label[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-medium);\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-total-row__value[data-v-16cd6aff] {\n    display: inline-flex;\n    align-items: center;\n    gap: 2px;\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-total-row__sign[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-bold);\n    margin-right: 2px;\n    opacity: 0.85;\n}\n.pos-v5-total-row__amount[data-v-16cd6aff] {\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* === TONES === */\n.pos-v5-total-row--muted .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-ink-soft);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-total-row--info .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-info);\n}\n.pos-v5-total-row--success .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-success-dark);\n}\n.pos-v5-total-row--danger .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-danger);\n}\n.pos-v5-total-row--hero[data-v-16cd6aff] {\n    margin-top: var(--pos-v5-space-2);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel));\n    border: 1px solid var(--pos-v5-brand-red-soft);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-total-row--hero .pos-v5-total-row__label[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    text-transform: none;\n}\n.pos-v5-total-row--hero .pos-v5-total-row__value[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h3);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-brand-red);\n    letter-spacing: var(--pos-v5-tracking-tight);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css":
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-tranche-row[data-v-4428e74e] {\n    display: flex;\n    flex-direction: column;\n    gap: var(--pos-v5-space-2);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-sm);\n    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-tranche-row--invalid[data-v-4428e74e] {\n    border-color: var(--pos-v5-danger);\n    box-shadow: 0 0 0 2px var(--pos-v5-danger-soft);\n}\n.pos-v5-tranche-row__header[data-v-4428e74e] {\n    display: flex;\n    align-items: center;\n    gap: var(--pos-v5-space-2);\n    flex-wrap: wrap;\n}\n.pos-v5-tranche-row__mode-label[data-v-4428e74e] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    text-transform: uppercase;\n    letter-spacing: var(--pos-v5-tracking-caps);\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-tranche-row__icon[data-v-4428e74e] {\n    font-size: 18px;\n}\n.pos-v5-tranche-row__mode-select[data-v-4428e74e] {\n    flex: 1 1 auto;\n    height: 40px;\n    padding: 0 var(--pos-v5-space-3);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-sm);\n    background: var(--pos-v5-bg-panel);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-tranche-row__mode-select[data-v-4428e74e]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n.pos-v5-tranche-row__remove[data-v-4428e74e] {\n    width: 32px;\n    height: 32px;\n    border: 0;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink-soft);\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-tranche-row__remove[data-v-4428e74e]:hover {\n    background: var(--pos-v5-danger-soft);\n    color: var(--pos-v5-danger);\n}\n.pos-v5-tranche-row__remove[data-v-4428e74e]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n.pos-v5-tranche-row__fields[data-v-4428e74e] {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: var(--pos-v5-space-2);\n}\n.pos-v5-tranche-row__field[data-v-4428e74e] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n}\n.pos-v5-tranche-row__field-label[data-v-4428e74e] {\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-tranche-row__input[data-v-4428e74e] {\n    height: 44px;\n    padding: 0 var(--pos-v5-space-3);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-sm);\n    background: var(--pos-v5-bg-panel);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n    text-align: center;\n}\n.pos-v5-tranche-row__input[data-v-4428e74e]:focus-visible {\n    outline: 0;\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n.pos-v5-tranche-row__change[data-v-4428e74e] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    padding: 6px var(--pos-v5-space-3);\n    background: var(--pos-v5-success-soft);\n    border-radius: var(--pos-v5-radius-sm);\n    color: var(--pos-v5-success-dark);\n    font-size: var(--pos-v5-text-body);\n    font-weight: var(--pos-v5-weight-bold);\n}\n.pos-v5-tranche-row__change-value[data-v-4428e74e] {\n    margin-left: auto;\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n.pos-v5-tranche-row__error[data-v-4428e74e] {\n    margin: 0;\n    font-size: var(--pos-v5-text-eyebrow);\n    color: var(--pos-v5-danger-dark);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1472,6 +1496,15 @@ function createEmptyTemp() {
         }
         modalTarget === null || modalTarget === void 0 || (_modalTarget$classLis2 = modalTarget.classList) === null || _modalTarget$classLis2 === void 0 || _modalTarget$classLis2.add("active");
         document.body.style.overflowY = "hidden";
+        _this4._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setTimeout(function () {
+          var _modalTarget$classLis3;
+          if (modalTarget && (_modalTarget$classLis3 = modalTarget.classList) !== null && _modalTarget$classLis3 !== void 0 && _modalTarget$classLis3.contains('active')) {
+            modalTarget.focus({
+              preventScroll: true
+            });
+          }
+        }, 150);
       })["catch"](function (error) {
         _this4.showItemLoadError(error);
       });
@@ -1487,7 +1520,7 @@ function createEmptyTemp() {
       this.editingCartIndex = typeof index === 'number' ? index : null;
       // [AUDIT 2026-04-17 R2] Keep the POS channel projection on edit too.
       this.$store.dispatch('item/details', this.posItemDetailsPayload(cartLine.item_id)).then(function (res) {
-        var _modalTarget$classLis3;
+        var _modalTarget$classLis4;
         var item = _this5.normalizeLoadedItem(res.data.data);
         _this5.item = item;
         _this5.addons = {};
@@ -1560,8 +1593,17 @@ function createEmptyTemp() {
         if (modalTarget && item) {
           modalTarget.setAttribute('data-wizard-item-data', JSON.stringify(item));
         }
-        modalTarget === null || modalTarget === void 0 || (_modalTarget$classLis3 = modalTarget.classList) === null || _modalTarget$classLis3 === void 0 || _modalTarget$classLis3.add('active');
+        modalTarget === null || modalTarget === void 0 || (_modalTarget$classLis4 = modalTarget.classList) === null || _modalTarget$classLis4 === void 0 || _modalTarget$classLis4.add('active');
         document.body.style.overflowY = 'hidden';
+        _this5._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setTimeout(function () {
+          var _modalTarget$classLis5;
+          if (modalTarget && (_modalTarget$classLis5 = modalTarget.classList) !== null && _modalTarget$classLis5 !== void 0 && _modalTarget$classLis5.contains('active')) {
+            modalTarget.focus({
+              preventScroll: true
+            });
+          }
+        }, 150);
       })["catch"](function () {
         // [V7 FIX] Show error feedback — silent failure leaves cashier confused
         _this5.editingCartIndex = null;
@@ -1583,6 +1625,13 @@ function createEmptyTemp() {
       var modalDiv = this.$refs.itemVariationModal;
       modalDiv === null || modalDiv === void 0 || (_modalDiv$classList2 = modalDiv.classList) === null || _modalDiv$classList2 === void 0 || _modalDiv$classList2.remove("active");
       document.body.style.overflowY = "auto";
+      var returnFocusEl = this._wizardReturnFocusEl;
+      this._wizardReturnFocusEl = null;
+      if (returnFocusEl && typeof returnFocusEl.focus === 'function' && document.contains(returnFocusEl)) {
+        this.$nextTick(function () {
+          return returnFocusEl.focus();
+        });
+      }
     },
     bumpPricingToCatalog: function bumpPricingToCatalog() {
       if (!this.usePricedCartBase || !this.item) return;
@@ -2434,6 +2483,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _helpers_posNormalizeIds__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../../../helpers/posNormalizeIds */ "./resources/js/helpers/posNormalizeIds.js");
 /* harmony import */ var _store_modules_posCart__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../../../store/modules/posCart */ "./resources/js/store/modules/posCart.js");
 /* harmony import */ var _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./v5/PosV5Numpad.vue */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue");
+/* harmony import */ var _v5_PosV5TrancheRow_vue__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./v5/PosV5TrancheRow.vue */ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue");
+/* harmony import */ var _helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../helpers/posSplitPayment */ "./resources/js/helpers/posSplitPayment.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
@@ -2460,12 +2511,16 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Numpad partagé V5
 
+// [CV1-POS-SPLIT-PAYMENT-001] Multi-tender (split) UI atom + helpers
+
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "PaymentComponent",
   components: {
     LoadingComponent: _components_LoadingComponent_vue__WEBPACK_IMPORTED_MODULE_2__["default"],
     ReceiptComponent: _ReceiptComponent_vue__WEBPACK_IMPORTED_MODULE_5__["default"],
-    PosV5Numpad: _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_13__["default"]
+    PosV5Numpad: _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_13__["default"],
+    PosV5TrancheRow: _v5_PosV5TrancheRow_vue__WEBPACK_IMPORTED_MODULE_14__["default"]
   },
   emits: ["payment-form:patch", "payment-form:reset", "order:confirmed"],
   props: {
@@ -2479,7 +2534,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       order: {},
       posPaymentMethodEnum: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_6__["default"],
       inputIdName: "cashInput",
-      cashReceivedRaw: 0
+      cashReceivedRaw: 0,
+      // [CV1-POS-SPLIT-PAYMENT-001] Local mode for the segmented control.
+      // 'cash' / 'card' map 1:1 to existing pos_payment_method paths (untouched).
+      // 'multi' is fully local: tranches[] are not bubbled into props.form.
+      paymentMode: 'cash',
+      tranches: [],
+      splitCount: 2
     };
   },
   computed: {
@@ -2495,9 +2556,55 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     paymentForm: function paymentForm() {
       var _this$props2;
       return ((_this$props2 = this.props) === null || _this$props2 === void 0 ? void 0 : _this$props2.form) || {};
+    },
+    // [CV1-POS-SPLIT-PAYMENT-001] Split-payment computed surface.
+    totalCents: function totalCents() {
+      var _this$props3;
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.toCents)(((_this$props3 = this.props) === null || _this$props3 === void 0 || (_this$props3 = _this$props3.form) === null || _this$props3 === void 0 ? void 0 : _this$props3.total) || 0);
+    },
+    coveredCents: function coveredCents() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.sumCoveredCents)(this.tranches);
+    },
+    totalCoveredEur: function totalCoveredEur() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)(this.coveredCents);
+    },
+    remainingCentsValue: function remainingCentsValue() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.remainingCents)(this.totalCents, this.tranches);
+    },
+    remainingDueEur: function remainingDueEur() {
+      var cents = this.remainingCentsValue;
+      return cents > 0 ? (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)(cents) : 0;
+    },
+    totalChangeEur: function totalChangeEur() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)((0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.totalChangeCents)(this.tranches));
+    },
+    canConfirmMulti: function canConfirmMulti() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.canConfirm)(this.totalCents, this.tranches);
+    },
+    canSplitEqually: function canSplitEqually() {
+      return Number(this.splitCount) >= 2 && this.totalCents > 0;
     }
   },
-  mounted: function mounted() {},
+  mounted: function mounted() {
+    // [CV1-POS-SPLIT-PAYMENT-001] Sync local paymentMode with parent's
+    // pos_payment_method on mount so a re-opened modal with CARD-default
+    // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
+    // never inherited (single-tender re-open ⇒ never multi).
+    this.syncPaymentModeFromForm();
+  },
+  watch: {
+    // [CV1-POS-SPLIT-PAYMENT-001] String-path watcher (Vue 3 supports it for nested
+    // reactive props). On external mutation of pos_payment_method (parent reset /
+    // restore-from-localStorage), re-sync the segmented control — unless the
+    // cashier is in 'multi' mode (multi is purely local; parent doesn't track it).
+    'props.form.pos_payment_method': {
+      handler: function handler() {
+        if (this.paymentMode !== 'multi') {
+          this.syncPaymentModeFromForm();
+        }
+      }
+    }
+  },
   methods: {
     currencyFormat: function currencyFormat(amount, decimal, currency, position) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].currencyFormat(amount, decimal, currency, position);
@@ -2547,6 +2654,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     reset: function reset() {
       this.resetPaymentInputs();
+      // [CV1-POS-SPLIT-PAYMENT-001] Reset multi-tender local state on modal close.
+      this.tranches = [];
+      this.splitCount = 2;
+      this.paymentMode = 'cash';
       this.emitPaymentFormPatch({
         pos_payment_note: ""
       });
@@ -2563,6 +2674,70 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         pos_payment_note: "",
         pos_received_amount: null
       });
+    },
+    // [CV1-POS-SPLIT-PAYMENT-001] Reflect parent's pos_payment_method into the
+    // local segmented control. CARD → 'card', anything else → 'cash'. Never
+    // auto-promotes to 'multi' (multi is a deliberate user choice).
+    syncPaymentModeFromForm: function syncPaymentModeFromForm() {
+      var _this$props4;
+      var m = (_this$props4 = this.props) === null || _this$props4 === void 0 || (_this$props4 = _this$props4.form) === null || _this$props4 === void 0 ? void 0 : _this$props4.pos_payment_method;
+      if (m === this.posPaymentMethodEnum.CARD) {
+        this.paymentMode = 'card';
+        this.inputIdName = 'cardInput';
+      } else {
+        this.paymentMode = 'cash';
+        this.inputIdName = 'cashInput';
+      }
+    },
+    // [CV1-POS-SPLIT-PAYMENT-001] Local-only mode toggle.
+    // For 'cash'/'card' we still call paymentMethod() to keep props.form in sync
+    // (zero behavior change for the existing single-tender flow).
+    // For 'multi' we leave props.form untouched and submit() builds payload directly.
+    setPaymentMode: function setPaymentMode(mode) {
+      if (mode !== 'cash' && mode !== 'card' && mode !== 'multi') return;
+      this.paymentMode = mode;
+      if (mode === 'cash') {
+        this.paymentMethod(this.posPaymentMethodEnum.CASH, 'cashInput');
+      } else if (mode === 'card') {
+        this.paymentMethod(this.posPaymentMethodEnum.CARD, 'cardInput');
+      }
+      // Multi: do not mutate props.form; tranches[] is the source of truth.
+    },
+    addTranche: function addTranche() {
+      var mode = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+      var amount = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var tendered = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var total = this.totalCents;
+      var remaining = Math.max(0, (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.remainingCents)(total, this.tranches));
+      // If remaining is 0 (or near 0), pre-fill 1 cent so the cashier doesn't
+      // see an instant "amount required" error — they'll edit immediately.
+      var defaultAmountCents = remaining > 0 ? remaining : 1;
+      var defaultAmount = amount !== null ? Number(amount) : (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)(defaultAmountCents);
+      var defaultMode = mode !== null ? Number(mode) : this.posPaymentMethodEnum.CASH;
+      this.tranches.push({
+        id: (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.makeTrancheId)(this.tranches.length),
+        mode: defaultMode,
+        amount: defaultAmount,
+        tendered: tendered !== null ? Number(tendered) : null,
+        note: null
+      });
+    },
+    removeTranche: function removeTranche(index) {
+      if (index < 0 || index >= this.tranches.length) return;
+      this.tranches.splice(index, 1);
+    },
+    updateTranche: function updateTranche(index, patch) {
+      if (index < 0 || index >= this.tranches.length) return;
+      var current = this.tranches[index];
+      this.tranches.splice(index, 1, _objectSpread(_objectSpread({}, current), patch));
+    },
+    splitEquallyHandler: function splitEquallyHandler() {
+      var n = Math.max(2, Math.min(20, Number(this.splitCount) || 2));
+      var totalEur = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)(this.totalCents);
+      this.tranches = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.splitEqually)(totalEur, n);
+    },
+    buildSplitPayload: function buildSplitPayload() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.serializeTranches)(this.tranches);
     },
     collectPaymentInputPatch: function collectPaymentInputPatch(form) {
       var _this$$refs$cardInput;
@@ -2715,7 +2890,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }(),
     runConfirmOrderAttempt: function () {
       var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var inputPatch, accessResponse, branchId, preparedForm, quotedForm, saveForm, orderResponse;
+        var _this4 = this;
+        var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, preparedForm, quotedForm, saveForm, orderResponse;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
             case 0:
@@ -2724,12 +2900,34 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               return this.$store.dispatch("defaultAccess/show");
             case 1:
               accessResponse = _context2.v;
-              branchId = (0,_helpers_posNormalizeIds__WEBPACK_IMPORTED_MODULE_11__.normalizeId)(accessResponse.data.data.branch_id) || accessResponse.data.data.branch_id;
-              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread({}, inputPatch), {}, {
+              branchId = (0,_helpers_posNormalizeIds__WEBPACK_IMPORTED_MODULE_11__.normalizeId)(accessResponse.data.data.branch_id) || accessResponse.data.data.branch_id; // [CV1-POS-SPLIT-PAYMENT-001] When paymentMode === 'multi', attach
+              // payment_breakdown[] to the payload. The frozen-zone backend currently
+              // ignores this field; once PLAN_P12 ships, it will create order_payments
+              // rows. The dominant tender (largest tranche) is set as pos_payment_method
+              // for backward compat with reports/receipt rendering.
+              isMulti = this.paymentMode === 'multi';
+              multiPatch = {};
+              if (isMulti) {
+                breakdown = this.buildSplitPayload();
+                dominant = breakdown.reduce(function (max, t) {
+                  return t.amount > ((max === null || max === void 0 ? void 0 : max.amount) || 0) ? t : max;
+                }, null);
+                dominantMode = (_dominant$mode = dominant === null || dominant === void 0 ? void 0 : dominant.mode) !== null && _dominant$mode !== void 0 ? _dominant$mode : this.posPaymentMethodEnum.CASH;
+                cashTranche = breakdown.find(function (t) {
+                  return t.mode === _this4.posPaymentMethodEnum.CASH;
+                });
+                multiPatch = {
+                  pos_payment_method: dominantMode,
+                  payment_breakdown: breakdown,
+                  pos_received_amount: cashTranche ? cashTranche.tendered : null,
+                  pos_payment_note: 'multi-tender'
+                };
+              }
+              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
                 branch_id: branchId,
                 items: this.normalizeItemsPayload(this.paymentForm.items)
               }));
-              this.emitPaymentFormPatch(_objectSpread(_objectSpread({}, inputPatch), {}, {
+              this.emitPaymentFormPatch(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
                 branch_id: preparedForm.branch_id,
                 items: preparedForm.items
               }));
@@ -2833,54 +3031,61 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               }
               return _context4.a(2);
             case 1:
+              if (!(this.paymentMode === 'multi' && !this.canConfirmMulti)) {
+                _context4.n = 2;
+                break;
+              }
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('pos.split_not_balanced') || 'Le paiement multi n’est pas équilibré (reste dû).');
+              return _context4.a(2);
+            case 2:
               this.loading.isActive = true;
               paymentSucceeded = false;
-              _context4.p = 2;
-              _context4.n = 3;
+              _context4.p = 3;
+              _context4.n = 4;
               return this.confirmOrderWithAuthRetry();
-            case 3:
+            case 4:
               paymentSucceeded = true;
               // [POS-V5 WAVE 3 2026-05-02] Notify parent for success-flash animation
               // (overlay vert 700ms après confirm). Logique métier inchangée.
               this.$emit("order:confirmed", this.order);
-              _context4.n = 5;
+              _context4.n = 6;
               break;
-            case 4:
-              _context4.p = 4;
-              _t3 = _context4.v;
-              this.handlePaymentError(_t3);
             case 5:
               _context4.p = 5;
-              this.loading.isActive = false;
-              return _context4.f(5);
+              _t3 = _context4.v;
+              this.handlePaymentError(_t3);
             case 6:
+              _context4.p = 6;
+              this.loading.isActive = false;
+              return _context4.f(6);
+            case 7:
               if (!paymentSucceeded) {
-                _context4.n = 11;
+                _context4.n = 12;
                 break;
               }
-              _context4.n = 7;
-              return this.$nextTick();
-            case 7:
               _context4.n = 8;
               return this.$nextTick();
             case 8:
               _context4.n = 9;
+              return this.$nextTick();
+            case 9:
+              _context4.n = 10;
               return new Promise(function (resolve) {
                 requestAnimationFrame(function () {
                   return requestAnimationFrame(resolve);
                 });
               });
-            case 9:
-              _context4.n = 10;
+            case 10:
+              _context4.n = 11;
               return new Promise(function (resolve) {
                 return setTimeout(resolve, 50);
               });
-            case 10:
-              this.showReceiptModalFromDom();
             case 11:
+              this.showReceiptModalFromDom();
+            case 12:
               return _context4.a(2);
           }
-        }, _callee4, this, [[2, 4, 5, 6]]);
+        }, _callee4, this, [[3, 5, 6, 7]]);
       }));
       function confirmOrder() {
         return _confirmOrder.apply(this, arguments);
@@ -7141,6 +7346,163 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js":
+/*!***********************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
+/* harmony import */ var _helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../helpers/posSplitPayment */ "./resources/js/helpers/posSplitPayment.js");
+/**
+ * PosV5TrancheRow — affichage + édition d'une tranche de paiement.
+ *
+ * Mission : CV1-POS-SPLIT-PAYMENT-001
+ * Doc plan : docs/audit/SPLIT_PAYMENT_IMPLEMENTATION_2026-05-06.md
+ *
+ * Design : POS V5 tokens. Atom autonome — ne mute PAS le tranche prop ;
+ * émet `update` avec un patch que le parent applique.
+ *
+ * Émissions :
+ *   - @update(patch) — { mode? | amount? | tendered? }
+ *   - @remove        — bouton ✕ cliqué
+ */
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'PosV5TrancheRow',
+  props: {
+    tranche: {
+      type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
+      "default": 0
+    }
+  },
+  emits: ['update', 'remove'],
+  computed: {
+    modes: function modes() {
+      return _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"];
+    },
+    isCash: function isCash() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__.isCashMode)(this.tranche.mode);
+    },
+    modeIcon: function modeIcon() {
+      var m = Number(this.tranche.mode);
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CASH) return '💵';
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CARD) return '💳';
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].MOBILE_BANKING) return '📱';
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].TICKET_RESTAURANT) return '🍽️';
+      return '💼';
+    },
+    modeLabel: function modeLabel() {
+      var m = Number(this.tranche.mode);
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CASH) return this.$t('label.cash');
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CARD) return this.$t('label.card');
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].MOBILE_BANKING) return this.$t('label.mobile_banking');
+      if (m === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].TICKET_RESTAURANT) return this.$t('label.ticket_restaurant');
+      return this.$t('label.other');
+    },
+    modeId: function modeId() {
+      return "tranche-mode-".concat(this.index);
+    },
+    amountId: function amountId() {
+      return "tranche-amount-".concat(this.index);
+    },
+    tenderedId: function tenderedId() {
+      return "tranche-tendered-".concat(this.index);
+    },
+    testid: function testid() {
+      return "pos-payment-tranche-row-".concat(this.index);
+    },
+    removeTestid: function removeTestid() {
+      return "pos-payment-tranche-remove-".concat(this.index);
+    },
+    amountTestid: function amountTestid() {
+      return "pos-payment-tranche-amount-".concat(this.index);
+    },
+    tenderedTestid: function tenderedTestid() {
+      return "pos-payment-tranche-tendered-".concat(this.index);
+    },
+    ariaGroupLabel: function ariaGroupLabel() {
+      return "".concat(this.$t('label.payment') || 'Paiement', " ").concat(this.index + 1, " (").concat(this.modeLabel, ")");
+    },
+    modeAriaLabel: function modeAriaLabel() {
+      return "".concat(this.$t('label.payment_method'), " #").concat(this.index + 1);
+    },
+    removeAriaLabel: function removeAriaLabel() {
+      return "".concat(this.$t('button.remove') || 'Supprimer', " #").concat(this.index + 1);
+    },
+    validation: function validation() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__.validateTranche)(this.tranche);
+    },
+    invalid: function invalid() {
+      return !this.validation.valid;
+    },
+    validationMsg: function validationMsg() {
+      var errs = this.validation.errors || {};
+      if (errs.tendered === 'tendered_required') {
+        return this.$t('pos.split_tendered_required') || 'Le montant reçu est requis pour la tranche cash.';
+      }
+      if (errs.tendered === 'tendered_below_amount') {
+        return this.$t('pos.split_tendered_below_amount') || 'Le montant reçu est inférieur au montant de la tranche.';
+      }
+      if (errs.amount === 'amount_required') {
+        return this.$t('pos.split_amount_required') || 'Le montant de la tranche est requis.';
+      }
+      if (errs.mode === 'invalid_mode') {
+        return this.$t('pos.split_mode_invalid') || 'Mode de paiement invalide.';
+      }
+      return '';
+    },
+    changeCents: function changeCents() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__.computeChangeCents)(this.tranche);
+    },
+    changeEur: function changeEur() {
+      return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__.fromCents)(this.changeCents);
+    }
+  },
+  methods: {
+    onModeChange: function onModeChange(e) {
+      var mode = Number(e.target.value);
+      var patch = {
+        mode: mode
+      };
+      if (!(0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_1__.isCashMode)(mode)) {
+        patch.tendered = null;
+      }
+      this.$emit('update', patch);
+    },
+    onAmountInput: function onAmountInput(e) {
+      var v = e.target.value;
+      this.$emit('update', {
+        amount: v === '' ? 0 : Number(v)
+      });
+    },
+    onTenderedInput: function onTenderedInput(e) {
+      var v = e.target.value;
+      this.$emit('update', {
+        tendered: v === '' ? null : Number(v)
+      });
+    },
+    formatEur: function formatEur(value) {
+      var _this$$store;
+      var setting = ((_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.getters) === null || _this$$store === void 0 ? void 0 : _this$$store['frontendSetting/lists']) || {};
+      var sym = setting.site_default_currency_symbol || '€';
+      return "".concat(Number(value).toFixed(2), " ").concat(sym);
+    }
+  }
+});
+
+/***/ }),
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/components/buttons/SmModalCreateComponent.vue?vue&type=template&id=1af8e23a":
 /*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/components/buttons/SmModalCreateComponent.vue?vue&type=template&id=1af8e23a ***!
@@ -7824,6 +8186,7 @@ var _hoisted_22 = {
   "class": "flex items-start gap-2 mb-1"
 };
 var _hoisted_23 = {
+  id: "item-variation-modal-title",
   "class": "text-base font-bold capitalize text-[var(--pos-v5-ink)]"
 };
 var _hoisted_24 = {
@@ -8057,6 +8420,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     id: "item-variation-modal",
     ref: "itemVariationModal",
     "class": "modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": "item-variation-modal-title",
+    tabindex: "-1",
     "data-pos-drinks-catalog": $options.drinksCatalogJson
   }, [$data.item ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md",
@@ -8460,7 +8827,7 @@ var _hoisted_12 = {
   "class": "pos-v5-payment-section-title"
 };
 var _hoisted_13 = {
-  "class": "pos-v4-payment-methods pos-v5-payment-methods",
+  "class": "pos-v4-payment-methods pos-v5-payment-methods pos-v5-payment-methods--3col",
   role: "tablist"
 };
 var _hoisted_14 = ["aria-selected"];
@@ -8471,47 +8838,106 @@ var _hoisted_16 = ["aria-selected"];
 var _hoisted_17 = {
   "class": "pos-v5-payment-method-label"
 };
-var _hoisted_18 = {
+var _hoisted_18 = ["aria-selected"];
+var _hoisted_19 = {
+  "class": "pos-v5-payment-method-label"
+};
+var _hoisted_20 = {
   "class": "mb-3"
 };
-var _hoisted_19 = {
+var _hoisted_21 = {
   "for": "cashInput",
   "class": "pos-v5-payment-input-label"
 };
-var _hoisted_20 = {
+var _hoisted_22 = {
   key: 0,
   "class": "pos-v5-payment-change",
   role: "status",
   "aria-live": "polite"
 };
-var _hoisted_21 = {
+var _hoisted_23 = {
   "class": "pos-v5-payment-change-label"
 };
-var _hoisted_22 = {
+var _hoisted_24 = {
   "class": "pos-v5-payment-change-value pos-v5-tabular"
 };
-var _hoisted_23 = {
+var _hoisted_25 = {
   "class": "mb-3"
 };
-var _hoisted_24 = {
+var _hoisted_26 = {
   "for": "cardInput",
   "class": "pos-v5-payment-input-label"
 };
-var _hoisted_25 = {
+var _hoisted_27 = {
   id: "cardInput",
   ref: "cardInput",
   type: "number",
   "class": "pos-v5-payment-input pos-v5-tabular",
   required: ""
 };
-var _hoisted_26 = {
+var _hoisted_28 = {
   key: 0,
   "class": "pos-v4-numpad pos-v5-payment-numpad-wrap mb-4"
 };
-var _hoisted_27 = ["disabled", "aria-busy"];
+var _hoisted_29 = {
+  key: 1,
+  id: "multi",
+  "class": "pos-v5-split-block",
+  "data-testid": "pos-payment-split-block"
+};
+var _hoisted_30 = ["aria-label"];
+var _hoisted_31 = {
+  "class": "pos-v5-split-summary__row"
+};
+var _hoisted_32 = {
+  "class": "pos-v5-split-summary__label"
+};
+var _hoisted_33 = {
+  "class": "pos-v5-split-summary__value pos-v5-tabular",
+  "data-testid": "pos-payment-total-covered"
+};
+var _hoisted_34 = {
+  "class": "pos-v5-split-summary__label"
+};
+var _hoisted_35 = {
+  "class": "pos-v5-split-summary__value pos-v5-tabular",
+  "data-testid": "pos-payment-remaining-due"
+};
+var _hoisted_36 = {
+  key: 0,
+  "class": "pos-v5-split-summary__row pos-v5-split-summary__row--change",
+  role: "status",
+  "aria-live": "polite"
+};
+var _hoisted_37 = {
+  "class": "pos-v5-split-summary__label"
+};
+var _hoisted_38 = {
+  "class": "pos-v5-split-summary__value pos-v5-tabular",
+  "data-testid": "pos-payment-total-change"
+};
+var _hoisted_39 = {
+  "class": "pos-v5-split-divider"
+};
+var _hoisted_40 = {
+  "for": "splitCountInput",
+  "class": "pos-v5-split-divider__label"
+};
+var _hoisted_41 = {
+  "class": "pos-v5-split-divider__row"
+};
+var _hoisted_42 = ["aria-label"];
+var _hoisted_43 = ["disabled"];
+var _hoisted_44 = ["aria-label"];
+var _hoisted_45 = {
+  key: 0,
+  "class": "pos-v5-split-empty"
+};
+var _hoisted_46 = ["disabled", "aria-busy", "aria-disabled"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_PosV5Numpad = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5Numpad");
+  var _component_PosV5TrancheRow = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5TrancheRow");
   var _component_ReceiptComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ReceiptComponent");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal paiement.\n      - Hero \"À encaisser\" en display 48px monospace tabular (le moment de vérité)\n      - Méthodes en segmented control V5 (cash | card)\n      - Numpad partagé via PosV5Numpad (réutilisable futurs override prix admin)\n      - CTA confirm V5 \"primary-pay\" avec ombre rouge soft\n      - Logique métier (paiement, quote refresh, auth retry) inchangée.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
@@ -8521,72 +8947,151 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.reset && $options.reset.apply($options, arguments);
     }),
     "aria-label": _ctx.$t('button.close')
-  }, _toConsumableArray(_cache[6] || (_cache[6] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, _toConsumableArray(_cache[10] || (_cache[10] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Hero \"À encaisser\" — moment de vérité "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($props.props.form.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Méthode de paiement "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "data-tab": "#cash",
     type: "button",
     role: "tab",
-    "aria-selected": $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CASH,
+    "aria-selected": $data.paymentMode === 'cash',
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["other-tabBtn pos-v4-payment-method pos-v5-payment-method", {
-      'active is-active': $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CASH
+      'active is-active': $data.paymentMode === 'cash'
     }]),
+    "data-testid": "pos-payment-mode-cash",
     onClick: _cache[1] || (_cache[1] = function ($event) {
-      return $options.paymentMethod($data.posPaymentMethodEnum.CASH, 'cashInput');
+      return $options.setPaymentMode('cash');
     })
-  }, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.cash")), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "data-tab": "#card",
     type: "button",
     role: "tab",
-    "aria-selected": $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CARD,
+    "aria-selected": $data.paymentMode === 'card',
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["other-tabBtn pos-v4-payment-method pos-v5-payment-method", {
-      'active is-active': $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CARD
+      'active is-active': $data.paymentMode === 'card'
     }]),
+    "data-testid": "pos-payment-mode-card",
     onClick: _cache[2] || (_cache[2] = function ($event) {
-      return $options.paymentMethod($data.posPaymentMethodEnum.CARD, 'cardInput');
+      return $options.setPaymentMode('card');
     })
-  }, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
-  }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.card")) + " (TPE)", 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_16)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash input + change due "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.card")) + " (TPE)", 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "data-tab": "#multi",
+    type: "button",
+    role: "tab",
+    "aria-selected": $data.paymentMode === 'multi',
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["other-tabBtn pos-v4-payment-method pos-v5-payment-method", {
+      'active is-active': $data.paymentMode === 'multi'
+    }]),
+    "data-testid": "pos-payment-mode-multi",
+    onClick: _cache[3] || (_cache[3] = function ($event) {
+      return $options.setPaymentMode('multi');
+    })
+  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "pos-v5-payment-method-icon",
+    "aria-hidden": "true"
+  }, "🔀", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_payment') || 'Multi-paiement'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_18)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash input + change due "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "cash",
-    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CASH ? 'active' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.received_amount")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $data.paymentMode === 'cash' ? 'active' : ''])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.received_amount")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "cashInput",
     ref: "cashInput",
     type: "text",
-    onKeypress: _cache[3] || (_cache[3] = function ($event) {
+    onKeypress: _cache[4] || (_cache[4] = function ($event) {
       return $options.floatNumber($event);
     }),
-    onInput: _cache[4] || (_cache[4] = function () {
+    onInput: _cache[5] || (_cache[5] = function () {
       return $options.onCashInput && $options.onCashInput.apply($options, arguments);
     }),
     "class": "pos-v5-payment-input pos-v5-tabular"
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.change_due") || 'Monnaie à rendre'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.cashChange, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card input "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.change_due") || 'Monnaie à rendre'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.cashChange, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card input "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "card",
-    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CARD ? 'active' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_25, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CASH || $props.props.form.pos_payment_method === $data.posPaymentMethodEnum.CARD ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $data.paymentMode === 'card' ? 'active' : ''])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_27, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $data.paymentMode === 'cash' || $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
     "aria-label": "Pavé numérique",
     onInput: $options.numpadInput,
     onBack: $options.numpadBack,
     onClear: $options.numpadClear
-  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] :disabled prevents a second click while the order is being submitted "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[5] || (_cache[5] = function () {
+  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Multi-paiement (split) — CV1-POS-SPLIT-PAYMENT-001\n                  Tranches locales (data.tranches) ; le payload est construit\n                  uniquement au submit (submitMulti) — n'altère PAS props.form\n                  pour les modes cash/card historiques.\n                "), $data.paymentMode === 'multi' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "pos-v5-split-summary",
+    role: "group",
+    "aria-label": _ctx.$t('label.split_summary') || 'Résumé multi-paiement'
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_covered') || 'Couvert'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalCoveredEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-v5-split-summary__row pos-v5-split-summary__row--remaining", {
+      'pos-v5-split-summary__row--ok': $options.remainingDueEur <= 0.01
+    }]),
+    role: "status",
+    "aria-live": "polite",
+    "data-testid": "pos-payment-remaining-due-row"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: "splitCountInput",
+    type: "number",
+    min: "2",
+    max: "20",
+    step: "1",
+    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+      return $data.splitCount = $event;
+    }),
+    "class": "pos-v5-split-divider__input pos-v5-tabular",
+    "aria-label": _ctx.$t('label.split_among_n') || 'Diviser entre N personnes',
+    "data-testid": "pos-payment-split-count"
+  }, null, 8 /* PROPS */, _hoisted_42), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.splitCount, void 0, {
+    number: true
+  }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-v5-split-divider__btn",
+    disabled: !$options.canSplitEqually,
+    onClick: _cache[7] || (_cache[7] = function () {
+      return $options.splitEquallyHandler && $options.splitEquallyHandler.apply($options, arguments);
+    }),
+    "data-testid": "pos-payment-split-equal"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_43)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "pos-v5-split-tranches",
+    role: "list",
+    "aria-label": _ctx.$t('label.split_tranches') || 'Tranches de paiement'
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.tranches, function (tr, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5TrancheRow, {
+      key: tr.id,
+      tranche: tr,
+      index: idx,
+      role: "listitem",
+      onUpdate: function onUpdate(patch) {
+        return $options.updateTranche(idx, patch);
+      },
+      onRemove: function onRemove($event) {
+        return $options.removeTranche(idx);
+      }
+    }, null, 8 /* PROPS */, ["tranche", "index", "onUpdate", "onRemove"]);
+  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_44), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-v5-split-add",
+    onClick: _cache[8] || (_cache[8] = function ($event) {
+      return $options.addTranche();
+    }),
+    "data-testid": "pos-payment-tranche-add"
+  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "+", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_tranche') || 'Ajouter une tranche'), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] :disabled prevents a second click while the order is being submitted "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    onClick: _cache[9] || (_cache[9] = function () {
       return $options.confirmOrder && $options.confirmOrder.apply($options, arguments);
     }),
     type: "button",
-    disabled: $data.loading.isActive,
+    disabled: $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
     "aria-busy": $data.loading.isActive,
+    "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
     "class": "pos-v4-confirm-button pos-v5-payment-confirm w-full",
     "data-testid": "pos-payment-confirm"
-  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_27)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_46)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
     ref: "receiptRoot",
     order: $data.order
   }, null, 8 /* PROPS */, ["order"])], 64 /* STABLE_FRAGMENT */);
@@ -11203,6 +11708,147 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true":
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = ["data-testid", "aria-label"];
+var _hoisted_2 = {
+  "class": "pos-v5-tranche-row__header"
+};
+var _hoisted_3 = ["for"];
+var _hoisted_4 = {
+  "class": "pos-v5-tranche-row__icon",
+  "aria-hidden": "true"
+};
+var _hoisted_5 = ["id", "value", "aria-label"];
+var _hoisted_6 = ["value"];
+var _hoisted_7 = ["value"];
+var _hoisted_8 = ["value"];
+var _hoisted_9 = ["value"];
+var _hoisted_10 = ["value"];
+var _hoisted_11 = ["aria-label", "data-testid"];
+var _hoisted_12 = {
+  "class": "pos-v5-tranche-row__fields"
+};
+var _hoisted_13 = {
+  "class": "pos-v5-tranche-row__field"
+};
+var _hoisted_14 = ["for"];
+var _hoisted_15 = ["id", "value", "data-testid"];
+var _hoisted_16 = {
+  key: 0,
+  "class": "pos-v5-tranche-row__field"
+};
+var _hoisted_17 = ["for"];
+var _hoisted_18 = ["id", "value", "data-testid"];
+var _hoisted_19 = {
+  key: 0,
+  "class": "pos-v5-tranche-row__change",
+  role: "status",
+  "aria-live": "polite"
+};
+var _hoisted_20 = {
+  "class": "pos-v5-tranche-row__change-text"
+};
+var _hoisted_21 = {
+  "class": "pos-v5-tranche-row__change-value pos-v5-tabular"
+};
+var _hoisted_22 = {
+  key: 1,
+  "class": "pos-v5-tranche-row__error",
+  role: "alert"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-tranche-row', $options.invalid ? 'pos-v5-tranche-row--invalid' : '']),
+    "data-testid": $options.testid,
+    role: "group",
+    "aria-label": $options.ariaGroupLabel
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
+    "for": $options.modeId,
+    "class": "pos-v5-tranche-row__mode-label"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeIcon), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_3), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    id: $options.modeId,
+    "class": "pos-v5-tranche-row__mode-select",
+    value: $props.tranche.mode,
+    "aria-label": $options.modeAriaLabel,
+    onChange: _cache[0] || (_cache[0] = function () {
+      return $options.onModeChange && $options.onModeChange.apply($options, arguments);
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", {
+    value: $options.modes.CASH
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash')), 9 /* TEXT, PROPS */, _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", {
+    value: $options.modes.CARD
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.card')), 9 /* TEXT, PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", {
+    value: $options.modes.MOBILE_BANKING
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mobile_banking')), 9 /* TEXT, PROPS */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", {
+    value: $options.modes.TICKET_RESTAURANT
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.ticket_restaurant')), 9 /* TEXT, PROPS */, _hoisted_9), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", {
+    value: $options.modes.OTHER
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.other')), 9 /* TEXT, PROPS */, _hoisted_10)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_5), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-v5-tranche-row__remove",
+    "aria-label": $options.removeAriaLabel,
+    "data-testid": $options.removeTestid,
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return _ctx.$emit('remove');
+    })
+  }, _toConsumableArray(_cache[4] || (_cache[4] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_11)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
+    "for": $options.amountId,
+    "class": "pos-v5-tranche-row__field-label"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 9 /* TEXT, PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: $options.amountId,
+    type: "number",
+    inputmode: "decimal",
+    step: "0.01",
+    min: "0",
+    "class": "pos-v5-tranche-row__input pos-v5-tabular",
+    value: $props.tranche.amount,
+    "data-testid": $options.amountTestid,
+    onInput: _cache[2] || (_cache[2] = function () {
+      return $options.onAmountInput && $options.onAmountInput.apply($options, arguments);
+    })
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_15)]), $options.isCash ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
+    "for": $options.tenderedId,
+    "class": "pos-v5-tranche-row__field-label"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.received_amount')), 9 /* TEXT, PROPS */, _hoisted_17), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: $options.tenderedId,
+    type: "number",
+    inputmode: "decimal",
+    step: "0.01",
+    min: "0",
+    "class": "pos-v5-tranche-row__input pos-v5-tabular",
+    value: $props.tranche.tendered,
+    "data-testid": $options.tenderedTestid,
+    onInput: _cache[3] || (_cache[3] = function () {
+      return $options.onTenderedInput && $options.onTenderedInput.apply($options, arguments);
+    })
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_18)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isCash && $options.changeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "pos-v5-tranche-row__change-label",
+    "aria-hidden": "true"
+  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatEur($options.changeEur)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.invalid && $options.validationMsg ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.validationMsg), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_1);
+}
+
+/***/ }),
+
 /***/ "./node_modules/lodash/_Symbol.js":
 /*!****************************************!*\
   !*** ./node_modules/lodash/_Symbol.js ***!
@@ -12370,6 +13016,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TotalRow_vue_vue_type_style_index_0_id_16cd6aff_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css":
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_style_index_0_id_4428e74e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_style_index_0_id_4428e74e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_style_index_0_id_4428e74e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -13895,6 +14571,83 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue":
+/*!******************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue ***!
+  \******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _PosV5TrancheRow_vue_vue_type_template_id_4428e74e_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true */ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true");
+/* harmony import */ var _PosV5TrancheRow_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PosV5TrancheRow.vue?vue&type=script&lang=js */ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js");
+/* harmony import */ var _PosV5TrancheRow_vue_vue_type_style_index_0_id_4428e74e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css */ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_PosV5TrancheRow_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_PosV5TrancheRow_vue_vue_type_template_id_4428e74e_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-4428e74e"],['__file',"resources/js/components/admin/pos/v5/PosV5TrancheRow.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js":
+/*!******************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5TrancheRow.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css":
+/*!**************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css ***!
+  \**************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_style_index_0_id_4428e74e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=style&index=0&id=4428e74e&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true":
+/*!************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true ***!
+  \************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_template_id_4428e74e_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5TrancheRow_vue_vue_type_template_id_4428e74e_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue?vue&type=template&id=4428e74e&scoped=true");
+
+
+/***/ }),
+
 /***/ "./resources/js/enums/modules/discountTypeEnum.js":
 /*!********************************************************!*\
   !*** ./resources/js/enums/modules/discountTypeEnum.js ***!
@@ -14016,12 +14769,14 @@ function createFKeyShortcuts(onShortcut) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   buildNf525Footer: () => (/* binding */ buildNf525Footer),
+/* harmony export */   buildPaymentBreakdownLines: () => (/* binding */ buildPaymentBreakdownLines),
 /* harmony export */   formatPaymentsBreakdown: () => (/* binding */ formatPaymentsBreakdown),
 /* harmony export */   normalizeReceiptExtras: () => (/* binding */ normalizeReceiptExtras),
 /* harmony export */   normalizeReceiptVariations: () => (/* binding */ normalizeReceiptVariations),
 /* harmony export */   receiptBranchHeader: () => (/* binding */ receiptBranchHeader),
 /* harmony export */   receiptInstructionForPrint: () => (/* binding */ receiptInstructionForPrint),
-/* harmony export */   receiptWidthClass: () => (/* binding */ receiptWidthClass)
+/* harmony export */   receiptWidthClass: () => (/* binding */ receiptWidthClass),
+/* harmony export */   sumPaymentBreakdownTotal: () => (/* binding */ sumPaymentBreakdownTotal)
 /* harmony export */ });
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
@@ -14093,6 +14848,65 @@ function formatPaymentsBreakdown(order) {
     }];
   }
   return [];
+}
+
+/**
+ * [CV1-POS-SPLIT-PAYMENT-001] Format LIVE multi-tender breakdown for the
+ * pre-confirmation receipt preview (PaymentComponent split block).
+ *
+ * Input  : array of in-flight tranches { mode, amount, tendered, change?, note? }
+ * Output : array of {label, amountText, changeText?} ready to render in the
+ *          preview panel. The persisted receipt uses formatPaymentsBreakdown()
+ *          (above) which reads from the API resource — this helper is for the
+ *          UI-side pre-payment ticket only.
+ *
+ * Why a dedicated helper? formatPaymentsBreakdown() is shaped for a saved
+ * Order resource (currency_amount strings, change_amount on the row); the
+ * LIVE tranches are JS-side numbers with a different field shape.
+ */
+function buildPaymentBreakdownLines(tranches) {
+  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  if (!Array.isArray(tranches) || tranches.length === 0) {
+    return [];
+  }
+  var labelFor = options.labelFor || function (mode) {
+    return "Mode ".concat(mode);
+  };
+  var fmt = options.formatAmount || function (n) {
+    return "".concat(Number(n).toFixed(2), " \u20AC");
+  };
+  return tranches.map(function (t) {
+    var _t$mode, _ref3, _t$change;
+    var mode = (_t$mode = t.mode) !== null && _t$mode !== void 0 ? _t$mode : t.payment_method;
+    var amount = Number(t.amount) || 0;
+    var tendered = t.tendered != null ? Number(t.tendered) : null;
+    var change = Number((_ref3 = (_t$change = t.change) !== null && _t$change !== void 0 ? _t$change : t.change_amount) !== null && _ref3 !== void 0 ? _ref3 : 0) || 0;
+    var line = {
+      mode: mode,
+      label: labelFor(mode),
+      amount: amount,
+      amountText: fmt(amount)
+    };
+    if (tendered != null && tendered > 0) {
+      line.tendered = tendered;
+      line.tenderedText = fmt(tendered);
+    }
+    if (change > 0) {
+      line.change = change;
+      line.changeText = fmt(change);
+    }
+    return line;
+  });
+}
+
+/**
+ * Sum total of a tranche array (EUR), ignoring change.
+ */
+function sumPaymentBreakdownTotal(tranches) {
+  if (!Array.isArray(tranches)) return 0;
+  return tranches.reduce(function (acc, t) {
+    return acc + (Number(t.amount) || 0);
+  }, 0);
 }
 
 /**
@@ -14271,6 +15085,291 @@ function receiptInstructionForPrint(item) {
   }
   return raw;
 }
+
+/***/ }),
+
+/***/ "./resources/js/helpers/posSplitPayment.js":
+/*!*************************************************!*\
+  !*** ./resources/js/helpers/posSplitPayment.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   canConfirm: () => (/* binding */ canConfirm),
+/* harmony export */   computeChangeCents: () => (/* binding */ computeChangeCents),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   fromCents: () => (/* binding */ fromCents),
+/* harmony export */   isCashMode: () => (/* binding */ isCashMode),
+/* harmony export */   isValidMode: () => (/* binding */ isValidMode),
+/* harmony export */   makeTrancheId: () => (/* binding */ makeTrancheId),
+/* harmony export */   remainingCents: () => (/* binding */ remainingCents),
+/* harmony export */   serializeTranches: () => (/* binding */ serializeTranches),
+/* harmony export */   splitEqually: () => (/* binding */ splitEqually),
+/* harmony export */   splitEquallyCents: () => (/* binding */ splitEquallyCents),
+/* harmony export */   sumCoveredCents: () => (/* binding */ sumCoveredCents),
+/* harmony export */   toCents: () => (/* binding */ toCents),
+/* harmony export */   totalChangeCents: () => (/* binding */ totalChangeCents),
+/* harmony export */   validateTranche: () => (/* binding */ validateTranche)
+/* harmony export */ });
+/* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/**
+ * posSplitPayment.js
+ *
+ * Mission : CV1-POS-SPLIT-PAYMENT-001
+ * Doc plan : docs/audit/SPLIT_PAYMENT_IMPLEMENTATION_2026-05-06.md
+ *
+ * Pure helpers (zero Vue / Vuex dependency) for the multi-tender (split)
+ * payment surface in PaymentComponent.vue.
+ *
+ * Money is handled in INTEGER CENTS internally to avoid float drift
+ * (the canonical 30.01 € → 10/10/10.01 split is impossible with binary
+ * floats). The public surface accepts and returns euros (Number) but the
+ * math always round-trips through Math.round(x * 100).
+ *
+ * Public API
+ * ──────────
+ *  - toCents(amount)               → integer cents (rounded half-up)
+ *  - fromCents(cents)              → Number with 2 decimals
+ *  - validateTranche(tranche)      → { valid, errors: { ... } }
+ *  - computeChange(tranche)        → cents (>=0; only for CASH with tendered)
+ *  - sumCovered(tranches)          → cents (sum of valid tranche.amount)
+ *  - remainingCents(totalCents, tranches)
+ *  - canConfirm(totalCents, tranches) → boolean
+ *  - splitEqually(totalCents, n)   → array of N tranche-stub objects with
+ *                                     integer-cent amounts that sum exactly
+ *                                     to totalCents (last tranche carries
+ *                                     the remainder cent(s)).
+ *  - serializeTranches(tranches)   → array safe for JSON / payload
+ *
+ * Tranche shape
+ * ─────────────
+ *  {
+ *    id:       string,         // local UUID-ish, for v-for keys
+ *    mode:     number,         // posPaymentMethodEnum (1=CASH, 2=CARD, ...)
+ *    amount:   number,         // EUR, 2 decimals (kept as Number for UI)
+ *    tendered: number | null,  // EUR; only for CASH; null for non-cash
+ *    note:     string | null,  // card last-4 / reference, optional
+ *  }
+ *
+ * Note on cents :
+ *   - toCents(0.1 + 0.2) === 30  // float drift handled
+ *   - splitEqually(toCents(30.01), 3) → [1000, 1000, 1001]
+ *   - splitEqually(toCents(30), 3)    → [1000, 1000, 1000]
+ */
+
+
+var CASH_MODES = new Set([_enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CASH]);
+var VALID_MODES = new Set([_enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CASH, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CARD, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].MOBILE_BANKING, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].OTHER, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].TICKET_RESTAURANT]);
+function toCents(amount) {
+  var num = Number(amount);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num * 100);
+}
+function fromCents(cents) {
+  var c = Number(cents) || 0;
+  return Math.round(c) / 100;
+}
+function isCashMode(mode) {
+  return CASH_MODES.has(Number(mode));
+}
+function isValidMode(mode) {
+  return VALID_MODES.has(Number(mode));
+}
+
+/**
+ * Validate one tranche.
+ * Returns { valid: boolean, errors: { mode?, amount?, tendered? } }.
+ */
+function validateTranche(tranche) {
+  var errors = {};
+  if (!tranche || _typeof(tranche) !== 'object') {
+    return {
+      valid: false,
+      errors: {
+        tranche: 'invalid_tranche'
+      }
+    };
+  }
+  var mode = Number(tranche.mode);
+  if (!isValidMode(mode)) {
+    errors.mode = 'invalid_mode';
+  }
+  var amount = Number(tranche.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    errors.amount = 'amount_required';
+  }
+  if (isCashMode(mode)) {
+    if (tranche.tendered === null || tranche.tendered === undefined || tranche.tendered === '') {
+      errors.tendered = 'tendered_required';
+    } else {
+      var tendered = Number(tranche.tendered);
+      if (!Number.isFinite(tendered) || tendered <= 0) {
+        errors.tendered = 'tendered_invalid';
+      } else if (toCents(tendered) < toCents(amount)) {
+        errors.tendered = 'tendered_below_amount';
+      }
+    }
+  }
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors: errors
+  };
+}
+
+/**
+ * Change for a CASH tranche, in cents. 0 if non-cash, missing tendered, or
+ * tendered < amount. Caller decides what to render.
+ */
+function computeChangeCents(tranche) {
+  if (!tranche || !isCashMode(tranche.mode)) return 0;
+  var amountCents = toCents(tranche.amount);
+  var tenderedCents = toCents(tranche.tendered);
+  if (tenderedCents <= 0 || amountCents <= 0) return 0;
+  if (tenderedCents < amountCents) return 0;
+  return tenderedCents - amountCents;
+}
+
+/**
+ * Sum of tranche.amount across all VALID tranches, in cents.
+ * Invalid tranches contribute 0 (so the cashier visibly cannot confirm
+ * until they fix them).
+ */
+function sumCoveredCents(tranches) {
+  if (!Array.isArray(tranches)) return 0;
+  return tranches.reduce(function (acc, t) {
+    var _validateTranche = validateTranche(t),
+      valid = _validateTranche.valid;
+    if (!valid) return acc;
+    return acc + toCents(t.amount);
+  }, 0);
+}
+function remainingCents(totalCents, tranches) {
+  return Number(totalCents || 0) - sumCoveredCents(tranches);
+}
+
+/**
+ * canConfirm — every tranche valid AND remaining ≤ 1 cent slack.
+ * The 1-cent slack absorbs UI-rounding noise; the backend will perform a
+ * strict sum check at persist time.
+ */
+function canConfirm(totalCents, tranches) {
+  if (!Array.isArray(tranches) || tranches.length === 0) return false;
+  var _iterator = _createForOfIteratorHelper(tranches),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var t = _step.value;
+      if (!validateTranche(t).valid) return false;
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  var remaining = remainingCents(totalCents, tranches);
+  return remaining <= 1 && remaining >= -100; // up to 1 € overpay tolerated
+}
+
+/**
+ * splitEqually(totalCents, n)
+ *
+ * Distributes totalCents across n tranches such that:
+ *   - sum(parts) === totalCents (exact, no float drift)
+ *   - first (n-1) parts are floor(totalCents / n)
+ *   - last  part absorbs the remainder cents
+ *
+ * Returns an array of CENT integers; caller maps to tranche objects.
+ */
+function splitEquallyCents(totalCents, n) {
+  var total = Math.round(Number(totalCents) || 0);
+  var count = Math.max(1, Math.floor(Number(n) || 0));
+  if (count === 1) return [total];
+  var base = Math.floor(total / count);
+  var remainder = total - base * count;
+  var parts = new Array(count).fill(base);
+  parts[count - 1] += remainder;
+  return parts;
+}
+
+/**
+ * splitEqually(totalEur, n) → array of tranche stubs with EUR amounts.
+ * Default mode is CASH (cashier will pick the actual mode per tranche).
+ */
+function splitEqually(totalEur, n) {
+  var defaultMode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__["default"].CASH;
+  var partsCents = splitEquallyCents(toCents(totalEur), n);
+  return partsCents.map(function (cents, idx) {
+    return {
+      id: makeTrancheId(idx),
+      mode: defaultMode,
+      amount: fromCents(cents),
+      tendered: null,
+      note: null
+    };
+  });
+}
+var _trancheCounter = 0;
+function makeTrancheId(seed) {
+  _trancheCounter += 1;
+  var ts = Date.now().toString(36);
+  var ctr = _trancheCounter.toString(36);
+  return "tr_".concat(ts, "_").concat(ctr, "_").concat(seed !== null && seed !== void 0 ? seed : '');
+}
+
+/**
+ * Build the API payload field expected by the backend (PLAN_P12).
+ * Frozen-zone backend currently ignores payment_breakdown[]; the field is
+ * forward-compatible — the front-end attaches it on every multi-tender
+ * submit so backend rollout is a server-only flip.
+ */
+function serializeTranches(tranches) {
+  if (!Array.isArray(tranches)) return [];
+  return tranches.map(function (t) {
+    var _t$note;
+    var cents = toCents(t.amount);
+    var tenderedCents = isCashMode(t.mode) ? toCents(t.tendered) : null;
+    return {
+      mode: Number(t.mode),
+      amount: fromCents(cents),
+      tendered: tenderedCents != null ? fromCents(tenderedCents) : null,
+      change: isCashMode(t.mode) ? fromCents(computeChangeCents(t)) : 0,
+      note: (_t$note = t.note) !== null && _t$note !== void 0 ? _t$note : null
+    };
+  });
+}
+
+/**
+ * Total change (cents) summed across all CASH tranches. Card/non-cash
+ * contribute 0.
+ */
+function totalChangeCents(tranches) {
+  if (!Array.isArray(tranches)) return 0;
+  return tranches.reduce(function (acc, t) {
+    return acc + computeChangeCents(t);
+  }, 0);
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  toCents: toCents,
+  fromCents: fromCents,
+  isCashMode: isCashMode,
+  isValidMode: isValidMode,
+  validateTranche: validateTranche,
+  computeChangeCents: computeChangeCents,
+  sumCoveredCents: sumCoveredCents,
+  remainingCents: remainingCents,
+  canConfirm: canConfirm,
+  splitEqually: splitEqually,
+  splitEquallyCents: splitEquallyCents,
+  serializeTranches: serializeTranches,
+  totalChangeCents: totalChangeCents,
+  makeTrancheId: makeTrancheId
+});
 
 /***/ }),
 

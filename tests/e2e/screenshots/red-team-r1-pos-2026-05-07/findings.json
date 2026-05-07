@@ -1,0 +1,194 @@
+[
+  {
+    "step": 1,
+    "slug": "login-empty",
+    "severity": "P2",
+    "note": "Email autocomplete=\"\" — devrait être \"username\" ou \"email\" pour gestionnaires de mots de passe",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-01-login-empty.png",
+    "ts": "2026-05-07T01:45:25.353Z"
+  },
+  {
+    "step": 1,
+    "slug": "login-empty",
+    "severity": "P1",
+    "note": "Pas de meta csrf-token — risque CSRF si endpoints session-based",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-01-login-empty.png",
+    "ts": "2026-05-07T01:45:25.354Z"
+  },
+  {
+    "step": 1,
+    "slug": "login-empty",
+    "severity": "P2",
+    "note": "Pas de \"remember me\" pour caissier — UX restaurant impacte les changements de poste",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-01-login-empty.png",
+    "ts": "2026-05-07T01:45:25.355Z"
+  },
+  {
+    "step": 1,
+    "slug": "login-empty",
+    "severity": "P2",
+    "note": "Console errors avant interaction: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-01-login-empty.png",
+    "ts": "2026-05-07T01:45:25.355Z"
+  },
+  {
+    "step": 1,
+    "slug": "login-empty",
+    "severity": "INFO",
+    "note": "DOM probe captured: email=true pass=true buttons=2 csrf-len=undefined",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-01-login-empty.png",
+    "ts": "2026-05-07T01:45:25.355Z"
+  },
+  {
+    "step": 2,
+    "slug": "surface-pos-v5",
+    "severity": "P2",
+    "note": "7 console warnings — bruit anormal",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-02-surface-pos-v5.png",
+    "ts": "2026-05-07T01:45:45.182Z"
+  },
+  {
+    "step": 2,
+    "slug": "surface-pos-v5",
+    "severity": "INFO",
+    "note": "tokens={\"bgApp\":\"#FFFBF5\",\"brandRed\":\"#E8001C\",\"border\":\"#EEE6D9\",\"surface\":\"\"} testids-count-sample=9",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-02-surface-pos-v5.png",
+    "ts": "2026-05-07T01:45:45.182Z"
+  },
+  {
+    "step": 3,
+    "slug": "categories",
+    "severity": "OK",
+    "note": "Click 2e catégorie → state actif détecté",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-03-categories-after-click.png",
+    "ts": "2026-05-07T01:45:56.459Z"
+  },
+  {
+    "step": 3,
+    "slug": "categories",
+    "severity": "INFO",
+    "note": "Double-click catégorie tenté (race) — voir capture",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-03-categories-double-click.png",
+    "ts": "2026-05-07T01:45:57.085Z"
+  },
+  {
+    "step": 4,
+    "slug": "grid",
+    "severity": "INFO",
+    "note": "64 tuile(s) produit visibles",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-04-grid.png",
+    "ts": "2026-05-07T01:46:07.193Z"
+  },
+  {
+    "step": 4,
+    "slug": "wizard",
+    "severity": "P1",
+    "note": "Wizard popup ouvert SANS role=\"dialog\" (role=null) — screen readers ignorent",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-04-after-tile-click.png",
+    "ts": "2026-05-07T01:46:08.779Z"
+  },
+  {
+    "step": 4,
+    "slug": "wizard",
+    "severity": "P1",
+    "note": "Wizard popup sans aria-modal=\"true\" (aria-modal=null) — screen readers ne savent pas que c'est modal",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-04-after-tile-click.png",
+    "ts": "2026-05-07T01:46:08.779Z"
+  },
+  {
+    "step": 4,
+    "slug": "wizard",
+    "severity": "P1",
+    "note": "Focus n'est PAS dans le wizard popup après ouverture — keyboard users perdus",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-04-after-tile-click.png",
+    "ts": "2026-05-07T01:46:08.779Z"
+  },
+  {
+    "step": 4,
+    "slug": "wizard",
+    "severity": "P2",
+    "note": "body.overflow=auto hidden alors que modal ouvert — scroll background possible",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-04-after-tile-click.png",
+    "ts": "2026-05-07T01:46:08.779Z"
+  },
+  {
+    "step": 5,
+    "slug": "wizard",
+    "severity": "P2",
+    "note": "Pas de modal/dialog visible — produit ajouté direct sans variation ?",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-05-wizard-open.png",
+    "ts": "2026-05-07T01:46:20.017Z"
+  },
+  {
+    "step": 6,
+    "slug": "add-to-cart",
+    "severity": "P1",
+    "note": "Après tentatives ajout, panier toujours vide (empty msg visible=true) — flux ajout cassé OU tuile ouvre wizard à valider manuellement",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-06-cart-with-item.png",
+    "ts": "2026-05-07T01:46:43.905Z"
+  },
+  {
+    "step": 7,
+    "slug": "cart-edits",
+    "severity": "P2",
+    "note": "Pas de cart item à éditer (cf step 6)",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-07-cart-loaded.png",
+    "ts": "2026-05-07T01:46:55.044Z"
+  },
+  {
+    "step": 8,
+    "slug": "customer",
+    "severity": "INFO",
+    "note": "5 contrôle(s) client trouvé(s)",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-08-customer-selector.png",
+    "ts": "2026-05-07T01:47:05.246Z"
+  },
+  {
+    "step": 9,
+    "slug": "discount",
+    "severity": "P2",
+    "note": "pos-discount-input non visible — peut-être conditionnel",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-09-discount.png",
+    "ts": "2026-05-07T01:47:16.072Z"
+  },
+  {
+    "step": 10,
+    "slug": "pay-btn",
+    "severity": "P0",
+    "note": "Bouton pos-v5-pay non visible",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-10-pre-pay.png",
+    "ts": "2026-05-07T01:47:27.593Z"
+  },
+  {
+    "step": 11,
+    "slug": "pay",
+    "severity": "P0",
+    "note": "pas de pos-v5-pay accessible",
+    "screenshot": "",
+    "ts": "2026-05-07T01:47:39.127Z"
+  },
+  {
+    "step": 14,
+    "slug": "receipt",
+    "severity": "INFO",
+    "note": "receipt visible=false toast=false",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-14-post-paiement-state.png",
+    "ts": "2026-05-07T01:47:50.220Z"
+  },
+  {
+    "step": 15,
+    "slug": "kds-event",
+    "severity": "INFO",
+    "note": "Vérification domain_events row faite hors-Playwright via php artisan tinker (cf rapport markdown)",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-15-kds-state-pos-side.png",
+    "ts": "2026-05-07T01:47:59.631Z"
+  },
+  {
+    "step": 16,
+    "slug": "offline",
+    "severity": "P1",
+    "note": "Aucun banner \"offline/connexion perdue\" affiché → caissier ne sait pas que les commandes ne se synchronisent pas",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/step-16-offline-tile-click.png",
+    "ts": "2026-05-07T01:48:11.667Z"
+  }
+]

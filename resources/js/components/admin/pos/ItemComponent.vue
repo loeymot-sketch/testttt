@@ -61,7 +61,7 @@
        L'image item devient ronde 88px (mirror wizard composition chips).
        La logique du wizard reste FROZEN (utilisé pour produits sans wizard).
     -->
-    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal" :data-pos-drinks-catalog="drinksCatalogJson">
+    <div id="item-variation-modal" ref="itemVariationModal" class="modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal" role="dialog" aria-modal="true" aria-labelledby="item-variation-modal-title" tabindex="-1" :data-pos-drinks-catalog="drinksCatalogJson">
         <div
             class="modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl"
             v-if="item">
@@ -71,7 +71,7 @@
                         alt="thumbnail">
                     <div class="flex-auto">
                         <div class="flex items-start gap-2 mb-1">
-                            <h3 class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
+                            <h3 id="item-variation-modal-title" class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
                             <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start"
                                 data-modal="#item-info-modal" @click.prevent="infoModalShow(item.name, item.caution)">
                                 <i class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>
@@ -790,6 +790,12 @@ export default {
                     }
                     modalTarget?.classList?.add("active");
                     document.body.style.overflowY = "hidden";
+                    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                    setTimeout(() => {
+                        if (modalTarget && modalTarget.classList?.contains('active')) {
+                            modalTarget.focus({ preventScroll: true });
+                        }
+                    }, 150);
                 }).catch((error) => {
                     this.showItemLoadError(error);
                 });
@@ -883,6 +889,12 @@ export default {
 
                     modalTarget?.classList?.add('active');
                     document.body.style.overflowY = 'hidden';
+                    this._wizardReturnFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                    setTimeout(() => {
+                        if (modalTarget && modalTarget.classList?.contains('active')) {
+                            modalTarget.focus({ preventScroll: true });
+                        }
+                    }, 150);
                 })
                 .catch(() => {
                     // [V7 FIX] Show error feedback — silent failure leaves cashier confused
@@ -906,6 +918,11 @@ export default {
             const modalDiv = this.$refs.itemVariationModal;
             modalDiv?.classList?.remove("active");
             document.body.style.overflowY = "auto";
+            const returnFocusEl = this._wizardReturnFocusEl;
+            this._wizardReturnFocusEl = null;
+            if (returnFocusEl && typeof returnFocusEl.focus === 'function' && document.contains(returnFocusEl)) {
+                this.$nextTick(() => returnFocusEl.focus());
+            }
         },
         bumpPricingToCatalog: function () {
             if (!this.usePricedCartBase || !this.item) return;

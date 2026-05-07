@@ -1,0 +1,22 @@
+{
+  "wizard-a11y-strict": {
+    "found": true,
+    "role": null,
+    "ariaModal": null,
+    "ariaLabel": null,
+    "focusInside": false,
+    "activeId": "",
+    "activeTag": "BUTTON"
+  },
+  "cart-after-add": {
+    "count": 0,
+    "grand": "Total0.00€",
+    "payVisible": false
+  },
+  "strict-modal-probe": {
+    "activeModalsCount": 1,
+    "visibleActiveModalsCount": 0,
+    "roleDialogCount": 0,
+    "samples": []
+  }
+}
