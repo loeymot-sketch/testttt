@@ -133128,11 +133128,19 @@ var posOrder = {
           clearTimeout(timeoutId);
           resolve(res);
         })["catch"](function (err) {
+          var _err$response, _err$response2;
           clearTimeout(timeoutId);
           if ((err === null || err === void 0 ? void 0 : err.code) === 'ERR_CANCELED' || (err === null || err === void 0 ? void 0 : err.name) === 'CanceledError') {
             reject({
               _paymentTimeout: true,
               message: 'Délai de paiement dépassé (30s). Ne relancez pas — vérifiez le statut.'
+            });
+          } else if ((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.status) === 409 && err !== null && err !== void 0 && (_err$response2 = err.response) !== null && _err$response2 !== void 0 && (_err$response2 = _err$response2.headers) !== null && _err$response2 !== void 0 && _err$response2['idempotency-key-conflict']) {
+            // [RED-R1 P2 / Q-13-2] Idempotency-Key conflict — same key, different payload.
+            // Cashier-friendly toast: order may already be in ticker, do NOT retry blindly.
+            reject({
+              _idempotencyConflict: true,
+              message: 'Commande déjà enregistrée — vérifier le ticker avant de relancer.'
             });
           } else {
             reject(err);

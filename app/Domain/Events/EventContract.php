@@ -60,7 +60,13 @@ final class EventContract
         EventType::ORDER_CANCELLED                => ['order_id'],
         // [F-02] OrderTableChanged minimum payload — see PersistOrderTableChangedToOutbox.
         EventType::ORDER_TABLE_CHANGED            => ['order_id', 'new_table_id'],
-        EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status'],
+        // [AGENT-CONTRACT C1 hardening 2026-05-08] Élargi des 2 keys minimales aux 7
+        // que tous les producers émettent réellement (PersistItemAvailabilityChangedToOutbox
+        // + Stock86 listener) et que les consumers SPA exigent (KDS in-flight marker
+        // CV1-KDS-INFLIGHT-OOS-MARKER-001 lit is_available + branch_id + reason).
+        // Empêche un futur producer d'émettre un payload tronqué qui passerait
+        // assertPayloadValid silencieusement → KDS silence radio.
+        EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status', 'is_available', 'branch_id', 'reason', 'price', 'type'],
         EventType::CATALOG_CHANGED                => ['entity_type', 'entity_id', 'change_type', 'snapshot_version'],
         EventType::STOCK_LOW                      => ['item_id'],
         // [PROMO-DASH-2026-05-06] Minimum coupon-changed payload — see PersistCouponChangedToOutbox.

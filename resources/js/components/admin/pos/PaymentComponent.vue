@@ -306,6 +306,17 @@ import {
 export default {
     name: "PaymentComponent",
     components: { LoadingComponent, ReceiptComponent, PosV5Numpad, PosV5TrancheRow },
+    /**
+     * [RED-R1 Q-X-1] Authoritative list of events PaymentComponent is allowed to emit.
+     * MODIFIER UNIQUEMENT VIA REVIEW HUMAINE — toute addition/suppression doit :
+     *   1. apparaître dans la description du PR
+     *   2. être justifiée par un FK-ID + plan documenté
+     *   3. mettre à jour la sentinel `paymentComponentEmitsJsdocList.spec.js`
+     * Events autorisés (exhaustif) :
+     *   - "payment-form:patch"   → patch du form parent (delta, jamais mutation directe)
+     *   - "payment-form:reset"   → demande au parent de réinitialiser le form
+     *   - "order:confirmed"      → notifie le parent qu'une commande a été confirmée
+     */
     emits: ["payment-form:patch", "payment-form:reset", "order:confirmed"],
     props: {
         props: Object,
@@ -708,6 +719,12 @@ export default {
         },
         handlePaymentError: function (err) {
             if (err?._paymentTimeout) {
+                alertService.error(err.message);
+                return;
+            }
+            if (err?._idempotencyConflict) {
+                // [RED-R1 P2] 409 Idempotency-Key-Conflict — surfaced explicitly so cashier
+                // does not retry blindly (commande probablement déjà dans le ticker).
                 alertService.error(err.message);
                 return;
             }

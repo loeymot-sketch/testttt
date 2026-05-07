@@ -200,6 +200,10 @@ export const posOrder = {
                     clearTimeout(timeoutId);
                     if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
                         reject({ _paymentTimeout: true, message: 'Délai de paiement dépassé (30s). Ne relancez pas — vérifiez le statut.' });
+                    } else if (err?.response?.status === 409 && err?.response?.headers?.['idempotency-key-conflict']) {
+                        // [RED-R1 P2 / Q-13-2] Idempotency-Key conflict — same key, different payload.
+                        // Cashier-friendly toast: order may already be in ticker, do NOT retry blindly.
+                        reject({ _idempotencyConflict: true, message: 'Commande déjà enregistrée — vérifier le ticker avant de relancer.' });
                     } else {
                         reject(err);
                     }

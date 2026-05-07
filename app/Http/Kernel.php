@@ -38,6 +38,9 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CorrelationIdMiddleware::class,
+            // [RED-R2 §1 P2] CSP via HTTP header (replaces <meta http-equiv>).
+            // Mode piloté par env CSP_ENFORCE_MODE — défaut report_only.
+            \App\Http\Middleware\ContentSecurityPolicyHeader::class,
         ],
 
         'api' => [

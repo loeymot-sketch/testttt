@@ -8,13 +8,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     {{-- [C13 / K-6.7] Kiosk-only Content-Security-Policy in Report-Only mode.
+         FALLBACK ONLY — la CSP applicable est désormais délivrée via le header
+         HTTP par App\Http\Middleware\ContentSecurityPolicyHeader (config :
+         config/security.php, env: CSP_ENFORCE_MODE). Cf. RED-R2 §1 P2 :
+         le <meta http-equiv> est ignoré par les navigateurs modernes pour
+         plusieurs directives critiques (frame-ancestors, sandbox, report-uri).
+         Ce <meta> reste en place le temps de la transition (rollback safety) —
+         voir docs/runbooks/CSP_HEADER_MIGRATION.md.
+
          Deliberately NOT enforced yet : the master layout still uses inline
          scripts (window.foodkingConfig, pos-wizard shim) and inline styles
          (Dine-In hide). K-9 will migrate these to nonced scripts then switch
          to enforcing `Content-Security-Policy`. For now we collect violations
          so ops can audit the real surface before flipping the switch.
-         Customer-facing POS / admin pages are untouched to avoid breaking
-         existing analytics injections.
 
          The `/api/frontend/csp-report` endpoint (ported in C2) ingests
          violations into the `observability` log channel — anonymous,

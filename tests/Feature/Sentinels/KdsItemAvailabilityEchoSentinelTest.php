@@ -53,13 +53,27 @@ class KdsItemAvailabilityEchoSentinelTest extends TestCase
     {
         $src = $this->kdsComponentSource();
 
-        // Le handler exact pour ItemAvailabilityChanged doit appeler _debouncedRefresh().
-        // On vérifie que la ligne précise existe (regex tolérante aux espaces).
+        // [CV1-KDS-INFLIGHT-OOS-MARKER-001 + AGENT-CONTRACT C1 2026-05-08] Le handler
+        // ItemAvailabilityChanged accepte maintenant 2 patterns équivalents:
+        //   1. callback inline directe `() => this._debouncedRefresh()` (ancien)
+        //   2. délégation `(parsed) => this._onItemAvailabilityChanged(parsed)` (nouveau,
+        //      pour CV1-KDS-INFLIGHT-OOS-MARKER qui set le flag Vuex avant de debouncer)
+        // Garantie maintenue : un de ces 2 patterns DOIT exister, ET la méthode
+        // _onItemAvailabilityChanged DOIT appeler _debouncedRefresh() in fine.
         $this->assertMatchesRegularExpression(
-            "/broadcastAs:\s*'ItemAvailabilityChanged'\s*,\s*handler:\s*\(\)\s*=>\s*\{\s*this\._debouncedRefresh\(\)\s*;?\s*\}/",
+            "/broadcastAs:\s*'ItemAvailabilityChanged'\s*,\s*handler:\s*\([^)]*\)\s*=>\s*\{\s*this\.(_debouncedRefresh|_onItemAvailabilityChanged)\s*\(/",
             $src,
-            "Le handler pour 'ItemAvailabilityChanged' DOIT appeler this._debouncedRefresh() "
-            . '(évite storm de requêtes /sync lors de bursts Echo simultanés).'
+            "Le handler pour 'ItemAvailabilityChanged' DOIT déléguer à _debouncedRefresh "
+            . 'OU à _onItemAvailabilityChanged (qui doit lui-même appeler _debouncedRefresh).'
+        );
+
+        // Garantie 2 : _onItemAvailabilityChanged DOIT in fine appeler _debouncedRefresh
+        // (sinon storm de requêtes /sync lors de bursts Echo simultanés).
+        $this->assertMatchesRegularExpression(
+            "/_onItemAvailabilityChanged[\s\S]{0,8000}?_debouncedRefresh\(\)/",
+            $src,
+            '_onItemAvailabilityChanged DOIT appeler this._debouncedRefresh() avant '
+            . 'de retourner (anti-storm Echo bursts).'
         );
     }
 

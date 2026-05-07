@@ -2522,6 +2522,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     PosV5Numpad: _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_13__["default"],
     PosV5TrancheRow: _v5_PosV5TrancheRow_vue__WEBPACK_IMPORTED_MODULE_14__["default"]
   },
+  /**
+   * [RED-R1 Q-X-1] Authoritative list of events PaymentComponent is allowed to emit.
+   * MODIFIER UNIQUEMENT VIA REVIEW HUMAINE — toute addition/suppression doit :
+   *   1. apparaître dans la description du PR
+   *   2. être justifiée par un FK-ID + plan documenté
+   *   3. mettre à jour la sentinel `paymentComponentEmitsJsdocList.spec.js`
+   * Events autorisés (exhaustif) :
+   *   - "payment-form:patch"   → patch du form parent (delta, jamais mutation directe)
+   *   - "payment-form:reset"   → demande au parent de réinitialiser le form
+   *   - "order:confirmed"      → notifie le parent qu'une commande a été confirmée
+   */
   emits: ["payment-form:patch", "payment-form:reset", "order:confirmed"],
   props: {
     props: Object
@@ -3007,6 +3018,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     handlePaymentError: function handlePaymentError(err) {
       var _err$response2, _err$response3;
       if (err !== null && err !== void 0 && err._paymentTimeout) {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err.message);
+        return;
+      }
+      if (err !== null && err !== void 0 && err._idempotencyConflict) {
+        // [RED-R1 P2] 409 Idempotency-Key-Conflict — surfaced explicitly so cashier
+        // does not retry blindly (commande probablement déjà dans le ticker).
         _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err.message);
         return;
       }

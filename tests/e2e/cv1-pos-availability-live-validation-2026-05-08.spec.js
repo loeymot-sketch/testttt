@@ -19,8 +19,11 @@ const BASE = 'http://localhost:8000';
 test.describe('CV1-POS-AVAILABILITY-LIVE-001 — fix validation', () => {
 
     test('CV1-A — Admin global (branch_id=0) ne fetch PAS /admin/item au mount POS', async ({ page }) => {
-        // admin@lecayenne.fr a branch_id=0 (cf UserTableSeeder)
-        await loginAsPosOperator(page);
+        // [TEST-INTEGRITY HEAL T7] admin@lecayenne.fr a branch_id=0 (cf UserTableSeeder).
+        // C'est le user qui DÉCLENCHE le bug RED-R3 F2. loginAsPosOperator() avec
+        // pos@lecayenne.fr (branch_id=1) rendrait le test tautologique : bootstrapBranchId=1
+        // → if branche → tile rendue OK même si fix retiré → faux positif PASS.
+        await loginAsPosOperator(page, 'admin@lecayenne.fr', '123456');
 
         const itemListUrls = [];
         page.on('request', (req) => {
