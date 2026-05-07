@@ -1004,10 +1004,48 @@ class FrontendOrderService
                 return;
             }
 
-            // M-08 fiscal gate Option B: kiosk payment confirmation may
-            // release the order operationally, but it must not allocate a
-            // fiscal_sequence_no or close/seal a Z. Fiscal finalization is
-            // delegated to the POS path.
+            // [P-K11-FZH / KR1] M-08 OPTION B SUPERSEDED — auto-allocate
+            // fiscal_sequence_no for kiosk direct TPE so orders enter Z
+            // aggregation immediately, not only when manually POS-collected.
+            // Without this, a kiosk-paid card order could remain unsealed
+            // indefinitely (NF525 fiscal gap).
+            //
+            // Feature flag `fiscal.kiosk_auto_allocate_sequence` (default true)
+            // gates the auto-allocation. Override via
+            // FISCAL_KIOSK_AUTO_ALLOCATE_SEQUENCE=false for emergency rollback
+            // to legacy M-08 Option B behaviour.
+            //
+            // Allocation runs INSIDE the same DB::transaction so any failure
+            // rolls back the status promotion as well — order stays PENDING
+            // until a future retry or manual POS collection.
+            if ($locked->fiscal_sequence_no === null
+                && config('fiscal.kiosk_auto_allocate_sequence', true)
+            ) {
+                try {
+                    $newSeq = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                        ->next((int) $locked->branch_id);
+                    $locked->fiscal_sequence_no = $newSeq;
+
+                    Log::channel('fiscal')->info('kiosk.fiscal_sequence_auto_allocated', [
+                        'event'              => 'kiosk.fiscal_sequence_auto_allocated',
+                        'order_id'           => $locked->id,
+                        'branch_id'          => $locked->branch_id,
+                        'fiscal_sequence_no' => $newSeq,
+                        'payment_method'     => $locked->payment_method,
+                        'source_surface'     => $locked->source_surface ?? null,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::channel('fiscal')->error('kiosk.fiscal_sequence_alloc_failed', [
+                        'event'    => 'kiosk.fiscal_sequence_alloc_failed',
+                        'order_id' => $locked->id,
+                        'error'    => $e->getMessage(),
+                    ]);
+                    // Fail-loud: fiscal compliance > UX. The transaction
+                    // rolls back; caller sees the error and can retry.
+                    throw $e;
+                }
+            }
+
             $locked->status = OrderStatus::ACCEPT;
             $locked->save();
             $promoted = true;

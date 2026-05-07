@@ -122,6 +122,26 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | [P-K11-FZH / KR1] Kiosk auto-allocate fiscal_sequence_no
+    |----------------------------------------------------------------------
+    |
+    | When true (default), FrontendOrderService::finalizePaidKioskOrder()
+    | allocates a fresh fiscal_sequence_no during the same DB::transaction
+    | that promotes the order PENDING → ACCEPT. Without this, kiosk-paid
+    | direct TPE orders may remain fiscally unsealed if no POS operator
+    | manually collects them — silent NF525 gap.
+    |
+    | Set FISCAL_KIOSK_AUTO_ALLOCATE_SEQUENCE=false to roll back to
+    | legacy M-08 Option B behaviour (emergency only).
+    */
+    'kiosk_auto_allocate_sequence' => filter_var(
+        env('FISCAL_KIOSK_AUTO_ALLOCATE_SEQUENCE', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE
+    ) ?? true,
+
+    /*
+    |----------------------------------------------------------------------
     | Archive retention (NF525 = 6 years)
     |----------------------------------------------------------------------
     */
