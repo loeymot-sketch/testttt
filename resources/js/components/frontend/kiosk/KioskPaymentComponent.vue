@@ -285,6 +285,19 @@ export default {
     this.syncNetworkState();
     window.addEventListener('online', this.syncNetworkState);
     window.addEventListener('offline', this.syncNetworkState);
+    // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
+    // approuvées par hardware mais dont le confirm backend a échoué (network
+    // blip / app crash post-TPE). Replay best-effort : aucune erreur ne doit
+    // bloquer le rendu de l'écran paiement. Périodique toutes les 60s tant
+    // que le composant est monté.
+    try {
+      this._reconcilePendingPayments();
+    } catch (_) {}
+    try {
+      this._reconcileInterval = setInterval(() => {
+        this._reconcilePendingPayments();
+      }, 60000);
+    } catch (_) { this._reconcileInterval = null; }
   },
   beforeUnmount() {
     this._lastOrder = null;
@@ -292,6 +305,11 @@ export default {
     window.removeEventListener('offline', this.syncNetworkState);
     // Kiosk Phase 9.1.8 — stoppe le TTS si on quitte l'écran pendant la lecture.
     try { this._kioskSpeech?.stop(); } catch (_) {}
+    // [AUDIT-F-008] Stoppe la boucle de reconcile périodique.
+    if (this._reconcileInterval) {
+      try { clearInterval(this._reconcileInterval); } catch (_) {}
+      this._reconcileInterval = null;
+    }
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
@@ -516,7 +534,15 @@ export default {
         // Without this, a PENDING order stays in DB forever (orphan order).
         // We fire-and-forget: if the void fails, staff can cancel manually from admin.
         if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
-          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: orderStatusEnum.CANCELED })
+          // [AUDIT-F-004] Reason whitelist for kiosk-originated cancels (OrderCancelReason).
+          // Mapping: TPE bridge declined / timed out → distinct codes for analytics; fallback
+          // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
+          // or non-whitelisted code when actor is kiosk machine token.
+          const tpeReasonCode = (paymentResult?.error_code === 'timeout' ? 'tpe_timeout' : 'tpe_declined');
+          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+            status: orderStatusEnum.CANCELED,
+            reason: tpeReasonCode,
+          })
             .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
         throw new Error(paymentResult.error || this.$t('kiosk.pay_screen.payment_declined'));
@@ -577,6 +603,38 @@ export default {
      */
     async _invokeTpe(amountEuros, method = 'CB') {
       const amountCents = Math.round(Number(amountEuros) * 100);
+
+      // [AUDIT-F-014] QA toggle (dev/staging only): force declined/timeout paths.
+      // Production guard non-bypassable: `process.env.NODE_ENV` est remplacé au build par
+      // webpack DefinePlugin (laravel-mix), donc la branche entière disparaît du bundle prod
+      // (dead-code elimination). Aucun query param ne peut activer ce toggle en production.
+      // Placé AVANT la branche stub afin que QA puisse aussi forcer un decline depuis une
+      // borne staging avec bridge=true (utile pour tester la gestion d'erreur côté UI sans
+      // pouvoir reproduire le decline avec un vrai TPE).
+      if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+        const force = new URLSearchParams(window.location.search).get('tpe_force');
+        if (force === 'declined') {
+          // [AUDIT-F-014] Mirror du contract bridge : approved:false avec error_code stable
+          // pour que processCardPayment throw → KioskErrorPaymentRefusedComponent visible.
+          // amount_cents_approved préservé (cross-contract F-002) même si jamais consommé
+          // côté backend (pas de payment-confirm si !approved).
+          return {
+            approved: false,
+            error: 'forced_decline_qa',
+            error_code: 'QA_FORCE_DECLINED',
+            transaction_id: null,
+            amount_cents_approved: amountCents,
+          };
+        }
+        if (force === 'timeout') {
+          // [AUDIT-F-014] Throw TPE_TIMEOUT directement après court délai pour mimer
+          // exactement le reject path du Promise.race global (TPE_TIMEOUT_MS=120s en prod
+          // serait inutilisable en QA). Le catch upstream traite ce throw identiquement.
+          await new Promise((r) => setTimeout(r, 500));
+          throw new Error('TPE_TIMEOUT');
+        }
+      }
+
       // Pas de bridge réel → stub navigateur classique avec délai visuel.
       if (!kioskHardware.isKioskBridge()) {
         this.tpeMessage = this.$t('kiosk.pay_screen.tpe_browser_sim');
@@ -663,7 +721,11 @@ export default {
       } catch (_) {}
       // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
       if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
-        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: orderStatusEnum.CANCELED })
+        // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
+        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+          status: orderStatusEnum.CANCELED,
+          reason: 'tpe_cancel_user',
+        })
           .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
         this._lastOrder = null;
       }
@@ -683,7 +745,111 @@ export default {
         }
       }
       console.warn('[KioskPayment] payment-confirm failed after retries:', lastError?.message);
+      // [AUDIT-F-008] Persist TPE-approved transaction for boot-time reconcile.
+      // Sans ça, un network blip ou crash backend post-TPE laisse l'order
+      // PENDING orphelin alors que le client a payé.
+      try {
+        this._appendPendingReconcile({
+          order_id:       orderId,
+          transaction_id: payload.transaction_id,
+          amount_cents:   payload.amount_cents,
+          card_type:      payload.card_type,
+          payment_method: payload.payment_method,
+        });
+      } catch (_) {}
+      // Observability : log via kiosk-event (whitelisted type 'sync_failed' avec
+      // subtype dédié — évite d'avoir à étendre KioskEventController::ALLOWED_TYPES).
+      try {
+        window.axios?.post('frontend/kiosk-event', {
+          type: 'sync_failed',
+          subtype: 'payment_confirm_retry_exhausted',
+          order_ref: String(orderId),
+          details: `tx=${payload.transaction_id}`,
+        }).catch(() => {});
+      } catch (_) {}
       throw new Error(this.$t('kiosk.pay_screen.payment_sync_failed'));
+    },
+
+    // [AUDIT-F-008] localStorage helpers for reconcile queue.
+    // Contrat : aucun PAN, aucune info bancaire — uniquement transaction_id +
+    // amount_cents + label card_type + payment_method (gateway integer).
+    _readPendingReconcile() {
+      try {
+        const raw = window?.localStorage?.getItem('pending_payment_confirms');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    },
+    _writePendingReconcile(list) {
+      try {
+        // Borne dure 50 entries (anti-explosion localStorage).
+        const trimmed = Array.isArray(list) ? list.slice(0, 50) : [];
+        window?.localStorage?.setItem('pending_payment_confirms', JSON.stringify(trimmed));
+      } catch (_) {}
+    },
+    _appendPendingReconcile(entry) {
+      const list = this._readPendingReconcile();
+      list.push({ ...entry, attempted_at: new Date().toISOString() });
+      this._writePendingReconcile(list);
+    },
+    _isPendingReconcileExpired(entry) {
+      // Borne 30 min — au-delà alert ops, pas de retry indéfini.
+      try {
+        return Date.now() - new Date(entry.attempted_at).getTime() > 30 * 60 * 1000;
+      } catch (_) {
+        return true;
+      }
+    },
+    async _reconcilePendingPayments() {
+      const list = this._readPendingReconcile();
+      if (list.length === 0) return;
+
+      const fresh = list.filter((e) => !this._isPendingReconcileExpired(e));
+      const expired = list.filter((e) => this._isPendingReconcileExpired(e));
+
+      if (expired.length > 0) {
+        // Alert ops — au-delà 30 min, transaction probablement perdue.
+        try {
+          window.axios?.post('frontend/kiosk-event', {
+            type: 'sync_failed',
+            subtype: 'payment_reconcile_expired',
+            details: 'expired_count=' + expired.length,
+          }).catch(() => {});
+        } catch (_) {}
+      }
+
+      if (fresh.length === 0) {
+        this._writePendingReconcile([]);
+        return;
+      }
+
+      try {
+        const entries = fresh.map((e) => ({
+          order_id:       e.order_id,
+          transaction_id: e.transaction_id,
+          amount_cents:   e.amount_cents,
+          card_type:      e.card_type,
+          payment_method: e.payment_method,
+        }));
+        const response = await axios.post('frontend/payment/reconcile-pending', { entries });
+        const results = response?.data?.data || [];
+        const reconciledTxs = results
+          .filter((r) => r.status === 'reconciled' || r.status === 'already_paid')
+          .map((r) => r.transaction_id);
+
+        // Garde uniquement les fresh non reconciled — drop les expired définitivement.
+        const remaining = fresh.filter((e) => !reconciledTxs.includes(e.transaction_id));
+        this._writePendingReconcile(remaining);
+      } catch (_) {
+        // Réseau / backend KO → on garde le localStorage pour le prochain tick.
+        // Drop les expired malgré tout (alert déjà émis ci-dessus).
+        if (expired.length > 0) {
+          this._writePendingReconcile(fresh);
+        }
+      }
     },
 
     // formatPrice() provided by kioskPriceMixin

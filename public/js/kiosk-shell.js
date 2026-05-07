@@ -1781,6 +1781,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   }),
   mounted: function mounted() {
+    var _this = this;
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
     // absence de Web Speech API sur le navigateur kiosk).
     try {
@@ -1793,6 +1794,21 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     this.syncNetworkState();
     window.addEventListener('online', this.syncNetworkState);
     window.addEventListener('offline', this.syncNetworkState);
+    // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
+    // approuvées par hardware mais dont le confirm backend a échoué (network
+    // blip / app crash post-TPE). Replay best-effort : aucune erreur ne doit
+    // bloquer le rendu de l'écran paiement. Périodique toutes les 60s tant
+    // que le composant est monté.
+    try {
+      this._reconcilePendingPayments();
+    } catch (_) {}
+    try {
+      this._reconcileInterval = setInterval(function () {
+        _this._reconcilePendingPayments();
+      }, 60000);
+    } catch (_) {
+      this._reconcileInterval = null;
+    }
   },
   beforeUnmount: function beforeUnmount() {
     this._lastOrder = null;
@@ -1803,6 +1819,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _this$_kioskSpeech;
       (_this$_kioskSpeech = this._kioskSpeech) === null || _this$_kioskSpeech === void 0 || _this$_kioskSpeech.stop();
     } catch (_) {}
+    // [AUDIT-F-008] Stoppe la boucle de reconcile périodique.
+    if (this._reconcileInterval) {
+      try {
+        clearInterval(this._reconcileInterval);
+      } catch (_) {}
+      this._reconcileInterval = null;
+    }
   },
   methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['submitOrder', 'reset'])), {}, {
     syncNetworkState: function syncNetworkState() {
@@ -1842,38 +1865,38 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       } catch (_) {}
     },
     confirmPayment: function confirmPayment() {
-      var _this = this;
+      var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var msg, _res$data, _res$data2, _res$data3, _res$data4, _res$data$data$total, _res$data5, _res$data6, _this$$store$state$ki, _res$data7, quote, res, orderId, queueNum, isOfflineId, rawTotal, total, n, loyaltyWasRequested, loyaltyApplied, navTarget, _msg, _err$response, _this$_kioskSpeech2, _err$response2, _this$_lastOrder, code, _orderId, _t;
+        var msg, _res$data, _res$data2, _res$data3, _res$data4, _res$data$data$total, _res$data5, _res$data6, _this2$$store$state$k, _res$data7, quote, res, orderId, queueNum, isOfflineId, rawTotal, total, n, loyaltyWasRequested, loyaltyApplied, navTarget, _msg, _err$response, _this2$_kioskSpeech, _err$response2, _this2$_lastOrder, code, _orderId, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              if (!(!_this.method || _this.submitting)) {
+              if (!(!_this2.method || _this2.submitting)) {
                 _context.n = 1;
                 break;
               }
               return _context.a(2);
             case 1:
-              if (!_this.isElectronicMethodBlocked(_this.method)) {
+              if (!_this2.isElectronicMethodBlocked(_this2.method)) {
                 _context.n = 2;
                 break;
               }
-              msg = _this.offlinePaymentMessage();
-              _this.error = msg;
-              _this.showToast(msg, 'warning', 4000);
+              msg = _this2.offlinePaymentMessage();
+              _this2.error = msg;
+              _this2.showToast(msg, 'warning', 4000);
               return _context.a(2);
             case 2:
-              _this.submitting = true;
-              _this.error = null;
+              _this2.submitting = true;
+              _this2.error = null;
               _context.p = 3;
               _context.n = 4;
-              return _this.refreshQuote();
+              return _this2.refreshQuote();
             case 4:
               quote = _context.v;
               // [PHASE-6.4] Analytics : démarrage du checkout (intent de payer).
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('checkout_started', {
-                  method: _this.method,
+                  method: _this2.method,
                   total_cents: Math.round(quote.total_ttc * 100)
                 });
               } catch (_) {}
@@ -1881,9 +1904,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // Step 1 — Submit order to Laravel API
               // [GAP-22-4] Pass orderType (sur place=25 / à emporter=10) chosen by customer in cart
               _context.n = 5;
-              return _this.submitOrder({
-                paymentMethod: _this.method,
-                orderType: _this.orderType,
+              return _this2.submitOrder({
+                paymentMethod: _this2.method,
+                orderType: _this2.orderType,
                 quote: quote
               });
             case 5:
@@ -1891,11 +1914,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               orderId = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.data) === null || _res$data === void 0 ? void 0 : _res$data.id) || (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.id);
               queueNum = (res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 || (_res$data3 = _res$data3.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.queue_number) || (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.queue_number);
               isOfflineId = typeof orderId === 'string' && String(orderId).startsWith('offline_');
-              if (!(isOfflineId && _this.isElectronicMethod(_this.method))) {
+              if (!(isOfflineId && _this2.isElectronicMethod(_this2.method))) {
                 _context.n = 6;
                 break;
               }
-              throw new Error(_this.offlinePaymentMessage());
+              throw new Error(_this2.offlinePaymentMessage());
             case 6:
               // [AUDIT-52 / T06] SSOT paiement : total numérique serveur (`OrderDetailsResource.total` / POS `order_amount`).
               // Hors-ligne seulement : pas de total serveur → repli sur le panier local pour l’UX TPE.
@@ -1904,7 +1927,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context.n = 7;
                 break;
               }
-              total = _this.cartTotal;
+              total = _this2.cartTotal;
               _context.n = 9;
               break;
             case 7:
@@ -1913,17 +1936,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context.n = 8;
                 break;
               }
-              throw new Error(_this.$t('kiosk.pay_screen.invalid_order_response'));
+              throw new Error(_this2.$t('kiosk.pay_screen.invalid_order_response'));
             case 8:
               total = Number.isFinite(Number(quote.total_ttc)) ? Number(quote.total_ttc) : n;
             case 9:
               // [AUDIT-P2] Check if loyalty discount was silently dropped server-side.
               // This happens when points were consumed by another order between the loyalty check
               // and the order commit (race condition). The order still succeeds but without the discount.
-              loyaltyWasRequested = ((_this$$store$state$ki = _this.$store.state.kioskCart) === null || _this$$store$state$ki === void 0 ? void 0 : _this$$store$state$ki.loyaltyDiscount) > 0;
+              loyaltyWasRequested = ((_this2$$store$state$k = _this2.$store.state.kioskCart) === null || _this2$$store$state$k === void 0 ? void 0 : _this2$$store$state$k.loyaltyDiscount) > 0;
               loyaltyApplied = res === null || res === void 0 || (_res$data7 = res.data) === null || _res$data7 === void 0 ? void 0 : _res$data7.loyalty_applied;
               if (loyaltyWasRequested && loyaltyApplied === false) {
-                _this.showToast(_this.$t('kiosk.pay_screen.loyalty_not_applied_toast'), 'warning', 6000);
+                _this2.showToast(_this2.$t('kiosk.pay_screen.loyalty_not_applied_toast'), 'warning', 6000);
               }
 
               // [AUDIT-P0] Guard: if the API response is malformed and orderId is missing,
@@ -1934,9 +1957,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context.n = 10;
                 break;
               }
-              throw new Error(_this.$t('kiosk.pay_screen.invalid_order_response'));
+              throw new Error(_this2.$t('kiosk.pay_screen.invalid_order_response'));
             case 10:
-              _this._lastOrder = {
+              _this2._lastOrder = {
                 id: orderId,
                 queue_number: queueNum,
                 total: total
@@ -1944,7 +1967,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
               // [Lot 2.H / F-13] Keep submitting=true through TPE/cash so the confirm
               // control cannot re-fire; clear only after payment path completes or in catch.
-              navTarget = _this.method === 'cash' ? {
+              navTarget = _this2.method === 'cash' ? {
                 name: 'kiosk.cash-instruction',
                 query: {
                   number: queueNum,
@@ -1961,41 +1984,41 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                   total: total
                 }
               }; // Step 2 — Payment processing
-              if (!(_this.method === 'card' || _this.method === 'tr')) {
+              if (!(_this2.method === 'card' || _this2.method === 'tr')) {
                 _context.n = 12;
                 break;
               }
               _context.n = 11;
-              return _this.processCardPayment(navTarget);
+              return _this2.processCardPayment(navTarget);
             case 11:
               _context.n = 13;
               break;
             case 12:
               _context.n = 13;
-              return _this.processCashPayment(navTarget);
+              return _this2.processCashPayment(navTarget);
             case 13:
               _context.n = 15;
               break;
             case 14:
               _context.p = 14;
               _t = _context.v;
-              _this.tpeWaiting = false;
-              _this.tpeCanCancel = false;
+              _this2.tpeWaiting = false;
+              _this2.tpeCanCancel = false;
               // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
 
               if ((_t === null || _t === void 0 ? void 0 : _t.message) === 'TPE_TIMEOUT') {
-                _msg = _this.$t('kiosk.payment.tpe_timeout_message');
+                _msg = _this2.$t('kiosk.payment.tpe_timeout_message');
               } else {
-                _msg = _t !== null && _t !== void 0 && (_err$response = _t.response) !== null && _err$response !== void 0 && (_err$response = _err$response.data) !== null && _err$response !== void 0 && _err$response.errors ? Object.values(_t.response.data.errors).flat().join(' ') : (_t === null || _t === void 0 ? void 0 : _t.message) || _this.$t('kiosk.pay_screen.payment_error_generic');
+                _msg = _t !== null && _t !== void 0 && (_err$response = _t.response) !== null && _err$response !== void 0 && (_err$response = _err$response.data) !== null && _err$response !== void 0 && _err$response.errors ? Object.values(_t.response.data.errors).flat().join(' ') : (_t === null || _t === void 0 ? void 0 : _t.message) || _this2.$t('kiosk.pay_screen.payment_error_generic');
               }
-              _this.error = _msg;
-              _this.showToast(_msg, 'error', 6000);
-              _this.submitting = false;
-              _this.submitted = false;
+              _this2.error = _msg;
+              _this2.showToast(_msg, 'error', 6000);
+              _this2.submitting = false;
+              _this2.submitted = false;
               // Kiosk Phase 9.1.8 — annonce vocale de l'erreur (no-op si audio off).
               // On énonce un message court + clef i18n pour le fallback AR mp3 statique.
               try {
-                (_this$_kioskSpeech2 = _this._kioskSpeech) === null || _this$_kioskSpeech2 === void 0 || _this$_kioskSpeech2.speak(_this.$t('kiosk.pay_screen.speech_error', {
+                (_this2$_kioskSpeech = _this2._kioskSpeech) === null || _this2$_kioskSpeech === void 0 || _this2$_kioskSpeech.speak(_this2.$t('kiosk.pay_screen.speech_error', {
                   msg: _msg
                 }), {
                   key: 'kiosk.pay_screen.speech_error'
@@ -2009,14 +2032,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               //  - `order_id` : référence de la commande pending pour void.
               // Le compteur est remis à 0 quand l'utilisateur change de method ou
               // re-sélectionne : resetPaymentFailureCount() ci-dessous.
-              _this.paymentFailureCount += 1;
-              if (_this.paymentFailureCount >= _this.$options.MAX_PAYMENT_FAILURES) {
+              _this2.paymentFailureCount += 1;
+              if (_this2.paymentFailureCount >= _this2.$options.MAX_PAYMENT_FAILURES) {
                 code = (_t === null || _t === void 0 ? void 0 : _t.code) || (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.code) || 'declined';
-                _orderId = (_this$_lastOrder = _this._lastOrder) !== null && _this$_lastOrder !== void 0 && _this$_lastOrder.id ? String(_this._lastOrder.id) : null; // Reset avant navigation pour ne pas empiler les seuils si l'utilisateur
+                _orderId = (_this2$_lastOrder = _this2._lastOrder) !== null && _this2$_lastOrder !== void 0 && _this2$_lastOrder.id ? String(_this2._lastOrder.id) : null; // Reset avant navigation pour ne pas empiler les seuils si l'utilisateur
                 // revient (back) sur /payment après l'écran d'erreur.
-                _this.paymentFailureCount = 0;
+                _this2.paymentFailureCount = 0;
                 try {
-                  _this.$router.push({
+                  _this2.$router.push({
                     name: 'kiosk.error.payment-refused',
                     query: _objectSpread({
                       code: code
@@ -2033,16 +2056,16 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }))();
     },
     refreshQuote: function refreshQuote() {
-      var _this2 = this;
+      var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
         var _res$data8;
         var payload, res, quote;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
             case 0:
-              payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_7__.buildKioskOrderPayload)(_this2.$store.state.kioskCart, {
-                orderType: _this2.orderType,
-                paymentMethod: _this2.method
+              payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_7__.buildKioskOrderPayload)(_this3.$store.state.kioskCart, {
+                orderType: _this3.orderType,
+                paymentMethod: _this3.method
               });
               _context2.n = 1;
               return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('frontend/order/quote', payload);
@@ -2053,79 +2076,85 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context2.n = 2;
                 break;
               }
-              throw new Error(_this2.$t('kiosk.pay_screen.invalid_order_response'));
+              throw new Error(_this3.$t('kiosk.pay_screen.invalid_order_response'));
             case 2:
-              _this2._lastQuote = quote;
+              _this3._lastQuote = quote;
               return _context2.a(2, quote);
           }
         }, _callee2);
       }))();
     },
     processCardPayment: function processCardPayment(navTarget) {
-      var _this3 = this;
+      var _this4 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
-        var _this3$_lastOrder2;
-        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this3$_lastOrder, expectedCents, echoedCents;
+        var _this4$_lastOrder2;
+        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this4$_lastOrder, tpeReasonCode, expectedCents, echoedCents;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.n) {
             case 0:
-              _this3.tpeWaiting = true;
-              tpeKey = _this3.method === 'card' ? 'tpe_card' : _this3.method === 'tr' ? 'tpe_tr' : 'tpe_default';
-              _this3.tpeMessage = _this3.$t("kiosk.pay_screen.".concat(tpeKey));
-              _this3.tpeCanCancel = true;
+              _this4.tpeWaiting = true;
+              tpeKey = _this4.method === 'card' ? 'tpe_card' : _this4.method === 'tr' ? 'tpe_tr' : 'tpe_default';
+              _this4.tpeMessage = _this4.$t("kiosk.pay_screen.".concat(tpeKey));
+              _this4.tpeCanCancel = true;
 
               // [PHASE-6.1] Passage par kioskHardware — stub auto en navigateur (dev/tests),
               // contrat {ok, error?} uniforme, auto-report vers /frontend/kiosk-event en cas de throw.
               // [AUDIT-52-BUG7] Wrap dans un timeout global (TPE peut figer sur chip+PIN). SSOT: config/kioskHardware.js
               TPE_TIMEOUT_MS = _config_kioskHardware__WEBPACK_IMPORTED_MODULE_4__.KIOSK_HARDWARE.TPE_TIMEOUT_MS;
-              amountEuros = _this3._lastOrder.total || _this3.cartTotal;
-              tpeMethod = _this3.method === 'tr' ? 'TR' : 'CB';
+              amountEuros = _this4._lastOrder.total || _this4.cartTotal;
+              tpeMethod = _this4.method === 'tr' ? 'TR' : 'CB';
               _context3.n = 1;
-              return Promise.race([_this3._invokeTpe(amountEuros, tpeMethod), new Promise(function (_, reject) {
+              return Promise.race([_this4._invokeTpe(amountEuros, tpeMethod), new Promise(function (_, reject) {
                 return setTimeout(function () {
                   return reject(new Error('TPE_TIMEOUT'));
                 }, TPE_TIMEOUT_MS);
               })]);
             case 1:
               paymentResult = _context3.v;
-              _this3.tpeCanCancel = false;
+              _this4.tpeCanCancel = false;
               if (paymentResult.approved) {
                 _context3.n = 2;
                 break;
               }
-              _this3.tpeWaiting = false;
+              _this4.tpeWaiting = false;
               // [PHASE-6.4] Analytics : échec paiement (code normalisé, jamais de PII).
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_failed', {
-                  method: _this3.method,
+                  method: _this4.method,
                   reason_code: paymentResult.error_code || 'declined',
-                  total_cents: Math.round((_this3._lastOrder.total || _this3.cartTotal) * 100)
+                  total_cents: Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100)
                 });
               } catch (_) {}
               // [AUDIT-P1] Void the server-side order when TPE declines/cancels.
               // Without this, a PENDING order stays in DB forever (orphan order).
               // We fire-and-forget: if the void fails, staff can cancel manually from admin.
-              if ((_this3$_lastOrder = _this3._lastOrder) !== null && _this3$_lastOrder !== void 0 && _this3$_lastOrder.id && !String(_this3._lastOrder.id).startsWith('offline_')) {
-                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this3._lastOrder.id), {
-                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED
+              if ((_this4$_lastOrder = _this4._lastOrder) !== null && _this4$_lastOrder !== void 0 && _this4$_lastOrder.id && !String(_this4._lastOrder.id).startsWith('offline_')) {
+                // [AUDIT-F-004] Reason whitelist for kiosk-originated cancels (OrderCancelReason).
+                // Mapping: TPE bridge declined / timed out → distinct codes for analytics; fallback
+                // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
+                // or non-whitelisted code when actor is kiosk machine token.
+                tpeReasonCode = (paymentResult === null || paymentResult === void 0 ? void 0 : paymentResult.error_code) === 'timeout' ? 'tpe_timeout' : 'tpe_declined';
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this4._lastOrder.id), {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED,
+                  reason: tpeReasonCode
                 })["catch"](function (e) {
                   return console.warn('[KioskPayment] void order failed:', e.message);
                 });
               }
-              throw new Error(paymentResult.error || _this3.$t('kiosk.pay_screen.payment_declined'));
+              throw new Error(paymentResult.error || _this4.$t('kiosk.pay_screen.payment_declined'));
             case 2:
-              _this3.tpeMessage = _this3.$t('kiosk.pay_screen.tpe_accepted');
+              _this4.tpeMessage = _this4.$t('kiosk.pay_screen.tpe_accepted');
 
               // [PHASE-6.4] Analytics : paiement validé au TPE (avant confirm API).
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_completed', {
-                  method: _this3.method,
-                  total_cents: Math.round((_this3._lastOrder.total || _this3.cartTotal) * 100)
+                  method: _this4.method,
+                  total_cents: Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100)
                 });
               } catch (_) {}
 
               // Step 3 — Confirm payment on backend (stores transaction_id)
-              if (!((_this3$_lastOrder2 = _this3._lastOrder) !== null && _this3$_lastOrder2 !== void 0 && _this3$_lastOrder2.id && paymentResult.transaction_id)) {
+              if (!((_this4$_lastOrder2 = _this4._lastOrder) !== null && _this4$_lastOrder2 !== void 0 && _this4$_lastOrder2.id && paymentResult.transaction_id)) {
                 _context3.n = 3;
                 break;
               }
@@ -2136,13 +2165,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // The amount source is `paymentResult.amount_cents_approved` if the bridge
               // returned it (real TPE driver), else fallback on the locally computed
               // cart total (stub mode + legacy bridges that don't echo amount).
-              expectedCents = Math.round((_this3._lastOrder.total || _this3.cartTotal) * 100);
+              expectedCents = Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100);
               echoedCents = Number.isInteger(paymentResult.amount_cents_approved) ? paymentResult.amount_cents_approved : expectedCents;
               _context3.n = 3;
-              return _this3.confirmBackendPayment(_this3._lastOrder.id, {
+              return _this4.confirmBackendPayment(_this4._lastOrder.id, {
                 transaction_id: paymentResult.transaction_id,
                 card_type: paymentResult.card_type || 'CARD',
-                payment_method: _this3.method === 'tr' ? 5 : 4,
+                payment_method: _this4.method === 'tr' ? 5 : 4,
                 amount_cents: echoedCents
               });
             case 3:
@@ -2151,9 +2180,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 return setTimeout(r, 800);
               });
             case 4:
-              _this3.tpeWaiting = false;
-              _this3.submitting = false;
-              _this3.$router.push(navTarget);
+              _this4.tpeWaiting = false;
+              _this4.submitting = false;
+              _this4.$router.push(navTarget);
             case 5:
               return _context3.a(2);
           }
@@ -2178,37 +2207,71 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
      */
     _invokeTpe: function _invokeTpe(amountEuros) {
       var _arguments = arguments,
-        _this4 = this;
+        _this5 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var method, amountCents, result, raw, approved, echoedAmount;
+        var method, amountCents, force, result, raw, approved, echoedAmount;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.n) {
             case 0:
               method = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : 'CB';
-              amountCents = Math.round(Number(amountEuros) * 100); // Pas de bridge réel → stub navigateur classique avec délai visuel.
-              if (_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
-                _context4.n = 2;
+              amountCents = Math.round(Number(amountEuros) * 100); // [AUDIT-F-014] QA toggle (dev/staging only): force declined/timeout paths.
+              // Production guard non-bypassable: `process.env.NODE_ENV` est remplacé au build par
+              // webpack DefinePlugin (laravel-mix), donc la branche entière disparaît du bundle prod
+              // (dead-code elimination). Aucun query param ne peut activer ce toggle en production.
+              // Placé AVANT la branche stub afin que QA puisse aussi forcer un decline depuis une
+              // borne staging avec bridge=true (utile pour tester la gestion d'erreur côté UI sans
+              // pouvoir reproduire le decline avec un vrai TPE).
+              if (!( true && typeof window !== 'undefined')) {
+                _context4.n = 3;
                 break;
               }
-              _this4.tpeMessage = _this4.$t('kiosk.pay_screen.tpe_browser_sim');
-              _context4.n = 1;
+              force = new URLSearchParams(window.location.search).get('tpe_force');
+              if (!(force === 'declined')) {
+                _context4.n = 1;
+                break;
+              }
+              return _context4.a(2, {
+                approved: false,
+                error: 'forced_decline_qa',
+                error_code: 'QA_FORCE_DECLINED',
+                transaction_id: null,
+                amount_cents_approved: amountCents
+              });
+            case 1:
+              if (!(force === 'timeout')) {
+                _context4.n = 3;
+                break;
+              }
+              _context4.n = 2;
+              return new Promise(function (r) {
+                return setTimeout(r, 500);
+              });
+            case 2:
+              throw new Error('TPE_TIMEOUT');
+            case 3:
+              if (_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
+                _context4.n = 5;
+                break;
+              }
+              _this5.tpeMessage = _this5.$t('kiosk.pay_screen.tpe_browser_sim');
+              _context4.n = 4;
               return new Promise(function (r) {
                 return setTimeout(r, 2000);
               });
-            case 1:
+            case 4:
               return _context4.a(2, {
                 approved: true,
                 transaction_id: "STUB-".concat(Date.now()),
                 card_type: 'VISA',
                 amount_cents_approved: amountCents
               });
-            case 2:
-              _context4.n = 3;
+            case 5:
+              _context4.n = 6;
               return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].tpeCharge(amountCents, method);
-            case 3:
+            case 6:
               result = _context4.v;
               if (result !== null && result !== void 0 && result.ok) {
-                _context4.n = 4;
+                _context4.n = 7;
                 break;
               }
               return _context4.a(2, {
@@ -2216,7 +2279,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 error: (result === null || result === void 0 ? void 0 : result.error) || 'tpe_unknown_error',
                 error_code: (result === null || result === void 0 ? void 0 : result.error_code) || null
               });
-            case 4:
+            case 7:
               // Le bridge peut renvoyer soit un shape direct `{tx_ref}`, soit une capsule
               // `{data: {status: 'approved', transaction_id, card_type, ...}}` (legacy).
               raw = result.data || result;
@@ -2237,9 +2300,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }))();
     },
     processCashPayment: function processCashPayment(navTarget) {
-      var _this5 = this;
+      var _this6 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
-        var _this5$_lastOrder;
+        var _this6$_lastOrder;
         return _regenerator().w(function (_context5) {
           while (1) switch (_context5.n) {
             case 0:
@@ -2249,11 +2312,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_completed', {
                   method: 'cash',
-                  total_cents: Math.round((((_this5$_lastOrder = _this5._lastOrder) === null || _this5$_lastOrder === void 0 ? void 0 : _this5$_lastOrder.total) || _this5.cartTotal) * 100)
+                  total_cents: Math.round((((_this6$_lastOrder = _this6._lastOrder) === null || _this6$_lastOrder === void 0 ? void 0 : _this6$_lastOrder.total) || _this6.cartTotal) * 100)
                 });
               } catch (_) {}
-              _this5.submitting = false;
-              _this5.$router.push(navTarget);
+              _this6.submitting = false;
+              _this6.$router.push(navTarget);
             case 1:
               return _context5.a(2);
           }
@@ -2272,9 +2335,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       } catch (_) {}
     },
     cancelCardPayment: function cancelCardPayment() {
-      var _this6 = this;
+      var _this7 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
-        var _this6$_lastOrder;
+        var _this7$_lastOrder;
         return _regenerator().w(function (_context6) {
           while (1) switch (_context6.n) {
             case 0:
@@ -2285,27 +2348,29 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               _context6.n = 1;
               return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].cancelPayment()["catch"](function () {});
             case 1:
-              _this6.tpeWaiting = false;
-              _this6.tpeCanCancel = false;
-              _this6.submitted = false;
-              _this6.submitting = false;
-              _this6.error = _this6.$t('kiosk.pay_screen.payment_cancelled');
-              _this6.showToast(_this6.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
+              _this7.tpeWaiting = false;
+              _this7.tpeCanCancel = false;
+              _this7.submitted = false;
+              _this7.submitting = false;
+              _this7.error = _this7.$t('kiosk.pay_screen.payment_cancelled');
+              _this7.showToast(_this7.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
               // [PHASE-6.4] Analytics : abandon explicite utilisateur au TPE.
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('order_cancelled', {
-                  method: _this6.method,
+                  method: _this7.method,
                   stage: 'tpe_cancel'
                 });
               } catch (_) {}
               // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
-              if ((_this6$_lastOrder = _this6._lastOrder) !== null && _this6$_lastOrder !== void 0 && _this6$_lastOrder.id && !String(_this6._lastOrder.id).startsWith('offline_')) {
-                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this6._lastOrder.id), {
-                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED
+              if ((_this7$_lastOrder = _this7._lastOrder) !== null && _this7$_lastOrder !== void 0 && _this7$_lastOrder.id && !String(_this7._lastOrder.id).startsWith('offline_')) {
+                // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this7._lastOrder.id), {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED,
+                  reason: 'tpe_cancel_user'
                 })["catch"](function (e) {
                   return console.warn('[KioskPayment] void on cancel failed:', e.message);
                 });
-                _this6._lastOrder = null;
+                _this7._lastOrder = null;
               }
             case 2:
               return _context6.a(2);
@@ -2314,10 +2379,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }))();
     },
     confirmBackendPayment: function confirmBackendPayment(orderId, payload) {
-      var _this7 = this;
+      var _this8 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
         var _lastError;
-        var lastError, _loop, _ret, attempt;
+        var lastError, _loop, _ret, attempt, _window$axios2;
         return _regenerator().w(function (_context8) {
           while (1) switch (_context8.n) {
             case 0:
@@ -2371,11 +2436,149 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               break;
             case 4:
               console.warn('[KioskPayment] payment-confirm failed after retries:', (_lastError = lastError) === null || _lastError === void 0 ? void 0 : _lastError.message);
-              throw new Error(_this7.$t('kiosk.pay_screen.payment_sync_failed'));
+              // [AUDIT-F-008] Persist TPE-approved transaction for boot-time reconcile.
+              // Sans ça, un network blip ou crash backend post-TPE laisse l'order
+              // PENDING orphelin alors que le client a payé.
+              try {
+                _this8._appendPendingReconcile({
+                  order_id: orderId,
+                  transaction_id: payload.transaction_id,
+                  amount_cents: payload.amount_cents,
+                  card_type: payload.card_type,
+                  payment_method: payload.payment_method
+                });
+              } catch (_) {}
+              // Observability : log via kiosk-event (whitelisted type 'sync_failed' avec
+              // subtype dédié — évite d'avoir à étendre KioskEventController::ALLOWED_TYPES).
+              try {
+                (_window$axios2 = window.axios) === null || _window$axios2 === void 0 || _window$axios2.post('frontend/kiosk-event', {
+                  type: 'sync_failed',
+                  subtype: 'payment_confirm_retry_exhausted',
+                  order_ref: String(orderId),
+                  details: "tx=".concat(payload.transaction_id)
+                })["catch"](function () {});
+              } catch (_) {}
+              throw new Error(_this8.$t('kiosk.pay_screen.payment_sync_failed'));
             case 5:
               return _context8.a(2);
           }
         }, _callee7);
+      }))();
+    },
+    // [AUDIT-F-008] localStorage helpers for reconcile queue.
+    // Contrat : aucun PAN, aucune info bancaire — uniquement transaction_id +
+    // amount_cents + label card_type + payment_method (gateway integer).
+    _readPendingReconcile: function _readPendingReconcile() {
+      try {
+        var _window;
+        var raw = (_window = window) === null || _window === void 0 || (_window = _window.localStorage) === null || _window === void 0 ? void 0 : _window.getItem('pending_payment_confirms');
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    },
+    _writePendingReconcile: function _writePendingReconcile(list) {
+      try {
+        var _window2;
+        // Borne dure 50 entries (anti-explosion localStorage).
+        var trimmed = Array.isArray(list) ? list.slice(0, 50) : [];
+        (_window2 = window) === null || _window2 === void 0 || (_window2 = _window2.localStorage) === null || _window2 === void 0 || _window2.setItem('pending_payment_confirms', JSON.stringify(trimmed));
+      } catch (_) {}
+    },
+    _appendPendingReconcile: function _appendPendingReconcile(entry) {
+      var list = this._readPendingReconcile();
+      list.push(_objectSpread(_objectSpread({}, entry), {}, {
+        attempted_at: new Date().toISOString()
+      }));
+      this._writePendingReconcile(list);
+    },
+    _isPendingReconcileExpired: function _isPendingReconcileExpired(entry) {
+      // Borne 30 min — au-delà alert ops, pas de retry indéfini.
+      try {
+        return Date.now() - new Date(entry.attempted_at).getTime() > 30 * 60 * 1000;
+      } catch (_) {
+        return true;
+      }
+    },
+    _reconcilePendingPayments: function _reconcilePendingPayments() {
+      var _this9 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
+        var list, fresh, expired, _window$axios3, _response$data, entries, response, results, reconciledTxs, remaining, _t3;
+        return _regenerator().w(function (_context9) {
+          while (1) switch (_context9.p = _context9.n) {
+            case 0:
+              list = _this9._readPendingReconcile();
+              if (!(list.length === 0)) {
+                _context9.n = 1;
+                break;
+              }
+              return _context9.a(2);
+            case 1:
+              fresh = list.filter(function (e) {
+                return !_this9._isPendingReconcileExpired(e);
+              });
+              expired = list.filter(function (e) {
+                return _this9._isPendingReconcileExpired(e);
+              });
+              if (expired.length > 0) {
+                // Alert ops — au-delà 30 min, transaction probablement perdue.
+                try {
+                  (_window$axios3 = window.axios) === null || _window$axios3 === void 0 || _window$axios3.post('frontend/kiosk-event', {
+                    type: 'sync_failed',
+                    subtype: 'payment_reconcile_expired',
+                    details: 'expired_count=' + expired.length
+                  })["catch"](function () {});
+                } catch (_) {}
+              }
+              if (!(fresh.length === 0)) {
+                _context9.n = 2;
+                break;
+              }
+              _this9._writePendingReconcile([]);
+              return _context9.a(2);
+            case 2:
+              _context9.p = 2;
+              entries = fresh.map(function (e) {
+                return {
+                  order_id: e.order_id,
+                  transaction_id: e.transaction_id,
+                  amount_cents: e.amount_cents,
+                  card_type: e.card_type,
+                  payment_method: e.payment_method
+                };
+              });
+              _context9.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('frontend/payment/reconcile-pending', {
+                entries: entries
+              });
+            case 3:
+              response = _context9.v;
+              results = (response === null || response === void 0 || (_response$data = response.data) === null || _response$data === void 0 ? void 0 : _response$data.data) || [];
+              reconciledTxs = results.filter(function (r) {
+                return r.status === 'reconciled' || r.status === 'already_paid';
+              }).map(function (r) {
+                return r.transaction_id;
+              }); // Garde uniquement les fresh non reconciled — drop les expired définitivement.
+              remaining = fresh.filter(function (e) {
+                return !reconciledTxs.includes(e.transaction_id);
+              });
+              _this9._writePendingReconcile(remaining);
+              _context9.n = 5;
+              break;
+            case 4:
+              _context9.p = 4;
+              _t3 = _context9.v;
+              // Réseau / backend KO → on garde le localStorage pour le prochain tick.
+              // Drop les expired malgré tout (alert déjà émis ci-dessus).
+              if (expired.length > 0) {
+                _this9._writePendingReconcile(fresh);
+              }
+            case 5:
+              return _context9.a(2);
+          }
+        }, _callee8, null, [[2, 4]]);
       }))();
     } // formatPrice() provided by kioskPriceMixin
   })
@@ -3035,7 +3238,8 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
               _context4.p = 1;
               _context4.n = 2;
               return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this9.orderId), {
-                status: STATUS_CANCELLED
+                status: STATUS_CANCELLED,
+                reason: 'customer_request'
               });
             case 2:
               // Success — clean up and return to idle

@@ -197,6 +197,8 @@ class OrderServicesContractTest extends TestCase
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
         $this->withToken($token)->postJson('/api/frontend/order/change-status/'.$order->id, [
             'status' => OrderStatus::CANCELED,
+            // [AUDIT-F-004] reason whitelisted required on terminal transitions (kiosk path)
+            'reason' => 'customer_request',
         ])->assertSuccessful();
 
         $this->assertSame(OrderStatus::CANCELED, (int) Order::withoutGlobalScopes()->findOrFail($order->id)->status);

@@ -132,8 +132,23 @@ class FrontendOrderService
     {
         $this->loyaltyApplied = false;
         $idempotencyLock = null;
-        $lockBranchId = (int) (\App\Models\KioskMachine::where('user_id', Auth::id())->value('branch_id')
-            ?? (Auth::user()?->branch_id ?? 0));
+        // [AUDIT-F-007] Resolve branch context for idempotency lock namespace.
+        // Decision orchestrateur 2026-05-08: route /api/frontend/order is dual-purpose
+        // (kiosk + web/mobile users). Plan F-007 littéral (hard-fail 403 si KioskMachine
+        // absent) casserait web/mobile users régression P0. Option (b) refinée:
+        //   1. Préférer KioskMachine.branch_id si présent (kiosk flow)
+        //   2. Sinon Auth user.branch_id (web/mobile users)
+        //   3. Si toujours 0 → HttpException 422 (ferme leak idempotency cross-branch
+        //      identifié comme bug original — 2 keys identiques sur branches différentes
+        //      collisionnaient via fallback `?? 0`).
+        $kioskMachine = \App\Models\KioskMachine::where('user_id', Auth::id())->first();
+        $lockBranchId = (int) ($kioskMachine?->branch_id ?? Auth::user()?->branch_id ?? 0);
+        if ($lockBranchId <= 0) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                422,
+                'Order request has no resolvable branch context (kiosk machine missing or user has no branch).'
+            );
+        }
         // [SPLASH SECURITY] Idempotency: if the kiosk sends the same key twice (network retry,
         // double-tap), return the existing order instead of creating a duplicate.
         $idempotencyKey = $request->header('X-Idempotency-Key');
@@ -619,6 +634,20 @@ class FrontendOrderService
                     }
                     app(LoyaltyService::class)->refundPoints($frontendOrder, 'kiosk');
                     $oldStatus = $frontendOrder->status;
+                    // [AUDIT-F-004] Propagate caller-supplied reason into the transition row.
+                    // OrderStatusRequest enforces non-empty reason on terminal transitions
+                    // (kiosk: enum whitelist; admin/staff: free-text). Persisting NULL here
+                    // would silently break the ORDER_FLOW.md §49 audit invariant.
+                    $cancelReason = $request->input('reason');
+                    if (is_string($cancelReason)) {
+                        $cancelReason = trim($cancelReason);
+                        if ($cancelReason === '') {
+                            $cancelReason = null;
+                        }
+                    }
+                    if ($cancelReason !== null && $frontendOrder->isFillable('reason')) {
+                        $frontendOrder->reason = $cancelReason;
+                    }
                     $frontendOrder->status = $request->status;
                     $frontendOrder->save();
                     OrderStateMachine::recordTransition(
@@ -627,7 +656,7 @@ class FrontendOrderService
                         (int) $oldStatus,
                         (int) $request->status,
                         Auth::check() ? (int) Auth::id() : null,
-                        null
+                        $cancelReason
                     );
                     // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens.
                     // Use OrderStatusChanged::dispatch (DispatchableAfterCommit) — not event(new …), which

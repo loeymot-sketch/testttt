@@ -163,6 +163,10 @@ class KioskFrontendComprehensiveTest extends TestCase
             'username' => 'guest_kiosk',
             'phone' => '1234567890',
             'password' => bcrypt('password123'),
+            // [AUDIT-F-007] Branch context required: route /api/frontend/order is dual-purpose,
+            // FrontendOrderService::myOrderStore throws 422 if neither KioskMachine nor user.branch_id
+            // can resolve a positive branch (anti-leak idempotency cross-branch).
+            'branch_id' => $this->branch->id,
         ]);
 
         $payload = [
@@ -210,6 +214,8 @@ class KioskFrontendComprehensiveTest extends TestCase
             'username' => 'hacker_kiosk',
             'phone' => '0987654321',
             'password' => bcrypt('password123'),
+            // [AUDIT-F-007] Branch context required (anti-leak idempotency cross-branch)
+            'branch_id' => $this->branch->id,
         ]);
 
         $payload = [

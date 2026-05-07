@@ -562,10 +562,23 @@ class OrderService
         // a few lines below for non-admin users), so the lookup is now safe across
         // both Admin (branch_id=0) and cashier flows.
         $idempotencyKey = $request->header('X-Idempotency-Key');
+        $idempotencyLock = null;
         if ($idempotencyKey) {
             $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency PROD-2 scoped lookup (not order-create)
+            // [AUDIT-F-006 Option A] Cache::lock préventif pour parité stricte POS↔Kiosk
+            // (HANDOFF invariant #5 : "POS et Kiosk ont le même comportement face à un
+            // duplicate idempotency_key"). Sans ce lock, un double-clic intense génère
+            // N INSERT dont N-1 échouent et catch QueryException 23000 → bruit logs +
+            // churn DB. Avec le lock, 1 INSERT + N-1 retournent l'existing depuis
+            // findExistingOrderForIdempotencyRecovery. Mirror Kiosk myOrderStore:141-145.
+            $idempotencyLock = Cache::lock(
+                'pos_order_idempotency_' . sha1($targetBranchId . '|' . $idempotencyKey),
+                10
+            );
+            $idempotencyLock->block(5);
             $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
             if ($existing) {
+                $idempotencyLock?->release();
                 return $existing;
             }
         }

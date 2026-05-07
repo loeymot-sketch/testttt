@@ -424,7 +424,13 @@ export default {
       this.cancelLoading = true;
       this.cancelError = null;
       try {
-        await axios.post(`frontend/order/change-status/${this.orderId}`, { status: STATUS_CANCELLED });
+        // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
+        // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
+        // when actor is kiosk machine token.
+        await axios.post(`frontend/order/change-status/${this.orderId}`, {
+          status: STATUS_CANCELLED,
+          reason: 'customer_request',
+        });
         // Success — clean up and return to idle
         this.showCancelConfirm = false;
         this.stopAll();

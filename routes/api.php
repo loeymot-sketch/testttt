@@ -1059,6 +1059,13 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
     });
 
+    // [AUDIT-F-008] Payment confirm reconciliation queue — frontend persists TPE-approved
+    // transactions whose backend confirmation failed (network blip / app crash post-TPE)
+    // and replays them in batch on boot. Idempotent per UNIQUE(transaction_id).
+    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1'])->group(function () {
+        Route::post('/reconcile-pending', [\App\Http\Controllers\Frontend\PaymentReconcileController::class, 'reconcile']);
+    });
+
     Route::prefix('offer')->name('offer.')->group(function () {
         Route::get('/', [FrontendOfferController::class, 'index']);
         Route::get('/show/{slug}', [FrontendOfferController::class, 'offerItems']);
