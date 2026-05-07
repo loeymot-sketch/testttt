@@ -1,0 +1,83 @@
+[
+  {
+    "step": "E-01",
+    "slug": "pos-surface",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "POS V5 tokens: bgApp=#FFFBF5, brand=#E8001C",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/01-pos-surface.png",
+    "ts": "2026-05-07T01:09:45.563Z"
+  },
+  {
+    "step": "E-02",
+    "slug": "kiosk-surface",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "Kiosk tokens: primary=#E8001C",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/02-kiosk-surface.png",
+    "ts": "2026-05-07T01:09:49.225Z"
+  },
+  {
+    "step": "E-03",
+    "slug": "kds-surface",
+    "state": "rendered",
+    "severity": "OK",
+    "note": "KDS body length=893, hasError=false",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/03-kds-surface.png",
+    "ts": "2026-05-07T01:09:58.422Z"
+  },
+  {
+    "step": "E-04",
+    "slug": "outbox-event-types",
+    "state": "empty",
+    "severity": "INFO",
+    "note": "Found event types in domain_events: 0, matching expected: 0/6",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/04-outbox-events-0-of-6.png",
+    "ts": "2026-05-07T01:09:59.036Z"
+  },
+  {
+    "step": "E-05",
+    "slug": "listeners-wired",
+    "state": "all-câblés",
+    "severity": "OK",
+    "note": "Listeners Outbox dans EventServiceProvider: {\"OrderCreated\":true,\"OrderStatusChanged\":true,\"OrderPaymentStatusChanged\":true,\"OrderPaidAtCounter\":true,\"ItemAvailabilityChanged\":true,\"CouponChanged\":true}",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/05-listeners-wired-all.png",
+    "ts": "2026-05-07T01:09:59.570Z"
+  },
+  {
+    "step": "E-06",
+    "slug": "channel-auth",
+    "state": "enforced",
+    "severity": "OK",
+    "note": "Channel branch.{id}=true, kioskAbility check=true, KioskMachine lookup=true, admin bypass=true",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/06-channel-auth-enforced.png",
+    "ts": "2026-05-07T01:10:00.113Z"
+  },
+  {
+    "step": "E-07",
+    "slug": "idempotency-routes",
+    "state": "all-protected",
+    "severity": "OK",
+    "note": "Routes protected by idempotency: {\"pos_create\":true,\"pos_change_payment\":true,\"frontend_order\":true,\"payment_confirm\":true,\"refund_counter\":true}",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/07-idempotency-routes-all.png",
+    "ts": "2026-05-07T01:10:00.654Z"
+  },
+  {
+    "step": "E-08",
+    "slug": "cycle7-alignment",
+    "state": "all-done",
+    "severity": "OK",
+    "note": "Cycle 7 + KR + K11 deliverables present: {\"cycle_7A_idempotency\":true,\"cycle_7B_payment_event\":true,\"cycle_7C_split_payment\":true,\"cycle_7D_chain_validator\":true,\"cycle_7D_sealed_guard\":true,\"cycle_7D_refund_mirror\":true,\"kr2_kiosk_coupon_echo\":true,\"k11_fiscal_auto_allocate\":true}",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/08-cycle7-alignment-all-done.png",
+    "ts": "2026-05-07T01:10:01.187Z"
+  },
+  {
+    "step": "E-09",
+    "slug": "frozen-services-wired",
+    "state": "partial",
+    "severity": "P1",
+    "note": "Frozen services callsites: {\"payment_state_machine_wired\":true,\"sealed_guard_wired\":false,\"sealed_guard_refunded\":false,\"chain_validator_wired\":true,\"split_payment_wired\":true}",
+    "screenshot": "tests/e2e/screenshots/audit-mega-e-2026-05-07/09-frozen-services-wired-partial.png",
+    "ts": "2026-05-07T01:10:01.703Z"
+  }
+]

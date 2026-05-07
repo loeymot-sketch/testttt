@@ -1,0 +1,13 @@
+{
+  "found": {
+    "_error": "Command failed: php artisan tinker --execute='echo json_encode(\\App\\Models\\DomainEvent::query()->select(\\'event_type\\')->distinct()->pluck(\\'event_type\\')->toArray());'\n/bin/sh: -c: line 0: syntax error near unexpected token `)'\n/bin/sh: -c: line 0: `php artisan tinker --execute='echo json_encode(\\App\\Models\\DomainEvent::query()->select(\\'event_type\\')->distinct()->pluck(\\'event_type\\')->toArray());''\n"
+  },
+  "expected": [
+    "order.created",
+    "order.status_changed",
+    "order.payment_status_changed",
+    "order.payment_confirmed",
+    "menu.item_availability_changed",
+    "promo.coupon_changed"
+  ]
+}

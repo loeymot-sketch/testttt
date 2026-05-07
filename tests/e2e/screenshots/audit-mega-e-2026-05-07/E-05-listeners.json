@@ -1,0 +1,8 @@
+{
+  "OrderCreated": true,
+  "OrderStatusChanged": true,
+  "OrderPaymentStatusChanged": true,
+  "OrderPaidAtCounter": true,
+  "ItemAvailabilityChanged": true,
+  "CouponChanged": true
+}
