@@ -1,0 +1,295 @@
+[
+  {
+    "step": "R4-00",
+    "slug": "seed-reality",
+    "state": "probed",
+    "severity": "OK",
+    "note": "seed reality probed: {\"chef\":{\"id\":17,\"branch_id\":1},\"pos\":{\"id\":16,\"branch_id\":1},\"branches_count\":1,\"non_branch1_users\":1}",
+    "screenshot": null,
+    "ts": "2026-05-07T04:12:14.993Z",
+    "seed": {
+      "chef": {
+        "id": 17,
+        "branch_id": 1
+      },
+      "pos": {
+        "id": 16,
+        "branch_id": 1
+      },
+      "branches_count": 1,
+      "non_branch1_users": 1
+    }
+  },
+  {
+    "step": "R4-01",
+    "slug": "kd10-rollback-static",
+    "state": "verified",
+    "severity": "OK",
+    "note": "KD10 réfuté par construction — 3 verrous statiques convergents",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-01-kd10-rollback-static-cited.png",
+    "ts": "2026-05-07T04:12:16.408Z",
+    "cites": [
+      "app/Domain/Kds/KitchenReleaseRule.php:41-49 canTransition() autorise UNIQUEMENT ACCEPT→PREPARING et PREPARING→PREPARED (forward only)",
+      "app/Http/Requests/Kds/KdsOrderStatusRequest.php:34-41 kdsStatuses() whitelist [ACCEPT, PREPARING, PREPARED] — toute autre valeur 422 via Rule::in()",
+      "app/Domain/Order/OrderStateMachine.php:54-55 case PREPARED ⇒ allow uniquement [OUT_FOR_DELIVERY, DELIVERED] (jamais retour PREPARING)"
+    ]
+  },
+  {
+    "step": "R4-02",
+    "slug": "kd4-double-click-static",
+    "state": "verified",
+    "severity": "OK",
+    "note": "KD4 verrouillé : double-clic = 1×202 + 1×409 par construction. Test runtime confirme R4-09.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-02-kd4-double-click-static-cited.png",
+    "ts": "2026-05-07T04:12:17.191Z",
+    "cites": [
+      "app/Services/KitchenDisplaySystemOrderService.php:152-178 DB::transaction + lockForUpdate + expected_status check ⇒ 409 sur 2e clic",
+      "app/Services/KitchenDisplaySystemOrderService.php:177 abort(409, \"Order status was updated elsewhere — please refresh the KDS.\")",
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1518-1524 catch err.response.status===409 ⇒ alert kds_status_conflict + debouncedRefresh"
+    ]
+  },
+  {
+    "step": "R4-03",
+    "slug": "kd11-audit-log-static",
+    "state": "verified",
+    "severity": "OK",
+    "note": "KD11 satisfait : audit row écrite pour TOUTE transition forward. Pas de runtime drilldown nécessaire.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-03-kd11-audit-log-static-cited.png",
+    "ts": "2026-05-07T04:12:17.956Z",
+    "cites": [
+      "app/Models/OrderStatusTransition.php:11-21 fillable [order_id, order_type, from_status, to_status, actor_id, actor_type, reason, correlation_id, occurred_at]",
+      "app/Domain/Order/OrderStateMachine.php:132-159 recordTransition() crée la rangée + extract correlation_id depuis header X-Correlation-ID",
+      "app/Services/KitchenDisplaySystemOrderService.php:194-201 appel recordTransition() dans DB::transaction (atomicité guard+mutate+audit)"
+    ]
+  },
+  {
+    "step": "R4-04",
+    "slug": "kd12-branch-iso-static",
+    "state": "verified",
+    "severity": "OK",
+    "note": "KD12 verrouillé statiquement. Runtime non drivable : seed = {\"non_branch1_users\":1,\"branches\":1} (1 branche, pas de cross-branch user). Limitation honnête déclarée.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-04-kd12-branch-iso-static-cited.png",
+    "ts": "2026-05-07T04:12:19.214Z",
+    "cites": [
+      "app/Services/KitchenDisplaySystemOrderService.php:78-80 list() ajoute where(branch_id) si userBranchId>0 (admin branch_id=0 voit tout — by design)",
+      "app/Services/KitchenDisplaySystemOrderService.php:158-161 changeStatus() abort(403) si userBranchId>0 ET locked.branch_id !== userBranchId"
+    ],
+    "seed": {
+      "non_branch1_users": 1,
+      "branches": 1
+    }
+  },
+  {
+    "step": "R4-05",
+    "slug": "kds-surface",
+    "state": "loaded",
+    "severity": "OK",
+    "note": "Surface KDS : fatal=false, console critical=0, page errors=0",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-05-kds-surface-loaded.png",
+    "ts": "2026-05-07T04:12:28.646Z",
+    "consoleErrors": [
+      "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "pageErrors": []
+  },
+  {
+    "step": "R4-06",
+    "slug": "a11y-axe",
+    "state": "analyzed",
+    "severity": "OK",
+    "note": "axe : 0 violations dont critical+serious=0",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-06-a11y-axe-analyzed.png",
+    "ts": "2026-05-07T04:12:38.525Z",
+    "critical_serious_ids": []
+  },
+  {
+    "step": "R4-07",
+    "slug": "kd1-kd2-aria",
+    "state": "probed",
+    "severity": "P2",
+    "note": "KD1: 8 cartes potentielles sans role=\"article\". KD2: 0 live regions (banners only — pas de live region dédiée aux transitions de statut).",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-07-kd1-kd2-aria-inspected.png",
+    "ts": "2026-05-07T04:12:47.910Z",
+    "probe": {
+      "order_card_count_no_role": 8,
+      "order_card_with_role_article": 0,
+      "live_region_count": 0,
+      "live_region_samples": []
+    }
+  },
+  {
+    "step": "R4-08",
+    "slug": "kd5-sound-watcher-bug",
+    "state": "static-confirmed",
+    "severity": "P1",
+    "note": "KD5 BUG CONFIRMÉ STATIC : watcher resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:921-929 ne déclenche son que si LENGTH grandit. Si +1 ACCEPT entrant et -1 PREPARED sortant du board (cf. _isVisibleInCurrentBoard:1300-1307 qui exclut PREPARED par défaut), length stable ⇒ chime silencieux ⇒ chef rate l'arrivée. Devrait comparer ids set, pas length. Audio runtime: {\"audio_element\":\"present\",\"src\":\"/sounds/kds-new-order.mp3\",\"preload\":\"auto\",\"currentTime\":0,\"paused\":true,\"muted\":false,\"volume\":1}.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-08-kd5-sound-watcher-bug-inspected.png",
+    "ts": "2026-05-07T04:12:57.327Z",
+    "watcherSrc": "watch: { orders(newVal, oldVal) { if (!this._kdsOrdersHydrated || oldVal === undefined) return; if (newVal.length > oldVal.length) { this.playKdsNewOrderSound(); } } }",
+    "cite": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:921-929",
+    "audioProbe": {
+      "audio_element": "present",
+      "src": "/sounds/kds-new-order.mp3",
+      "preload": "auto",
+      "currentTime": 0,
+      "paused": true,
+      "muted": false,
+      "volume": 1
+    }
+  },
+  {
+    "step": "R4-09",
+    "slug": "kd4-race-409",
+    "state": "runtime-confirmed",
+    "severity": "OK",
+    "note": "Concurrent change-status race : codes=[202,409] (expect 202+409). Final DB status=7 (7=PREPARING expected). Audit transitions=[{\"from_status\":4,\"to_status\":7,\"actor_id\":17}]",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-09-kd4-race-409-measured.png",
+    "ts": "2026-05-07T04:12:59.940Z",
+    "codes": [
+      202,
+      409
+    ],
+    "raceResult": {
+      "duration_ms": 71,
+      "a": {
+        "status": 202,
+        "body": ""
+      },
+      "b": {
+        "status": 409,
+        "body": "{\"status\":false,\"message\":\"Order status was updated elsewhere \\u2014 please refresh the KDS.\"}"
+      }
+    },
+    "dbState": {
+      "final_status": 7,
+      "transitions": [
+        {
+          "from_status": 4,
+          "to_status": 7,
+          "actor_id": 17
+        }
+      ]
+    }
+  },
+  {
+    "step": "R4-10",
+    "slug": "kd6-cancel-removal",
+    "state": "removed",
+    "severity": "OK",
+    "note": "Ticket #R4CANCEL-636d8a cancel → still visible after 7s polling: false. Cancel result: {\"ok\":true,\"final_status\":16}.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-10-kd6-after-cancel-measured.png",
+    "ts": "2026-05-07T04:13:19.264Z",
+    "seed": {
+      "order_id": 221,
+      "serial": "R4CANCEL-636d8a"
+    },
+    "cancelResult": {
+      "ok": true,
+      "final_status": 16
+    },
+    "beforeVisible": true,
+    "afterVisible": false
+  },
+  {
+    "step": "R4-11",
+    "slug": "kd9-86-distinction",
+    "state": "probed",
+    "severity": "P2",
+    "note": "KD9 : KDS écoute ItemAvailabilityChanged (KitchenDisplaySystemComponent.vue:1268) MAIS le handler appelle uniquement _debouncedRefresh. Pas de badge 86 visible côté KDS si l'item devient OOS pendant la prep (probe DOM no_class=true). R3-F3 déjà ouvert plan dédié — confirmation runtime que la distinction est invisible côté chef.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-11-kd9-86-distinction-inspected.png",
+    "ts": "2026-05-07T04:13:29.085Z",
+    "probe": {
+      "has_oos_class_in_dom": false,
+      "has_86_attr": false,
+      "listened_event": true
+    },
+    "cite": "KitchenDisplaySystemComponent.vue:1268 ItemAvailabilityChanged → _debouncedRefresh() seulement"
+  },
+  {
+    "step": "R4-12",
+    "slug": "ws-heartbeat",
+    "state": "probed",
+    "severity": "OK",
+    "note": "Banner mode secours : present=true. WS state=false. Si pas de serveur Pusher démarré (vérifié via ps aux : aucun) ET banner absent ⇒ KD8 heartbeat manquant. cf. KitchenDisplaySystemComponent.vue:4 v-if=\"!wsConnected\" + :812 wsConnected init via window._wsService?.isConnected().",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-12-ws-reconnect-banner-inspected.png",
+    "ts": "2026-05-07T04:13:38.432Z",
+    "probe": {
+      "banner_present": true,
+      "banner_text": " Mode secours actif — actualisation automatique toutes les 5s. ",
+      "ws_service_present": true,
+      "ws_connected_state": false
+    }
+  },
+  {
+    "step": "R4-13",
+    "slug": "kd3-keyboard-focus",
+    "state": "probed",
+    "severity": "P2",
+    "note": "KD3 focus inter-tickets : 0 action buttons trouvés, mais aucun trap clavier dédié inter-cartes. (Modal allergens a un focus trap dédié:1064-1095, mais le board principal n'a PAS de skip-link / shortcut clavier).",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-13-kd3-keyboard-focus-inspected.png",
+    "ts": "2026-05-07T04:13:47.897Z",
+    "probe": {
+      "action_button_count": 0,
+      "first_button": null
+    }
+  },
+  {
+    "step": "R4-14",
+    "slug": "kd7-pos-edit-sync",
+    "state": "static-cite",
+    "severity": "P2",
+    "note": "KD7 : Pas d'endpoint dédié pos-order/edit-items trouvé (grep=0 lignes). Le KDS écoute OrderStatusChanged + OrderCreated + OrderTableChanged + ItemAvailabilityChanged (KitchenDisplaySystemComponent.vue:1261-1275) mais PAS de OrderItemsChanged. Si POS modifie une ligne après envoi cuisine sans changer status, le KDS ne reçoit PAS d'event (seulement le polling 5s/60s rafraîchira via list()). Confusion serveur possible si chef voit l'ancien snapshot.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-14-kd7-pos-edit-sync-static.png",
+    "ts": "2026-05-07T04:13:57.344Z",
+    "grep": ""
+  },
+  {
+    "step": "R4-15",
+    "slug": "kd12-isolation-runtime",
+    "state": "isolated",
+    "severity": "OK",
+    "note": "Chef (branch=1) tente change-status sur order branch=99 → HTTP 404. 404 = isolation par BranchScope global (app/Models/Scopes/BranchScope.php:33-39) AVANT route binding find. 403 = isolation par abort explicite dans KitchenDisplaySystemOrderService:158-161. Les deux protègent ; 404 est plus sûr (no info leak). Body: {\"success\":false,\"message\":\"No query results for model.\"}",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-15-kd12-cross-branch-attempted.png",
+    "ts": "2026-05-07T04:13:59.380Z",
+    "attempt": {
+      "status": 404,
+      "body": "{\"success\":false,\"message\":\"No query results for model.\"}"
+    },
+    "branchScopeReference": "app/Models/Scopes/BranchScope.php:33-39"
+  },
+  {
+    "step": "R4-16",
+    "slug": "multi-items-render",
+    "state": "probed",
+    "severity": "P2",
+    "note": "8 items seedés (8/8 réussis) : ticket visible=true, qty badges dans DOM=13. IMPORTANT : le détail items est rendu dans <div style=\"height: 0px\"> (Vue:245) — collapsed par défaut. Le chef doit cliquer chevron pour voir les lignes. UX questionable pour rush cuisine.",
+    "screenshot": "tests/e2e/screenshots/red-team-r4-kds-2026-05-07/step-16-multi-items-render-measured.png",
+    "ts": "2026-05-07T04:14:12.170Z",
+    "probe": {
+      "visible": true,
+      "qty_badges_in_dom": 13
+    }
+  },
+  {
+    "step": "R4-17",
+    "slug": "synthesis",
+    "state": "final",
+    "severity": "OK",
+    "note": "Synthèse : 17 findings, 10 DOM probes, 11 traces.",
+    "screenshot": null,
+    "ts": "2026-05-07T04:14:13.074Z",
+    "summary": {
+      "generated_at": "2026-05-07T04:14:13.074Z",
+      "total_findings": 17,
+      "by_severity": {
+        "OK": 11,
+        "P2": 5,
+        "P1": 1
+      },
+      "dom_snapshots": 10,
+      "trace_entries": 11
+    }
+  }
+]

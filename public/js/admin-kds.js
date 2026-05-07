@@ -244,7 +244,16 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (!this._kdsOrdersHydrated || oldVal === undefined) {
         return;
       }
-      if (newVal.length > oldVal.length) {
+      // [RED-R4 BLUE / KD5] ID-based diff (was length-based). Heure de pointe :
+      // 1 commande PREPARED sort du board pendant que 1 nouvelle ACCEPT entre →
+      // length stable → ancien check ratait le chime → commande oubliée.
+      var oldIds = new Set((oldVal || []).map(function (o) {
+        return o && o.id;
+      }));
+      var newOrders = (newVal || []).filter(function (o) {
+        return o && !oldIds.has(o.id);
+      });
+      if (newOrders.length > 0) {
         this.playKdsNewOrderSound();
       }
     }

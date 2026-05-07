@@ -923,7 +923,12 @@ export default {
       if (!this._kdsOrdersHydrated || oldVal === undefined) {
         return;
       }
-      if (newVal.length > oldVal.length) {
+      // [RED-R4 BLUE / KD5] ID-based diff (was length-based). Heure de pointe :
+      // 1 commande PREPARED sort du board pendant que 1 nouvelle ACCEPT entre →
+      // length stable → ancien check ratait le chime → commande oubliée.
+      const oldIds = new Set((oldVal || []).map((o) => o && o.id));
+      const newOrders = (newVal || []).filter((o) => o && !oldIds.has(o.id));
+      if (newOrders.length > 0) {
         this.playKdsNewOrderSound();
       }
     },

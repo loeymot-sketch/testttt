@@ -1,0 +1,125 @@
+[
+  {
+    "label": "suite_init",
+    "payload": {
+      "cwd": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+      "env": {
+        "BROADCAST_DRIVER": "(default .env)",
+        "QUEUE_CONNECTION": "(default .env)"
+      },
+      "ts": "2026-05-07T04:12:14.535Z"
+    },
+    "ts": "2026-05-07T04:12:14.535Z"
+  },
+  {
+    "label": "seed_reality",
+    "payload": {
+      "chef": {
+        "id": 17,
+        "branch_id": 1
+      },
+      "pos": {
+        "id": 16,
+        "branch_id": 1
+      },
+      "branches_count": 1,
+      "non_branch1_users": 1
+    },
+    "ts": "2026-05-07T04:12:14.993Z"
+  },
+  {
+    "label": "R4-09_seed_order",
+    "payload": {
+      "order_id": 220,
+      "serial": "R4TEST-b61cda",
+      "branch": 1
+    },
+    "ts": "2026-05-07T04:12:59.411Z"
+  },
+  {
+    "label": "R4-09_race",
+    "payload": {
+      "duration_ms": 71,
+      "a": {
+        "status": 202,
+        "body": ""
+      },
+      "b": {
+        "status": 409,
+        "body": "{\"status\":false,\"message\":\"Order status was updated elsewhere \\u2014 please refresh the KDS.\"}"
+      }
+    },
+    "ts": "2026-05-07T04:12:59.486Z"
+  },
+  {
+    "label": "R4-09_db_after",
+    "payload": {
+      "final_status": 7,
+      "transitions": [
+        {
+          "from_status": 4,
+          "to_status": 7,
+          "actor_id": 17
+        }
+      ]
+    },
+    "ts": "2026-05-07T04:12:59.909Z"
+  },
+  {
+    "label": "R4-10_seed",
+    "payload": {
+      "order_id": 221,
+      "serial": "R4CANCEL-636d8a"
+    },
+    "ts": "2026-05-07T04:13:10.233Z"
+  },
+  {
+    "label": "R4-10_cancel",
+    "payload": {
+      "ok": true,
+      "final_status": 16
+    },
+    "ts": "2026-05-07T04:13:12.221Z"
+  },
+  {
+    "label": "R4-14_grep",
+    "payload": {
+      "grep": ""
+    },
+    "ts": "2026-05-07T04:13:57.343Z"
+  },
+  {
+    "label": "R4-15_seed_foreign",
+    "payload": {
+      "order_id": 222
+    },
+    "ts": "2026-05-07T04:13:59.326Z"
+  },
+  {
+    "label": "R4-15_attempt",
+    "payload": {
+      "status": 404,
+      "body": "{\"success\":false,\"message\":\"No query results for model.\"}"
+    },
+    "ts": "2026-05-07T04:13:59.348Z"
+  },
+  {
+    "label": "R4-16_seed",
+    "payload": {
+      "order_id": 223,
+      "items": 8,
+      "serial": "R4MULTI-19042c",
+      "item_ids": [
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367
+      ]
+    },
+    "ts": "2026-05-07T04:14:09.611Z"
+  }
+]

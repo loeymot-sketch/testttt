@@ -1,0 +1,99 @@
+[
+  {
+    "label": "R4-05_surface",
+    "payload": {
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "text_length": 1816,
+      "console_errors": [
+        "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+        "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+        "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+      ],
+      "page_errors": []
+    },
+    "ts": "2026-05-07T04:12:28.646Z"
+  },
+  {
+    "label": "R4-06_a11y_summary",
+    "payload": {
+      "total": 0,
+      "critical_serious": 0,
+      "ids": []
+    },
+    "ts": "2026-05-07T04:12:38.524Z"
+  },
+  {
+    "label": "R4-07_aria_probe",
+    "payload": {
+      "order_card_count_no_role": 8,
+      "order_card_with_role_article": 0,
+      "live_region_count": 0,
+      "live_region_samples": []
+    },
+    "ts": "2026-05-07T04:12:47.910Z"
+  },
+  {
+    "label": "R4-08_audio_probe",
+    "payload": {
+      "audio_element": "present",
+      "src": "/sounds/kds-new-order.mp3",
+      "preload": "auto",
+      "currentTime": 0,
+      "paused": true,
+      "muted": false,
+      "volume": 1
+    },
+    "ts": "2026-05-07T04:12:57.326Z"
+  },
+  {
+    "label": "R4-10_before_cancel",
+    "payload": {
+      "serial": "R4CANCEL-636d8a",
+      "visible_in_dom": true
+    },
+    "ts": "2026-05-07T04:13:11.790Z"
+  },
+  {
+    "label": "R4-10_after_cancel",
+    "payload": {
+      "serial": "R4CANCEL-636d8a",
+      "still_visible": false
+    },
+    "ts": "2026-05-07T04:13:19.264Z"
+  },
+  {
+    "label": "R4-11_probe",
+    "payload": {
+      "has_oos_class_in_dom": false,
+      "has_86_attr": false,
+      "listened_event": true
+    },
+    "ts": "2026-05-07T04:13:29.085Z"
+  },
+  {
+    "label": "R4-12_ws",
+    "payload": {
+      "banner_present": true,
+      "banner_text": " Mode secours actif — actualisation automatique toutes les 5s. ",
+      "ws_service_present": true,
+      "ws_connected_state": false
+    },
+    "ts": "2026-05-07T04:13:38.432Z"
+  },
+  {
+    "label": "R4-13_focus",
+    "payload": {
+      "action_button_count": 0,
+      "first_button": null
+    },
+    "ts": "2026-05-07T04:13:47.897Z"
+  },
+  {
+    "label": "R4-16_render",
+    "payload": {
+      "visible": true,
+      "qty_badges_in_dom": 13
+    },
+    "ts": "2026-05-07T04:14:12.123Z"
+  }
+]
