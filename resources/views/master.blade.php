@@ -157,14 +157,18 @@
             features: {
                 wizard_per_item_demo: @json(\App\Support\WizardPerItemDemo::enabled(request())),
             },
-            // [BYPASS-P1] E2E flow validation flags exposed to SPA. Frontend uses
-            // these to render visible "MODE TEST" markers. Production guard in
-            // AppServiceProvider::boot() prevents activation in APP_ENV=production.
+            // [BYPASS-P1 + AUDIT-HEAL B8] E2E flow validation flags exposed to SPA.
+            // Frontend uses these to render visible "MODE TEST" markers. Production guard
+            // in AppServiceProvider::boot() prevents activation in APP_ENV=production.
+            // RED-AUDIT B8 trouvé: HTML disclosure mineure → on conditionne l'injection
+            // sur !production pour ne JAMAIS leak la clé en prod (même si false).
+            @if (!app()->environment('production'))
             bypassMode: {
                 payment: @json((bool) config('payment.bypass.enabled', false)),
                 printing: @json((bool) config('printing.bypass.enabled', false)),
                 printingScreenMarker: @json((string) config('printing.bypass.screen_marker_text', '🔧 MODE TEST — IMPRESSION BYPASSÉE')),
             },
+            @endif
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

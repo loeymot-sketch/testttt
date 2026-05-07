@@ -15,6 +15,18 @@ final class EscPosPrinterService
 
     public function sendRaw(Printer $printer, string $bytes): bool
     {
+        // [BYPASS-AUDIT-HEAL P1] Wire BypassAuditLogger::printingBypassed() —
+        // RED a flagué le dead code (méthode définie mais jamais appelée).
+        // Quand printing.bypass.enabled, AppServiceProvider bind NullPrinterTransport
+        // qui swallow silently; ce log structuré garantit l'audit trail visible
+        // dans storage/logs/laravel.log (cf runbook §7).
+        \App\Services\Bypass\BypassAuditLogger::printingBypassed([
+            'service' => 'EscPosPrinterService::sendRaw',
+            'printer_id' => $printer->id,
+            'station' => $printer->station,
+            'bytes_count' => strlen($bytes),
+        ]);
+
         $ok = $this->transport->send($bytes, [
             'host' => $printer->host,
             'port' => $printer->port,
@@ -96,6 +108,15 @@ final class EscPosPrinterService
             }
 
             $commandBytes = EscPosCommandBuilder::openDrawerCommand();
+
+            // [BYPASS-AUDIT-HEAL P1] Wire BypassAuditLogger::printingBypassed() — cash drawer.
+            \App\Services\Bypass\BypassAuditLogger::printingBypassed([
+                'service' => 'EscPosPrinterService::openDrawer',
+                'printer_id' => $printer->id,
+                'station' => $printer->station,
+                'bytes_count' => strlen($commandBytes),
+            ]);
+
             $ok = $this->transport->send($commandBytes, [
                 'host' => $printer->host,
                 'port' => $printer->port,

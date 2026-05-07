@@ -47,11 +47,17 @@ PRINTING_BYPASS_MODE=true
 PRINTING_BYPASS_SCREEN_MARKER="🔧 MODE TEST — IMPRESSION BYPASSÉE"
 ```
 
-### Étape 2 — Vider la config cache (si applicable)
+### Étape 2 — Vider la config cache (⚠️ OBLIGATOIRE — pas optionnel)
+
+> **RED-AUDIT B7 trouvé** : si `php artisan config:cache` a été exécuté avec un ancien `.env`,
+> le cache préserve les anciennes valeurs même après modification de `.env`. **Toujours**
+> exécuter `config:clear` + `view:clear` après chaque toggle des flags bypass — sinon le
+> serveur continue à servir l'ancien état (foot-gun staging/dev).
 
 ```bash
-php artisan config:clear
+php artisan config:clear   # OBLIGATOIRE après chaque toggle .env
 php artisan cache:clear
+php artisan view:clear     # OBLIGATOIRE — le master.blade.php cache l'injection
 ```
 
 ### Étape 3 — Recompiler les assets frontend (master.blade.php injecte le flag dans `window.foodkingConfig`)
@@ -94,11 +100,14 @@ PAYMENT_BYPASS_MODE=false
 PRINTING_BYPASS_MODE=false
 ```
 
-### Étape 2 — Vider config cache + rebuild
+### Étape 2 — Vider config cache + view cache + rebuild (⚠️ OBLIGATOIRE)
 
 ```bash
-php artisan config:clear && npm run dev -- --build
+php artisan config:clear && php artisan view:clear && npm run dev -- --build
 ```
+
+(Voir RED-AUDIT B7 dans §6 Activation : `view:clear` indispensable car
+`master.blade.php` cache l'injection `window.foodkingConfig.bypassMode`.)
 
 ### Étape 3 — Vérifier désactivation
 
