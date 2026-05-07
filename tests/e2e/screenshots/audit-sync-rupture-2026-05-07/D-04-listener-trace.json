@@ -1,0 +1,5 @@
+{
+  "listenerExists": true,
+  "isCabled": true,
+  "source_excerpt": "<?php\n\nnamespace App\\Listeners;\n\nuse App\\Enums\\EventType;\nuse App\\Enums\\Status;\nuse App\\Events\\ItemAvailabilityChanged;\nuse App\\Jobs\\DispatchDomainEventsJob;\nuse App\\Models\\Branch;\nuse App\\Models\\DomainEvent;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Support\\Facades\\Log;\nuse Illuminate\\Support\\Str;\n\nclass PersistItemAvailabilityChangedToOutbox\n{\n    public function handle(ItemAvailabilityChanged $event): void\n    {\n        // [F-04bis] All payloads (global and branch-scoped) MUST include"
+}

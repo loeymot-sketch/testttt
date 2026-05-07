@@ -1,0 +1,83 @@
+[
+  {
+    "step": "D-01",
+    "slug": "src-dispatchers",
+    "state": "all-wired",
+    "severity": "OK",
+    "note": "4 services dispatch ItemAvailabilityChanged: {\"app/Services/ItemService.php\":{\"imports\":true,\"dispatches\":2},\"app/Services/ItemExtraService.php\":{\"imports\":true,\"dispatches\":1},\"app/Services/ItemAddonService.php\":{\"imports\":true,\"dispatches\":1},\"app/Services/ItemVariationService.php\":{\"imports\":true,\"dispatches\":1}}",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/01-src-dispatchers-wired.png",
+    "ts": "2026-05-07T01:07:06.119Z"
+  },
+  {
+    "step": "D-02",
+    "slug": "src-subscribers",
+    "state": "all-wired",
+    "severity": "OK",
+    "note": "POS subscribed=true, Kiosk=true, KDS=true",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/02-src-subscribers-all-wired.png",
+    "ts": "2026-05-07T01:07:06.678Z"
+  },
+  {
+    "step": "D-03",
+    "slug": "event-persistence",
+    "state": "persisted",
+    "severity": "OK",
+    "note": "Item 363 (Tacos M (1 Viande)): domain_events count 4→5 (delta=1). Latest event: {\"id\":254,\"event_type\":\"menu.item_availability_changed\",\"aggregate_id\":363,\"branch_id\":null,\"occurred_at\":\"2026-05-07T01:07:08.000000Z\"}",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/03-dispatch-trace-persisted.png",
+    "ts": "2026-05-07T01:07:09.902Z"
+  },
+  {
+    "step": "D-04",
+    "slug": "listener-outbox",
+    "state": "wired",
+    "severity": "OK",
+    "note": "PersistItemAvailabilityChangedToOutbox exists=true, EventServiceProvider câblé=true",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/04-listener-wired.png",
+    "ts": "2026-05-07T01:07:10.477Z"
+  },
+  {
+    "step": "D-05",
+    "slug": "event-contract",
+    "state": "wired",
+    "severity": "OK",
+    "note": "BROADCAST_MAP=true, REQUIRED_PAYLOAD_KEYS=true",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/05-event-contract-wired.png",
+    "ts": "2026-05-07T01:07:11.011Z"
+  },
+  {
+    "step": "D-06",
+    "slug": "sync-tables",
+    "state": "all-present",
+    "severity": "OK",
+    "note": "Tables: {\"item_branch_availability\":true,\"stock_levels\":true,\"item_extras\":true,\"item_addons\":true}",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/06-sync-tables-all-present.png",
+    "ts": "2026-05-07T01:07:11.844Z"
+  },
+  {
+    "step": "D-07",
+    "slug": "kiosk-handler",
+    "state": "no-refresh",
+    "severity": "P2",
+    "note": "Kiosk _handleItemAvailabilityChanged triggers fetchMenu=false",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/07-kiosk-handler-no-refresh.png",
+    "ts": "2026-05-07T01:07:12.378Z"
+  },
+  {
+    "step": "D-08",
+    "slug": "pos-86-badge",
+    "state": "present",
+    "severity": "OK",
+    "note": "POS ItemComponent has 86 badge logic=true",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/08-pos-86-badge-present.png",
+    "ts": "2026-05-07T01:07:12.919Z"
+  },
+  {
+    "step": "D-09",
+    "slug": "kds-sync001",
+    "state": "wired",
+    "severity": "OK",
+    "note": "KDS subscribed=true, triggers refresh=true",
+    "screenshot": "tests/e2e/screenshots/audit-sync-rupture-2026-05-07/09-kds-sync001-wired.png",
+    "ts": "2026-05-07T01:07:13.436Z"
+  }
+]
