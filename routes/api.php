@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\OtpController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\Pos\CashDrawerController;
+use App\Http\Controllers\Admin\Pos\CashDrawerSessionController;
 use App\Http\Controllers\Admin\Pos\CustomerNfcLookupController;
 use App\Http\Controllers\Admin\Pos\FloorplanController;
 use App\Http\Controllers\Admin\Pos\ParkedOrderController;
@@ -791,6 +792,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/{tableId}/release', [FloorplanController::class, 'release'])->name('release');
         });
         Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->name('cash-drawer.open');
+        // [AUDIT-F-003] Cash drawer SESSION management — distinct du hardware open above.
+        Route::prefix('cash-drawer/sessions')->name('cash-drawer.sessions.')->group(function () {
+            Route::get('/current', [CashDrawerSessionController::class, 'current'])->name('current');
+            Route::post('/open', [CashDrawerSessionController::class, 'open'])->name('open');
+            Route::post('/{session}/close', [CashDrawerSessionController::class, 'close'])
+                ->whereNumber('session')
+                ->name('close');
+            Route::post('/{session}/reconcile', [CashDrawerSessionController::class, 'reconcile'])
+                ->whereNumber('session')
+                ->name('reconcile');
+            Route::get('/{session}/movements', [CashDrawerSessionController::class, 'movements'])
+                ->whereNumber('session')
+                ->name('movements');
+        });
         Route::post('/customers/lookup-by-nfc', [CustomerNfcLookupController::class, 'lookup'])->name('customers.lookup-by-nfc');
     });
 
