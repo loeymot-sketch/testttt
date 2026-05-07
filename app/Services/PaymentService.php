@@ -13,6 +13,7 @@ use App\Events\OrderStatusChanged;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
 use Illuminate\Support\Facades\Auth;
@@ -115,6 +116,12 @@ class PaymentService
                     'fiscal_sequence_no'  => $order->fiscal_sequence_no,
                 ],
             ]);
+
+            // [AUDIT-F-003] Cash drawer hook — record cashback as direction=out.
+            // Best-effort hors transaction principale.
+            if ($order instanceof Order) {
+                $this->recordCashBackMovement($order, (float) $order->total);
+            }
         }
 
         return $transaction;
@@ -214,9 +221,106 @@ class PaymentService
 
         if ($paid) {
             OrderPaidAtCounter::dispatch($order, $mode);
+
+            // [AUDIT-F-003] Cash drawer movement hook — best-effort.
+            // Si une session caisse OPEN existe pour le caissier sur la branch,
+            // on enregistre le mouvement order_payment direction=in. Si aucune
+            // session n'est ouverte (legacy ou avant rollout cash sessions),
+            // log warning + continue — l'order reste valide, l'audit comptable
+            // sera fait post-hoc via reconciliation.
+            if ($mode === PosPaymentMethod::CASH) {
+                $this->recordCashOrderMovement($order, $note);
+            }
         }
 
         return $order;
+    }
+
+    /**
+     * [AUDIT-F-003] Hook side-effect : enregistre le movement cash sur la
+     * session OPEN du caissier (si elle existe). Best-effort (jamais bloquant).
+     */
+    private function recordCashOrderMovement(Order $order, ?string $note = null): void
+    {
+        try {
+            if (! Auth::check()) {
+                return;
+            }
+            $userId = (int) Auth::id();
+            $branchId = (int) ($order->branch_id ?? 0);
+            if ($branchId <= 0) {
+                return;
+            }
+
+            $cashService = app(CashDrawerService::class);
+            $session = $cashService->findOpenSessionForUser($branchId, $userId);
+
+            if (! $session) {
+                Log::info('[F-003] No open cash drawer session — order paid cash without session linkage', [
+                    'order_id'  => $order->id,
+                    'branch_id' => $branchId,
+                    'user_id'   => $userId,
+                ]);
+                return;
+            }
+
+            $cashService->recordMovement(
+                sessionId: (int) $session->id,
+                type: \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+                amount: round((float) $order->total, 2),
+                direction: \App\Models\CashMovement::DIRECTION_IN,
+                orderId: (int) $order->id,
+                notes: $note,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[F-003] recordCashOrderMovement failed (non-blocking)', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * [AUDIT-F-003] Hook side-effect : enregistre le cashback comme movement
+     * direction=out sur la session OPEN du caissier (si elle existe). Best-effort.
+     */
+    private function recordCashBackMovement(Order $order, float $amount): void
+    {
+        try {
+            if (! Auth::check()) {
+                return;
+            }
+            $userId = (int) Auth::id();
+            $branchId = (int) ($order->branch_id ?? 0);
+            if ($branchId <= 0) {
+                return;
+            }
+
+            $cashService = app(CashDrawerService::class);
+            $session = $cashService->findOpenSessionForUser($branchId, $userId);
+
+            if (! $session) {
+                Log::info('[F-003] No open cash drawer session — cashback without session linkage', [
+                    'order_id'  => $order->id,
+                    'branch_id' => $branchId,
+                    'user_id'   => $userId,
+                ]);
+                return;
+            }
+
+            $cashService->recordMovement(
+                sessionId: (int) $session->id,
+                type: \App\Models\CashMovement::TYPE_CASHBACK,
+                amount: round($amount, 2),
+                direction: \App\Models\CashMovement::DIRECTION_OUT,
+                orderId: (int) $order->id,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[F-003] recordCashBackMovement failed (non-blocking)', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
+        }
     }
 
     public function cancelCounterPayment(Order $order, ?string $reason = null): Order
