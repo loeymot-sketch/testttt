@@ -16,7 +16,16 @@
       - Self-contained styles using the kiosk DS tokens.
 -->
 <template>
-    <div class="ks-burger-builder" role="application" :aria-label="$t('kiosk.builder.aria_label')">
+    <!--
+        [A11y-HEAL-2026-05-08] P1 fix — `role="application"` retiré : il
+        désactive la navigation screen-reader par défaut (la SR passe en mode
+        "forms / no virtual cursor"), ce qui est sur-déclaré pour ce POC
+        drag-drop. Les deux <section> internes ont déjà role="region" + un
+        aria-label et apportent la sémantique nécessaire. L'aria-label global
+        reste sur le wrapper pour préserver le contexte (sans rôle, il sera
+        lu en tant que landmark implicite via le aria-label).
+    -->
+    <div class="ks-burger-builder" :aria-label="$t('kiosk.builder.aria_label')">
         <!-- Source pool : drag origin (clone) -->
         <section class="ks-burger-source" role="region" :aria-label="$t('kiosk.builder.source_label')">
             <h3 class="ks-burger-source-title">{{ $t('kiosk.builder.ingredients') }}</h3>
@@ -185,8 +194,13 @@ export default {
             [arr[from], arr[to]] = [arr[to], arr[from]];
             this.emitUpdate();
             // Refocus le layer déplacé pour préserver l'expérience clavier.
+            // [Iter2 fix 2026-05-08] Guard $el vs Element : Vue 3 peut retourner
+            // un Comment node ou Text node si racine conditionnelle/fragment.
+            // happy-dom test env reproduit le cas — querySelectorAll absent.
             this.$nextTick(() => {
-                const layers = this.$el?.querySelectorAll('[data-testid="ks-burger-layer"]');
+                const root = this.$el;
+                if (!root || typeof root.querySelectorAll !== 'function') return;
+                const layers = root.querySelectorAll('[data-testid="ks-burger-layer"]');
                 if (layers && layers[to]) {
                     layers[to].focus();
                 }
@@ -197,7 +211,10 @@ export default {
          * (premier ingredient). Permet de sortir du contexte burger sans souris.
          */
         onBlurLayer() {
-            const sources = this.$el?.querySelectorAll('[data-testid="ks-burger-ingredient"]');
+            // [Iter2 fix 2026-05-08] Same guard pattern que swapLayer.
+            const root = this.$el;
+            if (!root || typeof root.querySelectorAll !== 'function') return;
+            const sources = root.querySelectorAll('[data-testid="ks-burger-ingredient"]');
             if (sources && sources[0]) {
                 sources[0].focus();
             }

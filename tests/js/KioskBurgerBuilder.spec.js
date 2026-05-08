@@ -51,6 +51,34 @@ function mountBuilder(props = {}) {
     });
 }
 
+// [A11y-HEAL-2026-05-08] P1 fix — over-declaration regression guard.
+// The wrapper used to expose `role="application"`, which puts screen-readers
+// into "forms mode" and disables the default virtual cursor — far too heavy
+// for a POC drag-drop view. The internal <section role="region"> elements
+// already provide the right sub-region semantics.
+describe('KioskBurgerBuilder — a11y over-declaration fix (P1)', () => {
+    it('does NOT use role="application" on the root wrapper', () => {
+        const w = mountBuilder();
+        const root = w.find('.ks-burger-builder');
+        expect(root.exists()).toBe(true);
+        expect(root.attributes('role')).not.toBe('application');
+    });
+
+    it('keeps aria-label on the root wrapper for context', () => {
+        const w = mountBuilder();
+        const root = w.find('.ks-burger-builder');
+        // aria-label resolved via i18n fr.json
+        expect(root.attributes('aria-label')).toBeTruthy();
+    });
+
+    it('preserves the inner role="region" sub-landmarks (source + target)', () => {
+        const w = mountBuilder();
+        const regions = w.findAll('[role="region"]');
+        // source pool + target burger stack = 2 regions
+        expect(regions.length).toBe(2);
+    });
+});
+
 describe('KioskBurgerBuilder — initial render', () => {
     it('renders the source list with one entry per ingredient', () => {
         const w = mountBuilder();

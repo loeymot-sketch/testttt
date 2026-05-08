@@ -10,9 +10,17 @@
     @keydown.enter.prevent="startOrder"
     @keydown.space.prevent="startOrder"
   >
-    <!-- [PHASE-37] Language selector — only if multiple languages enabled -->
+    <!--
+      [PHASE-37] Language selector — only if multiple languages enabled.
+      [FR-LOCK 2026-05-08 ADR-007] Sélecteur désactivé (v-if="false") sous policy
+      FR-lock V1 : `ensureKioskLocale()` (router.beforeEach) reforce `fr` sur chaque
+      navigation `/kiosk/*`, ce qui rendait le switch UI dead (la locale repassait
+      à fr immédiatement après reload). `enabledLanguages`/`loadSettings`/imports
+      restent en place pour permettre la réactivation V2 (cf. ADR-007 §Phase 2).
+      Voir docs/ADR/ADR-2026-05-09-kiosk-locale-policy.md.
+    -->
     <div
-      v-if="enabledLanguages.length > 1"
+      v-if="false"
       class="kiosk-lang-selector"
       role="group"
       :aria-label="$t('kiosk.choose_language')"
@@ -178,13 +186,13 @@ export default {
       return getCurrentLocale();
     },
     // V2-4 — map de la locale courante vers la langue Web Speech API.
+    // [FR-LOCK 2026-05-08 ADR-007] Sous policy FR-lock V1, le runtime kiosk est
+    // toujours `fr` (cf. `ensureKioskLocale()` dans i18n.js). Le switch est
+    // simplifié en constante `'fr-FR'` pour refléter explicitement l'invariant
+    // et fermer la dead branch `en-US`/`ar-SA`. La logique multi-locale sera
+    // réintroduite quand la policy sera relâchée (cf. ADR-007 §Phase 2 BACKLOG).
     voiceLang() {
-      switch (this.currentLocale) {
-        case 'en': return 'en-US';
-        case 'ar': return 'ar-SA';
-        case 'fr':
-        default:   return 'fr-FR';
-      }
+      return 'fr-FR';
     },
   },
   watch: {
@@ -244,15 +252,16 @@ export default {
       this.$router.push({ name: 'kiosk.categories' });
     },
     changeLanguage(lang) {
-      // [PHASE-37] Change locale and reload page to apply RTL if needed
-      if (this.currentLocale !== lang) {
-        setLocale(lang);
-        // [PHASE-4.4] Mettre à jour le store kioskSettings — useKioskA11y
-        //             applique data-kiosk-* / lang / dir sans reload.
-        try { this.$store.dispatch('kioskSettings/setLocale', lang); } catch (_) {}
-        // Force reload to apply RTL and re-render all translations
-        window.location.reload();
-      }
+      // [FR-LOCK 2026-05-08 ADR-007] No-op sous policy FR-lock V1.
+      // L'ancienne logique appelait `setLocale(lang)` + `window.location.reload()`,
+      // mais `ensureKioskLocale()` (router.beforeEach) reforce `fr` sur la
+      // prochaine nav, rendant ce switch UI dead. Le sélecteur est désormais
+      // hidden (`v-if="false"`), donc cette méthode n'est plus appelée. Conservée
+      // pour préserver le call-graph et permettre la réactivation V2 (cf. ADR-007
+      // §Phase 2 BACKLOG : déverrouiller `KIOSK_LOCALE`, scoper sessionStorage,
+      // compléter `ar.json` clés `kiosk.voice.*` / `kiosk.builder.*` / `kiosk.admin.*`).
+      // eslint-disable-next-line no-unused-vars
+      void lang;
     },
     openSettings() {
       this.settingsOpen = true;

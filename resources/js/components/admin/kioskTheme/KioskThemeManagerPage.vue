@@ -44,7 +44,9 @@
                     :key="theme.id"
                     :theme="theme"
                     :is-active="activeTheme === theme.id"
+                    :is-focusable="activeTheme === theme.id"
                     @select="setActiveTheme(theme.id)"
+                    @navigate="onNavigate"
                 />
             </div>
 
@@ -230,6 +232,46 @@ export default {
                     this.statusMessage = null;
                 }, 3500);
             }
+        },
+        /**
+         * [A11y-HEAL-2026-05-08] P1 fix — radiogroup arrow nav.
+         *
+         * Implements the WAI-ARIA APG `radiogroup` pattern :
+         *   - ArrowRight / ArrowDown → next radio (with wrap-around)
+         *   - ArrowLeft / ArrowUp    → previous radio (with wrap-around)
+         *   - Selection follows focus : moving focus also activates the radio
+         *     (mirroring the native <input type="radio"> arrow behaviour).
+         *
+         * Note : `setActiveTheme` triggers a PATCH on the backend on each
+         * arrow press. This is the standard "selection-follows-focus" radio
+         * semantic, but it does mean each Arrow keystroke sends one network
+         * call. Acceptable for this admin page since the user lands on it,
+         * picks a theme, then leaves — not a hot path.
+         *
+         * @param {'prev'|'next'} direction
+         */
+        onNavigate(direction) {
+            const themes = this.availableThemes;
+            if (!themes || themes.length === 0) return;
+            const currentIdx = themes.findIndex((t) => t.id === this.activeTheme);
+            const baseIdx = currentIdx >= 0 ? currentIdx : 0;
+            const nextIdx = direction === 'next'
+                ? (baseIdx + 1) % themes.length
+                : (baseIdx - 1 + themes.length) % themes.length;
+            const nextTheme = themes[nextIdx];
+            if (!nextTheme) return;
+            // Selection follows focus → PATCH the new theme.
+            this.setActiveTheme(nextTheme.id);
+            // Move DOM focus to the freshly-active card so the user keeps
+            // navigating with arrows seamlessly (roving tabindex).
+            this.$nextTick(() => {
+                const cards = this.$el?.querySelectorAll
+                    ? this.$el.querySelectorAll('[role="radio"]')
+                    : null;
+                if (cards && cards[nextIdx] && typeof cards[nextIdx].focus === 'function') {
+                    try { cards[nextIdx].focus(); } catch (_) { /* silent */ }
+                }
+            });
         },
     },
 };

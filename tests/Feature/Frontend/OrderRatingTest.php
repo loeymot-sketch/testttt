@@ -9,7 +9,9 @@ use App\Models\Branch;
 use App\Models\FrontendOrder;
 use App\Models\OrderRating;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -214,6 +216,121 @@ class OrderRatingTest extends TestCase
 
         $response->assertStatus(403);
         $this->assertDatabaseCount('order_ratings', 0);
+    }
+
+    /**
+     * [SEC-HEAL-2026-05-08 iter2] Ultra-review HEAL data integrity finding —
+     * exploit confirmé : un kiosk valide pouvait POSTer 2× sur la même
+     * commande physique en swappant le `order_type` (Order vs FrontendOrder
+     * partagent la table `orders`), créant 2 rows pour la même commande
+     * et polluant les agrégats CSAT/NPS.
+     *
+     * Fix : `order_type` n'est plus accepté en body, et l'index unique est
+     * désormais sur `order_id` seul (1 rating par commande, point).
+     *
+     * Ce test démontre que l'exploit est définitivement clos.
+     */
+    public function test_double_rating_via_order_type_swap_blocked(): void
+    {
+        [$branch, $user, $order] = $this->makeOrderForUser();
+
+        // Tentative 1 : ancien exploit, body order_type=Order.
+        $r1 = $this->actAsKiosk($user)
+            ->postJson("/api/frontend/order/{$order->id}/rating", [
+                'rating'     => 3,
+                'order_type' => 'Order', // user tente d'injecter — controller doit ignorer
+                'source'     => 'kiosk',
+            ]);
+        $r1->assertStatus(201);
+
+        // Tentative 2 : ancien exploit, body order_type=FrontendOrder.
+        $r2 = $this->actAsKiosk($user)
+            ->postJson("/api/frontend/order/{$order->id}/rating", [
+                'rating'     => 5,
+                'order_type' => 'FrontendOrder',
+                'source'     => 'kiosk',
+            ]);
+        $r2->assertStatus(201);
+
+        // Avant fix : 2 rows. Après fix : 1 seule row (la 2e a updaté la 1re).
+        $this->assertDatabaseCount('order_ratings', 1);
+        $this->assertDatabaseHas('order_ratings', [
+            'order_id'   => $order->id,
+            'order_type' => 'FrontendOrder', // forced server-side
+            'rating'     => 5,                // last write wins via updateOrCreate
+        ]);
+    }
+
+    /**
+     * [SEC-HEAL-2026-05-08 iter2] Concurrent double-POST race-loser idempotency.
+     *
+     * Scenario simulé : 2 threads font POST `/rating` simultanément. L'updateOrCreate
+     * fait SELECT-then-INSERT ; si entre les 2 ops un autre thread insère, le
+     * thread perdant lève `QueryException` (1062 MySQL / "UNIQUE constraint
+     * failed" SQLite). Le controller doit catcher et re-fetch le rating gagnant
+     * pour préserver le contrat idempotent (201 + data).
+     *
+     * Implémentation test : on hook `creating` event, qui simule l'autre thread
+     * qui aurait inséré entre `firstOrNew` (qui retourne un new model) et `save`.
+     * On insère via `DB::table()` (bypass events) puis on throw QueryException
+     * pour simuler le 1062 venant de la base.
+     *
+     * Verify : le controller catch QueryException + re-fetch + 201.
+     */
+    public function test_concurrent_double_post_idempotent(): void
+    {
+        [$branch, $user, $order] = $this->makeOrderForUser();
+
+        $thrown = false;
+        OrderRating::creating(function ($model) use ($order, $branch, &$thrown) {
+            if ($thrown) {
+                return;
+            }
+            $thrown = true;
+
+            // Simule "l'autre thread" qui a inséré entre firstOrNew et save :
+            // on insère un row directement (bypass model events).
+            DB::table('order_ratings')->insert([
+                'order_id'       => $order->id,
+                'order_type'     => 'FrontendOrder',
+                'branch_id'      => $branch->id,
+                'rating'         => 4, // valeur du "winner"
+                'comment'        => 'winner-thread',
+                'source_surface' => 'kiosk',
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+
+            // Maintenant on lève la QueryException que MySQL/SQLite aurait
+            // levée si on avait laissé save() faire l'INSERT lui-même.
+            $previous = new \PDOException('UNIQUE constraint failed: order_ratings.order_id', 1062);
+            $previous->errorInfo = ['23000', 1062, 'Duplicate entry for key order_rating_unique'];
+
+            throw new QueryException(
+                'insert into order_ratings (...) values (...)',
+                [],
+                $previous
+            );
+        });
+
+        $response = $this->actAsKiosk($user)
+            ->postJson("/api/frontend/order/{$order->id}/rating", [
+                'rating' => 2, // valeur du loser — sera ignorée car winner a gagné la race
+                'source' => 'kiosk',
+            ]);
+
+        // Cleanup : retire le listener pour ne pas leaker sur les autres tests.
+        OrderRating::flushEventListeners();
+
+        // Le controller doit catcher la QueryException, re-fetch le winner,
+        // et renvoyer 201 idempotent.
+        $response->assertStatus(201);
+        $response->assertJsonPath('status', true);
+        $response->assertJsonPath('data.rating', 4); // winner's value, not loser's 2
+        $response->assertJsonPath('data.comment', 'winner-thread');
+
+        // Une seule row en DB (le winner).
+        $this->assertDatabaseCount('order_ratings', 1);
     }
 
     /**

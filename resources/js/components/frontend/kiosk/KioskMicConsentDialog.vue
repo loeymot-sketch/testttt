@@ -83,7 +83,22 @@
 export default {
     name: 'KioskMicConsentDialog',
     emits: ['confirm', 'cancel'],
+    data() {
+        return {
+            // [A11y-HEAL-2026-05-08] WCAG 2.4.3 — focus restoration target.
+            // Captured in mounted() before we move focus into the dialog so we
+            // can return focus to the element that opened it on unmount. Same
+            // pattern as `ds/KsModal.vue` (canonical kiosk DS modal).
+            _prevActive: null,
+        };
+    },
     mounted() {
+        // [A11y] Save the element that had focus before the dialog opened
+        // (typically the trigger button). On unmount we restore focus there
+        // so screen-reader / keyboard users keep their place.
+        if (typeof document !== 'undefined') {
+            this._prevActive = document.activeElement;
+        }
         this.$nextTick(() => {
             // [Privacy + A11y] Safe-default autofocus on Cancel : prevents
             // accidental consent via Enter key. Screen-reader announces the
@@ -91,6 +106,19 @@ export default {
             // expectation (deny by default).
             this.$refs.cancelBtn?.focus();
         });
+    },
+    beforeUnmount() {
+        // [A11y-HEAL-2026-05-08] WCAG 2.4.3 — restore focus to the trigger.
+        // Vue 3 hook (`beforeDestroy` would be Vue 2). Wrapped in try/catch
+        // because the previous active element may have been removed from the
+        // DOM while the dialog was open.
+        if (this._prevActive && typeof this._prevActive.focus === 'function') {
+            try {
+                this._prevActive.focus({ preventScroll: true });
+            } catch (_) {
+                /* silent — element gone or focus refused */
+            }
+        }
     },
     methods: {
         /**

@@ -240,4 +240,112 @@ describe('KioskThemeManagerPage [V2-5 Phase 2]', () => {
 
         expect(axios.patch).not.toHaveBeenCalled();
     });
+
+    // [A11y-HEAL-2026-05-08] P1 fix — radiogroup keyboard nav.
+    // WAI-ARIA APG radiogroup pattern : roving tabindex + arrow keys move
+    // focus *and* selection (selection follows focus, like native radios).
+    describe('radiogroup arrow nav + roving tabindex (P1 a11y)', () => {
+        it('uses roving tabindex (only the active card is tabindex=0)', async () => {
+            // Default GET resolves to "standard" → only the standard card
+            // should expose tabindex=0 ; the two others should be tabindex=-1.
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+
+            const cards = w.findAll('[role="radio"]');
+            expect(cards.length).toBe(3);
+            const tabindexes = cards.map((c) => c.attributes('tabindex'));
+            expect(tabindexes.filter((t) => t === '0').length).toBe(1);
+            expect(tabindexes.filter((t) => t === '-1').length).toBe(2);
+
+            // The single tabbable card must be the active one.
+            const activeCard = w.find('[data-testid="kiosk-theme-card-standard"]');
+            expect(activeCard.attributes('tabindex')).toBe('0');
+        });
+
+        it('roving tabindex follows the active theme after PATCH', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+
+            // Click halloween → it becomes active → it must take tabindex=0.
+            await w.find('[data-testid="kiosk-theme-card-halloween"]').trigger('click');
+            await flushPromises();
+
+            const halloweenCard = w.find('[data-testid="kiosk-theme-card-halloween"]');
+            const standardCard = w.find('[data-testid="kiosk-theme-card-standard"]');
+            expect(halloweenCard.attributes('tabindex')).toBe('0');
+            expect(standardCard.attributes('tabindex')).toBe('-1');
+        });
+
+        it('ArrowRight on a card moves selection to the next card (selection-follows-focus)', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+            // active = standard (idx 0) → ArrowRight should target halloween (idx 1)
+            axios.patch.mockClear();
+
+            await w.find('[data-testid="kiosk-theme-card-standard"]').trigger('keydown', { key: 'ArrowRight' });
+            await flushPromises();
+
+            expect(axios.patch).toHaveBeenCalledWith('admin/kiosk-theme/5', { theme: 'halloween' });
+        });
+
+        it('ArrowDown also navigates to next (vertical equivalent)', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+            axios.patch.mockClear();
+
+            await w.find('[data-testid="kiosk-theme-card-standard"]').trigger('keydown', { key: 'ArrowDown' });
+            await flushPromises();
+
+            expect(axios.patch).toHaveBeenCalledWith('admin/kiosk-theme/5', { theme: 'halloween' });
+        });
+
+        it('ArrowLeft on a card moves selection to the previous card (with wrap-around)', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+            // active = standard (idx 0) → ArrowLeft wraps to christmas (idx 2)
+            axios.patch.mockClear();
+
+            await w.find('[data-testid="kiosk-theme-card-standard"]').trigger('keydown', { key: 'ArrowLeft' });
+            await flushPromises();
+
+            expect(axios.patch).toHaveBeenCalledWith('admin/kiosk-theme/5', { theme: 'christmas' });
+        });
+
+        it('ArrowUp also navigates to previous (vertical equivalent + wrap-around)', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+            axios.patch.mockClear();
+
+            await w.find('[data-testid="kiosk-theme-card-standard"]').trigger('keydown', { key: 'ArrowUp' });
+            await flushPromises();
+
+            expect(axios.patch).toHaveBeenCalledWith('admin/kiosk-theme/5', { theme: 'christmas' });
+        });
+
+        it('ArrowRight wraps from the last card to the first (christmas → standard)', async () => {
+            // Pre-set active = christmas via GET
+            axios.get.mockResolvedValue({ data: { active_theme: 'christmas' } });
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+            axios.patch.mockClear();
+
+            await w.find('[data-testid="kiosk-theme-card-christmas"]').trigger('keydown', { key: 'ArrowRight' });
+            await flushPromises();
+
+            expect(axios.patch).toHaveBeenCalledWith('admin/kiosk-theme/5', { theme: 'standard' });
+        });
+
+        it('emits navigate from KioskThemePreviewCard on ArrowRight (parent contract)', async () => {
+            const { w } = mountPage({ authBranchId: 5 });
+            await flushPromises();
+
+            // Find the child component instance and verify it emits 'navigate'.
+            const card = w.findComponent({ name: 'KioskThemePreviewCard' });
+            expect(card.exists()).toBe(true);
+            await card.find('[role="radio"]').trigger('keydown', { key: 'ArrowRight' });
+            // KioskThemePreviewCard re-emits 'navigate' to the parent via @keydown.right.
+            expect(card.emitted('navigate')).toBeTruthy();
+            expect(card.emitted('navigate')[0]).toEqual(['next']);
+        });
+    });
 });

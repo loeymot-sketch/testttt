@@ -70,18 +70,47 @@ export default {
         },
     },
     emits: ['confirm', 'cancel'],
+    data() {
+        return {
+            // [A11y-HEAL-2026-05-08] WCAG 2.4.3 — focus restoration target.
+            // Captured in mounted() before focus is moved into the dialog so
+            // we can return focus to the trigger on unmount. Mirrors the
+            // canonical pattern from `ds/KsModal.vue`.
+            _prevActive: null,
+        };
+    },
     /**
      * [A11y-HEAL-2026-05-08] Ultra-review P0 finding : modal manquait
      * Escape handler + autofocus + focus trap. Conforme WCAG 2.4.3.
      * Escape handler : @keydown.esc dans le template overlay.
      * Autofocus : mounted() pose focus sur "OUI, CONTINUER" (action primaire).
      * Focus trap : onTabKey() boucle entre Cancel et Confirm.
+     * Focus restore : beforeUnmount() rend le focus à l'élément déclencheur.
      */
     mounted() {
+        // [A11y] Save the element that had focus before the dialog opened
+        // (typically the trigger button). On unmount we restore focus there
+        // so screen-reader / keyboard users keep their place.
+        if (typeof document !== 'undefined') {
+            this._prevActive = document.activeElement;
+        }
         this.$nextTick(() => {
             // Autofocus sur l'action primaire pour les screen readers.
             this.$refs.confirmBtn?.focus();
         });
+    },
+    beforeUnmount() {
+        // [A11y-HEAL-2026-05-08] WCAG 2.4.3 — restore focus to the trigger.
+        // Vue 3 hook (`beforeDestroy` would be Vue 2). Wrapped in try/catch
+        // because the previous active element may have been removed from the
+        // DOM while the dialog was open.
+        if (this._prevActive && typeof this._prevActive.focus === 'function') {
+            try {
+                this._prevActive.focus({ preventScroll: true });
+            } catch (_) {
+                /* silent — element gone or focus refused */
+            }
+        }
     },
     methods: {
         /**

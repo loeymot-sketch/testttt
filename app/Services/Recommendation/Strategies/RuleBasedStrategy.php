@@ -330,7 +330,19 @@ final class RuleBasedStrategy implements UpsellRecommendationService
      */
     private function branchAvailableItemsQuery(array $availableItemIds, array $excludeItemIds): \Illuminate\Database\Eloquent\Builder
     {
+        // [SEC-HEAL-2026-05-08 iter2] Ultra-review P1 perf finding : pré-fix,
+        // `Item::query()` faisait SELECT * (30+ colonnes : description, allergen_flags,
+        // chef_pick_order, soft-delete, media...). Les consumers ici
+        // (`topItemsInClass`, `topItemsAnyClass`) n'utilisent que :
+        //   - `id` (keying + projectAndSort hand-off)
+        //   - `item_category_id` (whereIn dans topItemsInClass)
+        //   - `is_chef_pick` (orderByDesc)
+        //   - `order` (orderBy)
+        //   - `status` (where dans cette query)
+        // `projectAndSort` re-fetch ensuite (name, price, kiosk_emoji,
+        // item_category_id) sur les ids gagnants — pas de double-coût ici.
         $q = Item::query()
+            ->select(['id', 'item_category_id', 'is_chef_pick', 'order', 'status'])
             ->where('status', Status::ACTIVE);
 
         if ($excludeItemIds !== []) {

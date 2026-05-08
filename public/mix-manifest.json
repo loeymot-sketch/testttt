@@ -2,5 +2,7 @@
     "/js/app.js": "/js/app.js",
     "/js/kiosk.js": "/js/kiosk.js",
     "/js/kiosk-builder-poc.js": "/js/kiosk-builder-poc.js",
+    "/js/admin-upsell-preview.js": "/js/admin-upsell-preview.js",
+    "/js/admin-kiosk-themes.js": "/js/admin-kiosk-themes.js",
     "/css/app.css": "/css/app.css"
 }

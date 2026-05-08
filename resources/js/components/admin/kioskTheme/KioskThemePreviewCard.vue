@@ -10,19 +10,29 @@
 
         A11y :
           - Acts as a `radio` inside a parent `radiogroup`.
-          - Tabbable + Enter/Space activate select.
+          - Tabbable via roving-tabindex pattern : seul l'item actif est
+            tabindex=0, les autres sont tabindex=-1 (WAI-ARIA APG radiogroup).
+          - Enter / Space activent select.
+          - ArrowLeft / ArrowUp → emit 'navigate' avec direction 'prev'.
+          - ArrowRight / ArrowDown → emit 'navigate' avec direction 'next'.
           - aria-checked reflects `isActive`.
+
+        [A11y-HEAL-2026-05-08] P1 fix — radiogroup arrow nav + roving tabindex.
     -->
     <div
         class="theme-card"
         :class="{ active: isActive }"
         role="radio"
         :aria-checked="isActive ? 'true' : 'false'"
-        :tabindex="0"
+        :tabindex="isFocusable ? 0 : -1"
         :data-testid="`kiosk-theme-card-${theme.id}`"
         @click="$emit('select')"
         @keydown.enter.prevent="$emit('select')"
         @keydown.space.prevent="$emit('select')"
+        @keydown.left.prevent="$emit('navigate', 'prev')"
+        @keydown.up.prevent="$emit('navigate', 'prev')"
+        @keydown.right.prevent="$emit('navigate', 'next')"
+        @keydown.down.prevent="$emit('navigate', 'next')"
     >
         <div class="theme-preview" :data-kiosk-theme="theme.id">
             <span class="theme-emoji" aria-hidden="true">{{ theme.emoji }}</span>
@@ -67,8 +77,15 @@ export default {
             type: Boolean,
             default: false,
         },
+        // [A11y-HEAL-2026-05-08] Roving-tabindex flag : the parent passes
+        // `true` only on the currently-active card so a single member of the
+        // radiogroup is in the tab order. WAI-ARIA APG radiogroup pattern.
+        isFocusable: {
+            type: Boolean,
+            default: false,
+        },
     },
-    emits: ['select'],
+    emits: ['select', 'navigate'],
 };
 </script>
 

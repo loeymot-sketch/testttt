@@ -49,6 +49,21 @@ class UpsellRecommendationController extends Controller
             'branch_id'            => 'required|integer|min:1',
         ]);
 
+        // [SEC-HEAL-2026-05-08 iter2] Ultra-review P1 finding : kiosk authentifié
+        // pouvait requérir des recommendations cross-branche via branch_id body.
+        // Item / ItemCategory / ItemBranchAvailability n'ont pas de BranchScope
+        // global → menu cross-branch leak exploitable. Pattern imité de
+        // UpsellPreviewController Wave A1 (branch_id=0 = head-office, sinon
+        // strict equality). CLAUDE.md non-négociable #8 : "Branch isolation
+        // must never be weakened."
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        if ($userBranchId !== 0 && $userBranchId !== (int) $validated['branch_id']) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Branch scope denied — kiosk lié à une autre branche.',
+            ], 403);
+        }
+
         $recommendations = $this->service->recommend(
             $validated['cart'],
             (int) $validated['branch_id'],

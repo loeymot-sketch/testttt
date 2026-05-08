@@ -2,6 +2,14 @@ import {createI18n} from "vue-i18n";
 
 const SUPPORTED_LOCALES = ['fr', 'en', 'ar'];
 const DEFAULT_LOCALE    = 'fr';
+// [FR-LOCK 2026-05-08 ADR-007] Kiosk locale policy V1.
+// Décision orchestrateur (Option A) : le kiosque déployé en France V1 est verrouillé
+// en français à des fins de conformité fiscale NF525 + cohérence des audit logs.
+// `KIOSK_LOCALE` est immuable, `ensureKioskLocale()` (cf. ci-dessous) reforce `fr`
+// sur chaque navigation `/kiosk/*`, et tout sélecteur de langue côté UI kiosk doit
+// être désactivé (cf. `KioskIdleScreenComponent.vue`). Multi-locale réel = V2,
+// nécessite RTL complet + scope sessionStorage stable + retraduction `kiosk.*`
+// dans `ar.json`. Voir `docs/ADR/ADR-2026-05-09-kiosk-locale-policy.md`.
 const KIOSK_LOCALE      = 'fr';   // langue borne : toujours français, immuable
 
 function setDocumentDirection(locale) {

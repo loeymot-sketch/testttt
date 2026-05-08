@@ -88,6 +88,43 @@ describe('KioskVoiceOrderingDialog', () => {
         expect(wrapper.vm.$refs.confirmBtn.dataset.testid).toBe('kiosk-voice-dialog-confirm');
     });
 
+    // [A11y-HEAL-2026-05-08] P0 fix — WCAG 2.4.3 focus restoration on unmount.
+    // The dialog must save document.activeElement on mount and restore it
+    // when unmounted, otherwise focus falls back to <body> after Esc/Cancel.
+    it('saves document.activeElement on mount (P0 a11y focus restore)', async () => {
+        document.body.innerHTML = '<button id="trigger">Voice</button>';
+        const trigger = document.getElementById('trigger');
+        // happy-dom doesn't always update document.activeElement on .focus(),
+        // so we assert the captured ref directly via Object.defineProperty —
+        // same workaround used elsewhere in this suite.
+        Object.defineProperty(document, 'activeElement', {
+            value: trigger,
+            configurable: true,
+        });
+        const wrapper = factory();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm._prevActive).toBe(trigger);
+        wrapper.unmount();
+    });
+
+    it('restores focus to the previous trigger on unmount (P0 a11y focus restore)', async () => {
+        document.body.innerHTML = '<button id="trigger">Voice</button>';
+        const trigger = document.getElementById('trigger');
+        Object.defineProperty(document, 'activeElement', {
+            value: trigger,
+            configurable: true,
+        });
+        const focusSpy = vi.spyOn(trigger, 'focus');
+        const wrapper = factory();
+        await wrapper.vm.$nextTick();
+        // mount() autofocuses confirmBtn → focusSpy on the trigger should not
+        // have been called yet (the dialog moves focus into itself).
+        focusSpy.mockClear();
+        wrapper.unmount();
+        // On unmount, beforeUnmount() must restore focus to the saved trigger.
+        expect(focusSpy).toHaveBeenCalled();
+    });
+
     it('traps Tab focus between cancel and confirm via onTabKey method (P0 a11y fix)', async () => {
         const wrapper = factory();
         await wrapper.vm.$nextTick();

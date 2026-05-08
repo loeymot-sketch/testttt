@@ -293,6 +293,31 @@ class UpsellRecommendationTest extends TestCase
         );
     }
 
+    /**
+     * [SEC-HEAL-2026-05-08 iter2] Ultra-review P1 finding : un kiosk
+     * authentifié sur Branch A pouvait POSTer `branch_id => Branch B` et
+     * recevoir des recommendations cross-branche (Item / ItemCategory /
+     * ItemBranchAvailability n'ont pas de BranchScope global, donc le
+     * service exécute la query telle quelle).
+     *
+     * CLAUDE.md non-négociable #8 : "Branch isolation must never be
+     * weakened." Pattern imité de UpsellPreviewController Wave A1.
+     */
+    public function test_kiosk_cannot_request_other_branch_recommendations(): void
+    {
+        $r = $this->authed()->postJson('/api/frontend/recommendations/upsell', [
+            'cart'      => [['item_id' => $this->burger->id, 'quantity' => 1, 'price' => 9.50]],
+            'branch_id' => $this->otherBranch->id, // ennemi : user.branch_id = $this->branch->id
+        ]);
+
+        $r->assertStatus(403);
+        $r->assertJsonPath('status', false);
+        $r->assertJsonPath('message', 'Branch scope denied — kiosk lié à une autre branche.');
+
+        // Aucun item de l'autre branche ne doit fuiter en payload.
+        $this->assertNull($r->json('data'), 'Le payload ne doit contenir aucune clé data — réponse 403 stricte.');
+    }
+
     // =====================================================================
     //  Strategy switch — MlPlaceholder
     // =====================================================================
