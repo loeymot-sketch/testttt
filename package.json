@@ -22,6 +22,8 @@
         "test": "vitest run",
         "vitest": "vitest run",
         "test:watch": "vitest",
+        "test:e2e:full": "playwright test --config=playwright.config.js",
+        "test:e2e:smoke": "playwright test --config=playwright.config.js tests/e2e/01-auth-refresh.spec.js tests/e2e/02-pos-cash.spec.js tests/e2e/03-kiosk-wizard.spec.js tests/e2e/04-kds-status.spec.js tests/e2e/stock-rupture-sync.spec.js",
         "perf:bundle-check": "node tools/perf/check_bundle_budget.mjs",
         "pos:lint:pricing": "node tools/lint/pos_pricing_guard.mjs",
         "pos:lint:status": "node tools/lint/pos_orderstatus_guard.mjs",
