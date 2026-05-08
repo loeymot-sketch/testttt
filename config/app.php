@@ -225,6 +225,8 @@ return [
         App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        // [PARALLEL-TRACK-1.1] Delivery platform integration (Uber Eats / Deliveroo / Delicity)
+        App\Providers\DeliveryServiceProvider::class,
     ],
 
     /*
