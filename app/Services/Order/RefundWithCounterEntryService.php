@@ -56,6 +56,18 @@ class RefundWithCounterEntryService
             );
         }
 
+        // [WAVE5-POS-001] Require parent to be in a CLOSED Z window before creating
+        // a counter-entry mirror. Without this, an order created in the still-open
+        // current Z would receive a mirror immediately, AND a separate cashier
+        // could subsequently transition the still-mutable parent to RETURNED via
+        // the standard pre-Z path — yielding two negatives for one sale in the
+        // same Z window (double-counted refund). The standard pre-Z RETURNED path
+        // is what should be used for orders inside the open Z. The guard reuses
+        // SealedOrderGuard's predicate, keeping a single source of truth for
+        // "sealed?" semantics across destroy / changeStatus / aggregate / refund.
+        app(\App\Services\Order\SealedOrderGuard::class)
+            ->assertSealed($parent, 'refund-with-counter-entry');
+
         if ((int) $parent->status === OrderStatus::RETURNED) {
             throw new InvalidArgumentException(
                 'Parent order is already RETURNED — refusing duplicate mirror.',
