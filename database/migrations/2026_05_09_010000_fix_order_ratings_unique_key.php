@@ -48,6 +48,30 @@ return new class extends Migration {
             $this->dropIndex(self::OLD_INDEX);
         }
 
+        // [iter3 advisor-required guard 2026-05-08] Dirty data cleanup.
+        //
+        // Si l'exploit double-rating a déjà été triggé en prod/staging avant
+        // que cette migration s'applique, plusieurs rows existent pour le même
+        // order_id (ex : 1 row order_type=Order + 1 row order_type=FrontendOrder).
+        // Créer un index unique sur order_id échouerait avec :
+        //   "Integrity constraint violation: 1062 Duplicate entry"
+        //
+        // On garde la 1ère row historique (MIN(id)) qui correspond
+        // chronologiquement au 1er feedback légitime du customer ;
+        // les doubles spammés via discriminator-swap sont supprimés.
+        //
+        // Cross-driver SQLite + MySQL :
+        //  - SQLite supporte la sub-query corrélée GROUP BY MIN(id)
+        //  - MySQL idem (5.7+ et 8.x)
+        DB::statement(
+            'DELETE FROM ' . self::TABLE . ' '
+            . 'WHERE id NOT IN ('
+            .   'SELECT keep_id FROM ('
+            .     'SELECT MIN(id) AS keep_id FROM ' . self::TABLE . ' GROUP BY order_id'
+            .   ') AS keepers'
+            . ')'
+        );
+
         Schema::table(self::TABLE, function (Blueprint $table): void {
             $table->unique('order_id', self::NEW_INDEX);
         });
