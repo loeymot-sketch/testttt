@@ -71,6 +71,12 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'apiKey' => ApiKeyMiddleware::class,
         'verify.api' => \App\Http\Middleware\VerifyEmail::class,
+        // [SEC-1 / P1-11] Sanctum 3 does not auto-register the named-ability
+        // middleware aliases. We register them explicitly so routes can guard
+        // on a specific ability (e.g. `abilities:kiosk:order` on the kiosk
+        // refresh endpoint) without relying on inline tokenCan() checks.
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,

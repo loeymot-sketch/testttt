@@ -192,6 +192,15 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             Route::post('/kiosk-logout', [KioskMachineLoginController::class, 'logout']);
             Route::post('/delete-account', [DeactivateController::class, 'deleteAccount']);
         });
+
+        // [SEC-1 / P1-11] Kiosk token refresh — caller must hold a still-valid
+        // kiosk token (kiosk:order ability). Issues a new token with the same
+        // ability and a fresh kiosk_expiration TTL, then revokes the old one.
+        // Throttled to prevent token churn / log noise (60/min/token is plenty
+        // for an axios interceptor: realistically <1/day per kiosk).
+        Route::post('/kiosk-refresh-token', [KioskMachineLoginController::class, 'refresh'])
+            ->middleware(['abilities:kiosk:order', 'throttle:60,1'])
+            ->name('kiosk-refresh-token');
     });
 
     Route::post('/authcheck', function () {

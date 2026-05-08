@@ -1,0 +1,15 @@
+[Unit]
+Description=Run FoodKing Laravel scheduler every minute
+Requires=foodking-scheduler.service
+
+[Timer]
+# OnCalendar wildcard `*-*-* *:*:00` fires at the top of every minute.
+# `Persistent=true` causes a missed run (host suspend / boot) to fire on resume.
+# `AccuracySec=1s` matches Laravel's expectation of minute-aligned ticks.
+OnCalendar=*-*-* *:*:00
+Persistent=true
+AccuracySec=1s
+Unit=foodking-scheduler.service
+
+[Install]
+WantedBy=timers.target

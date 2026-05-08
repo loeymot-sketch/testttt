@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\KioskMachineResource;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -80,10 +81,13 @@ class KioskMachineLoginController extends Controller
             // Revoke all existing kiosk tokens for this user to allow clean re-login
             $user->tokens()->where('name', 'kiosk-token')->delete();
 
+            // [SEC-1 / P1-11] Kiosk-specific TTL (default 30 days). Distinct from
+            // the global sanctum.expiration (8h) used by admin/POS/staff sessions.
+            // See config/sanctum.php for rationale.
             $this->token = $user->createToken(
                 'kiosk-token',
                 ['kiosk:order'],
-                now()->addMinutes((int) config('sanctum.expiration', 480))
+                now()->addMinutes((int) config('sanctum.kiosk_expiration', 60 * 24 * 30))
             )->plainTextToken;
             $lockedKiosk->update(['is_login' => Ask::YES]);
         });
@@ -93,6 +97,80 @@ class KioskMachineLoginController extends Controller
             'token' => $this->token,
             'kiosk' => new KioskMachineResource($kioskMachine),
         ], 201);
+    }
+
+    /**
+     * [SEC-1 / P1-11] Refresh a kiosk Sanctum token before it expires.
+     *
+     * Caller must hold a still-valid kiosk token (auth:sanctum + abilities:kiosk:order).
+     * The current token is revoked atomically and a new one is issued with the same
+     * single ability `kiosk:order` and a fresh kiosk_expiration TTL.
+     *
+     * Frontend contract (V1.x): axios interceptor catches 401 from a protected
+     * route, calls this endpoint with the still-valid (or near-expired) token,
+     * swaps the token in localStorage, and replays the original request. If the
+     * current token is already past expires_at, Sanctum's auth:sanctum middleware
+     * will return 401 BEFORE this controller runs — the kiosk must then
+     * re-authenticate via /api/auth/kiosk-login.
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        // Match the convention used by login()/logout() in this controller:
+        // $request->user() resolves through the default api guard which
+        // Sanctum's middleware has already populated with the access token
+        // (so currentAccessToken() returns the PersonalAccessToken row).
+        $user = $request->user();
+        if (! $user) {
+            // Defensive: auth:sanctum middleware already guarantees this, but
+            // we keep an explicit guard so the controller stays safe if the
+            // route is ever wired without that middleware.
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.credentials_invalid')],
+            ], 401);
+        }
+
+        $kioskMachine = KioskMachine::where('user_id', $user->id)->first();
+        if (! $kioskMachine) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.kiosk_user_inactive')],
+            ], 403);
+        }
+
+        // Reject refresh if the kiosk machine has been deactivated since login.
+        if ((int) $kioskMachine->status !== (int) Status::ACTIVE) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.kiosk_machine_inactive')],
+            ], 403);
+        }
+
+        $newPlainToken = DB::transaction(function () use ($user, $kioskMachine) {
+            // Revoke ONLY the current token, not all kiosk tokens for this user.
+            // (Logout/login already handle "revoke all" semantics; refresh keeps
+            // the re-login flow's invariant of "one active token at a time" by
+            // deleting exactly the token that was just used to authenticate.)
+            $current = $user->currentAccessToken();
+            if ($current instanceof PersonalAccessToken) {
+                $current->delete();
+            }
+
+            return $user->createToken(
+                'kiosk-token',
+                ['kiosk:order'],
+                now()->addMinutes((int) config('sanctum.kiosk_expiration', 60 * 24 * 30))
+            )->plainTextToken;
+        });
+
+        Log::info('[KioskAuth] Token refreshed', [
+            'user_id'          => $user->id,
+            'kiosk_machine_id' => $kioskMachine->id,
+            'branch_id'        => $kioskMachine->branch_id,
+        ]);
+
+        return response()->json([
+            'message'    => trans('all.message.login_success'),
+            'token'      => $newPlainToken,
+            'expires_at' => now()->addMinutes((int) config('sanctum.kiosk_expiration', 60 * 24 * 30))->toIso8601String(),
+        ], 200);
     }
 
     public function logout(Request $request): JsonResponse

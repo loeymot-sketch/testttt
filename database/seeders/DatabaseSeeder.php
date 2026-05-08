@@ -46,6 +46,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencyTableSeeder::class);
         $this->call(BranchTableSeeder::class);
         $this->call(UserTableSeeder::class);
+        // [POS-3] Walking customer obligatoire — UserTableSeeder est blocked en prod,
+        // ce seeder est le créateur en prod et un no-op idempotent en dev.
+        $this->call(WalkInCustomerSeeder::class);
         $this->call(RolePermissionTableSeeder::class);
         $this->call(LeCayenneRoleLandingUrlSeeder::class);
         $this->call(MailTableSeeder::class);

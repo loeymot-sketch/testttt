@@ -1,0 +1,40 @@
+[Unit]
+Description=FoodKing Queue Worker (high+default queues)
+Documentation=https://laravel.com/docs/queues
+After=network-online.target redis.service mysql.service mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__REPO_DIR__
+# `--queue=high,default` ensures `domain_events` (DispatchDomainEventsJob is
+# dispatched onto `high`) gets priority. `--tries=4 --backoff=1,5,30,300`
+# matches OutboxRescueCommand's expectation that we cap at 5 attempts.
+# `--max-time=3600` recycles workers hourly so OPcache + memory stay clean.
+ExecStart=__PHP_BIN__ __REPO_DIR__/artisan queue:work --queue=high,default --tries=4 --backoff=1,5,30,300 --sleep=2 --max-time=3600 --max-jobs=1000
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=foodking-worker
+
+# --- Security hardening ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=__REPO_DIR__/storage __REPO_DIR__/bootstrap/cache
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -43,6 +43,16 @@ class Kernel extends ConsoleKernel
         $schedule->command('foodking:pusher:monitor')
             ->everyFiveMinutes()
             ->withoutOverlapping();
+
+        // [PRE-PROD HARDENING / POS-2 / P1-8] Force-close stale cash
+        // drawer sessions. Restaurants close around 02:00; the 03:00
+        // tick lands in the dead zone where no cashier should still be
+        // legitimately open. Sessions still flagged status=open beyond
+        // 24h are auto-flipped to status=force_closed with
+        // variance=null and a reason tag, surfaced to ops via Log::warning.
+        $schedule->command('foodking:cash:close-stale-sessions')
+            ->dailyAt('03:00')
+            ->withoutOverlapping();
     }
 
     /**

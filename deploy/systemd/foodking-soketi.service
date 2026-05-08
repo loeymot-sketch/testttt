@@ -1,0 +1,42 @@
+[Unit]
+Description=FoodKing Soketi WebSocket Server
+Documentation=https://docs.soketi.app/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__REPO_DIR__
+EnvironmentFile=__REPO_DIR__/.env
+ExecStart=__SOKETI_BIN__ start --config=__REPO_DIR__/soketi.json
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=foodking-soketi
+
+# --- Security hardening (systemd-analyze security ≤ 4.0 target) ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=__REPO_DIR__/storage
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

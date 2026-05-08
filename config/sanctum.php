@@ -52,6 +52,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Kiosk Token Expiration Minutes
+    |--------------------------------------------------------------------------
+    |
+    | [SEC-1 / P1-11] Kiosk machines run unattended on dedicated hardware in
+    | branches. Their tokens are issued once at boot/login and reused across
+    | thousands of guest orders without human intervention. An 8-hour TTL would
+    | force a daily re-login that nobody is around to perform — operationally
+    | unrealistic.
+    |
+    | We therefore issue kiosk tokens with a 30-day TTL by default. This is
+    | tighter than the previous behaviour (no expiration) and bounds the blast
+    | radius of a leaked token: an attacker who siphons a kiosk token gets at
+    | most 30 days of access before the token expires, and the kiosk frontend
+    | is expected to renew via /api/auth/kiosk-refresh-token on a schedule
+    | (V1.x: axios interceptor on 401 → refresh transparent).
+    |
+    | Revocation: existing kiosk tokens are still revoked on re-login (see
+    | KioskMachineLoginController::login) and on logout. Refresh issues a new
+    | token and deletes the prior one (single active token per kiosk).
+    */
+    'kiosk_expiration' => env('SANCTUM_KIOSK_EXPIRATION', 60 * 24 * 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Sanctum Middleware
     |--------------------------------------------------------------------------
     |

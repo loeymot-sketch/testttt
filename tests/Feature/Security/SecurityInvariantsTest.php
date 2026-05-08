@@ -115,54 +115,62 @@ class SecurityInvariantsTest extends TestCase
     }
 
     /**
-     * SQL injection ORDER BY — PosCategoryController::index() accepts a
-     * user-supplied `order_column` and forwards it to ->orderBy() with
-     * NO whitelist (see app/Http/Controllers/Admin/PosCategoryController.php
-     * line 29-30). Laravel backticks the column identifier so a payload
-     * like `id; DROP TABLE orders;` cannot reach the SQL parser as
-     * code — the QueryGrammar wraps it as `\`id; DROP TABLE orders;--\``
-     * and the driver returns 0 rows instead of 200-with-data — so the
-     * impact is "fingerprintable / DoS / silent-degradation" rather
-     * than RCE.
+     * SQL injection ORDER BY — PosCategoryController::index() accepts
+     * `order_column` / `order_type` from the query string and forwards to
+     * ->orderBy(). Laravel backticks the column identifier so a payload
+     * like `id; DROP TABLE orders;` cannot reach the SQL parser as code,
+     * but the unfiltered identifier still produces a silent-empty result
+     * set (DoS / fingerprintable degradation).
      *
-     * **FINDING**: a malicious `order_column` currently returns 200 OK
-     * (with empty result set) on this codebase. That's a defense-in-depth
-     * gap, NOT an active exploit. Remediation = add an explicit whitelist
-     * (in_array($column, ['id', 'name', 'slug', 'created_at'], true) ?
-     * $column : 'id') in PosCategoryController::index().
+     * **REMEDIATED (P1-10 / harden)**: PosCategoryController now applies an
+     * explicit whitelist via `self::ALLOWED_ORDER_COLUMNS` and
+     * `self::ALLOWED_ORDER_DIRECTIONS`, falling back to `id` / `desc` on
+     * any non-whitelisted input. The endpoint must therefore return 200
+     * for every input (legit or malicious), because the malicious value
+     * is silently coerced to the safe default rather than reaching the
+     * grammar at all.
      *
-     * Track-5 charter forbids prod fixes — this test is therefore marked
-     * `markTestIncomplete` to publish the finding without breaking CI.
-     * Promote to a hard `assertNotEquals(200, ...)` once the whitelist
-     * lands. See plans/PLAN_AUDIT_F0XX_POS_CATEGORY_ORDER_COLUMN_WHITELIST.md
-     * (to be filed by orchestrator).
+     * Invariants enforced:
+     *  - malicious `order_column` → 200 (coerced to `id`, no SQL impact)
+     *  - malicious `order_type`   → 200 (coerced to `desc`)
+     *  - legitimate input         → 200 (accepted as-is)
+     *
+     * Regression risk: if a future change drops the whitelist, the SQL
+     * driver will start raising `SQLSTATE[42S22]` on the malicious column
+     * (column not found) and bubble up as a 500 from the try/catch — this
+     * test would then fail on the malicious-column branch.
      */
-    public function test_pos_category_rejects_malicious_order_column(): void
+    public function test_pos_category_order_column_whitelist_rejects_malicious_input(): void
     {
         $branch = Branch::factory()->create();
         $user = User::factory()->create(['branch_id' => $branch->id]);
         $user->assignRole('Admin');
 
+        // Case 1: malicious column → coerced to default 'id', 200 OK with safe ordering.
         $response = $this->actingAs($user, 'sanctum')
             ->getJson('/api/admin/pos-category?order_column=' . urlencode('id; DROP TABLE orders;--'));
-
-        if ($response->status() === 200) {
-            $this->markTestIncomplete(
-                'FINDING: PosCategoryController::index accepts non-whitelisted '
-                . 'order_column. Backticking blocks RCE but DoS / silent-empty '
-                . 'is possible. Remediation: in_array($column, [\'id\', \'name\', '
-                . '\'slug\', \'created_at\'], true) whitelist. Track-5 charter '
-                . 'forbids prod fix; promote this assertion to hard once '
-                . 'remediated.'
-            );
-        }
-
-        // Once remediated, this branch becomes the authoritative invariant:
-        $this->assertContains(
+        $this->assertEquals(
+            200,
             $response->status(),
-            [400, 422, 500],
-            'After whitelist remediation, malicious order_column must be 4xx (validation rejected). '
-            . 'Status: ' . $response->status()
+            'Malicious order_column must be silently coerced to the default and return 200. Status: ' . $response->status()
+        );
+
+        // Case 2: malicious direction → coerced to default 'desc', 200 OK.
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/admin/pos-category?order_type=' . urlencode('DROP TABLE'));
+        $this->assertEquals(
+            200,
+            $response->status(),
+            'Malicious order_type must be silently coerced to the default and return 200. Status: ' . $response->status()
+        );
+
+        // Case 3: legitimate column + direction accepted as-is.
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/admin/pos-category?order_column=name&order_type=asc');
+        $this->assertEquals(
+            200,
+            $response->status(),
+            'Legitimate whitelisted order_column/order_type must be honoured. Status: ' . $response->status()
         );
     }
 

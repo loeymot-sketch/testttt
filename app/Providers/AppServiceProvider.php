@@ -13,6 +13,7 @@ use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,6 +46,38 @@ class AppServiceProvider extends ServiceProvider
         // SQLite (tests CI / phpunit.xml :memory:) n'implémente pas REGEXP par défaut.
         // OrderService / FrontendOrderService filtrent queue_number avec REGEXP '^A[0-9]+$'.
         $this->registerSqliteRegexpIfNeeded();
+
+        // [SEC-1 / P1-11] Kiosk-specific token TTL bypass.
+        //
+        // Sanctum's Guard enforces TWO expiration checks per token (Guard::isValidAccessToken):
+        //   1. created_at > now() - config('sanctum.expiration')   ← global window (480m staff)
+        //   2. expires_at is not in the past                       ← per-token column
+        //
+        // Both must pass. We CANNOT bump the global window to 30 days without
+        // weakening admin/POS sessions (LoginController, RefreshTokenController,
+        // and ForgotPasswordController all read the same key to compute their
+        // own expires_at). So we install an authentication callback that, for
+        // tokens carrying the `kiosk:order` ability, ignores the global window
+        // and trusts the column-level expires_at exclusively. Kiosk tokens are
+        // gated solely by config('sanctum.kiosk_expiration') (default 30 days)
+        // written into the personal_access_tokens.expires_at column at login
+        // and refresh time. Admin/POS/staff tokens keep both checks unchanged.
+        //
+        // Rationale: kiosk hardware runs unattended; an 8h forced re-login is
+        // operationally unrealistic. 30-day TTL bounds the blast radius of a
+        // leaked token while remaining compatible with branch operation.
+        Sanctum::authenticateAccessTokensUsing(function ($accessToken, bool $isValid) {
+            $abilities = $accessToken->abilities ?? [];
+            if (in_array('kiosk:order', $abilities, true)) {
+                // Kiosk path: trust expires_at column only. Provider check is
+                // already part of $isValid via Guard::hasValidProvider, but
+                // since this app uses the default 'web' provider with no
+                // custom provider binding on the sanctum guard, that check is
+                // a no-op for our tokens — we don't need to recompute it.
+                return ! $accessToken->expires_at || ! $accessToken->expires_at->isPast();
+            }
+            return $isValid;
+        });
 
         if (app()->environment('production')) {
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
