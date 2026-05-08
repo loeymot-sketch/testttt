@@ -86,6 +86,11 @@ class DeliveryBoyService
      */
     public function update(DeliveryBoyRequest $request, User $deliveryBoy)
     {
+        // [WAVE5-SEC-001] Verify the route-bound user actually has the expected role
+        // BEFORE entering the try/catch (which rewrites everything to 422). See
+        // CustomerService::assertTargetRole for the full rationale.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 DB::transaction(function () use ($deliveryBoy, $request) {
@@ -162,10 +167,29 @@ class DeliveryBoyService
     }
 
     /**
+     * [WAVE5-SEC-001] Defense-in-depth: ensure the route-bound User is actually a
+     * Delivery Boy before any mutation. See CustomerService::assertTargetRole.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403
+     */
+    private function assertTargetRole(User $deliveryBoy): void
+    {
+        if (! $deliveryBoy->hasRole(EnumRole::DELIVERY_BOY)) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                403,
+                'Cannot mutate user outside expected role.'
+            );
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changePassword(UserChangePasswordRequest $request, User $deliveryBoy): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 $deliveryBoy->password = Hash::make($request->password);
@@ -185,6 +209,9 @@ class DeliveryBoyService
      */
     public function changeImage(ChangeImageRequest $request, User $deliveryBoy): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 if ($request->image) {

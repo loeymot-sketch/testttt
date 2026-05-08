@@ -86,6 +86,11 @@ class ChefService
      */
     public function update(ChefRequest $request, User $chef)
     {
+        // [WAVE5-SEC-001] Verify the route-bound user actually has the expected role
+        // BEFORE entering the try/catch (which rewrites everything to 422). See
+        // CustomerService::assertTargetRole for the full rationale.
+        $this->assertTargetRole($chef);
+
         try {
             if (!in_array(EnumRole::CHEF, $this->blockRoles)) {
                 DB::transaction(function () use ($chef, $request) {
@@ -161,10 +166,29 @@ class ChefService
     }
 
     /**
+     * [WAVE5-SEC-001] Defense-in-depth: ensure the route-bound User is actually a
+     * Chef before any mutation. See CustomerService::assertTargetRole.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403
+     */
+    private function assertTargetRole(User $chef): void
+    {
+        if (! $chef->hasRole(EnumRole::CHEF)) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                403,
+                'Cannot mutate user outside expected role.'
+            );
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changePassword(UserChangePasswordRequest $request, User $chef): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($chef);
+
         try {
             if (!in_array(EnumRole::CHEF, $this->blockRoles)) {
                 $chef->password = Hash::make($request->password);
@@ -184,6 +208,9 @@ class ChefService
      */
     public function changeImage(ChangeImageRequest $request, User $chef): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($chef);
+
         try {
             if (!in_array(EnumRole::CHEF, $this->blockRoles)) {
                 if ($request->image) {
