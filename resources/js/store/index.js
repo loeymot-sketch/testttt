@@ -98,6 +98,7 @@ import { subscriber } from './modules/subscriber';
 import { kitchenDisplaySystemOrder } from './modules/kitchenDisplaySystemOrder';
 import { orderStatusScreenOrder } from './modules/orderStatusScreenOrder';
 import { kioskMachine } from './modules/kioskMachine';
+import { deliveryPlatform } from './modules/deliveryPlatform';
 import { kioskCart } from './modules/kioskCart';
 import { kioskMenu } from './modules/kioskMenu';
 import { kioskSettings } from './modules/kioskSettings';
@@ -209,6 +210,7 @@ export default new createStore({
         kitchenDisplaySystemOrder,
         orderStatusScreenOrder,
         kioskMachine,
+        deliveryPlatform,
         kioskCart,
         kioskMenu,
         kioskSettings,

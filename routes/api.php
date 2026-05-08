@@ -62,6 +62,8 @@ use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\RefreshTokenController;
 use App\Http\Controllers\Admin\ItemCategoryController;
+use App\Http\Controllers\Admin\DeliveryPlatformController;
+use App\Http\Controllers\Admin\DeliveryPlatformHealthController;
 use App\Http\Controllers\Admin\KioskMachineController;
 use App\Http\Controllers\Admin\MenuTemplateController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -447,6 +449,30 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::delete('/{kioskMachine}', [KioskMachineController::class, 'destroy']);
             Route::post('/logout/{kioskMachine}', [KioskMachineController::class, 'logout']);
         });
+    });
+
+    /*
+     * [PARALLEL-TRACK-1.4] Delivery Platform admin surface.
+     *
+     * Mounted directly under /api/admin (not under /api/admin/setting)
+     * because the data model is its own first-class resource: a
+     * delivery_platforms row is per-branch and edited from a dedicated
+     * page in the admin UI, not from the generic settings tabs.
+     *
+     * Permission gate is `permission:settings` (same as kiosk-machine
+     * + setting/* surfaces) — see DeliveryPlatformController for the
+     * per-action middleware mapping. The reveal() endpoint enforces
+     * an additional Admin-role check inside the controller.
+     */
+    Route::prefix('delivery-platforms')->name('delivery-platforms.')->group(function () {
+        Route::get('/', [DeliveryPlatformController::class, 'index']);
+        Route::get('/{id}', [DeliveryPlatformController::class, 'show'])->whereNumber('id');
+        Route::match(['put', 'patch'], '/{id}', [DeliveryPlatformController::class, 'update'])->whereNumber('id');
+        Route::post('/{id}/toggle', [DeliveryPlatformController::class, 'toggleEnabled'])->whereNumber('id');
+        Route::post('/{id}/reveal', [DeliveryPlatformController::class, 'reveal'])->whereNumber('id');
+        Route::get('/{id}/webhook-url', [DeliveryPlatformController::class, 'webhookUrl'])->whereNumber('id');
+        Route::get('/{id}/health', [DeliveryPlatformHealthController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/test-signature', [DeliveryPlatformHealthController::class, 'testSignature'])->whereNumber('id');
     });
 
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
