@@ -48,21 +48,57 @@ return new class extends Migration {
             $this->dropIndex(self::OLD_INDEX);
         }
 
-        // [iter3 advisor-required guard 2026-05-08] Dirty data cleanup.
+        // [iter6 owner-decision Option B 2026-05-08] Archive-then-delete safe pattern.
         //
         // Si l'exploit double-rating a déjà été triggé en prod/staging avant
         // que cette migration s'applique, plusieurs rows existent pour le même
-        // order_id (ex : 1 row order_type=Order + 1 row order_type=FrontendOrder).
-        // Créer un index unique sur order_id échouerait avec :
+        // order_id. Créer un index unique sur order_id échouerait avec :
         //   "Integrity constraint violation: 1062 Duplicate entry"
         //
-        // On garde la 1ère row historique (MIN(id)) qui correspond
-        // chronologiquement au 1er feedback légitime du customer ;
-        // les doubles spammés via discriminator-swap sont supprimés.
+        // RÉPONSE OWNER ITER6 = Option B (archive recoverable, pas DELETE direct) :
+        //  1) Créer une table archive `order_ratings_pre_migration_archive`
+        //     avec exactement la même structure (CREATE TABLE LIKE).
+        //  2) Copier les rows qui SERONT supprimées (= doublons non-MIN(id))
+        //     dedans avec INSERT INTO ... SELECT ... pour traçabilité.
+        //  3) Puis seulement DELETE de la table principale.
         //
-        // Cross-driver SQLite + MySQL :
-        //  - SQLite supporte la sub-query corrélée GROUP BY MIN(id)
-        //  - MySQL idem (5.7+ et 8.x)
+        // Bénéfice owner : si un client se plaint plus tard d'avoir perdu un
+        // avis légitime double-saisi, on peut le récupérer via :
+        //   SELECT * FROM order_ratings_pre_migration_archive WHERE order_id = ?
+        //
+        // Cross-driver SQLite (tests) + MySQL (prod) :
+        //  - SQLite supporte CREATE TABLE archive AS SELECT * FROM source WHERE 1=0
+        //  - MySQL supporte CREATE TABLE archive LIKE source
+
+        $driver = Schema::getConnection()->getDriverName();
+
+        // 2.1 — Créer table archive (idempotent : drop si existe déjà)
+        Schema::dropIfExists('order_ratings_pre_migration_archive');
+
+        if ($driver === 'sqlite') {
+            DB::statement(
+                'CREATE TABLE order_ratings_pre_migration_archive AS '
+                . 'SELECT * FROM ' . self::TABLE . ' WHERE 1=0'
+            );
+        } else {
+            DB::statement(
+                'CREATE TABLE order_ratings_pre_migration_archive '
+                . 'LIKE ' . self::TABLE
+            );
+        }
+
+        // 2.2 — Copier les rows à supprimer dans archive
+        DB::statement(
+            'INSERT INTO order_ratings_pre_migration_archive '
+            . 'SELECT * FROM ' . self::TABLE . ' '
+            . 'WHERE id NOT IN ('
+            .   'SELECT keep_id FROM ('
+            .     'SELECT MIN(id) AS keep_id FROM ' . self::TABLE . ' GROUP BY order_id'
+            .   ') AS keepers'
+            . ')'
+        );
+
+        // 2.3 — Supprimer les doublons (déjà archivés ci-dessus)
         DB::statement(
             'DELETE FROM ' . self::TABLE . ' '
             . 'WHERE id NOT IN ('
