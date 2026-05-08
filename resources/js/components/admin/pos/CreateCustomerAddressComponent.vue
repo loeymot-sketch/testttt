@@ -108,7 +108,6 @@
 </template>
 <script>
 import labelEnum from "../../../enums/modules/labelEnum";
-import SmModalCreateComponent from "../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../components/LoadingComponent";
 import MapComponent from "../components/MapComponent";
 import appService from "../../../services/appService";
@@ -116,7 +115,7 @@ import alertService from "../../../services/alertService";
 
 export default {
     name: "CreateCustomerAddressComponent",
-    components: { SmModalCreateComponent, LoadingComponent, MapComponent },
+    components: { LoadingComponent, MapComponent },
     props: {
         props: Object,
     },
