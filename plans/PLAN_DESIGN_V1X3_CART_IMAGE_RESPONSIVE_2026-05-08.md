@@ -83,4 +83,6 @@ Cart owner-frozen — gate explicit requis. Decision owner-required A/B/C bloqua
 
 ## §8 — Status
 
-[ ] Pending gate + decision · [ ] Gate opened · [ ] Executed
+[x] Pending gate + decision · [x] Gate opened (owner explicit "execute tout les plan" 2026-05-08) · [x] **Executed — Option A safe** (commit `7adeaaa9c` `clamp(64px, 4.7vw, 96px)`)
+
+> **Note orientation (V1x-3 footnote)** : Baseline 64px portrait 1080×1920 only ; landscape 1920×1080 → ~90px. Kiosk borne deployment doctrine = portrait. Si déploiement landscape envisagé, re-validation visuelle requise.

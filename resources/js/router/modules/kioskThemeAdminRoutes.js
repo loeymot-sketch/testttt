@@ -7,8 +7,12 @@
  *
  * Path mounted : /admin/kiosk-themes
  * Component    : ./components/admin/kioskTheme/KioskThemeManagerPage.vue
+ *
+ * [Wave-B B2 2026-05-08] Lazy-loaded via webpack chunk to keep main bundle
+ * lean — admin pages aren't on the kiosk hot path.
  */
-import KioskThemeManagerPage from "../../components/admin/kioskTheme/KioskThemeManagerPage.vue";
+const KioskThemeManagerPage = () =>
+    import(/* webpackChunkName: "admin-kiosk-themes" */ "../../components/admin/kioskTheme/KioskThemeManagerPage.vue");
 
 export default [
     {

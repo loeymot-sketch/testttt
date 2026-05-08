@@ -106,4 +106,4 @@ V1.x+1 si owner valide ROI a11y.
 
 ## §9 — Status
 
-[ ] Pending gate + decision · [ ] Gate opened · [ ] Executed
+[x] Pending gate + decision · [x] Gate opened (owner explicit "execute tout les plan" 2026-05-08) · [x] **Executed — Decision B extensive** (commit `7adeaaa9c` — 3 templates `:title` + `:aria-label` sur `.kiosk-cart-item-name` + `.kiosk-cart-item-selections` + `.kiosk-cart-item-note`)
