@@ -636,16 +636,16 @@ export default {
 .kiosk-pay-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 32px 20px;
+  gap: var(--kiosk-space-5);
+  padding: var(--kiosk-space-6) var(--kiosk-space-8) var(--kiosk-space-5);
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
   flex-shrink: 0;
 }
 
 .kiosk-pay-back {
-  width: 52px;
-  height: 52px;
+  width: 52px; /* [V1x-1] keeps px — no token at this scale */
+  height: 52px; /* [V1x-1] keeps px — no token at this scale */
   border-radius: 14px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-bg);
@@ -667,7 +667,7 @@ export default {
   font-size: 26px;
   font-weight: 800;
   color: var(--kiosk-text);
-  margin: 0 0 4px;
+  margin: 0 0 var(--kiosk-space-1);
 }
 
 .kiosk-pay-total-label {
@@ -682,7 +682,7 @@ export default {
 .kiosk-pay-methods-outer {
   flex: 1;
   overflow-y: auto;
-  padding: 28px 32px;
+  padding: var(--kiosk-space-7) var(--kiosk-space-8);
   scrollbar-width: none;
   display: flex;
   justify-content: center;
@@ -694,7 +694,7 @@ export default {
 .kiosk-pay-methods {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 20px;
+  gap: var(--kiosk-space-5);
   width: 100%;
   max-width: 1000px;
   align-content: start;
@@ -703,9 +703,9 @@ export default {
 .kiosk-pay-method {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 28px;
-  min-height: 120px;
+  gap: var(--kiosk-space-5);
+  padding: var(--kiosk-space-6) var(--kiosk-space-7);
+  min-height: 120px; /* [V1x-1] keeps px — no token at this scale */
   background: var(--kiosk-bg);
   border-radius: 20px;
   border: 2px solid var(--kiosk-border);
@@ -724,8 +724,8 @@ export default {
 }
 
 .kiosk-pay-method-icon {
-  width: 72px;
-  height: 72px;
+  width: 72px; /* [V1x-1] keeps px — no token at this scale */
+  height: 72px; /* [V1x-1] keeps px — no token at this scale */
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -746,7 +746,7 @@ export default {
   font-size: 22px;
   font-weight: 700;
   color: var(--kiosk-text);
-  margin: 0 0 4px;
+  margin: 0 0 var(--kiosk-space-1);
 }
 
 .kiosk-pay-method-info p {
@@ -756,8 +756,8 @@ export default {
 }
 
 .kiosk-pay-method-check {
-  width: 36px;
-  height: 36px;
+  width: 36px; /* [V1x-1] keeps px — no token at this scale */
+  height: 36px; /* [V1x-1] keeps px — no token at this scale */
   border-radius: 50%;
   background: var(--kiosk-primary);
   display: flex;
@@ -778,14 +778,14 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  padding: 40px;
+  gap: var(--kiosk-space-6);
+  padding: var(--kiosk-space-10);
   text-align: center;
 }
 
 .kiosk-pay-processing-ring {
-  width: 120px;
-  height: 120px;
+  width: 120px; /* [V1x-1] keeps px — no token at this scale */
+  height: 120px; /* [V1x-1] keeps px — no token at this scale */
   border-radius: 50%;
   border: 4px solid var(--kiosk-primary-soft);
   display: flex;
@@ -797,8 +797,8 @@ export default {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .kiosk-pay-processing-ring-inner {
-  width: 96px;
-  height: 96px;
+  width: var(--kiosk-space-24);
+  height: var(--kiosk-space-24);
   border-radius: 50%;
   background: var(--kiosk-primary-soft);
   border: 4px solid var(--kiosk-primary);
@@ -824,16 +824,16 @@ export default {
   background: var(--kiosk-primary-soft);
   border: 1px solid var(--kiosk-primary);
   color: var(--kiosk-error);
-  padding: 14px 20px;
+  padding: 14px var(--kiosk-space-5); /* [V1x-1] 14px keeps px — no token at this scale */
   border-radius: 12px;
   font-size: 15px;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--kiosk-space-2);
 }
 
 /* Confirmer — largeur max centrée (borne) */
 .kiosk-pay-confirm {
-  padding: 20px 32px 32px;
+  padding: var(--kiosk-space-5) var(--kiosk-space-8) var(--kiosk-space-8);
   flex-shrink: 0;
 }
 
@@ -845,10 +845,10 @@ export default {
 
 .kiosk-btn-confirm {
   width: 100%;
-  max-width: 480px;
-  min-height: 80px;
+  max-width: 480px; /* [V1x-1] keeps px — no token at this scale */
+  min-height: var(--kiosk-space-20);
   height: auto;
-  padding: 20px 32px;
+  padding: var(--kiosk-space-5) var(--kiosk-space-8);
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
@@ -859,7 +859,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--kiosk-space-4);
   box-shadow: var(--kiosk-shadow-cta);
   transition: all 0.15s ease;
 }
@@ -888,7 +888,7 @@ export default {
 }
 .kiosk-tpe-card-anim {
   position: relative;
-  width: 160px; height: 160px;
+  width: 160px; height: 160px; /* [V1x-1] keeps px — no token at this scale */
   display: flex; align-items: center; justify-content: center;
 }
 .kiosk-tpe-ring {
@@ -907,7 +907,7 @@ export default {
   background: rgba(255,255,255,0.06);
   border: 2px solid rgba(255,255,255,0.15);
   border-radius: 50%;
-  width: 100px; height: 100px;
+  width: 100px; height: 100px; /* [V1x-1] keeps px — no token at this scale */
   display: flex; align-items: center; justify-content: center;
 }
 .kiosk-tpe-title {
@@ -917,7 +917,7 @@ export default {
   font-size: 1rem; color: rgba(255,255,255,0.5); margin: 0; max-width: 340px;
 }
 .kiosk-tpe-spinner {
-  width: 64px; height: 64px;
+  width: var(--kiosk-space-16); height: var(--kiosk-space-16);
   border: 5px solid rgba(255,255,255,0.1);
   border-top-color: var(--kiosk-primary);
   border-radius: 50%;
@@ -926,8 +926,8 @@ export default {
 @keyframes tpe-spin { to { transform: rotate(360deg); } }
 
 .kiosk-tpe-cancel {
-  margin-top: 8px;
-  padding: 14px 40px;
+  margin-top: var(--kiosk-space-2);
+  padding: 14px var(--kiosk-space-10); /* [V1x-1] 14px keeps px — no token at this scale */
   background: rgba(255,255,255,0.08);
   border: 1.5px solid rgba(255,255,255,0.2);
   border-radius: 14px;
@@ -950,16 +950,16 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin: 12px auto 18px;
-  max-width: 680px;
-  padding: 0 16px;
+  gap: 10px; /* [V1x-1] keeps px — no token at this scale */
+  margin: var(--kiosk-space-3) auto 18px; /* [V1x-1] 18px keeps px — no token at this scale */
+  max-width: 680px; /* [V1x-1] keeps px — no token at this scale */
+  padding: 0 var(--kiosk-space-4);
 }
 
 .kiosk-pay-security-text {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 6px; /* [V1x-1] keeps px — no token at this scale */
   font-size: 14px;
   color: var(--kiosk-text-muted, #5A5A5A);
   font-weight: 500;
@@ -968,7 +968,7 @@ export default {
 .kiosk-pay-card-logos {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--kiosk-space-3);
   list-style: none;
   padding: 0;
   margin: 0;
@@ -980,9 +980,9 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 56px;
-  height: 32px;
-  padding: 0 10px;
+  min-width: var(--kiosk-space-14);
+  height: var(--kiosk-space-8);
+  padding: 0 10px; /* [V1x-1] keeps px — no token at this scale */
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -1020,15 +1020,15 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 200;
-  padding: 24px;
+  padding: var(--kiosk-space-6);
 }
 
 .kiosk-pay-error-modal {
   background: var(--kiosk-surface, #fff);
   border: 1.5px solid var(--kiosk-border, #EEE6D9);
   border-radius: 20px;
-  padding: 32px;
-  max-width: 480px;
+  padding: var(--kiosk-space-8);
+  max-width: 480px; /* [V1x-1] keeps px — no token at this scale */
   width: 100%;
   text-align: center;
   box-shadow: var(--kiosk-shadow-modal, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
@@ -1038,28 +1038,28 @@ export default {
   font-size: 64px;
   line-height: 1;
   color: var(--kiosk-error, #C21E2F);
-  margin-bottom: 16px;
+  margin-bottom: var(--kiosk-space-4);
 }
 
 .kiosk-pay-error-modal-title {
   font-size: 28px;
   font-weight: 800;
   color: var(--kiosk-text, #1A1A1A);
-  margin: 0 0 12px;
+  margin: 0 0 var(--kiosk-space-3);
 }
 
 .kiosk-pay-error-modal-message {
   font-size: 16px;
   color: var(--kiosk-error, #C21E2F);
   font-weight: 500;
-  margin: 0 0 12px;
+  margin: 0 0 var(--kiosk-space-3);
   line-height: 1.5;
 }
 
 .kiosk-pay-error-modal-suggestion {
   font-size: 15px;
   color: var(--kiosk-text-muted, #5A5A5A);
-  margin: 0 0 24px;
+  margin: 0 0 var(--kiosk-space-6);
   line-height: 1.5;
 }
 
@@ -1073,7 +1073,7 @@ export default {
   color: var(--kiosk-text-on-red, #fff);
   border: none;
   border-radius: 14px;
-  padding: 16px 40px;
+  padding: var(--kiosk-space-4) var(--kiosk-space-10);
   font-size: 18px;
   font-weight: 800;
   cursor: pointer;

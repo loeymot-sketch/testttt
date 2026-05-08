@@ -132,7 +132,12 @@
           <!-- Infos + bouton édition -->
           <div class="kiosk-cart-item-info">
             <div class="kiosk-cart-item-name-row">
-              <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
+              <h3
+                class="kiosk-cart-item-name"
+                :title="displayCartItemName(item)"
+                :aria-label="displayCartItemName(item)"
+                :data-testid="`kiosk-cart-item-name-${idx}`"
+              >{{ displayCartItemName(item) }}</h3>
               <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
               <button
                 v-if="item.item_id"
@@ -147,9 +152,12 @@
               </button>
             </div>
             <!-- [GAP-22-2] Afficher les sélections wizard (variations, extras) -->
+            <!-- [V1x-6 Option B] :title (QA desktop tooltip) + :aria-label (screen reader) ensure full text reachable despite CSS ellipsis. -->
             <div
               v-if="getItemSelectionSummary(item)"
               class="kiosk-cart-item-selections"
+              :title="getItemSelectionSummary(item)"
+              :aria-label="getItemSelectionSummary(item)"
               :data-testid="`kiosk-cart-item-options-${idx}`"
             >
               {{ getItemSelectionSummary(item) }}
@@ -157,6 +165,8 @@
             <p
               v-if="item.instruction"
               class="kiosk-cart-item-note"
+              :title="displayCartInstruction(item)"
+              :aria-label="displayCartInstruction(item)"
               :data-testid="`kiosk-cart-item-note-${idx}`"
             >{{ displayCartInstruction(item) }}</p>
             <span class="kiosk-cart-item-unit">
@@ -523,14 +533,14 @@ export default {
 
 .kiosk-order-type-bar {
   display: flex;
-  gap: 12px;
-  padding: 16px 28px 0;
+  gap: var(--kiosk-space-3);
+  padding: var(--kiosk-space-4) var(--kiosk-space-7) 0;
   flex-shrink: 0;
 }
 
 .kiosk-order-type-btn {
   flex: 1;
-  height: 64px;
+  height: var(--kiosk-space-16);
   border-radius: 14px;
   border: 2px solid var(--kiosk-border);
   background: var(--kiosk-surface);
@@ -539,7 +549,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--kiosk-space-1);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -562,7 +572,7 @@ export default {
 .kiosk-cart-item-selections {
   font-size: 11px;
   color: var(--kiosk-text-mute);
-  margin: 2px 0 4px;
+  margin: 2px 0 var(--kiosk-space-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -572,16 +582,16 @@ export default {
 .kiosk-cart-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 28px 16px;
+  gap: var(--kiosk-space-4);
+  padding: var(--kiosk-space-5) var(--kiosk-space-7) var(--kiosk-space-4);
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
   flex-shrink: 0;
 }
 
 .kiosk-cart-back {
-  width: 44px;
-  height: 44px;
+  width: var(--kiosk-space-11);
+  height: var(--kiosk-space-11);
   border-radius: 12px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-surface);
@@ -612,7 +622,7 @@ export default {
 }
 
 .kiosk-cart-clear {
-  padding: 8px 16px;
+  padding: var(--kiosk-space-2) var(--kiosk-space-4);
   border-radius: 10px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-surface);
@@ -631,8 +641,8 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 40px;
+  gap: var(--kiosk-space-4);
+  padding: var(--kiosk-space-10);
   text-align: center;
 }
 
@@ -663,26 +673,26 @@ export default {
 
 .kiosk-cart-items {
   flex: 1;
-  padding: 16px 24px;
+  padding: var(--kiosk-space-4) var(--kiosk-space-6);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 10px; /* [V1x-1] keeps px — no token at this scale */
 }
 
 .kiosk-cart-item {
   background: var(--kiosk-surface);
   border-radius: 14px;
   border: 1.5px solid var(--kiosk-border);
-  padding: 14px;
+  padding: 14px; /* [V1x-1] keeps px — no token at this scale */
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 14px; /* [V1x-1] keeps px — no token at this scale */
   box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-cart-item-img {
-  width: 64px;
-  height: 64px;
+  width: clamp(64px, 4.7vw, 96px);    /* [V1x-3 Option A] responsive 4K — preserve baseline 64px */
+  height: clamp(64px, 4.7vw, 96px);
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
@@ -698,7 +708,7 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-cart-item-emoji { font-size: 32px; }
+.kiosk-cart-item-emoji { font-size: clamp(32px, 2.4vw, 48px); /* [V1x-3 Option A] proportional emoji */ }
 
 .kiosk-cart-item-info { flex: 1; min-width: 0; }
 
@@ -714,7 +724,7 @@ export default {
   border: 1px solid var(--kiosk-border);
   border-radius: 6px;
   color: var(--kiosk-text-mute);
-  width: 26px; height: 26px;
+  width: 26px; height: 26px; /* [V1x-1] keeps px — no token at this scale */
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -754,7 +764,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: var(--kiosk-space-2);
   flex-shrink: 0;
 }
 
@@ -769,8 +779,8 @@ export default {
 }
 
 .kiosk-qty-btn {
-  width: 38px;
-  height: 38px;
+  width: 38px; /* [V1x-1] keeps px — no token at this scale */
+  height: 38px; /* [V1x-1] keeps px — no token at this scale */
   border: none;
   background: transparent;
   color: var(--kiosk-text);
@@ -787,7 +797,7 @@ export default {
 .kiosk-qty-btn.minus:active { color: var(--kiosk-primary); }
 
 .kiosk-qty-num {
-  min-width: 32px;
+  min-width: var(--kiosk-space-8);
   text-align: center;
   font-size: 16px;
   font-weight: 700;
@@ -801,14 +811,14 @@ export default {
 }
 
 .kiosk-cart-summary {
-  margin: 0 24px;
+  margin: 0 var(--kiosk-space-6);
   background: var(--kiosk-surface);
   border-radius: 14px;
   border: 1.5px solid var(--kiosk-border);
-  padding: 16px 20px;
+  padding: var(--kiosk-space-4) var(--kiosk-space-5);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 10px; /* [V1x-1] keeps px — no token at this scale */
 }
 
 .kiosk-cart-summary-row {
@@ -823,9 +833,9 @@ export default {
   font-size: 18px;
   font-weight: 700;
   color: var(--kiosk-text);
-  padding-top: 10px;
+  padding-top: 10px; /* [V1x-1] keeps px — no token at this scale */
   border-top: 1px solid var(--kiosk-border);
-  margin-top: 4px;
+  margin-top: var(--kiosk-space-1);
 }
 
 .kiosk-cart-summary-row.loyalty { color: var(--kiosk-text-muted); }
@@ -839,38 +849,38 @@ export default {
 }
 
 .kiosk-cart-actions {
-  padding: 16px 24px 28px;
+  padding: var(--kiosk-space-4) var(--kiosk-space-6) var(--kiosk-space-7);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 10px; /* [V1x-1] keeps px — no token at this scale */
 }
 
 /* Kiosk Phase 9.1.6 — Section code promo panier. */
 .kiosk-cart-promo {
-  padding: 12px 24px 0;
+  padding: var(--kiosk-space-3) var(--kiosk-space-6) 0;
 }
 .kiosk-cart-promo-label {
   display: block;
   font-size: 13px;
   font-weight: 600;
   color: var(--kiosk-text-muted, #5A5A5A);
-  margin-bottom: 6px;
+  margin-bottom: 6px; /* [V1x-1] keeps px — no token at this scale */
 }
 .kiosk-cart-promo-row {
   display: flex;
-  gap: 8px;
+  gap: var(--kiosk-space-2);
 }
 .kiosk-cart-promo-input {
   flex: 1;
-  height: 48px;
-  padding: 0 14px;
+  height: var(--kiosk-space-12);
+  padding: 0 14px; /* [V1x-1] 14px keeps px — no token at this scale */
   border-radius: 10px;
   border: 1.5px solid #E5E5E5;
   background: #fff;
   font-size: 15px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  min-height: 44px;
+  min-height: var(--kiosk-space-11);
 }
 .kiosk-cart-promo-input:focus {
   border-color: var(--kiosk-primary, #E8001C);
@@ -880,8 +890,8 @@ export default {
   border-color: var(--kiosk-error, #C21E2F);
 }
 .kiosk-cart-promo-apply {
-  height: 48px;
-  padding: 0 18px;
+  height: var(--kiosk-space-12);
+  padding: 0 18px; /* [V1x-1] 18px keeps px — no token at this scale */
   border-radius: 10px;
   border: none;
   background: var(--kiosk-primary, #E8001C);
@@ -889,7 +899,7 @@ export default {
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  min-height: 44px;
+  min-height: var(--kiosk-space-11);
 }
 .kiosk-cart-promo-apply:disabled {
   opacity: 0.5;
@@ -898,14 +908,14 @@ export default {
 .kiosk-cart-promo-error {
   color: var(--kiosk-error, #C21E2F);
   font-size: 13px;
-  margin: 6px 0 0;
+  margin: 6px 0 0; /* [V1x-1] 6px keeps px — no token at this scale */
   font-weight: 500;
 }
 .kiosk-cart-promo-applied {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 10px; /* [V1x-1] keeps px — no token at this scale */
+  padding: 10px 14px; /* [V1x-1] keeps px — no token at this scale */
   background: #E8F5EC;
   border: 1.5px solid var(--kiosk-success, #1B8A3A);
   border-radius: 10px;
@@ -934,7 +944,7 @@ export default {
 
 .kiosk-btn-loyalty {
   width: 100%;
-  height: 52px;
+  height: 52px; /* [V1x-1] keeps px — no token at this scale */
   background: rgba(255,215,0,0.08);
   border: 1.5px solid rgba(255,215,0,0.3);
   border-radius: 12px;
@@ -945,9 +955,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 var(--kiosk-space-4);
   transition: background 0.2s;
-  margin-bottom: 4px;
+  margin-bottom: var(--kiosk-space-1);
 }
 .kiosk-btn-loyalty:active { background: rgba(255,215,0,0.15); }
 .kiosk-btn-loyalty-star { font-size: 18px; }
@@ -955,7 +965,7 @@ export default {
 
 .kiosk-btn-primary {
   width: 100%;
-  height: 60px;
+  height: 60px; /* [V1x-1] keeps px — no token at this scale */
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
@@ -966,7 +976,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 var(--kiosk-space-6);
   box-shadow: var(--kiosk-shadow-cta);
   transition: all 0.15s ease;
 }
@@ -977,13 +987,13 @@ export default {
   font-size: 18px;
   font-weight: 800;
   background: rgba(255,255,255,0.2);
-  padding: 4px 14px;
+  padding: var(--kiosk-space-1) 14px; /* [V1x-1] 14px keeps px — no token at this scale */
   border-radius: 10px;
 }
 
 .kiosk-btn-secondary {
   width: 100%;
-  height: 52px;
+  height: 52px; /* [V1x-1] keeps px — no token at this scale */
   background: var(--kiosk-surface);
   color: var(--kiosk-text-muted);
   border: 1.5px solid var(--kiosk-border);
@@ -1007,7 +1017,7 @@ export default {
   border: 1.5px solid var(--kiosk-border);
   border-radius: 20px;
   padding: 2rem;
-  width: 340px;
+  width: 340px; /* [V1x-1] keeps px — no token at this scale */
   text-align: center;
   box-shadow: var(--kiosk-shadow-modal);
 }

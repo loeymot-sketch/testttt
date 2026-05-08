@@ -152,4 +152,44 @@ describe('KioskCartComponent restyle', () => {
         expect(wrapper.find('[data-testid="kiosk-cart-loyalty-btn"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="kiosk-cart-loyalty-discount"]').text()).toContain('-');
     });
+
+    // [V1x-6 Option B] aria-label/title cover full untruncated text on name + selections + note.
+    it('cart item exposes full name/selections/note text via aria-label and title (Option B)', () => {
+        const items = [
+            {
+                item_id: 7,
+                name: 'Big Burger Royale Deluxe Extra Long Title',
+                quantity: 1,
+                convert_price: 12,
+                total: 12,
+                image: null,
+                item_variations: [{ name: 'XL' }, { name: 'Sauce BBQ' }],
+                item_extras: [{ name: 'Bacon' }, { name: 'Cheese' }],
+                item_variation_total: 0,
+                item_extra_total: 0,
+                instruction: 'Sans oignon, bien cuit',
+            },
+        ];
+        const store = makeStore({ items, subtotal: 12, total: 12 });
+        const wrapper = mount(KioskCartComponent, mountOpts(store));
+
+        const name = wrapper.find('[data-testid="kiosk-cart-item-name-0"]');
+        expect(name.exists()).toBe(true);
+        expect(name.attributes('aria-label')).toContain('Big Burger Royale');
+        expect(name.attributes('title')).toBe(name.attributes('aria-label'));
+
+        const sel = wrapper.find('[data-testid="kiosk-cart-item-options-0"]');
+        expect(sel.exists()).toBe(true);
+        const selAria = sel.attributes('aria-label');
+        expect(selAria).toBeTruthy();
+        // Selection summary uses ' · ' separator, includes variations and extras.
+        expect(selAria).toContain('XL');
+        expect(selAria).toContain('Bacon');
+        expect(sel.attributes('title')).toBe(selAria);
+
+        const note = wrapper.find('[data-testid="kiosk-cart-item-note-0"]');
+        expect(note.exists()).toBe(true);
+        expect(note.attributes('aria-label')).toContain('oignon');
+        expect(note.attributes('title')).toBe(note.attributes('aria-label'));
+    });
 });

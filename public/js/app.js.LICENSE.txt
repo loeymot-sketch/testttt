@@ -11,6 +11,12 @@
   */
 
 /*!
+  * vue-draggable-next v2.3.0
+  * (c) 2025 Anish George
+  * @license MIT
+  */
+
+/*!
  * ApexCharts v5.3.6
  * (c) 2018-2025 ApexCharts
  */

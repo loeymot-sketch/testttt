@@ -109,8 +109,11 @@
   --kiosk-space-4:  16px;
   --kiosk-space-5:  20px;
   --kiosk-space-6:  24px;
+  /* [V1x-1 — 2026-05-08] Tokens introduits pour migration Cart+Payment scoped CSS */
+  --kiosk-space-7:  28px;   /* base-4 scale extension — used in cart/payment headers */
   --kiosk-space-8:  32px;
   --kiosk-space-10: 40px;
+  --kiosk-space-11: 44px;   /* WCAG 2.1.1 touch target — used in cart/payment buttons */
   --kiosk-space-12: 48px;
   --kiosk-space-14: 56px;
   --kiosk-space-16: 64px;
