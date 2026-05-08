@@ -38,9 +38,17 @@ class HealthController extends Controller
 
     public function ready(): JsonResponse
     {
+        // [AUDIT-F-015] Production blocker safety net for the outbox pattern.
+        // queue_worker probe alerts when too many domain_events rows are stale
+        // (worker likely down). broadcast_config probe alerts when prod is
+        // misconfigured (sync queue or null/log broadcast driver). Both close
+        // the silent-failure trap documented in
+        // plans/PLAN_AUDIT_F015_QUEUE_CONFIG_PROD_2026-05-07.md.
         $checks = [
             'db' => $this->checkDb(),
             'redis' => $this->checkRedis(),
+            'queue_worker' => $this->checkQueueWorker(),
+            'broadcast_config' => $this->checkBroadcastConfig(),
         ];
 
         $allOk = collect($checks)->every(fn ($c) => $c['status'] === 'ok');
@@ -116,5 +124,91 @@ class HealthController extends Controller
         }
 
         return ['status' => 'ok', 'driver' => $driver];
+    }
+
+    /**
+     * [AUDIT-F-015] Detect a stalled outbox pipeline.
+     *
+     * If more than 10 `domain_events` rows older than 30s are still
+     * `dispatched_at = NULL`, the queue worker is most likely down or
+     * lagging far behind. Surfacing this at /ready lets supervisors and
+     * load-balancer probes pull the node out of rotation BEFORE the
+     * 30s polling fallback masks the silent failure to operators.
+     *
+     * Stays cheap: a single indexed COUNT() against `idx_pending`.
+     * Threshold is intentionally NOT configurable here — the operator
+     * tuneable lives on the `foodking:outbox:monitor` command (--threshold).
+     * /ready is a binary "rotate me out" probe, not a tuning surface.
+     */
+    private function checkQueueWorker(): array
+    {
+        try {
+            $staleCount = (int) DB::table('domain_events')
+                ->where('created_at', '<', now()->subSeconds(30))
+                ->whereNull('dispatched_at')
+                ->count();
+
+            if ($staleCount > 10) {
+                return [
+                    'status' => 'error',
+                    'stale_count' => $staleCount,
+                    'message' => "Queue worker appears down or lagging: {$staleCount} stale outbox events (>10).",
+                ];
+            }
+
+            return ['status' => 'ok', 'stale_count' => $staleCount];
+        } catch (\Throwable $e) {
+            // [AUDIT-F-015] If the probe itself crashes (e.g. missing table
+            // during a migration window), we DO NOT want /ready to flap to
+            // 503 — that would block deployments. Degrade silently here:
+            // the operator will see the error in subsystems but the gate
+            // stays open. Aligned with checkDb / checkRedis convention.
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * [AUDIT-F-015] Detect production misconfiguration of the broadcast
+     * pipeline. After the outbox refactor, `QUEUE_CONNECTION=sync` is
+     * incompatible with `DispatchDomainEventsJob` (events still dispatch
+     * but the API request thread blocks on broadcast). `BROADCAST_DRIVER`
+     * = null/log silently disables realtime entirely.
+     *
+     * Gate runs in production ONLY. Outside production (local dev, CI,
+     * staging without realtime) sync + log are valid configurations and
+     * must not flip /ready to 503.
+     */
+    private function checkBroadcastConfig(): array
+    {
+        $queue = config('queue.default');
+        $broadcast = config('broadcasting.default');
+
+        if (! app()->environment('production')) {
+            return ['status' => 'ok', 'queue' => $queue, 'broadcast' => $broadcast];
+        }
+
+        if ($queue === 'sync') {
+            return [
+                'status' => 'error',
+                'queue' => $queue,
+                'broadcast' => $broadcast,
+                'message' => 'QUEUE_CONNECTION=sync is incompatible with the outbox pattern in production. '
+                    . 'Set QUEUE_CONNECTION=redis (or database) and run `php artisan queue:work --queue=high` '
+                    . 'as a daemon. See docs/REALTIME_SETUP.md.',
+            ];
+        }
+
+        if (in_array($broadcast, [null, 'null', 'log'], true)) {
+            return [
+                'status' => 'error',
+                'queue' => $queue,
+                'broadcast' => $broadcast ?? 'null',
+                'message' => "BROADCAST_DRIVER={$broadcast} disables realtime broadcasts in production. "
+                    . 'Set BROADCAST_DRIVER=pusher (or compatible Soketi/Ably) and configure PUSHER_* env. '
+                    . 'See docs/REALTIME_SETUP.md.',
+            ];
+        }
+
+        return ['status' => 'ok', 'queue' => $queue, 'broadcast' => $broadcast];
     }
 }

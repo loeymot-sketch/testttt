@@ -41,6 +41,16 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [AUDIT-F-015] Outbox staleness alerter — complements rescue.
+        // Rescue re-queues stuck events; if the queue worker is down,
+        // rescue is silent. This monitor raises a Log::error + non-zero
+        // exit so supervisor/pager backends fire when the pipeline is
+        // degraded. See plans/PLAN_AUDIT_F015_QUEUE_CONFIG_PROD_2026-05-07.md.
+        $schedule->command('foodking:outbox:monitor --threshold=10')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()
