@@ -3,12 +3,17 @@ import { onEvents, sendAck } from '../../resources/js/services/eventContract.js'
 
 // [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
 //
-// Pins three invariants of the new sendAck() helper:
-//   1. it POSTs to /api/internal/pusher-ack with the snake_case payload
-//      shape that PusherAckController expects;
+// Pins four invariants of the sendAck() helper:
+//   1. it POSTs to RELATIVE `internal/pusher-ack` (resolved against
+//      axios.defaults.baseURL = '/api', cf. resources/js/app.js:56) with
+//      the snake_case payload shape that PusherAckController expects;
 //   2. it is a no-op without correlation_id (server cannot dedupe);
 //   3. it is wired from rawHandler so every successfully parsed envelope
-//      produces exactly one ack call, AFTER the user handler ran.
+//      produces exactly one ack call, AFTER the user handler ran;
+//   4. [A2 fix 2026-05-08] it MUST NOT prefix the URL with a leading `/api/`.
+//      Doing so produces `<API_URL>/api/api/internal/pusher-ack` 404 because
+//      axios concatenates baseURL `/api` with the leading-slash path,
+//      yielding the doubled prefix. Plan : ULTRA_PLAN_CORRECTION §A2.
 
 describe('eventContract — sendAck (SYN-2)', () => {
     let postSpy;
@@ -42,7 +47,13 @@ describe('eventContract — sendAck (SYN-2)', () => {
 
         expect(postSpy).toHaveBeenCalledTimes(1);
         const [url, body, options] = postSpy.mock.calls[0];
-        expect(url).toBe('/api/internal/pusher-ack');
+        // [A2 fix 2026-05-08] URL doit être RELATIVE — axios concatène avec
+        // baseURL `/api` (cf. resources/js/app.js:56) pour produire le path
+        // final `/api/internal/pusher-ack`. Préfixer par `/api/` casse tout :
+        // `/api` + `/api/internal/pusher-ack` → `/api/api/internal/pusher-ack` 404.
+        expect(url).toBe('internal/pusher-ack');
+        expect(url).not.toMatch(/^\/api\//);
+        expect(url.startsWith('/')).toBe(false);
         expect(body).toMatchObject({
             correlation_id: 'corr-123',
             branch_id: 7,
@@ -55,6 +66,28 @@ describe('eventContract — sendAck (SYN-2)', () => {
         expect(Number.isNaN(Date.parse(body.received_at))).toBe(false);
         // Timeout is enforced so a slow server cannot stall the UI.
         expect(options.timeout).toBe(3000);
+    });
+
+    it('[REGRESSION A2] does NOT use a leading `/api/` URL (axios baseURL doubling)', () => {
+        // Garde-fou explicite contre le bug pré-existant fixé le 2026-05-08.
+        // Si un jour quelqu'un re-introduit `/api/internal/pusher-ack`,
+        // axios produira `<baseURL>/api/api/internal/pusher-ack` 404,
+        // les ACK Pusher seront silently broken et la métrique
+        // dispatched-vs-ack'd sera mensonge. Ce test fail si bug re-introduit.
+        sendAck(
+            {
+                version: 1,
+                type: 'order.created',
+                correlation_id: 'corr-x',
+                branch_id: 1,
+                payload: {},
+            },
+            'private-branch.1',
+        );
+        const [url] = postSpy.mock.calls[0];
+        expect(url, 'sendAck doit utiliser une URL RELATIVE — pas /api/...').not.toMatch(
+            /^\/api\//,
+        );
     });
 
     it('is a no-op when correlation_id is missing', () => {

@@ -32,3 +32,8 @@ avis\ d\'expert\ .md
 # Splash reference clone — analyzed and integrated, not part of FoodKing codebase
 splash-partenaire-windows-borne-clone/
 borne-windows/
+
+# A7 — Media library temp uploads (CV1 cleanup 2026-05-08)
+# Ces fichiers sont des artifacts d'upload (Spatie Media Library)
+# qui peuvent être commités par accident lors d'un test de seed.
+storage/media-library/temp/

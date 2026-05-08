@@ -59,12 +59,17 @@ export function parseEvent(raw) {
 
 // [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
 // After every successfully parsed envelope we POST a single line to
-// /api/internal/pusher-ack so the server can compare dispatched-vs-ack'd
+// internal/pusher-ack so the server can compare dispatched-vs-ack'd
 // counts on a 5-minute sliding window. The call is fire-and-forget:
 //
 //  - no correlation_id → no ack possible (server cannot dedupe);
 //  - no axios → silently skipped (test envs without bootstrap);
 //  - any HTTP failure is swallowed (the handler must already have run).
+//
+// URL : RELATIVE (`internal/pusher-ack`), pas absolue (`/api/...`).
+// `axios.defaults.baseURL` est déjà `<API_URL>/api` (cf. resources/js/app.js:56),
+// donc préfixer par `/api/` produit `<API_URL>/api/api/...` → 404.
+// Bug pré-existant fixé par plan ULTRA_PLAN_CORRECTION §A2 (2026-05-08).
 //
 // Reads the snake_case fields straight off the raw envelope, NOT the
 // camelCase parsed object — keeps the wire format identical to the
@@ -77,7 +82,7 @@ export function sendAck(raw, channelName) {
         return;
     }
     try {
-        window.axios.post('/api/internal/pusher-ack', {
+        window.axios.post('internal/pusher-ack', {
             correlation_id:  raw.correlation_id,
             branch_id:       raw.branch_id ?? null,
             channel:         channelName || 'unknown',

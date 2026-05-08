@@ -15,6 +15,7 @@ use App\Services\Recommendation\Strategies\MlPlaceholderStrategy;
 use App\Services\Recommendation\Strategies\RuleBasedStrategy;
 use App\Services\Recommendation\UpsellRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -323,6 +324,47 @@ class UpsellRecommendationTest extends TestCase
     // =====================================================================
     //  Container binding via config
     // =====================================================================
+
+    // =====================================================================
+    //  A3 perf — N+1 regression guard (ultra-review 2026-05-08)
+    // =====================================================================
+
+    /**
+     * Measures the empirical query count for a typical burger-cart `recommend()`
+     * invocation, which is the hot path. Pre-A3 hoist : ~10-14 queries (4× pluck
+     * `item_branch_availability` + N× pluck `item_categories` per class).
+     * Post-A3 hoist : `branchAvailableItemIds` and `categoryIdsByClass`
+     * are loaded once at the top of `recommend()` and passed by value.
+     *
+     * We assert ≤ 8 to leave headroom for SQL drivers that issue extra
+     * SHOW/SET statements (MySQL prod) while still catching the regression
+     * if someone re-introduces a per-class pluck loop. SQLite `:memory:` (CI)
+     * typically reports ≤ 7.
+     */
+    public function test_recommend_burger_cart_query_count_under_threshold(): void
+    {
+        $cart = [
+            ['item_id' => $this->burger->id, 'quantity' => 1, 'price' => 9.50, 'category_id' => $this->catBurgers->id],
+        ];
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $strategy = app(RuleBasedStrategy::class);
+        $strategy->recommend($cart, $this->branch->id);
+
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $count = count($queries);
+        $this->assertLessThanOrEqual(
+            8,
+            $count,
+            "A3 N+1 regression: {$count} queries for burger cart recommend(). "
+            . "Expected ≤ 8 after hoisting branchAvailableItemIds + categoryIdsByClass. "
+            . "Queries: " . json_encode(array_map(fn ($q) => $q['query'], $queries), JSON_PRETTY_PRINT)
+        );
+    }
 
     public function test_container_binds_strategy_from_config(): void
     {

@@ -7,7 +7,8 @@
       :aria-pressed="isListening ? 'true' : 'false'"
       :disabled="!isSupported"
       type="button"
-      @click="toggle"
+      data-testid="kiosk-voice-button"
+      @click="onMicClick"
     >
       <span class="kiosk-voice-icon" aria-hidden="true">
         {{ isListening ? '🎤' : '🔊' }}
@@ -35,6 +36,12 @@
     >
       {{ unsupportedLabel }}
     </p>
+
+    <KioskMicConsentDialog
+      v-if="showConsent"
+      @confirm="onConsentGranted"
+      @cancel="onConsentDenied"
+    />
   </div>
 </template>
 
@@ -56,9 +63,12 @@
  * Voir plans/PLAN_DESIGN_V2_4_VOICE_ORDERING_2026-05-08.md.
  */
 import voiceService from '../../../services/kioskVoiceOrdering';
+import KioskMicConsentDialog from './KioskMicConsentDialog.vue';
 
 export default {
   name: 'KioskVoiceOrderingButton',
+
+  components: { KioskMicConsentDialog },
 
   props: {
     /**
@@ -83,6 +93,15 @@ export default {
       isListening: false,
       transcript: '',
       lastError: null,
+      // [A4 Privacy P2] Pre-flight consent state.
+      // `showConsent` toggles the modal dialog; `hasGrantedThisSession` is
+      // a SESSION-SCOPED flag stored in component state ONLY (no localStorage,
+      // no sessionStorage, no cookie). Rationale : tracking consent across
+      // kiosk sessions would imply a persistent identifier on a shared public
+      // device — that is exactly what RGPD forbids without explicit opt-in.
+      // Re-prompting on every kiosk session is the privacy-preserving default.
+      showConsent: false,
+      hasGrantedThisSession: false,
     };
   },
 
@@ -139,14 +158,62 @@ export default {
       return fallback;
     },
 
-    toggle() {
+    /**
+     * [A4 Privacy P2] Entry point for any user click on the mic button.
+     * - If the user is currently listening → stop (no consent needed to stop).
+     * - If consent was already granted in this session → start directly.
+     * - Otherwise → show pre-flight consent dialog. `start()` only fires
+     *   AFTER explicit confirm — see `onConsentGranted()`.
+     */
+    onMicClick() {
       if (!this.isSupported) return;
       if (this.isListening) {
         this.activeService.stop();
-      } else {
-        this.transcript = '';
-        this.activeService.start();
+        return;
       }
+      if (this.hasGrantedThisSession) {
+        this.startListening();
+      } else {
+        this.showConsent = true;
+      }
+    },
+
+    /**
+     * Legacy alias kept for backwards compatibility with any external caller
+     * still wiring `toggle()`. Internally now routes through `onMicClick`.
+     */
+    toggle() {
+      this.onMicClick();
+    },
+
+    /**
+     * Actually starts the underlying recognition service. Must NEVER be
+     * called directly from a click handler — always go through onMicClick →
+     * (consent path) → here. Direct call would bypass consent dialog.
+     */
+    startListening() {
+      if (!this.isSupported) return;
+      this.transcript = '';
+      this.activeService.start();
+    },
+
+    /**
+     * [A4 Privacy P2] User explicitly granted mic access for this session.
+     * Set the session-scoped flag, dismiss the dialog, then start listening
+     * on the next tick (let the dialog unmount cleanly first).
+     */
+    onConsentGranted() {
+      this.hasGrantedThisSession = true;
+      this.showConsent = false;
+      this.$nextTick(() => this.startListening());
+    },
+
+    /**
+     * [A4 Privacy P2] User explicitly denied (or dismissed via Esc/overlay).
+     * Just close the dialog — no `start()` call, no flag flip.
+     */
+    onConsentDenied() {
+      this.showConsent = false;
     },
 
     handleResult({ transcript, isFinal }) {

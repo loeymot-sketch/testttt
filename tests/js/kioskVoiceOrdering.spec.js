@@ -286,7 +286,7 @@ describe('KioskVoiceOrderingButton component', () => {
         expect(wrapper.find('[data-testid="kiosk-voice-unsupported"]').exists()).toBe(true);
     });
 
-    it('toggle déclenche start puis stop', async () => {
+    it('toggle déclenche start (après consent) puis stop', async () => {
         const svc = makeFakeService(true);
         const wrapper = mount(KioskVoiceOrderingButton, {
             props: { service: svc },
@@ -295,16 +295,127 @@ describe('KioskVoiceOrderingButton component', () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.vm.isSupported).toBe(true);
 
+        // [A4] 1er click → consent dialog s'affiche, pas de start direct.
         await wrapper.find('.kiosk-voice-button').trigger('click');
+        expect(svc.start).not.toHaveBeenCalled();
+        expect(wrapper.vm.showConsent).toBe(true);
+
+        // Confirme le consent → start() est appelé.
+        wrapper.vm.onConsentGranted();
+        await wrapper.vm.$nextTick();
         expect(svc.start).toHaveBeenCalledTimes(1);
+        expect(wrapper.vm.hasGrantedThisSession).toBe(true);
+        expect(wrapper.vm.showConsent).toBe(false);
 
         // Simuler "start" event reçu du service.
         svc.__emit('start');
         await wrapper.vm.$nextTick();
         expect(wrapper.vm.isListening).toBe(true);
 
+        // 2e click pendant écoute → stop (pas de re-prompt).
         await wrapper.find('.kiosk-voice-button').trigger('click');
         expect(svc.stop).toHaveBeenCalledTimes(1);
+    });
+
+    // [A4 Privacy P2] Pre-flight consent dialog tests
+    it('[A4] 1er click micro affiche le pre-flight consent dialog (no start)', async () => {
+        const svc = makeFakeService(true);
+        const wrapper = mount(KioskVoiceOrderingButton, {
+            props: { service: svc },
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.showConsent).toBe(false);
+        expect(wrapper.vm.hasGrantedThisSession).toBe(false);
+
+        await wrapper.find('[data-testid="kiosk-voice-button"]').trigger('click');
+        expect(wrapper.vm.showConsent).toBe(true);
+        expect(svc.start).not.toHaveBeenCalled();
+        expect(wrapper.find('[data-testid="kiosk-mic-consent-dialog"]').exists()).toBe(true);
+    });
+
+    it('[A4] Cancel consent → dialog fermé, pas de start, flag inchangé', async () => {
+        const svc = makeFakeService(true);
+        const wrapper = mount(KioskVoiceOrderingButton, {
+            props: { service: svc },
+        });
+        await wrapper.vm.$nextTick();
+        await wrapper.find('[data-testid="kiosk-voice-button"]').trigger('click');
+        expect(wrapper.vm.showConsent).toBe(true);
+
+        // Cancel via méthode (équivalent à click cancel ou Escape ou overlay).
+        wrapper.vm.onConsentDenied();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.showConsent).toBe(false);
+        expect(wrapper.vm.hasGrantedThisSession).toBe(false);
+        expect(svc.start).not.toHaveBeenCalled();
+    });
+
+    it('[A4] Confirm consent → start + flag set + dialog fermé', async () => {
+        const svc = makeFakeService(true);
+        const wrapper = mount(KioskVoiceOrderingButton, {
+            props: { service: svc },
+        });
+        await wrapper.vm.$nextTick();
+        await wrapper.find('[data-testid="kiosk-voice-button"]').trigger('click');
+        expect(wrapper.vm.showConsent).toBe(true);
+
+        // Confirm → flag flip + dialog fermé + start sur next tick.
+        wrapper.vm.onConsentGranted();
+        await wrapper.vm.$nextTick();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.hasGrantedThisSession).toBe(true);
+        expect(wrapper.vm.showConsent).toBe(false);
+        expect(svc.start).toHaveBeenCalledTimes(1);
+    });
+
+    it('[A4] 2e click même session → pas de re-prompt, start direct', async () => {
+        const svc = makeFakeService(true);
+        const wrapper = mount(KioskVoiceOrderingButton, {
+            props: { service: svc },
+        });
+        await wrapper.vm.$nextTick();
+
+        // Premier flow : click → dialog → confirm → start.
+        await wrapper.find('[data-testid="kiosk-voice-button"]').trigger('click');
+        wrapper.vm.onConsentGranted();
+        await wrapper.vm.$nextTick();
+        await wrapper.vm.$nextTick();
+        expect(svc.start).toHaveBeenCalledTimes(1);
+
+        // Simuler fin d'écoute (service émet 'end').
+        svc.__emit('end');
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.isListening).toBe(false);
+
+        // 2e click → start direct, AUCUN re-prompt.
+        await wrapper.find('[data-testid="kiosk-voice-button"]').trigger('click');
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.showConsent).toBe(false);
+        expect(svc.start).toHaveBeenCalledTimes(2);
+    });
+
+    it('[A4] hasGrantedThisSession est SESSION-SCOPED (pas localStorage)', () => {
+        // Privacy guarantee : aucune persistence entre sessions kiosk.
+        // Si on remount le component (= nouvelle session kiosk), le flag doit
+        // repartir à false. Vérifie qu'on ne lit ni localStorage ni sessionStorage
+        // pour initialiser hasGrantedThisSession.
+        const svc1 = makeFakeService(true);
+        const wrapper1 = mount(KioskVoiceOrderingButton, {
+            props: { service: svc1 },
+        });
+        wrapper1.vm.onConsentGranted();
+        expect(wrapper1.vm.hasGrantedThisSession).toBe(true);
+
+        // Simulation : re-mount = nouvelle session kiosk.
+        const svc2 = makeFakeService(true);
+        const wrapper2 = mount(KioskVoiceOrderingButton, {
+            props: { service: svc2 },
+        });
+        // Nouveau wrapper = état frais = consent re-demandé.
+        expect(wrapper2.vm.hasGrantedThisSession).toBe(false);
+        expect(wrapper2.vm.showConsent).toBe(false);
     });
 
     it('affiche le transcript intermédiaire et émet voice-input au final', async () => {
