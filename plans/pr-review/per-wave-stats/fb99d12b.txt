@@ -1,0 +1,32 @@
+fb99d12b6 design(wave-alpha): 10 kiosk design improvements parallel (5 sub-agents)
+
+
+ .../Controllers/Frontend/OrderRatingController.php |  81 +++++++
+ app/Models/OrderRating.php                         |  46 ++++
+ ...026_05_08_050000_create_order_ratings_table.php |  45 ++++
+ docs/KIOSK_SKELETON_LOADER.md                      |  45 ++++
+ .../KIOSK_DESIGN_AUDIT_CART_PAYMENT_2026-05-08.md  |   7 +-
+ plans/KIOSK_DESIGN_EXECUTION_MASTER_2026-05-08.md  | 146 ++++++++++++
+ public/css/app.css                                 |   2 +-
+ public/js/738.js                                   |   1 +
+ public/js/kiosk.js                                 |   2 +-
+ resources/css/kiosk/global-a11y.css                |  50 +++++
+ resources/css/kiosk/tokens.css                     |   6 +
+ resources/js/bootstrap-kiosk.js                    |   3 +
+ .../kiosk/KioskCashInstructionComponent.vue        | 108 ++++++++-
+ .../frontend/kiosk/KioskConfirmationComponent.vue  | 244 ++++++++++++++++++++-
+ .../frontend/kiosk/KioskPaymentComponent.vue       |  68 ++++++
+ .../frontend/kiosk/KioskSkeletonLoader.vue         | 214 ++++++++++++++++++
+ resources/js/helpers/kioskReceiptPersistence.js    |   8 +
+ resources/js/languages/ar.json                     |   3 +-
+ resources/js/languages/en.json                     |  20 +-
+ resources/js/languages/fr.json                     |  20 +-
+ routes/api.php                                     |   5 +
+ .../temp/2fc309a37d37cad1dbf848fb1f5de310          | Bin 0 -> 527336 bytes
+ .../Kq1U7VhUFDgL3iaGDP4LYaDT6DUVjy0Xthumb.png      | Bin 0 -> 57204 bytes
+ .../cri7jrxyAyaEAvaBRQC8h4hs4GPm80uE.png           | Bin 0 -> 79941 bytes
+ tests/Feature/Frontend/OrderRatingTest.php         | 211 ++++++++++++++++++
+ tests/js/KioskPhase3Screens.spec.js                |   7 +-
+ tests/js/KioskSkeletonLoader.spec.js               | 102 +++++++++
+ vendor                                             |   1 +
+ 28 files changed, 1422 insertions(+), 23 deletions(-)

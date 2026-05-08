@@ -1,0 +1,11 @@
+7adeaaa9c design(v1x-cart): owner-gate executed — spacing tokens + image responsive + aria-label variations (V1x-1, V1x-3 Option A, V1x-6 Option B)
+
+
+ public/js/app.js.LICENSE.txt                       |   6 ++
+ public/js/kiosk.js                                 |   2 +-
+ public/mix-manifest.json                           |   1 +
+ resources/css/kiosk/tokens.css                     |   3 +
+ .../frontend/kiosk/KioskCartComponent.vue          | 114 +++++++++++----------
+ .../frontend/kiosk/KioskPaymentComponent.vue       | 100 +++++++++---------
+ tests/js/KioskCartRestyle.spec.js                  |  40 ++++++++
+ 7 files changed, 163 insertions(+), 103 deletions(-)

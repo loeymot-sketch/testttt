@@ -1,0 +1,29 @@
+30551044e design(wave-4): V2-2 POC drag-drop + V2-5 Phase 2 themes + V2-3+V2-4 integration
+
+
+ .../Controllers/Admin/UpsellPreviewController.php  |  82 +++++
+ public/js/kiosk-builder-poc.js                     |   1 +
+ public/js/kiosk.js                                 |   2 +-
+ resources/js/bootstrap-kiosk.js                    |  55 +++
+ .../admin/kioskTheme/KioskThemeManagerPage.vue     | 332 +++++++++++++++++
+ .../admin/kioskTheme/KioskThemePreviewCard.vue     | 163 +++++++++
+ .../admin/upsellPreview/UpsellPreviewPage.vue      | 394 +++++++++++++++++++++
+ .../frontend/kiosk/KioskIdleScreenComponent.vue    | 106 +++++-
+ .../frontend/kiosk/KioskVoiceOrderingDialog.vue    | 185 ++++++++++
+ .../frontend/kiosk/builder/KioskBurgerBuilder.vue  | 340 ++++++++++++++++++
+ .../kiosk/builder/KioskBurgerBuilderPoc.vue        | 124 +++++++
+ .../frontend/kiosk/builder/KioskBurgerLayer.vue    | 116 ++++++
+ resources/js/languages/en.json                     |  47 ++-
+ resources/js/languages/fr.json                     |  47 ++-
+ resources/js/router/index.js                       |   9 +-
+ .../router/modules/kioskBurgerBuilderPocRoutes.js  |  20 ++
+ .../js/router/modules/kioskThemeAdminRoutes.js     |  25 ++
+ resources/js/router/modules/upsellPreviewRoutes.js |  25 ++
+ resources/js/services/kioskThemeManager.js         |   7 +-
+ routes/api.php                                     |   6 +
+ .../Feature/Admin/UpsellPreviewControllerTest.php  | 230 ++++++++++++
+ tests/js/KioskBurgerBuilder.spec.js                | 175 +++++++++
+ tests/js/KioskThemeManagerPage.spec.js             | 243 +++++++++++++
+ tests/js/kioskThemeManager.spec.js                 |  10 +-
+ tests/js/kioskVoiceOrderingDialog.spec.js          |  68 ++++
+ 25 files changed, 2804 insertions(+), 8 deletions(-)

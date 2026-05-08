@@ -1,0 +1,5 @@
+94ecb5ee6 design(kiosk): exhaustive audit cart + payment surfaces — 4 components 3368 LOC
+
+
+ .../KIOSK_DESIGN_AUDIT_CART_PAYMENT_2026-05-08.md  | 446 +++++++++++++++++++++
+ 1 file changed, 446 insertions(+)

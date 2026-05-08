@@ -1,0 +1,42 @@
+b44f11455 design(wave-beta+gamma): 8 items kiosk design — modal payment + DS atomic + a11y + V2 scaffolding + frozen-zone gate plans
+
+
+ .../Controllers/Admin/KioskThemeController.php     | 130 ++++++++
+ .../Frontend/UpsellRecommendationController.php    |  62 ++++
+ app/Models/Branch.php                              |   4 +
+ app/Providers/AppServiceProvider.php               |  17 +
+ .../Strategies/MlPlaceholderStrategy.php           |  39 +++
+ .../Strategies/RuleBasedStrategy.php               | 315 +++++++++++++++++++
+ .../Recommendation/UpsellRecommendationService.php |  50 +++
+ config/recommendation.php                          |  46 +++
+ ...6_05_08_060000_add_active_theme_to_branches.php |  47 +++
+ docs/KIOSK_THEMES.md                               | 198 ++++++++++++
+ .../PLAN_DESIGN_V1X1_SPACING_TOKENS_2026-05-08.md  |  75 +++++
+ ...DESIGN_V1X3_CART_IMAGE_RESPONSIVE_2026-05-08.md |  86 +++++
+ ..._DESIGN_V1X6_CART_VARIATIONS_ARIA_2026-05-08.md | 109 +++++++
+ ...PLAN_DESIGN_V2_2_DRAG_DROP_WIZARD_2026-05-08.md | 157 +++++++++
+ plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md     | 265 ++++++++++++++++
+ .../PLAN_DESIGN_V2_4_VOICE_ORDERING_2026-05-08.md  | 240 ++++++++++++++
+ ...N_DESIGN_V2_5_SKINNING_SAISONNIER_2026-05-08.md | 247 +++++++++++++++
+ public/js/kiosk.js                                 |   2 +-
+ resources/css/kiosk/themes/_base.css               |  79 +++++
+ resources/css/kiosk/themes/christmas.css           |  37 +++
+ resources/css/kiosk/themes/halloween.css           |  37 +++
+ resources/css/kiosk/themes/standard.css            |  20 ++
+ .../frontend/kiosk/KioskAdminComponent.vue         | 124 ++++++++
+ .../frontend/kiosk/KioskConfirmationComponent.vue  |  34 +-
+ .../frontend/kiosk/KioskPaymentComponent.vue       | 131 ++++++++
+ .../frontend/kiosk/KioskVoiceOrderingButton.vue    | 269 ++++++++++++++++
+ resources/js/languages/ar.json                     |   7 +-
+ resources/js/languages/en.json                     |  43 +--
+ resources/js/languages/fr.json                     |  43 +--
+ resources/js/services/kioskThemeManager.js         | 199 ++++++++++++
+ resources/js/services/kioskVoiceOrdering.js        | 187 +++++++++++
+ routes/api.php                                     |  30 ++
+ tests/Feature/Admin/KioskThemeControllerTest.php   | 192 ++++++++++++
+ .../Recommendation/UpsellRecommendationTest.php    | 349 +++++++++++++++++++++
+ tests/js/KsButton.spec.js                          | 196 ++++++++++++
+ tests/js/kioskAdminA11ySection.spec.js             | 181 +++++++++++
+ tests/js/kioskThemeManager.spec.js                 | 196 ++++++++++++
+ tests/js/kioskVoiceOrdering.spec.js                | 337 ++++++++++++++++++++
+ 38 files changed, 4718 insertions(+), 62 deletions(-)
