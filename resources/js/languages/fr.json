@@ -897,6 +897,7 @@
             "your_burger": "Votre burger",
             "ingredient_aria": "{name}, supplément {price}€",
             "remove_layer_aria": "Retirer {name} du burger",
+            "layer_focus_aria": "{name} en position {position}. Suppr ou Retour pour retirer, flèches haut/bas pour déplacer, Échap pour défocaliser.",
             "empty_state": "Faites glisser des ingrédients ici pour commencer",
             "total": "Total suppléments",
             "use_classic_mode": "Utiliser le mode classique",

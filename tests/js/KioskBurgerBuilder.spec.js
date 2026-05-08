@@ -144,6 +144,91 @@ describe('KioskBurgerBuilder — remove layer', () => {
     });
 });
 
+// [A11y-HEAL-2026-05-08] Ultra-review P0 fixes WCAG 2.1.1 :
+// keyboard reorder + delete sur les layers déposés.
+describe('KioskBurgerBuilder — keyboard reorder/delete (P0 a11y fix)', () => {
+    it('Delete key on a focused layer removes it and re-emits update:extras', async () => {
+        const w = mountBuilder();
+        const first = w.find('[data-testid="ks-burger-ingredient"]');
+        await first.trigger('keydown', { key: 'Enter' });
+        await first.trigger('keydown', { key: 'Enter' });
+
+        const layers = w.findAll('[data-testid="ks-burger-layer"]');
+        expect(layers).toHaveLength(2);
+
+        await layers[0].trigger('keydown', { key: 'Delete' });
+        const events = w.emitted('update:extras');
+        const last = events.at(-1)[0];
+        expect(last).toHaveLength(1);
+    });
+
+    it('Backspace key on a focused layer also removes it (P0)', async () => {
+        const w = mountBuilder();
+        const first = w.find('[data-testid="ks-burger-ingredient"]');
+        await first.trigger('keydown', { key: 'Enter' });
+
+        const layer = w.find('[data-testid="ks-burger-layer"]');
+        await layer.trigger('keydown', { key: 'Backspace' });
+        const events = w.emitted('update:extras');
+        const last = events.at(-1)[0];
+        expect(last).toHaveLength(0);
+    });
+
+    it('ArrowDown swaps a layer with its successor (P0 reorder)', async () => {
+        const w = mountBuilder();
+        const items = w.findAll('[data-testid="ks-burger-ingredient"]');
+        await items[0].trigger('keydown', { key: 'Enter' }); // Steak haché position 0
+        await items[1].trigger('keydown', { key: 'Enter' }); // Cheddar position 1
+
+        const layers = w.findAll('[data-testid="ks-burger-layer"]');
+        await layers[0].trigger('keydown', { key: 'ArrowDown' });
+
+        const events = w.emitted('update:extras');
+        const last = events.at(-1)[0];
+        expect(last[0].name).toBe('Cheddar');
+        expect(last[1].name).toBe('Steak haché');
+    });
+
+    it('ArrowUp swaps a layer with its predecessor (P0 reorder)', async () => {
+        const w = mountBuilder();
+        const items = w.findAll('[data-testid="ks-burger-ingredient"]');
+        await items[0].trigger('keydown', { key: 'Enter' }); // position 0
+        await items[1].trigger('keydown', { key: 'Enter' }); // position 1
+
+        const layers = w.findAll('[data-testid="ks-burger-layer"]');
+        await layers[1].trigger('keydown', { key: 'ArrowUp' });
+
+        const events = w.emitted('update:extras');
+        const last = events.at(-1)[0];
+        expect(last[0].name).toBe('Cheddar');
+        expect(last[1].name).toBe('Steak haché');
+    });
+
+    it('ArrowUp on first layer is a no-op (boundary)', async () => {
+        const w = mountBuilder();
+        const first = w.find('[data-testid="ks-burger-ingredient"]');
+        await first.trigger('keydown', { key: 'Enter' });
+        const emitsBeforeArrow = w.emitted('update:extras').length;
+
+        const layer = w.find('[data-testid="ks-burger-layer"]');
+        await layer.trigger('keydown', { key: 'ArrowUp' });
+
+        // Pas de nouveau emit (no-op)
+        expect(w.emitted('update:extras').length).toBe(emitsBeforeArrow);
+    });
+
+    it('Layers expose tabindex=0 + aria-keyshortcuts for screen readers', async () => {
+        const w = mountBuilder();
+        const first = w.find('[data-testid="ks-burger-ingredient"]');
+        await first.trigger('keydown', { key: 'Enter' });
+
+        const layer = w.find('[data-testid="ks-burger-layer"]');
+        expect(layer.attributes('tabindex')).toBe('0');
+        expect(layer.attributes('aria-keyshortcuts')).toContain('Delete');
+        expect(layer.attributes('aria-keyshortcuts')).toContain('ArrowUp');
+    });
+});
+
 describe('KioskBurgerBuilder — fallback / switch-to-classic', () => {
     it('clicking the fallback button emits switch-to-classic', async () => {
         const w = mountBuilder();

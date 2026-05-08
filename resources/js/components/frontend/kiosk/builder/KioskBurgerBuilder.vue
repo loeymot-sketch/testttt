@@ -69,6 +69,9 @@
                     :ingredient="element"
                     :index="index"
                     @remove="removeLayer(index)"
+                    @move-up="swapLayer(index, index - 1)"
+                    @move-down="swapLayer(index, index + 1)"
+                    @blur-layer="onBlurLayer"
                 />
             </draggable>
 
@@ -162,6 +165,42 @@ export default {
         removeLayer(index) {
             this.droppedIngredients.splice(index, 1);
             this.emitUpdate();
+        },
+        /**
+         * [A11y-HEAL-2026-05-08] Ultra-review P0 fix WCAG 2.1.1 :
+         * keyboard reorder via ArrowUp/ArrowDown swap with neighbor.
+         * Ignore les bornes (out of range = no-op).
+         */
+        swapLayer(from, to) {
+            if (
+                from < 0 ||
+                from >= this.droppedIngredients.length ||
+                to < 0 ||
+                to >= this.droppedIngredients.length ||
+                from === to
+            ) {
+                return;
+            }
+            const arr = this.droppedIngredients;
+            [arr[from], arr[to]] = [arr[to], arr[from]];
+            this.emitUpdate();
+            // Refocus le layer déplacé pour préserver l'expérience clavier.
+            this.$nextTick(() => {
+                const layers = this.$el?.querySelectorAll('[data-testid="ks-burger-layer"]');
+                if (layers && layers[to]) {
+                    layers[to].focus();
+                }
+            });
+        },
+        /**
+         * Escape depuis un layer focused : défocus vers le source pool
+         * (premier ingredient). Permet de sortir du contexte burger sans souris.
+         */
+        onBlurLayer() {
+            const sources = this.$el?.querySelectorAll('[data-testid="ks-burger-ingredient"]');
+            if (sources && sources[0]) {
+                sources[0].focus();
+            }
         },
         onChange() {
             this.emitUpdate();

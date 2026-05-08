@@ -6,8 +6,9 @@
         aria-labelledby="voice-dialog-title"
         data-testid="kiosk-voice-dialog"
         @click.self="$emit('cancel')"
+        @keydown.esc.prevent="$emit('cancel')"
     >
-        <div class="voice-dialog">
+        <div class="voice-dialog" @keydown.tab="onTabKey">
             <h2 id="voice-dialog-title" class="voice-dialog-title">
                 {{ tr('kiosk.voice.dialog_title', "J'ai entendu...") }}
             </h2>
@@ -28,6 +29,7 @@
                     type="button"
                     class="ks-btn-secondary"
                     data-testid="kiosk-voice-dialog-cancel"
+                    ref="cancelBtn"
                     @click="$emit('cancel')"
                 >
                     {{ tr('label.cancel', 'Annuler') }}
@@ -36,6 +38,7 @@
                     type="button"
                     class="ks-btn-primary"
                     data-testid="kiosk-voice-dialog-confirm"
+                    ref="confirmBtn"
                     @click="$emit('confirm')"
                 >
                     {{ tr('kiosk.voice.dialog_confirm', 'OUI, CONTINUER') }}
@@ -67,6 +70,19 @@ export default {
         },
     },
     emits: ['confirm', 'cancel'],
+    /**
+     * [A11y-HEAL-2026-05-08] Ultra-review P0 finding : modal manquait
+     * Escape handler + autofocus + focus trap. Conforme WCAG 2.4.3.
+     * Escape handler : @keydown.esc dans le template overlay.
+     * Autofocus : mounted() pose focus sur "OUI, CONTINUER" (action primaire).
+     * Focus trap : onTabKey() boucle entre Cancel et Confirm.
+     */
+    mounted() {
+        this.$nextTick(() => {
+            // Autofocus sur l'action primaire pour les screen readers.
+            this.$refs.confirmBtn?.focus();
+        });
+    },
     methods: {
         /**
          * Tente de traduire via $t si vue-i18n est branché ; sinon retourne
@@ -79,6 +95,24 @@ export default {
                 return value === key ? fallback : value;
             }
             return fallback;
+        },
+        /**
+         * [A11y] Focus trap minimal entre les 2 boutons : Tab depuis Confirm
+         * boucle vers Cancel, Shift+Tab depuis Cancel boucle vers Confirm.
+         * WCAG 2.4.3 — focus order préservé dans le contexte modal.
+         */
+        onTabKey(event) {
+            const cancel = this.$refs.cancelBtn;
+            const confirm = this.$refs.confirmBtn;
+            if (!cancel || !confirm) return;
+            const active = document.activeElement;
+            if (event.shiftKey && active === cancel) {
+                event.preventDefault();
+                confirm.focus();
+            } else if (!event.shiftKey && active === confirm) {
+                event.preventDefault();
+                cancel.focus();
+            }
         },
     },
 };

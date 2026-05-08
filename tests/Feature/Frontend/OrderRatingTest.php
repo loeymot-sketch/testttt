@@ -10,6 +10,7 @@ use App\Models\FrontendOrder;
 use App\Models\OrderRating;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -32,6 +33,17 @@ class OrderRatingTest extends TestCase
         parent::setUp();
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
+    }
+
+    /**
+     * [SEC-HEAL-2026-05-08] OrderRatingController requires `kiosk:order`
+     * sanctum ability (parité UpsellController + UpsellRecommendationController).
+     * Helper centralisé pour éviter de dupliquer Sanctum::actingAs partout.
+     */
+    private function actAsKiosk(User $user): self
+    {
+        Sanctum::actingAs($user, ['kiosk:order']);
+        return $this;
     }
 
     private function makeOrderForUser(): array
@@ -71,7 +83,7 @@ class OrderRatingTest extends TestCase
             // tester chaque borne sur une création neuve.
             OrderRating::query()->delete();
 
-            $response = $this->actingAs($user)
+            $response = $this->actAsKiosk($user)
                 ->postJson("/api/frontend/order/{$order->id}/rating", [
                     'rating' => $stars,
                     'source' => 'kiosk',
@@ -92,7 +104,7 @@ class OrderRatingTest extends TestCase
         [$branch, $user, $order] = $this->makeOrderForUser();
 
         foreach ([0, -1, 6, 99] as $bogus) {
-            $response = $this->actingAs($user)
+            $response = $this->actAsKiosk($user)
                 ->postJson("/api/frontend/order/{$order->id}/rating", [
                     'rating' => $bogus,
                 ]);
@@ -106,11 +118,11 @@ class OrderRatingTest extends TestCase
     {
         [$branch, $user, $order] = $this->makeOrderForUser();
 
-        $first = $this->actingAs($user)
+        $first = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", ['rating' => 3]);
         $first->assertStatus(201);
 
-        $second = $this->actingAs($user)
+        $second = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", ['rating' => 5]);
         $second->assertStatus(201);
 
@@ -127,13 +139,13 @@ class OrderRatingTest extends TestCase
         [$branch, $user, $order] = $this->makeOrderForUser();
 
         // Pas de comment → OK
-        $r1 = $this->actingAs($user)
+        $r1 = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", ['rating' => 4]);
         $r1->assertStatus(201);
 
         // Comment court accepté
         OrderRating::query()->delete();
-        $r2 = $this->actingAs($user)
+        $r2 = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", [
                 'rating'  => 4,
                 'comment' => 'Excellent burger',
@@ -143,7 +155,7 @@ class OrderRatingTest extends TestCase
 
         // Comment > 500 chars rejeté
         OrderRating::query()->delete();
-        $r3 = $this->actingAs($user)
+        $r3 = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", [
                 'rating'  => 4,
                 'comment' => str_repeat('a', 501),
@@ -169,7 +181,7 @@ class OrderRatingTest extends TestCase
     {
         [$branch, $user, $order] = $this->makeOrderForUser();
 
-        $response = $this->actingAs($user)
+        $response = $this->actAsKiosk($user)
             ->postJson("/api/frontend/order/{$order->id}/rating", [
                 'rating' => 5,
                 'source' => 'kiosk',
@@ -180,6 +192,28 @@ class OrderRatingTest extends TestCase
             'order_id'  => $order->id,
             'branch_id' => $branch->id,
         ]);
+    }
+
+    /**
+     * [SEC-HEAL-2026-05-08] Ultra-review P0 finding : sanctum-authenticated
+     * user without `kiosk:order` ability must be rejected (403). Cas couvert :
+     * un user customer authentifié via app mobile (token sans `kiosk:order`)
+     * tente de noter une commande — rejeté avant même la lecture de l'order.
+     */
+    public function test_authenticated_non_kiosk_user_cannot_rate(): void
+    {
+        [$branch, $user, $order] = $this->makeOrderForUser();
+
+        // Token sans ability `kiosk:order` (ex: app mobile avec autres abilities)
+        Sanctum::actingAs($user, ['mobile:read', 'profile:edit']);
+
+        $response = $this->postJson("/api/frontend/order/{$order->id}/rating", [
+            'rating' => 5,
+            'source' => 'web',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseCount('order_ratings', 0);
     }
 
     /**
@@ -198,7 +232,7 @@ class OrderRatingTest extends TestCase
             'status'    => \App\Enums\Status::ACTIVE,
         ]);
 
-        $response = $this->actingAs($userY)
+        $response = $this->actAsKiosk($userY)
             ->postJson("/api/frontend/order/{$orderX->id}/rating", [
                 'rating' => 5,
                 'source' => 'kiosk',

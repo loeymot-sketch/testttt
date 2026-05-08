@@ -49,6 +49,18 @@ class UpsellPreviewController extends AdminController
 
         $strategy = $validated['strategy'] ?? 'rule_based';
 
+        // [SEC-HEAL-2026-05-08] Ultra-review P1 finding : Admin scoped à une
+        // branche ne doit pas pouvoir prévisualiser une autre branche.
+        // Pattern imité de KioskThemeController.php : branch_id=0 = head-office
+        // (cross-branch légitime), sinon enforce strict equality.
+        // CLAUDE.md non-négociable #8 : "Branch isolation must never be weakened."
+        $userBranchId = (int) ($request->user()?->branch_id ?? 0);
+        if ($userBranchId !== 0 && $userBranchId !== (int) $validated['branch_id']) {
+            return response()->json([
+                'message' => 'Branch scope denied — admin scoped à une autre branche.',
+            ], 403);
+        }
+
         // Strategy resolution with explicit map — safer than dynamic class
         // resolution (no input class injection even though Str::studly is
         // sanitised by the validation rule above).

@@ -7,7 +7,30 @@
     prefers-reduced-motion.
 -->
 <template>
-    <li class="ks-burger-layer" :data-index="index" data-testid="ks-burger-layer">
+    <!--
+        [A11y-HEAL-2026-05-08] Ultra-review P0 fix : layer is now keyboard-focusable
+        (tabindex=0) and supports keyboard reorder/delete WCAG 2.1.1 :
+          - Delete / Backspace : remove this layer
+          - ArrowUp : swap with previous (move up the stack)
+          - ArrowDown : swap with next (move down the stack)
+          - Escape : blur (defocus to source pool)
+        ARIA :
+          - role="listitem" (implicit via <li>)
+          - aria-keyshortcuts advertises supported keys to screen readers
+    -->
+    <li
+        class="ks-burger-layer"
+        :data-index="index"
+        data-testid="ks-burger-layer"
+        :tabindex="0"
+        :aria-label="$t('kiosk.builder.layer_focus_aria', { name: ingredient.name, position: index + 1 })"
+        aria-keyshortcuts="Delete Backspace ArrowUp ArrowDown Escape"
+        @keydown.delete.prevent="$emit('remove')"
+        @keydown.backspace.prevent="$emit('remove')"
+        @keydown.up.prevent="$emit('move-up')"
+        @keydown.down.prevent="$emit('move-down')"
+        @keydown.esc.prevent="$emit('blur-layer')"
+    >
         <span class="ks-burger-layer-emoji" aria-hidden="true">{{ ingredient.emoji }}</span>
         <span class="ks-burger-layer-name">{{ ingredient.name }}</span>
         <span class="ks-burger-layer-price">{{ formatPrice(ingredient.price) }}</span>
@@ -36,7 +59,7 @@ export default {
             required: true,
         },
     },
-    emits: ['remove'],
+    emits: ['remove', 'move-up', 'move-down', 'blur-layer'],
     methods: {
         formatPrice(p) {
             return `${Number(p || 0).toFixed(2)} €`;

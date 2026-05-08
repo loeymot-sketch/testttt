@@ -1544,6 +1544,7 @@
             "your_burger": "Your burger",
             "ingredient_aria": "{name}, add-on {price}€",
             "remove_layer_aria": "Remove {name} from the burger",
+            "layer_focus_aria": "{name} at position {position}. Delete or Backspace to remove, arrow up/down to move, Escape to defocus.",
             "empty_state": "Drag ingredients here to start",
             "total": "Add-ons total",
             "use_classic_mode": "Use the classic mode",

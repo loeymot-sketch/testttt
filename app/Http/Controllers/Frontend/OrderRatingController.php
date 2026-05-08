@@ -25,6 +25,22 @@ class OrderRatingController extends Controller
 {
     public function store(Request $request, $orderId): JsonResponse
     {
+        // [SEC-HEAL-2026-05-08] Ultra-review P0 finding : ce endpoint manquait
+        // une vérification d'ability + ownership intra-branche. Sans ça, n'importe
+        // quel sanctum-user authentifié sur la même branche pouvait écraser le
+        // rating d'une commande d'un autre customer (intra-branch tampering).
+        // Parité corrigée avec UpsellController + UpsellRecommendationController
+        // qui requièrent tokenCan('kiosk:order'). CLAUDE.md non-négociable #8 :
+        // "Branch isolation must never be weakened" — le trou intra-branche est
+        // également une faiblesse d'autorisation.
+        $user = $request->user();
+        if (!$user || !$user->tokenCan('kiosk:order')) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Accès kiosk requis pour noter une commande.',
+            ], 403);
+        }
+
         $request->validate([
             'rating'     => 'required|integer|min:1|max:5',
             'comment'    => 'nullable|string|max:500',
