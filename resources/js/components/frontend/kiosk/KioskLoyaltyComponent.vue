@@ -801,7 +801,9 @@ export default {
 .kiosk-loyalty-skip {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
+  /* UX 4.9 : WCAG AA fix — opacity 0.4 → 0.7 sur background sombre.
+     Ratio rgba(255,255,255,0.7) on dark bg ≈ 4.6:1 (AA pass). */
+  color: rgba(255,255,255,0.7);
   font-size: 0.95rem;
   text-decoration: underline;
   cursor: pointer;

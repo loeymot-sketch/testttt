@@ -26,7 +26,12 @@
         </h2>
         <p :id="descriptionId" class="kiosk-inactivity-desc">
           {{ $t('kiosk.inactivity.desc') || 'Votre commande sera effacée dans' }}
-          <strong class="kiosk-inactivity-countdown" data-testid="kiosk-inactivity-countdown" aria-live="polite">
+          <strong
+            class="kiosk-inactivity-countdown"
+            :class="{ 'kiosk-inactivity-countdown-critical': isCritical }"
+            data-testid="kiosk-inactivity-countdown"
+            aria-live="polite"
+          >
             {{ secondsLeft }} {{ secondsLeft === 1 ? ($t('kiosk.inactivity.second') || 'seconde') : ($t('kiosk.inactivity.seconds') || 'secondes') }}
           </strong>
         </p>
@@ -110,6 +115,9 @@ export default {
     computed: {
         titleId()       { return `kiosk-inactivity-title-${this.uid}`; },
         descriptionId() { return `kiosk-inactivity-desc-${this.uid}`;  },
+        // UX 4.6 : alerte visuelle quand le countdown devient critique
+        // (≤ 10s). Pulse rouge respectant prefers-reduced-motion.
+        isCritical()    { return this.secondsLeft <= 10 && this.secondsLeft > 0; },
     },
     watch: {
         visible: {
@@ -220,6 +228,28 @@ export default {
     color: var(--kiosk-primary, #E8001C);
     font-weight: 900;
     font-variant-numeric: tabular-nums;
+    display: inline-block;
+    transform-origin: center;
+}
+
+/* UX 4.6 : signal visuel quand secondsLeft ≤ 10 — pulse + intensité couleur. */
+.kiosk-inactivity-countdown-critical {
+    color: #dc2626;
+    font-weight: 900;
+    animation: kiosk-pulse-critical 0.6s infinite alternate;
+}
+
+@keyframes kiosk-pulse-critical {
+    from { transform: scale(1); }
+    to   { transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kiosk-inactivity-countdown-critical { animation: none; }
+}
+
+:global([data-kiosk-reduced-motion="true"]) .kiosk-inactivity-countdown-critical {
+    animation: none;
 }
 
 .kiosk-inactivity-actions {

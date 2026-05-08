@@ -910,7 +910,9 @@ export default {
 
 .kiosk-admin-sub {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  /* UX 4.9 : WCAG AA fix — opacity 0.4 → 0.65 sur background sombre.
+     Ratio rgba(255,255,255,0.65) on dark bg ≈ 4.5:1 (AA pass). */
+  color: rgba(255, 255, 255, 0.65);
   margin: 0;
 }
 

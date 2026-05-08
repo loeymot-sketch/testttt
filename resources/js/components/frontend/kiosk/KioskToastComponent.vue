@@ -7,7 +7,11 @@
       :class="toast.type"
       @click="remove(toast.id)"
     >
-      <span class="kiosk-toast-icon">{{ ICONS[toast.type] || 'ℹ️' }}</span>
+      <span
+        class="kiosk-toast-icon"
+        role="img"
+        :aria-label="$t('kiosk.a11y.toast_' + toast.type)"
+      >{{ ICONS[toast.type] || 'ℹ️' }}</span>
       <span class="kiosk-toast-msg">{{ toast.message }}</span>
     </div>
   </transition-group>
