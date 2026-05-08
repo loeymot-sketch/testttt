@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Ask;
 use App\Libraries\AppLibrary;
+use App\Models\AuditLog;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderDetailsResource extends JsonResource
@@ -59,7 +60,52 @@ class OrderDetailsResource extends JsonResource
             // (CGI art. 242 nonies A — every receipt must list HT base
             // and tax per rate). POS-GA-F-20.
             'tax_lines' => $this->buildTaxLines(),
+            // [HARDEN-P1-12] NF525 art. 286-I-3°bis — printed receipt must
+            // surface the immutable per-branch fiscal sequence number so a
+            // tax inspector can cross-reference the ticket against the
+            // sealed audit chain. Nullable for back-compat with orders
+            // created before F-001 / phase POS-9.4.1.
+            'fiscal_sequence_no'      => $this->fiscal_sequence_no,
+            // [HARDEN-P1-12] First 8 chars of the latest HMAC link in the
+            // audit chain attached to this order. Visual proof on the ticket
+            // that the order is sealed in the chain — independent verifier
+            // (X/Z report, audit dump) can match it against `audit_logs`.
+            'fiscal_signature_short'  => $this->getFiscalSignatureShort(),
         ];
+    }
+
+    /**
+     * [HARDEN-P1-12] Look up the latest audit log row tied to this order
+     * and return the first 8 chars of its `current_hash` (HMAC chain link).
+     *
+     * Returns null when:
+     *   - the order has no `fiscal_sequence_no` (not yet allocated by F-001)
+     *   - no audit row exists for this order yet
+     *   - the audit_logs table is unavailable (defensive — receipts must
+     *     never crash for a presentation concern)
+     *
+     * Single-row query and only invoked from `toArray()`. Safe because
+     * `OrderDetailsResource` is never wrapped in a `::collection(...)`
+     * (verified across `app/Http/Controllers/`).
+     */
+    private function getFiscalSignatureShort(): ?string
+    {
+        if (empty($this->fiscal_sequence_no)) {
+            return null;
+        }
+
+        try {
+            $audit = AuditLog::query()
+                ->where('resource', 'order')
+                ->where('resource_id', (int) $this->id)
+                ->orderByDesc('id')
+                ->first(['current_hash']);
+
+            $hash = $audit?->current_hash;
+            return $hash ? substr((string) $hash, 0, 8) : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

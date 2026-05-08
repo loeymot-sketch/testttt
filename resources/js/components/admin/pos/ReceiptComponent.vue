@@ -34,6 +34,26 @@
                     </tbody>
                 </table>
 
+                <!--
+                  [HARDEN-P1-12] NF525 art. 286-I-3°bis — every printed
+                  receipt must show the immutable fiscal sequence number
+                  (per-branch, monotonic, allocated by F-001). The short
+                  HMAC signature is optional visual proof of the audit
+                  chain link; both fields stay hidden when missing so old
+                  pre-F-001 orders and online flows render unchanged.
+                -->
+                <div
+                    v-if="order.fiscal_sequence_no"
+                    class="text-center text-xs my-2 py-1 border-t border-b border-dashed border-gray-400 text-heading"
+                >
+                    <div class="font-semibold">
+                        {{ $t('receipt.fiscal_id') }} : #{{ order.fiscal_sequence_no }}
+                    </div>
+                    <div v-if="order.fiscal_signature_short" class="opacity-60">
+                        {{ $t('receipt.signature') }} : {{ order.fiscal_signature_short }}
+                    </div>
+                </div>
+
                 <table class="w-full">
                     <thead class="border-t border-b border-dashed border-gray-400">
                         <tr>

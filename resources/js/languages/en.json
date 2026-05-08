@@ -1593,5 +1593,9 @@
         "toggle_disabled_banner": "Per-branch toggle for this category requires the F-016a-BIS merge. Read-only for now.",
         "toggle_disabled_hint": "Toggle disabled — F-016a-BIS merge required.",
         "no_branch_selected": "Please select a branch before changing availability."
+    },
+    "receipt": {
+        "fiscal_id": "Fiscal ID",
+        "signature": "Signature"
     }
 }

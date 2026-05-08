@@ -946,5 +946,9 @@
         "toggle_disabled_banner": "Le toggle par filiale pour cette catégorie nécessite la fusion de F-016a-BIS. Lecture seule.",
         "toggle_disabled_hint": "Toggle indisponible — fusion F-016a-BIS requise.",
         "no_branch_selected": "Veuillez sélectionner une filiale avant de modifier la disponibilité."
+    },
+    "receipt": {
+        "fiscal_id": "N° fiscal",
+        "signature": "Signature"
     }
 }
