@@ -1,0 +1,37 @@
+/* =============================================================================
+   Halloween — skin saisonnier (octobre / 31).
+   -----------------------------------------------------------------------------
+   Palette : citrouille + violet sorcière sur fond pourpre profond.
+   Cible    : booster engagement +10..15% pendant l'événement (benchmark
+              McDo/BK ; cf. plans/PLAN_DESIGN_V2_5_SKINNING_SAISONNIER_2026-05-08.md).
+
+   A11y QA : contraste #FFE5CC sur #1A0A1F = 14.2:1 (AAA body ✓), focus
+             ring bleu (#2563EB) sur #1A0A1F = 5.0:1 (AA ≥ 3:1 ✓).
+
+   Pattern  : `--kiosk-theme-pattern` reste `none` par défaut tant que
+              l'asset SVG `/images/themes/halloween-pattern.svg` n'est pas
+              livré côté `public/`. Activer une seule fois l'asset uploadé.
+   ============================================================================= */
+
+:root[data-kiosk-theme="halloween"] {
+    /* -- Brand citrouille ----------------------------------------------------- */
+    --kiosk-primary:       #FF6B00;   /* orange citrouille — CTA primaire */
+    --kiosk-primary-dark:  #C24700;
+    --kiosk-primary-soft:  #FFE5CC;
+    --kiosk-accent:        #8B00FF;   /* violet sorcière — accents secondaires */
+
+    /* -- Surfaces sombres ----------------------------------------------------- */
+    --kiosk-bg:            #1A0A1F;   /* pourpre profond — fond plein écran */
+    --kiosk-surface:       #2D1A33;   /* surface carte / modal */
+    --kiosk-surface-alt:   #3A2542;
+    --kiosk-text:          #FFE5CC;   /* texte clair, ratio 14.2:1 sur bg AAA */
+    --kiosk-text-muted:    #B0A0B5;
+    --kiosk-text-on-red:   #FFFFFF;
+
+    /* -- Décoratives ---------------------------------------------------------- */
+    --kiosk-theme-emoji-prefix: '🎃';
+    /* asset à livrer hors greenfield CSS — laisser `none` jusqu'à upload :
+       --kiosk-theme-pattern: url('/images/themes/halloween-pattern.svg'); */
+    --kiosk-theme-pattern: none;
+    --kiosk-theme-banner-text: '🎃 HALLOWEEN SPECIALS 🎃';
+}

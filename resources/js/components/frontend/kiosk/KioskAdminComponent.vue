@@ -213,6 +213,59 @@
           </div>
         </div>
 
+        <!-- [DESIGN-V1x-5] Accessibilité PMR — staff override des préférences a11y.
+             SSOT = kioskSettings store (commun avec KsA11ySettings drawer côté
+             client). Le composable useKioskA11y propage les changements aux
+             attributs <html>, qui activent tokens-aaa.css / tokens-pmr.css. -->
+        <div class="kiosk-admin-section" data-testid="kiosk-admin-a11y-section">
+          <h3>{{ $t('kiosk.admin_screen.section_a11y') }}</h3>
+          <p class="kiosk-admin-idle-hint">{{ $t('kiosk.admin_screen.a11y_hint') }}</p>
+          <label class="kiosk-admin-consent-row">
+            <input
+              type="checkbox"
+              :checked="a11yDraft.contrast === 'aaa'"
+              @change="onContrastToggle($event)"
+              data-testid="kiosk-admin-a11y-aaa"
+            />
+            <span>
+              {{ $t('kiosk.a11y.contrast_aaa') }}
+              <small class="kiosk-admin-a11y-sub">{{ $t('kiosk.a11y.contrast_aaa_hint') }}</small>
+            </span>
+          </label>
+          <label class="kiosk-admin-consent-row">
+            <input
+              type="checkbox"
+              v-model="a11yDraft.pmr"
+              @change="onPmrToggle"
+              data-testid="kiosk-admin-a11y-pmr"
+            />
+            <span>
+              {{ $t('kiosk.a11y.pmr') }}
+              <small class="kiosk-admin-a11y-sub">{{ $t('kiosk.a11y.pmr_hint') }}</small>
+            </span>
+          </label>
+          <label class="kiosk-admin-consent-row">
+            <input
+              type="checkbox"
+              v-model="a11yDraft.reducedMotion"
+              @change="onReducedMotionToggle"
+              data-testid="kiosk-admin-a11y-reduced-motion"
+            />
+            <span>
+              {{ $t('kiosk.a11y.reduced_motion') }}
+              <small class="kiosk-admin-a11y-sub">{{ $t('kiosk.a11y.reduced_motion_hint') }}</small>
+            </span>
+          </label>
+          <button
+            class="kiosk-admin-btn"
+            @click="resetA11y"
+            data-testid="kiosk-admin-a11y-reset"
+          >
+            <span class="btn-icon">↺</span>
+            <span>{{ $t('kiosk.admin_screen.a11y_reset') }}</span>
+          </button>
+        </div>
+
         <!-- [PHASE-6.5] RGPD — consent admin override (debug / reset opt-out) -->
         <div class="kiosk-admin-section" data-testid="kiosk-admin-consent-section">
           <h3>{{ $t('kiosk.admin_screen.section_consent') }}</h3>
@@ -333,6 +386,10 @@ export default {
       // [PHASE-6.5] Edits locaux des sliders idle — appliqués au store sur save.
       idleDraft: null, // { idleMs, confirmMs, receiptMs }
       consentDraft: { analytics: false, loyalty: false },
+      // [DESIGN-V1x-5] Edits locaux des préférences a11y staff — bindés
+      // directement aux dispatch kioskSettings (pas de save explicite : le
+      // composable useKioskA11y propage immédiatement aux attributs <html>).
+      a11yDraft: { contrast: 'aa', pmr: false, reducedMotion: false },
     };
   },
 
@@ -374,6 +431,17 @@ export default {
       return {
         analytics: !!s.consentAnalytics,
         loyalty: !!s.consentLoyalty,
+      };
+    },
+    // [DESIGN-V1x-5] Lecture des préférences a11y depuis kioskSettings — SSOT
+    // partagée avec KsA11ySettings drawer (côté client) et useKioskA11y
+    // composable. Le watcher initialise `a11yDraft` à l'unlock du PIN.
+    storedA11yPrefs() {
+      const s = this.$store.state.kioskSettings || {};
+      return {
+        contrast: s.contrast || 'aa',
+        pmr: !!s.pmr,
+        reducedMotion: !!s.reducedMotion,
       };
     },
     // [PHASE-6.5] Label rapide pour le badge hardware en haut du panel.
@@ -617,6 +685,50 @@ export default {
     _initEditableState() {
       this.idleDraft = { ...this.storedIdleTimeouts };
       this.consentDraft = { ...this.storedConsent };
+      // [DESIGN-V1x-5] Snapshot des prefs a11y au moment de l'unlock.
+      this.a11yDraft = { ...this.storedA11yPrefs };
+    },
+
+    // [DESIGN-V1x-5] Toggles a11y staff — bind direct au store (pas de save
+    // intermédiaire). Le composable useKioskA11y observe et applique les
+    // attributs <html> dans le même tick. Trace ActionLog côté serveur.
+    onContrastToggle(e) {
+      const next = e.target.checked ? 'aaa' : 'aa';
+      const before = this.storedA11yPrefs.contrast;
+      this.a11yDraft.contrast = next;
+      this.$store.dispatch('kioskSettings/setContrast', next);
+      this._logAdminOverride('a11y_contrast', { before, after: next });
+      this.showFeedback(this.$t('kiosk.admin_screen.fb_a11y_saved'));
+    },
+    onPmrToggle() {
+      const next = !!this.a11yDraft.pmr;
+      const before = this.storedA11yPrefs.pmr;
+      this.$store.dispatch('kioskSettings/setPmr', next);
+      this._logAdminOverride('a11y_pmr', { before, after: next });
+      this.showFeedback(this.$t('kiosk.admin_screen.fb_a11y_saved'));
+    },
+    onReducedMotionToggle() {
+      const next = !!this.a11yDraft.reducedMotion;
+      const before = this.storedA11yPrefs.reducedMotion;
+      this.$store.dispatch('kioskSettings/setReducedMotion', next);
+      this._logAdminOverride('a11y_reduced_motion', { before, after: next });
+      this.showFeedback(this.$t('kiosk.admin_screen.fb_a11y_saved'));
+    },
+    /**
+     * [DESIGN-V1x-5] Reset a11y → defaults (aa / pmr=false / reducedMotion=false).
+     * Ne touche PAS aux autres préférences (locale, audio, consent, idle).
+     */
+    resetA11y() {
+      const before = { ...this.storedA11yPrefs };
+      this.$store.dispatch('kioskSettings/setContrast', 'aa');
+      this.$store.dispatch('kioskSettings/setPmr', false);
+      this.$store.dispatch('kioskSettings/setReducedMotion', false);
+      this.a11yDraft = { contrast: 'aa', pmr: false, reducedMotion: false };
+      this._logAdminOverride('a11y_reset', {
+        before,
+        after: { contrast: 'aa', pmr: false, reducedMotion: false },
+      });
+      this.showFeedback(this.$t('kiosk.admin_screen.fb_a11y_reset'));
     },
 
     /**
@@ -910,7 +1022,9 @@ export default {
 
 .kiosk-admin-sub {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  /* UX 4.9 : WCAG AA fix — opacity 0.4 → 0.65 sur background sombre.
+     Ratio rgba(255,255,255,0.65) on dark bg ≈ 4.5:1 (AA pass). */
+  color: rgba(255, 255, 255, 0.65);
   margin: 0;
 }
 
@@ -1172,6 +1286,18 @@ export default {
   width: 20px;
   height: 20px;
   accent-color: #E8001C;
+}
+
+/* [DESIGN-V1x-5] Sous-libellé compact dans une ligne consent — affiche le
+   hint de chaque toggle a11y (PMR / AAA / reducedMotion) sous le label.
+   Cohérent avec le pattern .kiosk-admin-field small. */
+.kiosk-admin-a11y-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

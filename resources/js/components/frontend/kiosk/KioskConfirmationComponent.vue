@@ -38,6 +38,19 @@
         <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.total_paid') }}</span>
         <span class="kiosk-confirmation-price" data-testid="kiosk-confirmation-total">{{ formatPrice(displayTotal) }}</span>
       </div>
+      <!-- [QW-5] Mode de paiement (label SSOT déjà traduit côté snapshot) -->
+      <div v-if="paymentMethodLabel" class="kiosk-confirmation-row" data-testid="kiosk-confirmation-payment-row">
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.payment_method') }}</span>
+        <span class="kiosk-confirmation-meta">
+          {{ paymentMethodLabel }}
+          <span v-if="paymentMethodIcon" aria-hidden="true">{{ paymentMethodIcon }}</span>
+        </span>
+      </div>
+      <!-- [QW-5] ETA cuisine (fenêtre 5..baseMin+3) -->
+      <div class="kiosk-confirmation-row" data-testid="kiosk-confirmation-eta-row">
+        <span class="kiosk-confirmation-label">{{ $t('kiosk.confirmation.estimated_ready') }}</span>
+        <span class="kiosk-confirmation-meta">{{ estimatedReadyTime }}</span>
+      </div>
     </div>
 
     <div v-if="printFailed" class="kiosk-printer-fallback">
@@ -52,12 +65,21 @@
     </div>
 
     <!-- [GAP-35-7] Points fidélité gagnés — style Splash -->
+    <!-- [QW-3] aria-hidden sur l'étoile décorative -->
+    <!-- [QW-6] Affichage du solde total cumulé (gagnés + balance) -->
     <transition name="fade-up">
       <div v-if="pointsEarned > 0 && loyaltyCustomerName" class="kiosk-confirmation-points">
-        <div class="kiosk-points-icon">⭐</div>
+        <div class="kiosk-points-icon" aria-hidden="true">⭐</div>
         <div class="kiosk-points-text">
           <span class="kiosk-points-name">{{ loyaltyCustomerName }},</span>
           <span class="kiosk-points-value">{{ $t('kiosk.confirmation.loyalty_points', { n: pointsEarned }) }}</span>
+          <span
+            v-if="totalLoyaltyPoints > pointsEarned"
+            class="kiosk-points-balance"
+            data-testid="kiosk-confirmation-points-balance"
+          >
+            {{ $t('kiosk.confirmation.total_balance', { points: totalLoyaltyPoints, eur: pointsValueEur }) }}
+          </span>
         </div>
       </div>
     </transition>
@@ -70,6 +92,46 @@
       </div>
     </div>
 
+    <!-- [M-3] 5-star CSAT inline (post-commande) — silent fail, optimistic UI -->
+    <div
+      v-if="ratingOrderId && !ratingSubmitted"
+      class="kiosk-confirmation-csat"
+      data-testid="kiosk-confirmation-csat"
+    >
+      <div class="kiosk-csat-prompt">{{ $t('kiosk.confirmation.csat_prompt') }}</div>
+      <div
+        class="kiosk-csat-stars"
+        role="radiogroup"
+        :aria-label="$t('kiosk.confirmation.csat_aria')"
+      >
+        <button
+          v-for="n in 5"
+          :key="n"
+          type="button"
+          class="kiosk-csat-star"
+          :class="{ active: n <= hoverRating || n <= rating }"
+          @click="submitRating(n)"
+          @mouseenter="hoverRating = n"
+          @mouseleave="hoverRating = 0"
+          @focus="hoverRating = n"
+          @blur="hoverRating = 0"
+          role="radio"
+          :aria-checked="n === rating"
+          :aria-label="$t('kiosk.confirmation.csat_n_stars', { n })"
+          :data-testid="`kiosk-confirmation-csat-star-${n}`"
+        >
+          <span aria-hidden="true">★</span>
+        </button>
+      </div>
+    </div>
+    <div
+      v-else-if="ratingSubmitted"
+      class="kiosk-confirmation-csat-thanks"
+      data-testid="kiosk-confirmation-csat-thanks"
+    >
+      {{ $t('kiosk.confirmation.csat_thanks') }} <span aria-hidden="true">✓</span>
+    </div>
+
     <button
       class="kiosk-btn-print"
       :class="{ 'is-printing': printStatus === 'printing', 'is-done': printStatus === 'done', 'is-error': printStatus === 'error' }"
@@ -78,15 +140,35 @@
       :aria-busy="printStatus === 'printing'"
       data-testid="kiosk-confirmation-cta-print"
     >
-      <span v-if="printStatus === 'printing'">⏳ {{ $t('kiosk.confirmation.printing') }}</span>
-      <span v-else-if="printStatus === 'done'">✅ {{ $t('kiosk.confirmation.printed') }}</span>
-      <span v-else-if="printStatus === 'error'">❌ {{ $t('kiosk.confirmation.print_error') }}</span>
-      <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
+      <!-- [QW-3] aria-hidden sur emojis purement décoratifs -->
+      <span v-if="printStatus === 'printing'">
+        <span aria-hidden="true">⏳</span> {{ $t('kiosk.confirmation.printing') }}
+      </span>
+      <span v-else-if="printStatus === 'done'">
+        <span aria-hidden="true">✅</span> {{ $t('kiosk.confirmation.printed') }}
+      </span>
+      <span v-else-if="printStatus === 'error'">
+        <span aria-hidden="true">❌</span> {{ $t('kiosk.confirmation.print_error') }}
+      </span>
+      <span v-else>
+        <span aria-hidden="true">🖨️</span> {{ $t('kiosk.confirmation.print_button') }}
+      </span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
+    <!-- [DESIGN-V1x-4] Migration vers KsButton DS — variant=primary, size=md
+         pour rester proportionné à la card 400px et au print button compact
+         (l'ancien .kiosk-btn-home faisait ~52px ; KsButton md fait 82px tout
+         en gardant le tap target PMR ≥ 64px). size=lg serait disproportionné
+         dans ce contexte (110px hero, dédié aux CTA plein écran type Cash). -->
+    <KsButton
+      class="kiosk-confirmation-home"
+      variant="primary"
+      size="md"
+      data-testid="kiosk-confirmation-cta-home"
+      @click="goHome"
+    >
       {{ $t('kiosk.confirmation.new_order') }} →
-    </button>
+    </KsButton>
   </div>
 
   <!-- Receipt zone (only visible when printing) -->
@@ -127,6 +209,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
@@ -169,6 +252,18 @@ export default {
       // [GAP-35-7] Snapshot loyalty customer before cart reset
       _snapshotLoyaltyName:  null,
       _snapshotOrderTotal:   null,
+      // [QW-5] Raw key (cash|card|tr) needed for icon mapping (the
+      // existing _snapshotPayment is the translated label).
+      _snapshotPaymentKey:   null,
+      // [QW-6] Pre-existing loyalty balance captured before cart reset.
+      _snapshotLoyaltyBalance: 0,
+      // [M-3] CSAT inline state
+      rating:           0,
+      hoverRating:      0,
+      ratingSubmitted:  false,
+      // [M-3] DB id (numeric PK) snapshotted from kioskCart.orderRef.
+      // Distinct from `orderNumber` (which is the queue display string).
+      ratingOrderId:    null,
     };
   },
   computed: {
@@ -223,6 +318,41 @@ export default {
       const browserLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'fr-FR';
       return new Date().toLocaleString(browserLocale, { dateStyle: 'short', timeStyle: 'short' });
     },
+    // [QW-5] Reuse _snapshotPayment which is already the translated label
+    // (set in mounted() from the same map). Falls back to '' so the row hides.
+    paymentMethodLabel() {
+      return this._snapshotPayment || '';
+    },
+    // [QW-5] Icon keyed on the raw cart paymentMethod string (cash|card|tr).
+    paymentMethodIcon() {
+      const map = { card: '💳', cash: '💶', tr: '🎫' };
+      return map[this._snapshotPaymentKey] || '';
+    },
+    // [QW-5] ETA fenêtre 5..baseMin+3, basée sur Settings.preparation_time.
+    estimatedReadyTime() {
+      const lists = this.$store.state.globalState?.lists;
+      const baseMin = parseInt(
+        lists?.order_setup_food_preparation_time
+          ?? lists?.preparation_time
+          ?? 5,
+        10,
+      ) || 5;
+      const min = Math.max(1, baseMin);
+      return this.$t('kiosk.confirmation.minutes_range', { min, max: min + 3 });
+    },
+    // [QW-6] Solde total cumulé (gagnés + balance pré-existant).
+    totalLoyaltyPoints() {
+      const earned = this.pointsEarned || 0;
+      const before = this._snapshotLoyaltyBalance || 0;
+      return earned + before;
+    },
+    // [QW-6] Conversion points → euros via le même rate SSOT que pointsEarned.
+    pointsValueEur() {
+      const lists = this.$store.state.globalState?.lists;
+      const rate = parseInt(lists?.loyalty_points_per_euro, 10) || 0;
+      if (rate <= 0) return '0.00';
+      return (this.totalLoyaltyPoints / rate).toFixed(2);
+    },
   },
   mounted() {
     // Snapshot cart data BEFORE resetting, so receipt can still be printed
@@ -258,14 +388,19 @@ export default {
       // été posé (locale au paiement) → on ne re-traduit pas pour rester
       // cohérent avec le ticket imprimé.
       this._snapshotPayment = snapshot.paymentMethod || '';
+      // [QW-5] La clé brute (cash|card|tr) survit aussi pour l'icône.
+      this._snapshotPaymentKey = snapshot.paymentMethodKey || null;
     } else {
       const rawMethod = state?.paymentMethod;
       this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+      this._snapshotPaymentKey = rawMethod || null;
     }
     // [GAP-35-7] Snapshot loyalty customer name and order total for points display
+    // [QW-6] Capture balance pré-existant pour totalLoyaltyPoints (gagnés + solde).
     if (cartIsEmpty && snapshot) {
       this._snapshotLoyaltyName = snapshot.loyaltyCustomerName || null;
       this._snapshotOrderTotal = Number.isFinite(snapshot.total) ? snapshot.total : 0;
+      this._snapshotLoyaltyBalance = Number.isFinite(snapshot.loyaltyBalance) ? snapshot.loyaltyBalance : 0;
     } else {
       const loyaltyCustomer = state?.loyaltyCustomer;
       this._snapshotLoyaltyName = loyaltyCustomer?.name || loyaltyCustomer?.first_name || null;
@@ -273,7 +408,23 @@ export default {
       this._snapshotOrderTotal = this.orderTotal != null
         ? this.orderTotal
         : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+      // Le payload backend renvoie selon le cas `loyalty_balance` ou
+      // `loyalty_points` ; on tolère les deux + 0 par défaut.
+      this._snapshotLoyaltyBalance = parseInt(
+        loyaltyCustomer?.loyalty_balance
+          ?? loyaltyCustomer?.loyalty_points
+          ?? loyaltyCustomer?.points
+          ?? 0,
+        10,
+      ) || 0;
     }
+
+    // [M-3] Snapshot l'ID DB numérique avant le reset du panier — distinct
+    // du `orderNumber` (queue display string) qui ne sert qu'à l'affichage.
+    // Source : `kioskCart.SET_ORDER_REF` posé par submitOrder dans le store.
+    this.ratingOrderId = state?.orderRef
+      ? parseInt(state.orderRef, 10) || null
+      : null;
 
     // Reset cart immediately — confirmation screen owns the data via snapshot
     this.$store.dispatch('kioskCart/reset');
@@ -292,7 +443,11 @@ export default {
         subtotal: this._snapshotSubtotal,
         items: this._snapshotItems,
         paymentMethod: this._snapshotPayment,
+        // [QW-5] Persiste la clé brute pour l'icône à la reload F5.
+        paymentMethodKey: this._snapshotPaymentKey,
         loyaltyCustomerName: this._snapshotLoyaltyName,
+        // [QW-6] Persiste le solde pré-existant pour totalLoyaltyPoints.
+        loyaltyBalance: this._snapshotLoyaltyBalance,
         pointsEarned: this.pointsEarned || 0,
         restaurantName: this.restaurantName,
       });
@@ -406,6 +561,34 @@ export default {
 
     sanitizeItemName(name) {
       return sanitizeKioskCustomerFacingText(name || '');
+    },
+
+    // [M-3] CSAT 5-star inline submit — silent fail (network/down), optimistic UI.
+    // Endpoint: POST /api/frontend/order/{orderId}/rating (auth:sanctum + throttle 10/min).
+    async submitRating(n) {
+      if (this.ratingSubmitted) return;
+      const stars = parseInt(n, 10);
+      if (!Number.isFinite(stars) || stars < 1 || stars > 5) return;
+      this.rating = stars;
+      // Optimistic flip — réseau coupé / endpoint en erreur ne doit pas
+      // bloquer le client en bas du parcours (CSAT n'est pas critique).
+      const orderId = this.ratingOrderId;
+      if (!orderId) {
+        this.ratingSubmitted = true;
+        return;
+      }
+      try {
+        // axios.defaults.baseURL est `/api` (cf. resources/js/app.js).
+        await axios.post(`frontend/order/${orderId}/rating`, {
+          rating: stars,
+          source: 'kiosk',
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[CSAT] submit failed (silent)', e?.message || e);
+      } finally {
+        this.ratingSubmitted = true;
+      }
     },
 
     // formatPrice() provided by kioskPriceMixin
@@ -578,28 +761,17 @@ export default {
 
 .kiosk-timer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2ECC71, #00b894);
+  /* [QW-5] Timer = countdown ≠ validation success — couleur muted pour
+     ne pas reproduire le vert de la coche de confirmation. */
+  background: var(--kiosk-text-muted, #5A5A5A);
   border-radius: 3px;
   transition: width 1s linear;
 }
 
-/* CTA */
-.kiosk-btn-home {
-  background: linear-gradient(135deg, #E8001C, #C0001A);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 1rem 2.4rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.18);
-  transition: transform 0.1s, box-shadow 0.1s;
+/* CTA — [DESIGN-V1x-4] KsButton DS atomic. Wrapping class only owns
+   the fadeUp entrance animation; visual base is delegated to KsButton. */
+.kiosk-confirmation-home {
   animation: fadeUp 0.5s ease-out 1.3s both;
-}
-.kiosk-btn-home:active {
-  transform: scale(0.96);
-  box-shadow: 0 4px 14px rgba(232,0,28,0.3);
 }
 
 @keyframes fadeUp {
@@ -622,6 +794,64 @@ export default {
 .kiosk-btn-print:disabled { opacity: 0.6; cursor: default; }
 .kiosk-btn-print.is-done { border-color: rgba(46,204,113,0.5); color: #2ecc71; }
 .kiosk-btn-print.is-error { border-color: rgba(232,0,28,0.5); color: #ff6b7a; }
+
+/* [QW-5] Payment / ETA meta rows — variantes visuelles plus discrètes que
+   le total pour ne pas concurrencer le numéro de commande comme info clé. */
+.kiosk-confirmation-meta {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f1f1f;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* [QW-6] Solde total — ligne secondaire sous "+N points". */
+.kiosk-points-balance {
+  font-size: 0.78rem;
+  color: #8a6b17;
+  margin-top: 2px;
+}
+
+/* [M-3] CSAT 5-star inline */
+.kiosk-confirmation-csat {
+  margin: 0.5rem auto 0.25rem;
+  text-align: center;
+  animation: fadeUp 0.5s ease-out 1.25s both;
+}
+.kiosk-csat-prompt {
+  font-size: 0.95rem;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  margin-bottom: 8px;
+}
+.kiosk-csat-stars {
+  display: inline-flex;
+  gap: 8px;
+}
+.kiosk-csat-star {
+  background: transparent;
+  border: none;
+  font-size: 36px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.15s ease, transform 0.15s ease;
+  font-family: inherit;
+  /* Tap target ≥ 44px (WCAG 2.5.5 + EAA) */
+  min-width: 44px;
+  min-height: 44px;
+}
+.kiosk-csat-star:hover,
+.kiosk-csat-star:focus-visible { transform: scale(1.15); outline: none; }
+.kiosk-csat-star:focus-visible { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.45); border-radius: 8px; }
+.kiosk-csat-star.active { color: var(--kiosk-warning, #F59E0B); }
+.kiosk-confirmation-csat-thanks {
+  color: var(--kiosk-success, #1B8A3A);
+  font-weight: 700;
+  margin: 0.75rem auto 0.25rem;
+  animation: fadeUp 0.4s ease-out;
+}
 
 /* Receipt zone — visible only when printing via window.print() */
 .kiosk-receipt-zone { display: none; }

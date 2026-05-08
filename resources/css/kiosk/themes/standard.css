@@ -1,0 +1,20 @@
+/* =============================================================================
+   Standard — thème par défaut FoodKing (rouge marque).
+   -----------------------------------------------------------------------------
+   Aucun override de couleur ici : le thème "standard" laisse intacts les
+   tokens base définis dans `resources/css/kiosk/tokens.css`. Il neutralise
+   simplement les variables décoratives (emoji prefix, banner) pour que
+   le kiosk affiche bien son look hors période thématique.
+
+   Ce fichier sert d'idempotence : si le service kioskThemeManager applique
+   `data-kiosk-theme="standard"` (par défaut ou par fallback), aucune
+   variable ne change — c'est intentionnel.
+   ============================================================================= */
+
+:root[data-kiosk-theme="standard"] {
+    /* Variables décoratives explicitement vides : évite qu'un thème
+       précédent ne laisse une "fuite" via :root sans data-attribute. */
+    --kiosk-theme-emoji-prefix: '';
+    --kiosk-theme-pattern: none;
+    --kiosk-theme-banner-text: '';
+}
