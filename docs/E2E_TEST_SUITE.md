@@ -213,3 +213,28 @@ When a Wave 4.3 test fails :
 - Existing massive test plan (legacy) : `docs/MASSIVE_TEST_PLAN.md`
 - Smoke baseline : `tests/e2e/01-auth-refresh.spec.js` … `04-kds-status.spec.js`
 - Frozen zones : `~/.claude/projects/.../memory/reference_frozen_zones.md`
+
+---
+
+## 10. Suite 7 — Stress / Load (Wave 4.4 addendum)
+
+The Suite 7 stress / load track lives in three places — each enforcing
+a different property:
+
+| Track | Path | Run | Asserts |
+|---|---|---|---|
+| Structural (CI) | `tests/load/RushMidiSimulationTest.php` | `php artisan test --testsuite=Load` or `--group=stress` | fiscal_sequence_no monotonic, queue_number unique, idempotency unique, outbox dispatched, Z window aggregation correct |
+| HTTP concurrency (owner-driven) | `php artisan foodking:e2e:stress --orders=N --branches=M --concurrency=K --type=pos\|kiosk\|mixed --output=path` | dev server with MySQL + Redis, owner runs nightly or pre-merge | Cache::lock + DB UNIQUE under real concurrency, P50/P95 latency, status breakdown, cross-branch leak detection |
+| Multi-context UI | `tests/e2e/concurrent-orders.spec.js` | `npx playwright test concurrent-orders` | SPA mounts under N parallel contexts, no cross-context auth leak, no 5xx on concurrent SPA fetches |
+
+**Why three?** sqlite-memory in CI cannot truly contend (`lockForUpdate` is
+a no-op on SQLite per Laravel docs). The PHPUnit volet exists to gate
+regressions on the structural invariants; the artisan command exists to
+exercise the actual production-like Cache::lock + UNIQUE constraint
+behaviour; the Playwright volet exists to prove the SPA does not melt
+under multi-tab use. None of the three is a substitute for the others.
+
+The artisan command is REGISTERED via `$this->load(__DIR__.'/Commands')`
+in `app/Console/Kernel.php::commands()` — auto-discovery, no Kernel.php
+modification required (sister command : `MonitorOutboxStaleness` follows
+the same pattern).

@@ -11,6 +11,15 @@
         <testsuite name="Feature">
             <directory suffix="Test.php">./tests/Feature</directory>
         </testsuite>
+        <!-- [F-017 Suite 7] Stress and load suite (rush midi simulation).
+             Lives in tests/load/ per the F-017 plan. Tests are tagged
+             group=stress so they can be targeted via
+             php artisan test group=stress. They also run as part of
+             the default Load testsuite so regressions on fiscal+queue
+             monotonicity invariants surface in normal CI. -->
+        <testsuite name="Load">
+            <directory suffix="Test.php">./tests/load</directory>
+        </testsuite>
     </testsuites>
     <coverage processUncoveredFiles="true">
         <include>
