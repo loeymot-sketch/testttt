@@ -929,6 +929,11 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
+        // [WAVE-ALPHA-A3 / M-3] CSAT 5-star inline post-order rating.
+        Route::post('/{orderId}/rating', [\App\Http\Controllers\Frontend\OrderRatingController::class, 'store'])
+            ->where('orderId', '[0-9]+')
+            ->middleware('throttle:10,1')
+            ->name('rating');
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {

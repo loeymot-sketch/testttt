@@ -414,12 +414,9 @@ Sizes prédictibles : Primary 76-92px height, Secondary 60px, Tertiary 34-50px. 
 3. **CSAT inline** — boost CRM data ; couplé V1.x marketing automation pour campagnes
 4. **DS atomic refactor (KsButton)** — coût dev moyen (3-5j) mais ROI long-terme énorme (consistency garantie + maintenance facile)
 
-### 6.3 À éviter
+### 6.3 Validation owner — exécution intégrale prévue
 
-1. **Dark mode kiosk** — aucune valeur en QSR (lumière ambiante restaurant variable), coût élevé
-2. **Animations excessives** — Confirmation est OK, mais sur Cart ça gênerait la rapidité
-3. **Personalisation extrême wizard** (BK-style drag-drop) — complexifie sans ROI clair en QSR rapide-fast-food (target FoodKing)
-4. **Multi-thème skinning saisonnier** sans framework solide — dette technique énorme
+Owner a validé l'ensemble des recommandations §5.1 + §5.2 + §5.3 + §5.4 (V2 incluant drag-drop wizard, AI upsell, voice ordering, skinning saisonnier). Photos articles HD = owner-handled. Tout le reste = plan + exécution orchestrateur. Détails : `plans/KIOSK_DESIGN_EXECUTION_MASTER_2026-05-08.md`.
 
 ---
 

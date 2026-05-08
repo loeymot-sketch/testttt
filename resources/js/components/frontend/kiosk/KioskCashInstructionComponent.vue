@@ -14,8 +14,12 @@
       <KsCard elevation="lift" padding="lg" class="kiosk-cash__card">
         <div class="kiosk-cash__row">
           <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.order_label') }}</span>
-          <strong class="kiosk-cash__number" data-testid="kiosk-cash-order-number">
-            #{{ orderNumber || '—' }}
+          <strong
+            class="kiosk-cash__number"
+            data-testid="kiosk-cash-order-number"
+            :aria-label="orderNumberAriaLabel"
+          >
+            <span aria-hidden="true">#&nbsp;{{ formattedOrderNumber }}</span>
           </strong>
         </div>
         <div class="kiosk-cash__divider" aria-hidden="true" />
@@ -31,11 +35,21 @@
         </div>
       </KsCard>
 
+      <p class="kiosk-cash__tip" data-testid="kiosk-cash-tip-receipt">
+        <span class="kiosk-cash__tip-icon" aria-hidden="true">💡</span>
+        <span>{{ $t('kiosk.cash_instruction.tip_receipt_after_payment') }}</span>
+      </p>
+
       <p class="kiosk-cash__help">{{ $t('kiosk.cash_instruction.help') }}</p>
     </div>
 
     <footer class="kiosk-cash__footer">
       <p v-if="countdown > 0" class="kiosk-cash__countdown" aria-live="polite">
+        <span
+          v-if="countdownPaused"
+          class="kiosk-cash__countdown-paused"
+          aria-hidden="true"
+        >⏸</span>
         {{ $t('kiosk.cash_instruction.auto_redirect', { n: countdown }) }}
       </p>
       <KsButton
@@ -84,20 +98,65 @@ export default {
         return {
             countdown: this.autoRedirectSeconds,
             timer: null,
+            countdownPaused: false,
+            pauseTimeout: null,
         };
+    },
+    computed: {
+        /**
+         * Numéro de commande espacé pour lisibilité comptoir staff (QW-4).
+         * "1234" → "1 2 3 4" — rendu visuel uniquement, le SR garde
+         * la valeur compacte via aria-label (sinon il vocalise « un, deux,
+         * trois, quatre » comme tokens séparés au lieu de « mille deux
+         * cent trente-quatre »).
+         */
+        formattedOrderNumber() {
+            const raw = String(this.orderNumber ?? '');
+            if (!raw) return '—';
+            return raw.split('').join(' ');
+        },
+        orderNumberAriaLabel() {
+            const raw = String(this.orderNumber ?? '');
+            // Defense-in-depth : on retire tout caractère non-alphanumérique
+            // (et `-`, `_`) avant de l'injecter dans aria-label. Les attributs
+            // sont déjà quotés par Vue mais on garde une marge sur tout
+            // contenu props imprévisible.
+            const safe = raw.replace(/[^A-Za-z0-9_-]/g, '');
+            if (!safe) return this.$t('kiosk.cash_instruction.order_label');
+            return `${this.$t('kiosk.cash_instruction.order_label')} ${safe}`;
+        },
     },
     mounted() {
         this.logEvent('cash_instruction_shown');
         this.startCountdown();
+        // M-2 : pause countdown si l'utilisateur interagit (UX accessibilité
+        // personnes âgées). Le timer reprend après 3 s d'inactivité.
+        this._activityHandler = () => this.pauseCountdown();
+        if (typeof window !== 'undefined') {
+            window.addEventListener('mousemove', this._activityHandler, { passive: true });
+            window.addEventListener('touchstart', this._activityHandler, { passive: true });
+            window.addEventListener('scroll', this._activityHandler, { passive: true });
+        }
     },
     beforeUnmount() {
         this.stopCountdown();
+        if (this._activityHandler && typeof window !== 'undefined') {
+            window.removeEventListener('mousemove', this._activityHandler);
+            window.removeEventListener('touchstart', this._activityHandler);
+            window.removeEventListener('scroll', this._activityHandler);
+            this._activityHandler = null;
+        }
+        if (this.pauseTimeout) {
+            clearTimeout(this.pauseTimeout);
+            this.pauseTimeout = null;
+        }
     },
     methods: {
         startCountdown() {
             if (this.autoRedirectSeconds <= 0) return;
             this.countdown = this.autoRedirectSeconds;
             this.timer = setInterval(() => {
+                if (this.countdownPaused) return;
                 this.countdown -= 1;
                 if (this.countdown <= 0) {
                     this.stopCountdown();
@@ -110,6 +169,19 @@ export default {
                 clearInterval(this.timer);
                 this.timer = null;
             }
+        },
+        /**
+         * M-2 : Met en pause le décompte 3 s tant que l'utilisateur
+         * interagit. Sécurise les personnes qui lisent lentement avant
+         * d'aller en caisse — pas de redirection-surprise.
+         */
+        pauseCountdown() {
+            this.countdownPaused = true;
+            if (this.pauseTimeout) clearTimeout(this.pauseTimeout);
+            this.pauseTimeout = setTimeout(() => {
+                this.countdownPaused = false;
+                this.pauseTimeout = null;
+            }, 3000);
         },
         acknowledge(reason = 'user') {
             this.stopCountdown();
@@ -240,5 +312,37 @@ export default {
     font-size: calc(var(--kiosk-font-size-caption) * var(--kiosk-text-scale));
     color: var(--kiosk-text-muted);
     font-weight: var(--kiosk-font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.kiosk-cash__countdown-paused {
+    color: var(--kiosk-primary);
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+/* QW-4 : tip impression ticket — bandeau discret sous la card. */
+.kiosk-cash__tip {
+    margin: var(--kiosk-space-4) auto var(--kiosk-space-3);
+    max-width: 600px;
+    padding: var(--kiosk-space-3) var(--kiosk-space-4);
+    background: var(--kiosk-primary-soft);
+    border-left: 4px solid var(--kiosk-primary);
+    border-radius: var(--kiosk-radius-3);
+    color: var(--kiosk-text-muted);
+    font-size: calc(var(--kiosk-font-size-body) * var(--kiosk-text-scale));
+    line-height: var(--kiosk-line-height-snug);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.kiosk-cash__tip-icon {
+    font-size: 1.2em;
+    line-height: 1;
 }
 </style>

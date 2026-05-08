@@ -58,7 +58,9 @@ function safeLocalStorage() {
  * @param {number} [receipt.subtotal]          - Sous-total HT/TTC (selon SSOT).
  * @param {Array}  [receipt.items]             - Lignes du ticket (nom + qty + total).
  * @param {string} [receipt.paymentMethod]
+ * @param {string} [receipt.paymentMethodKey] - clé brute (cash|card|tr) pour reconstruire l'icône au reload F5.
  * @param {string} [receipt.loyaltyCustomerName]
+ * @param {number} [receipt.loyaltyBalance]   - solde points pré-existant (avant cette commande).
  * @param {number} [receipt.pointsEarned]
  * @param {string} [receipt.restaurantName]
  * @param {string} [receipt.paidAt]            - ISO 8601, fallback now().
@@ -87,7 +89,13 @@ export function saveKioskReceiptSnapshot(receipt) {
             }))
             : [],
         paymentMethod: receipt.paymentMethod || '',
+        // [QW-5] Clé brute (cash|card|tr) pour reconstruire l'icône au F5.
+        paymentMethodKey: typeof receipt.paymentMethodKey === 'string' && receipt.paymentMethodKey
+            ? receipt.paymentMethodKey
+            : null,
         loyaltyCustomerName: receipt.loyaltyCustomerName || null,
+        // [QW-6] Solde de points pré-existant pour totalLoyaltyPoints.
+        loyaltyBalance: Number.isFinite(receipt.loyaltyBalance) ? receipt.loyaltyBalance : 0,
         pointsEarned: Number.isFinite(receipt.pointsEarned) ? receipt.pointsEarned : 0,
         restaurantName: receipt.restaurantName || null,
     };

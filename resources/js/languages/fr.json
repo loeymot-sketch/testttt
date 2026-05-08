@@ -262,6 +262,9 @@
         "article_singular": "article",
         "article_plural": "articles",
         "loading": "Chargement…",
+        "skeleton": {
+            "aria_label": "Chargement du contenu en cours…"
+        },
         "error_loading": "Impossible de charger les articles",
         "retry": "Réessayer",
         "popular": "Populaire",
@@ -292,7 +295,8 @@
             "amount_label": "Montant à régler",
             "help": "Paiement en espèces uniquement à la caisse.",
             "cta_understood": "J'ai compris",
-            "auto_redirect": "Retour à l'accueil dans {n} s"
+            "auto_redirect": "Retour à l'accueil dans {n} s",
+            "tip_receipt_after_payment": "Le ticket sera imprimé après votre paiement au comptoir."
         },
         "error": {
             "back_home": "Retour à l'accueil",
@@ -435,7 +439,9 @@
             "payment_declined": "Paiement refusé par l'appareil",
             "payment_cancelled": "Paiement annulé.",
             "payment_cancelled_toast": "Paiement annulé",
-            "speech_error": "Paiement refusé. {msg}"
+            "speech_error": "Paiement refusé. {msg}",
+            "secured_tls": "Transaction sécurisée — chiffrement TLS 1.3",
+            "accepted_cards_aria": "Moyens de paiement acceptés"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -772,7 +778,15 @@
                 "receipt_loyalty": "FIDÉLITÉ : +{n} pts",
                 "receipt_thanks": "Merci de votre visite !",
                 "receipt_present": "Présentez ce ticket au comptoir.",
-                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir."
+                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir.",
+                "payment_method": "Mode de paiement",
+                "estimated_ready": "Prêt dans environ",
+                "minutes_range": "{min}-{max} min",
+                "total_balance": "Solde total : {points} pts (~{eur} €)",
+                "csat_prompt": "Comment était votre commande ?",
+                "csat_aria": "Notez votre expérience de 1 à 5 étoiles",
+                "csat_n_stars": "{n} étoiles",
+                "csat_thanks": "Merci pour votre retour !"
             }
         },
         "order_type_label": "Type de commande",

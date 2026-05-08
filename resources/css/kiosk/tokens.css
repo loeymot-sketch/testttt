@@ -48,6 +48,12 @@
   --kiosk-focus-width:  4px;
   --kiosk-focus-offset: 2px;
 
+  /* -- States (disabled, etc.) ----------------------------------------------- */
+  /* [DESIGN-QW-1 — 2026-05-08] Standardize disabled-state opacity across kiosk
+     components. Scoped overrides in Vue components keep precedence; this is the
+     defensive fallback consumed by global-a11y.css and any future atom. */
+  --kiosk-opacity-disabled: 0.5;
+
   /* -- Overlays -------------------------------------------------------------- */
   --kiosk-overlay-modal:   rgba(26, 26, 26, 0.55);
   --kiosk-overlay-rupture: rgba(255, 255, 255, 0.92);

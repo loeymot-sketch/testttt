@@ -71,7 +71,12 @@ describe('KioskCashInstructionComponent', () => {
         });
 
         expect(wrapper.find('[data-testid="kiosk-cash-title"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="kiosk-cash-order-number"]').text()).toContain('000123');
+        const numberEl = wrapper.find('[data-testid="kiosk-cash-order-number"]');
+        // QW-4 : le numéro est espacé visuellement pour la lisibilité staff
+        // ("000123" → "# 0 0 0 1 2 3"), mais l'aria-label garde la valeur
+        // brute pour les screen readers.
+        expect(numberEl.text()).toContain('0 0 0 1 2 3');
+        expect(numberEl.attributes('aria-label')).toContain('000123');
         expect(wrapper.text()).toContain('Rendez-vous en caisse');
     });
 

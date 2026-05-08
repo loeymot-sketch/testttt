@@ -180,6 +180,20 @@
         role="alert"
         data-testid="kiosk-payment-error"
       >{{ error }}</div>
+      <!-- [DESIGN-M-4] Security microcopy + accepted card logos (additive) -->
+      <div class="kiosk-pay-security-row" data-testid="kiosk-payment-security-row">
+        <span class="kiosk-pay-security-text">
+          <span aria-hidden="true">🔒</span>
+          {{ $t('kiosk.pay_screen.secured_tls') }}
+        </span>
+        <ul class="kiosk-pay-card-logos" :aria-label="$t('kiosk.pay_screen.accepted_cards_aria')">
+          <li><span class="kiosk-pay-logo kiosk-pay-logo--visa" aria-label="Visa">VISA</span></li>
+          <li><span class="kiosk-pay-logo kiosk-pay-logo--mc" aria-label="Mastercard">MC</span></li>
+          <li><span class="kiosk-pay-logo kiosk-pay-logo--amex" aria-label="American Express">AMEX</span></li>
+          <li><span class="kiosk-pay-logo kiosk-pay-logo--apple" aria-label="Apple Pay">⌘Pay</span></li>
+          <li><span class="kiosk-pay-logo kiosk-pay-logo--google" aria-label="Google Pay">GPay</span></li>
+        </ul>
+      </div>
       <div class="kiosk-pay-confirm-inner">
       <button
         class="kiosk-btn-confirm"
@@ -893,5 +907,59 @@ export default {
   outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));
   outline-offset: 3px;
 }
+
+/* [DESIGN-M-4] Security microcopy + accepted cards row (additive, scope-minimal) */
+.kiosk-pay-security-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 12px auto 18px;
+  max-width: 680px;
+  padding: 0 16px;
+}
+
+.kiosk-pay-security-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  font-weight: 500;
+}
+
+.kiosk-pay-card-logos {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.kiosk-pay-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--kiosk-border, #EEE6D9);
+  border-radius: 6px;
+  background: var(--kiosk-surface, #fff);
+  color: var(--kiosk-text-muted, #5A5A5A);
+  user-select: none;
+}
+
+.kiosk-pay-logo--visa { color: #1A1F71; }
+.kiosk-pay-logo--mc { color: #EB001B; }
+.kiosk-pay-logo--amex { color: #2E77BC; }
+.kiosk-pay-logo--apple { color: #000; }
+.kiosk-pay-logo--google { color: #4285F4; }
 
 </style>

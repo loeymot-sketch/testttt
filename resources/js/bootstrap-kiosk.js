@@ -31,6 +31,9 @@
 import '../css/kiosk/tokens.css';
 import '../css/kiosk/tokens-aaa.css';
 import '../css/kiosk/tokens-pmr.css';
+// -- Global A11y defaults (QW-1 disabled opacity, QW-2 focus-visible) ---------
+// Cascade specificity 0 via `:where()` — scoped Vue styles always win.
+import '../css/kiosk/global-a11y.css';
 
 // -- Atoms barrel (re-export) --------------------------------------------------
 export {

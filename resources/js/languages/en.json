@@ -906,6 +906,9 @@
         "article_plural": "items",
         "per_unit": "per unit",
         "loading": "Loading...",
+        "skeleton": {
+            "aria_label": "Content is loading…"
+        },
         "error_loading": "Error loading items",
         "retry": "Retry",
         "popular": "Popular",
@@ -936,7 +939,8 @@
             "amount_label": "Amount due",
             "help": "Cash payment at the counter only.",
             "cta_understood": "I understand",
-            "auto_redirect": "Returning to home in {n} s"
+            "auto_redirect": "Returning to home in {n} s",
+            "tip_receipt_after_payment": "Your receipt will print after payment at the counter."
         },
         "error": {
             "back_home": "Back to home",
@@ -1082,7 +1086,9 @@
             "payment_declined": "Payment declined by the device",
             "payment_cancelled": "Payment cancelled.",
             "payment_cancelled_toast": "Payment cancelled",
-            "speech_error": "Payment declined. {msg}"
+            "speech_error": "Payment declined. {msg}",
+            "secured_tls": "Secured transaction — TLS 1.3 encryption",
+            "accepted_cards_aria": "Accepted payment methods"
         },
         "upsell_screen": {
             "title": "Anything else?",
@@ -1419,7 +1425,15 @@
                 "receipt_loyalty": "LOYALTY: +{n} pts",
                 "receipt_thanks": "Thank you for visiting!",
                 "receipt_present": "Present this ticket at the counter.",
-                "speech_summary": "Order number {number} confirmed. Total paid: {total}. Please go to the counter."
+                "speech_summary": "Order number {number} confirmed. Total paid: {total}. Please go to the counter.",
+                "payment_method": "Payment method",
+                "estimated_ready": "Ready in approx.",
+                "minutes_range": "{min}-{max} min",
+                "total_balance": "Total balance: {points} pts (~{eur} €)",
+                "csat_prompt": "How was your order?",
+                "csat_aria": "Rate your experience from 1 to 5 stars",
+                "csat_n_stars": "{n} stars",
+                "csat_thanks": "Thanks for your feedback!"
             }
         },
         "order_type_label": "Order type",

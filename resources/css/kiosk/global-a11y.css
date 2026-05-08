@@ -1,0 +1,50 @@
+/* =============================================================================
+   FoodKing Kiosk — Global Accessibility Defaults
+   -----------------------------------------------------------------------------
+   Phase  : Wave Alpha A1 (2026-05-08)
+   Source : plans/KIOSK_DESIGN_AUDIT_CART_PAYMENT_2026-05-08.md (QW-1, QW-2)
+   Scope  : Defensive fallbacks for the kiosk SPA root (.kiosk-app).
+
+   DOCTRINE
+   --------
+   These rules use `:where()` so cascade specificity is 0 — any scoped style in
+   a Vue component (`<style scoped>` in KioskCart, KioskPayment, the 8 frozen
+   wizards, etc.) automatically wins. We never override existing component
+   designs; we only fill gaps where no rule exists.
+
+   QW-1 — Disabled state opacity standardisation
+     Cart historically used 0.5, Payment 0.4. Scoped values stay; new components
+     and unstyled `:disabled` / `[aria-disabled="true"]` elements inherit the
+     standard token `--kiosk-opacity-disabled` (= 0.5).
+
+   QW-2 — Global :focus-visible (WCAG 2.4.7)
+     Before this file, only KioskPayment exposed a visible focus ring. All
+     other interactive elements (`.kiosk-btn-*`, `[role="button"]`,
+     `[role="radio"]`, links, inputs…) violated WCAG 2.4.7 for keyboard / TAB
+     navigation. This rule provides a fallback ring; scoped rings in
+     kiosk-wizard.css (`.kiosk-touch-btn:focus-visible`) and the AAA mode
+     (tokens-aaa.css §75-84) keep their own colours.
+   ============================================================================= */
+
+/* -- QW-2 — Universal focus ring (cascade specificity 0) --------------------- */
+:where(.kiosk-app) *:focus-visible {
+    outline: 3px solid var(--kiosk-focus-ring, #2563EB);
+    outline-offset: 3px;
+}
+
+/* Specific override for buttons, role-buttons, role-radios — same fallback,
+   distinct selector for future per-control tweaks without breaking generic
+   *:focus-visible above. */
+:where(.kiosk-app) button:focus-visible,
+:where(.kiosk-app) [role="button"]:focus-visible,
+:where(.kiosk-app) [role="radio"]:focus-visible {
+    outline: 3px solid var(--kiosk-focus-ring, #2563EB);
+    outline-offset: 3px;
+}
+
+/* -- QW-1 — Disabled state opacity (defensive fallback) ---------------------- */
+:where(.kiosk-app) [aria-disabled="true"],
+:where(.kiosk-app) :disabled {
+    opacity: var(--kiosk-opacity-disabled, 0.5);
+    cursor: not-allowed;
+}
