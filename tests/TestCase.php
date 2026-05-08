@@ -56,6 +56,12 @@ abstract class TestCase extends BaseTestCase
             ['key' => 'order_setup_food_preparation_time', 'payload' => json_encode(30), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'order_setup_takeaway', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'order_setup_delivery', 'payload' => json_encode(1), 'group' => 'order_setup', 'created_at' => now(), 'updated_at' => now()],
+            // [WAVE5-KIOSK-001] POS group — pos_dine_in_enabled defaults to TRUE in test
+            // env so existing kiosk happy-path tests posting OrderType::KIOSK (sur place)
+            // keep passing. Production default remains FALSE (see Settings::group('pos')
+            // ->get('pos_dine_in_enabled', false) fallback). V1-disabled scenarios in
+            // sentinel tests must explicitly write pos_dine_in_enabled=0.
+            ['key' => 'pos_dine_in_enabled', 'payload' => json_encode(1), 'group' => 'pos', 'created_at' => now(), 'updated_at' => now()],
             // Company settings required for notifications (group = 'company')
             ['key' => 'company_name', 'payload' => json_encode('FoodKing Test'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'company_email', 'payload' => json_encode('test@foodking.com'), 'group' => 'company', 'created_at' => now(), 'updated_at' => now()],

@@ -147,6 +147,26 @@ class OrderRequest extends FormRequest
                 }
             }
 
+            // [WAVE5-KIOSK-001] V1 dine-in disabled enforcement (backend-only, kiosk path).
+            // POS path is gated server-side via PosOrderRequest::withValidator (DINING_TABLE
+            // rejected when `pos_dine_in_enabled` is off). The kiosk path historically
+            // bypassed all order_type restrictions on kiosk tokens (line below). Per memory
+            // `feedback_v1_dine_in_disabled_2026-05-06`, V1 ships in "à emporter only" mode;
+            // the kiosk frontend defines ORDER_TYPE_KIOSK=25 as "Sur place" (cf.
+            // KioskCartComponent.vue:357). Without this guard a kiosk client (UI bypass,
+            // legacy device, replay) can still submit order_type=25 and create a dine-in
+            // order. Frontend visual gating in KioskCart Vue is deferred to F-016b
+            // (frozen-zone wizards). This is a server-authoritative line of defense.
+            if ($isKioskToken
+                && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)
+                && in_array($orderTypeInt, [OrderType::KIOSK, OrderType::DINING_TABLE], true)) {
+                $validator->errors()->add(
+                    'order_type',
+                    'Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).'
+                );
+                return;
+            }
+
             if ($isKioskToken && in_array($orderTypeInt, [OrderType::KIOSK, OrderType::TAKEAWAY], true)) {
                 $this->validateOrderItemVariationsAfter($validator);
                 return; // Kiosk orders bypass order_type setting restrictions
