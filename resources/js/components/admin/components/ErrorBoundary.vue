@@ -1,8 +1,8 @@
 <template>
   <slot v-if="!error" />
-  <div v-else class="error-boundary">
-    <p class="error-boundary-msg">Ce widget a rencontré une erreur.</p>
-    <button class="error-boundary-btn" @click="reset">Réessayer</button>
+  <div v-else class="error-boundary" role="alert">
+    <p class="error-boundary-msg">{{ $t('dashboard.error_boundary.message') }}</p>
+    <button class="error-boundary-btn" @click="reset">{{ $t('dashboard.error_boundary.retry') }}</button>
   </div>
 </template>
 

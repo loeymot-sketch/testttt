@@ -1453,7 +1453,11 @@
             "vkeyb_space_short": "Space",
             "vkeyb_backspace": "Delete last character",
             "vkeyb_submit": "Confirm",
-            "vkeyb_submit_short": "OK"
+            "vkeyb_submit_short": "OK",
+            "toast_success": "Success",
+            "toast_error": "Error",
+            "toast_warning": "Warning",
+            "toast_info": "Information"
         },
         "consent": {
             "title": "Loyalty programme",
@@ -1476,6 +1480,47 @@
             "tpe_error": "Payment terminal issue",
             "call_staff": "Please call a staff member",
             "degraded_service": "Degraded service — some features are limited"
+        },
+        "tpe_error": {
+            "timeout": "Transaction timed out. Please try again.",
+            "declined": "Card declined by your bank.",
+            "card_error": "Card error. Please ask staff for help.",
+            "communication": "Connection issue with the terminal.",
+            "user_cancel": "Payment cancelled.",
+            "unknown": "Unknown error. Please ask staff for help."
         }
+    },
+    "dashboard": {
+        "realtime": {
+            "title": "Live dashboard (real-time)",
+            "daily_sales": "Daily sales",
+            "daily_orders": "Daily orders",
+            "average_ticket": "Average ticket"
+        },
+        "audit": {
+            "title": "Audit trail",
+            "col_user": "User",
+            "col_action": "Action",
+            "col_resource": "Resource",
+            "col_time": "Time",
+            "empty": "No recent activity."
+        },
+        "sla": {
+            "title": "SLA alerts (Kitchen > 15 min)",
+            "alerts_count": "{count} alert(s)",
+            "empty": "No SLA alerts. Kitchen flow is optimal.",
+            "ticket": "Ticket #{queueNumber} ({serial})",
+            "waiting_for": "Waiting for {minutes} minutes"
+        },
+        "channels": {
+            "title": "Channel breakdown (today)"
+        },
+        "error_boundary": {
+            "message": "This widget encountered an error.",
+            "retry": "Retry"
+        }
+    },
+    "a11y": {
+        "channel_share": "Channel {name}: {percent}%"
     }
 }

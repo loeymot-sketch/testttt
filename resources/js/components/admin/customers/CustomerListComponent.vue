@@ -83,7 +83,7 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="customers.length > 0">
-                        <tr class="db-table-body-tr" v-for="customer in customers" :key="customer">
+                        <tr class="db-table-body-tr" v-for="customer in customers" :key="customer.id">
                             <td class="db-table-body-td">
                                 {{ textShortener(customer.name, 20) }}
                             </td>

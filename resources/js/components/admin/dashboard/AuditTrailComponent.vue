@@ -3,17 +3,17 @@
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h4 class="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
                 <i class="lab lab-history text-primary"></i>
-                Audit Trail (Historique des Actions)
+                {{ $t('dashboard.audit.title') }}
             </h4>
-            
+
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 rounded-tl-lg">Utilisateur</th>
-                            <th scope="col" class="px-6 py-3">Action</th>
-                            <th scope="col" class="px-6 py-3">Ressource</th>
-                            <th scope="col" class="px-6 py-3 rounded-tr-lg">Temps</th>
+                            <th scope="col" class="px-6 py-3 rounded-tl-lg">{{ $t('dashboard.audit.col_user') }}</th>
+                            <th scope="col" class="px-6 py-3">{{ $t('dashboard.audit.col_action') }}</th>
+                            <th scope="col" class="px-6 py-3">{{ $t('dashboard.audit.col_resource') }}</th>
+                            <th scope="col" class="px-6 py-3 rounded-tr-lg">{{ $t('dashboard.audit.col_time') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -26,7 +26,7 @@
                             <td class="px-6 py-4 text-gray-400">{{ log.time }}</td>
                         </tr>
                         <tr v-if="auditLogs.length === 0">
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Aucun historique récent.</td>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">{{ $t('dashboard.audit.empty') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -36,27 +36,44 @@
 </template>
 
 <script>
+const BASE_DELAY = 30000;
+const MAX_DELAY = 240000;
+const FAILURE_THRESHOLD = 3;
+
 export default {
     name: "AuditTrailComponent",
     data() {
         return {
             auditLogs: [],
-            timer: null
+            pollTimeout: null,
+            pollFailures: 0,
+            pollDelay: BASE_DELAY,
         }
     },
     mounted() {
-        this.fetchData();
-        // Auto-refresh every 30 seconds
-        this.timer = setInterval(this.fetchData, 30000);
+        this.pollLoop();
     },
     beforeUnmount() {
-        clearInterval(this.timer);
+        clearTimeout(this.pollTimeout);
     },
     methods: {
-        fetchData() {
-            this.$store.dispatch('dashboard/auditTrail').then(res => {
-                this.auditLogs = res.data.data;
-            });
+        async fetchData() {
+            const res = await this.$store.dispatch('dashboard/auditTrail');
+            this.auditLogs = res.data.data;
+        },
+        async pollLoop() {
+            try {
+                await this.fetchData();
+                this.pollFailures = 0;
+                this.pollDelay = BASE_DELAY;
+            } catch (e) {
+                this.pollFailures++;
+                if (this.pollFailures >= FAILURE_THRESHOLD) {
+                    console.warn('[AuditTrail] consecutive polling failures, backing off');
+                    this.pollDelay = Math.min(this.pollDelay * 2, MAX_DELAY);
+                }
+            }
+            this.pollTimeout = setTimeout(() => this.pollLoop(), this.pollDelay);
         }
     }
 }

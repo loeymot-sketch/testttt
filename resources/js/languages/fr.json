@@ -806,7 +806,11 @@
             "vkeyb_space_short": "Espace",
             "vkeyb_backspace": "Supprimer le dernier caractère",
             "vkeyb_submit": "Valider",
-            "vkeyb_submit_short": "OK"
+            "vkeyb_submit_short": "OK",
+            "toast_success": "Succès",
+            "toast_error": "Erreur",
+            "toast_warning": "Avertissement",
+            "toast_info": "Information"
         },
         "consent": {
             "title": "Programme fidélité",
@@ -829,6 +833,47 @@
             "tpe_error": "Problème terminal de paiement",
             "call_staff": "Veuillez appeler un membre de l'équipe",
             "degraded_service": "Service dégradé — certaines fonctions sont réduites"
+        },
+        "tpe_error": {
+            "timeout": "Transaction expirée. Réessayez.",
+            "declined": "Carte refusée par votre banque.",
+            "card_error": "Erreur de carte. Contactez le personnel.",
+            "communication": "Problème de connexion avec le terminal.",
+            "user_cancel": "Paiement annulé.",
+            "unknown": "Erreur inconnue. Contactez le personnel."
         }
+    },
+    "dashboard": {
+        "realtime": {
+            "title": "Tableau de bord en temps réel",
+            "daily_sales": "Chiffre d'affaires du jour",
+            "daily_orders": "Commandes du jour",
+            "average_ticket": "Ticket moyen"
+        },
+        "audit": {
+            "title": "Historique des actions",
+            "col_user": "Utilisateur",
+            "col_action": "Action",
+            "col_resource": "Ressource",
+            "col_time": "Temps",
+            "empty": "Aucun historique récent."
+        },
+        "sla": {
+            "title": "Alertes SLA (Cuisine > 15 min)",
+            "alerts_count": "{count} alerte(s)",
+            "empty": "Aucune alerte SLA. Flux de cuisine optimal.",
+            "ticket": "Ticket n°{queueNumber} ({serial})",
+            "waiting_for": "En attente depuis {minutes} minutes"
+        },
+        "channels": {
+            "title": "Répartition par canal (aujourd'hui)"
+        },
+        "error_boundary": {
+            "message": "Ce widget a rencontré une erreur.",
+            "retry": "Réessayer"
+        }
+    },
+    "a11y": {
+        "channel_share": "Canal {name} : {percent}%"
     }
 }
