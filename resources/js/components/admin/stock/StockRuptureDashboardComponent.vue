@@ -221,8 +221,8 @@ export default {
             this.loading = true;
             try {
                 const [summaryResponse, alertsResponse] = await Promise.all([
-                    axios.get('/api/admin/stock/scan-rupture/last-summary'),
-                    axios.get('/api/admin/stock/low-alerts'),
+                    axios.get('admin/stock/scan-rupture/last-summary'),
+                    axios.get('admin/stock/low-alerts'),
                 ]);
 
                 const summaryData = summaryResponse.data || {};
@@ -244,7 +244,7 @@ export default {
                     || this.currentlyUnavailable[0]?.branch_id
                     || this.lowAlerts[0]?.branch_id
                     || null;
-                await axios.post('/api/admin/stock/scan-rupture/run', branchId ? { branch_id: branchId } : {});
+                await axios.post('admin/stock/scan-rupture/run', branchId ? { branch_id: branchId } : {});
                 await this.loadAll();
             } finally {
                 this.runningManually = false;

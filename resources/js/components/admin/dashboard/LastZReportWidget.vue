@@ -67,7 +67,7 @@ export default {
             this.zReportUnavailable = false;
             this.resolvedReport = null;
             try {
-                const res = await axios.get('/api/admin/fiscal/z-report');
+                const res = await axios.get('admin/fiscal/z-report');
                 const rows = Array.isArray(res.data?.data) ? res.data.data : [];
                 if (rows.length === 0) {
                     this.zReportUnavailable = true;

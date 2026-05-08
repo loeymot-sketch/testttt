@@ -60,7 +60,7 @@ export default {
         async fetchAlerts() {
             this.loading.isActive = true;
             try {
-                const res = await axios.get('/api/admin/stock/low-alerts');
+                const res = await axios.get('admin/stock/low-alerts');
                 this.alerts = res.data?.alerts ?? [];
             } catch (_e) {
                 this.alerts = [];
