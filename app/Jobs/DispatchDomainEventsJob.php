@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class DispatchDomainEventsJob implements ShouldQueue
@@ -96,6 +97,11 @@ class DispatchDomainEventsJob implements ShouldQueue
             'dispatched_at' => now(),
             'last_error' => null,
         ])->save();
+
+        // [V1 SYNC_ROBUSTNESS 3.3] Heartbeat for HealthController.ready() —
+        // proves a worker actually drained an event from the outbox.
+        // 60s TTL keeps the read-side simple (stale > 60s = degraded).
+        Cache::put('ws:heartbeat', now()->toIso8601String(), 60);
     }
 
     public function failed(\Throwable $exception): void

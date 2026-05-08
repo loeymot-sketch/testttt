@@ -62,7 +62,17 @@ export function onEvent(branchId, broadcastAs, handler) {
 }
 
 export function onEvents(branchId, bindings) {
-    if (!window.Echo || !branchId || !Array.isArray(bindings) || bindings.length === 0) {
+    if (!window.Echo) {
+        // [V1 SYNC_ROBUSTNESS 3.2] Surface a warning so a missing/late-loaded Echo
+        // doesn't silently swallow listener bindings — components hold the
+        // returned handle and never re-subscribe, which manifests as a memory
+        // leak / dead realtime channel in production (kiosk, KDS, OSS).
+        console.warn('[eventContract] window.Echo not ready, listener binding skipped — possible memory leak');
+        return {
+            unsubscribe() {},
+        };
+    }
+    if (!branchId || !Array.isArray(bindings) || bindings.length === 0) {
         return {
             unsubscribe() {},
         };

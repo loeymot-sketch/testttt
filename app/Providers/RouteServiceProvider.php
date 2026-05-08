@@ -83,6 +83,14 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [V1 SYNC_ROBUSTNESS 3.4] /api/broadcasting/auth was unthrottled.
+        // 20/min per user (or per IP for unauthenticated requests) blocks
+        // token brute-force and replay-amplification while leaving plenty
+        // of headroom for legitimate channel subscriptions on POS/Kiosk/KDS.
+        RateLimiter::for('broadcasting-auth', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('login-lockout', function (Request $request) {
             $key = Str::lower($request->input('email', '')).'|'.$request->ip();
 

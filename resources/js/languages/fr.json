@@ -875,5 +875,8 @@
     },
     "a11y": {
         "channel_share": "Canal {name} : {percent}%"
+    },
+    "errors": {
+        "optimistic_lock_conflict": "Cette commande a été modifiée ailleurs. Veuillez rafraîchir."
     }
 }

@@ -80,11 +80,25 @@ if (_MIX_PUSHER_APP_KEY) {
     // [GAP-34-2] Re-inject the token after login (token not available at page load).
     // When the user logs in, the store updates authToken — Echo must pick it up.
     // We expose a helper so auth.js can call window._refreshEchoAuth() after login.
+    // [V1 SYNC_ROBUSTNESS 3.1] Defensive guards — return false on every failure
+    // path so callers can detect a no-op (current callers ignore return value,
+    // but tests assert each branch + console.warn breadcrumb is emitted for ops).
     window._refreshEchoAuth = function () {
-        const token = _getEchoBearerToken();
-        if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
-            window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
+        if (!window.Echo) {
+            console.warn('[Echo] _refreshEchoAuth called but window.Echo not initialized');
+            return false;
         }
+        if (!window.Echo.connector?.options?.auth?.headers) {
+            console.warn('[Echo] _refreshEchoAuth: connector.options.auth.headers not available');
+            return false;
+        }
+        const token = _getEchoBearerToken();
+        if (!token) {
+            console.warn('[Echo] _refreshEchoAuth: no token available');
+            return false;
+        }
+        window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
+        return true;
     };
 
     wsService.start();

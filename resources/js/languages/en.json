@@ -1522,5 +1522,8 @@
     },
     "a11y": {
         "channel_share": "Channel {name}: {percent}%"
+    },
+    "errors": {
+        "optimistic_lock_conflict": "This order was modified elsewhere. Please refresh."
     }
 }

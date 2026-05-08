@@ -29,6 +29,7 @@ import VueNextSelect from 'vue-next-select';
 import 'vue-next-select/dist/index.css';
 import VueApexCharts from "vue3-apexcharts";
 import ENV from './config/env';
+import alertService from './services/alertService';
 
 
 /* Start tooltip alert code */
@@ -98,6 +99,18 @@ axios.interceptors.response.use(
     response => response,
     error => {
         const status = error?.response?.status;
+
+        // [V1 SYNC_ROBUSTNESS 3.5] Surface optimistic-lock conflicts (HTTP 409)
+        // as a user-visible toast. KDS UI used to silently ignore these and
+        // staff didn't know to refresh — order moved on without them.
+        if (status === 409) {
+            try {
+                const msg = i18n.global.t('errors.optimistic_lock_conflict');
+                alertService.warning(msg);
+            } catch (_) { /* fallback silent — never block the rejection */ }
+            return Promise.reject(error);
+        }
+
         if (status !== 401) {
             return Promise.reject(error);
         }
