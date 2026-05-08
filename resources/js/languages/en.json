@@ -857,17 +857,11 @@
         "discount_loyalty": "Loyalty discount",
         "discount_promo": "Promo code {code}",
         "promo": {
-            "label": "Promo code",
-            "placeholder": "e.g. WELCOME10",
-            "apply": "Apply",
-            "loading": "Checking…",
-            "remove": "Remove",
-            "applied": "Code {code} applied (-{amount})",
-            "error": {
-                "empty": "Please enter a code.",
-                "invalid": "Invalid or expired promo code.",
-                "network": "Could not verify this code. Please try again."
-            }
+            "aria_label": "Active offers",
+            "badge_label": "Offer",
+            "code_label": "Code",
+            "code_aria": "Promo code {code}",
+            "min_cart": "Minimum {value}"
         },
         "checkout": "Checkout",
         "cancel": "Cancel",
@@ -1019,13 +1013,6 @@
             "warning_aria": "Warning: this product contains an allergen you declared.",
             "list_aria": "Allergens"
         },
-        "promo": {
-            "aria_label": "Active offers",
-            "badge_label": "Offer",
-            "code_label": "Code",
-            "code_aria": "Promo code {code}",
-            "min_cart": "Minimum {value}"
-        },
         "inactivity": {
             "title": "Still there?",
             "desc": "Your order will be cleared in",
@@ -1088,7 +1075,10 @@
             "payment_cancelled_toast": "Payment cancelled",
             "speech_error": "Payment declined. {msg}",
             "secured_tls": "Secured transaction — TLS 1.3 encryption",
-            "accepted_cards_aria": "Accepted payment methods"
+            "accepted_cards_aria": "Accepted payment methods",
+            "error_modal_title": "Payment failed",
+            "error_modal_suggestion": "Please try again or choose another payment method.",
+            "error_modal_retry": "RETRY"
         },
         "upsell_screen": {
             "title": "Anything else?",
@@ -1194,7 +1184,12 @@
             "consent_loyalty": "Loyalty signup allowed",
             "consent_save": "Save",
             "consent_saving": "Saving…",
-            "fb_consent_saved": "Consent updated"
+            "fb_consent_saved": "Consent updated",
+            "section_a11y": "Accessibility (reduced mobility)",
+            "a11y_hint": "Enable these options to accommodate people with reduced mobility, low vision, or motion sensitivity. Changes apply immediately to the kiosk.",
+            "a11y_reset": "Reset accessibility options",
+            "fb_a11y_saved": "Accessibility preference saved",
+            "fb_a11y_reset": "Accessibility options reset"
         },
         "loyalty_screen": {
             "title": "Loyalty programme",
@@ -1502,6 +1497,12 @@
             "communication": "Connection issue with the terminal.",
             "user_cancel": "Payment cancelled.",
             "unknown": "Unknown error. Please ask staff for help."
+        },
+        "voice": {
+            "button_label": "Start voice ordering",
+            "tap_to_speak": "Tap to speak",
+            "listening": "Listening…",
+            "not_supported": "Voice recognition is not available on this browser."
         }
     },
     "dashboard": {

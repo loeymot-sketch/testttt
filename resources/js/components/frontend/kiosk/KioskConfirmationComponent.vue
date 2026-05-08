@@ -155,9 +155,20 @@
       </span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
+    <!-- [DESIGN-V1x-4] Migration vers KsButton DS — variant=primary, size=md
+         pour rester proportionné à la card 400px et au print button compact
+         (l'ancien .kiosk-btn-home faisait ~52px ; KsButton md fait 82px tout
+         en gardant le tap target PMR ≥ 64px). size=lg serait disproportionné
+         dans ce contexte (110px hero, dédié aux CTA plein écran type Cash). -->
+    <KsButton
+      class="kiosk-confirmation-home"
+      variant="primary"
+      size="md"
+      data-testid="kiosk-confirmation-cta-home"
+      @click="goHome"
+    >
       {{ $t('kiosk.confirmation.new_order') }} →
-    </button>
+    </KsButton>
   </div>
 
   <!-- Receipt zone (only visible when printing) -->
@@ -757,23 +768,10 @@ export default {
   transition: width 1s linear;
 }
 
-/* CTA */
-.kiosk-btn-home {
-  background: linear-gradient(135deg, #E8001C, #C0001A);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 1rem 2.4rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.18);
-  transition: transform 0.1s, box-shadow 0.1s;
+/* CTA — [DESIGN-V1x-4] KsButton DS atomic. Wrapping class only owns
+   the fadeUp entrance animation; visual base is delegated to KsButton. */
+.kiosk-confirmation-home {
   animation: fadeUp 0.5s ease-out 1.3s both;
-}
-.kiosk-btn-home:active {
-  transform: scale(0.96);
-  box-shadow: 0 4px 14px rgba(232,0,28,0.3);
 }
 
 @keyframes fadeUp {

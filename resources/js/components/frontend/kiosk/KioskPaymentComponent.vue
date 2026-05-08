@@ -210,6 +210,43 @@
       </div>
     </div>
 
+    <!-- [DESIGN-V1x-2] Actionable error modal — additive overlay (template + scoped CSS only).
+         Inspired by KioskCartComponent's "kiosk-clear-overlay" pattern. The inline
+         error block above stays in DOM (a11y test contract: role=alert testid present)
+         and is visually covered by this modal's overlay (z-index: 200, position: fixed).
+         Triggers for any non-null `error` while the user is still on the payment screen
+         (i.e. before the 2-failure router gate redirects to /error/payment-refused). -->
+    <transition name="fade">
+      <div
+        v-if="error && !submitting && !submitted && !tpeWaiting"
+        class="kiosk-pay-error-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="kiosk-pay-error-modal-title"
+        data-testid="kiosk-payment-error-modal"
+        @click.self="error = null"
+        @keydown.esc="error = null"
+      >
+        <div class="kiosk-pay-error-modal">
+          <div class="kiosk-pay-error-modal-icon" aria-hidden="true">⚠</div>
+          <h2 id="kiosk-pay-error-modal-title" class="kiosk-pay-error-modal-title">{{ $t('kiosk.pay_screen.error_modal_title') }}</h2>
+          <p class="kiosk-pay-error-modal-message">{{ error }}</p>
+          <p class="kiosk-pay-error-modal-suggestion">{{ $t('kiosk.pay_screen.error_modal_suggestion') }}</p>
+          <div class="kiosk-pay-error-modal-actions">
+            <button
+              type="button"
+              class="kiosk-pay-error-retry-btn"
+              :aria-label="$t('kiosk.pay_screen.error_modal_retry')"
+              data-testid="kiosk-payment-error-modal-retry"
+              @click="error = null"
+            >
+              {{ $t('kiosk.pay_screen.error_modal_retry') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -961,5 +998,99 @@ export default {
 .kiosk-pay-logo--amex { color: #2E77BC; }
 .kiosk-pay-logo--apple { color: #000; }
 .kiosk-pay-logo--google { color: #4285F4; }
+
+/* [DESIGN-V1x-2] Actionable error modal — additive (no logic change).
+   Mirrors the KioskCartComponent kiosk-clear-overlay/modal pattern so that
+   payment refusal is a hard-to-miss confirmation surface instead of a small
+   inline alert. z-index sits above kiosk-tpe-overlay (100) but below toasts. */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.kiosk-pay-error-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--kiosk-overlay-modal, rgba(26, 26, 26, 0.55));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.kiosk-pay-error-modal {
+  background: var(--kiosk-surface, #fff);
+  border: 1.5px solid var(--kiosk-border, #EEE6D9);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--kiosk-shadow-modal, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
+}
+
+.kiosk-pay-error-modal-icon {
+  font-size: 64px;
+  line-height: 1;
+  color: var(--kiosk-error, #C21E2F);
+  margin-bottom: 16px;
+}
+
+.kiosk-pay-error-modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--kiosk-text, #1A1A1A);
+  margin: 0 0 12px;
+}
+
+.kiosk-pay-error-modal-message {
+  font-size: 16px;
+  color: var(--kiosk-error, #C21E2F);
+  font-weight: 500;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.kiosk-pay-error-modal-suggestion {
+  font-size: 15px;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.kiosk-pay-error-modal-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.kiosk-pay-error-retry-btn {
+  background: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-text-on-red, #fff);
+  border: none;
+  border-radius: 14px;
+  padding: 16px 40px;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.kiosk-pay-error-retry-btn:hover {
+  background: var(--kiosk-primary-dark, #B8000F);
+}
+
+.kiosk-pay-error-retry-btn:active {
+  transform: scale(0.98);
+}
+
+.kiosk-pay-error-retry-btn:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));
+  outline-offset: 3px;
+}
 
 </style>

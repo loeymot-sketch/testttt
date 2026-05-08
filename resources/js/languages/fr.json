@@ -239,17 +239,11 @@
         "discount_loyalty": "Réduction fidélité",
         "discount_promo": "Code promo {code}",
         "promo": {
-            "label": "Code promo",
-            "placeholder": "Ex : BIENVENUE10",
-            "apply": "Appliquer",
-            "loading": "Vérification…",
-            "remove": "Retirer",
-            "applied": "Code {code} appliqué (-{amount})",
-            "error": {
-                "empty": "Veuillez saisir un code.",
-                "invalid": "Code promo invalide ou expiré.",
-                "network": "Impossible de vérifier ce code. Réessayez."
-            }
+            "aria_label": "Offres en cours",
+            "badge_label": "Offre",
+            "code_label": "Code",
+            "code_aria": "Code promo {code}",
+            "min_cart": "À partir de {value}"
         },
         "empty_cart": "Votre panier est vide",
         "empty_cart_hint": "Parcourez le menu et ajoutez des articles !",
@@ -371,13 +365,6 @@
             "warning_aria": "Attention : ce produit contient un allergène que vous avez déclaré.",
             "list_aria": "Allergènes"
         },
-        "promo": {
-            "aria_label": "Offres en cours",
-            "badge_label": "Offre",
-            "code_label": "Code",
-            "code_aria": "Code promo {code}",
-            "min_cart": "À partir de {value}"
-        },
         "inactivity": {
             "title": "Toujours là ?",
             "desc": "Votre commande sera effacée dans",
@@ -441,7 +428,10 @@
             "payment_cancelled_toast": "Paiement annulé",
             "speech_error": "Paiement refusé. {msg}",
             "secured_tls": "Transaction sécurisée — chiffrement TLS 1.3",
-            "accepted_cards_aria": "Moyens de paiement acceptés"
+            "accepted_cards_aria": "Moyens de paiement acceptés",
+            "error_modal_title": "Paiement impossible",
+            "error_modal_suggestion": "Veuillez réessayer ou choisir un autre moyen de paiement.",
+            "error_modal_retry": "RÉESSAYER"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -547,7 +537,12 @@
             "consent_loyalty": "Inscription fidélité autorisée",
             "consent_save": "Enregistrer",
             "consent_saving": "Enregistrement…",
-            "fb_consent_saved": "Consentement mis à jour"
+            "fb_consent_saved": "Consentement mis à jour",
+            "section_a11y": "Accessibilité (PMR)",
+            "a11y_hint": "Activez ces options pour accommoder les personnes à mobilité réduite, malvoyantes, ou sensibles aux animations. Les changements sont appliqués immédiatement à la borne.",
+            "a11y_reset": "Réinitialiser les options d'accessibilité",
+            "fb_a11y_saved": "Préférence d'accessibilité enregistrée",
+            "fb_a11y_reset": "Options d'accessibilité réinitialisées"
         },
         "loyalty_screen": {
             "title": "Programme fidélité",
@@ -855,6 +850,12 @@
             "communication": "Problème de connexion avec le terminal.",
             "user_cancel": "Paiement annulé.",
             "unknown": "Erreur inconnue. Contactez le personnel."
+        },
+        "voice": {
+            "button_label": "Démarrer la dictée vocale",
+            "tap_to_speak": "Toucher pour parler",
+            "listening": "Écoute…",
+            "not_supported": "Reconnaissance vocale non disponible sur ce navigateur."
         }
     },
     "dashboard": {

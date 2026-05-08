@@ -1,0 +1,79 @@
+/* =============================================================================
+   FoodKing Kiosk — Theme Contract (Wave Gamma G3 / V2-5)
+   -----------------------------------------------------------------------------
+   Cible           : skinning saisonnier (Halloween, Noël, FIFA, Saint-Valentin,
+                     Pâques, été plage…) sans recompile, sans toucher aux atoms
+                     Vue ni aux composants wizard frozen.
+   Activation      : un thème ne s'applique que si l'attribut HTML
+                     `data-kiosk-theme="<slug>"` est posé sur `<html>`.
+                     Le service `resources/js/services/kioskThemeManager.js`
+                     pose cet attribut au boot, en lisant la priorité :
+                       localStorage > backend (Branch.active_kiosk_theme) > 'standard'.
+   Scope           : un thème SURCOUCHE un sous-ensemble de tokens `--kiosk-*`
+                     déjà déclarés dans `tokens.css`. Aucune nouvelle famille
+                     de variables ne doit être introduite par un thème.
+
+   ============================================================================
+   Variables AUTORISÉES à override (cosmétique pure)
+   ============================================================================
+   - Marque & accents :
+       --kiosk-primary
+       --kiosk-primary-dark
+       --kiosk-primary-soft
+       --kiosk-accent              (NEW — couleur d'appoint thème, optionnel)
+   - Surfaces :
+       --kiosk-bg
+       --kiosk-surface
+       --kiosk-surface-alt
+       --kiosk-text
+       --kiosk-text-muted
+       --kiosk-text-on-red
+   - Décoratives (NEW family — réservées aux thèmes) :
+       --kiosk-theme-emoji-prefix  (ex. '🎃' — préfixe queue numbers)
+       --kiosk-theme-pattern       (url() — image d'arrière-plan répétitive)
+       --kiosk-theme-banner-text   (ex. '🎄 NOËL 🎄' — content: pour bannières)
+
+   ============================================================================
+   Variables INTERDITES à override (a11y / cohérence métier)
+   ============================================================================
+   - Tailles typographiques (--kiosk-font-size-*) → utiliser
+     `--kiosk-text-scale` qui reste piloté par le mode AAA/PMR uniquement.
+   - Spacing tokens (--kiosk-space-*) → grille verticale partagée par
+     wizard/POS/KDS/dashboard.
+   - Tap targets (--kiosk-touch-*) → contraintes WCAG 2.2 AA.
+   - Focus ring (--kiosk-focus-*) → contraste 3:1 obligatoire AA.
+   - Sémantique (--kiosk-success / --kiosk-error / --kiosk-warning /
+     --kiosk-info) → un thème ne doit JAMAIS recolorer un état d'erreur,
+     un succès ou un warning : la signification métier prime sur la déco.
+   - Badges produits (--kiosk-badge-*) → information allergène / chef-pick.
+   - Z-index (--kiosk-z-*) → ordonnancement modal/toast/keyboard.
+   - Durations (--kiosk-duration-*) → respecte `prefers-reduced-motion`.
+
+   ============================================================================
+   Règles d'a11y obligatoires AVANT publication d'un thème
+   ============================================================================
+   1. Contraste texte sur fond ≥ 4.5:1 (WCAG 2.2 AA — body) et ≥ 3:1 pour
+      les grandes tailles (≥ 22px / bold ≥ 18px).
+   2. Le focus ring (`--kiosk-focus-ring`) doit conserver un contraste ≥ 3:1
+      sur la nouvelle `--kiosk-bg` ET la nouvelle `--kiosk-surface`.
+   3. La couleur primaire ne doit pas être confondue avec une couleur
+      sémantique (rouge erreur, vert succès, orange warning) si le thème
+      les déplace. Cas concret : un thème Halloween orange ne doit pas
+      faire ressembler un CTA primaire à un warning.
+   4. Les `--kiosk-theme-pattern` doivent être petits (< 4 KB SVG/PNG)
+      pour ne pas dégrader le LCP du kiosk en mode kiosque dégradé réseau.
+
+   ============================================================================
+   Référence d'implémentation
+   ============================================================================
+   - `standard.css`  : fallback no-op, conserve la marque rouge FK.
+   - `halloween.css` : exemple complet (orange citrouille / violet).
+   - `christmas.css` : exemple complet (rouge sapin / vert sapin).
+
+   Tout thème vit sous le sélecteur :
+     :root[data-kiosk-theme="<slug>"] { … overrides … }
+
+   Voir docs/KIOSK_THEMES.md pour la procédure d'ajout.
+   ============================================================================ */
+
+/* Aucun override par défaut. Ce fichier sert uniquement de contrat. */

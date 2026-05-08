@@ -24,6 +24,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // V2-3 — AI Upsell recommendation interface binding (greenfield).
+        //
+        // Voir plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md §2.3.
+        // Cohabitation V1.x : `App\Services\Kiosk\UpsellRuleService` reste
+        // autoritaire pour l'upsell kiosk admin-curated. Ce binding sert
+        // uniquement le nouvel endpoint /api/frontend/recommendations/upsell
+        // qui n'est PAS câblé dans les composants frozen en V1.x.
+        $this->app->bind(
+            \App\Services\Recommendation\UpsellRecommendationService::class,
+            function ($app) {
+                $strategy = config('recommendation.strategy', 'rule_based');
+                return match ($strategy) {
+                    'ml_placeholder' => $app->make(\App\Services\Recommendation\Strategies\MlPlaceholderStrategy::class),
+                    default          => $app->make(\App\Services\Recommendation\Strategies\RuleBasedStrategy::class),
+                };
+            }
+        );
     }
 
     /**

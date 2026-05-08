@@ -112,6 +112,8 @@ use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDelivery
 use App\Http\Controllers\HealthController;
 // [P0-4 / KIO-6] Fallback fiscal receipt PDF endpoint (download + email).
 use App\Http\Controllers\PdfReceiptController;
+// [Wave Gamma G3 / V2-5] Skinning saisonnier kiosk — read public + write admin.
+use App\Http\Controllers\Admin\KioskThemeController;
 
 
 /*
@@ -129,6 +131,14 @@ use App\Http\Controllers\PdfReceiptController;
 Route::get('/health', [HealthController::class, 'full']);
 Route::get('/health/live', [HealthController::class, 'live']);
 Route::get('/health/ready', [HealthController::class, 'ready']);
+
+// [Wave Gamma G3 / V2-5] Public read for kiosk active theme — consumed at boot
+// by `kioskThemeManager.js` BEFORE the kiosk acquires its sanctum token, so
+// it must remain unauthenticated. Returns the slug or 'standard' fallback,
+// never sensitive data. Write is gated below inside /api/admin (auth+settings).
+Route::get('/admin/kiosk-theme/{branchId}', [KioskThemeController::class, 'show'])
+    ->whereNumber('branchId')
+    ->name('admin.kiosk-theme.show');
 
 // [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
 // Auth-only (sanctum), no `installed`/`apiKey` group: clients that hold
@@ -504,6 +514,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/{id}/health', [DeliveryPlatformHealthController::class, 'show'])->whereNumber('id');
         Route::post('/{id}/test-signature', [DeliveryPlatformHealthController::class, 'testSignature'])->whereNumber('id');
     });
+
+    /*
+     * [Wave Gamma G3 / V2-5] Kiosk theme — admin write surface.
+     *
+     * Read is public (mounted top-level next to /api/health), write is
+     * gated by `permission:settings` (cf. KioskThemeController::__construct()).
+     * Branch isolation is enforced inside the controller : a non-zero
+     * branch_id Admin can only patch its own branch.
+     */
+    Route::match(['put', 'patch'], '/kiosk-theme/{branchId}', [KioskThemeController::class, 'update'])
+        ->whereNumber('branchId')
+        ->name('kiosk-theme.update');
 
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
         Route::get('/', [SubscriberController::class, 'index']);
@@ -1054,6 +1076,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
         ->middleware(['auth:sanctum', 'throttle:60,1'])
         ->name('frontend.upsell.suggest');
+
+    // V2-3 Phase A — POST /api/frontend/recommendations/upsell : nouvel endpoint
+    // greenfield (interface UpsellRecommendationService). Cohabite avec
+    // /api/frontend/upsell (autoritaire V1.x admin-curated). Voir
+    // plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md.
+    Route::post('/recommendations/upsell', [\App\Http\Controllers\Frontend\UpsellRecommendationController::class, 'recommend'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.recommendations.upsell');
 
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
     Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
