@@ -133,7 +133,10 @@ describe('kioskThemeManager — initialize()', () => {
         const applied = await mod.default.initialize(42);
 
         expect(applied).toBe('christmas');
-        expect(window.axios.get).toHaveBeenCalledWith('/api/admin/kiosk-theme/42');
+        // [V2-5 Phase 2] window.axios baseURL is `/api` (cf. resources/js/app.js).
+// The path MUST be relative (no leading `/api/`) — otherwise axios composes
+// `/api/api/admin/...` and the boot fetch silently 404s.
+expect(window.axios.get).toHaveBeenCalledWith('admin/kiosk-theme/42');
         expect(document.documentElement.getAttribute('data-kiosk-theme')).toBe('christmas');
     });
 
@@ -190,7 +193,10 @@ describe('kioskThemeManager — forceRefreshFromBackend()', () => {
         const applied = await mod.default.forceRefreshFromBackend(42);
 
         expect(applied).toBe('christmas');
-        expect(window.axios.get).toHaveBeenCalledWith('/api/admin/kiosk-theme/42');
+        // [V2-5 Phase 2] window.axios baseURL is `/api` (cf. resources/js/app.js).
+// The path MUST be relative (no leading `/api/`) — otherwise axios composes
+// `/api/api/admin/...` and the boot fetch silently 404s.
+expect(window.axios.get).toHaveBeenCalledWith('admin/kiosk-theme/42');
         expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 });

@@ -35,6 +35,61 @@ import '../css/kiosk/tokens-pmr.css';
 // Cascade specificity 0 via `:where()` — scoped Vue styles always win.
 import '../css/kiosk/global-a11y.css';
 
+// -- [V2-5 Phase 2] Seasonal theme CSS files -----------------------------------
+// Themes apply ONLY when the attribute `:root[data-kiosk-theme="<slug>"]` is
+// posed by `kioskThemeManager.initialize(branchId)`. Importing them here is
+// safe across the whole app (admin + kiosk) because no rule matches without
+// the attribute. The standard.css "no-op" entry simply blanks the decorative
+// vars to avoid any leak from a previously applied theme.
+import '../css/kiosk/themes/_base.css';
+import '../css/kiosk/themes/standard.css';
+import '../css/kiosk/themes/halloween.css';
+import '../css/kiosk/themes/christmas.css';
+
+// -- [V2-5 Phase 2] Theme boot initialization ---------------------------------
+// `bootstrap-kiosk.js` is imported globally from `app.js` (line 17), so this
+// runs on every page load (admin and kiosk). That is intentional and harmless:
+//   * Without `data-kiosk-theme` the CSS rules above match nothing.
+//   * `kioskThemeManager.initialize()` short-circuits when `branchId` is null
+//     (no fetch, no DOM mutation), so admin pages don't trigger an unwanted
+//     network call. The kiosk surface is responsible for exposing the branch
+//     ID via `window.kioskBranchId` (or a Vuex kioskStore) before this script
+//     runs — when neither source is set we fall back to 'standard'.
+import kioskThemeManager from './services/kioskThemeManager';
+
+// Resolve branchId at apply-time, not at script-eval time, so any later
+// hydration (Vuex restore, kiosk machine session lookup) is visible.
+function resolveKioskBranchId() {
+    if (typeof window === 'undefined') return null;
+    if (window.kioskBranchId !== undefined && window.kioskBranchId !== null) {
+        return window.kioskBranchId;
+    }
+    // Best-effort introspection of the kiosk store if Vuex is already up.
+    try {
+        const store = window.__kioskStore || window.kioskStore;
+        const branchId = store?.state?.kioskMachine?.branch_id
+            ?? store?.state?.kioskCart?.kioskMachine?.branch_id;
+        if (branchId !== undefined && branchId !== null) return branchId;
+    } catch (_) { /* silent */ }
+    return null;
+}
+
+if (typeof window !== 'undefined') {
+    const runInit = () => {
+        try {
+            kioskThemeManager.initialize(resolveKioskBranchId());
+        } catch (_) {
+            // Theme init is non-critical: never block the rest of the boot.
+        }
+    };
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runInit, { once: true });
+    } else {
+        // Document already parsed (e.g. when bundled below </body>): run now.
+        runInit();
+    }
+}
+
 // -- Atoms barrel (re-export) --------------------------------------------------
 export {
     KsButton,

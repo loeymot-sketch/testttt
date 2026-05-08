@@ -103,6 +103,29 @@
     <div class="kiosk-idle-footer" aria-hidden="true">
       <div class="kiosk-idle-footer-dot" v-for="n in 3" :key="n" :class="{ active: activeDot === n }" />
     </div>
+
+    <!-- V2-4 — Voice ordering CTA (additif, opt-in via kioskSettings.voiceOrderingEnabled).
+         Bottom-right de l'idle screen, ne touche PAS aux frozen wizards. -->
+    <div
+      v-if="isVoiceFeatureEnabled"
+      class="kiosk-idle-voice-cta"
+      data-testid="kiosk-idle-voice-cta"
+      @click.stop
+    >
+      <KioskVoiceOrderingButton
+        :lang="voiceLang"
+        @voice-input="onVoiceInput"
+        @voice-error="onVoiceError"
+      />
+    </div>
+
+    <!-- V2-4 — Confirmation dialog : pré-flight avant routing vers wizard. -->
+    <KioskVoiceOrderingDialog
+      v-if="showVoiceDialog"
+      :transcript="voiceTranscript"
+      @confirm="onConfirmVoice"
+      @cancel="onCancelVoice"
+    />
   </div>
 </template>
 
@@ -111,11 +134,14 @@
 import { setLocale, getCurrentLocale } from '../../../i18n';
 // [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
 import KsA11ySettings from './ds/KsA11ySettings.vue';
+// V2-4 Phase A — Voice ordering CTA + dialog (additif, opt-in via settings).
+import KioskVoiceOrderingButton from './KioskVoiceOrderingButton.vue';
+import KioskVoiceOrderingDialog from './KioskVoiceOrderingDialog.vue';
 
 export default {
   name: 'KioskIdleScreenComponent',
   emits: ['start-order'],
-  components: { KsA11ySettings },
+  components: { KsA11ySettings, KioskVoiceOrderingButton, KioskVoiceOrderingDialog },
   data() {
     return {
       activeDot: 1,
@@ -139,11 +165,26 @@ export default {
         en: 'EN',
         ar: 'العربية',
       },
+      // V2-4 — Voice ordering state (additif, opt-in via kioskSettings).
+      // Default OFF : safe rollout — owner enables via settings store /
+      // kiosk admin once micro permission + HTTPS conditions sont validées.
+      isVoiceFeatureEnabled: false,
+      showVoiceDialog: false,
+      voiceTranscript: '',
     };
   },
   computed: {
     currentLocale() {
       return getCurrentLocale();
+    },
+    // V2-4 — map de la locale courante vers la langue Web Speech API.
+    voiceLang() {
+      switch (this.currentLocale) {
+        case 'en': return 'en-US';
+        case 'ar': return 'ar-SA';
+        case 'fr':
+        default:   return 'fr-FR';
+      }
     },
   },
   watch: {
@@ -168,6 +209,7 @@ export default {
     this.applyLocalizedDefaults();
     this.loadSettings();
     this.startDotAnimation();
+    this.applyVoiceFeatureFlag();
     // Always clear any leftover cart when landing on idle (back-nav, timeout, etc.)
     this.$store.dispatch('kioskCart/reset');
   },
@@ -268,7 +310,55 @@ export default {
         if (data.kiosk_languages_enabled) {
           this.enabledLanguages = data.kiosk_languages_enabled;
         }
+
+        // V2-4 — Voice ordering settings (server-side opt-in, defaults OFF).
+        if (typeof data.kiosk_voice_ordering_enabled !== 'undefined') {
+          this.isVoiceFeatureEnabled = !!data.kiosk_voice_ordering_enabled;
+        }
       } catch (_) {}
+    },
+
+    // V2-4 — Voice ordering handlers (additif, opt-in via settings).
+    applyVoiceFeatureFlag() {
+      // Lire d'abord le flag store kioskSettings si le module est branché ;
+      // sinon attendre loadSettings(). Default OFF — safe rollout.
+      try {
+        const flag = this.$store?.state?.kioskSettings?.voiceOrderingEnabled;
+        if (typeof flag !== 'undefined') {
+          this.isVoiceFeatureEnabled = !!flag;
+        }
+      } catch (_) {
+        // store non câblé — ignore, loadSettings() prendra le relais.
+      }
+    },
+    onVoiceInput(transcript) {
+      const trimmed = (transcript || '').trim();
+      if (!trimmed) return;
+      this.voiceTranscript = trimmed;
+      this.showVoiceDialog = true;
+    },
+    onVoiceError(error) {
+      // Erreur micro / browser non supporté / pas de speech captured.
+      // On ne bloque PAS le parcours kiosk (fallback tap/click intact).
+      // eslint-disable-next-line no-console
+      console.warn('[KioskIdle][Voice] error:', error);
+    },
+    onConfirmVoice() {
+      const intent = this.voiceTranscript;
+      this.showVoiceDialog = false;
+      this.voiceTranscript = '';
+      // Route vers wizard avec voice_intent en query — le wizard
+      // (frozen côté composant, mais lit ses query params) pourra dans une
+      // wave ultérieure parser intent → pré-remplir le panier.
+      this.$emit('start-order');
+      this.$router.push({
+        name: 'kiosk.categories',
+        query: { voice_intent: intent },
+      });
+    },
+    onCancelVoice() {
+      this.showVoiceDialog = false;
+      this.voiceTranscript = '';
     },
   },
 };
@@ -563,5 +653,19 @@ export default {
 [dir="rtl"] .kiosk-idle-a11y-btn {
   left: auto;
   right: 24px;
+}
+
+/* V2-4 — Voice ordering CTA, bottom-right, additif sans toucher les zones existantes. */
+.kiosk-idle-voice-cta {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10;
+  /* Le bouton enfant gère son propre fond / animation pulse en écoute. */
+}
+
+[dir="rtl"] .kiosk-idle-voice-cta {
+  right: auto;
+  left: 24px;
 }
 </style>

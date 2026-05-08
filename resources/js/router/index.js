@@ -35,8 +35,12 @@ import orderStatusScreenRoutes from "./modules/orderStatusScreenRoutes";
 import waiterRoutes from "./modules/waiterRoutes";
 import chefRoutes from "./modules/chefRoutes";
 import kioskRoutes from "./modules/kioskRoutes";
+import kioskBurgerBuilderPocRoutes from "./modules/kioskBurgerBuilderPocRoutes";
 import deliveryPlatformRoutes from "./modules/deliveryPlatformRoutes";
 import stockManagerRoutes from "./modules/stockManagerRoutes";
+import upsellPreviewRoutes from "./modules/upsellPreviewRoutes";
+// [V2-5 Phase 2] Admin manager for the kiosk seasonal skinning.
+import kioskThemeAdminRoutes from "./modules/kioskThemeAdminRoutes";
 
 
 
@@ -135,8 +139,11 @@ export const routes = baseRoutes.concat(
     kitchenDisplaySystemRoutes,
     orderStatusScreenRoutes,
     kioskRoutes,
+    kioskBurgerBuilderPocRoutes,
     deliveryPlatformRoutes,
-    stockManagerRoutes
+    stockManagerRoutes,
+    upsellPreviewRoutes,
+    kioskThemeAdminRoutes
 );
 
 const permission = store.getters.authPermission;

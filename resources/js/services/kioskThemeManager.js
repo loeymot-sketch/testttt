@@ -136,8 +136,13 @@ export class KioskThemeManager {
         if (!branchId) return null;
         try {
             if (typeof window === 'undefined' || !window.axios) return null;
+            // [V2-5 Phase 2] window.axios has baseURL `/api` (cf. resources/js/app.js).
+            // We must NOT prefix with `/api/` here — axios would compose `/api/api/...`
+            // and the kiosk would always fall back to localStorage→standard. Use a
+            // path relative to the baseURL (without leading slash), matching the
+            // pattern used everywhere else in the codebase (e.g. DeliveryPlatformsPage).
             const response = await window.axios.get(
-                `/api/admin/kiosk-theme/${branchId}`
+                `admin/kiosk-theme/${branchId}`
             );
             const theme = response?.data?.active_theme;
             return this.isSupportedTheme(theme) ? theme : null;

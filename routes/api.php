@@ -280,6 +280,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/audit', [StockToggleController::class, 'audit'])->name('audit');
     });
 
+    // V2-3 Phase A — POST /api/admin/upsell-preview : outil aperçu admin
+    // pour QA RuleBased / MlPlaceholder hors prod kiosk. Read-only.
+    // Voir plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md.
+    Route::post('/upsell-preview', [\App\Http\Controllers\Admin\UpsellPreviewController::class, 'preview'])
+        ->name('upsell-preview');
+
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
             Route::get('/', [CompanyController::class, 'index']);
