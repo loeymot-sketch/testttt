@@ -1,0 +1,41 @@
+name: Vitest (frontend)
+
+# [iter5 SRE-DEPLOY 2026-05-08] Frontend test gate.
+#
+# Avant cette workflow, Vitest 624/624 vert était local-only — les PRs
+# pouvaient atterrir avec des régressions frontend invisibles à
+# `phpunit.yml`. Cette workflow ferme le gap et enforce le green Vitest
+# côté serveur de CI au même titre que PHPUnit.
+#
+# Couvre :
+#  - 70 fichiers spec actuels (tests/js/*.spec.js)
+#  - happy-dom environment (rapide, pas de browser)
+#  - Pas de Playwright (workflow `playwright.yml` séparé pour E2E)
+#
+# Triggers identiques à phpunit.yml (PR sur main+develop, push sur main+develop)
+# pour garantir parité gating.
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Vitest
+        run: npm test

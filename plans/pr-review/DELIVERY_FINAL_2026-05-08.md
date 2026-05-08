@@ -310,3 +310,57 @@ Aucun finding P0/P1/P2 réel. Les 2 P3 résiduels sont des items déjà document
 La discipline YC GStack après 4 cycles exige verdict honnête : **stop healing, ship**.
 
 — *iter4 confirme la livraison. Tous les voyants verts. Owner décide §0 + push + merge.*
+
+---
+
+## §12 — Iteration 5 owner-requested production-readiness pass (2026-05-08)
+
+Owner explicit override 2nd pass → angle **production-readiness** (pas redondance code review iter4).
+
+### Méthode
+1 sub-agent YC GStack **SRE-DEPLOY** focus deploy / migrations / env / secrets / permissions / i18n parity / CI-CD / outbox / observabilité.
+
+### Findings sub-agent SRE-DEPLOY
+
+| Severity | File | Description | Statut |
+|---|---|---|---|
+| **P1 prod-risk** | `database/migrations/2026_05_09_010000_*.php:66-73` | DELETE in `up()` is destructive + non-recoverable | ⚠️ OWNER (déjà §0 D4 surfacé) |
+| **P1 prod-risk** | `resources/lang/ar.json` | 59 keys missing kiosk namespaces (confirmation 19/27 + voice 0/13 + builder 0/12 + admin 0/26) | ⏸️ ADR-007 backlog Phase 2 |
+| **P2** | `public/js/*` | bundle timestamps inconsistents (16:48 vs 17:22) | ✅ AUTO-FIX iter5 (rebuild fresh) |
+| **P3** | `app/Models/OrderRating.php` | no outbox emission | ✅ acceptable (design comment) |
+| **P3** | `.github/workflows/` | no Vitest CI workflow | ✅ AUTO-FIX iter5 (added vitest.yml) |
+
+**Décision YC GStack iter5** :
+- ✅ **AUTO-FIX P3 Vitest CI** : `.github/workflows/vitest.yml` créé (gate frontend serveur de CI)
+- ✅ **AUTO-FIX P2 bundle freshness** : `npm run prod` clean rebuild (44.59s) — bundles cohérents
+- ⏸️ **OWNER P1 migration backup** : déjà documenté §0 D4 (mysqldump + --pretend + spot-check)
+- ⏸️ **OWNER P1 ar.json gap** : ADR-007 §Phase 2 honest gap (préférence: pas de placeholders fake-translations)
+- ✅ **AUDIT-DOC P3 outbox** : OrderRating Eloquent persist direct acceptable, BACKLOG si analytics dashboard futur
+
+### Métriques tests cumulatifs final post-iter5
+
+```
+Vitest          70 files, 624/624 ✅ (13.17s post-rebuild)
+PHPUnit         50/50 ✅ (27.43s, 154 assertions iter4)
+Build prod      Mix 44.59s ✓ FRESH
+Frozen-zones strict   3/3 + POS Vanilla wizard = 0 lines diff vs main
+Bundle splits   kiosk.js 580K + admin-kiosk-themes 20.1K + admin-upsell-preview 11.5K + kiosk-builder-poc 17.3K + app.js 4.56MiB
+0 unhandled rejection ✓
+```
+
+### Owner action items deploy prod (extracted SRE-DEPLOY)
+
+1. `mysqldump order_ratings > pre-iter3-migration-backup.sql` AVANT migrate
+2. `php artisan migrate --pretend` sur staging-snapshot prod
+3. Vérifier N rows deleted == N expected double-rated orders
+4. Document AR locale gap deploy notes (ADR-007 reference)
+5. `npm run prod` clean rebuild sur deploy host (ne pas reposer sur public/js/* commités)
+6. Confirmer Sanctum tokens kiosk machines ont ability `kiosk:order` assignée dans `KioskMachineTableSeeder`
+
+### Décision finale ITER5
+
+**WARN deploy-safe** — pas de P0 blocker ; les 2 P1 sont owner-decision items déjà surfacés (§0 D4) ou backlog accepté (ADR-007). Les 2 fixes P2/P3 ont été AUTO-FIX dans cette itération.
+
+5 itérations advisor-checked complétées. Discipline GStack tenue 5 cycles avec 0 drift sur frozen-zones.
+
+— *iter5 livre le production-readiness audit + 2 auto-fix. Le reste est owner-gate documenté.*
