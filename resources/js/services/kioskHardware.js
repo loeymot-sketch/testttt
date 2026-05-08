@@ -92,6 +92,53 @@ function buildStub() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  [P0-5 / KIO-1] Boot healthcheck gate                              */
+/* ------------------------------------------------------------------ */
+/*
+ * Module-level latch tracking whether the boot healthcheck has passed.
+ * Closed (`false`) by default — `tpeCharge()` short-circuits unless this
+ * is explicitly opened by `markBootHealthcheckPassed()` (called from
+ * `kioskBootHealthcheck.js` after critical_failures.length === 0).
+ *
+ * Critical invariant : when `isKioskBridge() === false` (browser/dev/tests),
+ * the gate behaves PERMISSIVELY so vitest, staging-without-bridge, and
+ * any non-Electron run path are unaffected. Only real Electron bridge
+ * sessions are gated.
+ *
+ * The gate resets to `false` on `resetBootHealthcheckGate()` (used by
+ * tests and by the retry button on the boot overlay).
+ */
+let _bootHealthcheckPassed = false;
+
+export function markBootHealthcheckPassed() {
+    _bootHealthcheckPassed = true;
+}
+
+export function resetBootHealthcheckGate() {
+    _bootHealthcheckPassed = false;
+}
+
+export function isBootHealthcheckPassed() {
+    return _bootHealthcheckPassed;
+}
+
+/**
+ * Returns `{ ok: true }` if it is safe to proceed with a payment-bearing
+ * operation, otherwise `{ ok: false, error: 'healthcheck_required' }`.
+ *
+ * Caller responsibility : if `ok === false`, the UI must surface the
+ * boot overlay and refuse to start a payment session.
+ *
+ * Permissive in non-bridge environments (browser/dev/tests) — see the
+ * STUB_MARKER + isKioskBridge() rationale above.
+ */
+export function requireHealthCheck() {
+    if (!isKioskBridge()) return { ok: true, stub: true };
+    if (_bootHealthcheckPassed) return { ok: true };
+    return { ok: false, error: 'healthcheck_required' };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Result wrapper                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -226,8 +273,20 @@ export async function readNFC(timeoutMs = 15000) {
  * Charge une carte via TPE. Conforme au spec (§1 hardware calls) :
  *  - Renvoie `{ok, tx_ref?, error?}`
  *  - Timeout natif TPE 90 s — caller doit prévoir un timeout UI distinct.
+ *
+ * [P0-5 / KIO-1] Gate healthcheck obligatoire :
+ *  - Hard-fail en mode bridge (Electron) si le boot healthcheck n'a pas
+ *    été marqué passé via `markBootHealthcheckPassed()`. Empêche les
+ *    encaissements fantômes quand le bridge est présent mais les drivers
+ *    TPE ont fail init silently.
+ *  - Permissif en mode stub (browser/dev/tests) — voir requireHealthCheck.
  */
 export async function tpeCharge(amountCents, method = 'CB') {
+    const gate = requireHealthCheck();
+    if (!gate.ok) {
+        reportHardwareFailureSilent('tpeCharge', 'healthcheck_required');
+        return fail('healthcheck_required');
+    }
     const b = getBridge();
     if (typeof b.tpeCharge !== 'function') {
         // Fallback legacy : chargeCard est le nom utilisé par KioskPayment actuel.
@@ -386,4 +445,9 @@ export default {
     quit,
     onHardwareEvent,
     reportHardwareEvent,
+    // [P0-5 / KIO-1] Boot healthcheck gate — see kioskBootHealthcheck.js.
+    requireHealthCheck,
+    markBootHealthcheckPassed,
+    resetBootHealthcheckGate,
+    isBootHealthcheckPassed,
 };

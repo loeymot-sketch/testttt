@@ -1569,5 +1569,29 @@
         "signature_ok": "HMAC signature valid.",
         "signature_fail": "HMAC signature invalid.",
         "placeholder_empty_secret": "Not configured"
+    },
+    "stock": {
+        "title": "Stock manager",
+        "items": "Items",
+        "extras": "Extras",
+        "variations": "Variations",
+        "col_name": "Name",
+        "col_status": "Status",
+        "col_reason": "Reason",
+        "col_toggle": "Available",
+        "toggle_available": "Available",
+        "toggle_unavailable": "Out of stock",
+        "reason_placeholder": "Reason (e.g. rupture, seasonal)",
+        "last_updated": "Last updated",
+        "audit_log": "Change log",
+        "audit_empty": "No recent changes.",
+        "audit_failed": "Could not load the change log.",
+        "empty": "Nothing to display for this branch.",
+        "load_failed": "Could not load the list.",
+        "toggle_success": "Availability updated.",
+        "toggle_failed": "Could not update availability.",
+        "toggle_disabled_banner": "Per-branch toggle for this category requires the F-016a-BIS merge. Read-only for now.",
+        "toggle_disabled_hint": "Toggle disabled — F-016a-BIS merge required.",
+        "no_branch_selected": "Please select a branch before changing availability."
     }
 }

@@ -102,6 +102,7 @@ import { deliveryPlatform } from './modules/deliveryPlatform';
 import { kioskCart } from './modules/kioskCart';
 import { kioskMenu } from './modules/kioskMenu';
 import { kioskSettings } from './modules/kioskSettings';
+import { stockManager } from './modules/stockManager';
 // [PHASE-6.4] Plugin analytics : s'abonne aux mutations Vuex pertinentes
 //             et relaie vers kioskAnalytics.track() (consent-gated, anonyme).
 import kioskAnalyticsPlugin from './plugins/kioskAnalyticsPlugin';
@@ -214,6 +215,7 @@ export default new createStore({
         kioskCart,
         kioskMenu,
         kioskSettings,
+        stockManager,
     },
     plugins: [
         createPersistedState({

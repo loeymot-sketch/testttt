@@ -57,6 +57,39 @@ export function parseEvent(raw) {
     };
 }
 
+// [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
+// After every successfully parsed envelope we POST a single line to
+// /api/internal/pusher-ack so the server can compare dispatched-vs-ack'd
+// counts on a 5-minute sliding window. The call is fire-and-forget:
+//
+//  - no correlation_id → no ack possible (server cannot dedupe);
+//  - no axios → silently skipped (test envs without bootstrap);
+//  - any HTTP failure is swallowed (the handler must already have run).
+//
+// Reads the snake_case fields straight off the raw envelope, NOT the
+// camelCase parsed object — keeps the wire format identical to the
+// server-side validation rules.
+export function sendAck(raw, channelName) {
+    if (!raw || !raw.correlation_id) {
+        return;
+    }
+    if (typeof window === 'undefined' || !window.axios) {
+        return;
+    }
+    try {
+        window.axios.post('/api/internal/pusher-ack', {
+            correlation_id:  raw.correlation_id,
+            branch_id:       raw.branch_id ?? null,
+            channel:         channelName || 'unknown',
+            event_name:      raw.type || 'unknown',
+            received_at:     new Date().toISOString(),
+            domain_event_id: raw.domain_event_id ?? null,
+        }, { timeout: 3000 }).catch(() => { /* silent */ });
+    } catch (_) {
+        /* silent */
+    }
+}
+
 export function onEvent(branchId, broadcastAs, handler) {
     return onEvents(branchId, [{ broadcastAs, handler }]);
 }
@@ -101,6 +134,14 @@ export function onEvents(branchId, bindings) {
                 }
 
                 handler(parsed);
+
+                // [PRE-PROD HARDENING / SYN-2 / P0-7] Heartbeat ack —
+                // fire-and-forget. Always after the handler so a slow
+                // server doesn't block UI updates, always inside the
+                // try block so a malformed envelope (which already
+                // emitted a console.warn above) does not produce an
+                // ack for un-handled data.
+                sendAck(raw, channelName);
             } catch (error) {
                 console.warn(`[eventContract] Failed to parse ${broadcastAs}.`, error, raw);
             }

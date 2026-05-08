@@ -1,5 +1,45 @@
 import store from "../../store/index.js";
 
+// [P0-5 / KIO-1] Mandatory boot healthcheck — gates tpeCharge() against
+// phantom transactions when Electron bridge is present but TPE drivers
+// failed silent init. The performBootHealthcheck() result is cached at
+// module level via a singleton promise so we run it ONCE per kiosk
+// session, then short-circuit on every subsequent /kiosk navigation.
+//
+// Permissive in non-bridge environments (browser dev / staging) — see
+// kioskHardware.requireHealthCheck() for the runtime gate semantics.
+import kioskHardware from "../../services/kioskHardware";
+import { performBootHealthcheck } from "../../services/kioskBootHealthcheck";
+
+let _bootHealthcheckPromise = null;
+function ensureBootHealthcheck() {
+    if (!kioskHardware.isKioskBridge()) {
+        // Browser/dev/tests : never block, never run the healthcheck. The
+        // tpeCharge gate is permissive in this mode — safe to fall through.
+        return Promise.resolve({ ok: true, stub: true });
+    }
+    // If the runtime gate has been opened by a prior successful run (e.g.
+    // the overlay's retry succeeded), the cached promise is stale — drop
+    // it so subsequent navigations short-circuit on the *current* state.
+    if (_bootHealthcheckPromise && kioskHardware.isBootHealthcheckPassed()) {
+        return Promise.resolve({ ok: true, cached: true });
+    }
+    // If the gate is closed but we held a previous failed promise, rerun
+    // a fresh check (operator may have power-cycled the TPE between nav
+    // events). We only memoize the in-flight promise to avoid concurrent
+    // duplicate calls during a single navigation burst.
+    if (!_bootHealthcheckPromise || (_bootHealthcheckPromise.__settled && !kioskHardware.isBootHealthcheckPassed())) {
+        const p = performBootHealthcheck().catch(() => ({
+            ok: false,
+            critical_failures: ['boot_healthcheck_runtime_error'],
+        }));
+        // Tag the promise so we can detect "already settled, rerun" above.
+        p.then(() => { p.__settled = true; }, () => { p.__settled = true; });
+        _bootHealthcheckPromise = p;
+    }
+    return _bootHealthcheckPromise;
+}
+
 // [C4] Lazy-load all kiosk components into a dedicated "kiosk" webpack chunk.
 // This keeps the initial app.js lighter for non-kiosk surfaces (admin, POS, KDS, OSS).
 // The kiosk chunk is prefetched on the idle screen so navigation feels instant.
@@ -22,6 +62,9 @@ const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "ki
 const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
 const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
 const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
+// [P0-5 / KIO-1] Boot healthcheck overlay — surfaced when bridge present
+// but a critical sub-check (TPE/backend) fails. UX retry + staff alert.
+const KioskBootHealthcheckOverlay = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskBootHealthcheckOverlay.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
@@ -40,21 +83,50 @@ function getKioskAutoCredentials() {
 /**
  * Guard: redirect to kiosk.login if the machine token is absent.
  * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
+ *
+ * [P0-5 / KIO-1] Wraps the original auth check with a mandatory boot
+ * healthcheck when the Electron bridge is present. The healthcheck is
+ * cached as a singleton promise (run once per kiosk session) so this
+ * adds zero overhead on subsequent navigations. If the healthcheck
+ * critical-fails (e.g. TPE unresponsive), the user is sent to the
+ * /kiosk/boot-failure overlay instead of the auth flow — preventing
+ * any payment session from opening on a broken kiosk.
  */
 function requireKioskAuth(to, from, next) {
-    if (to.name === 'kiosk.login') return next();
-    const token = store.state.kioskCart?.kioskToken;
-    if (token) return next();
+    if (to.name === 'kiosk.login' || to.name === 'kiosk.boot-failure') return next();
 
-    const auto = getKioskAutoCredentials();
-    if (auto) {
-        store
-            .dispatch('kioskCart/kioskLogin', auto)
-            .then(() => next())
-            .catch(() => next({ name: 'kiosk.login' }));
-        return;
-    }
-    next({ name: 'kiosk.login' });
+    // [P0-5] Run the boot healthcheck once per session. Permissive in
+    // non-bridge mode (Promise resolves to {ok:true,stub:true}) so dev
+    // browsers and Playwright runs are unaffected.
+    ensureBootHealthcheck().then((hc) => {
+        if (hc && hc.ok === false) {
+            return next({
+                name: 'kiosk.boot-failure',
+                query: { reason: (hc.critical_failures || []).join(',') || 'unknown' },
+            });
+        }
+
+        const token = store.state.kioskCart?.kioskToken;
+        if (token) return next();
+
+        const auto = getKioskAutoCredentials();
+        if (auto) {
+            store
+                .dispatch('kioskCart/kioskLogin', auto)
+                .then(() => next())
+                .catch(() => next({ name: 'kiosk.login' }));
+            return;
+        }
+        next({ name: 'kiosk.login' });
+    }).catch(() => {
+        // performBootHealthcheck never throws by contract, but if anything
+        // truly catastrophic happens (e.g. ESM loader fault), don't trap
+        // the user — fall through to the original auth flow rather than
+        // hard-block the kiosk.
+        const token = store.state.kioskCart?.kioskToken;
+        if (token) return next();
+        next({ name: 'kiosk.login' });
+    });
 }
 
 /**
@@ -104,6 +176,24 @@ export default [
         component: KioskLoginComponent,
         meta: { isKiosk: true, requiresAuth: false },
         beforeEnter: kioskLoginRouteGuard,
+    },
+    /*
+     * [P0-5 / KIO-1] Boot healthcheck failure surface.
+     * Reached when `requireKioskAuth` detects critical sub-check failures
+     * (TPE unresponsive, backend unreachable, hardware healthcheck threw).
+     * The overlay re-runs `performBootHealthcheck()` on its mounted hook
+     * AND on the "Réessayer" button — so a transient backend hiccup can
+     * recover without operator intervention.
+     */
+    {
+        path: "/kiosk/boot-failure",
+        name: "kiosk.boot-failure",
+        component: KioskBootHealthcheckOverlay,
+        meta: { isKiosk: true, requiresAuth: false },
+        // On `ready` (gate opened), fall through to the kiosk root which
+        // will re-run requireKioskAuth and short-circuit on the cached
+        // singleton promise — no double network hit.
+        // The component emits `ready` and `contact-staff` — see overlay.
     },
     {
         path: "/kiosk",

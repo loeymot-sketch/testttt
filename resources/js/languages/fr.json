@@ -922,5 +922,29 @@
         "signature_ok": "Signature HMAC valide.",
         "signature_fail": "Signature HMAC invalide.",
         "placeholder_empty_secret": "Non configuré"
+    },
+    "stock": {
+        "title": "Gestion des ruptures",
+        "items": "Plats",
+        "extras": "Suppléments",
+        "variations": "Variations",
+        "col_name": "Nom",
+        "col_status": "État",
+        "col_reason": "Motif",
+        "col_toggle": "Disponible",
+        "toggle_available": "Disponible",
+        "toggle_unavailable": "En rupture",
+        "reason_placeholder": "Motif (ex. rupture, saisonnier)",
+        "last_updated": "Dernière mise à jour",
+        "audit_log": "Journal des modifications",
+        "audit_empty": "Aucune modification récente.",
+        "audit_failed": "Impossible de charger le journal.",
+        "empty": "Aucun élément à afficher pour cette filiale.",
+        "load_failed": "Impossible de charger la liste.",
+        "toggle_success": "Disponibilité mise à jour.",
+        "toggle_failed": "Impossible de mettre à jour la disponibilité.",
+        "toggle_disabled_banner": "Le toggle par filiale pour cette catégorie nécessite la fusion de F-016a-BIS. Lecture seule.",
+        "toggle_disabled_hint": "Toggle indisponible — fusion F-016a-BIS requise.",
+        "no_branch_selected": "Veuillez sélectionner une filiale avant de modifier la disponibilité."
     }
 }

@@ -68,6 +68,9 @@ describe('kioskHardware service', () => {
             chargeCard: async () => ({ status: 'approved', tx_ref: 'legacy-xyz' }),
         };
         const hw = await freshImport();
+        // [P0-5 / KIO-1] Open the boot healthcheck gate — bridge mode requires
+        // it before tpeCharge will pass through. See kioskBootHealthcheck.js.
+        hw.markBootHealthcheckPassed();
         const res = await hw.tpeCharge(1500, 'CB');
         expect(res.ok).toBe(true);
         expect(res.tx_ref).toBe('legacy-xyz');
@@ -79,6 +82,8 @@ describe('kioskHardware service', () => {
             tpeCharge: async () => { throw new Error('tpe_offline'); },
         };
         const hw = await freshImport();
+        // [P0-5 / KIO-1] Open the gate so we can verify the throw-wrap behaviour.
+        hw.markBootHealthcheckPassed();
         const res = await hw.tpeCharge(500, 'CB');
         expect(res.ok).toBe(false);
         expect(res.error).toMatch(/tpe_offline/);

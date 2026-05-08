@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\CountryCodeController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\AvailabilityController;
+use App\Http\Controllers\Admin\StockToggleController;
 use App\Http\Controllers\Admin\ItemsReportController;
 use App\Http\Controllers\Admin\MenuProjectionController;
 use App\Http\Controllers\Admin\MenuSectionController;
@@ -109,6 +110,8 @@ use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeCo
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
 use App\Http\Controllers\HealthController;
+// [P0-4 / KIO-6] Fallback fiscal receipt PDF endpoint (download + email).
+use App\Http\Controllers\PdfReceiptController;
 
 
 /*
@@ -126,6 +129,15 @@ use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'full']);
 Route::get('/health/live', [HealthController::class, 'live']);
 Route::get('/health/ready', [HealthController::class, 'ready']);
+
+// [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
+// Auth-only (sanctum), no `installed`/`apiKey` group: clients that hold
+// a valid bearer token must be able to ack regardless of installation
+// state. The endpoint is silent-fail by design (cf. PusherAckController).
+// Mounted top-level so it follows the same pattern as /api/health.
+Route::post('/internal/pusher-ack', [\App\Http\Controllers\Internal\PusherAckController::class, 'store'])
+    ->middleware(['auth:sanctum'])
+    ->name('internal.pusherAck');
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
@@ -239,6 +251,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu-projection.show');
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
+
+    // [F-016b minimal] Stock manager — owner-driven manual rupture per branch.
+    // Items go through AvailabilityService (existing F-016 infra). Extras and
+    // variations are listed but their toggle is gated until F-016a-BIS lands.
+    Route::prefix('stock')->name('stock.')->group(function () {
+        Route::get('/', [StockToggleController::class, 'index'])->name('index');
+        Route::post('/toggle', [StockToggleController::class, 'toggle'])->name('toggle');
+        Route::get('/audit', [StockToggleController::class, 'audit'])->name('audit');
+    });
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -687,6 +708,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
 
+    // [P0-4 / KIO-6] Fallback fiscal receipt — download a PDF or email it
+    // to the customer when the kiosk's local printing chain fails.
+    // Permission gate: pos-manage-fiscal (Admin / Branch Manager).
+    Route::prefix('order')->name('order.')->group(function () {
+        Route::get('/{orderId}/receipt-pdf', [PdfReceiptController::class, 'download'])
+            ->where('orderId', '[0-9]+')
+            ->name('receipt-pdf.download');
+        Route::post('/{orderId}/receipt-pdf/email', [PdfReceiptController::class, 'emailToCustomer'])
+            ->where('orderId', '[0-9]+')
+            ->name('receipt-pdf.email');
+    });
+
     Route::prefix('push-notification')->name('push-notification.')->group(function () {
         Route::get('/', [PushNotificationController::class, 'index']);
         Route::post('/', [PushNotificationController::class, 'store']);
@@ -868,6 +901,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendLanguageController::class, 'index']);
         Route::get('/show/{language}', [FrontendLanguageController::class, 'show']);
     });
+
+    /*
+     * [P0-5 / KIO-1] Kiosk boot healthcheck endpoint.
+     * Public (apiKey + localization only — NO auth:sanctum) because the
+     * kiosk hits this BEFORE authenticating as a KioskMachine. Burst-safe
+     * throttle (60/min) since the boot retry button can be hit repeatedly.
+     * @see app/Http/Controllers/Frontend/KioskHealthController.php
+     */
+    Route::get('/kiosk/health', [\App\Http\Controllers\Frontend\KioskHealthController::class, 'status'])
+        ->middleware('throttle:60,1')
+        ->name('kiosk.health');
 
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);

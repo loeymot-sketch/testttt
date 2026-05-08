@@ -36,6 +36,7 @@ import waiterRoutes from "./modules/waiterRoutes";
 import chefRoutes from "./modules/chefRoutes";
 import kioskRoutes from "./modules/kioskRoutes";
 import deliveryPlatformRoutes from "./modules/deliveryPlatformRoutes";
+import stockManagerRoutes from "./modules/stockManagerRoutes";
 
 
 
@@ -134,7 +135,8 @@ export const routes = baseRoutes.concat(
     kitchenDisplaySystemRoutes,
     orderStatusScreenRoutes,
     kioskRoutes,
-    deliveryPlatformRoutes
+    deliveryPlatformRoutes,
+    stockManagerRoutes
 );
 
 const permission = store.getters.authPermission;

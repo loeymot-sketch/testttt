@@ -35,6 +35,14 @@ class Kernel extends ConsoleKernel
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping();
+
+        // [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher delivery ratio alarm.
+        // Compares dispatched envelopes vs. distinct client acks on a
+        // sliding 5-minute window; logs an error + non-zero exit when
+        // the ratio drops below 90% (clients silently missing events).
+        $schedule->command('foodking:pusher:monitor')
+            ->everyFiveMinutes()
+            ->withoutOverlapping();
     }
 
     /**
