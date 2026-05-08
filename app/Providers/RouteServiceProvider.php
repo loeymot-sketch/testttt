@@ -91,6 +91,26 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [PARALLEL-TRACK-1.2] Delivery-platform webhook ingest.
+        // 1000/min is generous (Uber Eats peak ≈ 200/min on a 50-restaurant
+        // tenant) but blocks runaway retries from a misbehaving aggregator.
+        // Keyed by platform + IP so a misconfigured Deliveroo cannot starve
+        // Uber Eats traffic. The numeric ceiling lives in
+        // config('delivery_platforms.rate_limit.webhooks') so ops can tune
+        // without redeploying.
+        RateLimiter::for('delivery-webhooks', function (Request $request) {
+            $raw = (string) config('delivery_platforms.rate_limit.webhooks', '1000,1');
+            $parts = explode(',', $raw);
+            $max = (int) ($parts[0] ?? 1000);
+            $minutes = (int) ($parts[1] ?? 1);
+            $platform = (string) $request->route('platform', 'unknown');
+            return Limit::perMinutes(max(1, $minutes), max(1, $max))
+                ->by('delivery:' . $platform . ':' . $request->ip())
+                ->response(function () {
+                    return response()->json(['status' => 'rate_limited'], 429);
+                });
+        });
+
         RateLimiter::for('login-lockout', function (Request $request) {
             $key = Str::lower($request->input('email', '')).'|'.$request->ip();
 

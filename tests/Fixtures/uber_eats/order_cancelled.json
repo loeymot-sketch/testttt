@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_cancel_2222-bbbb-3333-cccc-4444",
+  "event_type": "orders.cancel",
+  "event_time": "2026-05-08T10:25:00Z",
+  "resource_href": "https://api.uber.com/v1/eats/orders/cancel-uuid-1111-2222-3333-4444",
+  "meta": {
+    "user_id": "u_abc",
+    "resource_id": "cancel-uuid-1111-2222-3333-4444",
+    "status": "cancelled"
+  },
+  "data": {
+    "id": "cancel-uuid-1111-2222-3333-4444",
+    "display_id": "FK-0050",
+    "order_state": "cancelled",
+    "current_state": "cancelled",
+    "store": {
+      "id": "store_uuid_42",
+      "name": "FoodKing Paris République"
+    },
+    "cancellation": {
+      "reason": "CUSTOMER_REQUEST",
+      "details": "Client a annulé via app",
+      "cancelled_at": "2026-05-08T10:24:50Z"
+    }
+  }
+}

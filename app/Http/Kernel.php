@@ -76,5 +76,8 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'localization' => \App\Http\Middleware\localization::class,
         'installed' => \App\Http\Middleware\Installed::class,
+        // [PARALLEL-TRACK-1.2] Delivery-platform webhook signature gate.
+        // Mounted on POST /api/webhooks/delivery/{platform}/{event} only.
+        'delivery.verify-signature' => \App\Http\Middleware\VerifyDeliverySignature::class,
     ];
 }

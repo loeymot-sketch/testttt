@@ -1007,3 +1007,32 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
         Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| [PARALLEL-TRACK-1.2] Delivery-platform webhook ingest
+|--------------------------------------------------------------------------
+|
+| External aggregators (Uber Eats / Deliveroo / Delicity) post here when
+| a customer places an order on their app. Trust pipeline:
+|
+|   1. throttle:delivery-webhooks  → 1000 req/min keyed by platform+IP.
+|   2. delivery.verify-signature   → reads raw body, validates HMAC,
+|                                    swallows replays, stashes branch_id
+|                                    on the request attributes.
+|   3. DeliveryWebhookController   → persists the row + dispatches the
+|                                    queue job + returns 202.
+|
+| No `apiKey` middleware here — webhooks come from third parties whose
+| call surface we cannot mutate. The signature gate is the trust boundary.
+| No BranchScope (sanctum not authenticated): the middleware resolves
+| branch_id from the platform config row, then sets it on the request.
+*/
+Route::post(
+    '/webhooks/delivery/{platform}/{event}',
+    \App\Http\Controllers\Webhook\DeliveryWebhookController::class
+)
+    ->where('platform', 'uber_eats|deliveroo|delicity')
+    ->where('event',    '[a-z][a-z0-9._-]{0,63}')
+    ->middleware(['throttle:delivery-webhooks', 'delivery.verify-signature'])
+    ->name('webhooks.delivery');

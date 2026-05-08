@@ -1,0 +1,112 @@
+{
+  "event_id": "evt_dad6d6d4-ffff-4444-aaaa-1234567890ab",
+  "event_type": "orders.notification",
+  "event_time": "2026-05-08T10:15:30Z",
+  "resource_href": "https://api.uber.com/v1/eats/orders/87a2b9b8-1111-2222-3333-444455556666",
+  "meta": {
+    "user_id": "u_abc",
+    "resource_id": "87a2b9b8-1111-2222-3333-444455556666",
+    "status": "created"
+  },
+  "data": {
+    "id": "87a2b9b8-1111-2222-3333-444455556666",
+    "display_id": "FK-0042",
+    "order_state": "created",
+    "current_state": "created",
+    "store": {
+      "id": "store_uuid_42",
+      "name": "FoodKing Paris République",
+      "external_reference_id": "fk-paris-republique"
+    },
+    "customers": [
+      {
+        "id": "cust_98765",
+        "name": {
+          "display_name": "Marie Curie",
+          "first_name": "Marie",
+          "last_name": "Curie"
+        },
+        "contact": {
+          "phone": {
+            "number": "+33612345678",
+            "verified": true
+          }
+        }
+      }
+    ],
+    "cart": {
+      "items": [
+        {
+          "id": "item_001",
+          "instance_id": "item_inst_001",
+          "external_data": "FK-BURGER-CHEESE",
+          "title": "Cheeseburger",
+          "quantity": {"amount": 2, "unit": null},
+          "price": {
+            "unit_price": {"amount": 850, "currency_code": "EUR"},
+            "total_price": {"amount": 1700, "currency_code": "EUR"}
+          },
+          "selected_modifier_groups": [
+            {
+              "title": "Sauce",
+              "selected_items": [
+                {
+                  "id": "mod_ketchup",
+                  "external_data": "FK-SAUCE-KETCHUP",
+                  "title": "Ketchup",
+                  "price": {
+                    "unit_price": {"amount": 0, "currency_code": "EUR"}
+                  },
+                  "quantity": {"amount": 1}
+                }
+              ]
+            }
+          ],
+          "special_instructions": "Sans cornichons SVP"
+        },
+        {
+          "id": "item_002",
+          "instance_id": "item_inst_002",
+          "external_data": "FK-FRIES-MED",
+          "title": "Frites moyennes",
+          "quantity": {"amount": 1, "unit": null},
+          "price": {
+            "unit_price": {"amount": 450, "currency_code": "EUR"},
+            "total_price": {"amount": 450, "currency_code": "EUR"}
+          },
+          "selected_modifier_groups": []
+        }
+      ]
+    },
+    "payment": {
+      "charges": {
+        "sub_total": {"amount": 2150, "currency_code": "EUR"},
+        "tax": {"amount": 215, "currency_code": "EUR"},
+        "delivery_fee": {"amount": 250, "currency_code": "EUR"},
+        "total": {"amount": 2615, "currency_code": "EUR"}
+      },
+      "payment_detail": {
+        "order_total": {"amount": 2615, "currency_code": "EUR"}
+      }
+    },
+    "deliveries": [
+      {
+        "type": "DELIVERY_BY_UBER",
+        "location": {
+          "street_address_line_one": "10 rue de la Paix",
+          "street_address_line_two": "Apt 3B",
+          "city": "Paris",
+          "country": "FR",
+          "postal_code": "75002",
+          "latitude": 48.870556,
+          "longitude": 2.331944
+        },
+        "expected_delivery_time": "2026-05-08T10:55:00Z"
+      }
+    ],
+    "fulfillment_type": "DELIVERY_BY_UBER",
+    "placed_at": "2026-05-08T10:15:00Z",
+    "estimated_ready_for_pickup_at": "2026-05-08T10:35:00Z",
+    "ordering_platform": "uber_eats"
+  }
+}
