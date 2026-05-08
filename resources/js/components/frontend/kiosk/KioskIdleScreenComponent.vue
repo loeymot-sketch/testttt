@@ -50,9 +50,9 @@
     </button>
     <KsA11ySettings v-model="settingsOpen" @click.stop />
 
-    <!-- Vidéo de fond -->
+    <!-- Vidéo de fond — UX 4.7 : fallback animé si video stalled/error/timeout 3s -->
     <video
-      v-if="videoSrc"
+      v-if="videoSrc && !videoFailed"
       class="kiosk-idle-video"
       :src="videoSrc"
       autoplay
@@ -60,8 +60,12 @@
       muted
       playsinline
       ref="videoEl"
+      @error="onVideoError"
+      @stalled="onVideoStalled"
+      @loadstart="onVideoLoadstart"
+      @loadeddata="onVideoLoaded"
     />
-    <!-- Fallback : fond animé gradient si pas de vidéo -->
+    <!-- Fallback : fond animé gradient si pas de vidéo OU video failed -->
     <div v-else class="kiosk-idle-fallback" />
 
     <!-- Overlay sombre -->
@@ -99,6 +103,29 @@
     <div class="kiosk-idle-footer" aria-hidden="true">
       <div class="kiosk-idle-footer-dot" v-for="n in 3" :key="n" :class="{ active: activeDot === n }" />
     </div>
+
+    <!-- V2-4 — Voice ordering CTA (additif, opt-in via kioskSettings.voiceOrderingEnabled).
+         Bottom-right de l'idle screen, ne touche PAS aux frozen wizards. -->
+    <div
+      v-if="isVoiceFeatureEnabled"
+      class="kiosk-idle-voice-cta"
+      data-testid="kiosk-idle-voice-cta"
+      @click.stop
+    >
+      <KioskVoiceOrderingButton
+        :lang="voiceLang"
+        @voice-input="onVoiceInput"
+        @voice-error="onVoiceError"
+      />
+    </div>
+
+    <!-- V2-4 — Confirmation dialog : pré-flight avant routing vers wizard. -->
+    <KioskVoiceOrderingDialog
+      v-if="showVoiceDialog"
+      :transcript="voiceTranscript"
+      @confirm="onConfirmVoice"
+      @cancel="onCancelVoice"
+    />
   </div>
 </template>
 
@@ -107,16 +134,25 @@
 import { setLocale, getCurrentLocale } from '../../../i18n';
 // [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
 import KsA11ySettings from './ds/KsA11ySettings.vue';
+// V2-4 Phase A — Voice ordering CTA + dialog (additif, opt-in via settings).
+import KioskVoiceOrderingButton from './KioskVoiceOrderingButton.vue';
+import KioskVoiceOrderingDialog from './KioskVoiceOrderingDialog.vue';
 
 export default {
   name: 'KioskIdleScreenComponent',
   emits: ['start-order'],
-  components: { KsA11ySettings },
+  components: { KsA11ySettings, KioskVoiceOrderingButton, KioskVoiceOrderingDialog },
   data() {
     return {
       activeDot: 1,
       dotTimer: null,
       videoSrc: null,
+      // UX 4.7 — état du chargement vidéo. Si la vidéo idle échoue (network,
+      // codec) ou n'envoie aucun signal de chargement après 3s, on bascule
+      // sur le fallback animé pour éviter un écran noir 5min.
+      videoLoaded: false,
+      videoFailed: false,
+      videoTimeoutHandle: null,
       restaurantLogo: null,
       restaurantName: '',
       welcomeTitle: '',
@@ -129,19 +165,42 @@ export default {
         en: 'EN',
         ar: 'العربية',
       },
+      // V2-4 — Voice ordering state (additif, opt-in via kioskSettings).
+      // Default OFF : safe rollout — owner enables via settings store /
+      // kiosk admin once micro permission + HTTPS conditions sont validées.
+      isVoiceFeatureEnabled: false,
+      showVoiceDialog: false,
+      voiceTranscript: '',
     };
   },
   computed: {
     currentLocale() {
       return getCurrentLocale();
     },
+    // V2-4 — map de la locale courante vers la langue Web Speech API.
+    voiceLang() {
+      switch (this.currentLocale) {
+        case 'en': return 'en-US';
+        case 'ar': return 'ar-SA';
+        case 'fr':
+        default:   return 'fr-FR';
+      }
+    },
   },
   watch: {
     videoSrc(src) {
       if (src) {
+        // Reset l'état avant chaque nouvelle source video.
+        this.videoLoaded = false;
+        this.videoFailed = false;
+        this.armVideoTimeout();
         // Attendre que Vue rende l'élément <video> avant d'appeler play()
         this.$nextTick(() => {
-          this.$refs.videoEl?.play().catch(() => {});
+          this.$refs.videoEl?.play().catch(() => {
+            // play() peut échouer (autoplay policy, codec). On bascule
+            // proprement sur le fallback animé.
+            this.videoFailed = true;
+          });
         });
       }
     },
@@ -150,11 +209,16 @@ export default {
     this.applyLocalizedDefaults();
     this.loadSettings();
     this.startDotAnimation();
+    this.applyVoiceFeatureFlag();
     // Always clear any leftover cart when landing on idle (back-nav, timeout, etc.)
     this.$store.dispatch('kioskCart/reset');
   },
   beforeUnmount() {
     clearInterval(this.dotTimer);
+    if (this.videoTimeoutHandle) {
+      clearTimeout(this.videoTimeoutHandle);
+      this.videoTimeoutHandle = null;
+    }
   },
   methods: {
     applyLocalizedDefaults() {
@@ -198,6 +262,33 @@ export default {
         this.activeDot = (this.activeDot % 3) + 1;
       }, 800);
     },
+    // UX 4.7 — gestion du fallback vidéo
+    armVideoTimeout() {
+      if (this.videoTimeoutHandle) clearTimeout(this.videoTimeoutHandle);
+      this.videoTimeoutHandle = setTimeout(() => {
+        if (!this.videoLoaded) {
+          this.videoFailed = true;
+        }
+      }, 3000);
+    },
+    onVideoLoadstart() {
+      // Le navigateur a démarré le chargement, le pipeline est vivant.
+      this.videoLoaded = true;
+      if (this.videoTimeoutHandle) {
+        clearTimeout(this.videoTimeoutHandle);
+        this.videoTimeoutHandle = null;
+      }
+    },
+    onVideoLoaded() {
+      this.videoLoaded = true;
+    },
+    onVideoError() {
+      this.videoFailed = true;
+    },
+    onVideoStalled() {
+      // Si la vidéo stalled avant d'être considérée comme chargée, fallback.
+      if (!this.videoLoaded) this.videoFailed = true;
+    },
     async loadSettings() {
       try {
         const res = await this.$store.dispatch('frontendSetting/lists', { vuex: false });
@@ -219,7 +310,55 @@ export default {
         if (data.kiosk_languages_enabled) {
           this.enabledLanguages = data.kiosk_languages_enabled;
         }
+
+        // V2-4 — Voice ordering settings (server-side opt-in, defaults OFF).
+        if (typeof data.kiosk_voice_ordering_enabled !== 'undefined') {
+          this.isVoiceFeatureEnabled = !!data.kiosk_voice_ordering_enabled;
+        }
       } catch (_) {}
+    },
+
+    // V2-4 — Voice ordering handlers (additif, opt-in via settings).
+    applyVoiceFeatureFlag() {
+      // Lire d'abord le flag store kioskSettings si le module est branché ;
+      // sinon attendre loadSettings(). Default OFF — safe rollout.
+      try {
+        const flag = this.$store?.state?.kioskSettings?.voiceOrderingEnabled;
+        if (typeof flag !== 'undefined') {
+          this.isVoiceFeatureEnabled = !!flag;
+        }
+      } catch (_) {
+        // store non câblé — ignore, loadSettings() prendra le relais.
+      }
+    },
+    onVoiceInput(transcript) {
+      const trimmed = (transcript || '').trim();
+      if (!trimmed) return;
+      this.voiceTranscript = trimmed;
+      this.showVoiceDialog = true;
+    },
+    onVoiceError(error) {
+      // Erreur micro / browser non supporté / pas de speech captured.
+      // On ne bloque PAS le parcours kiosk (fallback tap/click intact).
+      // eslint-disable-next-line no-console
+      console.warn('[KioskIdle][Voice] error:', error);
+    },
+    onConfirmVoice() {
+      const intent = this.voiceTranscript;
+      this.showVoiceDialog = false;
+      this.voiceTranscript = '';
+      // Route vers wizard avec voice_intent en query — le wizard
+      // (frozen côté composant, mais lit ses query params) pourra dans une
+      // wave ultérieure parser intent → pré-remplir le panier.
+      this.$emit('start-order');
+      this.$router.push({
+        name: 'kiosk.categories',
+        query: { voice_intent: intent },
+      });
+    },
+    onCancelVoice() {
+      this.showVoiceDialog = false;
+      this.voiceTranscript = '';
     },
   },
 };
@@ -446,7 +585,9 @@ export default {
   padding: 8px 16px;
   border-radius: 20px;
   border: 1.5px solid rgba(255,255,255,0.3);
-  background: rgba(0,0,0,0.4);
+  /* UX 4.9 : WCAG AA fix — fond renforcé 0.4 → 0.6 sur background sombre.
+     Ratio rgba(255,255,255,0.9) text on rgba(0,0,0,0.6) bg ≈ 4.7:1 (AA pass). */
+  background: rgba(0,0,0,0.6);
   color: rgba(255,255,255,0.9);
   font-size: 14px;
   font-weight: 600;
@@ -512,5 +653,19 @@ export default {
 [dir="rtl"] .kiosk-idle-a11y-btn {
   left: auto;
   right: 24px;
+}
+
+/* V2-4 — Voice ordering CTA, bottom-right, additif sans toucher les zones existantes. */
+.kiosk-idle-voice-cta {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10;
+  /* Le bouton enfant gère son propre fond / animation pulse en écoute. */
+}
+
+[dir="rtl"] .kiosk-idle-voice-cta {
+  right: auto;
+  left: 24px;
 }
 </style>

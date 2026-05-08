@@ -239,17 +239,11 @@
         "discount_loyalty": "Réduction fidélité",
         "discount_promo": "Code promo {code}",
         "promo": {
-            "label": "Code promo",
-            "placeholder": "Ex : BIENVENUE10",
-            "apply": "Appliquer",
-            "loading": "Vérification…",
-            "remove": "Retirer",
-            "applied": "Code {code} appliqué (-{amount})",
-            "error": {
-                "empty": "Veuillez saisir un code.",
-                "invalid": "Code promo invalide ou expiré.",
-                "network": "Impossible de vérifier ce code. Réessayez."
-            }
+            "aria_label": "Offres en cours",
+            "badge_label": "Offre",
+            "code_label": "Code",
+            "code_aria": "Code promo {code}",
+            "min_cart": "À partir de {value}"
         },
         "empty_cart": "Votre panier est vide",
         "empty_cart_hint": "Parcourez le menu et ajoutez des articles !",
@@ -262,6 +256,9 @@
         "article_singular": "article",
         "article_plural": "articles",
         "loading": "Chargement…",
+        "skeleton": {
+            "aria_label": "Chargement du contenu en cours…"
+        },
         "error_loading": "Impossible de charger les articles",
         "retry": "Réessayer",
         "popular": "Populaire",
@@ -292,7 +289,8 @@
             "amount_label": "Montant à régler",
             "help": "Paiement en espèces uniquement à la caisse.",
             "cta_understood": "J'ai compris",
-            "auto_redirect": "Retour à l'accueil dans {n} s"
+            "auto_redirect": "Retour à l'accueil dans {n} s",
+            "tip_receipt_after_payment": "Le ticket sera imprimé après votre paiement au comptoir."
         },
         "error": {
             "back_home": "Retour à l'accueil",
@@ -367,13 +365,6 @@
             "warning_aria": "Attention : ce produit contient un allergène que vous avez déclaré.",
             "list_aria": "Allergènes"
         },
-        "promo": {
-            "aria_label": "Offres en cours",
-            "badge_label": "Offre",
-            "code_label": "Code",
-            "code_aria": "Code promo {code}",
-            "min_cart": "À partir de {value}"
-        },
         "inactivity": {
             "title": "Toujours là ?",
             "desc": "Votre commande sera effacée dans",
@@ -435,7 +426,12 @@
             "payment_declined": "Paiement refusé par l'appareil",
             "payment_cancelled": "Paiement annulé.",
             "payment_cancelled_toast": "Paiement annulé",
-            "speech_error": "Paiement refusé. {msg}"
+            "speech_error": "Paiement refusé. {msg}",
+            "secured_tls": "Transaction sécurisée — chiffrement TLS 1.3",
+            "accepted_cards_aria": "Moyens de paiement acceptés",
+            "error_modal_title": "Paiement impossible",
+            "error_modal_suggestion": "Veuillez réessayer ou choisir un autre moyen de paiement.",
+            "error_modal_retry": "RÉESSAYER"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -541,7 +537,12 @@
             "consent_loyalty": "Inscription fidélité autorisée",
             "consent_save": "Enregistrer",
             "consent_saving": "Enregistrement…",
-            "fb_consent_saved": "Consentement mis à jour"
+            "fb_consent_saved": "Consentement mis à jour",
+            "section_a11y": "Accessibilité (PMR)",
+            "a11y_hint": "Activez ces options pour accommoder les personnes à mobilité réduite, malvoyantes, ou sensibles aux animations. Les changements sont appliqués immédiatement à la borne.",
+            "a11y_reset": "Réinitialiser les options d'accessibilité",
+            "fb_a11y_saved": "Préférence d'accessibilité enregistrée",
+            "fb_a11y_reset": "Options d'accessibilité réinitialisées"
         },
         "loyalty_screen": {
             "title": "Programme fidélité",
@@ -772,7 +773,15 @@
                 "receipt_loyalty": "FIDÉLITÉ : +{n} pts",
                 "receipt_thanks": "Merci de votre visite !",
                 "receipt_present": "Présentez ce ticket au comptoir.",
-                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir."
+                "speech_summary": "Commande numéro {number} confirmée. Total payé : {total}. Présentez-vous au comptoir.",
+                "payment_method": "Mode de paiement",
+                "estimated_ready": "Prêt dans environ",
+                "minutes_range": "{min}-{max} min",
+                "total_balance": "Solde total : {points} pts (~{eur} €)",
+                "csat_prompt": "Comment était votre commande ?",
+                "csat_aria": "Notez votre expérience de 1 à 5 étoiles",
+                "csat_n_stars": "{n} étoiles",
+                "csat_thanks": "Merci pour votre retour !"
             }
         },
         "order_type_label": "Type de commande",
@@ -806,7 +815,11 @@
             "vkeyb_space_short": "Espace",
             "vkeyb_backspace": "Supprimer le dernier caractère",
             "vkeyb_submit": "Valider",
-            "vkeyb_submit_short": "OK"
+            "vkeyb_submit_short": "OK",
+            "toast_success": "Succès",
+            "toast_error": "Erreur",
+            "toast_warning": "Avertissement",
+            "toast_info": "Information"
         },
         "consent": {
             "title": "Programme fidélité",
@@ -829,6 +842,173 @@
             "tpe_error": "Problème terminal de paiement",
             "call_staff": "Veuillez appeler un membre de l'équipe",
             "degraded_service": "Service dégradé — certaines fonctions sont réduites"
+        },
+        "tpe_error": {
+            "timeout": "Transaction expirée. Réessayez.",
+            "declined": "Carte refusée par votre banque.",
+            "card_error": "Erreur de carte. Contactez le personnel.",
+            "communication": "Problème de connexion avec le terminal.",
+            "user_cancel": "Paiement annulé.",
+            "unknown": "Erreur inconnue. Contactez le personnel."
+        },
+        "voice": {
+            "button_label": "Démarrer la dictée vocale",
+            "tap_to_speak": "Toucher pour parler",
+            "listening": "Écoute…",
+            "not_supported": "Reconnaissance vocale non disponible sur ce navigateur.",
+            "dialog_title": "J'ai entendu...",
+            "dialog_subtitle": "Est-ce bien ce que vous souhaitez commander ?",
+            "dialog_disclaimer": "Vous pourrez ajuster votre commande dans le menu suivant.",
+            "dialog_confirm": "OUI, CONTINUER"
+        },
+        "admin": {
+            "upsell_preview_title": "Aperçu Recommandations Upsell",
+            "upsell_preview_subtitle": "Outil de QA — teste les stratégies RuleBased / MlPlaceholder hors prod kiosk.",
+            "upsell_preview_strategy": "Stratégie",
+            "upsell_preview_cart_items": "Panier de test",
+            "upsell_preview_item_id": "Item ID",
+            "upsell_preview_add_item": "Ajouter une ligne",
+            "upsell_preview_run": "Tester recommandations",
+            "upsell_preview_results": "Recommandations",
+            "upsell_preview_latency": "Latence",
+            "upsell_preview_cart_size": "Taille panier",
+            "upsell_preview_empty": "Aucune recommandation produite (heuristique non déclenchée).",
+            "upsell_preview_no_branch": "Aucune filiale",
+            "upsell_preview_error": "Erreur lors de l'aperçu.",
+            "theme_manager_title": "Thèmes saisonniers Kiosk",
+            "theme_manager_subtitle": "Choisissez le thème visuel actif sur les bornes de votre branche",
+            "theme_branch_label": "Branche :",
+            "theme_select_aria": "Sélectionnez un thème pour la branche",
+            "theme_load_error": "Impossible de charger les thèmes",
+            "theme_saved": "Thème enregistré, actif sur les bornes après leur prochain redémarrage",
+            "theme_save_error": "Erreur lors de la sauvegarde",
+            "theme_preview_note": "Note : le thème prendra effet sur les bornes au prochain redémarrage ou rafraîchissement de session.",
+            "theme_active_label": "Actif",
+            "theme_active_aria": "Thème actif",
+            "theme_standard_description": "Thème par défaut FoodKing (rouge marque)",
+            "theme_halloween_description": "Orange citrouille et violet sorcière pour octobre",
+            "theme_christmas_description": "Rouge sapin et vert sapin pour décembre"
+        },
+        "builder": {
+            "aria_label": "Composeur de burger interactif",
+            "source_label": "Ingrédients disponibles",
+            "target_label": "Votre burger en construction",
+            "ingredients": "Ingrédients",
+            "your_burger": "Votre burger",
+            "ingredient_aria": "{name}, supplément {price}€",
+            "remove_layer_aria": "Retirer {name} du burger",
+            "empty_state": "Faites glisser des ingrédients ici pour commencer",
+            "total": "Total suppléments",
+            "use_classic_mode": "Utiliser le mode classique",
+            "switch_to_classic_aria": "Passer au mode de sélection classique avec boutons"
         }
+    },
+    "dashboard": {
+        "realtime": {
+            "title": "Tableau de bord en temps réel",
+            "daily_sales": "Chiffre d'affaires du jour",
+            "daily_orders": "Commandes du jour",
+            "average_ticket": "Ticket moyen"
+        },
+        "audit": {
+            "title": "Historique des actions",
+            "col_user": "Utilisateur",
+            "col_action": "Action",
+            "col_resource": "Ressource",
+            "col_time": "Temps",
+            "empty": "Aucun historique récent."
+        },
+        "sla": {
+            "title": "Alertes SLA (Cuisine > 15 min)",
+            "alerts_count": "{count} alerte(s)",
+            "empty": "Aucune alerte SLA. Flux de cuisine optimal.",
+            "ticket": "Ticket n°{queueNumber} ({serial})",
+            "waiting_for": "En attente depuis {minutes} minutes"
+        },
+        "channels": {
+            "title": "Répartition par canal (aujourd'hui)"
+        },
+        "error_boundary": {
+            "message": "Ce widget a rencontré une erreur.",
+            "retry": "Réessayer"
+        }
+    },
+    "a11y": {
+        "channel_share": "Canal {name} : {percent}%"
+    },
+    "errors": {
+        "optimistic_lock_conflict": "Cette commande a été modifiée ailleurs. Veuillez rafraîchir."
+    },
+    "delivery_platforms": {
+        "title": "Plateformes de livraison",
+        "platform": "Plateforme",
+        "platform_uber_eats": "Uber Eats",
+        "platform_deliveroo": "Deliveroo",
+        "platform_delicity": "Delicity",
+        "enabled": "Activé",
+        "disabled": "Désactivé",
+        "store_id": "ID magasin",
+        "last_received": "Dernier webhook",
+        "last_pushed": "Dernier push",
+        "actions": "Actions",
+        "health": "État",
+        "config_title": "Configurer {platform}",
+        "credentials_legend": "Identifiants",
+        "webhook_url": "URL webhook",
+        "copy": "Copier",
+        "copied": "URL copiée dans le presse-papier",
+        "copy_failed": "Impossible de copier — sélectionnez et copiez manuellement.",
+        "client_id": "Client ID",
+        "client_secret": "Client Secret",
+        "webhook_secret": "Webhook Secret",
+        "show": "Afficher",
+        "hide": "Masquer",
+        "test_signature": "Tester la signature",
+        "test_push_status": "Tester un push",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "health_section": "État opérationnel",
+        "health_ok": "OK",
+        "health_warning": "Avertissement",
+        "health_critical": "Critique",
+        "never_received": "Jamais reçu",
+        "all_branches": "Toutes les filiales",
+        "empty": "Aucune plateforme configurée pour cette filiale.",
+        "load_failed": "Impossible de charger les plateformes.",
+        "toggle_success": "Plateforme mise à jour.",
+        "toggle_failed": "Impossible d'activer / désactiver la plateforme.",
+        "save_success": "Configuration enregistrée.",
+        "save_failed": "Échec de l'enregistrement.",
+        "signature_ok": "Signature HMAC valide.",
+        "signature_fail": "Signature HMAC invalide.",
+        "placeholder_empty_secret": "Non configuré"
+    },
+    "stock": {
+        "title": "Gestion des ruptures",
+        "items": "Plats",
+        "extras": "Suppléments",
+        "variations": "Variations",
+        "col_name": "Nom",
+        "col_status": "État",
+        "col_reason": "Motif",
+        "col_toggle": "Disponible",
+        "toggle_available": "Disponible",
+        "toggle_unavailable": "En rupture",
+        "reason_placeholder": "Motif (ex. rupture, saisonnier)",
+        "last_updated": "Dernière mise à jour",
+        "audit_log": "Journal des modifications",
+        "audit_empty": "Aucune modification récente.",
+        "audit_failed": "Impossible de charger le journal.",
+        "empty": "Aucun élément à afficher pour cette filiale.",
+        "load_failed": "Impossible de charger la liste.",
+        "toggle_success": "Disponibilité mise à jour.",
+        "toggle_failed": "Impossible de mettre à jour la disponibilité.",
+        "toggle_disabled_banner": "Le toggle par filiale pour cette catégorie nécessite la fusion de F-016a-BIS. Lecture seule.",
+        "toggle_disabled_hint": "Toggle indisponible — fusion F-016a-BIS requise.",
+        "no_branch_selected": "Veuillez sélectionner une filiale avant de modifier la disponibilité."
+    },
+    "receipt": {
+        "fiscal_id": "N° fiscal",
+        "signature": "Signature"
     }
 }

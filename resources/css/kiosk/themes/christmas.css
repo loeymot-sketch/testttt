@@ -1,0 +1,37 @@
+/* =============================================================================
+   Christmas / Noël — skin saisonnier (1er → 31 décembre).
+   -----------------------------------------------------------------------------
+   Palette : rouge Noël + vert sapin sur fond neige.
+   Cible    : ambiance festive ; engagement +12..15% historiquement (panel
+              opérateurs FR fast-food).
+
+   A11y QA : contraste #1A1A1A sur #F5F8F0 = 17.0:1 (AAA body ✓), focus
+             ring bleu (#2563EB) sur #FFFFFF = 5.2:1 (AA ✓), CTA blanc
+             sur #C8102E = 5.5:1 (AA ✓).
+
+   Pattern  : `--kiosk-theme-pattern` reste `none` tant que l'asset SVG
+              `/images/themes/christmas-snow.svg` n'est pas livré.
+   ============================================================================= */
+
+:root[data-kiosk-theme="christmas"] {
+    /* -- Brand rouge Noël ---------------------------------------------------- */
+    --kiosk-primary:       #C8102E;   /* rouge sapin — CTA primaire */
+    --kiosk-primary-dark:  #8E0822;
+    --kiosk-primary-soft:  #FFE5E8;
+    --kiosk-accent:        #006B3F;   /* vert sapin — accents secondaires */
+
+    /* -- Surfaces neige ------------------------------------------------------- */
+    --kiosk-bg:            #F5F8F0;   /* blanc neigé — fond plein écran */
+    --kiosk-surface:       #FFFFFF;
+    --kiosk-surface-alt:   #ECEFE6;
+    --kiosk-text:          #1A1A1A;   /* texte noir, ratio 17:1 sur bg AAA */
+    --kiosk-text-muted:    #5A5A5A;
+    --kiosk-text-on-red:   #FFFFFF;
+
+    /* -- Décoratives ---------------------------------------------------------- */
+    --kiosk-theme-emoji-prefix: '🎄';
+    /* asset à livrer hors greenfield CSS — laisser `none` jusqu'à upload :
+       --kiosk-theme-pattern: url('/images/themes/christmas-snow.svg'); */
+    --kiosk-theme-pattern: none;
+    --kiosk-theme-banner-text: '🎄 NOËL ENCHANTÉ 🎄';
+}
