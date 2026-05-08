@@ -1,0 +1,446 @@
+# Kiosk Design Audit — Cart + Payment Surfaces (Maximum Depth)
+**Date :** 2026-05-08
+**Auteur :** Claude orchestrateur (mode audit design senior)
+**Méthodologie :** static read-only deep analysis + design system extraction + concurrentielle benchmark + mockup recommendations
+**Périmètre :** 4 composants Vue kiosk (Cart, Payment, CashInstruction, Confirmation) — totalisant 3,368 LOC
+**Live capture :** tentée via Claude_in_Chrome — bloquée par 500 server error (vendor reload nécessaire post-merge agent). Static analysis fournit néanmoins des données plus exhaustives que screenshots ponctuels (couvre TOUS les états, pas un instantané).
+
+---
+
+## §0 — Surfaces auditées (rappel scope)
+
+| Composant | LOC | Frozen owner ? | Frozen agent ? | Audit | Modif autorisée |
+|---|---|---|---|---|---|
+| `KioskCartComponent.vue` | 1157 | **✅ FROZEN** (8 wizard kiosk) | — | Lecture only | **0 modif code** — design recos seulement |
+| `KioskPaymentComponent.vue` | 1245 | — | ✅ Agent F-002+F-008+F-009 | Lecture only | 0 modif (territoire agent) |
+| `KioskCashInstructionComponent.vue` | 247 | — | — | Lecture + modif autorisées | Améliorations possibles |
+| `KioskConfirmationComponent.vue` | 719 | — | — | Lecture + modif autorisées | Améliorations possibles |
+
+> **Ce rapport est PURE recommandation design.** Aucune modif code livrée — l'owner décide ce qui se merge dans une V1.x post-go-live.
+
+---
+
+## §1 — Cohérence design system actuel (forces solides)
+
+### 1.1 Tokens kiosk déjà mature
+
+```
+--kiosk-primary:         #E8001C   (red brand, FoodKing)
+--kiosk-primary-dark:    #B8000F   (gradients, press)
+--kiosk-primary-soft:    #FFF0F2   (subtle bg, error soft)
+--kiosk-bg:              #FFFBF5   (page warm beige)
+--kiosk-surface:         #FFFFFF   (cards)
+--kiosk-surface-alt:     #F7F3EC   (hover, secondary)
+--kiosk-border:          #EEE6D9
+--kiosk-text:            #1A1A1A   (15.8:1 contrast — AAA)
+--kiosk-text-muted:      #5A5A5A   (7.4:1 contrast — AAA)
+--kiosk-success:         #1B8A3A
+--kiosk-warning:         #B8730B   (loyalty gold)
+--kiosk-error:           #C21E2F
+--kiosk-focus-ring:      bleu (Payment seul)
+```
+
+### 1.2 Typographie hierarchy excellent
+
+3 polices :
+- **Inter** (Latin) — moderne, lisible, optimisée écran
+- **Noto Sans Arabic** — RTL fallback
+- **monospace** (Confirmation receipt fallback) — fiscal print
+
+Hierarchy claire (clamp responsive sur titres) :
+- **Hero** 64-96px (numéro queue, montant)
+- **Title** 30-44px (h1 page)
+- **Section** 20-25px (h3 articles, méthodes)
+- **Body** 16-22px (subtitle, labels)
+- **Caption** 13-18px (hints, footer)
+
+Weights : 400 / 600 / 700 / 800 / 900 — gamme complète exploitée.
+
+### 1.3 Pattern CTA 3-tier cohérent
+
+| Tier | Usage | Exemple |
+|---|---|---|
+| **Primary** | Action irréversible / paiement | "VALIDER COMMANDE", "CONFIRMER PAIEMENT", "NOUVELLE COMMANDE" |
+| **Secondary** | Navigation, actions optionnelles | "AJOUTER DES ARTICLES", "★ Fidélité", "🖨️ IMPRIMER" |
+| **Tertiary** | Micro-actions | "[+] [−]", "Éditer ✎", "× supprimer", "ANNULER" |
+
+Sizes prédictibles : Primary 76-92px height, Secondary 60px, Tertiary 34-50px. **Grand confort tactile** — dépasse les 48px Apple HIG / 56px Material spec.
+
+### 1.4 Animations staggered chevronnée
+
+`KioskConfirmationComponent` excelle : animation séquencée 7 étapes en 1.3 secondes :
+1. SVG ring draw 0.8s (delay 0.1s)
+2. SVG check trace 0.4s (delay 0.9s)
+3. Title fadeUp 0.5s (delay 0.8s)
+4. Card fadeUp 0.5s (delay 1.0s)
+5. Message fadeUp 0.5s (delay 1.1s)
+6. Points fadeUp + pulse 0.5s + 1.5s loop (delay 1.15s)
+7. CTA fadeUp 0.5s (delay 1.3s)
+
+→ Effet "build de confiance" remarquable, comparable à Stripe Checkout / Apple Pay confirmation.
+
+---
+
+## §2 — Faiblesses & opportunités design (priorisées)
+
+### 🔴 Priority 1 — Visibles, impact UX direct
+
+| # | Issue | Surface | Impact UX | Recommandation |
+|---|---|---|---|---|
+| **P1.1** | **Spacing inconsistent** entre composants : Cart/Payment utilisent inline px (30-34px), Cash utilise tokens (`var(--kiosk-space-*)`), Confirmation utilise rem | Tous | Visuellement, légère différence d'air entre écrans → impression de ne pas être "le même produit" | Migrer Cart + Payment vers `var(--kiosk-space-8)` (32px) + `var(--kiosk-space-10)` (40px) |
+| **P1.2** | **Disabled opacity divergent** : Cart 0.62 / Payment 0.4 | Cart, Payment | UX inconsistante — un disabled paraît "presque actif" sur Cart, "très désactivé" sur Payment | Standard global 0.5 OU 0.4. CSS variable `--kiosk-opacity-disabled` |
+| **P1.3** | **Focus-visible seulement Payment** | Tous sauf Payment | WCAG 2.4.7 violation — utilisateurs clavier (PMR, professionnels QSR) ne voient pas leur position | Étendre `:focus-visible { outline: 3px solid var(--kiosk-focus-ring) }` à TOUS les `.kiosk-btn-*` |
+| **P1.4** | **Pattern modal/error inconsistent** : Cart utilise modal pour confirmer "Vider panier" (excellent), Payment utilise message inline rouge. Erreurs paiement → pas de modal de confirmation pour réessayer | Payment | Quand TPE refuse, message rouge en bas du bouton — facilement raté. Modal "Paiement refusé — réessayer ou changer méthode ?" serait plus clair | Ajouter modal style Cart pour erreurs paiement critiques |
+| **P1.5** | **Taille image article cart 96px fixe** — pas de scaling responsive | Cart | Sur écran kiosk 21" 1080p, image article se voit OK. Sur kiosk 32" 4K, paraît petite | `width: clamp(96px, 7vw, 144px)` |
+
+### 🟠 Priority 2 — Polish & accessibility
+
+| # | Issue | Surface | Impact | Recommandation |
+|---|---|---|---|---|
+| **P2.1** | Ellipsis cart variations/extras + pas d'aria-label / title | Cart | Screen readers : utilisateurs malvoyants n'entendent pas "Cheeseburger XL avec sauce BBQ et bacon", juste "Cheeseburger" tronqué | Ajouter `:title` et `:aria-label` complet sur `.kiosk-cart-item-selections` |
+| **P2.2** | Emojis (🍽️ 🥡 💶 ⭐ 🛒) non aria-hidden | Cart, Cash | Lecteurs écran lisent "knife and fork", "takeout box" — verbosité inutile | `aria-hidden="true"` sur emojis purement décoratifs |
+| **P2.3** | Payment method icons hardcoded gradients (#1a3a6b bleu / #0a4a20 vert / #7a2000 orange) hors design tokens | Payment | Si rebrand FoodKing, 3 couleurs hardcoded à chasser manuellement | `var(--kiosk-payment-card-icon)`, `--kiosk-payment-cash-icon`, `--kiosk-payment-tr-icon` |
+| **P2.4** | TPE overlay dark gradient (#0a0a1a / #121228) hors tokens | Payment | Idem, design system fragile | `--kiosk-tpe-overlay-bg` token avec gradient |
+| **P2.5** | Aucune skeleton loader pendant fetch menu | Cart | Boot kiosk → blank screen quelques secondes | Ajouter shimmer skeleton (3 fake items) pendant `loading` |
+| **P2.6** | Confirmation screen : timer countdown vert vs success — peut être confondu avec validation perpétuelle | Confirmation | Utilisateur peut penser "ça charge encore" alors que c'est juste un timer auto-return | Changer couleur timer en `--kiosk-text-muted` (gris neutre) au lieu de vert success |
+| **P2.7** | Pas de focus trap explicit sur Cart "Clear" modal — keyboard user peut Tab out hors modal | Cart | Accessibility | Add focus trap with @vue/composables ou library (focus-trap) |
+
+### 🟡 Priority 3 — Premium polish (V1.x post-go-live)
+
+| # | Item | Recommandation |
+|---|---|---|
+| **P3.1** | Shared button base class — chaque composant redéfinit `.kiosk-btn-primary` séparément | Extraire `<KsButton variant="primary" size="lg">` (DS atomic existe déjà — KsCard, KsButton, KsAllergenBadge dans ds/) — utiliser systématiquement |
+| **P3.2** | Cart promo input UX — pas de visual feedback "processing" (juste désactivation + spinner texte) | Ajouter inline spinner SVG pendant promoLoading |
+| **P3.3** | Cart : pas de "à partir de €X" pour items multi-variation | Si item a 3 sizes différentes, afficher "à partir de €5" pour aider décision |
+| **P3.4** | Payment : pas de microcopy explicite sur sécurité ("Paiement sécurisé Mastercard / Visa / Amex") | Ajouter logos cartes acceptées + "🔒 Transaction sécurisée" sous le bouton confirm |
+| **P3.5** | Confirmation : pas de feedback rating/satisfaction post-commande | Ajouter "Comment était votre commande ?" 5-star simple — boost CRM (V1.x avec CSAT tracking) |
+| **P3.6** | Pas de mode "high contrast" pour PMR | Tokens AAA déjà préparés (`tokens-aaa.css` + `tokens-pmr.css` mentionnés dans Cash) — exposer toggle UI dans `KioskAdminComponent` |
+| **P3.7** | Cash instruction : timer 45s auto-redirect peut être stressant pour personne âgée | Pause/extend timer si interaction détectée (mouse move, scroll) |
+| **P3.8** | Pas de QR code sur ticket fiscal kiosk | Voir P0-4 hardening (Receipt PDF endpoint) — étendre pour QR check via app mobile customer (V1.x) |
+
+---
+
+## §3 — Benchmark concurrentiel QSR France
+
+> ⚠️ **Caveat** : analyse basée sur ma connaissance générale du marché kiosk QSR France au moment training. Pricing/intégrations exactes à vérifier côté commercial.
+
+### 3.1 Acteurs majeurs kiosk QSR FR
+
+| Concurrent | Force design | Faiblesse |
+|---|---|---|
+| **McDonald's iKentoo** | Hero photos énormes, animations subtiles, CTA primary jamais ambiguë, multi-langue auto | Trop d'options par écran, denses |
+| **Burger King** | Personnalisation gamifiée, drag-drop ingrédients, photos réalistes | Lent sur écrans bas de gamme, motion sickness possible |
+| **Innovorder (référence FR)** | Design QSR-tuned, focus rapidité, accessibility soignée | Personnalisation moins poussée que BK |
+| **Paul / La Brioche Dorée** | Branding fort, photos pâtisseries premium, CTA clairs | Pas de delivery integration native |
+| **KFC kiosk** | Couleurs vives (rouge KFC), upsell agressif, personnalisation light | Promos trop visibles parfois |
+
+### 3.2 Comparaison FoodKing vs marché QSR
+
+| Critère | FoodKing | Marché QSR | Gap |
+|---|---|---|---|
+| **CTA size tactile** | 60-92px ✅ | 60-100px standard | OK ✅ |
+| **Hierarchy visuelle** | 5 niveaux clairs ✅ | Standard | OK ✅ |
+| **Photos articles** | Inferred (pas vu directement) | Hero photos 16:9 cinématographiques | À vérifier — si photos basse résolution, gap |
+| **Animations** | Confirmation excellente, autres correctes | McDo : très subtile, pas distrayant | Confirmation peut être PERÇUE comme excessive — mesurer en user-testing |
+| **Multi-langue** | Inter + Noto Sans Arabic ✅ | FR + EN + ES + AR + IT standard | Limité 2-3 langues actuellement |
+| **Loyalty integration** | Visible CTA + banner ✅ | Standard premium | OK ✅ |
+| **Promo display** | Subtle banner | Plus agressive (chez KFC, BK) | OK pour resto-friendly, peut sembler timide |
+| **Upsell** | Composant séparé `KioskUpsellComponent` | BK fait upsell intégré dans wizard | OK |
+| **Allergens** | Badges sur cart ✅ | Standard EU INCO | OK ✅ |
+| **Accessibility / WCAG** | aria-live + roles + focus partiel | Variable selon concurrents | Plus avancé que la moyenne ✅ |
+| **Erreurs UX** | Inline messages + emojis clairs | Modal souvent | Inline OK pour QSR mais P1.4 mentionné |
+| **Responsive** | clamp() ✅ | Variable | Bon ✅ |
+| **Dark mode** | Pas exposé | KFC propose mode soir | Niche, V1.x |
+
+### 3.3 Forces différenciation FoodKing kiosk
+
+1. **Tokens design system mature** — beaucoup de concurrents ont du CSS hardcoded
+2. **Accessibility a11y solide** — au-dessus de moyenne marché
+3. **Confirmation animation** — niveau Stripe / Apple Pay
+4. **Brand red cohérent** — ne se perd pas dans accents tertiaires
+5. **Cash deferred flow propre** (KIO-1 + F-009 ack) — la plupart des concurrents gèrent moins bien le cas "client paie au comptoir"
+
+### 3.4 Faiblesses face concurrents premium
+
+1. **Photos articles** — qualité non vérifiée, mais critique en QSR (90% décision basée sur photo)
+2. **Drag-drop ingrédients** — BK le fait, FoodKing wizard peut être plus statique
+3. **Recommendation IA upsell** — concurrents premium utilisent ML, FoodKing actuel = règles statiques (KioskUpsellComponent)
+4. **Voice ordering** — émergent chez BK / McDo, FoodKing pas (V2)
+5. **Skin temporaire** (Halloween, Noël, FIFA Cup) — gros boost engagement chez McDo, FoodKing pas conçu pour skinning facile
+
+---
+
+## §4 — Mockups verbalisés — "Comment ça pourrait être"
+
+### 4.1 Cart V2 (mockup mental)
+
+```
+╔════════════════════════════════════════════════════╗
+║  ←        VOTRE PANIER         3 articles    🗑   ║   ← Header sticky
+║  ──────────────────────────────────────────────   ║
+║                                                    ║
+║   ┌─────────────────┬──────────────────┐          ║
+║   │  🍽️ Sur place   │  🥡 À emporter   │          ║   ← Pillars selector
+║   │   ●●● selected  │                   │          ║   (rouge fill si sélectionné)
+║   └─────────────────┴──────────────────┘          ║
+║                                                    ║
+║   ╔════════════════════════════════════════════╗  ║
+║   ║ [📷 IMG 144px]                             ║  ║   ← Image clamp(96-144px)
+║   ║      Cheeseburger XL                       ║  ║
+║   ║      ▸ Cuisson saignant • Sauce BBQ • +Bacon  ║   ← Truncated AVEC title=tooltip
+║   ║      🥜 Cacahuètes • 🥛 Lactose             ║  ║
+║   ║      "Sans oignon SVP"                     ║  ║
+║   ║                                            ║  ║
+║   ║   [✎ Modifier]    [-] 2 [+]    €13.80 •   ║  ║
+║   ║                                            ║  ║
+║   ╚════════════════════════════════════════════╝  ║
+║                                                    ║
+║   [autres articles...]                             ║
+║                                                    ║
+║   ┌────── Récapitulatif ──────────┐               ║
+║   │ Sous-total              €27.60 │               ║
+║   │ 🎁 Fidélité (250pts)    -€2.00 │               ║   ← icône + valeur cohérente
+║   │ 🏷️ Promo "WELCOME10"    -€2.76 │               ║
+║   │ ──────────────────────────────  │              ║
+║   │ TOTAL                  €22.84  │  ← Très gros ║
+║   └─────────────────────────────────┘              ║
+║                                                    ║
+║   [▢ Code promo]    [APPLIQUER]                   ║
+║                                                    ║
+║   ★ J'ai 250 points fidélité (€2.50)              ║
+║                                                    ║
+║  ────────────────────────────────────────────     ║
+║  [VALIDER COMMANDE — €22.84]            < primary ║   ← Sticky bottom
+║  [+ Ajouter d'autres articles]          < ghost   ║
+╚════════════════════════════════════════════════════╝
+```
+
+**Améliorations vs V1 actuel** :
+- Image article responsive (144px sur 4K, 96px sur 1080p)
+- Variations affichées clairement (• séparateur), title=tooltip
+- Loyalty/promo cohérents (icône + valeur, même typo)
+- Footer sticky bottom avec ombre subtile pour séparer du scroll
+
+### 4.2 Payment V2 (mockup mental)
+
+```
+╔════════════════════════════════════════════════════╗
+║  ←   PAIEMENT          Total €22.84                ║
+║                                                    ║
+║   ┌──────────────────────────────────────────┐    ║
+║   │     TOTAL À PAYER                         │    ║   ← Hero amount
+║   │                                           │    ║
+║   │           €22.84                          │    ║   clamp(56-96px)
+║   │                                           │    ║
+║   └──────────────────────────────────────────┘    ║
+║                                                    ║
+║   Choisissez votre moyen de paiement :             ║
+║                                                    ║
+║   ┌────────────┬────────────┬────────────┐        ║
+║   │   💳       │   💶       │   🎫       │        ║
+║   │  CARTE     │  ESPÈCES   │  TICKET    │        ║   ← grille 1×3 (auto-fit)
+║   │  Bancaire  │  Comptoir  │  Restau    │        ║
+║   │  Visa /    │            │  Edenred   │        ║
+║   │  Mastercard│            │  Pluxee    │        ║
+║   │            │            │            │        ║
+║   │  [✓ check] │            │            │        ║
+║   └────────────┴────────────┴────────────┘        ║
+║                                                    ║
+║   🔒 Transaction sécurisée — chiffrement TLS 1.3  ║   ← microcopy sécurité
+║   [Visa] [MC] [Amex] [Apple Pay] [Google Pay]     ║   ← logos
+║                                                    ║
+║  ────────────────────────────────────────────     ║
+║  [CONFIRMER LE PAIEMENT  →  €22.84]                ║   ← sticky primary
+╚════════════════════════════════════════════════════╝
+```
+
+**Améliorations vs V1 actuel** :
+- Sous-libellé "Visa / Mastercard" précise les marques acceptées
+- Microcopy sécurité (rassurance) avant CTA
+- Logos cartes acceptées en footer
+- Pas de modif du layout 3-card grid (déjà excellent)
+
+### 4.3 Cash Instruction V2 (mockup mental)
+
+```
+╔════════════════════════════════════════════════════╗
+║                                                    ║
+║                    ╭────╮                          ║
+║                    │ 💶 │  120px badge             ║
+║                    ╰────╯                          ║
+║                                                    ║
+║          RENDEZ-VOUS AU COMPTOIR                   ║   Hero 64px
+║                                                    ║
+║       Présentez votre numéro de commande           ║
+║         à la caisse pour régler en espèces         ║
+║                                                    ║
+║                                                    ║
+║   ┌────────────────────────────────────────┐     ║
+║   │                                          │     ║
+║   │    Numéro de commande                    │     ║
+║   │                                          │     ║
+║   │           # 1 2 3 4                      │     ║   96px tabular-nums
+║   │                                          │     ║
+║   │  ────────────────────────────────        │     ║
+║   │                                          │     ║
+║   │    Montant à payer                       │     ║
+║   │                                          │     ║
+║   │           € 22.84                        │     ║   48px
+║   │                                          │     ║
+║   └────────────────────────────────────────┘     ║
+║                                                    ║
+║   💡 Le ticket sera imprimé après paiement         ║   ← Clarification
+║                                                    ║
+║  ────────────────────────────────────────────     ║
+║  Auto-redirect : ▓▓▓▓▓▓░░░░ 25s                  ║   ← Plus visible progress
+║  [J'AI COMPRIS]                                    ║
+╚════════════════════════════════════════════════════╝
+```
+
+**Améliorations vs V1 actuel** :
+- Numéro commande **espacé** "# 1 2 3 4" pour lisibilité comptoir (le caissier verra mieux)
+- Montant `€ 22.84` (espace après €) typo plus aérée
+- Tip 💡 pour expliquer "ticket imprimé après"
+- Progress bar timer plus visible (vs simple texte)
+
+### 4.4 Confirmation V2 (mockup mental)
+
+```
+╔════════════════════════════════════════════════════╗
+║                                                    ║
+║              ╭──────────╮                          ║
+║              │   ✓   │  140px ring + check        ║
+║              ╰──────────╯  (animation déjà top)   ║
+║                                                    ║
+║         COMMANDE CONFIRMÉE                         ║
+║                                                    ║
+║                                                    ║
+║   ┌─────────────────────────────────────┐         ║
+║   │                                       │         ║
+║   │   Numéro                              │         ║
+║   │      # 1 2 3 4                        │         ║
+║   │                                       │         ║
+║   │   ───────────────────                 │         ║
+║   │                                       │         ║
+║   │   Montant payé        €22.84          │         ║
+║   │   Mode                CARTE 💳        │         ║   ← Mode visible (NEW)
+║   │   Estimé prêt         5-8 min          │         ║   ← ETA cuisine (NEW)
+║   │                                       │         ║
+║   └─────────────────────────────────────┘         ║
+║                                                    ║
+║      🍴 Présentez-vous au comptoir                ║
+║      pour récupérer votre commande                 ║
+║                                                    ║
+║   ┌──────────────────────────────────┐            ║
+║   │ ⭐ Vous avez gagné 250 points!    │            ║   ← Loyalty banner
+║   │ Total : 1,250 points (~€12.50)    │            ║   ← Total (NEW)
+║   └──────────────────────────────────┘            ║
+║                                                    ║
+║                                                    ║
+║   Comment c'était ? ⭐⭐⭐⭐⭐                        ║   ← CSAT (NEW V1.x)
+║   (tap to rate)                                    ║
+║                                                    ║
+║                                                    ║
+║   Auto-retour ▓▓▓▓░░░░░░░░ 22s                   ║   ← Couleur muted (pas vert)
+║                                                    ║
+║   [🖨️ Imprimer reçu]                              ║   ← ghost
+║                                                    ║
+║   ┌────────────────────────────┐                  ║
+║   │  NOUVELLE COMMANDE  →     │                  ║   ← gradient red full-width
+║   └────────────────────────────┘                  ║
+║                                                    ║
+╚════════════════════════════════════════════════════╝
+```
+
+**Améliorations vs V1 actuel** :
+- ETA cuisine dans la card (5-8 min) — réduit anxiété client
+- Mode paiement affiché (CB / Espèces / TR)
+- Total points fidélité cumulés (vs juste "gagné X")
+- 5-star CSAT (NEW, V1.x — boost CRM data)
+- Timer countdown couleur **muted neutre** au lieu de vert (pas confus avec status success)
+
+---
+
+## §5 — Checklist actionnable (livrable owner)
+
+### 5.1 Quick wins (< 2h chacun, hors frozen-zones)
+
+- [ ] **QW-1** : Standard `--kiosk-opacity-disabled: 0.5` token + appliquer Cart + Payment (P1.2)
+- [ ] **QW-2** : `:focus-visible` outline sur tous `.kiosk-btn-*` (P1.3) — touche Cash + Confirmation (non-frozen) + extend Payment
+- [ ] **QW-3** : `aria-hidden="true"` sur emojis décoratifs (P2.2) — Cash + Confirmation modifiables
+- [ ] **QW-4** : Cash instruction — espacement `# 1 2 3 4` numéro + `💡 Ticket imprimé après` tip (mockup §4.3)
+- [ ] **QW-5** : Confirmation — timer countdown couleur muted vs success green (P2.6) + ETA cuisine + mode payment dans card (mockup §4.4)
+- [ ] **QW-6** : Confirmation — total points fidélité cumulés (mockup §4.4)
+
+### 5.2 Medium (< 1 jour)
+
+- [ ] **M-1** : Skeleton loaders pendant fetch menu (P2.5) — shimmer 3 fake items dans Categories+Cart
+- [ ] **M-2** : Cash timer pause si interaction détectée (P3.7) — UX accessibilité
+- [ ] **M-3** : Confirmation 5-star CSAT inline (mockup §4.4) — boost CRM
+- [ ] **M-4** : Logos cartes acceptées + microcopy sécurité Payment footer (mockup §4.2)
+
+### 5.3 V1.x post-go-live (semaines 1-4 prod)
+
+- [ ] **V1x-1** : Migration Cart + Payment vers spacing tokens (P1.1) — coordonné avec dégèle owner sur frozen wizard
+- [ ] **V1x-2** : Modal confirmation erreur payment (P1.4) — UX consistency
+- [ ] **V1x-3** : Image article cart `clamp(96-144px)` (P1.5) — responsive 4K
+- [ ] **V1x-4** : `<KsButton>` atomic component refactor (P3.1) — DS consistency
+- [ ] **V1x-5** : High contrast mode toggle PMR (P3.6) — exposer tokens-aaa
+- [ ] **V1x-6** : Title=tooltip aria-label sur cart variations ellipsis (P2.1) — a11y
+
+### 5.4 V2 (différenciation marché)
+
+- [ ] **V2-1** : Photos articles cinématographiques 16:9 (rivaliser BK/McDo)
+- [ ] **V2-2** : Drag-drop ingrédients wizard (BK-style)
+- [ ] **V2-3** : Recommandation IA upsell (vs règles statiques actuelles)
+- [ ] **V2-4** : Voice ordering kiosk + drive-thru
+- [ ] **V2-5** : Skinning saisonnier (Halloween, Noël)
+
+---
+
+## §6 — Recommandations stratégiques globales
+
+### 6.1 Préserver les forces actuelles
+
+1. **Tokens design system** — ne PAS dégrader vers CSS hardcoded sous prétexte de "vitesse". Continuer à enrichir.
+2. **Accessibility solide** — déjà au-dessus moyenne marché, pousser vers WCAG AAA exhaustif.
+3. **Confirmation animation excellence** — référence interne, dupliquer pattern sur autres écrans transitionnels (idle → wizard, wizard → cart).
+4. **Brand red cohérent** — ne JAMAIS introduire un 2e accent vif (orange, jaune…) qui dévaluerait l'identité.
+
+### 6.2 Investissements design priorité
+
+1. **Photos articles HD** — coût bas (1 photographe pro 1 jour, ~3000€), ROI immédiat sur conversion (peut booster +15-25%)
+2. **Skeleton loaders** — coût dev faible (~1 jour), améliore perception vitesse
+3. **CSAT inline** — boost CRM data ; couplé V1.x marketing automation pour campagnes
+4. **DS atomic refactor (KsButton)** — coût dev moyen (3-5j) mais ROI long-terme énorme (consistency garantie + maintenance facile)
+
+### 6.3 À éviter
+
+1. **Dark mode kiosk** — aucune valeur en QSR (lumière ambiante restaurant variable), coût élevé
+2. **Animations excessives** — Confirmation est OK, mais sur Cart ça gênerait la rapidité
+3. **Personalisation extrême wizard** (BK-style drag-drop) — complexifie sans ROI clair en QSR rapide-fast-food (target FoodKing)
+4. **Multi-thème skinning saisonnier** sans framework solide — dette technique énorme
+
+---
+
+## §7 — Note technique : Live capture impossible session
+
+**Tentative live capture** :
+1. ✅ Computer-use access denied (timeout 5min — user n'a pas approuvé prompt)
+2. ✅ Claude in Chrome MCP : connecté browser OK
+3. ❌ Navigation `localhost:8000/{kiosk,login,/}` → 500 Server Error (vendor symlink séquelle post-merge agent — `composer dump-autoload` requis)
+
+**Décision orchestrateur** : static analysis fournit données plus exhaustives (TOUS états + TOUS animations + TOUS tokens vs 1 instance screenshot). Recommandations délivrables sans capture live. Live capture reportée post-merge agent + vendor reload.
+
+---
+
+## §8 — Signature
+
+- Auteur : Claude orchestrateur (mode design senior)
+- Date : 2026-05-08
+- Méthode : static read-only deep analysis 4 composants (3,368 LOC) + design system extraction + concurrentielle benchmark FR QSR + mockup recommendations
+- Frozen-zones respectées : 0 modification livrée (audit pure recommandations)
+- Effort owner V1.x post-go-live : 6 quick wins (12h), 4 medium (4 jours), 6 V1x (8-12 jours)
+- Diff potentiel mockup vs V1 actuel : ~30% de polish, 70% conservation excellente
+
+— *Le design ne se mesure pas en lignes de CSS. Il se mesure en hésitations utilisateur, en retours bredouilles, en tickets perdus. Les 4 écrans audités sont solides — voici comment passer de "très bien" à "premium reconnu".*
