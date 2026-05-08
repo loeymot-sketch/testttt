@@ -15,6 +15,9 @@ use App\Events\IngredientAvailabilityChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+// [F-016a-BIS] Branch-scoped extras / variations rupture toggles.
+use App\Events\ItemExtraAvailabilityChanged;
+use App\Events\ItemVariationAvailabilityChanged;
 use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
 use App\Events\OrderPaidAtCounter;
@@ -42,6 +45,9 @@ use App\Listeners\InvalidateMenuProjectionOnIngredientChange;
 use App\Listeners\PersistCatalogChangedToOutbox;
 use App\Listeners\PersistCouponChangedToOutbox;
 use App\Listeners\PersistItemAvailabilityChangedToOutbox;
+// [F-016a-BIS]
+use App\Listeners\PersistItemExtraAvailabilityChangedToOutbox;
+use App\Listeners\PersistItemVariationAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\DecrementStockOnOrderCreated;
 use App\Listeners\ReleaseAvailabilityOnOrderCanceled;
@@ -157,6 +163,16 @@ class EventServiceProvider extends ServiceProvider
             InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
             PersistCatalogChangedToOutbox::class,
             PersistItemAvailabilityChangedToOutbox::class,
+        ],
+        // [F-016a-BIS] Persist + broadcast branch-scoped extra/variation rupture toggles.
+        // No menu snapshot bump — extras/variations live inside item payloads, the
+        // surface refresh happens via the dedicated event broadcast that StockManager
+        // UI / Kiosk handlers subscribe to (F-016b).
+        ItemExtraAvailabilityChanged::class => [
+            PersistItemExtraAvailabilityChangedToOutbox::class,
+        ],
+        ItemVariationAvailabilityChanged::class => [
+            PersistItemVariationAvailabilityChangedToOutbox::class,
         ],
         IngredientAvailabilityChanged::class => [
             InvalidateMenuProjectionOnIngredientChange::class,

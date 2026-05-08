@@ -273,6 +273,16 @@ final class ChoiceAvailabilityResolver
             return ['is_available' => true, 'unavailable_reason' => null];
         }
 
+        // [F-016a-BIS] Manual rupture (manager-set) takes priority over automatic
+        // stock check. Reasoning: a manager flagging "seasonal" or "supplier_issue"
+        // expresses an explicit business decision that must surface in the UI even
+        // if stock_levels.on_hand happens to be > 0 (e.g. inventory drift or
+        // pre-emptive flag before a delivery shortfall is recorded).
+        $manualReason = $level->manual_unavailable_reason ?? null;
+        if (is_string($manualReason) && $manualReason !== '') {
+            return ['is_available' => false, 'unavailable_reason' => $manualReason];
+        }
+
         return (int) $level->on_hand > 0
             ? ['is_available' => true, 'unavailable_reason' => null]
             : ['is_available' => false, 'unavailable_reason' => 'stock_rupture'];

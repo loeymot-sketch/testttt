@@ -13,6 +13,11 @@ class EventType
     // to update the table label of an in-flight prep card without re-printing.
     const ORDER_TABLE_CHANGED = 'order.table_changed';
     const MENU_ITEM_AVAILABILITY_CHANGED = 'menu.item_availability_changed';
+    // [F-016a-BIS] Branch-scoped extra rupture toggles. Outbox payload mirrors
+    // ItemAvailabilityChanged contract (extra_id + branch_id + is_available + reason).
+    const MENU_EXTRA_AVAILABILITY_CHANGED = 'menu.extra_availability_changed';
+    // [F-016a-BIS] Branch-scoped variation rupture toggles.
+    const MENU_VARIATION_AVAILABILITY_CHANGED = 'menu.variation_availability_changed';
     const CATALOG_CHANGED = 'catalog.changed';
     const STOCK_LOW = 'stock.low';
     // [PROMO-DASH-2026-05-06] Code promo CRUD/toggle propagation pour les
@@ -35,6 +40,9 @@ class EventType
             self::ORDER_CANCELLED,
             self::ORDER_TABLE_CHANGED,
             self::MENU_ITEM_AVAILABILITY_CHANGED,
+            // [F-016a-BIS]
+            self::MENU_EXTRA_AVAILABILITY_CHANGED,
+            self::MENU_VARIATION_AVAILABILITY_CHANGED,
             self::CATALOG_CHANGED,
             self::STOCK_LOW,
             self::COUPON_CHANGED,

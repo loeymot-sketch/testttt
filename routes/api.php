@@ -251,6 +251,15 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
 Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:60,1'])->group(function () {
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
+
+    // [F-016a-BIS] Branch-scoped manual rupture endpoints for extras and
+    // variations. Same throttle bucket as the item toggle endpoint above
+    // because cashiers/managers may chain multiple 86 actions during rush
+    // and we don't want this to share the global admin-mutation bucket.
+    Route::post('/menu/availability/extra/toggle', [AvailabilityController::class, 'toggleExtra'])
+        ->name('menu.availability.extra.toggle');
+    Route::post('/menu/availability/variation/toggle', [AvailabilityController::class, 'toggleVariation'])
+        ->name('menu.availability.variation.toggle');
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
@@ -265,6 +274,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [CV1-V1-CLOSEOUT-001 T-DEEP-AVAIL-API-01] Endpoint admin pour AvailabilityService::setMaxDailyQty (M2 V2 task 2.5).
     Route::post('/menu/availability/max-daily-qty', [AvailabilityController::class, 'setMaxDailyQty'])
         ->name('menu.availability.max-daily-qty');
+
+    // [F-016a-BIS] Read-only aggregate (items + extras + variations marked
+    // unavailable on the branch). Powers the StockManager dashboard.
+    Route::get('/menu/availability/branch/{branch}', [AvailabilityController::class, 'showBranchAvailability'])
+        ->whereNumber('branch')
+        ->name('menu.availability.branch.show');
     Route::get('/stock/scan-rupture/last-summary', [StockRuptureDashboardController::class, 'lastSummary'])
         ->name('stock.scan-rupture.last-summary');
     Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])

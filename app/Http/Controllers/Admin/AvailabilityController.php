@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AvailabilityToggleRequest;
+use App\Http\Requests\Admin\ToggleExtraAvailabilityRequest;
+use App\Http\Requests\Admin\ToggleVariationAvailabilityRequest;
 use App\Models\Branch;
 use App\Models\ItemBranchAvailability;
 use App\Services\Menu\AvailabilityService;
@@ -16,7 +18,14 @@ class AvailabilityController extends AdminController
     {
         parent::__construct();
 
-        $this->middleware(['permission:items_edit'])->only(['toggle', 'setMaxDailyQty']);
+        $this->middleware(['permission:items_edit'])->only([
+            'toggle',
+            'setMaxDailyQty',
+            // [F-016a-BIS]
+            'toggleExtra',
+            'toggleVariation',
+            'showBranchAvailability',
+        ]);
     }
 
     /**
@@ -134,6 +143,93 @@ class AvailabilityController extends AdminController
                 'daily_consumed_qty' => (int) $row->daily_consumed_qty,
                 'unavailable_reason' => $row->unavailable_reason,
             ],
+        ]);
+    }
+
+    /**
+     * [F-016a-BIS] Branch-scoped manual rupture toggle for an ItemExtra.
+     *
+     * Delegates to {@see AvailabilityService::toggleExtra()} which owns
+     * locking, idempotency and after-commit dispatch of
+     * {@see \App\Events\ItemExtraAvailabilityChanged}. Auth + branch scoping
+     * remain controller responsibilities (parity with {@see toggle()}).
+     */
+    public function toggleExtra(ToggleExtraAvailabilityRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $extraId = (int) $validated['extra_id'];
+        $branchId = (int) $validated['branch_id'];
+        $isAvailable = (bool) $validated['is_available'];
+        $reason = $validated['reason'] ?? null;
+
+        $scopeBranchIds = $this->resolveScopedBranchIds((int) ($request->user()?->branch_id ?? 0));
+        if (! in_array($branchId, $scopeBranchIds, true)) {
+            return response()->json(['message' => 'Branch scope denied.'], 403);
+        }
+
+        $level = app(AvailabilityService::class)->toggleExtra($extraId, $branchId, $isAvailable, $reason);
+
+        return response()->json([
+            'ok' => true,
+            'extra_id' => $extraId,
+            'branch_id' => $branchId,
+            'is_available' => $isAvailable,
+            'reason' => $reason,
+            'manual_unavailable_since' => optional($level->manual_unavailable_since)?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * [F-016a-BIS] Branch-scoped manual rupture toggle for an ItemVariation.
+     *
+     * Sibling of {@see toggleExtra()}.
+     */
+    public function toggleVariation(ToggleVariationAvailabilityRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $variationId = (int) $validated['variation_id'];
+        $branchId = (int) $validated['branch_id'];
+        $isAvailable = (bool) $validated['is_available'];
+        $reason = $validated['reason'] ?? null;
+
+        $scopeBranchIds = $this->resolveScopedBranchIds((int) ($request->user()?->branch_id ?? 0));
+        if (! in_array($branchId, $scopeBranchIds, true)) {
+            return response()->json(['message' => 'Branch scope denied.'], 403);
+        }
+
+        $level = app(AvailabilityService::class)->toggleVariation($variationId, $branchId, $isAvailable, $reason);
+
+        return response()->json([
+            'ok' => true,
+            'variation_id' => $variationId,
+            'branch_id' => $branchId,
+            'is_available' => $isAvailable,
+            'reason' => $reason,
+            'manual_unavailable_since' => optional($level->manual_unavailable_since)?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * [F-016a-BIS] Aggregate snapshot of every (item / extra / variation)
+     * marked unavailable on the requested branch. Read endpoint for the
+     * StockManager dashboard (F-016b UI).
+     *
+     * Authz mirrors mutating endpoints: caller must have `items_edit` and
+     * the target branch must lie inside the caller's branch scope.
+     */
+    public function showBranchAvailability(Request $request, int $branch): JsonResponse
+    {
+        $branchId = (int) $branch;
+        $scopeBranchIds = $this->resolveScopedBranchIds((int) ($request->user()?->branch_id ?? 0));
+        if (! in_array($branchId, $scopeBranchIds, true)) {
+            return response()->json(['message' => 'Branch scope denied.'], 403);
+        }
+
+        $snapshot = app(AvailabilityService::class)->getBranchAvailabilitySnapshot($branchId);
+
+        return response()->json([
+            'ok' => true,
+            'data' => $snapshot,
         ]);
     }
 

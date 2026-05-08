@@ -3,10 +3,15 @@
 namespace App\Services\Menu;
 
 use App\Events\ItemAvailabilityChanged;
+use App\Events\ItemExtraAvailabilityChanged;
+use App\Events\ItemVariationAvailabilityChanged;
 use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
+use App\Models\ItemExtra;
+use App\Models\ItemVariation;
+use App\Models\StockLevel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -336,6 +341,243 @@ final class AvailabilityService
                 isAvailable: $available,
                 reason: $reason
             ));
+        });
+    }
+
+    // ---------------------------------------------------------------------
+    // [F-016a-BIS] Branch-scoped manual rupture for ItemExtra / ItemVariation.
+    //
+    // Backed by the polymorphic stock_levels table (stockable_type +
+    // stockable_id). Manual rupture sets `manual_unavailable_reason` /
+    // `manual_unavailable_since`; ChoiceAvailabilityResolver gives manual
+    // priority over automatic on_hand. Available toggle clears those columns
+    // and restores stock-driven availability without touching on_hand.
+    //
+    // Branch isolation: every query/upsert is keyed on (branch_id, type, id).
+    // Idempotency: re-toggling to the same state returns the existing row
+    // without dispatching duplicate events.
+    // ---------------------------------------------------------------------
+
+    public function toggleExtra(int $extraId, int $branchId, bool $available, ?string $reason = null): StockLevel
+    {
+        return $this->toggleStockable(ItemExtra::class, $extraId, $branchId, $available, $reason);
+    }
+
+    public function toggleVariation(int $variationId, int $branchId, bool $available, ?string $reason = null): StockLevel
+    {
+        return $this->toggleStockable(ItemVariation::class, $variationId, $branchId, $available, $reason);
+    }
+
+    /**
+     * Read helper. True iff the (extra, branch) pair has neither a manual
+     * rupture flag nor an on_hand=0 row. Absent row = available (V1 rule).
+     */
+    public function isExtraAvailable(int $extraId, int $branchId): bool
+    {
+        return $this->isStockableAvailable(ItemExtra::class, $extraId, $branchId);
+    }
+
+    public function isVariationAvailable(int $variationId, int $branchId): bool
+    {
+        return $this->isStockableAvailable(ItemVariation::class, $variationId, $branchId);
+    }
+
+    /**
+     * @return array<int, int> sorted ascending list of extra IDs marked manually unavailable on this branch.
+     */
+    public function getUnavailableExtraIdsForBranch(int $branchId): array
+    {
+        return $this->getManuallyUnavailableIdsForBranch(ItemExtra::class, $branchId);
+    }
+
+    /**
+     * @return array<int, int> sorted ascending list of variation IDs marked manually unavailable on this branch.
+     */
+    public function getUnavailableVariationIdsForBranch(int $branchId): array
+    {
+        return $this->getManuallyUnavailableIdsForBranch(ItemVariation::class, $branchId);
+    }
+
+    /**
+     * Aggregate snapshot used by the admin StockManager dashboard
+     * (GET /api/admin/menu/availability/branch/{branch}). Returns stable
+     * shape even when some buckets are empty so the frontend can render
+     * three tabs unconditionally.
+     *
+     * @return array{
+     *   branch_id: int,
+     *   items: array<int, array{item_id:int, reason:?string, since:?string}>,
+     *   extras: array<int, array{extra_id:int, reason:?string, since:?string}>,
+     *   variations: array<int, array{variation_id:int, reason:?string, since:?string}>
+     * }
+     */
+    public function getBranchAvailabilitySnapshot(int $branchId): array
+    {
+        $items = ItemBranchAvailability::query()
+            ->where('branch_id', $branchId)
+            ->where('is_available', false)
+            ->orderBy('item_id')
+            ->get(['item_id', 'unavailable_reason', 'unavailable_since'])
+            ->map(fn ($row): array => [
+                'item_id' => (int) $row->item_id,
+                'reason' => $row->unavailable_reason,
+                'since' => optional($row->unavailable_since)?->toIso8601String(),
+            ])
+            ->all();
+
+        $extras = StockLevel::query()
+            ->where('branch_id', $branchId)
+            ->where('stockable_type', ItemExtra::class)
+            ->whereNotNull('manual_unavailable_reason')
+            ->orderBy('stockable_id')
+            ->get(['stockable_id', 'manual_unavailable_reason', 'manual_unavailable_since'])
+            ->map(fn (StockLevel $row): array => [
+                'extra_id' => (int) $row->stockable_id,
+                'reason' => $row->manual_unavailable_reason,
+                'since' => optional($row->manual_unavailable_since)?->toIso8601String(),
+            ])
+            ->all();
+
+        $variations = StockLevel::query()
+            ->where('branch_id', $branchId)
+            ->where('stockable_type', ItemVariation::class)
+            ->whereNotNull('manual_unavailable_reason')
+            ->orderBy('stockable_id')
+            ->get(['stockable_id', 'manual_unavailable_reason', 'manual_unavailable_since'])
+            ->map(fn (StockLevel $row): array => [
+                'variation_id' => (int) $row->stockable_id,
+                'reason' => $row->manual_unavailable_reason,
+                'since' => optional($row->manual_unavailable_since)?->toIso8601String(),
+            ])
+            ->all();
+
+        return [
+            'branch_id' => $branchId,
+            'items' => $items,
+            'extras' => $extras,
+            'variations' => $variations,
+        ];
+    }
+
+    /**
+     * Shared core for {@see toggleExtra()} / {@see toggleVariation()}.
+     *
+     * Behaviour:
+     *  - Acquires a row-level lock to serialize concurrent toggles on the
+     *    same (branch, type, id) tuple.
+     *  - Creates the stock_levels row if missing (on_hand defaults to 0,
+     *    which is the safe value when an extra was never tracked yet).
+     *  - Idempotent: returns the existing row without dispatching when the
+     *    requested state matches the persisted manual flag.
+     *  - Dispatches the appropriate domain event AFTER commit so outbox /
+     *    broadcast pipeline never observes uncommitted state.
+     */
+    private function toggleStockable(string $type, int $id, int $branchId, bool $available, ?string $reason): StockLevel
+    {
+        return DB::transaction(function () use ($type, $id, $branchId, $available, $reason): StockLevel {
+            $level = StockLevel::query()
+                ->where('branch_id', $branchId)
+                ->where('stockable_type', $type)
+                ->where('stockable_id', $id)
+                ->lockForUpdate()
+                ->first();
+
+            $newReason = $available ? null : $reason;
+            $newSince = $available ? null : now();
+
+            if (! $level) {
+                $level = StockLevel::query()->create([
+                    'branch_id' => $branchId,
+                    'stockable_type' => $type,
+                    'stockable_id' => $id,
+                    'on_hand' => 0,
+                    'reserved' => 0,
+                    'manual_unavailable_reason' => $newReason,
+                    'manual_unavailable_since' => $newSince,
+                ]);
+
+                $this->dispatchStockableEvent($type, $id, $branchId, $available, $newReason);
+
+                return $level;
+            }
+
+            $currentReason = $level->manual_unavailable_reason;
+            $currentlyManualUnavailable = $currentReason !== null && $currentReason !== '';
+
+            // Idempotency: same desired state and (when unavailable) same reason → no-op.
+            if ($available && ! $currentlyManualUnavailable) {
+                return $level;
+            }
+            if (! $available && $currentlyManualUnavailable && $currentReason === $reason) {
+                return $level;
+            }
+
+            $level->manual_unavailable_reason = $newReason;
+            $level->manual_unavailable_since = $newSince;
+            $level->save();
+
+            $this->dispatchStockableEvent($type, $id, $branchId, $available, $newReason);
+
+            return $level;
+        });
+    }
+
+    private function isStockableAvailable(string $type, int $id, int $branchId): bool
+    {
+        $level = StockLevel::query()
+            ->where('branch_id', $branchId)
+            ->where('stockable_type', $type)
+            ->where('stockable_id', $id)
+            ->first(['on_hand', 'manual_unavailable_reason']);
+
+        if (! $level) {
+            return true; // V1 rule: absent row = available.
+        }
+
+        if (is_string($level->manual_unavailable_reason) && $level->manual_unavailable_reason !== '') {
+            return false;
+        }
+
+        return (int) $level->on_hand > 0;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function getManuallyUnavailableIdsForBranch(string $type, int $branchId): array
+    {
+        return StockLevel::query()
+            ->where('branch_id', $branchId)
+            ->where('stockable_type', $type)
+            ->whereNotNull('manual_unavailable_reason')
+            ->orderBy('stockable_id')
+            ->pluck('stockable_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    private function dispatchStockableEvent(string $type, int $id, int $branchId, bool $available, ?string $reason): void
+    {
+        DB::afterCommit(function () use ($type, $id, $branchId, $available, $reason): void {
+            if ($type === ItemExtra::class) {
+                event(new ItemExtraAvailabilityChanged(
+                    extraId: $id,
+                    branchId: $branchId,
+                    isAvailable: $available,
+                    reason: $reason
+                ));
+                return;
+            }
+
+            if ($type === ItemVariation::class) {
+                event(new ItemVariationAvailabilityChanged(
+                    variationId: $id,
+                    branchId: $branchId,
+                    isAvailable: $available,
+                    reason: $reason
+                ));
+                return;
+            }
         });
     }
 

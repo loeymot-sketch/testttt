@@ -10,6 +10,21 @@ class StockLevel extends Model
 {
     use HasFactory;
 
+    /**
+     * [F-016a-BIS] Whitelist of accepted manual rupture reasons.
+     *
+     * Centralized so FormRequests, AvailabilityService and any future admin UI
+     * stay in sync. Free-form strings are rejected at the validator boundary
+     * to keep dashboard buckets clean.
+     */
+    public const MANUAL_UNAVAILABLE_REASONS = [
+        'out_of_stock_manual',
+        'seasonal',
+        'recipe_change',
+        'supplier_issue',
+        'quality_issue',
+    ];
+
     protected $fillable = [
         'branch_id',
         'stockable_type',
@@ -17,6 +32,8 @@ class StockLevel extends Model
         'on_hand',
         'reserved',
         'threshold_low',
+        'manual_unavailable_reason',
+        'manual_unavailable_since',
     ];
 
     protected $casts = [
@@ -26,6 +43,7 @@ class StockLevel extends Model
         'on_hand' => 'integer',
         'reserved' => 'integer',
         'threshold_low' => 'integer',
+        'manual_unavailable_since' => 'datetime',
     ];
 
     protected static function booted(): void
