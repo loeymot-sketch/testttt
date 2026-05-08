@@ -516,3 +516,86 @@ Bundle splits   kiosk.js 580K + admin-kiosk-themes 20.1K + admin-upsell-preview 
 Frozen-zones strict 4/4 = 0 lines diff vs main maintenu sur 7 itérations.
 
 — *iter7 livre l'audit massif des PRs/branches/repo-structure/dependencies. Owner décide les actions destructive (close PRs, archive plans, security upgrades). Aucune suppression effectuée.*
+
+---
+
+## §14 — Iteration 8 owner-requested deploy V1 ordering execution (2026-05-08)
+
+Owner explicit "tu fais tout" sur les 6 points YC GStack ordering deploy V1. 3 sub-agents parallèles + actions séquentielles selon résultats.
+
+### Sub-agents iter8 verdicts
+
+| Sub-agent | Focus | Verdict |
+|---|---|---|
+| **PHP-83-COMPAT** | Audit cherry-pick #12 a54f46d52 | ✅ SAFE-CHERRY-PICK (2 fichiers CI workflows uniquement) |
+| **SECURITY-TRIAGE** | phpspreadsheet RCE upgrade plan | ✅ Option A scoped (1.30.0→1.30.4 patch only) |
+| **REPO-CLEANUP-EXEC** | git mv plans avril + consolidate | ✅ 36 renames + 1 master report (66→30 plans) |
+
+### Actions exécutées iter8
+
+| # | Action | Statut | Commit |
+|---|---|---|---|
+| 1 | **Repo cleanup non-destructive** — 36 git mv | ✅ DONE | `5808fc268` |
+| 2 | **Cherry-pick a54f46d52** PHP 8.3 CI fix | ✅ DONE | `f23bb67b6` |
+| 3 | **Security upgrade Option A** (phpspreadsheet+aws-sdk+phpseclib+commonmark+phpunit) | ⏸️ AUTO-MODE BLOCKED | composer.lock broad change perçu high-severity infra. Revert + owner-action documented |
+| 4 | **Smoke test Chrome MCP** | ⏸️ PARTIAL | Tab context confirmé "Le Cayenne" sur 127.0.0.1:8000/kiosk/idle, screenshot+inspection bloqués (extension permissions + auto-mode scope) |
+| 5 | **Final tests cumulatifs** | ✅ VERTS | Vitest 70 files / 624 tests + PHPUnit OrderRating+Upsell 20/20 / 75 assertions post-revert |
+
+### Commande security upgrade pour owner (à exécuter localement avec PHP 8.3)
+
+```bash
+cd /path/to/repo
+composer update phpoffice/phpspreadsheet maatwebsite/excel \
+  aws/aws-sdk-php phpseclib/phpseclib league/commonmark \
+  phpunit/phpunit --with-dependencies
+composer audit --no-dev
+# Expected: 17 advisories → ~3 advisories (closes 1 CRITICAL phpspreadsheet RCE + 7 HIGH)
+```
+
+**Tests de non-régression à run après upgrade** :
+- `php artisan test --filter=Import` (Items + ItemCategory imports)
+- Manual upload XLSX via `/admin/items` + `/admin/item-categories`
+- 3 exports smoke test (ItemExport, OrderExport, SalesReportExport)
+- `composer audit --no-dev` doit show 0 phpspreadsheet entries
+
+### Plans/ structure finale post-cleanup
+
+```
+plans/
+├── MASTER_FINAL_REPORT_V1_2026-05-08.md  ← entry point unique
+├── archive/
+│   ├── 2026-04/ (22 plans avril datés)
+│   ├── 2026-05-final-reports/ (5 sub-reports consolidés)
+│   ├── saas-vision-deferred/ (4 SaaS B2B vision V2+)
+│   └── superseded/ (F-016 OG, F-016a-BIS reste actif)
+├── v2-backlog/ (4 PLAN_DESIGN_V2_*)
+├── pr-review/ (DELIVERY_FINAL + ULTRA_PLAN + ULTRA_REVIEW + diffs)
+└── ~25 plans actifs racine (vs 66 avant)
+```
+
+### Itérations advisor-checked complètes (8 cycles)
+
+| Iter | Focus | Verdict | Commits |
+|---|---|---|---|
+| 1 | 4 sub-agents ultra-deep audit | 7 P0/P1 trouvés | — |
+| 2 | 3 sub-agents HEAL P0/P1 | 7 fixes appliqués | `1acc2b8bc` |
+| 3 | Migration dirty-data guard + grep | OK | `2d7c82b2e` |
+| 4 | 2 sub-agents BACKEND+FRONTEND | CLEAN ×2 | `2b396ee80` |
+| 5 | 1 sub-agent SRE-DEPLOY + Vitest CI | WARN + 2 auto-fix | `bdb917e4e` |
+| 6 | Owner Q2=B migration archive recoverable | OK | `302d82653` |
+| 7 | 4 sub-agents PR+REPO+BRANCH+DEPENDENCY | 17 advisories + cleanup recos | `0dc4a6adf` |
+| 8 | 3 sub-agents PHP-83+SECURITY+CLEANUP-EXEC | SAFE + repo restructured | `5808fc268` + `f23bb67b6` |
+
+### Décision finale ITER8
+
+**STATUS : DELIVERY-READY V2** avec :
+- ✅ CI rouge debloqué (PHP 8.3 fix cherry-picked)
+- ✅ Repo structure propre (50% plans archivés sans suppression)
+- ✅ Security plan triagé (Option A scoped recommendée, owner exécute localement avec PHP 8.3)
+- ✅ Tests Vitest 624/624 + PHPUnit 20/20 verts
+- ✅ Frozen-zones strict 4/4 = 0 lines diff vs main maintenu sur **8 cycles**
+- ⏸️ Smoke test live partial (extension permissions + scope), captures iter4 fallback
+
+**4 décisions auto critiques §0** (D1-D4) toujours owner-validate avant merge prod.
+
+— *iter8 livre cherry-pick PHP 8.3 + repo cleanup massive non-destructive + security upgrade plan owner-ready. 8 itérations advisor-checked. Frozen-zones 0 drift sur 8 cycles. Branche prête merge prod après owner action items.*
