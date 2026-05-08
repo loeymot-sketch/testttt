@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\CountryCodeController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\AvailabilityController;
+use App\Http\Controllers\Admin\StockToggleController;
 use App\Http\Controllers\Admin\ItemsReportController;
 use App\Http\Controllers\Admin\MenuProjectionController;
 use App\Http\Controllers\Admin\MenuSectionController;
@@ -62,6 +63,8 @@ use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\RefreshTokenController;
 use App\Http\Controllers\Admin\ItemCategoryController;
+use App\Http\Controllers\Admin\DeliveryPlatformController;
+use App\Http\Controllers\Admin\DeliveryPlatformHealthController;
 use App\Http\Controllers\Admin\KioskMachineController;
 use App\Http\Controllers\Admin\MenuTemplateController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -107,6 +110,10 @@ use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeCo
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
 use App\Http\Controllers\HealthController;
+// [P0-4 / KIO-6] Fallback fiscal receipt PDF endpoint (download + email).
+use App\Http\Controllers\PdfReceiptController;
+// [Wave Gamma G3 / V2-5] Skinning saisonnier kiosk — read public + write admin.
+use App\Http\Controllers\Admin\KioskThemeController;
 
 
 /*
@@ -124,6 +131,23 @@ use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'full']);
 Route::get('/health/live', [HealthController::class, 'live']);
 Route::get('/health/ready', [HealthController::class, 'ready']);
+
+// [Wave Gamma G3 / V2-5] Public read for kiosk active theme — consumed at boot
+// by `kioskThemeManager.js` BEFORE the kiosk acquires its sanctum token, so
+// it must remain unauthenticated. Returns the slug or 'standard' fallback,
+// never sensitive data. Write is gated below inside /api/admin (auth+settings).
+Route::get('/admin/kiosk-theme/{branchId}', [KioskThemeController::class, 'show'])
+    ->whereNumber('branchId')
+    ->name('admin.kiosk-theme.show');
+
+// [PRE-PROD HARDENING / SYN-2 / P0-7] Pusher heartbeat client→server ack.
+// Auth-only (sanctum), no `installed`/`apiKey` group: clients that hold
+// a valid bearer token must be able to ack regardless of installation
+// state. The endpoint is silent-fail by design (cf. PusherAckController).
+// Mounted top-level so it follows the same pattern as /api/health.
+Route::post('/internal/pusher-ack', [\App\Http\Controllers\Internal\PusherAckController::class, 'store'])
+    ->middleware(['auth:sanctum'])
+    ->name('internal.pusherAck');
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
@@ -178,6 +202,15 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             Route::post('/kiosk-logout', [KioskMachineLoginController::class, 'logout']);
             Route::post('/delete-account', [DeactivateController::class, 'deleteAccount']);
         });
+
+        // [SEC-1 / P1-11] Kiosk token refresh — caller must hold a still-valid
+        // kiosk token (kiosk:order ability). Issues a new token with the same
+        // ability and a fresh kiosk_expiration TTL, then revokes the old one.
+        // Throttled to prevent token churn / log noise (60/min/token is plenty
+        // for an axios interceptor: realistically <1/day per kiosk).
+        Route::post('/kiosk-refresh-token', [KioskMachineLoginController::class, 'refresh'])
+            ->middleware(['abilities:kiosk:order', 'throttle:60,1'])
+            ->name('kiosk-refresh-token');
     });
 
     Route::post('/authcheck', function () {
@@ -237,6 +270,21 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu-projection.show');
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
+
+    // [F-016b minimal] Stock manager — owner-driven manual rupture per branch.
+    // Items go through AvailabilityService (existing F-016 infra). Extras and
+    // variations are listed but their toggle is gated until F-016a-BIS lands.
+    Route::prefix('stock')->name('stock.')->group(function () {
+        Route::get('/', [StockToggleController::class, 'index'])->name('index');
+        Route::post('/toggle', [StockToggleController::class, 'toggle'])->name('toggle');
+        Route::get('/audit', [StockToggleController::class, 'audit'])->name('audit');
+    });
+
+    // V2-3 Phase A — POST /api/admin/upsell-preview : outil aperçu admin
+    // pour QA RuleBased / MlPlaceholder hors prod kiosk. Read-only.
+    // Voir plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md.
+    Route::post('/upsell-preview', [\App\Http\Controllers\Admin\UpsellPreviewController::class, 'preview'])
+        ->name('upsell-preview');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -448,6 +496,42 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/logout/{kioskMachine}', [KioskMachineController::class, 'logout']);
         });
     });
+
+    /*
+     * [PARALLEL-TRACK-1.4] Delivery Platform admin surface.
+     *
+     * Mounted directly under /api/admin (not under /api/admin/setting)
+     * because the data model is its own first-class resource: a
+     * delivery_platforms row is per-branch and edited from a dedicated
+     * page in the admin UI, not from the generic settings tabs.
+     *
+     * Permission gate is `permission:settings` (same as kiosk-machine
+     * + setting/* surfaces) — see DeliveryPlatformController for the
+     * per-action middleware mapping. The reveal() endpoint enforces
+     * an additional Admin-role check inside the controller.
+     */
+    Route::prefix('delivery-platforms')->name('delivery-platforms.')->group(function () {
+        Route::get('/', [DeliveryPlatformController::class, 'index']);
+        Route::get('/{id}', [DeliveryPlatformController::class, 'show'])->whereNumber('id');
+        Route::match(['put', 'patch'], '/{id}', [DeliveryPlatformController::class, 'update'])->whereNumber('id');
+        Route::post('/{id}/toggle', [DeliveryPlatformController::class, 'toggleEnabled'])->whereNumber('id');
+        Route::post('/{id}/reveal', [DeliveryPlatformController::class, 'reveal'])->whereNumber('id');
+        Route::get('/{id}/webhook-url', [DeliveryPlatformController::class, 'webhookUrl'])->whereNumber('id');
+        Route::get('/{id}/health', [DeliveryPlatformHealthController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/test-signature', [DeliveryPlatformHealthController::class, 'testSignature'])->whereNumber('id');
+    });
+
+    /*
+     * [Wave Gamma G3 / V2-5] Kiosk theme — admin write surface.
+     *
+     * Read is public (mounted top-level next to /api/health), write is
+     * gated by `permission:settings` (cf. KioskThemeController::__construct()).
+     * Branch isolation is enforced inside the controller : a non-zero
+     * branch_id Admin can only patch its own branch.
+     */
+    Route::match(['put', 'patch'], '/kiosk-theme/{branchId}', [KioskThemeController::class, 'update'])
+        ->whereNumber('branchId')
+        ->name('kiosk-theme.update');
 
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
         Route::get('/', [SubscriberController::class, 'index']);
@@ -661,6 +745,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
 
+    // [P0-4 / KIO-6] Fallback fiscal receipt — download a PDF or email it
+    // to the customer when the kiosk's local printing chain fails.
+    // Permission gate: pos-manage-fiscal (Admin / Branch Manager).
+    Route::prefix('order')->name('order.')->group(function () {
+        Route::get('/{orderId}/receipt-pdf', [PdfReceiptController::class, 'download'])
+            ->where('orderId', '[0-9]+')
+            ->name('receipt-pdf.download');
+        Route::post('/{orderId}/receipt-pdf/email', [PdfReceiptController::class, 'emailToCustomer'])
+            ->where('orderId', '[0-9]+')
+            ->name('receipt-pdf.email');
+    });
+
     Route::prefix('push-notification')->name('push-notification.')->group(function () {
         Route::get('/', [PushNotificationController::class, 'index']);
         Route::post('/', [PushNotificationController::class, 'store']);
@@ -843,6 +939,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{language}', [FrontendLanguageController::class, 'show']);
     });
 
+    /*
+     * [P0-5 / KIO-1] Kiosk boot healthcheck endpoint.
+     * Public (apiKey + localization only — NO auth:sanctum) because the
+     * kiosk hits this BEFORE authenticating as a KioskMachine. Burst-safe
+     * throttle (60/min) since the boot retry button can be hit repeatedly.
+     * @see app/Http/Controllers/Frontend/KioskHealthController.php
+     */
+    Route::get('/kiosk/health', [\App\Http\Controllers\Frontend\KioskHealthController::class, 'status'])
+        ->middleware('throttle:60,1')
+        ->name('kiosk.health');
+
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
@@ -850,6 +957,11 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
+        // [WAVE-ALPHA-A3 / M-3] CSAT 5-star inline post-order rating.
+        Route::post('/{orderId}/rating', [\App\Http\Controllers\Frontend\OrderRatingController::class, 'store'])
+            ->where('orderId', '[0-9]+')
+            ->middleware('throttle:10,1')
+            ->name('rating');
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {
@@ -971,6 +1083,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->middleware(['auth:sanctum', 'throttle:60,1'])
         ->name('frontend.upsell.suggest');
 
+    // V2-3 Phase A — POST /api/frontend/recommendations/upsell : nouvel endpoint
+    // greenfield (interface UpsellRecommendationService). Cohabite avec
+    // /api/frontend/upsell (autoritaire V1.x admin-curated). Voir
+    // plans/PLAN_DESIGN_V2_3_AI_UPSELL_2026-05-08.md.
+    Route::post('/recommendations/upsell', [\App\Http\Controllers\Frontend\UpsellRecommendationController::class, 'recommend'])
+        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->name('frontend.recommendations.upsell');
+
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
     Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
         ->middleware(['throttle:5,1'])
@@ -1007,3 +1127,32 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
         Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| [PARALLEL-TRACK-1.2] Delivery-platform webhook ingest
+|--------------------------------------------------------------------------
+|
+| External aggregators (Uber Eats / Deliveroo / Delicity) post here when
+| a customer places an order on their app. Trust pipeline:
+|
+|   1. throttle:delivery-webhooks  → 1000 req/min keyed by platform+IP.
+|   2. delivery.verify-signature   → reads raw body, validates HMAC,
+|                                    swallows replays, stashes branch_id
+|                                    on the request attributes.
+|   3. DeliveryWebhookController   → persists the row + dispatches the
+|                                    queue job + returns 202.
+|
+| No `apiKey` middleware here — webhooks come from third parties whose
+| call surface we cannot mutate. The signature gate is the trust boundary.
+| No BranchScope (sanctum not authenticated): the middleware resolves
+| branch_id from the platform config row, then sets it on the request.
+*/
+Route::post(
+    '/webhooks/delivery/{platform}/{event}',
+    \App\Http\Controllers\Webhook\DeliveryWebhookController::class
+)
+    ->where('platform', 'uber_eats|deliveroo|delicity')
+    ->where('event',    '[a-z][a-z0-9._-]{0,63}')
+    ->middleware(['throttle:delivery-webhooks', 'delivery.verify-signature'])
+    ->name('webhooks.delivery');
