@@ -1,0 +1,16 @@
+{
+  "event": "order.cancelled",
+  "event_id": "evt_dlc_cancel_5555-6666-7777",
+  "event_time": "2026-05-08T10:30:00Z",
+  "data": {
+    "id": "delicity-cancel-3333",
+    "external_id": "delicity-cancel-3333",
+    "venue_id": "fk-paris-republique",
+    "status": "cancelled",
+    "cancellation": {
+      "reason": "Restaurant ne pouvait pas honorer la commande",
+      "cancelled_at": "2026-05-08T10:29:50Z",
+      "cancelled_by": "restaurant"
+    }
+  }
+}

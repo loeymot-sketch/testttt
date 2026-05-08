@@ -1,0 +1,21 @@
+{
+  "event": "order.cancelled",
+  "event_id": "evt_dlv_cancel_aaaa-bbbb-cccc",
+  "event_time": "2026-05-08T10:25:00Z",
+  "data": {
+    "order_id": "deliveroo-cancel-1111-2222",
+    "display_id": "DLV-0050",
+    "status": "cancelled",
+    "restaurant": {
+      "id": "rst_42",
+      "external_id": "fk-paris-republique",
+      "name": "FoodKing Paris République"
+    },
+    "cancellation": {
+      "reason_code": "CUSTOMER_REQUEST",
+      "reason": "Le client a annulé via l'application Deliveroo",
+      "cancelled_at": "2026-05-08T10:24:50Z",
+      "cancelled_by": "customer"
+    }
+  }
+}

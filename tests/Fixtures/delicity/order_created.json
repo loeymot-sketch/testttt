@@ -1,0 +1,59 @@
+{
+  "event": "order.created",
+  "event_id": "evt_dlc_1111-2222-3333-4444",
+  "event_time": "2026-05-08T10:15:30Z",
+  "data": {
+    "id": "delicity-order-9876",
+    "external_id": "delicity-order-9876",
+    "venue_id": "fk-paris-republique",
+    "status": "created",
+    "customer": {
+      "name": "Pierre de Fermat",
+      "phone": "+33655667788"
+    },
+    "delivery_address": {
+      "street": "30 rue Cadet",
+      "apartment": "Studio 12",
+      "city": "Paris",
+      "country": "FR",
+      "zip": "75009",
+      "latitude": 48.876389,
+      "longitude": 2.343611
+    },
+    "items": [
+      {
+        "id": "dlc_item_1",
+        "sku": "FK-MENU-MAXI",
+        "name": "Menu Maxi Burger",
+        "quantity": 1,
+        "unit_price_eur": 12.50,
+        "modifiers": [
+          {
+            "id": "mod_sauce_bbq",
+            "sku": "FK-SAUCE-BBQ",
+            "name": "Sauce BBQ",
+            "group_name": "Sauces",
+            "quantity": 1,
+            "unit_price_eur": 0.50
+          }
+        ]
+      },
+      {
+        "id": "dlc_item_2",
+        "sku": "FK-DESSERT-COOKIE",
+        "name": "Cookie chocolat",
+        "quantity": 2,
+        "unit_price_eur": 2.20,
+        "modifiers": []
+      }
+    ],
+    "totals": {
+      "subtotal_eur": 17.40,
+      "delivery_fee_eur": 1.99,
+      "total_eur": 19.39
+    },
+    "pickup_type": "delivery",
+    "placed_at": "2026-05-08T10:15:00Z",
+    "pickup_at": "2026-05-08T10:40:00Z"
+  }
+}

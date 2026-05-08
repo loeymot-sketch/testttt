@@ -32,6 +32,7 @@ use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
+use App\Listeners\PushStatusToDeliveryPlatform;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -98,6 +99,10 @@ class EventServiceProvider extends ServiceProvider
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
             PersistOrderStatusChangedToOutbox::class,
+            // [PARALLEL-TRACK-1.3 / Phase 3] Outbound platform sync.
+            // Listener short-circuits silently for non-platform-originated
+            // orders (kiosk / web / POS) — see PushStatusToDeliveryPlatform.
+            PushStatusToDeliveryPlatform::class,
         ],
         // [PHASE-36-P1] FCM push notifications on new order
         OrderCreated::class => [

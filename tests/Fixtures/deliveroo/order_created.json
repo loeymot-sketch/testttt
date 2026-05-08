@@ -1,0 +1,63 @@
+{
+  "event": "order.placed",
+  "event_id": "evt_dlv_aaaa-bbbb-cccc-dddd-eeee",
+  "event_time": "2026-05-08T10:15:30Z",
+  "data": {
+    "order_id": "deliveroo-order-1234-5678",
+    "display_id": "DLV-0042",
+    "status": "placed",
+    "restaurant": {
+      "id": "rst_42",
+      "external_id": "fk-paris-republique",
+      "name": "FoodKing Paris République"
+    },
+    "customer": {
+      "name": "Henri Becquerel",
+      "phone_number": "+33611112233"
+    },
+    "delivery_address": {
+      "line1": "20 rue Lafayette",
+      "line2": "Etage 4",
+      "city": "Paris",
+      "country": "FR",
+      "postcode": "75009",
+      "latitude": 48.876111,
+      "longitude": 2.339722
+    },
+    "items": [
+      {
+        "id": "dlv_item_1",
+        "pos_id": "FK-BURGER-CLASSIC",
+        "name": "Hamburger classic",
+        "quantity": 2,
+        "unit_price": 720,
+        "modifiers": [
+          {
+            "id": "mod_extra_cheese",
+            "pos_id": "FK-EXTRA-CHEESE",
+            "name": "Cheddar supplément",
+            "group_name": "Extras",
+            "quantity": 1,
+            "unit_price": 100
+          }
+        ]
+      },
+      {
+        "id": "dlv_item_2",
+        "pos_id": "FK-DRINK-COKE",
+        "name": "Coca-Cola 33cl",
+        "quantity": 2,
+        "unit_price": 280,
+        "modifiers": []
+      }
+    ],
+    "pricing": {
+      "subtotal": 2100,
+      "delivery_fee": 199,
+      "total": 2299
+    },
+    "fulfillment_type": "delivery",
+    "created_at": "2026-05-08T10:15:00Z",
+    "expected_pickup_at": "2026-05-08T10:35:00Z"
+  }
+}

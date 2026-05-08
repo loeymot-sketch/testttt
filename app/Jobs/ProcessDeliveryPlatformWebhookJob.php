@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Domain\Delivery\PlatformAdapterRegistry;
 use App\Models\DeliveryWebhookEvent;
+use App\Services\Delivery\DeliveryOrderCancellationService;
 use App\Services\Delivery\DeliveryOrderIngestionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -51,8 +53,11 @@ class ProcessDeliveryPlatformWebhookJob implements ShouldQueue
         $this->onQueue('high');
     }
 
-    public function handle(DeliveryOrderIngestionService $ingestion): void
-    {
+    public function handle(
+        DeliveryOrderIngestionService $ingestion,
+        DeliveryOrderCancellationService $cancellation,
+        PlatformAdapterRegistry $registry,
+    ): void {
         /** @var DeliveryWebhookEvent|null $event */
         $event = DeliveryWebhookEvent::query()->find($this->webhookEventId);
 
@@ -68,6 +73,24 @@ class ProcessDeliveryPlatformWebhookJob implements ShouldQueue
             return;
         }
 
+        // [PARALLEL-TRACK-1.3 / Phase 3] Route by event type. The Phase 2
+        // IngestionService deliberately short-circuits on non-create events
+        // (DeliveryOrderIngestionService.php:103). Cancellation flows must
+        // therefore travel through DeliveryOrderCancellationService, which
+        // applies OrderStateMachine::apply(CANCELED) on the existing
+        // FrontendOrder and dispatches OrderStatusChanged after commit.
+        $eventType = $this->classifyEvent($event, $registry);
+
+        if ($eventType === 'order.cancelled') {
+            $cancelResult = $cancellation->cancel($event);
+            $event->forceFill([
+                'delivery_platform_external_order_id' => $cancelResult['external_order_id'] ?? null,
+                'processed_at'                        => now(),
+                'processing_error'                    => null,
+            ])->save();
+            return;
+        }
+
         $result = $ingestion->ingest($event);
 
         $event->forceFill([
@@ -75,6 +98,30 @@ class ProcessDeliveryPlatformWebhookJob implements ShouldQueue
             'processed_at'                        => now(),
             'processing_error'                    => null,
         ])->save();
+    }
+
+    /**
+     * Resolve the event type from the persisted body via the adapter,
+     * falling back to the row's `event_type` column when the adapter
+     * cannot decide (we still want forensic events to be classified
+     * sensibly).
+     */
+    private function classifyEvent(DeliveryWebhookEvent $event, PlatformAdapterRegistry $registry): string
+    {
+        try {
+            $adapter = $registry->for((string) $event->platform);
+            $type    = $adapter->eventTypeFrom((array) ($event->body ?? []));
+            if ($type !== '' && $type !== 'order.unknown') {
+                return $type;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ProcessDeliveryPlatformWebhookJob] eventTypeFrom failed', [
+                'webhook_event_id' => $this->webhookEventId,
+                'error'            => $e->getMessage(),
+            ]);
+        }
+
+        return (string) $event->event_type;
     }
 
     public function failed(\Throwable $exception): void
