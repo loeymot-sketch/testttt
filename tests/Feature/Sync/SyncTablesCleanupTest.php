@@ -130,8 +130,12 @@ class SyncTablesCleanupTest extends TestCase
 
     public function test_runs_cleanly_on_empty_tables(): void
     {
-        $this->assertSame(0, DB::table('pusher_event_acks')->count());
-        $this->assertSame(0, DB::table('domain_events')->count());
+        // Self-sufficient empty state: don't rely on RefreshDatabase baseline,
+        // which can carry seeded rows on MySQL but not on SQLite. The point of
+        // this test is "exit 0 with nothing to delete," not "verify migrations
+        // produce an empty domain_events."
+        DB::table('pusher_event_acks')->delete();
+        DB::table('domain_events')->delete();
 
         $this->artisan('foodking:sync:cleanup')->assertExitCode(0);
 
