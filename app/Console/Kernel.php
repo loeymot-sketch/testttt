@@ -32,6 +32,12 @@ class Kernel extends ConsoleKernel
             ->everyMinute()
             ->withoutOverlapping();
 
+        $schedule->command('foodking:sync:cleanup')
+            ->daily()
+            ->name('foodking-sync-cleanup')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping();
