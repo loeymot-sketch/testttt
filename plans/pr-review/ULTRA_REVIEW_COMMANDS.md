@@ -1,90 +1,170 @@
 # Ultra-Review Commands — copie-colle direct
-**Branche :** `claude/blissful-mclean-c915c2`
+**Date :** 2026-05-08
+**4 sous-branches review créées localement** ✅
 
-> **Mode d'emploi simple :**
-> 1. Copie le bloc `BATCH N` complet (3-4 lignes)
-> 2. Colle dans Claude Code / Cursor
-> 3. Attends la review
-> 4. Applique les findings
-> 5. Passe au batch suivant
->
-> Chaque batch est limité en taille pour passer sous le seuil "project too big".
+> `/ultrareview` accepte UNIQUEMENT : un nom de branche, un numéro de PR, ou rien (current branch).
+> Le projet entier = trop volumineux. J'ai donc créé **4 sous-branches** scopées par batch.
+> Chaque sous-branche contient seulement les fichiers de son batch, basée sur `main`.
+> Tu vas reviewer **une par une** en utilisant le nom de branche.
 
 ---
 
-## ⚠️ Si la commande `/ultrareview` n'existe pas chez toi
+## ✅ 4 sous-branches prêtes
 
-Test ces 3 alternatives dans cet ordre — utilise celle qui marche :
-
-1. **`/ultra-review`** (avec tiret)
-2. **`/code-review`** (plugin code-review officiel Claude)
-3. **`/review-pr`** (plugin pr-review-toolkit officiel Claude)
-
-Si aucune ne marche, colle juste le **TEXTE en gras** sans slash command — Claude le lit comme une demande de review.
+| Branche | Fichiers | LOC | Focus |
+|---|---|---|---|
+| `review/batch-1-backend-php` | 18 | +2129 | 🔴 Sécurité backend PHP |
+| `review/batch-2-frozen-cart-payment` | 7 | +613 / -85 | 🔴 Frozen-zone Cart+Payment |
+| `review/batch-3-greenfield-vue` | 14 | +2479 | 🟠 POC + admin tools + voice |
+| `review/batch-4-additive-ds-i18n` | 21 | +2968 / -83 | 🟡 Additive + DS + i18n |
 
 ---
 
-# 🔴 BATCH 1/4 — Backend PHP (security)
+# 🔴 BATCH 1/4 — Backend PHP
+
+**Copie cette ligne :**
 
 ```
-/ultrareview Ultra review backend PHP de cette branche claude/blissful-mclean-c915c2. Focus sécurité P0 : auth + branch isolation + defense-in-depth (match() vs Str::studly) + N+1 queries. Périmètre exact : app/Http/Controllers/Admin/UpsellPreviewController.php, app/Http/Controllers/Admin/KioskThemeController.php, app/Http/Controllers/Frontend/OrderRatingController.php, app/Http/Controllers/Frontend/UpsellRecommendationController.php, app/Services/Recommendation/, app/Models/OrderRating.php, app/Models/Branch.php, app/Providers/AppServiceProvider.php, config/recommendation.php, database/migrations/2026_05_08_050000_create_order_ratings_table.php, database/migrations/2026_05_08_060000_add_active_theme_to_branches.php, routes/api.php, tests/Feature/Frontend/OrderRatingTest.php, tests/Feature/Recommendation/UpsellRecommendationTest.php, tests/Feature/Admin/UpsellPreviewControllerTest.php, tests/Feature/Admin/KioskThemeControllerTest.php. Vérifier : 1) Sanctum abilities + Spatie permissions sur chaque endpoint 2) BranchScope strict 3) Validation Form Request 4) Migrations reversible 5) Tests PHPUnit edge cases. Verdict attendu : MERGE / HEAL / BLOCK avec liste actions correctives.
+/ultrareview review/batch-1-backend-php
 ```
+
+**Périmètre (18 fichiers) :**
+- `app/Http/Controllers/Admin/UpsellPreviewController.php` (P0 defense-in-depth `match()`)
+- `app/Http/Controllers/Admin/KioskThemeController.php`
+- `app/Http/Controllers/Frontend/OrderRatingController.php`
+- `app/Http/Controllers/Frontend/UpsellRecommendationController.php`
+- `app/Services/Recommendation/{Service interface, RuleBasedStrategy, MlPlaceholderStrategy}`
+- `app/Models/{OrderRating, Branch}`
+- `app/Providers/AppServiceProvider.php`
+- `config/recommendation.php`
+- 2 migrations (`order_ratings`, `add_active_theme_to_branches`)
+- `routes/api.php`
+- 4 tests Feature PHPUnit
+
+**Focus si reviewer demande contexte :**
+- Sécurité Sanctum abilities + Spatie permissions
+- BranchScope strict
+- Validation Form Request
+- N+1 queries dans RuleBasedStrategy
+- Migrations reversible
 
 ---
 
 # 🔴 BATCH 2/4 — Frozen-zone Cart + Payment
 
+**Copie cette ligne :**
+
 ```
-/ultrareview Ultra review frozen-zone discipline branche claude/blissful-mclean-c915c2. Owner a explicitement débloqué KioskCartComponent UNIQUEMENT pour V1x-1 (spacing tokens) + V1x-3 (image clamp Option A) + V1x-6 (aria-label Option B extensive). KioskPaymentComponent territory agent F-002/F-008/F-009 = additive scope-minimal seul. Périmètre : resources/js/components/frontend/kiosk/KioskCartComponent.vue, resources/js/components/frontend/kiosk/KioskPaymentComponent.vue, resources/css/kiosk/tokens.css, tests/js/KioskCartRestyle.spec.js, plans/PLAN_DESIGN_V1X1_SPACING_TOKENS_2026-05-08.md, plans/PLAN_DESIGN_V1X3_CART_IMAGE_RESPONSIVE_2026-05-08.md, plans/PLAN_DESIGN_V1X6_CART_VARIATIONS_ARIA_2026-05-08.md. Vérifier : 1) Cart : 0 modif script section, exactement 3 nouveaux aria-label 2) Payment : 0 modif state machine + appels API 3) tokens.css : que additions (3 nouveaux : --kiosk-space-7, --kiosk-space-11, --kiosk-opacity-disabled) 4) V1x-3 Option A : 1080p inchangé strict 64x64. Verdict attendu : GATE RESPECTED / DRIFT MINOR / DRIFT MAJOR.
+/ultrareview review/batch-2-frozen-cart-payment
 ```
+
+**Périmètre (7 fichiers) :**
+- `resources/js/components/frontend/kiosk/KioskCartComponent.vue` (V1x-1+V1x-3+V1x-6)
+- `resources/js/components/frontend/kiosk/KioskPaymentComponent.vue` (M-4 + V1x-2 + V1x-1)
+- `resources/css/kiosk/tokens.css` (3 nouveaux tokens additifs)
+- `tests/js/KioskCartRestyle.spec.js` (V1x-6 aria-label assertion)
+- 3 plans gate documentation V1x-1/3/6
+
+**Focus si reviewer demande contexte :**
+- Owner a explicitement débloqué Cart pour V1x-1+V1x-3+V1x-6 UNIQUEMENT
+- 0 modif `<script>` section
+- Exactement 3 nouveaux `:aria-label` dans `<template>`
+- Payment additive only (pas de modif state machine)
+- tokens.css que des additions
 
 ---
 
 # 🟠 BATCH 3/4 — Greenfield Vue (POC + admin tools + voice)
 
+**Copie cette ligne :**
+
 ```
-/ultrareview Ultra review composants Vue 2 greenfield branche claude/blissful-mclean-c915c2. 4 features : V2-2 POC drag-drop ingrédients (admin route hors prod), V2-5 Phase 2 theme manager admin UI, V2-3 admin upsell preview QA tool, V2-4 voice ordering dialog. Périmètre : resources/js/components/frontend/kiosk/builder/KioskBurgerBuilder.vue, resources/js/components/frontend/kiosk/builder/KioskBurgerLayer.vue, resources/js/components/frontend/kiosk/builder/KioskBurgerBuilderPoc.vue, resources/js/components/admin/kioskTheme/KioskThemeManagerPage.vue, resources/js/components/admin/kioskTheme/KioskThemePreviewCard.vue, resources/js/components/admin/upsellPreview/UpsellPreviewPage.vue, resources/js/components/frontend/kiosk/KioskVoiceOrderingButton.vue, resources/js/components/frontend/kiosk/KioskVoiceOrderingDialog.vue, resources/js/router/modules/kioskBurgerBuilderPocRoutes.js, resources/js/router/modules/kioskThemeAdminRoutes.js, resources/js/router/modules/upsellPreviewRoutes.js, tests/js/KioskBurgerBuilder.spec.js, tests/js/KioskThemeManagerPage.spec.js, tests/js/kioskVoiceOrderingDialog.spec.js. Vérifier : 1) vue-draggable-next v2.3.0 default slot pattern (pas #item) 2) A11y WCAG 2.1.1 keyboard alternative drag-drop (Tab/Enter/arrows) 3) ARIA labels source/drop/dialog 4) Voice dialog role=dialog + aria-modal=true + focus trap 5) Mic consent user explicite 6) URL admin/kiosk-theme relative (pas /api/admin/...) 7) Routes admin permission guard router 8) prefers-reduced-motion respecté. Verdict attendu : MERGE-READY / HEAL / BLOCK.
+/ultrareview review/batch-3-greenfield-vue
 ```
+
+**Périmètre (14 fichiers) :**
+- V2-2 POC : `KioskBurgerBuilder.vue` (340) + `KioskBurgerLayer.vue` (116) + `KioskBurgerBuilderPoc.vue` (124)
+- V2-5 Phase 2 : `KioskThemeManagerPage.vue` (332) + `KioskThemePreviewCard.vue` (163)
+- V2-3 admin : `UpsellPreviewPage.vue` (394)
+- V2-4 voice : `KioskVoiceOrderingButton.vue` (269) + `KioskVoiceOrderingDialog.vue` (185)
+- 3 router modules admin (kioskBurgerBuilderPoc + kioskThemeAdmin + upsellPreview)
+- 3 tests vitest (KioskBurgerBuilder + KioskThemeManagerPage + kioskVoiceOrderingDialog)
+
+**Focus si reviewer demande contexte :**
+- vue-draggable-next v2.3.0 default slot pattern (pas `#item`)
+- WCAG 2.1.1 keyboard alternative drag-drop (Tab/Enter/arrows)
+- ARIA labels source/drop/dialog
+- `role="dialog"` + `aria-modal="true"` + focus trap voice dialog
+- Mic consent user explicite
+- URL relative `admin/kiosk-theme/{branchId}` (PAS `/api/admin/...`)
+- Routes admin permission guard router (beforeEnter)
 
 ---
 
 # 🟡 BATCH 4/4 — Additive Vue + DS + i18n + bootstrap
 
+**Copie cette ligne :**
+
 ```
-/ultrareview Ultra review additive discipline branche claude/blissful-mclean-c915c2. KioskIdleScreen reçoit voice CTA additif (default OFF safe rollout). KioskCash/Confirmation/Admin reçoivent polish Wave Alpha. Bootstrap-kiosk init themes V2-5. CSS tokens additifs strict. Périmètre : resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue, resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue, resources/js/components/frontend/kiosk/KioskAdminComponent.vue, resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue, resources/js/components/frontend/kiosk/KioskSkeletonLoader.vue, resources/js/bootstrap-kiosk.js, resources/js/services/kioskThemeManager.js, resources/js/services/kioskVoiceOrdering.js, resources/css/kiosk/global-a11y.css, resources/css/kiosk/themes/_base.css, resources/css/kiosk/themes/standard.css, resources/css/kiosk/themes/halloween.css, resources/css/kiosk/themes/christmas.css, resources/js/languages/fr.json, resources/js/languages/en.json, resources/js/languages/ar.json, tests/js/KioskSkeletonLoader.spec.js, tests/js/KsButton.spec.js, tests/js/kioskAdminA11ySection.spec.js, tests/js/kioskThemeManager.spec.js, tests/js/kioskVoiceOrdering.spec.js. Vérifier : 1) V2-4 voice flag default false (pas true) 2) kioskThemeManager.js URL relative admin/kiosk-theme/ (BUG FIX critique du /api/api/) 3) bootstrap-kiosk short-circuit si branchId null (admin pages safe) 4) global-a11y.css scope :where() specificity 0 5) Themes CSS leak-safe (toutes rules wrappées par [data-kiosk-theme]) 6) i18n fr/en symétriques sur ~106 keys ajoutées 7) Pas de keys i18n orphelines 8) Skeleton 4 types tous utilisés. Verdict attendu : MERGE-READY / HEAL / BLOCK.
+/ultrareview review/batch-4-additive-ds-i18n
 ```
+
+**Périmètre (21 fichiers) :**
+- 4 composants additive : `KioskCashInstruction` + `KioskConfirmation` + `KioskAdmin` + `KioskIdleScreen`
+- 1 greenfield : `KioskSkeletonLoader.vue`
+- `bootstrap-kiosk.js` (V2-5 themes init)
+- 2 services : `kioskThemeManager.js` (BUG FIX URL) + `kioskVoiceOrdering.js`
+- 5 CSS : `global-a11y.css` + 4 themes (`_base`, `standard`, `halloween`, `christmas`)
+- 3 i18n : `fr.json` + `en.json` (~106 keys) + `ar.json` (10 partial)
+- 5 tests vitest
+
+**Focus si reviewer demande contexte :**
+- V2-4 voice flag `isVoiceFeatureEnabled = false` DEFAULT (safe rollout)
+- `kioskThemeManager.js` URL relative `admin/kiosk-theme/...` (BUG FIX du `/api/api/`)
+- `bootstrap-kiosk.js` short-circuit si `branchId` null (admin pages safe)
+- `global-a11y.css` scope `:where()` specificity 0
+- Themes CSS leak-safe (toutes rules wrappées par `[data-kiosk-theme="..."]`)
+- i18n fr/en symétriques
+- 0 keys i18n orphelines
 
 ---
 
-## 📋 Workflow par batch
+## 📋 Workflow
 
-| Étape | Action |
-|---|---|
-| 1 | Copie tout le bloc ` ``` ` du batch (3-15 lignes incluant la commande complète) |
-| 2 | Colle dans Claude Code / Cursor (ou ton outil ultra-review) |
-| 3 | Attends le rapport |
-| 4 | Applique les actions correctives |
-| 5 | Commit les fixes éventuels |
-| 6 | Passe au batch suivant |
+```
+1. Copie le bloc /ultrareview du batch courant
+2. Colle dans Claude Code (la branche existe déjà localement)
+3. Attends le rapport
+4. Fix les findings (si applicable) → commit sur claude/blissful-mclean-c915c2
+5. Passe au batch suivant
+```
 
-**Estimation :**
-- Batch 1 : ~30 min review
-- Batch 2 : ~15 min review
-- Batch 3 : ~40 min review
-- Batch 4 : ~25 min review
-- **Total : ~110 min**
+**Note importante** : les 4 sous-branches sont basées sur `main`. Si tu fixes un finding, fais-le sur la branche principale `claude/blissful-mclean-c915c2`. Les sous-branches review sont **read-only** (juste pour scoper la review).
 
 ---
 
 ## ✅ Status à cocher
 
-- [ ] Batch 1/4 lancé
+- [ ] Batch 1/4 lancé (`/ultrareview review/batch-1-backend-php`)
 - [ ] Batch 1/4 findings appliqués
-- [ ] Batch 2/4 lancé
+- [ ] Batch 2/4 lancé (`/ultrareview review/batch-2-frozen-cart-payment`)
 - [ ] Batch 2/4 findings appliqués
-- [ ] Batch 3/4 lancé
+- [ ] Batch 3/4 lancé (`/ultrareview review/batch-3-greenfield-vue`)
 - [ ] Batch 3/4 findings appliqués
-- [ ] Batch 4/4 lancé
+- [ ] Batch 4/4 lancé (`/ultrareview review/batch-4-additive-ds-i18n`)
 - [ ] Batch 4/4 findings appliqués
 - [ ] Verdict global validé
-- [ ] Push branch + gh pr create
+- [ ] Merge `claude/blissful-mclean-c915c2` vers `main`
+
+---
+
+## 🧹 Cleanup post-merge
+
+Une fois la review terminée et la branche principale mergée, supprime les 4 sous-branches :
+
+```bash
+git branch -D review/batch-1-backend-php
+git branch -D review/batch-2-frozen-cart-payment
+git branch -D review/batch-3-greenfield-vue
+git branch -D review/batch-4-additive-ds-i18n
+```
