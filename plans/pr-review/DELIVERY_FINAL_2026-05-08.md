@@ -238,3 +238,75 @@ fb99d12b6       design(wave-alpha): 10 items kiosk design parallel
 
 — *Le plan est exécuté. La branche est prête. La discipline GStack a tenu trois itérations.
 Les 4 décisions auto critiques sont surfacées en §0. C'est à l'owner de valider et merger.*
+
+---
+
+## §11 — Iteration 4 owner-requested final audit pass (2026-05-08)
+
+Owner explicit override de la recommandation advisor() "stop iterating" → CLAUDE.md §8 human gate rule respected.
+
+### Méthode
+2 sub-agents YC GStack parallèles avec focus différents (max coverage angles) :
+1. **BACKEND-DEEP** : Architect + Security + DBA + Tester
+2. **FRONTEND-UI** : A11y + Tester + SRE
+
+### Résultats
+
+#### BACKEND-DEEP audit
+**Verdict : CLEAN — 0 P0 + 0 P1 + 0 P2**
+
+Vérifications passées :
+- ✅ BranchScope discipline : `OrderRating` model docstring justifie absence (kiosk anonymous customer), re-fetch via `order_id` unique → pas de leak
+- ✅ Sanctum `kiosk:order` ability uniformément exigée sur 3 controllers (UpsellRecommendation + UpsellPreview + OrderRating)
+- ✅ Multi-tenant integrity migration MIN(id) : `order_id` unique au niveau `orders.id`, FK structurelle empêche cross-branch leak
+- ✅ Race condition idempotency : `QueryException` catch traite 23000 / SQLite UNIQUE constraint correctement, pas de retry-storm
+- ✅ N+1 last mile : `RuleBasedStrategy` hoist intact, test `query_count_under_threshold` ≤ 8 enforced
+- ✅ Migration safety : DELETE dirty data + unique index, idempotent re-run, cross-driver SQLite + MySQL
+- ✅ NF525 frozen-zone : 0 modif `fiscal_sequence` / `fiscal_journal`
+- ✅ Validation request : `comment` max 500, `rating` 1..5, `cart.*.quantity` int min:1
+- ✅ Test coverage : cross-tenant + double-rating exploit + race-loser + non-kiosk-ability + cross-branch user blocked + N+1 query count + validation edge cases
+
+Observations P3 informatives (NON-bloquantes, BACKLOG hardening V2) :
+- Migration DELETE sans chunking : OK aujourd'hui (table quasi vide), à wrapper en `chunkById(10000)` si > 100K rows futur
+- `RuleBasedStrategy` LIKE `%hint%` non-anchored : full-scan acceptable car table `item_categories` < 100 rows typique restau
+
+#### FRONTEND-UI audit
+**Verdict : CLEAN — 0 P0 + 0 P1 + 0 P2**
+
+Vérifications passées :
+- ✅ WCAG 2.1.1 keyboard alt : drag/swap/click toujours alternable (KioskBurgerBuilder swapLayer reachable, KioskThemeManagerPage radiogroup roving tabindex)
+- ✅ WCAG 2.4.3 focus order : autofocus Cancel safe-default + restore via `_prevActive` (KioskMicConsentDialog + KioskVoiceOrderingDialog)
+- ✅ WAI-ARIA APG patterns : `role="dialog"` + `aria-modal=true` + `aria-labelledby` corrects ; `role="radiogroup"` + cards `role="radio"` + `aria-checked` ; `role="application"` removed (KioskBurgerBuilder)
+- ✅ FR-lock cohérence : `KIOSK_LOCALE='fr'` immutable, `voiceLang='fr-FR'` constant, selector `v-if="false"`, 2 mutation sites `i18n.global.locale.value` gated par `SUPPORTED_LOCALES` (0 fuite)
+- ✅ Vue 3 reactivity : `nextTick` après mutation pour focus, `beforeUnmount` cleanup balanced, Comment-node guard `typeof === 'function'` (happy-dom edge)
+- ✅ Bundle splits effectifs : `kiosk.js` 580 KiB (hot path) + `admin-kiosk-themes.js` 19 KiB + `admin-upsell-preview.js` 11 KiB (lazy chunks séparés confirmés)
+- ✅ Tests Vitest 624/624 + 70 files
+- ✅ Frozen-zones strict 0 lines diff : `KioskWizardComponent.vue` / `KioskAppComponent.vue` / `KioskUpsellComponent.vue`
+- ✅ Aucune surface XSS (pas de `v-html`/`innerHTML` dans iter1+iter2 components)
+- ✅ Aucune fuite event listener (`addEventListener` balancés)
+
+Observations P3 informatives (NON-bloquantes, BACKLOG ADR-007 §Phase 2 documenté) :
+- `lang/ar.json` 38 nouvelles keys absentes : déjà acté ADR-007 FR-lock V1, AR re-introduite Phase 2 future
+- `kioskVoiceOrdering.spec.js` Vue warn `$t` cosmetic stderr : production OK via `globalInjection: true`, fix futur `global.mocks.$t`
+
+### Métriques tests cumulatifs final
+
+```
+Vitest          70 files, 624/624 ✅ (43.98s)
+PHPUnit         50/50 ✅ (27.43s, 154 assertions, filter élargi vs iter3)
+Build prod      Mix 37s ✓ (déjà vérifié iter2)
+Bundle splits   kiosk.js 580K + admin-kiosk-themes 19K + admin-upsell-preview 11K + kiosk-builder-poc 17K + app.js 4.6M
+Frozen-zones strict   3/3 (KioskWizardComponent + KioskAppComponent + KioskUpsellComponent) = 0 lines diff vs main
+Frozen-zones owner-gate cleared   KioskCartComponent 376 lines + KioskPaymentComponent 425 lines (commit 7adeaaa9c "owner-gate executed", legitimate)
+0 unhandled rejection ✓
+```
+
+### Décision finale ITER4
+
+**CLEAN — Delivery confirmée.**
+
+Aucun finding P0/P1/P2 réel. Les 2 P3 résiduels sont des items déjà documentés en BACKLOG (ADR-007 AR Phase 2 + cosmetic test stderr). 4 itérations advisor-checked + 2 sub-agents convergent sur "0 finding bloquant introduit par iter1+iter2+iter3, code production-ready".
+
+La discipline YC GStack après 4 cycles exige verdict honnête : **stop healing, ship**.
+
+— *iter4 confirme la livraison. Tous les voyants verts. Owner décide §0 + push + merge.*
