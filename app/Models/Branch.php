@@ -15,6 +15,8 @@ class Branch extends Model
         'name', 'email', 'phone', 'latitude', 'longitude',
         'city', 'state', 'zip_code', 'address', 'zone', 'status',
         'available_locales',
+        // [Wave Gamma G3 / V2-5] Skinning saisonnier — slot CSS theme actif.
+        'active_kiosk_theme',
     ];
     protected $casts = [
         'id'                 => 'integer',
@@ -31,6 +33,8 @@ class Branch extends Model
         'status'             => 'integer',
         // Kiosk Design V1 — Phase 1.2
         'available_locales'  => 'array',
+        // [Wave Gamma G3 / V2-5] Skinning saisonnier — string slug (`standard`, `halloween`…).
+        'active_kiosk_theme' => 'string',
     ];
 
     /**
