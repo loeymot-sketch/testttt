@@ -251,6 +251,47 @@ y est enregistrée pour éviter la dérive et le re-questioning.
   HEAD update, frozen-zones wording, advisories 17→3, migrations 5→4)
 - **Aucune dérive direction** détectée (NORTH STAR §1 toujours valide)
 
+### 2026-05-09 — Ultra-review iter15 plan (post-audit, 3 sub-agents adversariaux)
+
+Plan iter15 a été re-audit par 3 sub-agents adversariaux (DEVIL-ADVOCATE +
+RISK-ANALYZER + PRIORITY-CHALLENGER). Verdict : **plan trop optimiste**,
+recommandation conservatrice :
+
+#### ❌ DROP COMPLÈTEMENT (3/3 sub-agents reject)
+- **A5 Micro-task exemption** — DANGEROUS. Crée loophole bypass visual test,
+  erode discipline §3 principe 11. Risk d'introduire UI bugs systématiques.
+- **A8 Emergency NF525 hotfix** — HIGH RISK doctrine erosion. NF525 a pas
+  d'urgence override autorisé. Précédent dangereux.
+- **A3 API Payload Test** — REDONDANT avec §6 visual test mandate déjà
+  en place + PHPUnit response assertions.
+
+#### ✅ APPLY MAINTENANT (1 seul amendment safe)
+- **A1 §7 POS Vanilla path** — APPLIED (path verified) :
+  - `public/js/pos-wizard.js` (Vanilla JS hand-written, S25-SinglePage)
+  - `public/css/pos-wizard.css`
+  - `resources/views/admin-pos-v4.blade.php` (loader Blade direct)
+
+#### ⏸️ DEFER V1.0.1 (avec specs préalables requises)
+- **A2 Healing counter** — d'abord définir parser format + BRAIN pollution mitigation
+- **A4 Anti-Drift Checklist** — d'abord définir algorithm grep précis (false positives risk)
+- **A6 Frozen escalation gate** — d'abord définir intent detection heuristic
+- **A7 Mid-LOOP interrupt** — d'abord écrire recovery SOP (sinon état orphelin)
+
+#### ⏸️ POST-V1 si jamais (pas urgents)
+- A9 Quick Start §17 (docstring inflation risk)
+- A10 Sub-agent conflict (define rubric d'abord)
+- A11 Playwright fallback (weakens visual test mandate)
+
+### Méta-leçon iter15 ultra-review
+La discipline LOOP §5 a fait son travail : audit → second pass adversarial
+→ identification du sur-engineering → application minimale safe.
+**11 amendments proposés → 1 seul appliqué.** Évite l'inflation doctrinale
+qui aurait dilué CLAUDE.md.
+
+CLAUDE.md actuel est **acceptable pour V1**. Les amendments restants doivent
+être triggered par incidents réels, pas par hypothèses. Evidence-driven
+discipline maintenue.
+
 ---
 
 ## §9 OWNER ACTION ITEMS — Pre-merge V1

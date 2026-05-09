@@ -217,7 +217,13 @@ nécessite gate explicite owner ou test régression triple-vert.
 - `resources/js/components/frontend/kiosk/KioskWizardComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskAppComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskUpsellComponent.vue`
-- POS Vanilla JS wizard (popup caisse) — design parfait selon owner
+- **POS Vanilla JS wizard** (popup caisse) — design parfait selon owner.
+  Fichiers exacts (verified iter15 ultra-review 2026-05-09) :
+  - `public/js/pos-wizard.js` (Vanilla JS hand-written, ~296 KB,
+    version S25-SinglePage, **non-Mix compiled**)
+  - `public/css/pos-wizard.css`
+  - `resources/views/admin-pos-v4.blade.php` (Blade qui charge le
+    wizard via `<script src="{{ asset('js/pos-wizard.js') }}">`)
 
 ### Backend (NF525-critical)
 - `app/Services/Fiscal/FiscalSequenceService.php` — chain integrity
