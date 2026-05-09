@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,6 +11,21 @@ class OrderItem extends Model
 {
     use HasFactory;
     use SoftDeletes;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // [P0-FIX-2 NF525-V1 2026-05-09] OrderItem must be scoped to user's branch
+        // like Order is. Without this, ItemService::destroy():365
+        // (`OrderItem::query()->where('item_id', $itemId)->count()`) leaks
+        // historical-order counts across all tenants → branch isolation breach.
+        // BranchScope respects admin bypass (branch_id=0) and kiosk routing
+        // (KioskMachine.branch_id), so no behavior change for legitimate paths.
+        // Existing access via `$order->orderItems()` is unchanged because Order
+        // already enforces the same scope on its parent query.
+        static::addGlobalScope(new BranchScope());
+    }
 
     protected $table = "order_items";
     protected $fillable = [
