@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPayment;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
 use Illuminate\Database\ConnectionInterface;
@@ -140,6 +141,46 @@ class RefundWithCounterEntryService
                 ]);
             }
 
+            // 4-bis) [iter15-P0-10] Mirror split-payment tranches with NEGATED amounts.
+            //
+            // Pre-fix the mirror Order had negated total/subtotal/tax + items but
+            // ZERO order_payments rows. Z reconciliation aggregates per-mode cash
+            // via order_payments → split-payment refunds were under-credited
+            // (cash mode kept its full positive aggregate; the refund only
+            // hit the synthetic legacy `pos_payment_method` field which Z does
+            // not break out per-tranche).
+            //
+            // Fix: for each parent OrderPayment, create a mirror OrderPayment
+            // with `amount` and `change_amount` negated, same `mode` + `tendered`,
+            // reference suffixed `-REFUND`, and `paid_at = now()` so Z ranges
+            // capture it in the current window. Inside the same DB::transaction
+            // as the mirror Order — atomicity is preserved.
+            //
+            // BranchScope on OrderPayment: query parent payments WITHOUT global
+            // scope so cross-branch refund tools (admin) still work in tests
+            // where the test user's branch may differ from the parent's branch.
+            $parentPayments = OrderPayment::withoutGlobalScopes()
+                ->where('order_id', $parent->id)
+                ->get();
+
+            foreach ($parentPayments as $payment) {
+                /** @var OrderPayment $payment */
+                OrderPayment::create([
+                    'order_id'      => $mirror->id,
+                    'branch_id'     => $branchId,
+                    'mode'          => (int) $payment->mode,
+                    'amount'        => -1 * (float) ($payment->amount ?? 0),
+                    'tendered'      => $payment->tendered !== null
+                        ? -1 * (float) $payment->tendered
+                        : null,
+                    'change_amount' => -1 * (float) ($payment->change_amount ?? 0),
+                    'reference'     => $payment->reference !== null
+                        ? ((string) $payment->reference) . '-REFUND'
+                        : null,
+                    'paid_at'       => now(),
+                ]);
+            }
+
             // 5) Audit trail — immutable forensic link parent ↔ mirror.
             $this->audit->write([
                 'branch_id'   => $branchId,
@@ -153,6 +194,7 @@ class RefundWithCounterEntryService
                     'parent_fiscal_sequence_no' => (int) $parent->fiscal_sequence_no,
                     'mirror_fiscal_sequence_no' => (int) $mirrorSeq,
                     'mirror_total'              => round(-1 * (float) ($parent->total ?? 0), 2),
+                    'mirror_payments_count'     => $parentPayments->count(),
                     'reason'                    => $reason,
                 ],
             ]);
