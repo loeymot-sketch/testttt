@@ -2,14 +2,12 @@
   <div class="kiosk-payment" data-testid="kiosk-payment-root">
     <!-- Header -->
     <div class="kiosk-pay-header">
-      <button
+      <button type="button"
         class="kiosk-pay-back"
-        type="button"
         @click="$router.replace({ name: 'kiosk.cart' })"
         :disabled="submitting"
         :aria-label="$t('kiosk.back')"
-        data-testid="kiosk-payment-back"
-      >
+        data-testid="kiosk-payment-back">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -18,6 +16,26 @@
         <h1 class="kiosk-pay-title" data-testid="kiosk-payment-title">{{ $t('kiosk.pay_screen.title') }}</h1>
         <p class="kiosk-pay-total-label" data-testid="kiosk-payment-total">{{ $t('kiosk.pay_screen.total_prefix') }} <strong>{{ formatPrice(cartTotal) }}</strong></p>
       </div>
+    </div>
+    <div
+      v-if="networkOffline"
+      class="kiosk-pay-offline-alert"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-payment-offline-alert"
+    >
+      Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.
+    </div>
+
+    <div
+      v-if="!submitting && !submitted && !tpeWaiting"
+      class="kiosk-pay-amount-card"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-payment-amount-card"
+    >
+      <span>{{ $t('kiosk.pay_screen.total_prefix') }}</span>
+      <strong>{{ formatPrice(cartTotal) }}</strong>
     </div>
 
     <!-- Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) -->
@@ -31,10 +49,11 @@
       <!-- CB -->
       <div
         class="kiosk-pay-method"
-        :class="{ selected: method === 'card' }"
+        :class="{ selected: method === 'card', disabled: isElectronicMethodBlocked('card') }"
         role="radio"
-        tabindex="0"
+        :tabindex="isElectronicMethodBlocked('card') ? -1 : 0"
         :aria-checked="method === 'card'"
+        :aria-disabled="isElectronicMethodBlocked('card') ? 'true' : 'false'"
         data-testid="kiosk-payment-method-card"
         @click="selectMethod('card')"
         @keydown.enter.prevent="selectMethod('card')"
@@ -92,10 +111,11 @@
       <!-- Ticket Restaurant -->
       <div
         class="kiosk-pay-method"
-        :class="{ selected: method === 'tr' }"
+        :class="{ selected: method === 'tr', disabled: isElectronicMethodBlocked('tr') }"
         role="radio"
-        tabindex="0"
+        :tabindex="isElectronicMethodBlocked('tr') ? -1 : 0"
         :aria-checked="method === 'tr'"
+        :aria-disabled="isElectronicMethodBlocked('tr') ? 'true' : 'false'"
         data-testid="kiosk-payment-method-tr"
         @click="selectMethod('tr')"
         @keydown.enter.prevent="selectMethod('tr')"
@@ -121,9 +141,9 @@
       </div>
     </div>
 
-    <!-- Écran API en cours (commande en création) -->
+    <!-- Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) -->
     <div
-      v-if="submitting"
+      v-if="submitting && !tpeWaiting"
       class="kiosk-pay-processing"
       role="status"
       aria-live="polite"
@@ -160,8 +180,9 @@
         </div>
         <h2 id="kiosk-tpe-title" class="kiosk-tpe-title" aria-live="polite">{{ tpeMessage }}</h2>
         <p class="kiosk-tpe-sub">{{ $t('kiosk.pay_screen.tpe_follow') }}</p>
+        <p class="kiosk-tpe-help" id="kiosk-tpe-stuck-help">{{ $t('kiosk.pay_screen.tpe_stuck_help') }}</p>
         <div class="kiosk-tpe-spinner" aria-hidden="true"></div>
-        <button
+        <button type="button"
           v-if="tpeCanCancel"
           class="kiosk-tpe-cancel"
           @click="cancelCardPayment"
@@ -181,9 +202,9 @@
         data-testid="kiosk-payment-error"
       >{{ error }}</div>
       <div class="kiosk-pay-confirm-inner">
-      <button
+      <button type="button"
         class="kiosk-btn-confirm"
-        :disabled="!method"
+        :disabled="!method || isElectronicMethodBlocked(method)"
         @click="confirmPayment"
         :aria-label="$t('kiosk.pay_screen.confirm', { amount: formatPrice(cartTotal) })"
         data-testid="kiosk-payment-confirm"
@@ -206,12 +227,15 @@ import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 // [PHASE-6.1] Unified hardware wrapper — remplace les appels window.borne.* directs
 //             par le contrat {ok, error?} + reporting automatique des erreurs hardware.
 import kioskHardware from '../../../services/kioskHardware';
+import { KIOSK_HARDWARE } from '../../../config/kioskHardware';
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 // Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
 // Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
 // que le client ne réalise pas que la transaction a échoué.
 import { useKioskSpeech } from '../../../composables/useKioskSpeech';
+import { buildKioskOrderPayload } from '../../../store/modules/kioskCart';
+import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 
 export default {
   name: 'KioskPaymentComponent',
@@ -231,6 +255,8 @@ export default {
       tpeMessage:    '',
       tpeCanCancel:  false,
       _lastOrder:    null,
+      _lastQuote:    null,
+      networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
       // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
       // on laisse l'utilisateur retenter UNE fois après un premier refus.
@@ -248,7 +274,7 @@ export default {
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
-    cartTotal() { return this.total; },
+    cartTotal() { return this._lastQuote?.total_ttc ?? this.total; },
   },
   mounted() {
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
@@ -256,16 +282,66 @@ export default {
     try {
       this._kioskSpeech = useKioskSpeech({ store: this.$store });
     } catch (_) { this._kioskSpeech = null; }
+    this.syncNetworkState();
+    window.addEventListener('online', this.syncNetworkState);
+    window.addEventListener('offline', this.syncNetworkState);
+    // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
+    // approuvées par hardware mais dont le confirm backend a échoué (network
+    // blip / app crash post-TPE). Replay best-effort : aucune erreur ne doit
+    // bloquer le rendu de l'écran paiement. Périodique toutes les 60s tant
+    // que le composant est monté.
+    try {
+      this._reconcilePendingPayments();
+    } catch (_) {}
+    try {
+      this._reconcileInterval = setInterval(() => {
+        this._reconcilePendingPayments();
+      }, 60000);
+    } catch (_) { this._reconcileInterval = null; }
   },
   beforeUnmount() {
     this._lastOrder = null;
+    window.removeEventListener('online', this.syncNetworkState);
+    window.removeEventListener('offline', this.syncNetworkState);
     // Kiosk Phase 9.1.8 — stoppe le TTS si on quitte l'écran pendant la lecture.
     try { this._kioskSpeech?.stop(); } catch (_) {}
+    // [AUDIT-F-008] Stoppe la boucle de reconcile périodique.
+    if (this._reconcileInterval) {
+      try { clearInterval(this._reconcileInterval); } catch (_) {}
+      this._reconcileInterval = null;
+    }
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
 
+    syncNetworkState() {
+      this.networkOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+      if (this.networkOffline && this.isElectronicMethod(this.method)) {
+        this.method = null;
+      }
+    },
+
+    isElectronicMethod(method) {
+      return method === 'card' || method === 'tr';
+    },
+
+    isElectronicMethodBlocked(method) {
+      return this.networkOffline && this.isElectronicMethod(method);
+    },
+
+    offlinePaymentMessage() {
+      return 'Paiement CB/TR indisponible hors ligne.';
+    },
+
     selectMethod(m) {
+      if (this.isElectronicMethodBlocked(m)) {
+        const msg = this.offlinePaymentMessage();
+        this.method = null;
+        this.error = msg;
+        this.showToast(msg, 'warning', 4000);
+        return;
+      }
+
       this.method = m;
       this.error = null;
       // Kiosk Phase 9.1.11 — changer de mode réinitialise le compteur d'échec.
@@ -278,21 +354,44 @@ export default {
 
     async confirmPayment() {
       if (!this.method || this.submitting) return;
+      if (this.isElectronicMethodBlocked(this.method)) {
+        const msg = this.offlinePaymentMessage();
+        this.error = msg;
+        this.showToast(msg, 'warning', 4000);
+        return;
+      }
+
       this.submitting = true;
       this.error = null;
-      // [PHASE-6.4] Analytics : démarrage du checkout (intent de payer).
-      try { kioskAnalytics.track('checkout_started', { method: this.method, total_cents: Math.round(this.cartTotal * 100) }); } catch (_) {}
 
       try {
+        const quote = await this.refreshQuote();
+        // [PHASE-6.4] Analytics : démarrage du checkout (intent de payer).
+        try { kioskAnalytics.track('checkout_started', { method: this.method, total_cents: Math.round(quote.total_ttc * 100) }); } catch (_) {}
+
         // Step 1 — Submit order to Laravel API
         // [GAP-22-4] Pass orderType (sur place=25 / à emporter=10) chosen by customer in cart
-        const res = await this.submitOrder({ paymentMethod: this.method, orderType: this.orderType });
+        const res = await this.submitOrder({ paymentMethod: this.method, orderType: this.orderType, quote });
         const orderId  = res?.data?.data?.id || res?.data?.id;
         const queueNum = res?.data?.data?.queue_number || res?.data?.queue_number;
-        // [AUDIT-52-BUG5] FrontendOrder (kiosk) uses column 'total', NOT 'order_amount' (POS-only column).
-        // Fallback chain: server total → POS order_amount (never set for kiosk) → client cart total.
-        // Using cartTotal as final fallback only — TPE must always charge the server-validated amount.
-        const total    = res?.data?.data?.total ?? res?.data?.data?.order_amount ?? this.cartTotal;
+        const isOfflineId = typeof orderId === 'string' && String(orderId).startsWith('offline_');
+        if (isOfflineId && this.isElectronicMethod(this.method)) {
+          throw new Error(this.offlinePaymentMessage());
+        }
+
+        // [AUDIT-52 / T06] SSOT paiement : total numérique serveur (`OrderDetailsResource.total` / POS `order_amount`).
+        // Hors-ligne seulement : pas de total serveur → repli sur le panier local pour l’UX TPE.
+        const rawTotal = res?.data?.data?.total ?? res?.data?.data?.order_amount;
+        let total;
+        if (isOfflineId) {
+          total = this.cartTotal;
+        } else {
+          const n = rawTotal != null && rawTotal !== '' ? Number(rawTotal) : NaN;
+          if (!Number.isFinite(n)) {
+            throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
+          }
+          total = Number.isFinite(Number(quote.total_ttc)) ? Number(quote.total_ttc) : n;
+        }
 
         // [AUDIT-P2] Check if loyalty discount was silently dropped server-side.
         // This happens when points were consumed by another order between the loyalty check
@@ -307,16 +406,18 @@ export default {
         // do NOT navigate to /waiting/undefined — show a clear error instead.
         // This prevents an infinite poll loop on GET frontend/order/undefined.
         // [AUDIT-P48-BUG3] Clearer logic: throw if no orderId AND it's not an offline queued order.
-        const isOfflineId = typeof orderId === 'string' && orderId.startsWith('offline_');
         if (!orderId && !isOfflineId) {
           throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
         }
 
         this._lastOrder = { id: orderId, queue_number: queueNum, total };
 
-        this.submitting = false;
-
-        const navTarget = {
+        // [Lot 2.H / F-13] Keep submitting=true through TPE/cash so the confirm
+        // control cannot re-fire; clear only after payment path completes or in catch.
+        const navTarget = this.method === 'cash' ? {
+          name:  'kiosk.cash-instruction',
+          query: { number: queueNum, total, timeout: 45 },
+        } : {
           name:   'kiosk.waiting',
           params: { orderId: String(orderId) },
           query:  { queue: queueNum, total },
@@ -335,7 +436,7 @@ export default {
         // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
         let msg;
         if (err?.message === 'TPE_TIMEOUT') {
-          msg = this.$t('kiosk.pay_screen.tpe_timeout');
+          msg = this.$t('kiosk.payment.tpe_timeout_message');
         } else {
           msg = err?.response?.data?.errors
             ? Object.values(err.response.data.errors).flat().join(' ')
@@ -381,6 +482,20 @@ export default {
       }
     },
 
+    async refreshQuote() {
+      const payload = buildKioskOrderPayload(this.$store.state.kioskCart, {
+        orderType: this.orderType,
+        paymentMethod: this.method,
+      });
+      const res = await axios.post('frontend/order/quote', payload);
+      const quote = res?.data?.data;
+      if (!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature) {
+        throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
+      }
+      this._lastQuote = quote;
+      return quote;
+    },
+
     async processCardPayment(navTarget) {
       this.tpeWaiting = true;
       const tpeKey =
@@ -394,8 +509,8 @@ export default {
 
       // [PHASE-6.1] Passage par kioskHardware — stub auto en navigateur (dev/tests),
       // contrat {ok, error?} uniforme, auto-report vers /frontend/kiosk-event en cas de throw.
-      // [AUDIT-52-BUG7] Wrap dans un timeout global de 120s (TPE peut figer sur chip+PIN).
-      const TPE_TIMEOUT_MS = 120_000;
+      // [AUDIT-52-BUG7] Wrap dans un timeout global (TPE peut figer sur chip+PIN). SSOT: config/kioskHardware.js
+      const { TPE_TIMEOUT_MS } = KIOSK_HARDWARE;
       const amountEuros = this._lastOrder.total || this.cartTotal;
       const tpeMethod = this.method === 'tr' ? 'TR' : 'CB';
       const paymentResult = await Promise.race([
@@ -419,7 +534,15 @@ export default {
         // Without this, a PENDING order stays in DB forever (orphan order).
         // We fire-and-forget: if the void fails, staff can cancel manually from admin.
         if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
-          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
+          // [AUDIT-F-004] Reason whitelist for kiosk-originated cancels (OrderCancelReason).
+          // Mapping: TPE bridge declined / timed out → distinct codes for analytics; fallback
+          // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
+          // or non-whitelisted code when actor is kiosk machine token.
+          const tpeReasonCode = (paymentResult?.error_code === 'timeout' ? 'tpe_timeout' : 'tpe_declined');
+          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+            status: orderStatusEnum.CANCELED,
+            reason: tpeReasonCode,
+          })
             .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
         throw new Error(paymentResult.error || this.$t('kiosk.pay_screen.payment_declined'));
@@ -437,15 +560,28 @@ export default {
 
       // Step 3 — Confirm payment on backend (stores transaction_id)
       if (this._lastOrder?.id && paymentResult.transaction_id) {
+        // [AUDIT-F-002] Echo amount_cents to backend so the controller can verify
+        // that the TPE-approved amount matches order.total (±1 cent tolerance).
+        // Without this, a compromised TPE could approve an arbitrary amount and
+        // the backend would mark PAID without detecting the discrepancy.
+        // The amount source is `paymentResult.amount_cents_approved` if the bridge
+        // returned it (real TPE driver), else fallback on the locally computed
+        // cart total (stub mode + legacy bridges that don't echo amount).
+        const expectedCents = Math.round((this._lastOrder.total || this.cartTotal) * 100);
+        const echoedCents = Number.isInteger(paymentResult.amount_cents_approved)
+          ? paymentResult.amount_cents_approved
+          : expectedCents;
         await this.confirmBackendPayment(this._lastOrder.id, {
           transaction_id: paymentResult.transaction_id,
           card_type:      paymentResult.card_type || 'CARD',
           payment_method: this.method === 'tr' ? 5 : 4,
+          amount_cents:   echoedCents,
         });
       }
 
       await new Promise(r => setTimeout(r, 800));
       this.tpeWaiting = false;
+      this.submitting = false;
       this.$router.push(navTarget);
     },
 
@@ -455,19 +591,62 @@ export default {
      * attendu par processCardPayment. En dev (stub), retourne un stub synthétique.
      *
      * Contrat `tpeCharge(amountCents, method)` du service :
-     *   → { ok: true, tx_ref, legacy?, data? } | { ok: false, error }
+     *   → { ok: true, tx_ref, amount_cents_approved?, legacy?, data? } | { ok: false, error }
+     *
+     * [AUDIT-F-002] amount_cents_approved est l'écho strict du montant approuvé.
+     * Le backend OrderController::paymentConfirm vérifie abs(amount_cents - order.total*100) ≤ 1.
+     * Stub mode : echo strict de amountCents (mirroir). Bridges Electron prod : driver TPE
+     * doit retourner amount_cents_approved depuis la trame ISO bancaire.
      *
      * Rétro-compat : si le bridge renvoie un shape legacy { status: 'approved', ... }
      * (vieux firmware Electron), runSafe encapsule déjà dans `data`.
      */
     async _invokeTpe(amountEuros, method = 'CB') {
+      const amountCents = Math.round(Number(amountEuros) * 100);
+
+      // [AUDIT-F-014] QA toggle (dev/staging only): force declined/timeout paths.
+      // Production guard non-bypassable: `process.env.NODE_ENV` est remplacé au build par
+      // webpack DefinePlugin (laravel-mix), donc la branche entière disparaît du bundle prod
+      // (dead-code elimination). Aucun query param ne peut activer ce toggle en production.
+      // Placé AVANT la branche stub afin que QA puisse aussi forcer un decline depuis une
+      // borne staging avec bridge=true (utile pour tester la gestion d'erreur côté UI sans
+      // pouvoir reproduire le decline avec un vrai TPE).
+      if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+        const force = new URLSearchParams(window.location.search).get('tpe_force');
+        if (force === 'declined') {
+          // [AUDIT-F-014] Mirror du contract bridge : approved:false avec error_code stable
+          // pour que processCardPayment throw → KioskErrorPaymentRefusedComponent visible.
+          // amount_cents_approved préservé (cross-contract F-002) même si jamais consommé
+          // côté backend (pas de payment-confirm si !approved).
+          return {
+            approved: false,
+            error: 'forced_decline_qa',
+            error_code: 'QA_FORCE_DECLINED',
+            transaction_id: null,
+            amount_cents_approved: amountCents,
+          };
+        }
+        if (force === 'timeout') {
+          // [AUDIT-F-014] Throw TPE_TIMEOUT directement après court délai pour mimer
+          // exactement le reject path du Promise.race global (TPE_TIMEOUT_MS=120s en prod
+          // serait inutilisable en QA). Le catch upstream traite ce throw identiquement.
+          await new Promise((r) => setTimeout(r, 500));
+          throw new Error('TPE_TIMEOUT');
+        }
+      }
+
       // Pas de bridge réel → stub navigateur classique avec délai visuel.
       if (!kioskHardware.isKioskBridge()) {
         this.tpeMessage = this.$t('kiosk.pay_screen.tpe_browser_sim');
         await new Promise((r) => setTimeout(r, 2000));
-        return { approved: true, transaction_id: `STUB-${Date.now()}`, card_type: 'VISA' };
+        // [AUDIT-F-002] Stub echoes amountCents to honor backend echo verification contract.
+        return {
+          approved: true,
+          transaction_id: `STUB-${Date.now()}`,
+          card_type: 'VISA',
+          amount_cents_approved: amountCents,
+        };
       }
-      const amountCents = Math.round(Number(amountEuros) * 100);
       const result = await kioskHardware.tpeCharge(amountCents, method);
       if (!result?.ok) {
         return {
@@ -482,26 +661,25 @@ export default {
       const approved =
         result.ok !== false &&
         (raw.status === 'approved' || raw.approved === true || !!raw.transaction_id || !!raw.tx_ref);
+      // [AUDIT-F-002] amount_cents_approved : extracted from bridge response (real TPE
+      // drivers must echo it from ISO bancaire trame). Fallback sur amountCents si absent
+      // (rétro-compat firmware Electron legacy — but the backend will reject if mismatch).
+      const echoedAmount = Number.isInteger(raw.amount_cents_approved)
+        ? raw.amount_cents_approved
+        : (Number.isInteger(result.amount_cents_approved) ? result.amount_cents_approved : amountCents);
       return {
         approved,
         transaction_id: raw.transaction_id || raw.tx_ref || result.tx_ref || null,
         card_type: raw.card_type || raw.cardType || 'CARD',
         error: !approved ? (raw.error || result.error || 'declined') : null,
         error_code: raw.error_code || result.error_code || null,
+        amount_cents_approved: echoedAmount,
       };
     },
 
     async processCashPayment(navTarget) {
-      // [PHASE-6.1] Passage par kioskHardware.openDrawer — le service gère
-      // bridge absent (no-op stub) + report auto d'erreur via hardware_event.
-      if (kioskHardware.isKioskBridge()) {
-        const drawerResult = await kioskHardware.openDrawer();
-        if (!drawerResult.ok) {
-          console.warn('[KioskPayment] Cash drawer failed:', drawerResult.error);
-          this._reportDrawerFailure(drawerResult.error || 'no success');
-        }
-      }
-      // [PHASE-6.4] Paiement cash : l'ordre est transmis, le cash est encaissé par le staff.
+      // [B5b] Paiement espèces borne : aucune ouverture tiroir côté borne.
+      // L'ordre part en cuisine mais reste PENDING_COUNTER jusqu'à encaissement POS.
       // On émet payment_completed ici même sans validation TPE (cf. KIOSK_ANALYTICS_EVENTS.md).
       try {
         kioskAnalytics.track('payment_completed', {
@@ -509,6 +687,7 @@ export default {
           total_cents: Math.round((this._lastOrder?.total || this.cartTotal) * 100),
         });
       } catch (_) {}
+      this.submitting = false;
       this.$router.push(navTarget);
     },
     _reportDrawerFailure(errorMsg) {
@@ -542,7 +721,11 @@ export default {
       } catch (_) {}
       // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
       if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
-        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, { status: 16 })
+        // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
+        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+          status: orderStatusEnum.CANCELED,
+          reason: 'tpe_cancel_user',
+        })
           .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
         this._lastOrder = null;
       }
@@ -562,7 +745,111 @@ export default {
         }
       }
       console.warn('[KioskPayment] payment-confirm failed after retries:', lastError?.message);
+      // [AUDIT-F-008] Persist TPE-approved transaction for boot-time reconcile.
+      // Sans ça, un network blip ou crash backend post-TPE laisse l'order
+      // PENDING orphelin alors que le client a payé.
+      try {
+        this._appendPendingReconcile({
+          order_id:       orderId,
+          transaction_id: payload.transaction_id,
+          amount_cents:   payload.amount_cents,
+          card_type:      payload.card_type,
+          payment_method: payload.payment_method,
+        });
+      } catch (_) {}
+      // Observability : log via kiosk-event (whitelisted type 'sync_failed' avec
+      // subtype dédié — évite d'avoir à étendre KioskEventController::ALLOWED_TYPES).
+      try {
+        window.axios?.post('frontend/kiosk-event', {
+          type: 'sync_failed',
+          subtype: 'payment_confirm_retry_exhausted',
+          order_ref: String(orderId),
+          details: `tx=${payload.transaction_id}`,
+        }).catch(() => {});
+      } catch (_) {}
       throw new Error(this.$t('kiosk.pay_screen.payment_sync_failed'));
+    },
+
+    // [AUDIT-F-008] localStorage helpers for reconcile queue.
+    // Contrat : aucun PAN, aucune info bancaire — uniquement transaction_id +
+    // amount_cents + label card_type + payment_method (gateway integer).
+    _readPendingReconcile() {
+      try {
+        const raw = window?.localStorage?.getItem('pending_payment_confirms');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    },
+    _writePendingReconcile(list) {
+      try {
+        // Borne dure 50 entries (anti-explosion localStorage).
+        const trimmed = Array.isArray(list) ? list.slice(0, 50) : [];
+        window?.localStorage?.setItem('pending_payment_confirms', JSON.stringify(trimmed));
+      } catch (_) {}
+    },
+    _appendPendingReconcile(entry) {
+      const list = this._readPendingReconcile();
+      list.push({ ...entry, attempted_at: new Date().toISOString() });
+      this._writePendingReconcile(list);
+    },
+    _isPendingReconcileExpired(entry) {
+      // Borne 30 min — au-delà alert ops, pas de retry indéfini.
+      try {
+        return Date.now() - new Date(entry.attempted_at).getTime() > 30 * 60 * 1000;
+      } catch (_) {
+        return true;
+      }
+    },
+    async _reconcilePendingPayments() {
+      const list = this._readPendingReconcile();
+      if (list.length === 0) return;
+
+      const fresh = list.filter((e) => !this._isPendingReconcileExpired(e));
+      const expired = list.filter((e) => this._isPendingReconcileExpired(e));
+
+      if (expired.length > 0) {
+        // Alert ops — au-delà 30 min, transaction probablement perdue.
+        try {
+          window.axios?.post('frontend/kiosk-event', {
+            type: 'sync_failed',
+            subtype: 'payment_reconcile_expired',
+            details: 'expired_count=' + expired.length,
+          }).catch(() => {});
+        } catch (_) {}
+      }
+
+      if (fresh.length === 0) {
+        this._writePendingReconcile([]);
+        return;
+      }
+
+      try {
+        const entries = fresh.map((e) => ({
+          order_id:       e.order_id,
+          transaction_id: e.transaction_id,
+          amount_cents:   e.amount_cents,
+          card_type:      e.card_type,
+          payment_method: e.payment_method,
+        }));
+        const response = await axios.post('frontend/payment/reconcile-pending', { entries });
+        const results = response?.data?.data || [];
+        const reconciledTxs = results
+          .filter((r) => r.status === 'reconciled' || r.status === 'already_paid')
+          .map((r) => r.transaction_id);
+
+        // Garde uniquement les fresh non reconciled — drop les expired définitivement.
+        const remaining = fresh.filter((e) => !reconciledTxs.includes(e.transaction_id));
+        this._writePendingReconcile(remaining);
+      } catch (_) {
+        // Réseau / backend KO → on garde le localStorage pour le prochain tick.
+        // Drop les expired malgré tout (alert déjà émis ci-dessus).
+        if (expired.length > 0) {
+          this._writePendingReconcile(fresh);
+        }
+      }
     },
 
     // formatPrice() provided by kioskPriceMixin
@@ -574,7 +861,7 @@ export default {
 .kiosk-payment {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-bg);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -586,16 +873,17 @@ export default {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 24px 32px 20px;
+  padding: 26px 34px 22px;
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   flex-shrink: 0;
 }
 
 .kiosk-pay-back {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-bg);
   color: var(--kiosk-text);
@@ -613,10 +901,11 @@ export default {
 .kiosk-pay-header-info { flex: 1; }
 
 .kiosk-pay-title {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 4px;
+  text-transform: uppercase;
 }
 
 .kiosk-pay-total-label {
@@ -627,11 +916,42 @@ export default {
 
 .kiosk-pay-total-label strong { color: var(--kiosk-text); font-size: 18px; }
 
+.kiosk-pay-amount-card {
+  margin: 28px auto 0;
+  width: min(720px, calc(100vw - 64px));
+  min-height: 168px;
+  border-radius: 34px;
+  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));
+  color: var(--kiosk-text-on-red);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: var(--kiosk-shadow-cta);
+  text-align: center;
+}
+
+.kiosk-pay-amount-card span {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.86;
+}
+
+.kiosk-pay-amount-card strong {
+  font-size: clamp(56px, 9vw, 96px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: 0;
+}
+
 /* Grille méthodes — cartes centrées, pas bandeaux edge-to-edge */
 .kiosk-pay-methods-outer {
   flex: 1;
   overflow-y: auto;
-  padding: 28px 32px;
+  padding: 28px 32px 20px;
   scrollbar-width: none;
   display: flex;
   justify-content: center;
@@ -643,7 +963,7 @@ export default {
 .kiosk-pay-methods {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 20px;
+  gap: 22px;
   width: 100%;
   max-width: 1000px;
   align-content: start;
@@ -653,10 +973,10 @@ export default {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 24px 28px;
-  min-height: 120px;
-  background: var(--kiosk-bg);
-  border-radius: 20px;
+  padding: 26px 28px;
+  min-height: 138px;
+  background: var(--kiosk-surface);
+  border-radius: 28px;
   border: 2px solid var(--kiosk-border);
   box-shadow: var(--kiosk-shadow-card);
   cursor: pointer;
@@ -666,16 +986,22 @@ export default {
 
 .kiosk-pay-method:active { transform: scale(0.99); }
 
+.kiosk-pay-method.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
 .kiosk-pay-method.selected {
   border-color: var(--kiosk-primary);
-  background: var(--kiosk-primary-soft);
+  background: var(--kiosk-surface);
   box-shadow: 0 0 0 2px var(--kiosk-primary), var(--kiosk-shadow-lift);
 }
 
 .kiosk-pay-method-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -692,14 +1018,14 @@ export default {
 .kiosk-pay-method-info { flex: 1; min-width: 0; }
 
 .kiosk-pay-method-info h3 {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 25px;
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 4px;
 }
 
 .kiosk-pay-method-info p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--kiosk-text-muted);
   margin: 0;
 }
@@ -751,7 +1077,7 @@ export default {
   border-radius: 50%;
   background: var(--kiosk-primary-soft);
   border: 4px solid var(--kiosk-primary);
-  border-top-color: transparent;
+  border-block-start-color: transparent;
   animation: spin 0.8s linear infinite reverse;
 }
 
@@ -780,9 +1106,22 @@ export default {
   margin-bottom: 8px;
 }
 
+.kiosk-pay-offline-alert {
+  margin: 0 20px 12px;
+  border: 1px solid rgba(215, 38, 61, 0.28);
+  border-radius: 12px;
+  background: rgba(215, 38, 61, 0.08);
+  color: #8f1022;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 12px 14px;
+  text-align: center;
+}
+
 /* Confirmer — largeur max centrée (borne) */
 .kiosk-pay-confirm {
-  padding: 20px 32px 32px;
+  padding: 20px 32px 34px;
   flex-shrink: 0;
 }
 
@@ -794,16 +1133,16 @@ export default {
 
 .kiosk-btn-confirm {
   width: 100%;
-  max-width: 480px;
-  min-height: 80px;
+  max-width: 680px;
+  min-height: 92px;
   height: auto;
   padding: 20px 32px;
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 20px;
-  font-size: 22px;
-  font-weight: 700;
+  border-radius: 30px;
+  font-size: 26px;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -861,6 +1200,14 @@ export default {
 }
 .kiosk-tpe-title {
   font-size: 1.8rem; font-weight: 800; color: var(--kiosk-text-on-red, #fff); margin: 0;
+}
+.kiosk-tpe-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  opacity: 0.95;
+  max-width: 22rem;
+  text-align: center;
 }
 .kiosk-tpe-sub {
   font-size: 1rem; color: rgba(255,255,255,0.5); margin: 0; max-width: 340px;

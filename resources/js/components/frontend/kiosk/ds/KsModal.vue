@@ -2,8 +2,12 @@
   <transition name="ks-modal">
     <div
       v-if="modelValue"
-      class="ks-modal"
-      :class="{ 'ks-modal--no-pad': bare }"
+      ref="modalRoot"
+      :class="[
+        'ks-modal',
+        `ks-modal--tone-${tone}`,
+        { 'ks-modal--no-pad': bare }
+      ]"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
@@ -18,13 +22,11 @@
           <h2 :id="titleId" class="ks-modal__title">
             <slot name="header">{{ title }}</slot>
           </h2>
-          <button
+          <button type="button"
             v-if="closable"
-            type="button"
             class="ks-modal__close"
             :aria-label="closeLabel"
-            @click="close('close-button')"
-          >×</button>
+            @click="close('close-button')">×</button>
         </header>
 
         <div class="ks-modal__body"><slot /></div>
@@ -76,6 +78,17 @@ export default {
         escClose: { type: Boolean, default: true },
         bare: { type: Boolean, default: false },
         closeLabel: { type: String, default: 'Fermer' },
+        /**
+         * V1.8 Bold Appétissant — tone visuel.
+         *  - default   : surface kiosk legacy (--kiosk-surface)
+         *  - warm-blur : backdrop blur warm + surface bold (--kiosk-bold-surface)
+         *                + ombre modal-bold (premium feel pour wizard abandon, etc.)
+         */
+        tone: {
+            type: String,
+            default: 'default',
+            validator: (v) => ['default', 'warm-blur'].includes(v),
+        },
     },
     emits: ['update:modelValue', 'close'],
     data() {
@@ -95,12 +108,11 @@ export default {
                     this._prevOverflow = document.body.style.overflow;
                     document.body.style.overflow = 'hidden';
                     this.$nextTick(() => {
-                        if (this.$refs.panel && this.$refs.panel.focus) {
-                            this.$refs.panel.setAttribute('tabindex', '-1');
-                            this.$refs.panel.focus({ preventScroll: true });
-                        }
+                        this._attachFocusTrap();
+                        this._focusFirstFocusable();
                     });
                 } else {
+                    this._detachFocusTrap();
                     document.body.style.overflow = this._prevOverflow || '';
                     if (this._prevActive && typeof this._prevActive.focus === 'function') {
                         try { this._prevActive.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
@@ -114,9 +126,58 @@ export default {
     },
     beforeUnmount() {
         document.removeEventListener('keydown', this.onKeydown);
+        this._detachFocusTrap();
         if (this._prevOverflow != null) document.body.style.overflow = this._prevOverflow;
     },
     methods: {
+        _focusFirstFocusable() {
+            const panel = this.$refs.panel;
+            if (!panel) return;
+            const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+            const nodes = [...panel.querySelectorAll(sel)].filter(
+                (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+            );
+            const first = nodes[0];
+            if (first && typeof first.focus === 'function') {
+                first.focus({ preventScroll: true });
+            } else {
+                panel.setAttribute('tabindex', '-1');
+                panel.focus({ preventScroll: true });
+            }
+        },
+        _trapKeydownHandler(e) {
+            if (e.key !== 'Tab') return;
+            const panel = this.$refs.panel;
+            if (!panel || !this.modelValue) return;
+            const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+            const focusables = [...panel.querySelectorAll(sel)].filter(
+                (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+            );
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        },
+        _attachFocusTrap() {
+            this._detachFocusTrap();
+            const root = this.$refs.modalRoot;
+            if (!root) return;
+            this._modalTrapListener = (e) => this._trapKeydownHandler(e);
+            root.addEventListener('keydown', this._modalTrapListener);
+        },
+        _detachFocusTrap() {
+            const root = this.$refs.modalRoot;
+            if (root && this._modalTrapListener) {
+                root.removeEventListener('keydown', this._modalTrapListener);
+            }
+            this._modalTrapListener = null;
+        },
         close(reason = 'programmatic') {
             this.$emit('close', reason);
             this.$emit('update:modelValue', false);
@@ -223,7 +284,7 @@ export default {
     border-top: 1px solid var(--kiosk-border);
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: end;
     gap: var(--kiosk-space-4);
 }
 
@@ -239,5 +300,45 @@ export default {
 .ks-modal-enter-from .ks-modal__panel,
 .ks-modal-leave-to   .ks-modal__panel {
     transform: translateY(16px) scale(0.98);
+}
+
+/* ---------- V1.8 Bold Appétissant — tone "warm-blur" ---------- */
+.ks-modal--tone-warm-blur {
+    background: var(--kiosk-backdrop-overlay-bold, rgba(26, 20, 16, 0.55));
+    backdrop-filter: var(--kiosk-backdrop-blur-bold, blur(16px) saturate(180%));
+    -webkit-backdrop-filter: var(--kiosk-backdrop-blur-bold, blur(16px) saturate(180%));
+}
+.ks-modal--tone-warm-blur .ks-modal__panel {
+    background: var(--kiosk-bold-surface);
+    color: var(--kiosk-bold-text-primary);
+    box-shadow: var(--kiosk-shadow-modal-bold, var(--kiosk-shadow-modal));
+    border-radius: var(--kiosk-radius-2xl);
+}
+.ks-modal--tone-warm-blur .ks-modal__header {
+    border-bottom-color: var(--kiosk-bold-border);
+}
+.ks-modal--tone-warm-blur .ks-modal__title {
+    font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+    font-weight: var(--kiosk-display-weight-bold, 700);
+    letter-spacing: -0.02em;
+}
+.ks-modal--tone-warm-blur .ks-modal__close {
+    background: var(--kiosk-bold-surface-subtle);
+    border-color: var(--kiosk-bold-border);
+    color: var(--kiosk-bold-text-primary);
+}
+.ks-modal--tone-warm-blur .ks-modal__footer {
+    border-top-color: var(--kiosk-bold-border);
+}
+
+/* Reduced motion : conserver le fade mais sans transform scale (déjà géré
+   par le @media query global, mais ceinture-bretelles ici aussi pour le tone bold). */
+[data-kiosk-reduced-motion='true'] .ks-modal-enter-active,
+[data-kiosk-reduced-motion='true'] .ks-modal-leave-active {
+    transition: opacity 1ms;
+}
+[data-kiosk-reduced-motion='true'] .ks-modal-enter-from .ks-modal__panel,
+[data-kiosk-reduced-motion='true'] .ks-modal-leave-to .ks-modal__panel {
+    transform: none;
 }
 </style>

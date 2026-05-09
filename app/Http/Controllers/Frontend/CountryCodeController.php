@@ -29,7 +29,12 @@ class CountryCodeController extends Controller
     public function show($country
     ) : \Illuminate\Http\Response | CountryCodeResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new CountryCodeResource($this->countryCodeService->show($country));
+            $model = $this->countryCodeService->show($country);
+            if ($model === null) {
+                return response(['status' => false, 'message' => 'Country not found'], 404);
+            }
+
+            return new CountryCodeResource($model);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

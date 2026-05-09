@@ -25,6 +25,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
     protected $fillable = [
         'order_serial_no',
         'queue_number',
+        'business_date',
         'token',
         'user_id',
         'branch_id',
@@ -41,6 +42,9 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'address',
         'payment_method',
         'payment_status',
+        'pos_payment_method',
+        'pos_payment_note',
+        'pos_received_amount',
         'status',
         'dining_table_id',
         'source',
@@ -51,11 +55,16 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'loyalty_customer_code',
         'transaction_id',
         'card_type',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] flag set when fiscal_seq
+        // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
+        // the order up without losing its PAID+PENDING state.
+        'fiscal_alloc_error_at',
     ];
 
     protected $casts = [
         'id'               => 'integer',
         'order_serial_no'  => 'string',
+        'business_date'    => 'date:Y-m-d',
         'token'            => 'string',
         'user_id'          => 'integer',
         'branch_id'        => 'integer',
@@ -70,9 +79,14 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'is_advance_order' => 'integer',
         'payment_method'   => 'integer',
         'payment_status'   => 'integer',
+        'pos_payment_method' => 'integer',
+        'pos_payment_note' => 'string',
+        'pos_received_amount' => 'decimal:6',
         'status'           => 'integer',
         'dining_table_id'  => 'integer',
-        'source'           => 'integer'
+        'source'           => 'integer',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+        'fiscal_alloc_error_at' => 'datetime',
     ];
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany

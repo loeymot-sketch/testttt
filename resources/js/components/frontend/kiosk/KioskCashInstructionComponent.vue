@@ -135,7 +135,7 @@ export default {
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: var(--kiosk-bg);
+    background: var(--kiosk-page-bg, var(--kiosk-bg));
     display: flex;
     flex-direction: column;
     padding: var(--kiosk-space-12) var(--kiosk-space-8) var(--kiosk-space-10);
@@ -151,8 +151,9 @@ export default {
     height: 120px;
     margin: 0 auto var(--kiosk-space-5);
     border-radius: 50%;
-    background: var(--kiosk-primary-soft);
-    color: var(--kiosk-primary);
+    background: var(--kiosk-primary);
+    color: var(--kiosk-text-on-red);
+    box-shadow: var(--kiosk-shadow-cta);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -188,6 +189,7 @@ export default {
 .kiosk-cash__card {
     max-width: 720px;
     width: 100%;
+    border-radius: 30px;
 }
 
 .kiosk-cash__row {

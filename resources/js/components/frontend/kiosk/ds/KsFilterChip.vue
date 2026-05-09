@@ -7,17 +7,19 @@
     role="checkbox"
     :aria-checked="active ? 'true' : 'false'"
     :aria-disabled="disabled ? 'true' : null"
+    :aria-labelledby="labelId"
     :tabindex="disabled ? -1 : 0"
     @click="onToggle"
     @keydown.enter.prevent="onToggle"
     @keydown.space.prevent="onToggle"
   >
     <span v-if="icon" class="ks-filter-chip__icon" aria-hidden="true">{{ icon }}</span>
-    <span class="ks-filter-chip__label"><slot>{{ label }}</slot></span>
+    <span :id="labelId" class="ks-filter-chip__label"><slot>{{ label }}</slot></span>
   </div>
 </template>
 
 <script>
+let _ksFilterChipUid = 0;
 /**
  * KsFilterChip — Chip de filtre diététique / prix pour la grille produits.
  *
@@ -33,6 +35,9 @@
  */
 export default {
     name: 'KsFilterChip',
+    data() {
+        return { labelId: `ks-filter-chip-label-${++_ksFilterChipUid}` };
+    },
     props: {
         filter: {
             type: String,

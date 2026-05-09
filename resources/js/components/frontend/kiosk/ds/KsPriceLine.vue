@@ -3,7 +3,11 @@
     :class="[
       'ks-priceline',
       `ks-priceline--${size}`,
-      { 'ks-priceline--total': emphasis, 'ks-priceline--neg': signedDelta < 0 }
+      {
+        'ks-priceline--total': emphasis,
+        'ks-priceline--neg': signedDelta < 0,
+        'ks-priceline--bold': bold,
+      }
     ]"
   >
     <span class="ks-priceline__label">
@@ -48,9 +52,15 @@ export default {
         size: {
             type: String,
             default: 'md',
-            validator: (v) => ['sm', 'md', 'lg'].includes(v),
+            validator: (v) => ['sm', 'md', 'lg', 'hero'].includes(v),
         },
         emphasis: { type: Boolean, default: false },
+        /**
+         * V1.10 Bold Appétissant — variant 'total-hero' :
+         * label en Fraunces, valeur en Fraunces XXL primary.
+         * À combiner avec size='hero' pour le total panier/wizard.
+         */
+        bold: { type: Boolean, default: false },
     },
     computed: {
         isDelta() { return this.delta != null; },
@@ -139,5 +149,40 @@ export default {
 /* ---------- Negative delta (rabais, remise) ---------- */
 .ks-priceline--neg .ks-priceline__value {
     color: var(--kiosk-success);
+}
+
+/* ---------- V1.10 Bold Appétissant ---------- */
+/* size hero : label small caps Inter, value Fraunces 56px primary */
+.ks-priceline--hero .ks-priceline__label {
+    font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
+    font-size: calc(11px * var(--kiosk-text-scale, 1));
+    font-weight: var(--kiosk-font-weight-bold, 700);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--kiosk-bold-text-secondary);
+}
+.ks-priceline--hero .ks-priceline__value {
+    font-family: var(--kiosk-font-display, 'Fraunces', Georgia, serif);
+    font-weight: var(--kiosk-display-weight-black, 900);
+    font-size: calc(var(--kiosk-display-size-l, 56px) * var(--kiosk-text-scale, 1));
+    line-height: var(--kiosk-display-leading-snug, 1.1);
+    letter-spacing: var(--kiosk-display-tracking-snug, -0.02em);
+    color: var(--kiosk-bold-primary);
+    text-rendering: optimizeLegibility;
+    font-variation-settings: 'opsz' 56;
+}
+
+/* variant bold : applique tokens bold à toutes les sizes */
+.ks-priceline--bold {
+    color: var(--kiosk-bold-text-primary);
+}
+.ks-priceline--bold .ks-priceline__label {
+    color: var(--kiosk-bold-text-secondary);
+}
+.ks-priceline--bold .ks-priceline__value {
+    color: var(--kiosk-bold-text-primary);
+}
+.ks-priceline--bold.ks-priceline--total .ks-priceline__value {
+    color: var(--kiosk-bold-primary);
 }
 </style>

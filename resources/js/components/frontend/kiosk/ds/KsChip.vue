@@ -7,6 +7,7 @@
     :class="[
       'ks-chip',
       `ks-chip--${size}`,
+      `ks-chip--${variant}`,
       { 'ks-chip--selected': selected, 'ks-chip--disabled': disabled }
     ]"
     @click="onClick"
@@ -22,14 +23,12 @@
       class="ks-chip__count"
       :aria-label="countAriaLabel || `× ${count}`"
     >× {{ count }}</span>
-    <button
+    <button type="button"
       v-if="removable && selected && !disabled"
-      type="button"
       class="ks-chip__remove"
       :aria-label="removeAriaLabel || 'Retirer'"
       @click.stop="onRemove"
-      @keydown.stop
-    >×</button>
+      @keydown.stop>×</button>
   </div>
 </template>
 
@@ -37,9 +36,9 @@
 /**
  * KsChip — Option toggle (sauces, viandes, garnitures, suppléments).
  *
- * ⚠ Implémenté en `<div role="button">` et PAS en `<button>` natif : l'atome
+ * ⚠ Implémenté en `<div role="button">` et PAS en bouton natif (`button`) : l'atome
  *   supporte un sous-bouton optionnel "retirer" (`removable=true`). Imbriquer
- *   un `<button>` dans un `<button>` est invalide HTML5. Le pattern
+ *   deux éléments `button` HTML5 est invalide. Le pattern
  *   `div[role=button]` + `tabindex=0` + `aria-pressed` est le WCAG-safe pattern
  *   officiel (Authoring Practices 1.2, "Button (Disclosure)").
  *
@@ -66,6 +65,16 @@ export default {
             type: String,
             default: 'md',
             validator: (v) => ['sm', 'md', 'lg'].includes(v),
+        },
+        /**
+         * V1.7 Bold Appétissant — variant 'composition' rend une chip dense
+         * pour la composition live wizard (warm, dot accent, padding réduit).
+         * Variants : 'default' (legacy) | 'composition' (bold) | 'included' (bold).
+         */
+        variant: {
+            type: String,
+            default: 'default',
+            validator: (v) => ['default', 'composition', 'included'].includes(v),
         },
         countAriaLabel: { type: String, default: null },
         removeAriaLabel: { type: String, default: null },
@@ -169,8 +178,10 @@ export default {
 
 .ks-chip__remove {
     margin-inline-start: var(--kiosk-space-2);
-    width: 28px;
-    height: 28px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.24);
     color: inherit;
@@ -182,9 +193,53 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
 }
 .ks-chip__remove:focus-visible {
     outline: 2px solid var(--kiosk-focus-ring);
     outline-offset: 1px;
+}
+
+/* ---------- V1.7 Bold Appétissant variants ---------- */
+/* composition : dense chip pour wizard composition live (warm subtle + dot accent) */
+.ks-chip--composition {
+    min-height: auto;
+    padding: 6px 12px;
+    border-radius: var(--kiosk-radius-pill);
+    border: 1px solid var(--kiosk-bold-border);
+    background: var(--kiosk-bold-surface-subtle);
+    color: var(--kiosk-bold-text-primary);
+    font-size: calc(13px * var(--kiosk-text-scale, 1));
+    font-weight: var(--kiosk-font-weight-bold, 700);
+    text-transform: none;
+    letter-spacing: 0;
+    gap: 6px;
+}
+.ks-chip--composition::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--kiosk-bold-accent);
+    flex-shrink: 0;
+}
+.ks-chip--composition.ks-chip--selected {
+    background: var(--kiosk-bold-primary-soft);
+    border-color: var(--kiosk-bold-primary);
+    color: var(--kiosk-bold-primary);
+    box-shadow: none;
+}
+
+/* included : chip "inclus" (vert success, soft) */
+.ks-chip--included {
+    background: var(--kiosk-bold-success-soft);
+    color: var(--kiosk-bold-success-text);
+    border: 1px solid var(--kiosk-bold-success);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: calc(11px * var(--kiosk-text-scale, 1));
+    padding: 4px 10px;
+    min-height: auto;
 }
 </style>
