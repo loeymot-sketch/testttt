@@ -212,6 +212,22 @@ class ZReportService
                     }
 
                     $closedAt   = Carbon::now();
+
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+                    // Pre-check: warn the operator if any kiosk-paid order in
+                    // the closing window is still missing its NF525 fiscal
+                    // sequence (i.e. the retry cron has not caught up). These
+                    // rows are correctly excluded from the aggregate (fiscal
+                    // gap-prevention invariant), but a silent exclusion at Z
+                    // close is the exact failure mode the iter13 audit
+                    // flagged. Surfacing it here gives ops a chance to delay
+                    // the close until the retry succeeds.
+                    //
+                    // Bound to (opened_at, closedAt] to match the aggregate's
+                    // half-open window so we don't re-warn forever about
+                    // historical orphans that predate the retry mechanism.
+                    $this->warnOnOrphanedPaidOrders($branchId, $open->opened_at, $closedAt);
+
                     $aggregates = $this->aggregate($branchId, $open->opened_at, $closedAt);
 
                     $prevHash = (string) (ZReport::query()
@@ -538,6 +554,50 @@ class ZReportService
         }
 
         return $result;
+    }
+
+    /**
+     * [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+     *
+     * Counts kiosk-paid orders in the closing window that are still
+     * missing their NF525 fiscal sequence and emits a warning on the
+     * fiscal log channel when the count is non-zero. Best-effort: a
+     * failure here MUST NOT abort the Z close (the rows are correctly
+     * excluded from the aggregate either way — the warn is observability,
+     * not correctness).
+     *
+     * Window: half-open `(from, to]`, matching {@see aggregate()}.
+     */
+    private function warnOnOrphanedPaidOrders(int $branchId, ?Carbon $from, Carbon $to): void
+    {
+        try {
+            $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('branch_id', $branchId)
+                ->where('payment_status', PaymentStatus::PAID)
+                ->whereNull('fiscal_sequence_no')
+                ->where('created_at', '<=', $to);
+
+            if ($from) {
+                $query->where('created_at', '>', $from);
+            }
+
+            $count = (int) $query->count();
+
+            if ($count > 0) {
+                Log::channel('fiscal')->warning('z_report.close.orphan_paid_orders_in_window', [
+                    'event'         => 'fiscal.z_report.orphan_paid_in_window',
+                    'branch_id'     => $branchId,
+                    'window_from'   => $from?->toIso8601String(),
+                    'window_to'     => $to->toIso8601String(),
+                    'orphan_count'  => $count,
+                    'note'          => 'kiosk-paid orders missing fiscal_sequence_no — retry cron foodking:fiscal:retry-alloc may still be in flight or alloc backend is degraded.',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Best-effort observability — never let a count() crash break
+            // a Z close.
+            Log::warning('[FISCAL-ORPHAN-RETRY] warnOnOrphanedPaidOrders failed: ' . $e->getMessage());
+        }
     }
 
     private function sign(int $branchId, string $prevHash, int $sequenceNo, array $aggregates, Carbon $closedAt): string

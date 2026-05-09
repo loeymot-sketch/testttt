@@ -51,6 +51,10 @@ class Order extends Model implements BroadcastableOrder
         'parent_order_id',
         // [FIX-53-6] loyalty_points_awarded must be fillable for atomic sentinel updates via Eloquent
         'loyalty_points_awarded',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] flag set when fiscal_seq
+        // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
+        // the order up without losing its PAID+PENDING state.
+        'fiscal_alloc_error_at',
     ];
 
     protected $casts = [
@@ -77,7 +81,9 @@ class Order extends Model implements BroadcastableOrder
         'source' => 'integer',
         'pos_payment_method' => 'integer',
         'pos_payment_note' => 'string',
-        'pos_received_amount' => 'decimal:6'
+        'pos_received_amount' => 'decimal:6',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+        'fiscal_alloc_error_at' => 'datetime',
     ];
 
     protected static function boot(): void

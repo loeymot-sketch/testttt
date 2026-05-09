@@ -1063,6 +1063,14 @@ class FrontendOrderService
                         ->next((int) $locked->branch_id);
                     $locked->fiscal_sequence_no = $newSeq;
 
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+                    // Clear the error flag — a previous failed attempt may
+                    // have set it, and a successful retry brings the row
+                    // back to the happy invariant.
+                    if (!is_null($locked->fiscal_alloc_error_at)) {
+                        $locked->fiscal_alloc_error_at = null;
+                    }
+
                     Log::channel('fiscal')->info('kiosk.fiscal_sequence_auto_allocated', [
                         'event'              => 'kiosk.fiscal_sequence_auto_allocated',
                         'order_id'           => $locked->id,
@@ -1072,14 +1080,40 @@ class FrontendOrderService
                         'source_surface'     => $locked->source_surface ?? null,
                     ]);
                 } catch (\Throwable $e) {
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+                    // Audit iter13 ORDER-PATH P1: previously this branch
+                    // re-threw, rolling back the entire transaction and
+                    // leaving the row PAID+PENDING+seq=NULL with no marker
+                    // — invisible to KDS, excluded from Z, unrecoverable
+                    // unless the caller had its own retry. If the caller
+                    // crashed (one-shot webhook, payment provider callback)
+                    // the order silently became an NF525 orphan.
+                    //
+                    // New behaviour: persist a `fiscal_alloc_error_at`
+                    // marker on the row so the
+                    // `foodking:fiscal:retry-alloc` cron can pick it up,
+                    // log on the fiscal channel, and return without
+                    // promoting (status stays PENDING — KDS still skips,
+                    // matching the old observable behaviour). The flag
+                    // write happens INSIDE the same transaction as the
+                    // alloc attempt (same closure), so there is no window
+                    // where the row is left both half-allocated and
+                    // unmarked.
+                    $locked->fiscal_alloc_error_at = now();
+                    $locked->save();
+
                     Log::channel('fiscal')->error('kiosk.fiscal_sequence_alloc_failed', [
                         'event'    => 'kiosk.fiscal_sequence_alloc_failed',
                         'order_id' => $locked->id,
+                        'branch_id'=> $locked->branch_id,
                         'error'    => $e->getMessage(),
+                        'flagged'  => true,
                     ]);
-                    // Fail-loud: fiscal compliance > UX. The transaction
-                    // rolls back; caller sees the error and can retry.
-                    throw $e;
+
+                    // promoted stays false — caller sees no exception, KDS
+                    // does not pick the order up (status still PENDING),
+                    // retry cron will retry and clear the flag on success.
+                    return;
                 }
             }
 

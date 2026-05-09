@@ -74,6 +74,18 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->when(fn () => (bool) config('catalog_v15.auto_86_preventive_cron.enabled', false));
 
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+        // Retry NF525 fiscal sequence allocation for kiosk-paid orders
+        // flagged with `fiscal_alloc_error_at`. Same cadence + concurrency
+        // primitives as outbox:rescue / outbox:monitor — everyMinute is OK
+        // because the predicate is sparse (only failed-alloc rows match)
+        // and the command short-circuits on empty.
+        $schedule->command('foodking:fiscal:retry-alloc')
+            ->everyMinute()
+            ->name('foodking-fiscal-retry-alloc')
+            ->withoutOverlapping(5)
+            ->onOneServer();
+
         // [iter13 P1 STOCK 2026-05-09] Daily quota stale reset.
         //
         // Lazy reset (in AvailabilityService::decrementForOrder) only fires
