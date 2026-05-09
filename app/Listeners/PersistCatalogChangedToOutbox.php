@@ -42,30 +42,50 @@ class PersistCatalogChangedToOutbox
         $domainEventIds = [];
 
         foreach ($branchIds as $branchId) {
-            if ($this->alreadyPersisted($catalogEvent, $branchId, $correlationId)) {
-                continue;
-            }
+            // [iter15-P1b — ref iter14 SPECIALIST-2 pattern]
+            // Replaces the prior `alreadyPersisted()` exists() probe (race-non-atomic
+            // under concurrent listener fires) with a deterministic key + UNIQUE
+            // index dedupe. Key includes branch_id because the listener fans out to
+            // one row per branch; without it the second branch's firstOrCreate would
+            // collide with the first row and silently lose N-1 broadcasts. Also
+            // includes change_type so a created→deleted sequence on the same entity
+            // in the same request retains both rows (legitimate distinct events).
+            $idempotencyKey = sha1(implode('|', [
+                EventType::CATALOG_CHANGED,
+                (string) $catalogEvent->entityType,
+                (int) $catalogEvent->entityId,
+                (int) $branchId,
+                (string) $catalogEvent->changeType,
+                $correlationId,
+            ]));
 
-            $domainEvent = DomainEvent::query()->create([
-                'event_type' => EventType::CATALOG_CHANGED,
-                'aggregate_type' => $catalogEvent->entityType,
-                'aggregate_id' => $catalogEvent->entityId,
-                'branch_id' => $branchId,
-                'payload' => [
-                    'entity_type' => $catalogEvent->entityType,
-                    'entity_id' => $catalogEvent->entityId,
-                    'change_type' => $catalogEvent->changeType,
+            $domainEvent = DomainEvent::query()->firstOrCreate(
+                ['idempotency_key' => $idempotencyKey],
+                [
+                    'event_type' => EventType::CATALOG_CHANGED,
+                    'aggregate_type' => $catalogEvent->entityType,
+                    'aggregate_id' => $catalogEvent->entityId,
                     'branch_id' => $branchId,
-                    'snapshot_version' => $this->snapshot->current($branchId),
-                    'payload_diff' => $catalogEvent->payloadDiff,
-                ],
-                'channel' => json_encode(['private-branch.' . $branchId]),
-                'broadcast_as' => 'CatalogChanged',
-                'correlation_id' => $correlationId,
-                'occurred_at' => now(),
-            ]);
+                    'payload' => [
+                        'entity_type' => $catalogEvent->entityType,
+                        'entity_id' => $catalogEvent->entityId,
+                        'change_type' => $catalogEvent->changeType,
+                        'branch_id' => $branchId,
+                        'snapshot_version' => $this->snapshot->current($branchId),
+                        'payload_diff' => $catalogEvent->payloadDiff,
+                    ],
+                    'channel' => json_encode(['private-branch.' . $branchId]),
+                    'broadcast_as' => 'CatalogChanged',
+                    'correlation_id' => $correlationId,
+                    'occurred_at' => now(),
+                ]
+            );
 
-            $domainEventIds[] = (int) $domainEvent->id;
+            // Only schedule a dispatch when firstOrCreate actually inserted; on a
+            // replay the existing row was already enqueued by the original fire.
+            if ($domainEvent->wasRecentlyCreated) {
+                $domainEventIds[] = (int) $domainEvent->id;
+            }
         }
 
         if ($domainEventIds === []) {
@@ -77,17 +97,6 @@ class PersistCatalogChangedToOutbox
                 DispatchDomainEventsJob::dispatch($domainEventId);
             }
         });
-    }
-
-    private function alreadyPersisted(CatalogChanged $event, int $branchId, string $correlationId): bool
-    {
-        return DomainEvent::query()
-            ->where('event_type', EventType::CATALOG_CHANGED)
-            ->where('aggregate_type', $event->entityType)
-            ->where('aggregate_id', $event->entityId)
-            ->where('branch_id', $branchId)
-            ->where('correlation_id', $correlationId)
-            ->exists();
     }
 
     private function resolveCorrelationId(): string

@@ -45,17 +45,40 @@ class PersistItemAvailabilityChangedToOutbox
                 ->all();
         }
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type'     => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
-            'aggregate_type' => 'item',
-            'aggregate_id'   => $event->itemId,
-            'branch_id'      => $event->branchId,
-            'payload'        => $payload,
-            'channel'        => json_encode($channels),
-            'broadcast_as'   => 'ItemAvailabilityChanged',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at'    => now(),
-        ]);
+        $correlationId = $this->resolveCorrelationId();
+
+        // [iter15-P1b — ref iter14 SPECIALIST-2 pattern]
+        // Availability is a transition (toggle) and is NOT one-shot — the same
+        // (item × branch) tuple can flip true→false→true across legitimate
+        // distinct requests. Scope dedupe to the originating request via
+        // correlation_id so a duplicate listener fire within the same request
+        // collapses, but the next legitimate toggle gets a fresh row. Key also
+        // distinguishes the global emission (branch_id=null) from a per-branch
+        // emission for the same item in the same request — they MUST coexist
+        // because they target different downstream channels.
+        $idempotencyKey = sha1(implode('|', [
+            EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+            (int) $event->itemId,
+            $event->branchId === null ? 'global' : (int) $event->branchId,
+            $event->isAvailable === null ? 'null' : ($event->isAvailable ? '1' : '0'),
+            (string) $event->type,
+            $correlationId,
+        ]));
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type'     => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+                'aggregate_type' => 'item',
+                'aggregate_id'   => $event->itemId,
+                'branch_id'      => $event->branchId,
+                'payload'        => $payload,
+                'channel'        => json_encode($channels),
+                'broadcast_as'   => 'ItemAvailabilityChanged',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.

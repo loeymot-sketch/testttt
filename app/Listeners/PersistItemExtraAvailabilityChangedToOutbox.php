@@ -30,18 +30,35 @@ class PersistItemExtraAvailabilityChangedToOutbox
         ];
 
         $channels = ['private-branch.' . $event->branchId];
+        $correlationId = $this->resolveCorrelationId();
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type'     => EventType::MENU_EXTRA_AVAILABILITY_CHANGED,
-            'aggregate_type' => 'item_extra',
-            'aggregate_id'   => $event->extraId,
-            'branch_id'      => $event->branchId,
-            'payload'        => $payload,
-            'channel'        => json_encode($channels),
-            'broadcast_as'   => 'ItemExtraAvailabilityChanged',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at'    => now(),
-        ]);
+        // [iter15-P1b — ref iter14 SPECIALIST-2 pattern]
+        // Extra rupture toggle is a transition (true↔false) and NOT one-shot.
+        // Scope dedupe to the originating request via correlation_id; a duplicate
+        // listener fire within the same request collapses, but the next legitimate
+        // toggle in a distinct request gets a fresh row.
+        $idempotencyKey = sha1(implode('|', [
+            EventType::MENU_EXTRA_AVAILABILITY_CHANGED,
+            (int) $event->extraId,
+            (int) $event->branchId,
+            $event->isAvailable ? '1' : '0',
+            $correlationId,
+        ]));
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type'     => EventType::MENU_EXTRA_AVAILABILITY_CHANGED,
+                'aggregate_type' => 'item_extra',
+                'aggregate_id'   => $event->extraId,
+                'branch_id'      => $event->branchId,
+                'payload'        => $payload,
+                'channel'        => json_encode($channels),
+                'broadcast_as'   => 'ItemExtraAvailabilityChanged',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             DispatchDomainEventsJob::dispatch($domainEvent->id);

@@ -39,31 +39,48 @@ class PersistCouponChangedToOutbox
         $domainEventIds = [];
 
         foreach ($branchIds as $branchId) {
-            if ($this->alreadyPersisted($event, $branchId, $correlationId)) {
-                continue;
+            // [iter15-P1b — ref iter14 SPECIALIST-2 pattern]
+            // Replaces the prior `alreadyPersisted()` exists() probe (race-non-atomic
+            // under concurrent listener fires) with a deterministic key + UNIQUE
+            // index dedupe. Key includes branch_id (one row per branch in fan-out)
+            // and change_type (created/updated/deleted/status_toggled distinct
+            // legitimate events on same coupon in same request).
+            $idempotencyKey = sha1(implode('|', [
+                EventType::COUPON_CHANGED,
+                (int) $event->couponId,
+                (int) $branchId,
+                (string) $event->changeType,
+                $correlationId,
+            ]));
+
+            $domainEvent = DomainEvent::query()->firstOrCreate(
+                ['idempotency_key' => $idempotencyKey],
+                [
+                    'event_type'    => EventType::COUPON_CHANGED,
+                    'aggregate_type' => 'coupon',
+                    'aggregate_id' => $event->couponId,
+                    'branch_id'    => $branchId,
+                    'payload'      => [
+                        'coupon_id'   => $event->couponId,
+                        'code'        => $event->code,
+                        'status'      => $event->status,
+                        'change_type' => $event->changeType,
+                        'branch_id'   => $branchId,
+                        'surfaces'    => $event->surfaces,
+                        'payload_diff' => $event->payloadDiff,
+                    ],
+                    'channel'        => json_encode(['private-branch.' . $branchId]),
+                    'broadcast_as'   => 'CouponChanged',
+                    'correlation_id' => $correlationId,
+                    'occurred_at'    => now(),
+                ]
+            );
+
+            // Only schedule a dispatch when firstOrCreate actually inserted; on
+            // a replay the original fire already enqueued the dispatch job.
+            if ($domainEvent->wasRecentlyCreated) {
+                $domainEventIds[] = (int) $domainEvent->id;
             }
-
-            $domainEvent = DomainEvent::query()->create([
-                'event_type'    => EventType::COUPON_CHANGED,
-                'aggregate_type' => 'coupon',
-                'aggregate_id' => $event->couponId,
-                'branch_id'    => $branchId,
-                'payload'      => [
-                    'coupon_id'   => $event->couponId,
-                    'code'        => $event->code,
-                    'status'      => $event->status,
-                    'change_type' => $event->changeType,
-                    'branch_id'   => $branchId,
-                    'surfaces'    => $event->surfaces,
-                    'payload_diff' => $event->payloadDiff,
-                ],
-                'channel'        => json_encode(['private-branch.' . $branchId]),
-                'broadcast_as'   => 'CouponChanged',
-                'correlation_id' => $correlationId,
-                'occurred_at'    => now(),
-            ]);
-
-            $domainEventIds[] = (int) $domainEvent->id;
         }
 
         if ($domainEventIds === []) {
@@ -75,18 +92,6 @@ class PersistCouponChangedToOutbox
                 DispatchDomainEventsJob::dispatch($domainEventId);
             }
         });
-    }
-
-    private function alreadyPersisted(CouponChanged $event, int $branchId, string $correlationId): bool
-    {
-        return DomainEvent::query()
-            ->where('event_type', EventType::COUPON_CHANGED)
-            ->where('aggregate_type', 'coupon')
-            ->where('aggregate_id', $event->couponId)
-            ->where('branch_id', $branchId)
-            ->where('correlation_id', $correlationId)
-            ->where('payload->change_type', $event->changeType)
-            ->exists();
     }
 
     private function resolveCorrelationId(): string

@@ -29,6 +29,7 @@ class PersistOrderTableChangedToOutbox
     public function handle(OrderTableChanged $event): void
     {
         $order = $event->order;
+        $correlationId = $this->resolveCorrelationId();
 
         $diningTableName = null;
         try {
@@ -40,25 +41,43 @@ class PersistOrderTableChangedToOutbox
             $diningTableName = null;
         }
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type'     => EventType::ORDER_TABLE_CHANGED,
-            'aggregate_type' => get_class($order),
-            'aggregate_id'   => $order->id,
-            'branch_id'      => $order->branch_id,
-            'payload'        => [
-                'order_id'           => (int) $order->id,
-                'branch_id'          => (int) $order->branch_id,
-                'previous_table_id'  => $event->previousTableId,
-                'new_table_id'       => (int) $event->newTableId,
-                'action'             => $event->action,
-                'queue_number'       => $order->queue_number ?? null,
-                'dining_table_name'  => $diningTableName,
-            ],
-            'channel'        => json_encode(['private-branch.' . $order->branch_id]),
-            'broadcast_as'   => 'OrderTableChanged',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at'    => now(),
-        ]);
+        // [iter15-P1b — ref iter14 SPECIALIST-2 pattern]
+        // Table reassignment is a transition (previous_table → new_table) and is
+        // NOT one-shot — admin can re-assign back to a prior table in a separate
+        // request. Scope dedupe to the originating request via correlation_id so
+        // a duplicate listener fire within the same request collapses, but a
+        // legitimate later reassignment with the same (prev,new) tuple in a
+        // distinct request still gets a fresh row.
+        $idempotencyKey = sha1(implode('|', [
+            EventType::ORDER_TABLE_CHANGED,
+            (int) $order->id,
+            $event->previousTableId === null ? 'null' : (int) $event->previousTableId,
+            (int) $event->newTableId,
+            $correlationId,
+        ]));
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type'     => EventType::ORDER_TABLE_CHANGED,
+                'aggregate_type' => get_class($order),
+                'aggregate_id'   => $order->id,
+                'branch_id'      => $order->branch_id,
+                'payload'        => [
+                    'order_id'           => (int) $order->id,
+                    'branch_id'          => (int) $order->branch_id,
+                    'previous_table_id'  => $event->previousTableId,
+                    'new_table_id'       => (int) $event->newTableId,
+                    'action'             => $event->action,
+                    'queue_number'       => $order->queue_number ?? null,
+                    'dining_table_name'  => $diningTableName,
+                ],
+                'channel'        => json_encode(['private-branch.' . $order->branch_id]),
+                'broadcast_as'   => 'OrderTableChanged',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane is encoded in the job
