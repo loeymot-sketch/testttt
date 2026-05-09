@@ -22,29 +22,46 @@ class PersistOrderPaymentStatusChangedToOutbox
     public function handle(OrderPaymentStatusChanged $event): void
     {
         $order = $event->order;
+        $correlationId = $this->resolveCorrelationId();
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type'     => EventType::ORDER_PAYMENT_STATUS_CHANGED,
-            'aggregate_type' => get_class($order),
-            'aggregate_id'   => $order->id,
-            'branch_id'      => $order->branch_id,
-            'payload'        => [
-                'order_id'           => $order->id,
-                'branch_id'          => (int) $order->branch_id,
-                'queue_number'       => $order->queue_number,
-                '_origin'            => $this->resolveOrigin($order),
-                'payment_method'     => $this->resolvePaymentMethod($order),
-                'old_status'         => $event->oldPaymentStatus,
-                'new_status'         => $event->newPaymentStatus,
-                'total'              => round((float) $order->total, 2),
-                'fiscal_sequence_no' => $order->fiscal_sequence_no,
-                'token'              => $order->token ?? null,
-            ],
-            'channel'        => json_encode(['private-branch.' . $order->branch_id]),
-            'broadcast_as'   => 'OrderPaymentStatusChanged',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at'    => now(),
-        ]);
+        // [iter14 SPECIALIST-2] Payment status transitions can repeat across
+        // requests (UNPAID→PAID→REFUNDED, then admin re-bills, etc.). Scope
+        // dedupe to the originating request via correlation_id so duplicate
+        // listener fires within the same request collapse but legitimate
+        // later transitions still produce a row.
+        $idempotencyKey = sha1(implode('|', [
+            EventType::ORDER_PAYMENT_STATUS_CHANGED,
+            $order->id,
+            (int) $event->oldPaymentStatus,
+            (int) $event->newPaymentStatus,
+            $correlationId,
+        ]));
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type'     => EventType::ORDER_PAYMENT_STATUS_CHANGED,
+                'aggregate_type' => get_class($order),
+                'aggregate_id'   => $order->id,
+                'branch_id'      => $order->branch_id,
+                'payload'        => [
+                    'order_id'           => $order->id,
+                    'branch_id'          => (int) $order->branch_id,
+                    'queue_number'       => $order->queue_number,
+                    '_origin'            => $this->resolveOrigin($order),
+                    'payment_method'     => $this->resolvePaymentMethod($order),
+                    'old_status'         => $event->oldPaymentStatus,
+                    'new_status'         => $event->newPaymentStatus,
+                    'total'              => round((float) $order->total, 2),
+                    'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                    'token'              => $order->token ?? null,
+                ],
+                'channel'        => json_encode(['private-branch.' . $order->branch_id]),
+                'broadcast_as'   => 'OrderPaymentStatusChanged',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.

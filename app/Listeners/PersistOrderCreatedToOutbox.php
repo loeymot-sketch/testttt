@@ -16,28 +16,36 @@ class PersistOrderCreatedToOutbox
     {
         $order = $event->order;
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type' => EventType::ORDER_CREATED,
-            'aggregate_type' => get_class($order),
-            'aggregate_id' => $order->id,
-            'branch_id' => $order->branch_id,
-            'payload' => [
-                'order_id' => $order->id,
-                'queue_number' => $order->queue_number,
-                '_origin' => $this->resolveOrigin($order),
-                'payment_method' => $this->resolvePaymentMethod($order),
-                'payment_status' => $order->payment_status,
-                'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
-                'status' => $order->status,
-                'order_type' => $order->order_type,
-                'total' => $order->total,
-                'created_at' => $order->created_at?->toISOString(),
-            ],
-            'channel' => json_encode(['private-branch.' . $order->branch_id]),
-            'broadcast_as' => 'OrderCreated',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at' => now(),
-        ]);
+        // [iter14 SPECIALIST-2] OrderCreated is a one-shot per aggregate.
+        // sha1(event_type|aggregate_id) — no discriminator; second listener
+        // fire (e.g. queue retry) is silently absorbed by the UNIQUE index.
+        $idempotencyKey = sha1(EventType::ORDER_CREATED . '|' . $order->id);
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type' => EventType::ORDER_CREATED,
+                'aggregate_type' => get_class($order),
+                'aggregate_id' => $order->id,
+                'branch_id' => $order->branch_id,
+                'payload' => [
+                    'order_id' => $order->id,
+                    'queue_number' => $order->queue_number,
+                    '_origin' => $this->resolveOrigin($order),
+                    'payment_method' => $this->resolvePaymentMethod($order),
+                    'payment_status' => $order->payment_status,
+                    'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
+                    'status' => $order->status,
+                    'order_type' => $order->order_type,
+                    'total' => $order->total,
+                    'created_at' => $order->created_at?->toISOString(),
+                ],
+                'channel' => json_encode(['private-branch.' . $order->branch_id]),
+                'broadcast_as' => 'OrderCreated',
+                'correlation_id' => $this->resolveCorrelationId(),
+                'occurred_at' => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.

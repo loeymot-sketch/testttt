@@ -15,28 +15,46 @@ class PersistOrderStatusChangedToOutbox
     public function handle(OrderStatusChanged $event): void
     {
         $order = $event->order;
+        $correlationId = $this->resolveCorrelationId();
 
-        $domainEvent = DomainEvent::query()->create([
-            'event_type' => EventType::ORDER_STATUS_CHANGED,
-            'aggregate_type' => get_class($order),
-            'aggregate_id' => $order->id,
-            'branch_id' => $order->branch_id,
-            'payload' => [
-                'order_id' => $order->id,
-                'queue_number' => $order->queue_number,
-                '_origin' => $this->resolveOrigin($order),
-                'payment_method' => $this->resolvePaymentMethod($order),
-                'payment_status' => $order->payment_status,
-                'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
-                'old_status' => $event->oldStatus,
-                'new_status' => $event->newStatus,
-                'token' => $order->token ?? null,
-            ],
-            'channel' => json_encode(['private-branch.' . $order->branch_id]),
-            'broadcast_as' => 'OrderStatusChanged',
-            'correlation_id' => $this->resolveCorrelationId(),
-            'occurred_at' => now(),
-        ]);
+        // [iter14 SPECIALIST-2] Status transitions are NOT one-shot — Admin
+        // override allows DELIVERED↔RETURNED reverts (see OrderStateMachine).
+        // Scope dedupe to the originating request via correlation_id, so a
+        // legitimate later transition with the same (old,new) tuple in a
+        // different request still gets a fresh row, while a duplicate
+        // listener fire within the same request collapses.
+        $idempotencyKey = sha1(implode('|', [
+            EventType::ORDER_STATUS_CHANGED,
+            $order->id,
+            (int) $event->oldStatus,
+            (int) $event->newStatus,
+            $correlationId,
+        ]));
+
+        $domainEvent = DomainEvent::query()->firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type' => EventType::ORDER_STATUS_CHANGED,
+                'aggregate_type' => get_class($order),
+                'aggregate_id' => $order->id,
+                'branch_id' => $order->branch_id,
+                'payload' => [
+                    'order_id' => $order->id,
+                    'queue_number' => $order->queue_number,
+                    '_origin' => $this->resolveOrigin($order),
+                    'payment_method' => $this->resolvePaymentMethod($order),
+                    'payment_status' => $order->payment_status,
+                    'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
+                    'old_status' => $event->oldStatus,
+                    'new_status' => $event->newStatus,
+                    'token' => $order->token ?? null,
+                ],
+                'channel' => json_encode(['private-branch.' . $order->branch_id]),
+                'broadcast_as' => 'OrderStatusChanged',
+                'correlation_id' => $correlationId,
+                'occurred_at' => now(),
+            ]
+        );
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
