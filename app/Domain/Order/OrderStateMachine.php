@@ -2,7 +2,10 @@
 
 namespace App\Domain\Order;
 
+use App\Enums\OrderType;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
 use App\Models\OrderStatusTransition;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -76,6 +79,51 @@ final class OrderStateMachine
         if (!self::allows($from, $to, $user)) {
             throw new IllegalTransitionException('Illegal order status transition from ' . $from . ' to ' . $to);
         }
+    }
+
+    /**
+     * @return int[]
+     */
+    public static function kitchenReleaseStatuses(): array
+    {
+        return [
+            OrderStatus::ACCEPT,
+            OrderStatus::PREPARING,
+            OrderStatus::PREPARED,
+        ];
+    }
+
+    public static function isKitchenReleaseStatus(int $status): bool
+    {
+        return in_array($status, self::kitchenReleaseStatuses(), true);
+    }
+
+    public static function isKitchenReleaseTransition(int $from, int $to): bool
+    {
+        if ($from === $to) {
+            return self::isKitchenReleaseStatus($from);
+        }
+
+        return ($from === OrderStatus::ACCEPT && $to === OrderStatus::PREPARING)
+            || ($from === OrderStatus::PREPARING && $to === OrderStatus::PREPARED);
+    }
+
+    public static function isReleasedToKitchen(
+        int $status,
+        int $paymentStatus,
+        ?int $orderType = null,
+        ?int $posPaymentMethod = null
+    ): bool {
+        if ($status < OrderStatus::ACCEPT) {
+            return false;
+        }
+
+        if ($paymentStatus === PaymentStatus::PAID) {
+            return true;
+        }
+
+        return $orderType === OrderType::POS
+            && $posPaymentMethod === PosPaymentMethod::CASH;
     }
 
     /**

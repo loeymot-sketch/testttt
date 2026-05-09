@@ -20,6 +20,7 @@ class Order extends Model implements BroadcastableOrder
     protected $fillable = [
         'order_serial_no',
         'queue_number',
+        'business_date',
         'token',
         'user_id',
         'branch_id',
@@ -46,13 +47,20 @@ class Order extends Model implements BroadcastableOrder
         'source_surface',
         // [AUDIT-P50-BUG1] Idempotency key must be fillable so POS orders can be deduplicated
         'idempotency_key',
+        // [P11-FZH / F-VERIFY-08-02] parent_order_id pour refund-with-counter-entry mirror orders
+        'parent_order_id',
         // [FIX-53-6] loyalty_points_awarded must be fillable for atomic sentinel updates via Eloquent
         'loyalty_points_awarded',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] flag set when fiscal_seq
+        // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
+        // the order up without losing its PAID+PENDING state.
+        'fiscal_alloc_error_at',
     ];
 
     protected $casts = [
         'id' => 'integer',
         'order_serial_no' => 'string',
+        'business_date' => 'date:Y-m-d',
         'token' => 'string',
         'user_id' => 'integer',
         'branch_id' => 'integer',
@@ -73,7 +81,9 @@ class Order extends Model implements BroadcastableOrder
         'source' => 'integer',
         'pos_payment_method' => 'integer',
         'pos_payment_note' => 'string',
-        'pos_received_amount' => 'decimal:6'
+        'pos_received_amount' => 'decimal:6',
+        // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
+        'fiscal_alloc_error_at' => 'datetime',
     ];
 
     protected static function boot(): void
@@ -139,6 +149,19 @@ class Order extends Model implements BroadcastableOrder
     public function coupon(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(OrderCoupon::class);
+    }
+
+    /**
+     * [F-SPLIT-PAYMENT-001] Multi-tender breakdown.
+     *
+     * `OrderDetailsResource::buildPaymentsBreakdown()` lit cette relation
+     * pour rendre le receipt avec la liste des tranches (mode/amount/
+     * change/reference). Quand vide, le resource retombe sur le path
+     * legacy single-tender (`pos_payment_method` + `pos_received_amount`).
+     */
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrderPayment::class, 'order_id');
     }
 
     public function scopePending($query)

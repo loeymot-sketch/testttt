@@ -1,6 +1,10 @@
 <template>
   <ConnectionStatusBanner />
-  <div class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 ">
+  <div
+    class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 "
+    role="main"
+    :aria-label="$t('label.oss_main_aria')"
+  >
     <PopularItemComponent />
     <div class="col-span-2 grid grid-cols-2 gap-4 md:mt-0 mt-[-20px]">
       <PreparingAndReadyComponent />
