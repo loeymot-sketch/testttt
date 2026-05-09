@@ -47,15 +47,33 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
-- **HEAD** : `cce7a6f30` (post iter14 V1.0.1 sprint delivery)
-- **Last update** : 2026-05-09
-- **Domaines production-ready** : 16 / 16 ✅
-- **Tests** : 705/705 PHPUnit verts + 16/16 E2E Playwright PASS
-- **Frozen-zones** : 0 lines diff vs main (4 files protected)
+- **HEAD** : `951cc4604` (CLAUDE.md rewrite + PROJECT_BRAIN.md bootstrap + audit iter15)
+- **Last update** : 2026-05-09 (post audit système Claude)
+- **Domaines production-ready** : 16 / 16 ✅ (basé sur code presence, validation
+  fonctionnelle live deferred au smoke test post-merge)
+- **Tests filter cumulative iter14** : 705/705 PHPUnit verts (filter
+  Outbox|Persist|DomainEvent|Fiscal|FinalizePaid|ZReport|FiscalSequence|Order)
+- **E2E Playwright iter14** : 16/16 PASS (POS+Kiosk+KDS+auth+admin baseURL)
+- **Frozen-zones spécifiques** : 0 lines diff vs main sur les 4 fichiers
+  protégés (KioskWizard + KioskApp + KioskUpsell + POS Vanilla wizard).
+  La branche release globale a normalement >4000 fichiers diff vs main
+  — c'est attendu pour un cycle PHASE2.
 
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**iter15 audit système Claude** (post-bootstrap 951cc4604) :
+- 4 sub-agents YC GStack en parallèle (DOC + UX + WORKFLOW + BRAIN auditors)
+- Verdict global : Coherence solide / Friction UX 2.1/5 / LOOP robustness
+  6.5/10 / BRAIN accuracy ~65% (staleness HIGH)
+- 4 corrections factuelles BRAIN.md appliquées :
+  - §2 frozen-zones wording (clarifie "fichiers spécifiques", pas branche)
+  - §5 V1.x security advisories (3 vraies vs 17 de worktree blissful)
+  - §9 4 migrations (le 5e était sur worktree blissful)
+  - §9 advisories triage corrigé (3 vraies vs 17 stale)
+- 11 amendments P1 CLAUDE.md proposés (NON-appliqués, attente validation owner)
+- Cf. §8 DRIFT ALERTS pour findings P1 détaillés
 
 **iter14 V1.0.1 hardening sprint** (commits `1ddc642a6` + `179d4e377` +
 `3150992a7` + `cce7a6f30`) :
@@ -67,9 +85,9 @@ Plateforme restaurant fast-food complète :
   + cron `foodking:fiscal:retry-alloc` + nouvelle migration
   `fiscal_alloc_error_at` + 4 tests verts
 
-Tests cumulatifs : 705/705 PHPUnit verts (filter Outbox|Persist|
+Tests cumulatifs iter14 : 705/705 PHPUnit verts (filter Outbox|Persist|
 DomainEvent|Fiscal|FinalizePaid|ZReport|FiscalSequence|Order).
-E2E Playwright : 12/12 core (POS+Kiosk+KDS) + 4/4 auth+admin = 16/16 PASS.
+E2E Playwright iter14 : 12/12 core (POS+Kiosk+KDS) + 4/4 auth+admin = 16/16 PASS.
 Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 
 ---
@@ -115,14 +133,16 @@ Pas de plan en attente d'exécution.
 
 ### V1.x post-V1
 - F-016b stock dashboard UI (Q3=A)
-- 17 advisories security composer (1 CRITICAL phpspreadsheet RCE)
-- Laravel 9 → 10 → 11 migration
-- Spatie 5 → 6
+- 3 advisories security composer (vérifié `composer audit` 2026-05-09 sur
+  PHASE2 main repo) :
+  - LOW : `firebase/php-jwt` CVE-2025-45769
+  - MEDIUM : `laravel/framework` CVE-2025-27515 (file validation bypass)
+  - MEDIUM : `psy/psysh` CVE-2026-25129 (local privilege escalation)
+- Laravel 9 → 10 → 11 migration (track séparé EOL approche)
+- Spatie 5 → 6 (track séparé)
 - ESLint v10 + Vue plugin setup
 - Saga pattern Order + Payment + Stock
-- Stripe webhook idempotency (parité SenangPay)
-- Migration `2026_05_09_010000` squash dans `2026_05_08_050000`
-  (avant prod V1)
+- Stripe webhook idempotency (parité SenangPay iter11)
 
 ---
 
@@ -186,7 +206,50 @@ y est enregistrée pour éviter la dérive et le re-questioning.
 > Si Claude détecte une dérive de direction (15-20° du NORTH STAR),
 > il append ici avec timestamp + cause + recommandation.
 
-Aucun drift détecté actuellement (post iter14).
+### 2026-05-09 — Audit iter15 système Claude (post bootstrap 951cc4604)
+
+**11 amendments P1 CLAUDE.md proposés** (audit 4 sub-agents YC GStack) —
+**non-appliqués, attente validation owner** :
+
+#### Apply maintenant (corrige risques opérationnels concrets)
+- **A1** §7 Frozen Zones — chemin exact POS Vanilla wizard manquant
+  (probablement `resources/js/components/admin/pos/PosComponent.vue`
+  ou inline script)
+- **A2** §5 étape 7 — mécanisme comptage healing cycles non-opérationnel
+  (format "(counter: X/3) [problème: Y]" + reset si problème change)
+- **A3** §6 Visual Test — ne couvre pas API payload mutations (visual
+  capture ≠ JSON structure verification). Ajouter §6.1 API Payload Test
+- **A7** §5 étape 8 — protocole interruption mid-LOOP manquant (commit WIP
+  + BRAIN.md "[INTERRUPTED at step N]" + Graphiti incident)
+
+#### Apply en V1.0.1 (améliore discipline, pas urgent)
+- **A4** §12 Anti-Drift Checklist opérationnel (read DECISIONS LOG +
+  grep décisions clés vs task objective + STOP si conflict)
+- **A5** §5 étape pré-1 — Micro-task exemption (≤5 lignes + non-frontend
+  + non-frozen → merge étapes 1-2-4, skip 6 si pas frontend)
+- **A6** §5 étape 2-3 — Frozen-zone escalation gate pre-execute (intent
+  detection typo/test/logic → STOP gate user si logic-change)
+- **A8** §10 Decision — Emergency NF525 hotfix clause (EXECUTE + post-hoc
+  evidence + branche hotfix/* + owner ack avant merge)
+
+#### Apply post-V1 (UX + résilience)
+- **A9** §17 (NEW) — Quick Start Commands & Examples (6 conversations
+  naturelles → slash commands correspondants)
+- **A10** §4 Sub-agents — conflict resolution protocol (evidence quality
+  tabulation → BRAIN.md §6 DECISIONS LOG entry)
+- **A11** §5 étape 6 — Playwright fail fallback (log + skip + tag
+  "[VISUAL TEST SKIPPED: server unavailable]" + downgrade confidence)
+
+### Verdict audit iter15
+- **Coherence CLAUDE.md** : solide globalement, 4 P1 gaps (frozen path POS,
+  healing counter, payload visual gap, anti-drift algorithm)
+- **Friction UX** : 2.1/5 medium (slash commands non-discoverable,
+  LOOP opaque user non-tech, plan persistence non-mandatory)
+- **LOOP robustness** : 6.5/10 (manque micro-task exempt, frozen escalation,
+  mid-LOOP interrupt, sub-agent conflict, MCP fallback, emergency NF525)
+- **BRAIN accuracy** : ~65% (4 corrections factuelles appliquées 2026-05-09 :
+  HEAD update, frozen-zones wording, advisories 17→3, migrations 5→4)
+- **Aucune dérive direction** détectée (NORTH STAR §1 toujours valide)
 
 ---
 
@@ -196,13 +259,21 @@ Avant merge `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27` → `main` :
 
 1. ✅ **Push origin DONE** (commits iter11-14 sur `cce7a6f30`)
 2. ⏳ **Backup prod** : `mysqldump foodking_prod > pre-V1-backup-2026-05-09.sql`
-3. ⏳ **migrate --pretend staging** (5 nouvelles migrations) :
-   - `2026_05_09_010000_fix_order_ratings_unique_key.php`
-   - `2026_05_09_120000_create_webhook_events_table.php`
-   - `2026_05_09_160000_add_z_reports_delete_trigger_immutability.php`
-   - `2026_05_09_180000_add_idempotency_key_to_domain_events.php`
-   - `2026_05_09_200000_add_fiscal_alloc_error_at_to_orders.php`
-4. ⏳ **Triage 17 advisories security composer** (1 CRITICAL `phpspreadsheet` RCE)
+3. ⏳ **migrate --pretend staging** (4 nouvelles migrations sur PHASE2 main repo,
+   verified `ls database/migrations/2026_05_09_*` 2026-05-09) :
+   - `2026_05_09_120000_create_webhook_events_table.php` (iter11 webhook unifié)
+   - `2026_05_09_160000_add_z_reports_delete_trigger_immutability.php` (iter11 NF525 trigger)
+   - `2026_05_09_180000_add_idempotency_key_to_domain_events.php` (iter14 listener dedupe)
+   - `2026_05_09_200000_add_fiscal_alloc_error_at_to_orders.php` (iter14 fiscal orphan)
+   > NB : Le 5e migration `2026_05_09_010000_fix_order_ratings_unique_key.php`
+   > était sur le worktree blissful-mclean (cycle iter1-8), pas sur PHASE2 main.
+4. ⏳ **Triage 3 advisories security composer** (verified 2026-05-09) :
+   - LOW : firebase/php-jwt CVE-2025-45769
+   - MEDIUM : laravel/framework CVE-2025-27515 (file validation bypass)
+   - MEDIUM : psy/psysh CVE-2026-25129 (local privilege escalation)
+   > NB : Pas de CRITICAL phpspreadsheet RCE sur PHASE2 (le 17 advisories
+   > venait de l'audit iter5 SRE-DEPLOY sur worktree blissful — état
+   > composer différent).
 5. ⏳ **Smoke test live** post-deploy (Chrome MCP captures)
 6. ⏳ **Coordinate** avec autre agent (PR #12 PHP 8.3 fix si conflit ouvert)
 7. ⏳ **Merge → main** après validation
