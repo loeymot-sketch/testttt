@@ -1,163 +1,345 @@
 <template>
-    <ConnectionStatusBanner />
+    <!--
+      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte design POS V5 "warm premium".
+      - Conserve la classe `fk-pos-v4` pour rollback éventuel via [data-pos-v4-disabled].
+      - Ajoute la classe `pos-v5-shell` qui active la typo Inter, le bg crème warm
+        et le système de tokens unifié défini dans foundations/pos-v5-tokens.css.
+      - Le wizard kiosk reste FROZEN (KioskWizardComponent + kiosk-wizard.css).
+      - Aucune logique métier touchée : pricing, OrderStatus, branch_id, dispatch
+        intacts. Cf. plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md.
+    -->
+    <section class="pos-v5-shell fk-pos-v4 pos-v4-shell" data-pos-v4-shell data-pos-v5-shell>
+    <a href="#pos-cart" class="pos-v5-skip-link sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
+    <div id="pos-a11y-live" class="sr-only pos-v5-sr-only" aria-live="polite" aria-atomic="true"></div>
+    <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
-    <div class="md:w-[calc(100%-340px)] lg:w-[calc(100%-320px)] xl:w-[calc(100%-377px)]">
-        <form @submit.prevent="search"
-            class="flex items-center w-full h-[38px] leading-[38px] mb-4 rounded-lg bg-white border-[#EFF0F6] border-t border-l border-b">
-            <input type="text" v-model="props.search.name" :placeholder="$t('label.search_by_menu_item')"
-                class="w-full px-5 rounded-tl-lg rounded-bl-lg placeholder:text-xs placeholder:font-rubik placeholder:text-[#A0A3BD]">
-            <button @click="resetName" type="button" v-if="props.search.name"
-                class="text-sm text-red-500 fa-regular fa-circle-xmark mr-4"></button>
-            <button type="submit"
-                class="flex-shrink-0 w-[38px] h-full text-center ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg bg-primary">
-                <i class="lab lab-search-normal text-white"></i>
-            </button>
-        </form>
-
-        <!-- LANDING: grille catégories + best sellers -->
-        <template v-if="isLanding">
-            <!-- Grille catégories (grandes cartes) -->
-            <!-- [Y6 FIX] Filter out the "All" pseudo-category (id=0 or id='') instead of slice(1)
-                 so real categories are never hidden if API order changes. -->
-            <div v-if="categories.filter(c => c.id && c.id !== 0).length > 0" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
-                <router-link v-for="(category, index) in categories.filter(c => c.id && c.id !== 0)" :key="category.id"
-                    to="#" @click.prevent="setCategory(category.id)"
-                    class="flex flex-col items-center text-center gap-2 py-4 px-2 rounded-xl border border-[#EFF0F6] bg-white hover:bg-[#FFEDF4] hover:border-primary transition">
-                    <img class="h-10 w-10 object-contain drop-shadow-category" :src="category.thumb" alt="category">
-                    <h3 class="text-xs font-medium font-rubik leading-tight">{{ category.name }}</h3>
-                </router-link>
-            </div>
-
-            <!-- Best Sellers -->
-            <div v-if="bestSellerItems.length > 0" class="mb-4">
-                <h3 class="text-sm font-semibold font-rubik text-heading mb-3">⭐ Best Sellers</h3>
-                <ItemComponent ref="posItemComponent" :items="bestSellerItems" />
-            </div>
-            <!-- Pas de best sellers trouvés: monter ItemComponent vide pour permettre l'édition depuis le panier -->
-            <ItemComponent v-else ref="posItemComponent" :items="[]" />
-        </template>
-
-        <!-- FILTRÉ: swiper catégories + liste complète -->
-        <template v-else>
-            <div class="swiper pos-menu-swiper mb-4" v-if="categories.length > 1">
-                <Swiper dir="ltr" :speed="1000" slidesPerView="auto" :spaceBetween="16" class="menu-slides">
-                    <!-- [W9 FIX] Stable key using category.id instead of object reference -->
-                    <SwiperSlide class="!w-fit" v-for="(category, index) in categories" :key="category.id || index"
-                        :class="category.id === props.search.item_category_id || (category.id === 0 && props.search.item_category_id === '') ? 'pos-group' : ''">
-                        <router-link v-if="index === 0" to="#" @click.prevent="allCategory"
-                            class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                        </router-link>
-                        <router-link v-else to="#" @click.prevent="setCategory(category.id)"
-                            class="w-28 flex flex-col items-center text-center gap-4 py-4 px-3 rounded-lg border-b-2 border-transparent transition hover:bg-[#FFEDF4] hover:border-primary bg-white">
-                            <img class="h-7 drop-shadow-category" :src="category.thumb" alt="category">
-                            <h3 class="text-xs leading-[16px] font-medium font-rubik">{{ category.name }}</h3>
-                        </router-link>
-                    </SwiperSlide>
-                </Swiper>
-            </div>
-
-            <ItemComponent ref="posItemComponent" :items="items" />
-
-            <div class="my-12" v-if="items.length === 0 && !props.search.name">
-                <div class="max-w-[350px] mx-auto">
-                    <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]">
+        <header class="pos-v5-operator-bar pos-v4-operator-bar" role="banner">
+            <div class="pos-v5-operator-bar__brand">
+                <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
+                <div class="pos-v5-operator-bar__identity min-w-0 flex-1">
+                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse FoodKing</p>
+                    <h1 class="pos-v5-operator-bar__title pos-v4-title">Commande rapide</h1>
+                    <div class="pos-v5-operator-bar__live pos-v4-status-row">
+                        <PosV5StatChip
+                            v-if="checkoutProps.form.branch_id"
+                            :label="$t('label.branch')"
+                            :value="`#${checkoutProps.form.branch_id}`"
+                            tone="neutral"
+                        />
+                        <PosV5StatChip
+                            v-else
+                            :label="$t('label.ready')"
+                            tone="ghost"
+                        />
+                        <PosV5StatChip
+                            :label="$t('label.items')"
+                            :value="totalItems()"
+                            :tone="totalItems() > 0 ? 'brand' : 'neutral'"
+                            :class="{ 'is-bumping': cartBumping }"
+                            data-testid="pos-cart-stat-chip"
+                        />
+                    </div>
                 </div>
-                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
             </div>
-            <div class="my-12" v-else-if="items.length === 0 && props.search.name">
-                <div class="max-w-[250px] mx-auto">
-                    <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+            <nav class="pos-v5-operator-bar__actions pos-v4-operator-actions" aria-label="Actions caisse">
+                <PosV5Button
+                    v-if="kioskCashOrders.length > 0"
+                    variant="kiosk-cash"
+                    size="md"
+                    data-testid="kiosk-cash-open"
+                    :badge="kioskCashOrders.length"
+                    :title="$t('pos.kiosk_counter_collect_hint')"
+                    @click="showKioskCashPanel = true"
+                >
+                    <template #icon>🖥️</template>
+                    <span class="hidden lg:inline">{{ $t('pos.kiosk_counter_collect_short') }}</span>
+                </PosV5Button>
+                <!--
+                  [POS-V5] Bouton suivi commandes — variant tracker.
+                  Tone "ready" = halo vert pulsant dès qu'une commande passe à PREPARED.
+                  Aucun popup, aucun son — juste un signal visuel pour le caissier.
+                  [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
+                  réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
+                -->
+                <PosV5Button
+                    variant="tracker"
+                    size="md"
+                    as="router-link"
+                    :to="{ name: 'admin.pos-orders.tracker' }"
+                    :tone="activeOrdersStats.ready > 0 ? 'ready' : 'neutral'"
+                    :badge="activeOrdersStats.active > 0 ? activeOrdersStats.active : null"
+                    data-testid="pos-tracker-open"
+                    :title="$t('pos.tracker.button_hint')"
+                >
+                    <template #icon>📋</template>
+                    <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
+                </PosV5Button>
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    as="router-link"
+                    :to="{ name: 'admin.order-status-screen' }"
+                    target="_blank"
+                    rel="noopener"
+                    :title="$t('pos.tracker.customer_screen_hint')"
+                >
+                    <template #icon>🖥️</template>
+                    <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
+                </PosV5Button>
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    as="router-link"
+                    :to="{ name: 'admin.pos.floorplan' }"
+                    class="pos-v4-floorplan-link"
+                    :title="$t('label.floorplan')"
+                >
+                    <template #icon>🪑</template>
+                    <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
+                </PosV5Button>
+                <!--
+                  [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
+                  Discoverable mais ne compete jamais avec paiement / tracker.
+                  Backend bridge kioskHardware.openDrawer() inchangé.
+                -->
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    class="pos-v4-no-sale-btn"
+                    data-testid="pos-no-sale"
+                    :title="$t('pos.no_sale_hint')"
+                    :disabled="noSaleBusy"
+                    :loading="noSaleBusy"
+                    @click="triggerNoSaleOpenDrawer"
+                >
+                    <template #icon>💵</template>
+                    <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
+                </PosV5Button>
+            </nav>
+        </header>
+        <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
+        <PosV5SearchInput
+            class="pos-v4-search"
+            :model-value="props.search.name"
+            :placeholder="$t('label.search_by_menu_item')"
+            :aria-label="$t('label.search_by_menu_item')"
+            :clear-aria-label="$t('button.close')"
+            @input="onSearchInput"
+            @submit="search"
+            @clear="resetName"
+        />
+
+        <!--
+          [POS-V5] Categories strip warm — pills avec photos rondes 56px
+          (mirror direct du stepper visual du wizard kiosk). L'active est marquée
+          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).
+        -->
+        <nav
+            v-if="categories.length > 1"
+            class="pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip"
+            ref="categoryScrollStrip"
+            role="tablist"
+            aria-label="Catégories"
+        >
+            <template v-for="(category, index) in categories" :key="category.id || index">
+                <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="(index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId) ? 'true' : 'false'"
+                    :class="['pos-v5-category', 'pos-v4-category-pill', {
+                        'is-active': (index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId)
+                    }]"
+                    @click="index === 0 ? allCategory() : setCategory(category.id)"
+                >
+                    <span class="pos-v5-category__visual">
+                        <img v-if="category.thumb" :src="category.thumb" :alt="category.name || ''" loading="lazy" />
+                        <span v-else class="pos-v5-category__visual-fallback" aria-hidden="true">{{ (category.name || '?').charAt(0).toUpperCase() }}</span>
+                    </span>
+                    <span class="pos-v5-category__label">{{ category.name }}</span>
+                </button>
+            </template>
+        </nav>
+
+        <div aria-live="polite" aria-relevant="additions"
+            :aria-busy="loadingItems ? 'true' : 'false'"
+            class="pos-menu-products-region">
+            <SkeletonGrid v-if="loadingItems" :count="12" />
+            <template v-else>
+                <ItemComponent ref="posItemComponent" :items="items" :drinks-catalog="drinksCatalog" />
+
+                <div class="my-12" v-if="items.length === 0 && !props.search.name">
+                    <div class="max-w-[350px] mx-auto">
+                        <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                    </div>
+                    <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
                 </div>
-                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
-            </div>
-        </template>
+                <div class="my-12" v-else-if="items.length === 0 && props.search.name">
+                    <div class="max-w-[250px] mx-auto">
+                        <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+                    </div>
+                    <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
+                </div>
+            </template>
+        </div>
     </div>
 
 
-    <div id="pos-cart"
-        class="db-pos-cartDiv fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[85px] ltr:md:right-5 rtl:md:left-5 md:w-[322px] lg:w-[305px] xl:w-[360px] md:h-[calc(100dvh-85px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
-        <div class="p-4 flex-shrink-0">
-            <div class="md:hidden text-right mb-3">
-                <button class="db-pos-cartCls" @click="closeCanvas('pos-cart')">
-                    <i class="lab-close-circle-line font-fill-danger lab-font-size-24"></i>
-                </button>
+    <!--
+      [POS-V5] Cart panel "ticket vivant" — segments verticaux clairs, header
+      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,
+      shortcuts park/parked, loyalty badge optionnel, type de commande en
+      segmented control, items list en cards verticales, footer avec totals
+      + CTA principal "Encaisser X €" (montant intégré au bouton, Q3 plan).
+    -->
+    <aside id="pos-cart"
+        role="region"
+        :aria-label="$t('a11y.cart_region')"
+        class="db-pos-cartDiv pos-v4-cart-panel pos-v5-cart fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[340px] lg:w-[360px] xl:w-[400px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white">
+        <!-- Mobile-only close button -->
+        <div class="md:hidden text-right p-3 pb-0">
+            <button type="button" class="db-pos-cartCls pos-v5-modal__close" @click="closeCanvas('pos-cart')"
+                :aria-label="$t('button.close')">
+                <span aria-hidden="true">✕</span>
+            </button>
+        </div>
+
+        <!-- Cart header -->
+        <header class="pos-v5-cart__head pos-v4-cart-head flex-shrink-0">
+            <div class="pos-v5-cart__head-titles">
+                <p class="pos-v5-cart__eyebrow">Ticket caisse</p>
+                <h2 class="pos-v5-cart__title">Commande en cours</h2>
             </div>
-            <div class="flex items-center w-full gap-4 mb-3">
-                <div class="db-field flex-grow">
-                    <vue-select
-                        class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]"
-                        id="customer" v-model="checkoutProps.form.customer_id" :options="customers"
-                        @update:modelValue="changingUser" label-by="name" value-by="id" :closeOnSelect="true"
-                        :searchable="true" :clearOnClose="true" :placeholder="$t('label.select_customer')"
-                        :search-placeholder="$t('label.search_customer')" />
+            <div class="pos-v5-stack-3 mt-3">
+                <PosV5Pill
+                    v-if="totalItems() > 0"
+                    variant="brand"
+                    size="md"
+                >
+                    {{ totalItems() }} {{ $t('label.items') }}
+                </PosV5Pill>
+
+                <!-- Customer selector + add CTA -->
+                <div class="flex items-center w-full gap-2">
+                    <div class="db-field flex-grow">
+                        <vue-select
+                            class="db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]"
+                            id="customer" v-model="checkoutProps.form.customer_id" :options="customers"
+                            @update:modelValue="changingUser" label-by="name" value-by="id" :closeOnSelect="true"
+                            :searchable="true" :clearOnClose="true" :placeholder="$t('label.select_customer')"
+                            :search-placeholder="$t('label.search_customer')" />
+                    </div>
+                    <PosV5Button
+                        variant="primary"
+                        size="md"
+                        :aria-label="$t('button.add_customer')"
+                        data-modal="#addCustomer"
+                        @click.prevent="addCustomers"
+                    >
+                        <template #icon>+</template>
+                    </PosV5Button>
                 </div>
-                <div data-modal="#addCustomer" @click.prevent="addCustomers"
-                    class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-circle-plus text-white"></i>
+
+                <!-- Park / Parked shortcuts -->
+                <div class="grid grid-cols-2 gap-2">
+                    <PosV5Button
+                        variant="secondary"
+                        size="md"
+                        :disabled="parkingInFlight"
+                        :loading="parkingInFlight"
+                        @click="promptParkOrder"
+                    >
+                        <template #icon>⏸</template>
+                        {{ $t('pos.park') }}
+                    </PosV5Button>
+                    <PosV5Button
+                        variant="ghost-counter"
+                        size="md"
+                        :badge="parkedOrdersCount"
+                        @click="openParkedOrders"
+                    >
+                        <template #icon>📦</template>
+                        {{ $t('pos.parked_orders') }}
+                    </PosV5Button>
                 </div>
+            </div>
+            <!--
+              [POS-V5] Cancel last cart line — undo subtil, pas destructif.
+              "Oops" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).
+            -->
+            <div v-if="carts.length > 0" class="mt-3">
+                <PosV5Button
+                    variant="ghost"
+                    size="sm"
+                    block
+                    data-testid="pos-cancel-last-line"
+                    @click="cancelLastCartLine"
+                >
+                    <template #icon>↻</template>
+                    {{ $t('pos.cancel_last_line') }}
+                </PosV5Button>
             </div>
 
-            <!-- Loyalty badge — shown when selected customer has a loyalty account -->
-            <div v-if="selectedCustomerLoyalty.code" class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
-                <i class="fa-solid fa-star text-amber-500 text-sm"></i>
-                <span class="text-xs font-medium text-amber-700">
+            <!-- [POS-V5] Loyalty badge — warm gold/amber chaleureux. -->
+            <div v-if="selectedCustomerLoyalty.code" class="pos-v5-loyalty mt-3" role="status">
+                <span class="pos-v5-loyalty__icon" aria-hidden="true">⭐</span>
+                <span>
                     <span v-if="selectedCustomerLoyalty.loading">...</span>
                     <template v-else>
-                        <span class="font-bold">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
-                        <span class="text-amber-500 ml-1">({{ selectedCustomerLoyalty.code }})</span>
+                        <span class="pos-v5-loyalty__points">{{ selectedCustomerLoyalty.points ?? 0 }}</span> pts fidélité
+                        <span class="opacity-80 ml-1">({{ selectedCustomerLoyalty.code }})</span>
                     </template>
                 </span>
             </div>
 
-            <div class="p-3 pt-2 rounded-lg border border-[#D9DBE9]">
-                <h4 class="text-sm font-medium mb-3">{{ $t('label.select_order_type') }}</h4>
+            <!--
+              [POS-V5] Order type — segmented control V5 (mirror du wizard
+              "Sur place / À emporter" pattern). Le delivery inline form reste
+              identique pour ne pas casser la logique d'autocomplete d'adresse.
+            -->
+            <fieldset class="mt-3">
+                <legend class="pos-v5-cart__eyebrow mb-2">{{ $t('label.select_order_type') }}</legend>
 
-                <div class="db-field-radio-group gap-1 active-group">
-
-                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false).
-                         Enable via /api/admin/settings.pos.dine_in_enabled = 1 once floor-plan + table
-                         selector UX is validated. Logic kept live so flipping the flag is zero-code. -->
-                    <label v-if="dineInEnabled" @click="dineInOrder" ref="dineIn" for="dinein" data-dine="#dine"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
-                        <div class="custom-radio sm">
-                            <input ref="dineInInput" type="radio" id="dinein" name="orderType"
-                                :value="orderTypeEnums.dineIn" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.dine_in') }}
-                        </h3>
-                    </label>
-                    <label ref="takeAway" @click="takeAwayOrder" for="takeway"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] active">
-                        <div class="custom-radio sm">
-                            <input ref="takeAwayInput" type="radio" id="takeway" name="orderType"
-                                :value="orderTypeEnums.takeAway" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.takeaway') }}
-                        </h3>
+                <div class="pos-v5-segmented" role="radiogroup">
+                    <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). -->
+                    <label
+                        v-if="dineInEnabled"
+                        ref="dineIn"
+                        for="dinein"
+                        data-dine="#dine"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.dineIn }]"
+                        @click="dineInOrder"
+                    >
+                        <input ref="dineInInput" type="radio" id="dinein" name="orderType"
+                            :value="orderTypeEnums.dineIn" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🍽️</span>
+                        <span>{{ $t('label.dine_in') }}</span>
                     </label>
 
+                    <label
+                        ref="takeAway"
+                        for="takeway"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.takeAway }]"
+                        @click="takeAwayOrder"
+                    >
+                        <input ref="takeAwayInput" type="radio" id="takeway" name="orderType"
+                            :value="orderTypeEnums.takeAway" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🥡</span>
+                        <span>{{ $t('label.takeaway') }}</span>
+                    </label>
 
-                    <label ref="deliveryOrderLabel" @click="deliveryOrder" for="delivery"
-                        data-orderdelivery="#orderdelivery" type="button"
-                        class="!w-fit db-field-radio px-2.5 py-2 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC]">
-                        <div class="custom-radio sm">
-                            <input ref="deliveryOrderInput" type="radio" id="delivery" name="orderType"
-                                :value="orderTypeEnums.delivery" v-model="checkoutProps.form.order_type"
-                                class="custom-radio-field" />
-                            <span class="custom-radio-span"></span>
-                        </div>
-                        <h3 class="db-field-label text-sm text-heading">
-                            {{ $t('label.delivery') }}
-                        </h3>
+                    <label
+                        ref="deliveryOrderLabel"
+                        for="delivery"
+                        data-orderdelivery="#orderdelivery"
+                        :class="['pos-v5-segmented__item', { 'is-active': checkoutProps.form.order_type === orderTypeEnums.delivery }]"
+                        @click="deliveryOrder"
+                    >
+                        <input ref="deliveryOrderInput" type="radio" id="delivery" name="orderType"
+                            :value="orderTypeEnums.delivery" v-model="checkoutProps.form.order_type" />
+                        <span aria-hidden="true">🛵</span>
+                        <span>{{ $t('label.delivery') }}</span>
                     </label>
                 </div>
                 <!-- [P4] Inline delivery form — no separate modal, no map tab -->
@@ -230,6 +412,13 @@
                                     <span class="leading-tight">{{ s.description }}</span>
                                 </li>
                             </ul>
+                            <div
+                                v-if="deliveryGeocodeError"
+                                class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"
+                                role="alert"
+                            >
+                                {{ deliveryGeocodeError }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -246,210 +435,256 @@
                         </div>
                     </div>
                 </div>
+            </fieldset>
+        </header>
 
-            </div>
+        <!--
+          [POS-V5] Cart body — cart lines as vertical cards.
+          Avoid role="list" here: axe flags aria-required-children when the cart
+          is empty or mid-hydrate (list with no listitem). Region + item names
+          keep screen-reader context via headings / buttons.
+        -->
+        <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="region" :aria-label="$t('a11y.cart_region')">
+            <article
+                v-for="(cart, index) in carts"
+                :key="`cart-${index}`"
+                class="pos-v5-cart-item"
+            >
+                <button
+                    type="button"
+                    class="pos-v5-cart-item__visual"
+                    @click.prevent="editCartLine(index)"
+                    :title="$t('button.edit') || 'Modifier'"
+                    :aria-label="$t('button.edit')"
+                >
+                    <img v-if="cart.image" :src="cart.image" :alt="cart.name" />
+                    <span v-else class="pos-v5-cart-item__visual-fallback" aria-hidden="true">🍴</span>
+                </button>
+                <div class="pos-v5-cart-item__body">
+                    <h3 class="pos-v5-cart-item__name">
+                        <span>{{ cart.name }}</span>
+                        <button
+                            type="button"
+                            class="pos-v5-cart-item__edit"
+                            @click.prevent="editCartLine(index)"
+                            :title="$t('button.edit') || 'Modifier'"
+                            :aria-label="$t('button.edit')"
+                        >
+                            <span aria-hidden="true">✎</span>
+                        </button>
+                    </h3>
 
+                    <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) -->
+                    <p
+                        v-if="cart.cart_display && cart.cart_display.trim()"
+                        class="pos-v5-cart-item__detail"
+                    >{{ cart.cart_display }}</p>
 
-        </div>
-        <div class="flex-1 min-h-0 overflow-y-auto thin-scrolling border-t border-[#EFF0F6]">
-
-        <table class="w-full">
-            <thead class="bg-[#FFEDF4]">
-                <tr class="h-9">
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading pl-3">
-                        {{ $t('label.item') }}
-                    </th>
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
-                        {{ $t('label.qty') }}
-                    </th>
-                    <th class="capitalize text-xs font-normal font-rubik text-left px-3 text-heading">
-                        {{ $t('label.price') }}
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(cart, index) in carts">
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <div class="flex gap-2 items-start">
-                            <img v-if="cart.image" :src="cart.image" class="w-10 h-10 rounded-md object-cover flex-shrink-0" />
-                            <div>
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h3 class="capitalize text-xs font-rubik text-[#2E2F38]">{{ cart.name }}</h3>
-                                    <button type="button" @click.prevent="editCartLine(index)"
-                                        class="shrink-0 text-primary hover:opacity-80"
-                                        :title="$t('button.edit') || 'Modifier'">
-                                        <i class="fa-regular fa-pen-to-square text-xs"></i>
-                                    </button>
-                                </div>
-                                <!-- Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) — no instruction clutter -->
-                                <template v-if="cart.cart_display && cart.cart_display.trim()">
-                                    <p class="text-[11px] font-rubik text-[#5A5A78] leading-snug whitespace-pre-line mt-0.5">{{ cart.cart_display }}</p>
-                                </template>
-                                <!-- Fallback for non-wizard products: show raw variations/extras -->
-                                <template v-else>
-                                <p v-if="Object.keys(cart.item_variations.variations).length !== 0">
-                            <span v-for="(variation, variationName, index) in cart.item_variations.names">
-                                <span class="capitalize text-xs leading-4 font-rubik text-heading">{{
-                                    variationName
-                                    }}:
-                                    &nbsp;</span>
-                                <span class="capitalize text-xs leading-4 font-rubik">{{ variation }}
-                                    <span v-if="index + 1 < Object.keys(cart.item_variations.names).length">,
-                                        &nbsp;</span>
-                                </span>
-                            </span>
+                    <!-- Fallback for non-wizard products: variations + extras -->
+                    <template v-else>
+                        <p v-if="formatCartVariationSummary(cart)" class="pos-v5-cart-item__detail">
+                            {{ formatCartVariationSummary(cart) }}
                         </p>
-                        <ul v-if="cart.item_extras.extras.length > 0">
-                            <li class="leading-4">
-                                <span class="capitalize text-xs leading-4 font-rubik text-heading">
-                                    {{ $t('label.extras') }}:
-                                </span>
-                                <p class="capitalize text-xs leading-4 font-rubik">
-                                    <span v-for="(extra, index) in cart.item_extras.names">
-                                        {{ extra }}
-                                        <span v-if="index + 1 < cart.item_extras.extras.length">, &nbsp;</span>
-                                    </span>
-                                </p>
-                            </li>
-                        </ul>
-                                </template>
+                        <p v-if="formatCartExtraSummary(cart)" class="pos-v5-cart-item__detail">
+                            {{ $t('label.extras') }}: {{ formatCartExtraSummary(cart) }}
+                        </p>
+                    </template>
 
-                        <!-- Menu bundled + extras menu directement sous chaque ligne -->
-                        <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="mt-1.5 space-y-0.5">
-                            <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi">
-                                <div class="text-[11px] font-semibold font-rubik text-[#1AB759] leading-snug flex items-center gap-1 flex-wrap">
-                                    <span>+ {{ bundled.name }}</span>
-                                    <span v-if="bundledLineUnitTotal(bundled) > 0" class="font-rubik text-[#1AB759]">
-                                        (+{{
-                                            currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
-                                                setting.site_digit_after_decimal_point,
-                                                setting.site_default_currency_symbol, setting.site_currency_position)
-                                        }})
-                                    </span>
-                                </div>
-                                <!-- Extras menu directement sous cette ligne (sauce frites, grande portion, cheddar) -->
-                                <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="ml-3 mt-0.5 space-y-0.5">
-                                    <li v-for="(extra, ei) in bundled.menu_extras" :key="'me-' + index + '-' + bi + '-' + ei"
-                                        class="text-[10px] font-rubik text-[#8E8EA9] leading-snug flex items-center gap-1">
-                                        <span class="text-[#1AB759] font-bold">↳</span>
-                                        <span>{{ extra }}</span>
-                                    </li>
-                                </ul>
-                            </div>
+                    <!-- Menu bundled + extras menu (formules) -->
+                    <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="pos-v5-cart-item__bundled">
+                        <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi" class="pos-v5-cart-item__bundled-line">
+                            <span>+ {{ bundled.name }}</span>
+                            <span v-if="bundledLineUnitTotal(bundled) > 0" class="pos-v5-tabular">
+                                (+{{
+                                    currencyFormat(bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity,
+                                        setting.site_digit_after_decimal_point,
+                                        setting.site_default_currency_symbol, setting.site_currency_position)
+                                }})
+                            </span>
+                            <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="w-full m-0 p-0 list-none ml-3 mt-0.5">
+                                <li
+                                    v-for="(extra, ei) in bundled.menu_extras"
+                                    :key="'me-' + index + '-' + bi + '-' + ei"
+                                    class="text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
+                                >
+                                    <span class="text-[color:var(--pos-v5-success)] font-bold" aria-hidden="true">↳</span>
+                                    <span>{{ extra }}</span>
+                                </li>
+                            </ul>
                         </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6]">
-                        <div class="flex items-center indec-group">
-                            <button @click.prevent="cartQuantityDecrement(index)"
-                                :class="cart.quantity === 1 ? 'fa-trash-can' : 'fa-minus'"
-                                class="fa-solid text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
-                            <input v-on:keypress="onlyNumber($event)" v-on:keyup="cartQuantityUp(index, $event)"
-                                type="number" :value="cart.quantity"
-                                class="text-center w-7 text-xs font-semibold text-heading indec-value">
-                            <button @click.prevent="cartQuantityIncrement(index)"
-                                class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
-                        </div>
-                    </td>
-                    <td class="pl-3 py-3 last:pr-3 align-top border-b border-[#EFF0F6] text-xs font-rubik text-heading">
-                        {{
-                            currencyFormat(cart.total, setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position)
-                        }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    </div>
+                </div>
+                <div class="pos-v5-cart-item__price pos-v5-tabular">
+                    {{
+                        currencyFormat(cart.total, setting.site_digit_after_decimal_point,
+                            setting.site_default_currency_symbol, setting.site_currency_position)
+                    }}
+                </div>
+                <div class="pos-v5-cart-item__qty">
+                    <PosV5QtyStepper
+                        size="sm"
+                        :model-value="cart.quantity"
+                        :show-trash="cart.quantity === 1"
+                        :aria-label="cart.name"
+                        :increment-aria-label="$t('a11y.increase_qty', { item: cart.name })"
+                        :decrement-aria-label="$t('a11y.decrease_qty', { item: cart.name })"
+                        :remove-aria-label="$t('a11y.remove_item', { item: cart.name })"
+                        @increment="cartQuantityIncrement(index)"
+                        @decrement="cartQuantityDecrement(index)"
+                        @remove="cartQuantityDecrement(index)"
+                    />
+                </div>
+            </article>
+
+            <div v-if="carts.length === 0" class="pos-v5-cart__empty">
+                <span class="pos-v5-cart__empty-icon" aria-hidden="true">🍽️</span>
+                <p>Aucun article. Sélectionnez un produit dans la grille.</p>
+            </div>
         </div>
-        <div class="p-4 flex-shrink-0 bg-white border-t border-[#EFF0F6] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-            <div class="flex h-[38px]" v-if="carts.length > 0">
+        <!--
+          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +
+          CTA principal "Encaisser X €" (Q3 plan : montant intégré au bouton).
+        -->
+        <footer class="pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0">
+            <!-- Discount block -->
+            <div v-if="carts.length > 0" class="flex h-9 mb-2">
                 <div class="dropdown-group">
                     <button
-                        class="flex items-center justify-start w-[120px] h-full text-sm font-rubik rounded-tl rounded-bl appearance-none border pl-3 text-heading border-[#EFF0F6] dropdown-btn">
+                        type="button"
+                        class="flex items-center justify-start w-[100px] h-full text-xs font-medium rounded-l-md appearance-none border pl-3 text-[var(--pos-v5-ink)] border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] dropdown-btn"
+                    >
                         <span class="flex-1 text-start" v-if="discountType === discountTypeEnum.PERCENTAGE">{{
                             $t("label.percentage") }}</span>
                         <span class="flex-1 text-start" v-else>{{ $t("label.fixed") }}</span>
                         <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1"></i>
                     </button>
                     <ul
-                        class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full">
-                        <li class="flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100"
+                        class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+                    >
+                        <li
+                            class="flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-[var(--pos-v5-brand-red-soft)]"
                             v-for="option in [
                                 { name: $t('label.percentage'), value: discountTypeEnum.PERCENTAGE },
                                 { name: $t('label.fixed'), value: discountTypeEnum.FIXED }
-                            ]" :key="option" @click="selectDiscount(option.value)">
-                            <span class="text-heading capitalize text-sm">{{ option.name }}</span>
-
+                            ]"
+                            :key="option.value"
+                            @click="selectDiscount(option.value)"
+                        >
+                            <span class="text-[var(--pos-v5-ink)] capitalize text-sm">{{ option.name }}</span>
                         </li>
                     </ul>
                 </div>
-                <input v-on:keypress="floatNumber($event)" v-model="discount" type="text"
+                <input
+                    v-on:keypress="floatNumber($event)"
+                    v-model="discount"
+                    type="text"
                     :placeholder="$t('label.add_discount')"
-                    class="w-full h-full border-t border-b px-3 border-[#EFF0F6]">
-                <button @click.prevent="applyDiscount" type="submit"
-                    class="flex-shrink-0 w-16 h-full text-sm font-medium font-rubik capitalize ltr:rounded-tr-lg ltr:rounded-br-lg rtl:rounded-tl-lg rtl:rounded-bl-lg text-white bg-[#008BBA]">
+                    data-testid="pos-discount-input"
+                    class="w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)]"
+                />
+                <!--
+                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a
+                  positive discount is set without a 3+ char reason. Backend
+                  enforces this (OrderService L2007-2011) — mirror client-side.
+                -->
+                <button
+                    @click.prevent="applyDiscount"
+                    type="button"
+                    :disabled="!isDiscountApplyable"
+                    :aria-disabled="!isDiscountApplyable"
+                    data-testid="pos-discount-apply"
+                    class="flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
                     {{ $t('button.apply') }}
                 </button>
             </div>
 
-            <ul class="flex flex-col gap-1.5 mb-4 mt-4">
-                <li class="flex items-center justify-between">
-                    <span class="text-sm font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{ $t("label.sub_total") }}
+            <div v-if="carts.length > 0" class="mb-3">
+                <label
+                    for="pos-discount-reason"
+                    class="flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"
+                >
+                    <span>
+                        {{ $t('label.reason') }}
+                        <span
+                            v-if="discountReasonRequired"
+                            class="ml-1 text-[10px] font-bold text-[var(--pos-v5-danger)] normal-case"
+                            data-testid="pos-discount-reason-required-flag"
+                        >({{ $t('pos.reason_required_short') }})</span>
                     </span>
-                    <span class="text-sm font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{
-                            currencyFormat(subtotal, setting.site_digit_after_decimal_point,
-                                setting.site_default_currency_symbol, setting.site_currency_position)
-                        }}
-                    </span>
-                </li>
-                <li class="flex items-center justify-between">
-                    <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.discount") }}</span>
-                    <span class="text-sm font-rubik capitalize leading-6">{{
-                        currencyFormat(posDiscount,
-                            setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                            setting.site_currency_position)
-                    }}</span>
-                </li>
-                <li class="flex items-center justify-between" v-if="checkoutProps.form.delivery_charge">
-                    <span class="text-sm font-rubik capitalize leading-6">{{ $t("label.delivery_charge") }}</span>
-                    <span class="text-sm font-rubik capitalize leading-6 font-medium text-[#1AB759]">{{
-                        currencyFormat(checkoutProps.form.delivery_charge,
-                            setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                            setting.site_currency_position)
-                    }}</span>
-                </li>
-                <li class="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F7FC] -mx-1 mt-1">
-                    <span class="text-sm font-semibold font-rubik capitalize leading-6 text-[#2E2F38]">
-                        {{ $t("label.total") }}
-                        <!-- [AUDIT-P2] Tax is recalculated server-side from catalog tax_id.
-                             Display total here is pre-tax (subtotal + delivery - discount).
-                             Final order total may differ slightly if products carry a tax rate. -->
-                        <span class="text-xs font-normal text-[#A0A3BD] ml-1">(HT)</span>
-                    </span>
-                    <span class="text-base font-bold font-rubik leading-6 text-primary">
-                        {{
-                            currencyFormat((subtotal + checkoutProps.form.delivery_charge) - posDiscount,
-                                setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
-                                setting.site_currency_position)
-                        }}
-                    </span>
-                </li>
-            </ul>
-            <div class="flex items-center justify-center gap-6" v-if="carts.length > 0">
-                <button @click.prevent="resetCart"
-                    class="capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#FB4E4E]">
-                    {{ $t('button.cancel') }}
-                </button>
-                <button @click.prevent="orderSubmit"
-                    class="capitalize text-sm font-medium leading-6 font-rubik w-full text-center rounded-3xl py-2 text-white bg-[#1AB759]">
-                    {{ $t('button.order') }}
-                </button>
+                    <span class="text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case">{{ (discountReason || '').length }}/255</span>
+                </label>
+                <input
+                    id="pos-discount-reason"
+                    v-model="discountReason"
+                    type="text"
+                    maxlength="255"
+                    :placeholder="$t('pos.reason_required_placeholder')"
+                    data-testid="pos-discount-reason"
+                    :class="['w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)]', discountReasonInvalid ? 'border-[var(--pos-v5-danger)] bg-[var(--pos-v5-danger-soft)]' : 'border-[var(--pos-v5-border)]']"
+                />
+                <p
+                    v-if="discountReasonInvalid"
+                    class="mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]"
+                    role="alert"
+                    data-testid="pos-discount-reason-invalid"
+                >
+                    {{ $t('pos.reason_required_hint') }}
+                </p>
             </div>
-        </div>
-    </div>
+
+            <!-- Totals block -->
+            <div role="status" aria-live="polite" aria-atomic="true" class="mb-3">
+                <PosV5TotalRow :label="$t('label.sub_total')" :value="subtotalDisplay" />
+                <PosV5TotalRow
+                    v-if="posDiscount"
+                    :label="$t('label.discount')"
+                    :value="posDiscountDisplay"
+                    tone="muted"
+                    sign="-"
+                />
+                <PosV5TotalRow
+                    v-if="checkoutProps.form.delivery_charge"
+                    :label="$t('label.delivery_charge')"
+                    :value="deliveryChargeDisplay"
+                    tone="info"
+                    sign="+"
+                />
+                <PosV5TotalRow
+                    :label="$t('label.total')"
+                    :value="grandTotalDisplay"
+                    tone="hero"
+                    :class="['pos-v4-total-row', { 'is-flashing': totalFlashing }]"
+                    data-testid="pos-grand-total"
+                />
+            </div>
+
+            <!-- Action CTAs -->
+            <div v-if="carts.length > 0" class="flex flex-col gap-2">
+                <PosV5Button
+                    variant="primary-pay"
+                    size="xl"
+                    block
+                    @click.prevent="orderSubmit"
+                    data-testid="pos-v5-pay"
+                    class="pos-v4-action-pay"
+                >
+                    <template #icon>💳</template>
+                    {{ $t('button.order') }} · {{ grandTotalDisplay }}
+                </PosV5Button>
+                <PosV5Button
+                    variant="danger-ghost"
+                    size="sm"
+                    block
+                    @click.prevent="resetCart"
+                    class="pos-v4-action-cancel"
+                >
+                    <template #icon>↻</template>
+                    {{ $t('button.cancel') }}
+                </PosV5Button>
+            </div>
+        </footer>
+    </aside>
 
 
     <!--====================================
@@ -459,7 +694,8 @@
         <div class="modal-dialog">
             <div class="modal-header pb-3 border-b border-[#D9DBE9]">
                 <h3 class="capitalize font-medium">{{ $t('button.add_customer') }}</h3>
-                <button @click="resetCustomer" class="modal-close fa-regular fa-circle-xmark"></button>
+                <button type="button" @click="resetCustomer" class="modal-close fa-regular fa-circle-xmark"
+                    :aria-label="$t('button.close')"></button>
             </div>
             <div class="modal-body">
                 <form @submit.prevent="saveCustomer">
@@ -532,7 +768,19 @@
     <!--====================================
       PAYMENT MODAL PART START
   =====================================-->
-    <PaymentComponent :props="checkoutProps" />
+    <ParkedOrdersComponent
+        :open="showParkedOrders"
+        @close="showParkedOrders = false"
+        @restored="applyParkedSnapshot"
+    />
+    <PaymentComponent
+        :props="checkoutProps"
+        @payment-form:patch="patchPaymentForm"
+        @payment-form:reset="resetPaymentForm"
+        @order:confirmed="triggerSuccessFlash"
+    />
+    <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
+    <div v-if="successFlashing" class="pos-v5-success-flash" aria-hidden="true"></div>
     <!--====================================
           PAYMENT MODAL PART END
       =====================================-->
@@ -548,7 +796,7 @@
 
 
     <button @click="openCanvas('pos-cart')" type="button"
-        class="db-pos-cartBtn fixed md:hidden bottom-0 z-10 left-0 w-full h-14 py-4 text-center flex items-center justify-center shadow-xl-top gap-3 bg-primary">
+        class="db-pos-cartBtn pos-v4-mobile-cart fixed md:hidden bottom-0 z-10 left-0 w-full h-14 py-4 text-center flex items-center justify-center shadow-xl-top gap-3 bg-primary">
         <i class="lab lab-bag-2 lab-font-size-13 text-white"></i>
         <span class="text-base font-medium font-rubik text-white">
             {{ totalItems() }} {{ $t('label.items') }} - {{
@@ -560,27 +808,29 @@
         </span>
     </button>
 
-    <!-- ═══ Borne Cash — notification flottante ═══ -->
-    <!-- Badge pulsant si des commandes kiosk cash sont en attente de paiement -->
-    <transition name="slide-up-pos">
-      <button
-        v-if="kioskCashOrders.length > 0"
-        class="kiosk-cash-fab"
-        @click="showKioskCashPanel = true"
-        title="Commandes borne à encaisser"
-      >
-        <span class="kiosk-cash-fab-icon">🖥️</span>
-        <span class="kiosk-cash-fab-badge">{{ kioskCashOrders.length }}</span>
-      </button>
-    </transition>
-
-    <!-- Panel commandes borne cash -->
+    <!-- Panel commandes borne cash (ouvert depuis la barre du haut) -->
     <transition name="slide-panel">
       <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
         <div class="kiosk-cash-panel">
           <div class="kiosk-cash-panel-header">
             <h3>🖥️ Commandes borne — à encaisser</h3>
-            <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+            <div class="kiosk-cash-panel-header-actions">
+                <!--
+                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers
+                  la liste filtrée historique (status / date / N° / client) sans passer
+                  par le menu admin latéral.
+                -->
+                <router-link
+                    :to="{ name: 'admin.pos-orders.list' }"
+                    class="kiosk-cash-panel-history-link"
+                    :title="$t('pos.orders.history_hint')"
+                    data-testid="kiosk-cash-panel-history"
+                >
+                    <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+                    <span>{{ $t('pos.orders.history') }}</span>
+                </router-link>
+                <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+            </div>
           </div>
           <div class="kiosk-cash-panel-body">
             <div v-if="kioskCashLoading" class="kiosk-cash-loading">
@@ -606,7 +856,7 @@
                   >
                     <i class="fa-solid fa-chevron-down" :class="{ 'kiosk-cash-expand-btn-rotated': isKioskCashOrderExpanded(order.id) }"></i>
                   </button>
-                  <span class="kiosk-cash-order-total">{{ formatKioskPrice(order.order_amount) }}</span>
+                  <span class="kiosk-cash-order-total">{{ formatKioskPrice(order.total ?? order.order_amount) }}</span>
                 </div>
               </div>
               <div class="kiosk-cash-order-items">
@@ -648,13 +898,33 @@
               </div>
               <div class="kiosk-cash-order-foot">
                 <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
-                <!-- [GAP-25-2] Bouton "Encaisser" — marque la commande comme DELIVERED (13) -->
+                <!--
+                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la
+                  commande (lignes, statut, ticket fiscal) — accessible sans quitter
+                  l'écran caisse pour vérification ou réimpression.
+                -->
+                <router-link
+                  :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
+                  class="kiosk-cash-detail-btn"
+                  :title="$t('pos.orders.view_detail')"
+                  :data-testid="`kiosk-cash-detail-${order.id}`"
+                >
+                  <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  {{ $t('pos.orders.detail_short') }}
+                </router-link>
                 <button
                   class="kiosk-cash-collect-btn"
-                  :disabled="order._collecting"
+                  :disabled="order._collecting || order._canceling"
                   @click="collectKioskCashOrder(order)"
                 >
                   {{ order._collecting ? '…' : '✓ Encaisser' }}
+                </button>
+                <button
+                  class="kiosk-cash-cancel-btn"
+                  :disabled="order._collecting || order._canceling"
+                  @click="cancelKioskCashOrder(order)"
+                >
+                  {{ order._canceling ? '…' : 'Annuler' }}
                 </button>
               </div>
             </div>
@@ -665,26 +935,32 @@
         </div>
       </div>
     </transition>
+    </section>
 </template>
 <script>
 import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent.vue";
+import SkeletonGrid from "./SkeletonGrid.vue";
 import sourceEnum from "../../../enums/modules/sourceEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import roleEnum from "../../../enums/modules/roleEnum";
 import appService from "../../../services/appService";
+import PosSyncService from "../../../services/PosSyncService";
 import discountTypeEnum from "../../../enums/modules/discountTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import alertService from "../../../services/alertService";
+// [POS-V4-CASHIER-OPS 2026-05-02] No-sale / drawer open passes through the
+// hardware bridge wrapper. Returns {ok:true} in dev (no real till) and logs
+// hardware_event server-side in production for audit trail.
+import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHardware";
 import PaymentComponent from "./PaymentComponent.vue";
+import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import 'swiper/css';
-import focustrap from "bootstrap/js/src/util/focustrap";
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
@@ -694,8 +970,32 @@ import {
     bundledOrderQuantityAndTotal,
     parsePositiveInt,
 } from "../../../helpers/posCartLineMath";
+import {
+    normalizeExtraEntries,
+    normalizeId,
+    normalizeVariationEntries,
+} from "../../../helpers/posNormalizeIds";
 import ConnectionStatusBanner from "../../common/ConnectionStatusBanner.vue";
 import { onEvents } from "../../../services/eventContract";
+import { normalizeRealtimeOrderEvent, shouldNotifyPosRealtimeOrder } from "../../../store/modules/posOrder";
+import debounce from "lodash/debounce";
+import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
+import { calculateDeliveryChargeFromDistance } from "../../../helpers/deliveryCharge";
+// [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives unifiées POS V5.
+// Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md §4.
+import PosV5Button from "./v5/PosV5Button.vue";
+import PosV5Card from "./v5/PosV5Card.vue";
+import PosV5Pill from "./v5/PosV5Pill.vue";
+import PosV5StatChip from "./v5/PosV5StatChip.vue";
+import PosV5TotalRow from "./v5/PosV5TotalRow.vue";
+import PosV5QtyStepper from "./v5/PosV5QtyStepper.vue";
+import PosV5SearchInput from "./v5/PosV5SearchInput.vue";
+
+// [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
+// `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
+// logique prix côté client (SSOT serveur). Voir plan 10 phases, Phase 6.
+// [Phase-9 / T18] A11y opérateur : skip link → panier, `#pos-a11y-live`, rôle
+// `region` panier — helpers `posA11y` (focus / announce). Pas d’`outline: none` arbitraire.
 
 export default {
     name: "PosComponent",
@@ -705,9 +1005,17 @@ export default {
         ConnectionStatusBanner,
         LoadingComponent,
         ItemComponent,
-        Swiper,
-        SwiperSlide,
-        PaymentComponent
+        SkeletonGrid,
+        ParkedOrdersComponent,
+        PaymentComponent,
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives V5
+        PosV5Button,
+        PosV5Card,
+        PosV5Pill,
+        PosV5StatChip,
+        PosV5TotalRow,
+        PosV5QtyStepper,
+        PosV5SearchInput,
     },
     data() {
         return {
@@ -723,9 +1031,36 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            showParkedOrders: false,
             expandedKioskCashOrders: {},
+            // [POS-V4-ORDERS-TRACKER 2026-05-02] Stats discrètes pour le bouton "Suivi
+            // commandes" : `active` = ACCEPT+PREPARING+PREPARED (badge), `ready` =
+            // PREPARED uniquement (déclencheur du halo vert). Pas de popup, pas de son
+            // ici — l'écran tracker dédié et l'OSS client gèrent les notifications fortes.
+            activeOrdersStats: { active: 0, ready: 0 },
+            // [POS-V4-CASHIER-OPS 2026-05-02] Guard against double-tap on the
+            // no-sale button while the hardware bridge resolves (real till can
+            // take ~200-500ms to physically open).
+            noSaleBusy: false,
+            parkingInFlight: false,
+            // [POS-V5 WAVE 3 2026-05-02] Flags pour animations cart-bump et
+            // total-flash. Toggled via watcher sur totalItems()/subtotal et
+            // remis à false après ~320-700ms (durée animation CSS).
+            cartBumping: false,
+            totalFlashing: false,
+            successFlashing: false,
+            _cartBumpTimer: null,
+            _totalFlashTimer: null,
+            _successFlashTimer: null,
+            /** [T12] Item grid skeleton while first POS menu fetch is in flight */
+            posItemsFetchPending: false,
+            _itemListFetchDepth: 0,
             _kioskPollTimer: null,
+            _posSyncBranchId: null,
             _eventSub: null,
+            _walkInCustomerPromise: null,
+            /** [T11] Debounce map itemId → timer id — max one toast / item / second */
+            _availabilityToastTimers: null,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -734,6 +1069,7 @@ export default {
                     customer_id: null,
                     discount: 0,
                     delivery_charge: 0,
+                    delivery_distance_km: null,
                     delivery_time: null,
                     total: 0,
                     order_type: orderTypeEnum.TAKEAWAY,
@@ -763,14 +1099,17 @@ export default {
                     order_type: "asc",
                     name: "",
                     item_category_id: "",
-                    status: statusEnum.ACTIVE
+                    status: statusEnum.ACTIVE,
+                    surface: "pos",
+                    branch_id: null
                 },
             },
             categoryProps: {
                 paginate: 0,
                 order_column: 'sort',
                 order_type: 'asc',
-                status: statusEnum.ACTIVE
+                status: statusEnum.ACTIVE,
+                surface: "pos"
             },
 
             statusEnum: statusEnum,
@@ -826,6 +1165,7 @@ export default {
                 lng: null
             },
             clearAddresses: false,
+            deliveryGeocodeError: '',
 
             // [P4] Inline delivery form — no separate modal, no map
             deliveryInline: {
@@ -840,15 +1180,41 @@ export default {
                 loading: false,
                 activeIdx: -1,
             },
+            _deliveryAcTimer: null,
+            _deliveryAcService: null,
+            _deliveryActiveIdx: -1,
 
         }
     },
     computed: {
-        focustrap() {
-            return focustrap
-        },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Discount-with-reason UX guards.
+        // Backend rule: any positive POS discount requires a reason ≥3 chars
+        // (assertPosManualDiscountAllowed). Mirrored client-side so:
+        //  - the apply button is greyed out the instant either constraint is
+        //    violated (no surprise alert after click);
+        //  - the reason field shows a red border + inline hint as soon as the
+        //    cashier types a discount value but skips the reason.
+        // Empty discount stays applyable so the cashier can clear an existing
+        // discount without re-typing a reason.
+        discountAmountValue: function () {
+            const raw = this.discount;
+            if (raw === '' || raw == null) return 0;
+            const n = parseFloat(raw);
+            return Number.isFinite(n) ? n : 0;
+        },
+        discountReasonRequired: function () {
+            return this.discountAmountValue > 0;
+        },
+        discountReasonInvalid: function () {
+            if (!this.discountReasonRequired) return false;
+            return String(this.discountReason || '').trim().length < 3;
+        },
+        isDiscountApplyable: function () {
+            if (this.discountAmountValue <= 0) return true;
+            return !this.discountReasonInvalid;
         },
         /**
          * [POS-9.1.6] POS dine-in feature flag.
@@ -858,6 +1224,10 @@ export default {
         dineInEnabled: function () {
             const s = this.setting || {};
             const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+            // [V10 #1] Strict typeof guard: reject arrays/objects/functions before
+            // coercion (String([1]) === '1' would otherwise activate the flag).
+            const t = typeof raw;
+            if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
             return String(raw) === '1' || raw === true;
         },
         categories: function () {
@@ -865,6 +1235,9 @@ export default {
         },
         items: function () {
             return this.$store.getters["item/lists"];
+        },
+        loadingItems: function () {
+            return this.posItemsFetchPending && this.$store.getters["item/lists"].length === 0;
         },
         isLanding: function () {
             return this.props.search.item_category_id === '' && !this.props.search.name;
@@ -882,6 +1255,59 @@ export default {
                 return names.some(function (bs) { return n.includes(bs); });
             });
         },
+        /**
+         * [POS-WIZARD-DRINKS 2026-05-02] Catalogue boissons — symétrie POS↔borne.
+         *
+         * Source : `posCategory/lists` (déjà branch-scoped) + `item/lists` (déjà branch-scoped
+         * par RouteServiceProvider via auth user). Détection catégorie identique à
+         * `KioskStepMenuComponent.isDrinkCategory` (regex sur name+slug). Le wizard JS shim
+         * reçoit ce catalogue via attribut DOM (`data-pos-drinks-catalog`) sur la modal racine
+         * et l'utilise comme priorité 1 pour reconnaître les addons boisson, plus permettre
+         * une cross-reference par item_id ou nom — au-delà de la regex keywords legacy.
+         *
+         * Invariants respectés :
+         * - Backend pricing SSOT : aucun prix calculé ici, juste id/name/thumb pour affichage.
+         * - branch_id : items et catégories déjà filtrés par le backend selon l'utilisateur.
+         * - Pas de mutation, lecture-only.
+         */
+        drinksCatalog: function () {
+            const allCats = this.$store.getters["posCategory/lists"] || [];
+            const drinkCatRegex = /\b(boisson|boissons|drink|drinks|soda|sodas|beverage|beverages)\b/i;
+            const drinkCategoryIds = new Set(
+                allCats
+                    .filter(function (c) {
+                        const haystack = String(c.name || '') + ' ' + String(c.slug || '');
+                        return drinkCatRegex.test(haystack);
+                    })
+                    .map(function (c) { return String(c.id); })
+            );
+            if (drinkCategoryIds.size === 0) return [];
+            const allItems = this.$store.getters["item/lists"] || [];
+            const seen = new Set();
+            const out = [];
+            for (let i = 0; i < allItems.length; i++) {
+                const it = allItems[i];
+                if (!it) continue;
+                if (it.is_available === false) continue;
+                const status = Number(it.status);
+                if (status === 0 || status === 2 || status === 10) continue;
+                const catId = String(it.item_category_id != null ? it.item_category_id : (it.category_id != null ? it.category_id : ''));
+                if (catId === '' || !drinkCategoryIds.has(catId)) continue;
+                const idRaw = it.id != null ? it.id : (it.item_id != null ? it.item_id : null);
+                if (idRaw == null) continue;
+                const idKey = String(idRaw);
+                if (seen.has(idKey)) continue;
+                seen.add(idKey);
+                out.push({
+                    id: typeof idRaw === 'number' ? idRaw : (Number(idRaw) || idRaw),
+                    name: String(it.name || it.item_name || ''),
+                    thumb: it.thumb || it.image || '',
+                    category_id: it.item_category_id != null ? it.item_category_id : (it.category_id != null ? it.category_id : null),
+                    is_available: it.is_available !== false,
+                });
+            }
+            return out;
+        },
         customers: function () {
             return this.$store.getters['user/lists'];
         },
@@ -893,6 +1319,55 @@ export default {
         },
         posDiscount: function () {
             return this.$store.getters['posCart/discount'];
+        },
+        parkedOrdersCount: function () {
+            return Number(this.$store.getters['posParked/count'] || 0);
+        },
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Total numérique + display
+        // formaté pour CTA "Encaisser X €" (Q3 plan §3.1.6).
+        grandTotal: function () {
+            const sub = Number(this.subtotal) || 0;
+            const delivery = Number(this.checkoutProps?.form?.delivery_charge) || 0;
+            const discount = Number(this.posDiscount) || 0;
+            return Math.max(0, sub + delivery - discount);
+        },
+        grandTotalDisplay: function () {
+            return this.currencyFormat(
+                this.grandTotal,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        subtotalDisplay: function () {
+            return this.currencyFormat(
+                this.subtotal,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        posDiscountDisplay: function () {
+            return this.currencyFormat(
+                this.posDiscount,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        deliveryChargeDisplay: function () {
+            return this.currencyFormat(
+                this.checkoutProps?.form?.delivery_charge || 0,
+                this.setting.site_digit_after_decimal_point,
+                this.setting.site_default_currency_symbol,
+                this.setting.site_currency_position
+            );
+        },
+        // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Wizard "active category" mirror.
+        // Permet de surligner la catégorie courante dans la nouvelle category strip V5.
+        currentCategoryId: function () {
+            const raw = this.props?.search?.item_category_id;
+            return raw === '' || raw === null || raw === undefined ? 0 : Number(raw);
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
@@ -911,42 +1386,102 @@ export default {
         },
     },
     beforeUnmount() {
+        if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
+            this._debouncedListRefresh.cancel();
+        }
+        if (this._stopBarcode) {
+            this._stopBarcode();
+        }
+        if (this._stopFKeys) {
+            this._stopFKeys();
+        }
+        // [V14 C-α / FINDING C-2 P2] Clear pending availability toast debounce timers
+        // to avoid late-firing toasts on an unmounted component.
+        if (this._availabilityToastTimers && typeof this._availabilityToastTimers === 'object') {
+            try {
+                Object.keys(this._availabilityToastTimers).forEach((k) => {
+                    const t = this._availabilityToastTimers[k];
+                    if (t) { clearTimeout(t); }
+                    delete this._availabilityToastTimers[k];
+                });
+            } catch (_e) { /* defensive */ }
+        }
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        // [POS-V5 WAVE 3] Cleanup animations timers
+        if (this._cartBumpTimer) { clearTimeout(this._cartBumpTimer); this._cartBumpTimer = null; }
+        if (this._totalFlashTimer) { clearTimeout(this._totalFlashTimer); this._totalFlashTimer = null; }
+        if (this._successFlashTimer) { clearTimeout(this._successFlashTimer); this._successFlashTimer = null; }
+        PosSyncService.stop();
+        this._posSyncBranchId = null;
         this._unsubscribeEcho();
         this._unbindWsService();
     },
     mounted() {
+        this._debouncedListRefresh = debounce(() => {
+            this.itemList(1, { overlay: false });
+        }, 150);
+        this._stopBarcode = createBarcodeDetector((code) => this.onBarcodeScanned(code));
+        // [V14 C-α / FINDING C-5 P2] Disable F-key shortcuts when the parked
+        // orders drawer is open (prevents background category switching while
+        // the operator interacts with the drawer).
+        this._stopFKeys = createFKeyShortcuts(
+            (idx) => this.onFKeyShortcut(idx),
+            { shouldIntercept: () => !this.showParkedOrders }
+        );
         this.closeSidebar();
         this.$refs.takeAway.click();
         this.itemCategories();
-        this.itemList();
+        const bootstrapBranchId = this.authBranchId();
+        if (bootstrapBranchId) {
+            this.applyPosBranchScope(bootstrapBranchId);
+            this.itemList();
+        } else {
+            // [CV1-POS-AVAILABILITY-LIVE-001] Aucun branch_id côté auth (admin global
+            // sans DefaultAccess) → ne JAMAIS fetcher un catalogue POS sans branch
+            // scope. La projection availability per-branch (item_branch_availability)
+            // ne peut s'appliquer qu'avec branch_id côté requête (cf ItemService::
+            // applyBranchAvailabilityOverlay early-return $branchId<1). Sinon le store
+            // se remplit avec is_available global (col items.is_available toujours
+            // true), créant le bug R3-F2 : tile cliquable pour item OOS, rejet 422 au
+            // submit. Le defaultAccess/show ci-dessous secourra si branch dispo.
+            this.loading.isActive = false;
+        }
         this.loadKioskCashOrders();
+        this.loadActiveOrdersStats();
         this._subscribeEcho();
         this._startKioskPolling();
         this._bindWsService();
+        this._startPosSyncFallback();
         try {
             this.loading.isActive = true;
             this.$store.dispatch("defaultAccess/show").then((res) => {
-                this.checkoutProps.form.branch_id = res.data.data.branch_id
-                // [POS-9.1.9] Bind the POS cart to the active cashier (branch + user).
-                // Without this, all carts share `pos_cart_v2` and a cashier B
-                // logging in after cashier A inherits A's lines (POS-GA-F-41).
-                try {
-                    const authInfo = this.$store.getters['auth/authInfo'] || {};
-                    this.$store.dispatch('posCart/setScope', {
-                        branchId: res.data.data.branch_id,
-                        userId: authInfo.id || null,
-                    });
-                } catch (e) { /* defensive: never block POS bootstrap */ }
-                this.$store.dispatch("frontendBranch/show", this.checkoutProps.form.branch_id).then(res => {
-                    this.location = {
-                        lat: res.data.data.latitude,
-                        lng: res.data.data.longitude
-                    };
-                }).catch();
+                const previousBranchId = this.props.search.branch_id;
+                const branchId = this.resolveDefaultAccessBranchId(res);
+                if (branchId) {
+                    this.applyPosBranchScope(branchId);
+                    this.loadBranchLocation(branchId);
+                    this._startPosSyncFallback();
+                    if (previousBranchId !== branchId) {
+                        this.itemList();
+                    } else {
+                        this.loading.isActive = false;
+                    }
+                } else {
+                    this.loading.isActive = false;
+                }
 
             }).catch((err) => {
-                this.loading.isActive = false;
+                const previousBranchId = this.props.search.branch_id;
+                const fallbackBranchId = this.authBranchId();
+                if (fallbackBranchId) {
+                    this.applyPosBranchScope(fallbackBranchId);
+                    this._startPosSyncFallback();
+                    if (previousBranchId !== fallbackBranchId) {
+                        this.itemList();
+                    }
+                } else {
+                    this.loading.isActive = false;
+                }
             });
 
             this.loading.isActive = true;
@@ -960,15 +1495,14 @@ export default {
                     // [W4 FIX] Find walking customer by email first, then by name keyword.
                     // Do NOT fall back to res.data.data[0] — that would assign a real customer's
                     // account to an anonymous POS order, leaking order history.
-                    var walkingCustomer = res.data.data.find(u => u.email === 'walkingcustomer@example.com')
-                        || res.data.data.find(u => u.name && u.name.toLowerCase().includes('walking'));
+                    const walkingCustomer = this.findWalkInCustomer(res.data.data);
                     if (walkingCustomer) {
-                        this.checkoutProps.form.customer_id = walkingCustomer.id;
-                        this.address.form.user_id = walkingCustomer.id;
-                        this.gettingUserAddress(this.checkoutProps.form.customer_id);
+                        this.assignWalkInCustomer(walkingCustomer);
+                    } else {
+                        this.ensureWalkInCustomer();
                     }
-                    // If no walking customer found, leave customer_id null — cashier must select manually
                 }
+                if (!this.checkoutProps.form.customer_id) this.ensureWalkInCustomer();
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
@@ -1032,13 +1566,225 @@ export default {
 
     },
     methods: {
+        // [POS-V5 WAVE 3 2026-05-02] Animations triggers ─────────────────────
+        triggerCartBump() {
+            if (this._cartBumpTimer) clearTimeout(this._cartBumpTimer);
+            this.cartBumping = true;
+            this._cartBumpTimer = setTimeout(() => {
+                this.cartBumping = false;
+                this._cartBumpTimer = null;
+            }, 360);
+        },
+        triggerTotalFlash() {
+            if (this._totalFlashTimer) clearTimeout(this._totalFlashTimer);
+            this.totalFlashing = true;
+            this._totalFlashTimer = setTimeout(() => {
+                this.totalFlashing = false;
+                this._totalFlashTimer = null;
+            }, 360);
+        },
+        triggerSuccessFlash() {
+            if (this._successFlashTimer) clearTimeout(this._successFlashTimer);
+            this.successFlashing = true;
+            this._successFlashTimer = setTimeout(() => {
+                this.successFlashing = false;
+                this._successFlashTimer = null;
+            }, 720);
+        },
+        // ────────────────────────────────────────────────────────────────────
+
+        authBranchId() {
+            const authInfo = this.$store.getters['auth/authInfo'] || {};
+            const candidates = [
+                this.$store.getters['auth/authBranchId'],
+                authInfo.branch_id,
+                this.$store.getters.authBranchId,
+                this.$store.state?.auth?.authBranchId,
+                this.$store.state?.auth?.authInfo?.branch_id,
+            ];
+
+            for (const candidate of candidates) {
+                if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+                    continue;
+                }
+
+                const value = parseInt(candidate, 10);
+                if (Number.isFinite(value)) {
+                    return value;
+                }
+            }
+
+            return 0;
+        },
+
+        resolveDefaultAccessBranchId(response) {
+            const raw = response?.data?.data?.branch_id;
+            if (raw !== '' && raw !== null && typeof raw !== 'undefined') {
+                const value = parseInt(raw, 10);
+                if (Number.isFinite(value) && value > 0) {
+                    return value;
+                }
+            }
+
+            return this.authBranchId();
+        },
+
+        applyPosBranchScope(branchId) {
+            const value = parseInt(branchId, 10);
+            if (!Number.isFinite(value) || value <= 0) {
+                return null;
+            }
+
+            this.checkoutProps.form.branch_id = value;
+            this.props.search.branch_id = value;
+
+            try {
+                const authInfo = this.$store.getters['auth/authInfo'] || {};
+                this.$store.dispatch('posCart/setScope', {
+                    branchId: value,
+                    userId: authInfo.id || null,
+                });
+            } catch (e) { /* defensive: never block POS bootstrap */ }
+
+            return value;
+        },
+
+        loadBranchLocation(branchId) {
+            const value = parseInt(branchId, 10);
+            if (!Number.isFinite(value) || value <= 0) {
+                return;
+            }
+
+            this.$store.dispatch("frontendBranch/show", value).then(res => {
+                this.location = {
+                    lat: res.data.data.latitude,
+                    lng: res.data.data.longitude
+                };
+            }).catch(() => {});
+        },
+
+        findWalkInCustomer(customers) {
+            const list = Array.isArray(customers) ? customers : [];
+            return list.find((user) => String(user.email || '').toLowerCase() === 'walkingcustomer@example.com')
+                || list.find((user) => {
+                    const haystack = `${user.name || ''} ${user.name_email || ''}`.toLowerCase();
+                    return haystack.includes('walking')
+                        || haystack.includes('walk-in')
+                        || haystack.includes('comptoir')
+                        || haystack.includes('client passage');
+                })
+                || null;
+        },
+
+        assignWalkInCustomer(customer) {
+            if (!customer || !customer.id) return false;
+            this.checkoutProps.form.customer_id = customer.id;
+            this.address.form.user_id = customer.id;
+            this.gettingUserAddress(customer.id);
+            return true;
+        },
+
+        /**
+         * Re-fetch customers if the store list is still empty (race: operator taps Pay
+         * before mounted()'s user/lists resolves). Avoids orderSubmit stalling on walk-in.
+         */
+        async ensureCustomersHydratedForCheckout() {
+            const have = Array.isArray(this.customers) ? this.customers.length : 0;
+            if (have > 0) return true;
+            try {
+                await this.$store.dispatch('user/lists', {
+                    order_column: 'id',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE,
+                    role_id: 2,
+                });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        async ensureWalkInCustomer() {
+            if (this.checkoutProps.form.customer_id) return true;
+
+            const existing = this.findWalkInCustomer(this.customers);
+            if (this.assignWalkInCustomer(existing)) return true;
+
+            try {
+                const res = await axios.get('/admin/pos/walk-in-customer');
+                const row = res.data?.data;
+                if (row && row.id && this.assignWalkInCustomer(row)) {
+                    return true;
+                }
+            } catch (e) {
+                /* fall through — operator may lack route access in exotic configs */
+            }
+
+            if (this._walkInCustomerPromise) {
+                return this._walkInCustomerPromise;
+            }
+
+            const countryCode = this.customerProps.form.country_code || this.country_code || '+33';
+            this._walkInCustomerPromise = axios.post('/admin/users', {
+                name: 'Client Comptoir',
+                email: 'walkingcustomer@example.com',
+                phone: null,
+                password: '123456',
+                password_confirmation: '123456',
+                status: statusEnum.ACTIVE,
+                country_code: countryCode,
+            }).then((res) => {
+                const customer = res.data?.data || null;
+                this.assignWalkInCustomer(customer);
+                return true;
+            }).catch(() => {
+                return this.$store.dispatch('user/lists', {
+                    paginate: 0,
+                    order_column: 'id',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE,
+                    role_id: 2,
+                    name: 'Client Comptoir',
+                    vuex: true,
+                }).then((res) => {
+                    const fallback = this.findWalkInCustomer(res.data?.data || []);
+                    return this.assignWalkInCustomer(fallback);
+                }).catch(() => false);
+            }).finally(() => {
+                this._walkInCustomerPromise = null;
+            });
+
+            return this._walkInCustomerPromise;
+        },
+
         // ── WebSocket state awareness ────────────────────────────────────
+        _startPosSyncFallback() {
+            const branchId = parseInt(
+                this.props.search.branch_id || this.checkoutProps.form.branch_id || this.authBranchId(),
+                10,
+            );
+            if (!Number.isFinite(branchId) || branchId <= 0) {
+                return;
+            }
+            if (this._posSyncBranchId === branchId) {
+                return;
+            }
+            this._posSyncBranchId = branchId;
+            PosSyncService.start({
+                branchId,
+                store: this.$store,
+                axios: window.axios || axios,
+                webSocketService: window._wsService,
+            });
+        },
         _bindWsService() {
             const ws = window._wsService;
             if (!ws) return;
             this._onWsConnected = () => {
                 this.loadKioskCashOrders();
                 this._restartKioskPolling();
+                // [V1.5C R2] Refresh catalogue after reconnect — Echo may have skipped pushes during outage.
+                try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             };
             this._onWsDisconnected = () => {
                 this._restartKioskPolling();
@@ -1053,10 +1799,14 @@ export default {
             if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
         },
         _kioskPollingInterval() {
-            return window._wsService?.isConnected() ? 60000 : 10000;
+            return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
-            this._kioskPollTimer = setInterval(() => this.loadKioskCashOrders(), this._kioskPollingInterval());
+            this._kioskPollTimer = setInterval(() => {
+                this.loadKioskCashOrders();
+                // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
+                this.loadActiveOrdersStats();
+            }, this._kioskPollingInterval());
         },
         _restartKioskPolling() {
             if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
@@ -1065,7 +1815,7 @@ export default {
         // ── Echo real-time subscription for kiosk cash orders ─────────────
         _subscribeEcho() {
             if (!window.Echo) return;
-            const branchId = parseInt(this.$store.getters['auth/authBranchId'] || 0);
+            const branchId = this.authBranchId();
             if (branchId <= 0) return;
             try {
                 this._eventSub = onEvents(branchId, [
@@ -1077,17 +1827,52 @@ export default {
                             // kiosk-cash / online orders, only a silent list refresh.
                             this._notifyNewOrder(event);
                             this.loadKioskCashOrders();
+                            // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
+                            this.loadActiveOrdersStats();
                         },
                     },
-                    { broadcastAs: 'OrderStatusChanged', handler: () => this.loadKioskCashOrders() },
+                    {
+                        broadcastAs: 'OrderStatusChanged',
+                        handler: () => {
+                            this.loadKioskCashOrders();
+                            this.loadActiveOrdersStats();
+                        },
+                    },
+                    {
+                        broadcastAs: 'OrderPaidAtCounter',
+                        handler: () => {
+                            this.loadKioskCashOrders();
+                            this.loadActiveOrdersStats();
+                        },
+                    },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
                     // so freshly out-of-stock tiles grey out without an F5.
                     // Audit POS-GA-F-45 — kiosk already subscribes; POS did not.
                     { broadcastAs: 'ItemAvailabilityChanged', handler: (event) => this._onItemAvailabilityChanged(event) },
+                    { broadcastAs: 'CatalogChanged', handler: (event) => this._onCatalogChanged(event) },
                 ]);
             } catch (e) {
                 // Echo auth failed or Soketi not running — polling fallback handles it
             }
+        },
+        _onCatalogChanged(event) {
+            const payload = (event && event.payload) ? event.payload : event || {};
+            const eventBranchId = parseInt(
+                event?.branchId ?? payload.branch_id ?? payload.branchId ?? 0,
+                10,
+            );
+            const activeBranchId = this.authBranchId();
+
+            if (
+                Number.isFinite(eventBranchId)
+                && eventBranchId > 0
+                && activeBranchId > 0
+                && eventBranchId !== activeBranchId
+            ) {
+                return;
+            }
+
+            try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
         },
         /**
          * [POS-9.1.10] Apply an ItemAvailabilityChanged broadcast to the POS
@@ -1100,6 +1885,29 @@ export default {
             const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
             if (!itemId) return;
 
+            // [F-04bis] Distinguish two emission modes (event contract is now uniform —
+            // see app/Listeners/PersistItemAvailabilityChangedToOutbox + ItemAvailabilityChanged):
+            //   • Global catalogue update — admin edited item status/price/variations.
+            //     `is_available` is null/undefined; `branch_id` is null; type is one of
+            //     'status' | 'price' | 'full'. MUST NOT prune the cart (the item is still
+            //     available everywhere — we just need to refresh the catalogue if the
+            //     change was structural).
+            //   • Branch-scoped flip — MENU_86 toggle / auto-86 / release-after-cancel.
+            //     `is_available` is explicitly true|false; `branch_id` is set.
+            //     Apply normal pruning logic.
+            const hasAvailabilitySignal =
+                payload.is_available === true || payload.is_available === false ||
+                payload.is_available === 1 || payload.is_available === 0 ||
+                payload.is_available === '1' || payload.is_available === '0';
+
+            if (!hasAvailabilitySignal) {
+                // Global catalogue change — refresh items list silently if structural.
+                if (payload.type === 'full') {
+                    try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
+                }
+                return;
+            }
+
             // Locate item in the cached POS list (this.itemsRaw / this.items).
             const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
                        : (Array.isArray(this.items) ? this.items : null);
@@ -1107,17 +1915,52 @@ export default {
                 const idx = list.findIndex(i => parseInt(i.id, 10) === itemId);
                 if (idx !== -1) {
                     const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                    const prevName = list[idx].name;
                     list[idx] = Object.assign({}, list[idx], {
                         is_available: isAvailable,
                         availability_reason: payload.reason || null,
                     });
+                    // [P12_POS_CART_PRUNE / F-VERIFY-01-02] Mirror kiosk parity:
+                    // remove cart lines for this item_id when it becomes unavailable.
+                    if (!isAvailable) {
+                        try { this.$store.dispatch('posCart/pruneUnavailable', itemId); } catch (e) { /* defensive */ }
+                        this._maybeToastItemUnavailableLost(itemId, prevName);
+                    }
+                    try {
+                        const child = this.$refs.posItemComponent;
+                        if (child && typeof child.syncItemAvailabilityFromBroadcast === 'function') {
+                            child.syncItemAvailabilityFromBroadcast(itemId, isAvailable, payload.reason || null);
+                        }
+                    } catch (e) { /* defensive */ }
                 }
             }
 
             // If the broadcast signals a structural change (price / variation /
             // category move), reload the catalogue in the background.
             if (payload.type === 'full') {
-                try { this.itemList(); } catch (e) { /* defensive */ }
+                try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
+            }
+        },
+        /**
+         * [T11] One toast per item per ~1s (rapid duplicate broadcasts).
+         */
+        _maybeToastItemUnavailableLost(itemId, itemName) {
+            if (!this._availabilityToastTimers) {
+                this._availabilityToastTimers = Object.create(null);
+            }
+            const key = String(itemId);
+            if (this._availabilityToastTimers[key]) return;
+            this._availabilityToastTimers[key] = true;
+            setTimeout(() => {
+                delete this._availabilityToastTimers[key];
+            }, 1000);
+            try {
+                const label = this.$t
+                    ? this.$t('pos.item_no_longer_available', { name: itemName || ('#' + itemId) })
+                    : ((itemName || itemId) + ' indisponible');
+                alertService.warning(label);
+            } catch (e) {
+                alertService.warning(String(itemName || itemId));
             }
         },
         _unsubscribeEcho() {
@@ -1133,21 +1976,15 @@ export default {
          *  - Honors the `pos_new_order_sound_enabled` frontend setting (defaults true).
          */
         _notifyNewOrder(event) {
-            const payload = (event && event.payload) ? event.payload : event || {};
-            const orderId = payload.order_id || payload.id || null;
-
-            // [H.3.4 / F-A6] Source filter + self-exclusion.
-            // Cashier-originated orders (POS=15, DINING_TABLE=20) are
-            // created by this very terminal — beeping on them would
-            // confuse the operator. We only notify for orders coming
-            // from *other* sources (KIOSK, online TAKEAWAY, DELIVERY).
-            // OrderType enum values are mirrored here to avoid pulling
-            // the PHP enum into every Vue bundle.
-            const POS_SELF_TYPES = [15, 20];
-            const orderType = parseInt(payload.order_type, 10);
-            if (!Number.isNaN(orderType) && POS_SELF_TYPES.includes(orderType)) {
+            if (!shouldNotifyPosRealtimeOrder(event)) {
                 return;
             }
+
+            const normalized = normalizeRealtimeOrderEvent(event);
+            const orderId = normalized.orderId;
+
+            // [K09B] Source filter is centralized in posOrder.js and now prefers
+            // the backend `_origin` payload key, falling back to legacy order_type.
 
             try {
                 const label = orderId
@@ -1207,23 +2044,37 @@ export default {
             } catch (e) { /* defensive */ }
         },
 
+        // ── Suivi commandes (badge tracker caisse) ────────────────────────
+        // [POS-V4-ORDERS-TRACKER 2026-05-02]
+        // Lecture-only. Source : `admin/oss-order` (OSS endpoint déjà branch-scoped
+        // côté backend). On compte ACCEPT (4) + PREPARING (7) + PREPARED (8) pour le
+        // badge total, et PREPARED seul pour le halo vert. En cas d'erreur on retombe
+        // silencieusement à 0/0 — le tracker plein écran reste accessible quand même.
+        async loadActiveOrdersStats() {
+            try {
+                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
+                let active = 0;
+                let ready = 0;
+                for (let i = 0; i < list.length; i++) {
+                    const s = parseInt(list[i].status ?? list[i].order_status ?? 0, 10);
+                    if (s === orderStatusEnum.ACCEPT || s === orderStatusEnum.PREPARING) active += 1;
+                    else if (s === orderStatusEnum.PREPARED) { active += 1; ready += 1; }
+                }
+                this.activeOrdersStats = { active, ready };
+            } catch (e) {
+                // Silencieux — pas de toast (le caissier n'a pas besoin de bruit ici).
+                this.activeOrdersStats = { active: 0, ready: 0 };
+            }
+        },
+
         // ── Kiosk cash orders ──────────────────────────────────────────────
         async loadKioskCashOrders() {
             this.kioskCashLoading = true;
             try {
-                // [GAP-25-1] Fetch BOTH order_type=25 (KIOSK/sur place) AND order_type=10 (TAKEAWAY/à emporter)
-                // since kiosk now allows customers to choose "à emporter" (Phase 22).
-                const [resKiosk, resTakeaway] = await Promise.all([
-                    axios.get('admin/kds-order', { params: { order_type: 25, payment_method: 1, paginate: 50 } }).catch(() => null),
-                    axios.get('admin/kds-order', { params: { order_type: 10, payment_method: 1, paginate: 50 } }).catch(() => null),
-                ]);
-                const all = [
-                    ...(resKiosk?.data?.data || []),
-                    ...(resTakeaway?.data?.data || []),
-                ];
-                // Client-side filter by status (ACCEPT=4, PREPARING=7, PREPARED=8)
+                const res = await axios.get('admin/pos/counter-collect/pending');
+                const all = res?.data?.data || [];
                 this.kioskCashOrders = all
-                    .filter(o => [4, 7, 8].includes(parseInt(o.order_status ?? o.status, 10)))
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             } catch (_) {
                 this.kioskCashOrders = [];
@@ -1241,17 +2092,34 @@ export default {
             return !!this.expandedKioskCashOrders[orderId];
         },
 
-        // [GAP-25-2] Mark a kiosk cash order as DELIVERED (collected + paid by cashier)
         async collectKioskCashOrder(order) {
             if (order._collecting) return;
             order._collecting = true;
             try {
-                await axios.post(`admin/kds-order/change-status/${order.id}`, { status: 13 }); // 13 = DELIVERED
+                await axios.post(`admin/pos/counter-collect/${order.id}/confirm`, {
+                    mode: posPaymentMethodEnum.CASH,
+                    received: order.total ?? order.order_amount ?? 0,
+                    note: 'Encaissement borne au comptoir',
+                });
                 await this.loadKioskCashOrders();
             } catch (err) {
                 const msg = err?.response?.data?.message || 'Erreur lors de l\'encaissement';
                 alertService.error(msg);
                 order._collecting = false;
+            }
+        },
+        async cancelKioskCashOrder(order) {
+            if (order._canceling) return;
+            order._canceling = true;
+            try {
+                await axios.post(`admin/pos/counter-collect/${order.id}/cancel`, {
+                    reason: 'Commande borne annulee au comptoir',
+                });
+                await this.loadKioskCashOrders();
+            } catch (err) {
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
+                alertService.error(msg);
+                order._canceling = false;
             }
         },
         formatKioskPrice(amount) {
@@ -1279,20 +2147,201 @@ export default {
         closeCanvas: function (id) {
             return appService.closeCanvas(id);
         },
+        currentParkSnapshot() {
+            return {
+                lists: this.carts,
+                subtotal: this.subtotal,
+                discount: this.posDiscount,
+                total: (this.subtotal + (Number(this.checkoutProps.form.delivery_charge) || 0)) - this.posDiscount,
+                checkout_form: {
+                    branch_id: this.checkoutProps.form.branch_id,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    order_type: this.checkoutProps.form.order_type,
+                    dining_table_id: this.checkoutProps.form.dining_table_id,
+                    address_id: this.checkoutProps.form.address_id,
+                    delivery_charge: this.checkoutProps.form.delivery_charge,
+                    delivery_distance_km: this.checkoutProps.form.delivery_distance_km,
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code,
+                    pos_payment_method: this.checkoutProps.form.pos_payment_method,
+                    pos_payment_note: this.checkoutProps.form.pos_payment_note,
+                    source: this.checkoutProps.form.source,
+                },
+                selected_address: this.selectedAddress,
+                delivery_inline: {
+                    ...this.deliveryInline,
+                    suggestions: [],
+                    loading: false,
+                    activeIdx: -1,
+                },
+            };
+        },
+        patchPaymentForm(patch) {
+            this.checkoutProps.form = {
+                ...this.checkoutProps.form,
+                ...patch,
+            };
+        },
+        resetPaymentForm() {
+            this.checkoutProps.form = {
+                ...this.checkoutProps.form,
+                token: "",
+                subtotal: null,
+                discount: 0,
+                delivery_time: null,
+                delivery_charge: null,
+                delivery_distance_km: null,
+                total: 0,
+                order_type: orderTypeEnum.TAKEAWAY,
+                is_advance_order: isAdvanceOrderEnum.NO,
+                source: sourceEnum.POS,
+                address_id: null,
+                dining_table_id: null,
+                coupon_id: null,
+                items: [],
+                pos_payment_method: posPaymentMethodEnum.CASH,
+                pos_payment_note: null,
+                pos_received_amount: null,
+                quote_token: null,
+                quote_signature: null,
+            };
+        },
+        openParkedOrders() {
+            this.showParkedOrders = true;
+            this.$store.dispatch('posParked/fetchList').then().catch(() => {});
+        },
+        async promptParkOrder() {
+            if (this.parkingInFlight) {
+                return;
+            }
+
+            if (!Array.isArray(this.carts) || this.carts.length === 0) {
+                alertService.info(this.$t('pos.park_requires_items'));
+                return;
+            }
+
+            const promptLabel = this.$t('pos.park_label_prompt');
+            const label = window.prompt(promptLabel, '');
+
+            if (label === null) {
+                return;
+            }
+
+            this.parkingInFlight = true;
+
+            try {
+                await this.$store.dispatch('posParked/park', {
+                    label: label.trim() || null,
+                    snapshot: this.currentParkSnapshot(),
+                });
+                await this.$store.dispatch('posCart/resetCart');
+                this.checkoutProps.form.token = "";
+                this.selectedAddress = {};
+                this.resetDeliveryInline();
+                alertService.success(this.$t('pos.park_success'));
+            } catch (error) {
+                alertService.error(this.$t('pos.park_save_error'));
+            } finally {
+                this.parkingInFlight = false;
+            }
+        },
+        applyParkedSnapshot(payload) {
+            const savedForm = payload?.checkout_form || {};
+            const savedOrderType = savedForm.order_type ?? orderTypeEnum.TAKEAWAY;
+            const savedCustomerId = savedForm.customer_id ?? null;
+            const savedSelectedAddress = savedForm.address_id ? (payload?.selected_address || {}) : {};
+            const savedDeliveryInline = payload?.delivery_inline && typeof payload.delivery_inline === 'object'
+                ? {
+                    ...this.deliveryInline,
+                    ...payload.delivery_inline,
+                    suggestions: [],
+                    loading: false,
+                    activeIdx: -1,
+                }
+                : null;
+
+            this.showParkedOrders = false;
+            this.checkoutProps.form.token = "";
+
+            this.$nextTick(() => {
+                if (savedOrderType === orderTypeEnum.DELIVERY) {
+                    this.deliveryOrder();
+                } else if (savedOrderType === orderTypeEnum.DINING_TABLE && this.dineInEnabled) {
+                    this.dineInOrder();
+                } else {
+                    this.takeAwayOrder();
+                }
+
+                this.checkoutProps.form.branch_id = savedForm.branch_id ?? this.checkoutProps.form.branch_id;
+                this.checkoutProps.form.customer_id = savedCustomerId;
+                this.checkoutProps.form.order_type = savedOrderType;
+                this.checkoutProps.form.dining_table_id = savedForm.dining_table_id ?? null;
+                this.checkoutProps.form.address_id = savedForm.address_id ?? null;
+                this.checkoutProps.form.delivery_charge = savedForm.delivery_charge ?? 0;
+                this.checkoutProps.form.delivery_distance_km = savedForm.delivery_distance_km ?? null;
+                this.checkoutProps.form.loyalty_customer_code = savedForm.loyalty_customer_code ?? null;
+                this.checkoutProps.form.pos_payment_method = savedForm.pos_payment_method ?? posPaymentMethodEnum.CASH;
+                this.checkoutProps.form.pos_payment_note = savedForm.pos_payment_note ?? '';
+                this.address.form.user_id = savedCustomerId;
+                this.selectedAddress = savedSelectedAddress;
+
+                if (savedDeliveryInline) {
+                    this.deliveryInline = savedDeliveryInline;
+                } else {
+                    this.resetDeliveryInline();
+                }
+
+                if (savedCustomerId) {
+                    this.clearAddresses = false;
+                    this.gettingUserAddress(savedCustomerId);
+                    this._loadCustomerLoyalty(savedCustomerId);
+                } else {
+                    this.clearAddresses = true;
+                }
+            });
+        },
         resetName: function () {
+            if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
+                this._debouncedListRefresh.cancel();
+            }
             this.props.search.name = "";
-            this.itemList();
+            this.itemList(1, { overlay: false });
+        },
+        onSearchInput: function (event) {
+            this.props.search.name = event.target.value;
+            this._debouncedListRefresh();
+        },
+        onBarcodeScanned: function (code) {
+            this.$store.dispatch("item/lookupByBarcode", code).then((item) => {
+                if (item) {
+                    this.$refs.posItemComponent?.variationModalShow(item);
+                } else {
+                    alertService.error(this.$t("pos.barcode_not_found", { code }));
+                }
+            }).catch(() => {
+                alertService.error(this.$t("pos.barcode_not_found", { code }));
+            });
+        },
+        onFKeyShortcut: function (idx) {
+            const cat = this.categories?.[idx - 1];
+            if (!cat) {
+                return;
+            }
+            if (cat.id === 0 || cat.id === "") {
+                this.allCategory();
+            } else {
+                this.setCategory(cat.id);
+            }
         },
         selectDiscount(value) {
             this.discountType = value;
         },
         search: function () {
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         allCategory: function () {
             this.props.search.name = "";
             this.props.search.item_category_id = "";
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         closeSidebar: function () {
             this.$store.dispatch("globalState/set", { topSidebar: false });
@@ -1300,26 +2349,47 @@ export default {
             document?.querySelector(".db-main")?.classList?.add("expand");
         },
         itemCategories: function (page = 1) {
-            this.loading.isActive = true;
+            // No fullscreen overlay — runs in parallel with itemList on mount; overlay was confusing with menu fetch.
             this.props.search.page = page;
-            this.$store.dispatch("posCategory/lists", this.categoryProps).then((res) => {
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
-            });
+            this.$store.dispatch("posCategory/lists", this.categoryProps).then(() => {}).catch(() => {});
         },
-        itemList: function (page = 1) {
-            this.loading.isActive = true;
+        /**
+         * Load POS menu items. Use `{ overlay: false }` for category/search/filter changes so the
+         * fullscreen spinner is not shown; the previous grid stays visible until the new list arrives.
+         */
+        itemList: function (page = 1, opts) {
+            const options = opts != null && typeof opts === 'object' ? opts : {};
+            const showOverlay = options.overlay !== false;
+
+            if (showOverlay) {
+                this.loading.isActive = true;
+            }
+
+            this._itemListFetchDepth = (this._itemListFetchDepth || 0) + 1;
+            this.posItemsFetchPending = true;
+
             this.props.search.page = page;
-            this.$store.dispatch("item/lists", this.props.search).then((res) => {
-                this.loading.isActive = false;
-            }).catch((err) => {
-                this.loading.isActive = false;
+
+            const finish = () => {
+                this._itemListFetchDepth = Math.max(0, (this._itemListFetchDepth || 1) - 1);
+                if (this._itemListFetchDepth === 0) {
+                    this.posItemsFetchPending = false;
+                }
+                if (showOverlay) {
+                    this.loading.isActive = false;
+                }
+            };
+
+            this.$store.dispatch("item/lists", this.props.search).then(() => {
+                finish();
+            }).catch(() => {
+                finish();
             });
         },
         setCategory: function (id) {
+            this.props.search.name = "";
             this.props.search.item_category_id = id;
-            this.itemList();
+            this.itemList(1, { overlay: false });
         },
         cartQuantityUp: function (id, e) {
             // [V4 FIX] e.target.value is always a string from DOM input; parseInt before storing
@@ -1337,6 +2407,49 @@ export default {
         },
         deleteCartItem: function (id) {
             this.$store.dispatch('posCart/deleteCartItem', { id: id, status: "decrement" }).then().catch();
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] Cancel the most recently added cart line.
+        // Reuses the existing deleteCartItem mutation; no new store contract needed.
+        cancelLastCartLine: function () {
+            const lines = this.$store.getters['posCart/lists'] || [];
+            if (lines.length === 0) {
+                return;
+            }
+            const lastIndex = lines.length - 1;
+            const lastLine = lines[lastIndex];
+            this.$store.dispatch('posCart/deleteCartItem', { id: lastIndex, status: 'decrement' })
+                .then(() => {
+                    const label = (lastLine && lastLine.name) ? lastLine.name : '';
+                    alertService.info(label
+                        ? this.$t('pos.cancel_last_line_done_named', { name: label })
+                        : this.$t('pos.cancel_last_line_done'));
+                })
+                .catch(() => {
+                    alertService.error(this.$t('pos.cancel_last_line_error'));
+                });
+        },
+        // [POS-V4-CASHIER-OPS 2026-05-02] No-sale / open drawer.
+        // No order is created. Backend audit trail comes from the hardware
+        // bridge (reportHardwareEvent) — we don't double-log here. We also
+        // surface a tiny success/info toast so the cashier sees feedback even
+        // when the dev stub returns immediately.
+        triggerNoSaleOpenDrawer: async function () {
+            if (this.noSaleBusy) {
+                return;
+            }
+            this.noSaleBusy = true;
+            try {
+                const result = await Promise.resolve(kioskHardwareOpenDrawer());
+                if (result && result.ok === false) {
+                    alertService.error(this.$t('pos.no_sale_error'));
+                } else {
+                    alertService.info(this.$t('pos.no_sale_done'));
+                }
+            } catch (e) {
+                alertService.error(this.$t('pos.no_sale_error'));
+            } finally {
+                this.noSaleBusy = false;
+            }
         },
         applyDiscount: function () {
             // [POS-9.1.1] Require motif for any non-zero discount; surface server permission gate.
@@ -1381,6 +2494,35 @@ export default {
         bundledLineUnitTotal: function (bundled) {
             return rowUnitBundled(bundled);
         },
+        cartVariationEntries: function (cart) {
+            return normalizeVariationEntries(cart && cart.item_variations);
+        },
+        cartExtraEntries: function (cart) {
+            return normalizeExtraEntries(cart && cart.item_extras);
+        },
+        formatCartVariationSummary: function (cart) {
+            const entries = this.cartVariationEntries(cart);
+            if (entries.length === 0) return '';
+
+            return entries
+                .map((variation) => {
+                    const quantity = Math.max(1, parseInt(variation.quantity, 10) || 1);
+                    const label = variation.name || variation.variation_name || 'Option';
+                    return `${quantity}× ${label}`;
+                })
+                .join(', ');
+        },
+        formatCartExtraSummary: function (cart) {
+            const entries = this.cartExtraEntries(cart);
+            if (entries.length === 0) return '';
+
+            return entries
+                .map((extra) => {
+                    const quantity = Math.max(1, parseInt(extra.quantity, 10) || 1);
+                    return quantity > 1 ? `${quantity}× ${extra.name || 'Extra'}` : (extra.name || 'Extra');
+                })
+                .join(', ');
+        },
         editCartLine: function (index) {
             const line = this.carts[index];
             if (!line || !this.$refs.posItemComponent) return;
@@ -1388,40 +2530,21 @@ export default {
         },
         /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
         buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {
-            let item_variations = [];
-            // [V2 FIX] Join variations by attrId key using names_by_id map (set in changeVariation).
-            // Falls back to index-zip if names_by_id is absent (legacy cart lines or addon rows).
-            const variationEntries = Object.entries(row.item_variations.variations || {});
-            const namesByIdMap = row.item_variations.names_by_id || null;
-            const nameEntries = Object.entries(row.item_variations.names || {});
-            variationEntries.forEach(([attrId, varId], i) => {
-                let variation_name, name;
-                if (namesByIdMap && namesByIdMap[String(attrId)]) {
-                    variation_name = namesByIdMap[String(attrId)].attrName;
-                    name = namesByIdMap[String(attrId)].varName;
-                } else {
-                    const nameEntry = nameEntries[i];
-                    variation_name = nameEntry ? nameEntry[0] : undefined;
-                    name = nameEntry ? nameEntry[1] : undefined;
-                }
-                item_variations.push({
-                    id: varId,
-                    item_id: row.item_id,
-                    item_attribute_id: attrId,
-                    variation_name,
-                    name,
-                });
-            });
-            let item_extras = [];
-            const extraIds = row.item_extras.extras || [];
-            const extraNames = row.item_extras.names || [];
-            extraIds.forEach((extraId, i) => {
-                item_extras.push({
-                    id: extraId,
-                    item_id: row.item_id,
-                    name: extraNames[i] || undefined,
-                });
-            });
+            const item_variations = this.cartVariationEntries(row).map((variation) => ({
+                id: normalizeId(variation.id) || variation.id,
+                item_id: row.item_id,
+                item_attribute_id: normalizeId(variation.item_attribute_id),
+                variation_name: variation.variation_name,
+                name: variation.name,
+                quantity: Math.max(1, parseInt(variation.quantity, 10) || 1),
+            }));
+
+            const item_extras = this.cartExtraEntries(row).map((extra) => ({
+                id: normalizeId(extra.id) || extra.id,
+                item_id: row.item_id,
+                name: extra.name || undefined,
+                quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
+            }));
             return {
                 item_id: row.item_id,
                 item_price: row.convert_price,
@@ -1442,8 +2565,27 @@ export default {
                 return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
             }
             this.loading.isActive = true;
+            if (this.checkoutProps.form.order_type !== orderTypeEnum.DELIVERY && !this.checkoutProps.form.customer_id) {
+                await this.ensureCustomersHydratedForCheckout();
+                const walkInReady = await this.ensureWalkInCustomer();
+                if (!walkInReady) {
+                    this.loading.isActive = false;
+                    return alertService.error('Client comptoir indisponible. Rechargez la caisse puis réessayez.');
+                }
+            }
             this.checkoutProps.form.subtotal = this.subtotal;
-            this.checkoutProps.form.total = parseFloat(this.subtotal + this.checkoutProps.form.delivery_charge - this.checkoutProps.form.discount).toFixed(this.setting.site_digit_after_decimal_point);
+            // @pricing-allowed-block start
+            // [POS-V4 W0+ DISCOVERY 2026-04-26] Pre-modal display total — backend remains SSOT and recomputes server-side.
+            // Must match `grandTotal` / footer CTA: raw `+ form.delivery_charge` can mis-add if charge is a string
+            // (e.g. "19.5" + number → wrong total) and `form.discount` can drift from Vuex `posCart/discount`.
+            // Identical pattern to ItemComponent.totalPriceSetup (W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, decision D1).
+            // signoff-pending — date_limit: 2026-05-10
+            // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
+            // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
+            this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
+            this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
+            this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
+            // @pricing-allowed-block end
             this.checkoutProps.form.items = [];
             _.forEach(this.carts, (item) => {
                 const mainQty = parsePositiveInt(item.quantity, 1);
@@ -1491,9 +2633,16 @@ export default {
                 }
             }
 
-            // [AUDIT-P50-BUG2] Generate idempotency key for POS orders to prevent double-submit duplicates
-            // This key is unique per checkout attempt and sent in X-Idempotency-Key header
-            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${this.checkoutProps.form.branch_id || 0}`;
+            // [AUDIT-P50-BUG2 + POS-V4 W0+] Generate idempotency key for POS orders to prevent double-submit duplicates
+            // This key is unique per checkout attempt and sent in X-Idempotency-Key header.
+            // INVARIANT (branch_id isolation): a null branch_id would suffix the key with "_0_" and risk
+            // cross-branch collisions on a shared backend key store. We hard-stop here instead of falling back to 0.
+            const _branchId = this.checkoutProps.form.branch_id;
+            if (_branchId == null || _branchId === '' || _branchId === 0) {
+                this.loading.isActive = false;
+                return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+            }
+            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
 
             this.loading.isActive = false;
             appService.modalShow('#orderpayment');
@@ -1579,6 +2728,8 @@ export default {
             this.checkoutProps.form.address_id = null;
             this.selectedAddress = {};
             this.checkoutProps.form.delivery_charge = 0;
+            this.checkoutProps.form.delivery_distance_km = null;
+            this.clearDeliveryGeocodeError();
 
             this.$refs.dineIn.classList.add('active');
             this.$refs.dineInDiv.classList.add('block');
@@ -1593,6 +2744,8 @@ export default {
             this.checkoutProps.form.address_id = null;
             this.selectedAddress = {};
             this.checkoutProps.form.delivery_charge = 0;
+            this.checkoutProps.form.delivery_distance_km = null;
+            this.clearDeliveryGeocodeError();
 
             this.$refs.takeAway?.classList.add('active');
             this.$refs.dineIn?.classList.remove('active');
@@ -1684,6 +2837,7 @@ export default {
                     };
                     this.checkoutProps.form.address_id = null;
                     this.checkoutProps.form.delivery_charge = 0;
+                    this.checkoutProps.form.delivery_distance_km = null;
                     this.selectedAddress = {};
                     if (this.address.form.label === this.$t("label.home")) {
                         this.address.status = false;
@@ -1724,40 +2878,81 @@ export default {
         },
         deliveryChargeCalculation: function () {
             if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY && (typeof this.selectedAddress.latitude !== 'undefined' && this.selectedAddress.latitude !== '')) {
-                this.$store.dispatch("branch/showByLatLong", {
-                    branch_id: this.checkoutProps.form.branch_id,
-                    latitude: this.selectedAddress.latitude,
-                    longitude: this.selectedAddress.longitude
-                }).then((branchRes) => {
-                    const distance = appService.distance(parseFloat(this.selectedAddress.latitude), parseFloat(this.selectedAddress.longitude), parseFloat(branchRes.data.data.latitude), parseFloat(branchRes.data.data.longitude));
-
-                    if (distance > this.setting.order_setup_free_delivery_kilometer) {
-                        let extraDistance = distance - parseFloat(this.setting.order_setup_free_delivery_kilometer);
-                        this.checkoutProps.form.delivery_charge = (extraDistance * parseFloat(this.setting.order_setup_charge_per_kilo) + parseFloat(this.setting.order_setup_basic_delivery_charge));
-                    } else {
-                        this.checkoutProps.form.delivery_charge = parseFloat(this.setting.order_setup_basic_delivery_charge);
-                    }
-                }).catch((err) => {
-                    this.loading.isActive = false;
-                    this.selectedAddress = {};
-                    this.checkoutProps.form.address_id = null;
-                    this.checkoutProps.form.delivery_charge = 0;
-                    alertService.info(err.response.data.message);
-
-                });
+                this.applyDeliveryChargeFromCoordinates(this.selectedAddress.latitude, this.selectedAddress.longitude)
+                    .catch(() => {});
+            } else if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY) {
+                this.checkoutProps.form.delivery_distance_km = null;
+                this.checkoutProps.form.delivery_charge = 0;
+                this.showDeliveryGeocodeError();
             } else {
                 this.selectedAddress = {};
                 this.checkoutProps.form.address_id = null;
+                this.checkoutProps.form.delivery_distance_km = null;
                 this.checkoutProps.form.delivery_charge = 0;
+                this.clearDeliveryGeocodeError();
             }
         },
 
-        // ─── [P4] Inline delivery autocomplete ───────────────────────────────────
-        _deliveryAcTimer: null,
-        _deliveryAcService: null,
-        _deliveryActiveIdx: -1,
+        async applyDeliveryChargeFromCoordinates(latitude, longitude) {
+            const lat = parseFloat(latitude);
+            const lng = parseFloat(longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                this.checkoutProps.form.delivery_distance_km = null;
+                this.checkoutProps.form.delivery_charge = 0;
+                this.showDeliveryGeocodeError();
+                return false;
+            }
 
+            try {
+                this.clearDeliveryGeocodeError();
+                const branchRes = await this.$store.dispatch("branch/showByLatLong", {
+                    branch_id: this.checkoutProps.form.branch_id,
+                    latitude: lat,
+                    longitude: lng
+                });
+                const distance = appService.distance(lat, lng, parseFloat(branchRes.data.data.latitude), parseFloat(branchRes.data.data.longitude));
+                if (!Number.isFinite(distance) || distance < 0) {
+                    this.checkoutProps.form.delivery_distance_km = null;
+                    this.checkoutProps.form.delivery_charge = 0;
+                    this.showDeliveryGeocodeError();
+                    return false;
+                }
+                this.checkoutProps.form.delivery_distance_km = distance;
+                this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(this.checkoutProps.form.delivery_distance_km);
+                return true;
+            } catch (err) {
+                this.loading.isActive = false;
+                this.selectedAddress = {};
+                this.checkoutProps.form.address_id = null;
+                this.checkoutProps.form.delivery_distance_km = null;
+                this.checkoutProps.form.delivery_charge = 0;
+                this.showDeliveryGeocodeError();
+                alertService.info(err.response?.data?.message || this.deliveryGeocodeError);
+                return false;
+            }
+        },
+
+        clearDeliveryGeocodeError() {
+            this.deliveryGeocodeError = '';
+        },
+
+        showDeliveryGeocodeError() {
+            this.deliveryGeocodeError = 'Adresse non reconnue. Vérifiez l’adresse avant de valider la livraison.';
+            this.focusDeliveryAddressField();
+        },
+
+        focusDeliveryAddressField() {
+            this.$nextTick(() => {
+                const input = this.$refs.deliveryAddressInput;
+                if (input && typeof input.focus === 'function') {
+                    input.focus();
+                }
+            });
+        },
+
+        // ─── [P4] Inline delivery autocomplete ───────────────────────────────────
         onDeliveryAddressInput() {
+            this.clearDeliveryGeocodeError();
             this.deliveryInline.confirmed = false;
             this.deliveryInline.latitude = '';
             this.deliveryInline.longitude = '';
@@ -1817,13 +3012,15 @@ export default {
                         this.deliveryInline.address = suggestion.description;
                         this.deliveryInline.confirmed = true;
                     } else {
-                        this.deliveryInline.address = suggestion.description;
-                        this.deliveryInline.confirmed = true;
+                        this.deliveryInline.address = '';
+                        this.deliveryInline.confirmed = false;
+                        this.showDeliveryGeocodeError();
                     }
                 });
             } else {
-                this.deliveryInline.address = suggestion.description;
-                this.deliveryInline.confirmed = true;
+                this.deliveryInline.address = '';
+                this.deliveryInline.confirmed = false;
+                this.showDeliveryGeocodeError();
                 this.deliveryInline.loading = false;
             }
         },
@@ -1857,35 +3054,45 @@ export default {
             this.deliveryInline.loading = false;
             this.deliveryInline.activeIdx = -1;
             this.checkoutProps.form.address_id = null;
+            this.checkoutProps.form.delivery_distance_km = null;
+            this.checkoutProps.form.delivery_charge = 0;
+            this.clearDeliveryGeocodeError();
         },
 
         async ensureDeliveryCustomerAndAddress() {
             // If address_id already set (legacy flow), nothing to do
             if (this.checkoutProps.form.address_id) return true;
             // Inline form must have at minimum an address
-            if (!this.deliveryInline.address) {
+            const deliveryAddress = (this.deliveryInline.address || this.deliveryInline.addressText || '').trim();
+            if (!deliveryAddress) {
                 alertService.error('Veuillez saisir une adresse de livraison.');
+                return false;
+            }
+            if (!this.deliveryInline.latitude || !this.deliveryInline.longitude) {
+                this.showDeliveryGeocodeError();
+                alertService.error(this.deliveryGeocodeError);
                 return false;
             }
             try {
                 this.loading.isActive = true;
                 // 1. Create or reuse customer
                 let customerId = this.checkoutProps.form.customer_id;
-                if (this.deliveryInline.name) {
+                if (!customerId) {
                     const customerRes = await axios.post('/admin/users', {
-                        name: this.deliveryInline.name,
+                        name: this.deliveryInline.name || 'Client livraison',
                         phone: this.deliveryInline.phone || null,
                         email: `delivery_${Date.now()}@pos.local`,
                         password: 'delivery123',
                         password_confirmation: 'delivery123',
-                        status: 1,
+                        status: statusEnum.ACTIVE,
+                        country_code: this.customerProps.form.country_code || this.country_code || '+33',
                     });
                     customerId = customerRes.data.data.id;
                     this.checkoutProps.form.customer_id = customerId;
                 }
                 // 2. Save address under that customer
                 const addrRes = await axios.post(`/admin/users/address/${customerId}`, {
-                    address: this.deliveryInline.address,
+                    address: deliveryAddress,
                     apartment: '',
                     latitude: this.deliveryInline.latitude || '',
                     longitude: this.deliveryInline.longitude || '',
@@ -1893,14 +3100,15 @@ export default {
                 });
                 this.checkoutProps.form.address_id = addrRes.data.data.id;
                 // Update delivery charge if lat/lng available
-                if (this.deliveryInline.latitude && this.deliveryInline.longitude) {
-                    this.selectedAddress = {
-                        id: addrRes.data.data.id,
-                        address: this.deliveryInline.address,
-                        latitude: this.deliveryInline.latitude,
-                        longitude: this.deliveryInline.longitude,
-                    };
-                    this.deliveryChargeCalculation();
+                this.selectedAddress = {
+                    id: addrRes.data.data.id,
+                    address: deliveryAddress,
+                    latitude: this.deliveryInline.latitude,
+                    longitude: this.deliveryInline.longitude,
+                };
+                if (! await this.applyDeliveryChargeFromCoordinates(this.deliveryInline.latitude, this.deliveryInline.longitude)) {
+                    this.loading.isActive = false;
+                    return false;
                 }
                 this.loading.isActive = false;
                 return true;
@@ -1918,7 +3126,21 @@ export default {
             this.customerProps.form.password_confirmation = newValue;
         },
         carts: {
-            handler(newCarts) {
+            handler(newCarts, oldCarts) {
+                // [POS-V5 WAVE 3] Trigger cart-bump animation quand un item est ajouté.
+                // - Ne se déclenche QUE si la quantité totale a augmenté (pas sur retrait/édition)
+                // - Auto-reset après 320ms (durée de l'animation CSS pos-v5-bump).
+                const newCount = Array.isArray(newCarts)
+                    ? newCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
+                    : 0;
+                const oldCount = Array.isArray(oldCarts)
+                    ? oldCarts.reduce((sum, c) => sum + (parseInt(c.quantity, 10) || 0), 0)
+                    : 0;
+                if (newCount > oldCount && newCount > 0) {
+                    this.triggerCartBump();
+                    this.triggerTotalFlash();
+                }
+
                 if (!newCarts || newCarts.length === 0) {
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
@@ -1927,15 +3149,7 @@ export default {
                     this.$nextTick(() => {
                         if (this.$refs.takeAway) {
                             this.$refs.takeAway.click();
-                            if (this.customers.length > 0) {
-                                // [BUG-M2 FIX] Use same walking customer resolution logic — never rely on array index
-                                var wc = this.customers.find(u => u.email === 'walkingcustomer@example.com')
-                                    || this.customers.find(u => u.name && u.name.toLowerCase().includes('walking'))
-                                    || this.customers[0];
-                                this.checkoutProps.form.customer_id = wc.id;
-                                this.address.form.user_id = wc.id;
-                                this.gettingUserAddress(this.checkoutProps.form.customer_id);
-                            }
+                            this.ensureWalkInCustomer();
 
                         }
                     });
@@ -1949,131 +3163,357 @@ export default {
 </script>
 
 <style scoped>
-/* ── Kiosk cash FAB button ── */
-.kiosk-cash-fab {
-  position: fixed;
-  bottom: 88px;
-  right: 20px;
-  z-index: 1000;
-  background: #e8001c;
-  border: none;
-  border-radius: 50px;
-  padding: 0.6rem 1rem 0.6rem 0.85rem;
-  display: flex; align-items: center; gap: 0.4rem;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(232,0,28,0.4);
-  animation: kiosk-fab-pulse 2s ease-in-out infinite;
+/* =============================================================================
+   PosComponent — POS V5 Design Convergence (refonte 2026-05-02)
+   -----------------------------------------------------------------------------
+   Mission : CV1-POS-DESIGN-CONVERGENCE-001
+   Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md
+   -----------------------------------------------------------------------------
+   - Le wizard kiosk (`KioskWizardComponent`) reste FROZEN.
+   - Les classes `.pos-v5-*` partagées vivent dans `resources/css/pos-v5.css`
+     (importé via app.css). Ce fichier scoped ne contient que :
+       1. Neutralisation des anciens styles `.fk-pos-v4` / `.pos-v4-*` qui
+          combattraient les nouvelles classes V5 (gradient sombre operator bar,
+          tickets head, total row, item tile :deep, etc.).
+       2. Styles UNIQUES à PosComponent : kiosk-cash-panel inline drawer,
+          add-customer modal inline.
+   - Rollback : poser `[data-pos-v4-disabled]` sur le shell désactive tout.
+   ============================================================================= */
+
+/* === 1. SHELL — laisser pos-v5-shell prendre le relais === */
+.fk-pos-v4.pos-v5-shell {
+  /* On supprime l'ancien gradient gris/froid hérité de pos-v4 ; le bg crème
+     warm vient de .pos-v5-shell (foundations/pos-v5-tokens.css). */
+  background: var(--pos-v5-bg-app);
+  color: var(--pos-v5-ink);
+  min-height: calc(100dvh - 64px);
+  margin: -4px -8px 0 -8px;
+  padding: 4px 10px 12px 8px;
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
-@keyframes kiosk-fab-pulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(232,0,28,0.4); }
-  50% { box-shadow: 0 4px 28px rgba(232,0,28,0.7); }
+
+/* Rollback kill-switch (héritage doctrine pos-v4.css §9) */
+[data-pos-v4-disabled].fk-pos-v4 { all: revert; }
+
+.pos-v4-main {
+  padding: 0 8px 16px 0;
+  min-height: 0;
 }
-.kiosk-cash-fab-icon { font-size: 1.2rem; }
-.kiosk-cash-fab-badge {
-  background: #fff;
-  color: #e8001c;
-  border-radius: 50%;
-  width: 22px; height: 22px;
-  font-size: 0.78rem; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
+
+/* === 2. NEUTRALISATION ancien gradient operator bar ===
+   La nouvelle classe .pos-v5-operator-bar (pos-v5.css) gère tout. On laisse
+   les anciennes classes legacy (.pos-v4-operator-bar, .pos-v4-eyebrow,
+   .pos-v4-title, .pos-v4-status-row) en passe-plat — pas de redéfinition. */
+.pos-v4-operator-bar {
+  /* Reset : le V5 prend le relais */
+  background: transparent;
+  color: inherit;
+  border: 0;
+  min-height: 0;
 }
-/* ── Panel overlay ── */
+.pos-v4-eyebrow,
+.pos-v4-title,
+.pos-v4-status-row,
+.pos-v4-status-row span {
+  /* Reset legacy : les V5 classes prennent le relais */
+  color: inherit;
+  background: transparent;
+}
+
+/* === 3. SEARCH — déjà géré par PosV5SearchInput, neutralisation legacy === */
+.pos-v4-search { background: transparent; border: 0; box-shadow: none; height: auto; }
+.pos-v4-search input,
+.pos-v4-search button[type="submit"] { all: unset; }
+
+/* === 4. CART HEAD — neutralisation legacy === */
+.pos-v4-cart-head {
+  background: transparent;
+}
+.pos-v4-cart-table thead {
+  background: transparent !important;
+}
+
+/* === 5. CART FOOTER — neutralisation legacy === */
+.pos-v4-cart-footer {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.pos-v4-total-row {
+  /* Le hero V5 prend le relais */
+  background: transparent !important;
+  border: 0 !important;
+  min-height: 0 !important;
+}
+
+/* === 6. PRODUCT TILES ===
+   [POS-V5 R2 2026-05-02] Les tiles produits (.pos-item-tile / .pos-v5-tile) sont
+   désormais entièrement gérées par le styling scoped d'ItemComponent.vue (photo
+   hero 4/3, body name+price+add, hover lift+scale image). On supprime les
+   :deep() overrides ici pour éviter une bataille de spécificité avec le
+   composant enfant — single source of truth = ItemComponent.vue. */
+
+/* === 7. RESPONSIVE === */
+@media (max-width: 767px) {
+  .fk-pos-v4.pos-v5-shell {
+    margin: -8px;
+    padding: 10px;
+    padding-bottom: 76px;
+  }
+  .pos-v4-main { padding-right: 0; }
+}
+
+/* =============================================================================
+   8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)
+   -----------------------------------------------------------------------------
+   Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.
+   ============================================================================= */
 .kiosk-cash-panel-overlay {
-  position: fixed; inset: 0; z-index: 2000;
-  background: rgba(0,0,0,0.5);
-  display: flex; align-items: flex-end; justify-content: flex-end;
+  position: fixed;
+  inset: 0;
+  z-index: var(--pos-v5-z-modal);
+  background: rgba(26, 26, 26, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  backdrop-filter: blur(2px);
 }
 .kiosk-cash-panel {
-  background: #fff;
-  width: 380px; max-width: 100vw;
+  background: var(--pos-v5-bg-panel);
+  width: 420px;
+  max-width: 100vw;
   height: 100vh;
-  display: flex; flex-direction: column;
-  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 48px rgba(26, 26, 26, 0.20);
+  border-top-left-radius: var(--pos-v5-radius-xl);
+  border-bottom-left-radius: var(--pos-v5-radius-xl);
+  font-family: var(--pos-v5-font-sans);
 }
 .kiosk-cash-panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 700; font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
+  border-bottom: 1px solid var(--pos-v5-border);
+  background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 70%);
+  font-weight: var(--pos-v5-weight-extrabold);
+  font-size: var(--pos-v5-text-h6);
+  color: var(--pos-v5-ink);
+}
+.kiosk-cash-panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pos-v5-space-2);
+}
+.kiosk-cash-panel-history-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
+  color: var(--pos-v5-ink);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-bold);
+  text-decoration: none;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-panel-history-link:hover {
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
 }
 .kiosk-cash-panel-close {
-  background: none; border: none; font-size: 1.1rem;
-  cursor: pointer; color: #888; padding: 0.25rem;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--pos-v5-radius-pill);
+  background: var(--pos-v5-bg-subtle);
+  color: var(--pos-v5-ink-soft);
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-panel-close:hover {
+  background: var(--pos-v5-danger-soft);
+  color: var(--pos-v5-danger);
+}
+.kiosk-cash-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
+  color: var(--pos-v5-ink);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-detail-btn:hover {
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
 }
 .kiosk-cash-panel-body {
-  flex: 1; overflow-y: auto;
-  padding: 1rem;
-  display: flex; flex-direction: column; gap: 0.75rem;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pos-v5-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pos-v5-space-3);
+  background: var(--pos-v5-bg-app);
 }
-.kiosk-cash-loading, .kiosk-cash-empty {
-  display: flex; align-items: center; justify-content: center;
-  padding: 2rem; color: #888; font-size: 0.9rem;
+.kiosk-cash-loading,
+.kiosk-cash-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pos-v5-space-8);
+  color: var(--pos-v5-ink-muted);
+  font-size: var(--pos-v5-text-body);
+  text-align: center;
 }
 .kiosk-cash-spinner {
-  width: 32px; height: 32px;
-  border: 3px solid #f0f0f0;
-  border-top-color: #e8001c;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--pos-v5-bg-subtle);
+  border-top-color: var(--pos-v5-brand-red);
   border-radius: 50%;
-  animation: kiosk-spin 0.8s linear infinite;
+  animation: kiosk-cash-spin 0.8s linear infinite;
 }
-@keyframes kiosk-spin { to { transform: rotate(360deg); } }
+@keyframes kiosk-cash-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-cash-spinner { animation: none; }
+}
 .kiosk-cash-order-card {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-left: 4px solid #e8001c;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  display: flex; flex-direction: column; gap: 0.4rem;
+  background: var(--pos-v5-bg-panel);
+  border: 1px solid var(--pos-v5-border);
+  border-left: 4px solid var(--pos-v5-brand-red);
+  border-radius: var(--pos-v5-radius-md);
+  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--pos-v5-shadow-sm);
+  transition: box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-order-card:hover {
+  box-shadow: var(--pos-v5-shadow-md);
 }
 .kiosk-cash-order-head {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.kiosk-cash-order-num { font-weight: 800; font-size: 1rem; }
-.kiosk-cash-order-total { font-weight: 700; color: #e8001c; font-size: 1rem; }
-.kiosk-cash-order-items { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.kiosk-cash-order-num {
+  font-weight: var(--pos-v5-weight-extrabold);
+  font-size: var(--pos-v5-text-body-lg);
+  color: var(--pos-v5-ink);
+}
+.kiosk-cash-order-total {
+  font-weight: var(--pos-v5-weight-extrabold);
+  color: var(--pos-v5-brand-red);
+  font-size: var(--pos-v5-text-body-lg);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+.kiosk-cash-order-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .kiosk-cash-item-pill {
-  background: #f0f0f0; border-radius: 20px;
-  padding: 0.18rem 0.55rem; font-size: 0.78rem; color: #444;
+  background: var(--pos-v5-bg-subtle);
+  border-radius: var(--pos-v5-radius-pill);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: var(--pos-v5-weight-semibold);
+  color: var(--pos-v5-ink-soft);
 }
-.kiosk-cash-item-pill.more { background: #ffe4e4; color: #e8001c; }
-/* [GAP-25-2] Bouton Encaisser */
+.kiosk-cash-item-pill.more {
+  background: var(--pos-v5-brand-red-soft);
+  color: var(--pos-v5-brand-red);
+}
+/* [GAP-25-2] Bouton Encaisser (kiosk-cash) */
 .kiosk-cash-collect-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: none;
-  background: #16a34a;
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: var(--pos-v5-radius-sm);
+  border: 0;
+  background: var(--pos-v5-success);
+  color: var(--pos-v5-ink-on-dark);
+  font-size: var(--pos-v5-text-caption);
+  font-weight: var(--pos-v5-weight-extrabold);
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
   white-space: nowrap;
+  box-shadow: var(--pos-v5-shadow-success);
 }
-.kiosk-cash-collect-btn:hover { background: #15803d; }
-.kiosk-cash-collect-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
+.kiosk-cash-collect-btn:hover { background: var(--pos-v5-success-dark); }
+.kiosk-cash-collect-btn:disabled,
+.kiosk-cash-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.kiosk-cash-cancel-btn {
+  border: 0;
+  background: var(--pos-v5-danger-soft);
+  color: var(--pos-v5-danger-dark);
+  border-radius: var(--pos-v5-radius-pill);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: var(--pos-v5-weight-extrabold);
+  cursor: pointer;
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.kiosk-cash-cancel-btn:hover { background: var(--pos-v5-danger-ghost); }
 .kiosk-cash-order-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 0.78rem; color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--pos-v5-text-caption);
+  color: var(--pos-v5-ink-muted);
 }
-.kiosk-cash-order-status { color: #16a34a; font-weight: 600; }
+.kiosk-cash-order-status {
+  color: var(--pos-v5-success-dark);
+  font-weight: var(--pos-v5-weight-semibold);
+}
 .kiosk-cash-panel-footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #f0f0f0;
+  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+  border-top: 1px solid var(--pos-v5-border);
+  background: var(--pos-v5-bg-panel);
 }
 .kiosk-cash-refresh-btn {
-  width: 100%; padding: 0.6rem;
-  background: #f5f5f5; border: none; border-radius: 8px;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #444;
+  width: 100%;
+  padding: 10px;
+  background: var(--pos-v5-bg-subtle);
+  border: 1px solid var(--pos-v5-border);
+  border-radius: var(--pos-v5-radius-md);
+  font-size: var(--pos-v5-text-body);
+  font-weight: var(--pos-v5-weight-semibold);
+  cursor: pointer;
+  color: var(--pos-v5-ink);
+  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
-.kiosk-cash-refresh-btn:hover { background: #ebebeb; }
-/* Transitions */
-.slide-up-pos-enter-active, .slide-up-pos-leave-active { transition: transform 0.3s ease, opacity 0.3s; }
-.slide-up-pos-enter-from, .slide-up-pos-leave-to { transform: translateY(20px); opacity: 0; }
-.slide-panel-enter-active, .slide-panel-leave-active { transition: opacity 0.25s; }
-.slide-panel-enter-from, .slide-panel-leave-to { opacity: 0; }
+.kiosk-cash-refresh-btn:hover {
+  background: var(--pos-v5-brand-red-soft);
+  border-color: var(--pos-v5-brand-red);
+  color: var(--pos-v5-brand-red);
+}
+
+/* Slide-in panel transitions */
+.slide-panel-enter-active,
+.slide-panel-leave-active { transition: opacity var(--pos-v5-duration-base); }
+.slide-panel-enter-from,
+.slide-panel-leave-to { opacity: 0; }
 .slide-panel-enter-active .kiosk-cash-panel,
-.slide-panel-leave-active .kiosk-cash-panel { transition: transform 0.3s ease; }
+.slide-panel-leave-active .kiosk-cash-panel { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard); }
 .slide-panel-enter-from .kiosk-cash-panel,
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
 </style>
