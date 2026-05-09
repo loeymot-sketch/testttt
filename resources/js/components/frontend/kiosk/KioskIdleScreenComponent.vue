@@ -161,7 +161,9 @@
 
 <script>
 // [PHASE-37] Multi-language support
-import { setLocale, getCurrentLocale } from '../../../i18n';
+// [ADR-007 / iter15-P1a] `setLocale` retiré : kiosk runtime FR-immutable.
+// Seul `getCurrentLocale` reste utilisé pour l'affichage `aria-pressed`.
+import { getCurrentLocale } from '../../../i18n';
 // [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
 import KsA11ySettings from './ds/KsA11ySettings.vue';
 import { KIOSK_ORDER_TYPES } from '../../../store/modules/kioskCart';
@@ -232,16 +234,14 @@ export default {
       // vers kiosk.categories (cassait les transitions slide-left / écran noir).
       this.$emit('start-order', orderType);
     },
-    changeLanguage(lang) {
-      // [PHASE-37] Change locale and reload page to apply RTL if needed
-      if (this.currentLocale !== lang) {
-        setLocale(lang);
-        // [PHASE-4.4] Mettre à jour le store kioskSettings — useKioskA11y
-        //             applique data-kiosk-* / lang / dir sans reload.
-        try { this.$store.dispatch('kioskSettings/setLocale', lang); } catch (_) {}
-        // Force reload to apply RTL and re-render all translations
-        window.location.reload();
-      }
+    changeLanguage(/* lang */) {
+      // [ADR-007 / iter15-P1a] FR-lock immutable au runtime kiosk.
+      // Le sélecteur de langue reste rendu pour des raisons de continuité
+      // visuelle (legacy PHASE-37) mais NE déclenche plus de changement de
+      // locale : ni setLocale(), ni dispatch store, ni reload. Toute mutation
+      // runtime contredirait KIOSK_LOCALE='fr' (resources/js/i18n.js).
+      // Voir aussi : applyKioskA11yFromStore (composables/useKioskA11y.js)
+      // qui force la locale au boot depuis le store kioskSettings.
     },
     openSettings() {
       this.settingsOpen = true;

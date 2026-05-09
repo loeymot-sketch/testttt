@@ -178,8 +178,10 @@ import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { onEvents } from '../../../services/eventContract';
 import { useCatalogChangeNotifier } from '../../../composables/useCatalogChangeNotifier';
 // [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
+// [ADR-007 / iter15-P1a] `setLocale` retiré : kiosk runtime FR-immutable.
+// `applyKioskA11yFromStore` propage encore la locale du store kioskSettings
+// au boot ; aucun watcher runtime ne doit re-trigger setLocale ici.
 import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
-import { setLocale } from '../../../i18n';
 // [PHASE-5] Hardware bridge + analytics helpers
 import kioskHardware from '../../../services/kioskHardware';
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
@@ -398,14 +400,16 @@ export default {
 
     /**
      * [PHASE-4.4] Wire des watchers Vuex → attributs <html>.
-     *  Maintient data-kiosk-contrast / data-kiosk-pmr / data-kiosk-audio /
-     *  lang / dir synchronisés avec kioskSettings, sans nécessiter de reload.
+     *  Maintient data-kiosk-contrast / data-kiosk-pmr / data-kiosk-audio
+     *  synchronisés avec kioskSettings, sans nécessiter de reload.
      *  Les disposers sont stockés pour cleanup au beforeUnmount.
+     *
+     *  [ADR-007 / iter15-P1a] Watcher `kioskSettings.locale` SUPPRIMÉ :
+     *  kiosk runtime FR-immutable, aucune mutation locale n'est propagée
+     *  vers i18n après l'init. La locale est posée une seule fois au boot
+     *  via `applyKioskA11yFromStore(this.$store)` dans `mounted()`.
      */
     _wireA11yWatchers() {
-      const applyLocale = (lang) => {
-        setLocale(lang || 'fr');
-      };
       this._unwatchA11y = [
         this.$store.watch(
           (state) => state.kioskSettings?.contrast,
@@ -418,10 +422,6 @@ export default {
         this.$store.watch(
           (state) => state.kioskSettings?.audio,
           (v) => document.documentElement.setAttribute('data-kiosk-audio', v ? 'true' : 'false')
-        ),
-        this.$store.watch(
-          (state) => state.kioskSettings?.locale,
-          applyLocale
         ),
       ];
     },

@@ -7,7 +7,17 @@ import fr from './languages/fr.json';
 
 const SUPPORTED_LOCALES = Object.keys({ fr, en, ar });
 const DEFAULT_LOCALE    = 'fr';
-/** Défaut au boot `/kiosk` avant hydratation Vuex ; la langue réelle vient de `kioskSettings` + `setLocale`. */
+/**
+ * [ADR-007 / iter15-P1a] Borne FR-lock immutable au runtime.
+ *  - Boot `/kiosk` : `detectLocale()` retourne `KIOSK_LOCALE` ('fr') quel que
+ *    soit `navigator.language`. Aucun localStorage n'est lu (cf. `detectLocale`).
+ *  - Runtime : les composants kiosk (KioskIdleScreenComponent / KioskAppComponent)
+ *    n'appellent plus `setLocale()` — voir tests/js/kioskFrLockImmutable.spec.js.
+ *  - Résiduel : `applyKioskA11yFromStore(store)` dans `composables/useKioskA11y.js`
+ *    propage encore `kioskSettings.locale` au boot ; un store persisté en `ar`/`en`
+ *    forcerait alors une locale non-FR. Hors scope iter15-P1a — à durcir si une
+ *    politique stricte FR-only doit être appliquée même contre le store.
+ */
 const KIOSK_LOCALE      = 'fr';
 
 function setDocumentDirection(locale) {
