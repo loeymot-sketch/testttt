@@ -1,6 +1,10 @@
 <template>
   <LoadingComponent :props="loading" />
-    <div class="col-span-2 md:block hidden">
+    <div
+      class="col-span-2 md:block hidden"
+      role="region"
+      :aria-label="$t('label.oss_popular_region_aria')"
+    >
     <div class="customer-screen db-card rounded-[10px] h-screen md:h-[calc(100vh-117px)] overflow-hidden pb-20">
       <div class="p-3 pb-2 mb-6">
         <h3 class="text-[22px] font-semibold text-[#0057B7]">{{ $t("label.popular_menu_items") }}</h3>

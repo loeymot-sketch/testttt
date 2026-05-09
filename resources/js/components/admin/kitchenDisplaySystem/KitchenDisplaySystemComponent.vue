@@ -2,7 +2,7 @@
   <ConnectionStatusBanner />
   <LoadingComponent :props="loading" />
   <div v-if="!wsConnected" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
-    Mode secours actif — actualisation automatique toutes les 5s.
+    {{ $t('label.kds_fallback_banner') }}
   </div>
   <div
     v-if="kdsIsCentralAdmin"
@@ -24,7 +24,7 @@
     role="alert"
   >
     <span>{{ $t("label.kds_order_list_full_warning", { n: orders.length }) }}</span>
-    <button type="button" class="kds-hint-link" @click="kdsOverflowSeeMore">Voir plus</button>
+    <button type="button" class="kds-hint-link" @click="kdsOverflowSeeMore">{{ $t('label.kds_see_more') }}</button>
   </div>
   <div
     v-if="!kdsHideBumpInfo"
