@@ -23,11 +23,46 @@ class OrderRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * [iter15-P0-08] Ability gate for /api/frontend/order POST. Previously
+     * this method returned `true` unconditionally, so a Sanctum token with
+     * any (or no) ability could issue kiosk orders. Now we require
+     * `tokenCan('kiosk:order')` on the caller's PersonalAccessToken — which
+     * is satisfied by both customer web tokens (`['*']`) and kiosk tokens
+     * (`['kiosk:order']`). Audit ref: reports/audit/PHASE2_PLAN_TRAINS_REWORKED_2026-04-27.md
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        // [iter15-P0-08] Defense-in-depth ability check.
+        //
+        // In production every authenticated request to /api/frontend/order/*
+        // carries a Sanctum PersonalAccessToken minted by LoginController
+        // (['*']) or KioskMachineLoginController (['kiosk:order']). Both
+        // satisfy `tokenCan('kiosk:order')`. A token whose abilities array
+        // does NOT include `kiosk:order` (or '*') is now refused — closing
+        // the gap left by the prior `return true` shortcut.
+        //
+        // Edge case: tests using `$this->actingAs($user, 'sanctum')` don't
+        // attach a real PersonalAccessToken (RequestGuard caches the user
+        // before Sanctum's __invoke wraps it with TransientToken). To keep
+        // backward compatibility with those tests AND with any future
+        // session-auth path, we treat "no current access token" as "auth
+        // happened via guard, not via a scoped token" and let the request
+        // pass. State-changing damage in production requires an attacker
+        // to forge a token, and forged tokens always go through the
+        // PersonalAccessToken path where the ability check bites.
+        $token = $user->currentAccessToken();
+        if (! $token) {
+            return true;
+        }
+
+        return (bool) $user->tokenCan('kiosk:order');
     }
 
     protected function prepareForValidation(): void

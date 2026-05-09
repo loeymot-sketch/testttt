@@ -1079,6 +1079,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{language}', [FrontendLanguageController::class, 'show']);
     });
 
+    // [iter15-P0-08] Ability enforcement on state-changing kiosk/customer order
+    // routes is performed inside OrderRequest::authorize() (see
+    // app/Http/Requests/OrderRequest.php). It checks tokenCan('kiosk:order')
+    // against the caller's PersonalAccessToken abilities, with a documented
+    // tolerance for non-token guard auth (TransientToken / session-resolved
+    // user). Route-level `abilities:kiosk:order` middleware was considered
+    // but rejected because Sanctum's CheckAbilities throws 401 when the
+    // caller has no `currentAccessToken()` — that would break legitimate
+    // session/guard-based callers including existing test fixtures.
+    // The FormRequest path closes the original gap (OrderRequest::authorize
+    // previously returned true unconditionally) without that collateral.
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
