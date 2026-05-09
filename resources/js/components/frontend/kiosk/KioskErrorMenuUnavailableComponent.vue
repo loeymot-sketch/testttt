@@ -31,8 +31,8 @@
 </template>
 
 <script>
-import axios from 'axios';
 import KioskErrorLayoutComponent from './KioskErrorLayoutComponent.vue';
+import { trackKioskErrorEvent } from '../../../helpers/kioskAnalytics';
 
 /**
  * KioskErrorMenuUnavailableComponent — Kiosk Design V1 Phase 3.3
@@ -46,22 +46,22 @@ export default {
     emits: ['retry', 'back-home'],
     data() { return { retrying: false }; },
     mounted() {
-        this.logEvent('error_shown', { subtype: 'menu_unavailable' });
+        this.logEvent('error_shown');
     },
     methods: {
         async retry() {
             this.retrying = true;
-            this.logEvent('error_retry', { subtype: 'menu_unavailable' });
+            this.logEvent('error_retry');
             this.$emit('retry');
             setTimeout(() => { this.retrying = false; }, 500);
         },
         backHome() {
-            this.logEvent('error_back_home', { subtype: 'menu_unavailable' });
+            this.logEvent('error_back_home');
             this.$emit('back-home');
             this.$router?.push({ name: 'kiosk.idle' }).catch(() => {});
         },
         logEvent(type, meta = {}) {
-            axios.post('/frontend/kiosk/event', { type, ...meta }).catch(() => {});
+            trackKioskErrorEvent(type, 'menu_unavailable', meta);
         },
     },
 };

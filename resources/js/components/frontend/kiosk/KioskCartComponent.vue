@@ -2,13 +2,11 @@
   <div class="kiosk-cart" data-testid="kiosk-cart-root">
     <!-- Header -->
     <div class="kiosk-cart-header">
-      <button
+      <button type="button"
         class="kiosk-cart-back"
-        type="button"
         @click="goBackFromCart"
         :aria-label="$t('kiosk.back')"
-        data-testid="kiosk-cart-back"
-      >
+        data-testid="kiosk-cart-back">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -19,7 +17,7 @@
           {{ cartCount }} {{ cartCount > 1 ? $t('kiosk.article_plural') : $t('kiosk.article_singular') }}
         </p>
       </div>
-      <button
+      <button type="button"
         class="kiosk-cart-clear"
         @click="showClearConfirm = true"
         v-if="cartCount > 0"
@@ -45,12 +43,12 @@
           <p id="kiosk-cart-clear-title" class="kiosk-clear-title">{{ $t('kiosk.clear_cart') }}</p>
           <p class="kiosk-clear-sub">{{ $t('kiosk.clear_cart_confirm') }}</p>
           <div class="kiosk-clear-actions">
-            <button
+            <button type="button"
               class="kiosk-clear-yes"
               @click="confirmClear"
               data-testid="kiosk-cart-clear-yes"
             >{{ $t('kiosk.yes_clear') }}</button>
-            <button
+            <button type="button"
               class="kiosk-clear-no"
               @click="showClearConfirm = false"
               data-testid="kiosk-cart-clear-no"
@@ -71,7 +69,7 @@
       <div class="kiosk-cart-empty-icon" aria-hidden="true">🛒</div>
       <h2>{{ $t('kiosk.empty_cart') }}</h2>
       <p>{{ $t('kiosk.empty_cart_hint') }}</p>
-      <button
+      <button type="button"
         class="kiosk-btn-primary"
         @click="$router.push({ name: 'kiosk.categories' })"
         data-testid="kiosk-cart-empty-cta"
@@ -88,7 +86,7 @@
       :aria-label="$t('kiosk.order_type_label')"
       data-testid="kiosk-cart-order-type"
     >
-      <button
+      <button type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_KIOSK }"
         role="radio"
@@ -99,7 +97,7 @@
         <span class="kiosk-order-type-icon" aria-hidden="true">🍽️</span>
         <span class="kiosk-order-type-label">{{ $t('kiosk.dine_in') }}</span>
       </button>
-      <button
+      <button type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_TAKEAWAY }"
         role="radio"
@@ -134,7 +132,7 @@
             <div class="kiosk-cart-item-name-row">
               <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
               <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
-              <button
+              <button type="button"
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
                 @click="editItem(idx)"
@@ -154,6 +152,15 @@
             >
               {{ getItemSelectionSummary(item) }}
             </div>
+            <KsAllergenBadge
+              v-if="cartLineCatalogItem(item)"
+              class="kiosk-cart-item-allergens"
+              :item="cartLineCatalogItem(item)"
+              :selections="cartLineAllergenSelections(item)"
+              :allergens="[]"
+              :customer-allergens="customerAllergenCodes"
+              :data-testid="`kiosk-cart-item-allergens-${idx}`"
+            />
             <p
               v-if="item.instruction"
               class="kiosk-cart-item-note"
@@ -172,7 +179,7 @@
               role="group"
               :aria-label="$t('kiosk.quantity_of', { name: displayCartItemName(item) })"
             >
-              <button
+              <button type="button"
                 class="kiosk-qty-btn minus"
                 @click="changeQty(idx, item.quantity - 1)"
                 :aria-label="$t('kiosk.decrease_qty')"
@@ -187,7 +194,7 @@
                 aria-live="polite"
                 :data-testid="`kiosk-cart-item-qty-${idx}`"
               >{{ item.quantity }}</span>
-              <button
+              <button type="button"
                 class="kiosk-qty-btn plus"
                 :disabled="item.quantity >= maxItemQty"
                 @click="changeQty(idx, item.quantity + 1)"
@@ -215,6 +222,7 @@
         class="kiosk-cart-summary"
         role="region"
         :aria-label="$t('kiosk.subtotal')"
+        aria-live="polite"
         data-testid="kiosk-cart-summary"
       >
         <div class="kiosk-cart-summary-row">
@@ -261,13 +269,11 @@
               data-testid="kiosk-cart-promo-input"
               @keydown.enter.prevent="applyPromo"
             />
-            <button
-              type="button"
+            <button type="button"
               class="kiosk-cart-promo-apply"
               :disabled="promoLoading || !promoInput.trim()"
               data-testid="kiosk-cart-promo-apply"
-              @click="applyPromo"
-            >
+              @click="applyPromo">
               {{ promoLoading ? $t('kiosk.promo.loading') : $t('kiosk.promo.apply') }}
             </button>
           </div>
@@ -286,19 +292,17 @@
           <span class="kiosk-cart-promo-applied-text">
             {{ $t('kiosk.promo.applied', { code: promoCode, amount: formatPrice(promoDiscount) }) }}
           </span>
-          <button
-            type="button"
+          <button type="button"
             class="kiosk-cart-promo-remove"
             data-testid="kiosk-cart-promo-remove"
-            @click="removePromo"
-          >
+            @click="removePromo">
             {{ $t('kiosk.promo.remove') }}
           </button>
         </div>
       </div>
 
       <!-- Bouton fidélité -->
-      <button
+      <button type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -311,15 +315,25 @@
 
       <!-- Bouton valider → upsell -->
       <div class="kiosk-cart-actions">
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="proceedToUpsell"
+          :disabled="quoteLoading"
+          :aria-busy="quoteLoading ? 'true' : 'false'"
           data-testid="kiosk-cart-checkout"
         >
           <span>{{ $t('kiosk.validate_order') }}</span>
           <span class="kiosk-btn-price">{{ formatPrice(cartTotal) }}</span>
         </button>
-        <button
+        <p
+          v-if="quoteError"
+          class="kiosk-cart-quote-error"
+          role="alert"
+          data-testid="kiosk-cart-quote-error"
+        >
+          {{ quoteError }}
+        </p>
+        <button type="button"
           class="kiosk-btn-secondary"
           @click="$router.push({ name: 'kiosk.categories' })"
           data-testid="kiosk-cart-add-more"
@@ -336,6 +350,8 @@ import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
+import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
 const ORDER_TYPE_KIOSK    = 25;
@@ -344,6 +360,7 @@ const ORDER_TYPE_TAKEAWAY = 10;
 export default {
   name: 'KioskCartComponent',
   mixins: [kioskPriceMixin],
+  components: { KsAllergenBadge },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -355,6 +372,8 @@ export default {
       ORDER_TYPE_KIOSK,
       ORDER_TYPE_TAKEAWAY,
       maxItemQty: window.foodkingConfig?.maxItemQty ?? 20,
+      quoteLoading: false,
+      quoteError: null,
       // Kiosk Phase 9.1.6 — Champ local (pas directement dans le store) pour
       // laisser l'utilisateur taper/effacer sans triggerer de validate sur
       // chaque frappe. L'appel réseau n'est déclenché qu'au clic Appliquer.
@@ -376,7 +395,12 @@ export default {
       promoError: 'promoError',
       promoLoading: 'promoLoading',
     }),
-    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId']),
+    ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId', 'allItems']),
+    customerAllergenCodes() {
+      const profile = this.$store?.getters?.['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
+    },
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
@@ -385,8 +409,11 @@ export default {
   methods: {
     ...mapActions('kioskCart', [
       'updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType',
+      'quoteOrder',
       // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
       'validatePromo', 'clearPromo',
+      // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
+      'startEditingCartItem',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -428,6 +455,23 @@ export default {
     displayCartInstruction(item) {
       if (!item?.instruction) return '';
       return sanitizeKioskCustomerFacingText(item.instruction);
+    },
+
+    cartLineCatalogItem(line) {
+      if (!line?.item_id || !Array.isArray(this.allItems)) return null;
+      return this.allItems.find((i) => String(i.id) === String(line.item_id)) || null;
+    },
+
+    cartLineAllergenSelections(line) {
+      const cat = this.cartLineCatalogItem(line);
+      if (!cat) return { variations: [], extras: [] };
+      const vars = (line.item_variations || [])
+        .map((v) => findVariationObjectById(cat, v.id))
+        .filter(Boolean);
+      const ext = (line.item_extras || [])
+        .map((e) => findExtraObjectById(cat, e.id))
+        .filter(Boolean);
+      return { variations: vars, extras: ext };
     },
 
     // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
@@ -478,12 +522,30 @@ export default {
      * quantity from the old line is NOT pre-set (wizard default = 1 to keep
      * things simple and avoid complexity with selections state).
      */
+    /**
+     * [P-MEGA-05] Édition d'une ligne du panier — version "safe" :
+     * 1. Le store mémorise la cart line via startEditingCartItem (no pop).
+     * 2. Le wizard, à son montage, restaure les sélections depuis le
+     *    snapshot (`_wizardSelections`) et bascule en mode "edit".
+     * 3. À la validation, le wizard fait `replaceEditingCartItem` :
+     *    la ligne est remplacée en place (préserve l'ordre, l'index, les
+     *    coupons attachés à un slot précis).
+     * 4. Si l'utilisateur abandonne (close/abandon), `cancelEditingCartItem`
+     *    laisse la ligne intacte. AUCUN risque de perte.
+     *
+     * Compat ascendante : si pour une raison X le wizard ne bascule pas
+     * en mode edit (item supprimé du catalogue, etc.), la ligne originale
+     * reste dans le panier (pas de double dépense, pas de panier cassé).
+     */
     async editItem(index) {
-      const item = await this.popItem(index);
+      const item = this.cartItems[index];
       if (!item?.item_id) return;
+      const ok = await this.startEditingCartItem(index);
+      if (!ok) return;
       this.$router.push({
         name: 'kiosk.wizard',
         params: { itemId: String(item.item_id) },
+        query: { edit: '1' },
       });
     },
 
@@ -493,17 +555,34 @@ export default {
       this.$router.push({ name: 'kiosk.categories' });
     },
 
-    proceedToUpsell() {
-      if (this.upsellShown) {
-        this.$router.push({ name: 'kiosk.payment' });
-        return;
+    async proceedToUpsell() {
+      if (this.quoteLoading || this.cartCount === 0) return;
+
+      this.quoteLoading = true;
+      this.quoteError = null;
+
+      try {
+        await this.quoteOrder({ orderType: this.orderType });
+
+        if (this.upsellShown) {
+          this.$router.push({ name: 'kiosk.payment' });
+          return;
+        }
+        this.markUpsellShown();
+        if (this.shouldSkipKioskUpsell) {
+          this.$router.push({ name: 'kiosk.payment' });
+          return;
+        }
+        this.$router.push({ name: 'kiosk.upsell' });
+      } catch (err) {
+        const message = err?.response?.data?.message
+          || err?.message
+          || this.$t('kiosk.pay_screen.invalid_order_response');
+        this.quoteError = message;
+        this.showToast(message, 'error', 6000);
+      } finally {
+        this.quoteLoading = false;
       }
-      this.markUpsellShown();
-      if (this.shouldSkipKioskUpsell) {
-        this.$router.push({ name: 'kiosk.payment' });
-        return;
-      }
-      this.$router.push({ name: 'kiosk.upsell' });
     },
 
     // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists
@@ -515,7 +594,7 @@ export default {
 .kiosk-cart {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -523,18 +602,19 @@ export default {
 
 .kiosk-order-type-bar {
   display: flex;
-  gap: 12px;
-  padding: 16px 28px 0;
+  gap: 16px;
+  padding: 20px 30px 0;
   flex-shrink: 0;
 }
 
 .kiosk-order-type-btn {
   flex: 1;
-  height: 64px;
-  border-radius: 14px;
+  min-height: 82px;
+  height: auto;
+  border-radius: 24px;
   border: 2px solid var(--kiosk-border);
   background: var(--kiosk-surface);
-  color: var(--kiosk-text-mute);
+  color: var(--kiosk-text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -546,17 +626,31 @@ export default {
 
 .kiosk-order-type-btn.active {
   border-color: var(--kiosk-primary);
-  background: var(--kiosk-primary-soft);
-  color: var(--kiosk-text);
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
+  box-shadow: var(--kiosk-shadow-cta);
 }
 
 .kiosk-order-type-btn:active { transform: scale(0.97); }
+.kiosk-btn-primary[disabled] {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.kiosk-cart-quote-error {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--kiosk-error, #b91c1c);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
 
 .kiosk-order-type-icon { font-size: 22px; line-height: 1; }
 
 .kiosk-order-type-label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 900;
 }
 
 .kiosk-cart-item-selections {
@@ -573,16 +667,17 @@ export default {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 28px 16px;
+  padding: 24px 32px 20px;
   background: var(--kiosk-surface);
   border-bottom: 1px solid var(--kiosk-border);
+  box-shadow: var(--kiosk-shadow-sticky);
   flex-shrink: 0;
 }
 
 .kiosk-cart-back {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
   border: 1.5px solid var(--kiosk-border);
   background: var(--kiosk-surface);
   color: var(--kiosk-text);
@@ -599,22 +694,24 @@ export default {
 .kiosk-cart-header-info { flex: 1; }
 
 .kiosk-cart-title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 2px;
+  text-transform: uppercase;
 }
 
 .kiosk-cart-item-count {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--kiosk-text-mute);
   margin: 0;
 }
 
 .kiosk-cart-clear {
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--kiosk-border);
+  min-height: 52px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 2px solid var(--kiosk-border);
   background: var(--kiosk-surface);
   color: var(--kiosk-primary);
   font-size: 14px;
@@ -663,30 +760,30 @@ export default {
 
 .kiosk-cart-items {
   flex: 1;
-  padding: 16px 24px;
+  padding: 22px 30px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .kiosk-cart-item {
   background: var(--kiosk-surface);
-  border-radius: 14px;
+  border-radius: 26px;
   border: 1.5px solid var(--kiosk-border);
-  padding: 14px;
+  padding: 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-cart-item-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -698,7 +795,7 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-cart-item-emoji { font-size: 32px; }
+.kiosk-cart-item-emoji { font-size: 48px; }
 
 .kiosk-cart-item-info { flex: 1; min-width: 0; }
 
@@ -712,9 +809,9 @@ export default {
   flex-shrink: 0;
   background: var(--kiosk-surface-alt);
   border: 1px solid var(--kiosk-border);
-  border-radius: 6px;
+  border-radius: 50%;
   color: var(--kiosk-text-mute);
-  width: 26px; height: 26px;
+  width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -727,8 +824,8 @@ export default {
 }
 
 .kiosk-cart-item-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 2px;
   white-space: nowrap;
@@ -746,14 +843,14 @@ export default {
 }
 
 .kiosk-cart-item-unit {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--kiosk-text-mute);
 }
 
 .kiosk-cart-item-controls {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: end;
   gap: 8px;
   flex-shrink: 0;
 }
@@ -763,14 +860,18 @@ export default {
   align-items: center;
   gap: 0;
   background: var(--kiosk-surface-alt);
-  border-radius: 10px;
+  border-radius: 999px;
   border: 1.5px solid var(--kiosk-border);
   overflow: hidden;
 }
 
+[dir="rtl"] .kiosk-qty-ctrl {
+  direction: ltr;
+}
+
 .kiosk-qty-btn {
-  width: 38px;
-  height: 38px;
+  width: 50px;
+  height: 50px;
   border: none;
   background: transparent;
   color: var(--kiosk-text);
@@ -787,25 +888,25 @@ export default {
 .kiosk-qty-btn.minus:active { color: var(--kiosk-primary); }
 
 .kiosk-qty-num {
-  min-width: 32px;
+  min-width: 38px;
   text-align: center;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 900;
   color: var(--kiosk-text);
 }
 
 .kiosk-cart-item-total {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--kiosk-text);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--kiosk-primary);
 }
 
 .kiosk-cart-summary {
-  margin: 0 24px;
+  margin: 0 30px;
   background: var(--kiosk-surface);
-  border-radius: 14px;
+  border-radius: 26px;
   border: 1.5px solid var(--kiosk-border);
-  padding: 16px 20px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -815,13 +916,13 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--kiosk-text-muted);
 }
 
 .kiosk-cart-summary-row.total {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 900;
   color: var(--kiosk-text);
   padding-top: 10px;
   border-top: 1px solid var(--kiosk-border);
@@ -833,13 +934,13 @@ export default {
 .green { color: var(--kiosk-success); font-weight: 700; }
 
 .kiosk-cart-grand-total {
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 900;
   color: var(--kiosk-primary);
 }
 
 .kiosk-cart-actions {
-  padding: 16px 24px 28px;
+  padding: 18px 30px 32px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -847,7 +948,7 @@ export default {
 
 /* Kiosk Phase 9.1.6 — Section code promo panier. */
 .kiosk-cart-promo {
-  padding: 12px 24px 0;
+  padding: 14px 30px 0;
 }
 .kiosk-cart-promo-label {
   display: block;
@@ -865,8 +966,9 @@ export default {
   height: 48px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1.5px solid #E5E5E5;
-  background: #fff;
+  border: 1.5px solid var(--kiosk-border);
+  background: var(--kiosk-surface);
+  color: var(--kiosk-text);
   font-size: 15px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -906,7 +1008,7 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: #E8F5EC;
+  background: rgba(27, 138, 58, 0.12);
   border: 1.5px solid var(--kiosk-success, #1B8A3A);
   border-radius: 10px;
   color: var(--kiosk-success, #1B8A3A);
@@ -934,12 +1036,13 @@ export default {
 
 .kiosk-btn-loyalty {
   width: 100%;
-  height: 52px;
+  min-height: 60px;
+  height: auto;
   background: rgba(255,215,0,0.08);
   border: 1.5px solid rgba(255,215,0,0.3);
-  border-radius: 12px;
+  border-radius: 18px;
   color: var(--kiosk-warning);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -947,7 +1050,8 @@ export default {
   justify-content: space-between;
   padding: 0 16px;
   transition: background 0.2s;
-  margin-bottom: 4px;
+  margin: 0 30px 4px;
+  width: calc(100% - 60px);
 }
 .kiosk-btn-loyalty:active { background: rgba(255,215,0,0.15); }
 .kiosk-btn-loyalty-star { font-size: 18px; }
@@ -955,13 +1059,14 @@ export default {
 
 .kiosk-btn-primary {
   width: 100%;
-  height: 60px;
+  min-height: 76px;
+  height: auto;
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 14px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 24px;
+  font-size: 22px;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -983,13 +1088,14 @@ export default {
 
 .kiosk-btn-secondary {
   width: 100%;
-  height: 52px;
+  min-height: 60px;
+  height: auto;
   background: var(--kiosk-surface);
   color: var(--kiosk-text-muted);
   border: 1.5px solid var(--kiosk-border);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
 }

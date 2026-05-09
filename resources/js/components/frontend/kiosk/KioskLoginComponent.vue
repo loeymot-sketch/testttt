@@ -31,15 +31,6 @@
           <span v-else class="kiosk-login-spinner"></span>
         </button>
 
-        <button
-          v-if="maintenanceMode"
-          type="button"
-          class="kiosk-login-secondary-btn"
-          :disabled="loading"
-          @click="disableMaintenanceMode"
-        >
-          {{ $t('kiosk.login_screen.exit_maintenance') }}
-        </button>
       </div>
 
       <p v-if="showDevSeedHint" class="kiosk-login-devhint">
@@ -60,13 +51,6 @@ export default {
   computed: {
     showDevSeedHint() {
       return process.env.NODE_ENV !== 'production';
-    },
-    maintenanceMode() {
-      try {
-        return sessionStorage.getItem('kiosk_maintenance_mode') === '1';
-      } catch (_) {
-        return false;
-      }
     },
   },
   data() {
@@ -89,11 +73,6 @@ export default {
     ...mapActions('kioskCart', ['kioskLogin']),
 
     getAutoCredentials() {
-      try {
-        if (sessionStorage.getItem('kiosk_maintenance_mode') === '1') {
-          return null;
-        }
-      } catch (_) { /* ignore if sessionStorage unavailable */ }
       const auto = window.foodkingConfig?.kioskAutoLogin || null;
       if (!auto?.username || auto.password === undefined || auto.password === null || String(auto.password) === '') {
         return null;
@@ -119,9 +98,7 @@ export default {
       const auto = this.getAutoCredentials();
       if (!auto) {
         this.setupRequired = true;
-        this.error = this.maintenanceMode
-          ? this.$t('kiosk.login_screen.err_maintenance')
-          : this.$t('kiosk.login_screen.err_no_credentials');
+        this.error = this.$t('kiosk.login_screen.err_no_credentials');
         return;
       }
       this.setupRequired = false;
@@ -147,14 +124,6 @@ export default {
     },
 
     retryAutoLogin() {
-      this.retryAttempts = 0;
-      this.startAutoLogin();
-    },
-
-    disableMaintenanceMode() {
-      try {
-        sessionStorage.removeItem('kiosk_maintenance_mode');
-      } catch (_) { /* ignore */ }
       this.retryAttempts = 0;
       this.startAutoLogin();
     },

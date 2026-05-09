@@ -57,10 +57,13 @@
       
       <!-- Suppléments -->
       <div v-if="selectedSupplements.length > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplements.length }})</h4>
+        <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplementsTotalCount }})</h4>
         <div v-for="supplement in selectedSupplements" :key="supplement.id" class="kiosk-summary-row">
-          <span>{{ displaySupplementName(supplement) }}</span>
-          <span class="kiosk-price">+{{ formatPrice(supplement.price) }}</span>
+          <span>
+            {{ displaySupplementName(supplement) }}
+            <strong v-if="supplement.count > 1" class="kiosk-summary-count">×{{ supplement.count }}</strong>
+          </span>
+          <span class="kiosk-price">+{{ formatPrice(supplement.linePrice) }}</span>
         </div>
       </div>
       
@@ -111,7 +114,7 @@
         role="group"
         aria-labelledby="kiosk-order-summary-qty-label"
       >
-        <button
+        <button type="button"
           @click="decrementQty"
           :disabled="selections.quantity <= 1"
           :aria-label="$t('kiosk.decrease_qty')"
@@ -122,7 +125,7 @@
           :aria-label="$t('kiosk.quantity_of', { n: selections.quantity })"
           aria-live="polite"
         >{{ selections.quantity }}</span>
-        <button
+        <button type="button"
           @click="incrementQty"
           :aria-label="$t('kiosk.increase_qty')"
           data-testid="kiosk-order-summary-qty-plus"
@@ -135,7 +138,12 @@
 <script>
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
-import { calculateKioskRunningTotal, getKioskExtraSauceUnitPrice, getKioskMenuAddonPrice } from '../../../helpers/kioskPricing';
+import {
+  calculateKioskRunningTotal,
+  getKioskExtraSauceUnitPrice,
+  getKioskMenuAddonPrice,
+  normalizeKioskSelectionCount,
+} from '../../../helpers/kioskPricing';
 
 export default {
   name: 'KioskOrderSummary',
@@ -159,12 +167,17 @@ export default {
       if (!this.item.extras) return [];
 
       return this.item.extras
-        .filter(e => this.selections.supplements?.[e.id] && parseFloat(e.convert_price || e.price || 0) > 0)
+        .filter(e => normalizeKioskSelectionCount(this.selections.supplements?.[e.id]) > 0 && parseFloat(e.convert_price || e.price || 0) > 0)
         .map(e => ({
           id: e.id,
           name: e.name,
-          price: parseFloat(e.convert_price || e.price || 0)
+          count: normalizeKioskSelectionCount(this.selections.supplements?.[e.id]),
+          price: parseFloat(e.convert_price || e.price || 0),
+          linePrice: parseFloat(e.convert_price || e.price || 0) * normalizeKioskSelectionCount(this.selections.supplements?.[e.id])
         }));
+    },
+    selectedSupplementsTotalCount() {
+      return this.selectedSupplements.reduce((sum, supplement) => sum + supplement.count, 0);
     },
     viandeDisplayRows() {
       const meta = this.selections._viandeMeta;
@@ -294,6 +307,10 @@ export default {
       const boissonId = this.selections.boissonChoice;
       if (!boissonId) return this.$t('kiosk.wizard.summary.not_selected_drink');
 
+      if (this.selections._boissonMeta?.boissonName) {
+        return sanitizeKioskCustomerFacingText(this.selections._boissonMeta.boissonName);
+      }
+
       const boisson = this.item.addons?.find(a => {
         const linked = a.item_addon_id ?? a.addon_item_id;
         return linked === boissonId
@@ -325,8 +342,10 @@ export default {
 
 <style scoped>
 .kiosk-order-summary {
-  padding: 10px 18px 22px;
-  background: var(--kiosk-surface);
+  padding: 14px 18px 26px;
+  background:
+    linear-gradient(180deg, rgba(232, 0, 28, 0.08), transparent 130px),
+    var(--kiosk-surface);
   min-height: 100%;
 }
 
@@ -334,22 +353,25 @@ export default {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  background: var(--kiosk-surface);
-  border: 1px solid var(--kiosk-border);
+  padding: 16px 18px;
+  background: var(--kiosk-surface-alt);
+  border: 1.5px solid var(--kiosk-border);
   border-radius: 18px;
   margin-bottom: 12px;
 }
 
 .kiosk-summary-item.main {
   border: 2px solid var(--kiosk-primary);
-  background: var(--kiosk-primary-soft);
+  background:
+    linear-gradient(135deg, rgba(232, 0, 28, 0.24), rgba(232, 0, 28, 0.07)),
+    var(--kiosk-surface-alt);
+  box-shadow: var(--kiosk-shadow-card);
 }
 
 .kiosk-summary-img {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -374,15 +396,17 @@ export default {
 }
 
 .kiosk-summary-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 900;
   color: var(--kiosk-text);
+  line-height: 1.15;
 }
 
 .kiosk-summary-price {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--kiosk-primary);
-  font-weight: 700;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-summary-sections {
@@ -393,18 +417,18 @@ export default {
 }
 
 .kiosk-summary-section {
-  background: var(--kiosk-surface);
-  border: 1px solid var(--kiosk-border);
+  background: var(--kiosk-surface-alt);
+  border: 1.5px solid var(--kiosk-border);
   border-radius: 16px;
-  padding: 12px 16px;
+  padding: 14px 16px;
 }
 
 .kiosk-summary-section h4 {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--kiosk-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--kiosk-text-2, var(--kiosk-text));
   text-transform: uppercase;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   letter-spacing: 1px;
 }
 
@@ -412,30 +436,51 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 0;
+  gap: 12px;
+  padding: 7px 0;
   border-bottom: 1px solid var(--kiosk-border);
-  font-size: 13px;
-  color: var(--kiosk-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kiosk-text);
+  line-height: 1.3;
 }
 
 .kiosk-summary-row:last-child { border-bottom: none; }
 
+.kiosk-summary-row > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .kiosk-summary-row.boisson {
-  padding-left: 14px;
-  color: var(--kiosk-text-muted);
-  font-size: 12px;
+  padding-inline-start: 14px;
+  color: var(--kiosk-text-2, var(--kiosk-text-muted));
+  font-size: 13px;
 }
 
 .kiosk-free {
   color: var(--kiosk-success);
-  font-weight: 700;
-  font-size: 11px;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .kiosk-price {
   color: var(--kiosk-primary);
-  font-weight: 700;
-  font-size: 12px;
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.kiosk-summary-count {
+  display: inline-flex;
+  margin-inline-start: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
+  color: var(--kiosk-primary, #e8001c);
+  font-size: 11px;
 }
 
 .kiosk-summary-tags {
@@ -448,33 +493,35 @@ export default {
   background: rgba(27,138,58,0.1);
   border: 1px solid var(--kiosk-success);
   color: var(--kiosk-success);
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 50px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .kiosk-summary-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
-  background: var(--kiosk-primary-soft);
-  border: 1px solid var(--kiosk-primary);
-  border-radius: 16px;
-  margin-bottom: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--kiosk-shadow-cta);
 }
 
 .kiosk-summary-total span:first-child {
-  color: var(--kiosk-text-muted);
-  font-size: 15px;
-  font-weight: 700;
+  color: var(--kiosk-text-on-red);
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .kiosk-total-price {
-  color: var(--kiosk-primary);
-  font-size: 24px;
+  color: var(--kiosk-text-on-red);
+  font-size: 28px;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .kiosk-quantity-section {
@@ -483,21 +530,25 @@ export default {
   justify-content: center;
   gap: 16px;
   padding: 12px 18px;
-  background: var(--kiosk-surface);
-  border: 1px solid var(--kiosk-border);
+  background: var(--kiosk-surface-alt);
+  border: 1.5px solid var(--kiosk-border);
   border-radius: 16px;
 }
 
 .kiosk-quantity-section > span {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--kiosk-text-muted);
+  font-weight: 800;
+  color: var(--kiosk-text-2, var(--kiosk-text-muted));
 }
 
 .kiosk-qty-controls {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+[dir="rtl"] .kiosk-qty-controls {
+  direction: ltr;
 }
 
 .kiosk-qty-controls button {
@@ -513,7 +564,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
   border-radius: 50%;
   border: 1.5px solid var(--kiosk-border);
 }
@@ -548,5 +603,6 @@ export default {
   color: var(--kiosk-text);
   min-width: 40px;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 </style>

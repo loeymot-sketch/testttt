@@ -1,5 +1,9 @@
 <template>
-  <div class="kiosk-waiting" :class="{ ready: isReady }">
+  <div
+    class="kiosk-waiting"
+    :class="{ ready: isReady, 'kiosk-ready-flash': _readyFlashActive }"
+    data-testid="kiosk-waiting-root"
+  >
     <!-- Fond animé -->
     <div class="kiosk-waiting-bg" />
 
@@ -61,7 +65,7 @@
 
     <!-- Footer (offline) -->
     <div v-if="isOfflineOrder" class="kiosk-waiting-footer">
-      <button class="kiosk-waiting-new-order" @click="newOrder">
+      <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
         {{ $t('kiosk.new_order') }}
       </button>
     </div>
@@ -69,7 +73,7 @@
     <!-- Footer -->
     <div v-else class="kiosk-waiting-footer">
       <template v-if="isReady">
-        <button class="kiosk-waiting-new-order" @click="newOrder">
+        <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
           {{ $t('kiosk.new_order') }}
         </button>
         <span class="kiosk-waiting-auto-reset">
@@ -81,7 +85,7 @@
           {{ $t('kiosk.waiting_subtitle') }}
         </span>
         <!-- Allow cancellation during preparation (before kitchen starts) -->
-        <button
+        <button type="button"
           v-if="showCancelButton"
           class="kiosk-waiting-cancel-btn"
           @click="confirmCancel"
@@ -108,7 +112,7 @@
           <h2>{{ $t('kiosk.waiting_screen.timeout_title') }}</h2>
           <p>{{ $t('kiosk.waiting_screen.timeout_body_1') }}</p>
           <p>{{ $t('kiosk.waiting_screen.timeout_body_2') }}</p>
-          <button class="kiosk-timeout-btn" @click="newOrder">{{ $t('kiosk.waiting_screen.timeout_home') }}</button>
+          <button type="button" class="kiosk-timeout-btn" @click="newOrder">{{ $t('kiosk.waiting_screen.timeout_home') }}</button>
         </div>
       </div>
     </transition>
@@ -122,11 +126,11 @@
           <p v-if="!cancelError">{{ $t('kiosk.waiting_screen.cancel_modal_body') }}</p>
           <p v-else class="kiosk-cancel-error-msg">{{ cancelError }}</p>
           <div class="kiosk-cancel-actions">
-            <button v-if="!cancelError" class="kiosk-cancel-yes" :disabled="cancelLoading" @click="cancelOrder">
+            <button type="button" v-if="!cancelError" class="kiosk-cancel-yes" :disabled="cancelLoading" @click="cancelOrder">
               <span v-if="!cancelLoading">{{ $t('kiosk.waiting_screen.cancel_yes') }}</span>
               <span v-else class="kiosk-spinner-sm"></span>
             </button>
-            <button class="kiosk-cancel-no" @click="closeCancelModal">
+            <button type="button" class="kiosk-cancel-no" @click="closeCancelModal">
               {{ cancelError ? $t('kiosk.waiting_screen.close') : $t('kiosk.waiting_screen.cancel_no') }}
             </button>
           </div>
@@ -140,7 +144,9 @@
 import { mapActions } from 'vuex';
 import axios from 'axios';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import { onEvents } from '../../../services/eventContract';
+import kioskHardware from '../../../services/kioskHardware';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
@@ -152,9 +158,16 @@ const STATUS_PREPARED  = orderStatusEnum.PREPARED;   // 8
 const STATUS_DELIVERED = orderStatusEnum.DELIVERED;  // 13
 const STATUS_PREPARING = orderStatusEnum.PREPARING;  // 7 — kitchen started, cancel no longer allowed
 const STATUS_CANCELLED = orderStatusEnum.CANCELED;   // 16 — cancelled by admin/staff
+const PAYMENT_PAID = paymentStatusEnum.PAID;
+const PAYMENT_PENDING_COUNTER = paymentStatusEnum.PENDING_COUNTER;
 
 export default {
   name: 'KioskWaitingComponent',
+
+  inject: {
+    showToast: { default: () => () => {} },
+  },
+
   props: {
     orderId: { type: [String, Number], required: true },
   },
@@ -177,6 +190,7 @@ export default {
       timedOut: false, // [AUDIT-P1-C] true after 15 min timeout
       _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
+      _readyFlashActive: false,
     };
   },
   mounted() {
@@ -226,7 +240,7 @@ export default {
             },
           },
         ]);
-        console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo subscription failed:', e.message);
       }
@@ -237,7 +251,7 @@ export default {
       if (branchId <= 0) return;
       try {
         this._eventSub?.unsubscribe();
-        console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
       } catch (e) {
         console.warn('[KioskWaiting] Echo unsubscribe error:', e.message);
       }
@@ -266,14 +280,17 @@ export default {
         const data = res?.data?.data || res?.data || {};
         const numericStatus = parseInt(data.status ?? data.order_status ?? -1, 10);
 
+        if (data.queue_number) this.queueNumber = data.queue_number;
+
         if (numericStatus === STATUS_PREPARED || numericStatus === STATUS_DELIVERED) {
-          if (data.queue_number) this.queueNumber = data.queue_number;
           this.markReady();
         } else if (numericStatus === STATUS_CANCELLED) {
           // [SPLASH] Order was cancelled by admin/staff — redirect to idle with message
           this.stopAll();
           this.reset();
           this.$router.push({ name: 'kiosk.idle' });
+        } else if (this.shouldRouteToConfirmation(data, numericStatus)) {
+          await this.routeToConfirmation(data);
         } else if (numericStatus >= STATUS_PREPARING) {
           // Kitchen started — hide cancel button (API will refuse anyway)
           this.showCancelButton = false;
@@ -293,6 +310,35 @@ export default {
       }
     },
 
+    shouldRouteToConfirmation(order, numericStatus) {
+      if (!order || numericStatus === STATUS_CANCELLED) return false;
+      if (numericStatus === STATUS_PREPARED || numericStatus === STATUS_DELIVERED) return false;
+      if (numericStatus >= STATUS_PREPARING) return false;
+
+      const paymentStatus = parseInt(order.payment_status, 10);
+      return paymentStatus === PAYMENT_PAID
+        || paymentStatus === PAYMENT_PENDING_COUNTER
+        || order.payment_pending_counter === true;
+    },
+
+    async routeToConfirmation(order) {
+      this.stopAll();
+      const queueNumber = order.queue_number || this.queueNumber;
+      if (queueNumber) this.queueNumber = queueNumber;
+      this.$store.commit('kioskCart/SET_ORDER_REF', {
+        orderId: order.id || this.orderId,
+        queueNumber,
+      });
+      const total = order.total ?? this.$route.query.total ?? null;
+      await this.$router.push({
+        name: 'kiosk.confirmation',
+        query: {
+          ...(queueNumber ? { number: queueNumber } : {}),
+          ...(total !== null && total !== undefined && total !== '' ? { total } : {}),
+        },
+      }).catch(() => {});
+    },
+
     markReady() {
       clearInterval(this.pollTimer);
       this.isReady = true;
@@ -308,9 +354,16 @@ export default {
       }, 1000);
     },
 
-    playReadySound() {
+    async playReadySound() {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) throw new Error('AudioContext unavailable');
+        const ctx = new Ctor();
+        if (ctx.state === 'suspended') {
+          await ctx.resume().catch(() => {});
+        }
+        if (ctx.state !== 'running') throw new Error('AudioContext not running');
+
         [523, 659, 784].forEach((freq, i) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -326,6 +379,17 @@ export default {
         setTimeout(() => {
           try { ctx.close(); } catch (_) {}
         }, 1200);
+      } catch (_) {
+        this.triggerReadyVisualFallback();
+      }
+    },
+
+    triggerReadyVisualFallback() {
+      this.showToast(this.$t('kiosk.waiting.ready_visual_fallback'), 'info', 4000);
+      this._readyFlashActive = true;
+      window.setTimeout(() => { this._readyFlashActive = false; }, 3000);
+      try {
+        kioskHardware.haptic('success');
       } catch (_) {}
     },
 
@@ -360,7 +424,13 @@ export default {
       this.cancelLoading = true;
       this.cancelError = null;
       try {
-        await axios.post(`frontend/order/change-status/${this.orderId}`, { status: 16 });
+        // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
+        // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
+        // when actor is kiosk machine token.
+        await axios.post(`frontend/order/change-status/${this.orderId}`, {
+          status: STATUS_CANCELLED,
+          reason: 'customer_request',
+        });
         // Success — clean up and return to idle
         this.showCancelConfirm = false;
         this.stopAll();
@@ -405,7 +475,7 @@ export default {
 .kiosk-waiting {
   width: 100vw;
   height: 100vh;
-  background: #f7f7f8;
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -415,18 +485,18 @@ export default {
   transition: background 0.5s ease;
 }
 
-.kiosk-waiting.ready { background: #f6fbf7; }
+.kiosk-waiting.ready { background: var(--kiosk-page-bg, var(--kiosk-bg)); }
 
 /* Fond animé */
 .kiosk-waiting-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(232,0,28,0.05) 0%, transparent 70%);
+  background: var(--kiosk-product-media-bg, transparent);
   animation: bgPulse 4s ease-in-out infinite;
 }
 
 .kiosk-waiting.ready .kiosk-waiting-bg {
-  background: radial-gradient(ellipse at center, rgba(46,204,113,0.10) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(46,204,113,0.14) 0%, transparent 70%);
 }
 
 @keyframes bgPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
@@ -488,9 +558,9 @@ export default {
 }
 
 .kiosk-waiting-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #1f1f1f;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 900;
+  color: var(--kiosk-text);
   margin: 0;
   max-width: 500px;
   line-height: 1.3;
@@ -505,30 +575,30 @@ export default {
 }
 
 .kiosk-waiting-number-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #999;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--kiosk-text-muted);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
 
 .kiosk-waiting-number {
-  font-size: 100px;
+  font-size: clamp(112px, 16vw, 180px);
   font-weight: 900;
-  color: #e8001c;
+  color: var(--kiosk-primary);
   line-height: 1;
   letter-spacing: -4px;
   text-shadow: 0 6px 24px rgba(232,0,28,0.12);
 }
 
 .kiosk-waiting.ready .kiosk-waiting-number {
-  color: #2ECC71;
+  color: var(--kiosk-success);
   text-shadow: 0 6px 24px rgba(46,204,113,0.12);
 }
 
 .kiosk-waiting-hint, .kiosk-ready-hint {
-  font-size: 17px;
-  color: #777;
+  font-size: 19px;
+  color: var(--kiosk-text-muted);
   margin: 0;
   max-width: 400px;
   line-height: 1.5;
@@ -536,10 +606,10 @@ export default {
 
 /* Barre progress */
 .kiosk-waiting-progress {
-  width: 240px;
-  height: 4px;
-  background: #ececec;
-  border-radius: 2px;
+  width: min(360px, 58vw);
+  height: 8px;
+  background: var(--kiosk-surface-alt);
+  border-radius: 999px;
   overflow: hidden;
 }
 
@@ -596,9 +666,9 @@ export default {
 }
 
 .kiosk-ready-title {
-  font-size: 36px;
+  font-size: clamp(42px, 6vw, 68px);
   font-weight: 900;
-  color: #2ECC71;
+  color: var(--kiosk-success);
   margin: 0;
   animation: fadeInUp 0.5s ease;
 }
@@ -620,13 +690,14 @@ export default {
 }
 
 .kiosk-waiting-new-order {
-  padding: 16px 38px;
-  background: #e8001c;
-  color: white;
+  min-height: 76px;
+  padding: 18px 42px;
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 14px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 28px;
+  font-size: 22px;
+  font-weight: 900;
   cursor: pointer;
   box-shadow: 0 6px 24px rgba(232,0,28,0.2);
   transition: all 0.15s ease;
@@ -635,14 +706,14 @@ export default {
 .kiosk-waiting-new-order:active { transform: scale(0.97); }
 
 .kiosk-waiting-auto-reset {
-  font-size: 14px;
-  color: #999;
+  font-size: 16px;
+  color: var(--kiosk-text-muted);
   margin-top: 8px;
 }
 
 .kiosk-waiting-preparing-hint {
-  font-size: 16px;
-  color: #999;
+  font-size: 18px;
+  color: var(--kiosk-text-muted);
   font-style: italic;
 }
 
@@ -668,7 +739,7 @@ export default {
 .kiosk-offline-spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid #ececec;
+  border: 3px solid var(--kiosk-border);
   border-top-color: var(--kiosk-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -695,7 +766,7 @@ export default {
 .kiosk-cancel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: var(--kiosk-overlay-modal);
   backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
@@ -703,25 +774,25 @@ export default {
   justify-content: center;
 }
 .kiosk-cancel-modal {
-  background: white;
-  border: 1px solid #f0d5d9;
+  background: var(--kiosk-surface);
+  border: 1px solid var(--kiosk-border);
   border-radius: 22px;
   padding: 2.5rem 2rem;
   max-width: 440px;
   width: 90%;
   text-align: center;
-  color: #1f1f1f;
+  color: var(--kiosk-text);
 }
 .kiosk-cancel-icon  { font-size: 3rem; margin-bottom: 0.75rem; }
 .kiosk-cancel-modal h2 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem; }
-.kiosk-cancel-modal p  { color: #777; font-size: 0.95rem; margin: 0 0 1.5rem; }
+.kiosk-cancel-modal p  { color: var(--kiosk-text-muted); font-size: 0.95rem; margin: 0 0 1.5rem; }
 .kiosk-cancel-actions  { display: flex; gap: 1rem; }
 .kiosk-cancel-yes {
   flex: 1;
-  background: #fff3f5;
-  border: 1px solid #f0b8c2;
+  background: var(--kiosk-primary-soft);
+  border: 1px solid var(--kiosk-border);
   border-radius: 14px;
-  color: #d7263d;
+  color: var(--kiosk-primary);
   padding: 0.9rem;
   font-size: 1rem;
   font-weight: 600;
@@ -729,10 +800,10 @@ export default {
 }
 .kiosk-cancel-no {
   flex: 1;
-  background: #f7f7f8;
-  border: 1px solid #e4e4e4;
+  background: var(--kiosk-surface-alt);
+  border: 1px solid var(--kiosk-border);
   border-radius: 14px;
-  color: #444;
+  color: var(--kiosk-text);
   padding: 0.9rem;
   font-size: 1rem;
   font-weight: 600;
@@ -760,8 +831,8 @@ export default {
 /* Network lost banner */
 .kiosk-network-banner {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  background: #e8001c;
-  color: #fff;
+  background: var(--kiosk-primary);
+  color: var(--kiosk-text-on-red);
   display: flex; align-items: center; justify-content: center; gap: 0.6rem;
   padding: 0.65rem 1rem;
   font-size: 0.95rem; font-weight: 600;
@@ -771,4 +842,20 @@ export default {
 .slide-down-banner-leave-active { transition: transform 0.35s ease, opacity 0.35s ease; }
 .slide-down-banner-enter-from,
 .slide-down-banner-leave-to { transform: translateY(-100%); opacity: 0; }
+
+/* Audio indisponible — flash visuel 3s (WCAG 2.3.3 reduced motion) */
+.kiosk-waiting.kiosk-ready-flash {
+  animation: kioskReadyFlash 3s ease-out 1;
+}
+@keyframes kioskReadyFlash {
+  0% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0); }
+  15% { box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.12); }
+  100% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-waiting.kiosk-ready-flash {
+    animation: none;
+    box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.08);
+  }
+}
 </style>

@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="kiosk-loyalty-header">
-      <button class="kiosk-back-btn" @click="goBack">
+      <button type="button" class="kiosk-back-btn" @click="goBack">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round"/>
@@ -33,12 +33,12 @@
             maxlength="20"
             @keyup.enter="checkLoyalty"
           />
-          <button class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
+          <button type="button" class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
         </div>
 
         <!-- Clavier numérique tactile -->
         <div class="kiosk-numpad">
-          <button
+          <button type="button"
             v-for="key in numpadKeys"
             :key="key"
             class="kiosk-numpad-btn"
@@ -58,7 +58,7 @@
 
         <div v-if="error" class="kiosk-loyalty-error">{{ error }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!code.trim() || loading"
           @click="checkLoyalty"
@@ -67,12 +67,12 @@
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.skip') }}
         </button>
 
         <!-- Register new customer -->
-        <button class="kiosk-loyalty-register-btn" @click="step = 'register'">
+        <button type="button" class="kiosk-loyalty-register-btn" @click="step = 'register'">
           {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
@@ -133,7 +133,7 @@
 
         <div v-if="registerError" class="kiosk-loyalty-error">{{ registerError }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!registerName.trim() || !registerPhone.trim() || registerLoading"
           @click="submitRegister"
@@ -141,7 +141,7 @@
           <span v-if="!registerLoading">{{ $t('kiosk.loyalty_screen.register_submit') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
-        <button class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
+        <button type="button" class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
       </div>
     </div>
 
@@ -184,7 +184,7 @@
 
         <!-- Options : utiliser ou pas -->
         <div v-if="canRedeem" class="kiosk-loyalty-options">
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
             @click="redeemChoice = 'yes'"
@@ -200,7 +200,7 @@
             </div>
           </button>
 
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'no' }"
             @click="redeemChoice = 'no'"
@@ -223,7 +223,7 @@
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
           :disabled="canRedeem && !redeemChoice"
@@ -231,7 +231,7 @@
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.cancel') }}
         </button>
       </div>
@@ -286,7 +286,7 @@
         <p class="kiosk-loyalty-confirm-sub">
           {{ appliedDiscount > 0 ? $t('kiosk.loyalty_screen.confirm_discount_sub') : $t('kiosk.loyalty_screen.confirm_saved_sub') }}
         </p>
-        <button class="kiosk-btn-primary full" @click="proceedToPayment">
+        <button type="button" class="kiosk-btn-primary full" @click="proceedToPayment">
           {{ $t('kiosk.loyalty_screen.continue_payment') }}
         </button>
       </div>
@@ -320,6 +320,9 @@ export default {
   inject: {
     showToast: { default: () => () => {} },
   },
+
+  // [MEGA 2.E / F-09] Hard cap on loyalty check latency (QR/keyboard path uses same API).
+  LOYALTY_HTTP_TIMEOUT_MS: 25000,
 
   data() {
     return {
@@ -423,8 +426,9 @@ export default {
     ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.get('frontend/loyalty/config');
+        const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
         this.minRedeemPoints = cfg.min_redeem_points || 100;
         if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
@@ -483,8 +487,9 @@ export default {
       if (!this.code.trim()) return;
       this.loading = true;
       this.error = null;
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() });
+        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() }, { timeout: ms });
         const data = res.data?.data || res.data || {};
         // Normalize field names: API returns `points`, UI uses `loyalty_point`
         this.customer = {
@@ -494,8 +499,12 @@ export default {
         this.discountValue = parseFloat(data.discount_value || 0);
         this.step = 'balance';
       } catch (err) {
-        const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-        this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          this.error = this.$t('kiosk.loyalty_screen.request_timeout');
+        } else {
+          const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
+          this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        }
       } finally {
         this.loading = false;
       }

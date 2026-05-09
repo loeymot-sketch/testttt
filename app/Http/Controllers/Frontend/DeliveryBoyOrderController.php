@@ -8,10 +8,11 @@ use App\Models\Order;
 use App\Services\OrderService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PaginateRequest;
-use App\Http\Requests\OrderStatusRequest;
 use App\Http\Resources\OrderDetailsResource;
 use App\Http\Resources\DeliveryBoyOrderCountResource;
 use App\Http\Resources\SimpleDeliveryBoyOrderResource;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class DeliveryBoyOrderController extends Controller
 {
@@ -35,6 +36,8 @@ class DeliveryBoyOrderController extends Controller
     {
         try {
             return new OrderDetailsResource($this->orderService->deliveryBoyOrderDetails($order));
+        } catch (HttpExceptionInterface $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -49,10 +52,16 @@ class DeliveryBoyOrderController extends Controller
         }
     }
 
-    public function deliveryBoyOrderChangeStatus(Order $order, OrderStatusRequest $request)
+    public function deliveryBoyOrderChangeStatus(Order $order, Request $request)
     {
         try {
+            $request->validate([
+                'status' => ['required', 'integer'],
+            ]);
+
             return new OrderDetailsResource($this->orderService->deliveryBoyOrderChangeStatus($order, $request));
+        } catch (HttpExceptionInterface $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

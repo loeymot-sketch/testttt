@@ -43,8 +43,8 @@
 </template>
 
 <script>
-import axios from 'axios';
 import KioskErrorLayoutComponent from './KioskErrorLayoutComponent.vue';
+import { trackKioskErrorEvent } from '../../../helpers/kioskAnalytics';
 
 /**
  * KioskErrorPaymentRefusedComponent — Kiosk Design V1 Phase 3.5
@@ -67,7 +67,6 @@ export default {
     data() { return { retrying: false }; },
     mounted() {
         this.logEvent('error_shown', {
-            subtype: 'payment_refused',
             context: {
                 error_code: this.errorCode,
                 order_id: this.orderId,
@@ -77,21 +76,21 @@ export default {
     methods: {
         async retryPayment() {
             this.retrying = true;
-            this.logEvent('error_payment_retry', { subtype: 'payment_refused' });
+            this.logEvent('error_payment_retry');
             this.$emit('retry');
             setTimeout(() => { this.retrying = false; }, 500);
         },
         payCounter() {
-            this.logEvent('error_payment_switch_cash', { subtype: 'payment_refused' });
+            this.logEvent('error_payment_switch_cash');
             this.$emit('pay-at-counter');
         },
         cancelOrder() {
-            this.logEvent('error_payment_cancel', { subtype: 'payment_refused' });
+            this.logEvent('error_payment_cancel');
             this.$emit('cancel-order');
             this.$router?.push({ name: 'kiosk.idle' }).catch(() => {});
         },
         logEvent(type, meta = {}) {
-            axios.post('/frontend/kiosk/event', { type, ...meta }).catch(() => {});
+            trackKioskErrorEvent(type, 'payment_refused', meta);
         },
     },
 };

@@ -1,7 +1,34 @@
 <template>
-  <div class="kiosk-app" @touchstart="resetIdleTimer" @click="resetIdleTimer" @keydown="resetIdleTimer">
+  <div
+    class="kiosk-app"
+    :class="`kiosk-theme--${themeMode}`"
+    :data-kiosk-theme="themeMode"
+    @touchstart="resetIdleTimer"
+    @click="resetIdleTimer"
+    @keydown="resetIdleTimer"
+  >
 
-    <ConnectionStatusBanner />
+    <ConnectionStatusBanner suppress-transient />
+
+    <CatalogChangeToastComponent
+      :visible="catalogChangeToastVisible"
+      :message="catalogChangeToastMessage"
+      :removed-selections="catalogChangeRemovedSelections"
+      :severity="catalogChangeSeverity"
+      @review="reviewCatalogChangedCart"
+      @dismiss="dismissCatalogChangeToast"
+    />
+
+    <button
+      type="button"
+      class="kiosk-theme-toggle"
+      data-testid="kiosk-theme-toggle"
+      :aria-label="themeToggleAriaLabel"
+      :aria-pressed="String(themeMode === 'dark')"
+      @click.stop="toggleTheme"
+    >
+      <span aria-hidden="true">{{ themeMode === 'dark' ? '☀' : '☾' }}</span>
+    </button>
 
     <!-- Initialisation : overlay pendant le chargement de la branche -->
     <transition name="fade">
@@ -17,22 +44,28 @@
         <div class="kiosk-init-error-icon">⚠️</div>
         <p class="kiosk-init-error-title">{{ $t('kiosk.app.service_unavailable') }}</p>
         <p class="kiosk-init-error-sub">{{ branchError }}</p>
-        <button class="kiosk-init-retry-btn" @click="loadBranch">{{ $t('kiosk.app.retry') }}</button>
+        <button type="button" class="kiosk-init-retry-btn" @click="loadBranch">{{ $t('kiosk.app.retry') }}</button>
       </div>
     </transition>
 
     <!-- Panier flottant (visible hors idle) -->
     <transition name="slide-down">
-      <div v-if="showCartBar && cartCount > 0" class="kiosk-cart-bar" @click.stop="goToCart">
-        <div class="kiosk-cart-bar-left">
+      <button
+        v-if="showCartBar && cartCount > 0"
+        type="button"
+        class="kiosk-cart-bar"
+        :aria-label="cartBarAriaLabel"
+        @click.stop="goToCart"
+      >
+        <span class="kiosk-cart-bar-left">
           <span class="kiosk-cart-bar-badge">{{ cartCount }}</span>
           <span class="kiosk-cart-bar-label">{{ $t('kiosk.app.cart_bar_label') }}</span>
-        </div>
-        <div class="kiosk-cart-bar-right">
+        </span>
+        <span class="kiosk-cart-bar-right">
           <span class="kiosk-cart-bar-total">{{ formatPrice(cartTotal) }}</span>
-          <span class="kiosk-cart-bar-arrow">›</span>
-        </div>
-      </div>
+          <span class="kiosk-cart-bar-arrow" aria-hidden="true">›</span>
+        </span>
+      </button>
     </transition>
 
     <!-- Offline sync indicator -->
@@ -63,22 +96,36 @@
       </div>
     </transition>
 
-    <!-- Vue enfant (page courante) -->
-    <router-view
-      v-slot="{ Component }"
-      @add-to-cart="handleAddToCart"
-      @go-to-cart="goToCart"
-      @start-order="startOrder"
-      @reset-kiosk="resetKiosk"
-    >
-      <transition :name="transitionName" mode="out-in">
-        <!--
-          Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
-          catégorie refait toute la transition slide-left du shell (effet « toujours pareil »).
-          La liste produits anime alors localement dans KioskCategoriesComponent.
-        -->
-        <component :is="Component" :key="kioskRouterViewKey" />
-      </transition>
+    <transition name="slide-down">
+      <button
+        v-if="showOfflineConflictCta"
+        type="button"
+        class="kiosk-offline-conflict-cta"
+        data-testid="kiosk-offline-conflict-cta"
+        @click="openOfflineConflictModal"
+      >
+        Voir
+      </button>
+    </transition>
+
+    <!-- Vue enfant (page courante)
+         Pas de <transition> sur le router-view : en prod Playwright a montré des états
+         où le DOM sous .kiosk-app ne contenait plus que le bouton thème (vue routée
+         jamais montée / transition Vue bloquée) alors que l’URL était /kiosk/categories.
+         Les écrans gardent leurs transitions locales (wizard, paniers, etc.). -->
+    <router-view v-slot="{ Component }">
+      <!--
+        Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
+        catégorie remonterait tout le shell. Les @listeners sont sur <component>.
+      -->
+      <component
+        :is="Component"
+        :key="kioskRouterViewKey"
+        @add-to-cart="handleAddToCart"
+        @go-to-cart="goToCart"
+        @start-order="startOrder"
+        @reset-kiosk="resetKiosk"
+      />
     </router-view>
 
     <!-- Feedback tactile visuel -->
@@ -96,18 +143,13 @@
       @leave="onInactivityLeave"
     />
 
-    <!-- Admin panel (accessible via 5 taps rapides sur la zone secrète) -->
-    <div
-      class="kiosk-admin-trigger"
-      @click="handleAdminTap"
-      :title="$t('kiosk.app.admin_trigger_title')"
+    <KioskOfflineConflictModalComponent
+      v-model="offlineConflictModalOpen"
+      :entries="offlineConflictEntries"
+      @opened="trackOfflineConflictModalOpened"
+      @cancel-entry="cancelOfflineConflictEntry"
+      @force-entry="forceOfflineConflictEntry"
     />
-    <transition name="fade">
-      <KioskAdminComponent
-        v-if="showAdmin"
-        @close="showAdmin = false"
-      />
-    </transition>
 
     <!-- Toast notifications globales -->
     <KioskToastComponent ref="toast" />
@@ -116,16 +158,28 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex';
-import { getPendingCount, getAbandonedCount, startAutoSync, stopAutoSync } from '../../../helpers/kioskOfflineQueue';
-import KioskAdminComponent from './KioskAdminComponent.vue';
+import {
+  cancelStaleEntry,
+  forceRetryEntry,
+  getAbandonedCount,
+  getPendingCount,
+  getStaleEntries,
+  startAutoSync,
+  stopAutoSync,
+} from '../../../helpers/kioskOfflineQueue';
+
 import KioskToastComponent from './KioskToastComponent.vue';
+import CatalogChangeToastComponent from './CatalogChangeToastComponent.vue';
+import KioskOfflineConflictModalComponent from './KioskOfflineConflictModalComponent.vue';
 import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import axios from 'axios';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
-import { onEvent } from '../../../services/eventContract';
+import { onEvents } from '../../../services/eventContract';
+import { useCatalogChangeNotifier } from '../../../composables/useCatalogChangeNotifier';
 // [PHASE-4.4] Sync store kioskSettings → <html data-kiosk-* / lang / dir>.
 import { applyKioskA11yFromStore } from '../../../composables/useKioskA11y';
+import { setLocale } from '../../../i18n';
 // [PHASE-5] Hardware bridge + analytics helpers
 import kioskHardware from '../../../services/kioskHardware';
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
@@ -134,24 +188,17 @@ import kioskAnalytics from '../../../helpers/kioskAnalytics';
 const IDLE_FALLBACK_MS = 180000;
 const STILL_HERE_FALLBACK_MS = 30000;
 const HEALTHCHECK_INTERVAL_MS = 90000; // brief §5.2 — 90s
-// Ordre canonique pour l'animation de transition directionnelle
-const ROUTE_ORDER = [
-  'kiosk.idle',
-  'kiosk.categories',
-  'kiosk.products',
-  'kiosk.wizard',
-  'kiosk.cart',
-  'kiosk.loyalty',
-  'kiosk.upsell',
-  'kiosk.payment',
-  'kiosk.waiting',
-  'kiosk.confirmation',
-];
 
 export default {
   name: 'KioskAppComponent',
   mixins: [kioskPriceMixin],
-  components: { ConnectionStatusBanner, KioskAdminComponent, KioskToastComponent, KioskInactivityOverlayComponent },
+  components: {
+    ConnectionStatusBanner,
+    KioskToastComponent,
+    CatalogChangeToastComponent,
+    KioskOfflineConflictModalComponent,
+    KioskInactivityOverlayComponent,
+  },
 
   // Provide showToast to all kiosk child components via inject('showToast')
   provide() {
@@ -167,7 +214,6 @@ export default {
       idleTimer: null,
       stillHereTimer: null,
       showStillHere: false,
-      transitionName: 'slide-left',
       ripple: { show: false, x: 0, y: 0 },
       rippleTimer: null,
       branchLoading: true,
@@ -175,20 +221,29 @@ export default {
       offlinePending: 0,
       offlineAbandoned: 0,
       offlineCheckTimer: null,
-      // Admin panel — accessible via 5 taps rapides sur la zone secrète
-      showAdmin: false,
-      _adminTapCount: 0,
-      _adminTapTimer: null,
       _eventSub: null,
+      offlineConflictEntries: [],
+      offlineConflictModalOpen: false,
+      showOfflineConflictCta: false,
+      _offlineQuotaListener: null,
+      _staleToastDebounceTimer: null,
+      _pendingStaleItemIds: new Set(),
+      _catalogChangeNotifier: null,
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
+      themeMode: 'dark',
     };
   },
   computed: {
     ...mapGetters('kioskCart', ['count', 'total']),
     cartCount() { return this.count; },
     cartTotal() { return this.total; },
+    cartBarAriaLabel() {
+      const n = this.cartCount;
+      const articles = n > 1 ? this.$t('kiosk.article_plural') : this.$t('kiosk.article_singular');
+      return `${this.$t('kiosk.app.cart_bar_label')}, ${n} ${articles}, ${this.$t('kiosk.total')} ${this.formatPrice(this.cartTotal)}`;
+    },
     showCartBar() {
       const hiddenRoutes = ['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell'];
       return !hiddenRoutes.includes(this.$route.name);
@@ -219,23 +274,31 @@ export default {
       const raw = Number.isFinite(s?.confirmMs) ? s.confirmMs : 15000;
       return Math.min(60000, Math.max(3000, raw));
     },
+    themeToggleAriaLabel() {
+      return this.themeMode === 'dark'
+        ? 'Passer en mode clair'
+        : 'Passer en mode sombre';
+    },
+    catalogChangeToastVisible() {
+      return !!this._catalogChangeNotifier?.toastVisible?.value;
+    },
+    catalogChangeToastMessage() {
+      return this._catalogChangeNotifier?.toastMessage?.value || '';
+    },
+    catalogChangeRemovedSelections() {
+      return this._catalogChangeNotifier?.removedSelectionsByStep?.value || {};
+    },
+    catalogChangeSeverity() {
+      return this._catalogChangeNotifier?.toastSeverity?.value || 'info';
+    },
   },
   watch: {
-    $route(to, from) {
-      if (to.meta?.kioskStableShell && from.meta?.kioskStableShell) {
-        this.transitionName = 'kiosk-shell-static';
-        this.resetIdleTimer();
-        return;
-      }
-      const toIdx   = ROUTE_ORDER.indexOf(to.name);
-      const fromIdx = ROUTE_ORDER.indexOf(from.name);
-      // Unknown routes (e.g. deep links): default forward
-      this.transitionName = (fromIdx === -1 || toIdx >= fromIdx) ? 'slide-left' : 'slide-right';
-      // Reset idle timer on every navigation
+    $route() {
       this.resetIdleTimer();
     },
   },
   mounted() {
+    this.loadKioskTheme();
     this.startIdleTimer();
     this.loadBranch();
     this._loadSettingsIntoGlobalState();
@@ -259,10 +322,21 @@ export default {
     this.offlinePending = getPendingCount();
     this.offlineAbandoned = getAbandonedCount();
     this.offlineCheckTimer = setInterval(syncCb, 15000);
+    this.refreshOfflineConflictEntries();
+    this._offlineQuotaListener = () => {
+      this.$refs.toast?.show('File saturée. Veuillez relancer la borne.', 'error', 6000);
+    };
+    window.addEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
     if (window._wsService) {
       this._onWsReconnect = () => {
         if (getPendingCount() > 0) {
           startAutoSync((url, data, config) => axios.post(url, data, config || {}), syncCb);
+        }
+        // [V1.5C R2] After a WebSocket reconnect, Pusher may have missed catalog events
+        // during the gap — force a fresh menu fetch for the active branch.
+        const bid = this.$store?.state?.kioskMenu?.branchId;
+        if (bid) {
+          this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId: bid }).catch(() => {});
         }
       };
       window._wsService.on('connected', this._onWsReconnect);
@@ -270,7 +344,6 @@ export default {
   },
   beforeUnmount() {
     this.clearIdleTimer();
-    clearTimeout(this._adminTapTimer);
     clearTimeout(this.rippleTimer);
     clearInterval(this.offlineCheckTimer);
     stopAutoSync();
@@ -286,11 +359,42 @@ export default {
     if (window._wsService && this._onWsReconnect) {
       window._wsService.off('connected', this._onWsReconnect);
     }
+    if (this._offlineQuotaListener) {
+      window.removeEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
+    }
+    if (this._staleToastDebounceTimer) {
+      clearTimeout(this._staleToastDebounceTimer);
+      this._staleToastDebounceTimer = null;
+    }
+    this._catalogChangeNotifier?.stop?.();
+    this._catalogChangeNotifier = null;
+    this._pendingStaleItemIds.clear();
   },
   methods: {
-    ...mapActions('kioskCart', ['reset', 'setBranch']),
+    ...mapActions('kioskCart', ['reset', 'setBranch', 'pruneOfflineQueueOnAvailabilityChanged']),
     ...mapActions('frontendBranch', { loadBranchList: 'lists' }),
     ...mapActions('globalState', { _setGlobalState: 'set' }),
+
+    loadKioskTheme() {
+      let stored = null;
+      try { stored = window.localStorage?.getItem('foodking:kiosk-theme'); } catch (_) {}
+      const next = ['dark', 'light'].includes(stored) ? stored : 'dark';
+      this.themeMode = next;
+      this.applyKioskTheme(next);
+    },
+
+    applyKioskTheme(mode) {
+      try {
+        document.documentElement.setAttribute('data-kiosk-visual-theme', mode);
+      } catch (_) {}
+    },
+
+    toggleTheme() {
+      const next = this.themeMode === 'dark' ? 'light' : 'dark';
+      this.themeMode = next;
+      try { window.localStorage?.setItem('foodking:kiosk-theme', next); } catch (_) {}
+      this.applyKioskTheme(next);
+    },
 
     /**
      * [PHASE-4.4] Wire des watchers Vuex → attributs <html>.
@@ -300,9 +404,7 @@ export default {
      */
     _wireA11yWatchers() {
       const applyLocale = (lang) => {
-        const v = lang || 'fr';
-        document.documentElement.setAttribute('lang', v);
-        document.documentElement.setAttribute('dir', v === 'ar' ? 'rtl' : 'ltr');
+        setLocale(lang || 'fr');
       };
       this._unwatchA11y = [
         this.$store.watch(
@@ -324,19 +426,8 @@ export default {
       ];
     },
 
-    // 5 taps rapides sur la zone secrète (coin bas-gauche) ouvre le panel admin
-    handleAdminTap() {
-      this._adminTapCount++;
-      clearTimeout(this._adminTapTimer);
-      this._adminTapTimer = setTimeout(() => { this._adminTapCount = 0; }, 2000);
-      if (this._adminTapCount >= 5) {
-        this._adminTapCount = 0;
-        this.showAdmin = true;
-      }
-    },
-
-    // [KIOSK-16/17] Load all settings into globalState so kiosk components can read
-    // company_name, kiosk_admin_pin, loyalty rates, etc. without individual axios calls.
+    // [KIOSK-16/17] Load public settings into globalState so kiosk components can read
+    // company_name, loyalty rates, etc. without individual axios calls.
     // Uses globalState/set (not init) to ensure values are always overwritten — init
     // skips keys that already exist, which would leave stale defaults in place.
     async _loadSettingsIntoGlobalState() {
@@ -357,10 +448,13 @@ export default {
         const res = await this.loadBranchList({ vuex: false });
         const branch = res?.data?.data?.[0];
         if (branch?.id) {
+          // W7.A invariant: one kiosk instance operates on one active branch loaded at boot.
+          // All real-time availability side effects must stay scoped to that branch only.
           this.setBranch(branch.id);
           this.branchLoading = false;
           // Pre-warm menu cache in background so Categories screen is instant
           this.$store.dispatch('kioskMenu/fetchMenu', { branchId: branch.id }).catch(() => {});
+          this._startCatalogChangeNotifier(branch.id);
           // [C3] Subscribe to item availability updates for this branch
           this._subscribeEchoChannel(branch.id);
         } else {
@@ -382,22 +476,315 @@ export default {
       if (!window.Echo || !branchId) return;
       this._leaveEchoChannel();
       try {
-        this._eventSub = onEvent(branchId, 'ItemAvailabilityChanged', (event) => {
-          const payload = event.payload;
-          this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
-          // If full refetch needed (price/variations changed), trigger it in background
-          if (payload.type === 'full') {
-            this.$store.dispatch('kioskMenu/fetchMenu', { force: true, branchId }).catch(() => {});
-          }
-        });
+        this._eventSub = onEvents(branchId, [
+          {
+            broadcastAs: 'ItemAvailabilityChanged',
+            handler: (event) => {
+              this._handleItemAvailabilityChanged(event, branchId);
+            },
+          },
+          {
+            broadcastAs: 'CatalogChanged',
+            handler: (event) => {
+              this._handleCatalogChanged(event, branchId);
+              this._handleCatalogChangeMidSession(event);
+            },
+          },
+          {
+            broadcastAs: 'ComposerProfileChanged',
+            handler: (event) => {
+              this._handleCatalogChangeMidSession(event);
+            },
+          },
+          {
+            // [KR2 / KIOSK-K3.5] Subscribe to admin coupon mutations so kiosk
+            // invalidates its local promo cache the moment a code is toggled
+            // off / scoped out / expired. Without this, kiosk could accept a
+            // disabled coupon (stale view) until next REST validate.
+            broadcastAs: 'CouponChanged',
+            handler: (event) => {
+              this._handleCouponChanged(event, branchId);
+            },
+          },
+        ]);
       } catch (_) {
         // Echo auth may fail if token not ready — silent fallback to TTL
+      }
+    },
+
+    _startCatalogChangeNotifier(branchId) {
+      this._catalogChangeNotifier?.stop?.();
+      this._catalogChangeNotifier = useCatalogChangeNotifier({
+        store: this.$store,
+        eventContract: { onEvents },
+        branchId,
+        i18n: { t: this.$t.bind(this) },
+        analytics: kioskAnalytics,
+        hasOpenWizard: () => this.$route?.name === 'kiosk.wizard',
+        autoSubscribe: false,
+      });
+    },
+
+    _handleCatalogChangeMidSession(event) {
+      return this._catalogChangeNotifier?.__onCatalogChanged?.(event)
+        ?.catch?.(() => ({ ignored: true, reason: 'catalog_change_notifier_failed' }));
+    },
+
+    dismissCatalogChangeToast() {
+      this._catalogChangeNotifier?.dismiss?.();
+    },
+
+    reviewCatalogChangedCart() {
+      this.dismissCatalogChangeToast();
+      this.goToCart();
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const panel = document.querySelector('[data-testid="kiosk-cart-root"], .kiosk-cart');
+          if (!panel || typeof panel.focus !== 'function') {
+            return;
+          }
+          if (!panel.hasAttribute('tabindex')) {
+            panel.setAttribute('tabindex', '-1');
+          }
+          panel.focus({ preventScroll: true });
+        }, 0);
+      });
+    },
+
+    _normalizeBranchId(value) {
+      const normalized = parseInt(value, 10);
+      return Number.isFinite(normalized) ? normalized : null;
+    },
+
+    _getActiveBranchId() {
+      return this._normalizeBranchId(
+        this.$store?.getters?.['kioskCart/branchId']
+          ?? this.$store?.state?.kioskCart?.branchId
+          ?? null
+      );
+    },
+
+    _showToast(message, type = 'info', duration = 2800) {
+      this.$refs.toast?.show(message, type, duration);
+    },
+
+    _scheduleStaleToast(itemId) {
+      const normalizedItemId = parseInt(itemId, 10);
+      this._pendingStaleItemIds.add(Number.isFinite(normalizedItemId) ? normalizedItemId : String(itemId || 'unknown'));
+      if (this._staleToastDebounceTimer) {
+        clearTimeout(this._staleToastDebounceTimer);
+      }
+      this._staleToastDebounceTimer = setTimeout(() => {
+        this._flushStaleToast();
+      }, 800);
+    },
+
+    _flushStaleToast() {
+      const count = this._pendingStaleItemIds.size;
+      this._staleToastDebounceTimer = null;
+      if (count === 0) return;
+
+      const message = count === 1
+        ? this.$t('kiosk.offline.stale_single')
+        : this.$t('kiosk.offline.stale_multiple', { count });
+
+      this._showToast(message, 'warning', 6000);
+      this._pendingStaleItemIds.clear();
+    },
+
+    _handleItemAvailabilityChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      // Defensive guard: a kiosk should only react to the single branch selected at boot.
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return Promise.resolve({ ignored: true, reason: 'branch_mismatch' });
+      }
+
+      // [F-04bis] Distinguish global catalogue update (is_available null/undefined,
+      // type = 'status' | 'price' | 'full', branch_id null) from a real branch-scoped
+      // availability flip (is_available === true|false, type = 'branch_availability').
+      // Global updates MUST NOT prune the kiosk cart — they only require a menu refresh
+      // if the change was structural (variations / categories changed).
+      const hasAvailabilitySignal =
+        payload.is_available === true || payload.is_available === false ||
+        payload.is_available === 1 || payload.is_available === 0;
+
+      if (!hasAvailabilitySignal) {
+        if (payload.type === 'full') {
+          this.$store.dispatch('kioskMenu/fetchMenu', {
+            force: true,
+            branchId: activeBranchId ?? eventBranchId ?? subscribedBranchId,
+          }).catch(() => {});
+        }
+        return Promise.resolve({ ignored: true, reason: 'global_no_availability_signal' });
+      }
+
+      this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
+      this.$store.dispatch('kioskCart/pruneUnavailableLines');
+
+      const scopedBranchId = activeBranchId ?? eventBranchId;
+
+      return this.pruneOfflineQueueOnAvailabilityChanged({
+        itemId: payload?.id || payload?.item_id,
+        branchId: scopedBranchId,
+      }).then((result) => {
+        if ((result?.updatedEntries || 0) > 0) {
+          this.refreshOfflineConflictEntries(result.entries || []);
+          this.showOfflineConflictCta = true;
+          this._scheduleStaleToast(payload?.id || payload?.item_id);
+        }
+
+        // If full refetch needed (price/variations changed), trigger it in background.
+        if (payload.type === 'full') {
+          this.$store.dispatch('kioskMenu/fetchMenu', {
+            force: true,
+            branchId: scopedBranchId ?? subscribedBranchId,
+          }).catch(() => {});
+        }
+
+        return result;
+      }).catch(() => ({ ignored: true, reason: 'queue_update_failed' }));
+    },
+
+    _handleCatalogChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return Promise.resolve({ ignored: true, reason: 'branch_mismatch' });
+      }
+
+      const branchId = activeBranchId ?? eventBranchId ?? subscribedBranchId;
+
+      return this.$store.dispatch('kioskMenu/fetchMenu', {
+        force: true,
+        branchId,
+      }).then(() => ({ refreshed: true, entityType: payload.entity_type || null }))
+        .catch(() => ({ ignored: true, reason: 'menu_refresh_failed' }));
+    },
+
+    /**
+     * [KR2 / KIOSK-K3.5] Handle live coupon mutations from admin (cycle 6).
+     * The kiosk doesn't keep a local list of coupons (validates on demand
+     * via REST), so the cleanest invalidation is to clear any cached promo
+     * resolution in the cart store + emit a soft toast for in-session UX.
+     * If a customer typed a code that just got disabled, next pricing
+     * preview will refuse it cleanly instead of silently applying stale state.
+     */
+    _handleCouponChanged(event, subscribedBranchId = null) {
+      const payload = event?.payload || {};
+      const activeBranchId = this._getActiveBranchId();
+      const eventBranchId = this._normalizeBranchId(
+        event?.branchId
+          ?? payload?.branch_id
+          ?? payload?.branchId
+          ?? subscribedBranchId
+      );
+
+      // Branch isolation: ignore events for other branches (defense in depth;
+      // backend already scopes via branch_scope, but this protects against
+      // global broadcasts where branch_id is null).
+      if (
+        activeBranchId !== null
+        && eventBranchId !== null
+        && eventBranchId !== activeBranchId
+      ) {
+        return;
+      }
+
+      try {
+        // Best-effort: clear any cached coupon resolution in the cart store.
+        // Action may not exist yet; that's OK — the next pricing preview will
+        // re-validate against the server.
+        this.$store.dispatch('kioskCart/clearCouponCache', {
+          code: payload?.code || null,
+          changeType: payload?.change_type || null,
+        }).catch(() => {});
+      } catch (_) {
+        // Silent — handler must never break the kiosk shell.
       }
     },
 
     _leaveEchoChannel() {
       this._eventSub?.unsubscribe();
       this._eventSub = null;
+    },
+
+    async refreshOfflineConflictEntries(entries = null) {
+      const nextEntries = Array.isArray(entries) ? entries : await getStaleEntries();
+      this.offlineConflictEntries = nextEntries;
+      this.showOfflineConflictCta = nextEntries.length > 0;
+    },
+
+    openOfflineConflictModal() {
+      this.offlineConflictModalOpen = true;
+    },
+
+    trackOfflineConflictModalOpened() {
+      try {
+        kioskAnalytics.track('offline.queue.v2.conflict_modal_opened', {
+          count: this.offlineConflictEntries.length,
+        });
+      } catch (_) {}
+    },
+
+    async cancelOfflineConflictEntry(localKey) {
+      const removed = await cancelStaleEntry(localKey);
+      if (removed) {
+        await this.refreshOfflineConflictEntries();
+        this.offlinePending = getPendingCount();
+        this.offlineAbandoned = getAbandonedCount();
+        this.$refs.toast?.show('Commande retirée de la file d\'attente.', 'success', 3000);
+        try {
+          kioskAnalytics.track('offline.queue.v2.conflict_resolved', {
+            action: 'cancel',
+            count: 1,
+          });
+        } catch (_) {}
+      }
+      if (this.offlineConflictEntries.length === 0) {
+        this.offlineConflictModalOpen = false;
+      }
+    },
+
+    async forceOfflineConflictEntry(localKey) {
+      const changed = await forceRetryEntry(localKey);
+      if (changed) {
+        await this.refreshOfflineConflictEntries();
+        this.offlinePending = getPendingCount();
+        this.offlineAbandoned = getAbandonedCount();
+        this.$refs.toast?.show('La commande sera réessayée au prochain cycle.', 'success', 3000);
+        try {
+          kioskAnalytics.track('offline.queue.v2.conflict_resolved', {
+            action: 'force',
+            count: 1,
+          });
+        } catch (_) {}
+      }
+      if (this.offlineConflictEntries.length === 0) {
+        this.offlineConflictModalOpen = false;
+      }
     },
 
     startIdleTimer() {
@@ -473,8 +860,11 @@ export default {
       this.rippleTimer = setTimeout(() => { this.ripple.show = false; }, 400);
     },
 
-    startOrder() {
+    startOrder(orderType = null) {
       this.reset();
+      if (orderType !== null && orderType !== undefined) {
+        this.$store.dispatch('kioskCart/setOrderType', orderType);
+      }
       this.$router.push({ name: 'kiosk.categories' });
     },
 
@@ -585,35 +975,64 @@ export default {
 </script>
 
 <style>
-/* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend */
-/* ═══════════════════════════════════════════════════════════════
-   SPLASH / GUR THEME — Fond BLANC, accent ROUGE, aéré, retail
-   ═══════════════════════════════════════════════════════════════ */
+/* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend. */
 .kiosk-app {
-  --kiosk-primary:     #E8001C;
-  --kiosk-primary-dark:#C0001A;
-  --kiosk-primary-light: rgba(232,0,28,0.08);
-  --kiosk-accent:      #E8001C;
-  --kiosk-success:     #2ECC71;
-  --kiosk-warn:        #F39C12;
+  --kiosk-primary:       #E8001C;
+  --kiosk-primary-dark:  #B8000F;
+  --kiosk-primary-soft:  rgba(232, 0, 28, 0.16);
+  --kiosk-primary-light: rgba(232, 0, 28, 0.10);
+  --kiosk-accent:        #E8001C;
+  --kiosk-success:       #22C55E;
+  --kiosk-error:         #FF4961;
+  --kiosk-warning:       #F59E0B;
+  --kiosk-warn:          var(--kiosk-warning);
+  --kiosk-info:          #60A5FA;
 
-  /* Fond CLAIR — style Splash/GUR */
-  --kiosk-bg:          #FFFFFF;
-  --kiosk-bg-2:        #F7F7F8;
-  --kiosk-bg-3:        #EFEFEF;
+  --kiosk-bg:            #070304;
+  --kiosk-bg-2:          #12080A;
+  --kiosk-bg-3:          #1F0A0F;
+  --kiosk-surface:       #130B0E;
+  --kiosk-surface-alt:   #211317;
+  --kiosk-surface-strong:#2D151B;
+  --kiosk-border:        rgba(255, 255, 255, 0.13);
+  --kiosk-border-strong: rgba(255, 255, 255, 0.26);
 
-  /* Compat: ancien nom → nouveau fond */
-  --kiosk-dark:        #FFFFFF;
-  --kiosk-dark-2:      #F7F7F8;
-  --kiosk-dark-3:      #EFEFEF;
+  --kiosk-dark:          var(--kiosk-bg);
+  --kiosk-dark-2:        var(--kiosk-bg-2);
+  --kiosk-dark-3:        var(--kiosk-bg-3);
 
-  --kiosk-text:        #1A1A1A;
-  --kiosk-text-2:      #555555;
-  --kiosk-text-muted:  #999999;
-  --kiosk-border:      #E0E0E0;
-  --kiosk-border-light:rgba(0,0,0,0.06);
-  --kiosk-shadow:      0 2px 8px rgba(0,0,0,0.06);
-  --kiosk-shadow-lg:   0 4px 20px rgba(0,0,0,0.10);
+  --kiosk-text:          #FFFFFF;
+  --kiosk-text-2:        rgba(255, 255, 255, 0.82);
+  --kiosk-text-muted:    rgba(255, 255, 255, 0.70);
+  --kiosk-text-mute:     rgba(255, 255, 255, 0.55);
+  --kiosk-text-on-red:   #FFFFFF;
+  --kiosk-border-light:  rgba(255, 255, 255, 0.08);
+
+  --kiosk-page-bg:
+    radial-gradient(circle at 20% 0%, rgba(232, 0, 28, 0.22), transparent 32%),
+    linear-gradient(160deg, #050102 0%, #120407 42%, #2A070E 100%);
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #180205 0%, #E8001C 55%, #74000B 100%);
+  --kiosk-idle-text: #FFFFFF;
+  --kiosk-idle-muted: rgba(255, 255, 255, 0.88);
+  --kiosk-idle-card-bg: rgba(255, 255, 255, 0.94);
+  --kiosk-idle-card-text: #9E0014;
+  --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 62%);
+  --kiosk-theme-control-bg: rgba(19, 11, 14, 0.82);
+
+  --kiosk-shadow:        0 10px 30px rgba(0, 0, 0, 0.24);
+  --kiosk-shadow-card:   0 18px 48px rgba(0, 0, 0, 0.28);
+  --kiosk-shadow-lift:   0 24px 64px rgba(0, 0, 0, 0.34);
+  --kiosk-shadow-cta:    0 18px 46px rgba(232, 0, 28, 0.34);
+  --kiosk-shadow-modal:  0 28px 74px rgba(0, 0, 0, 0.42);
+  --kiosk-shadow-sticky: 0 -14px 34px rgba(0, 0, 0, 0.24);
+  --kiosk-overlay-modal: rgba(0, 0, 0, 0.72);
+  --kiosk-focus-ring:    #FFFFFF;
+  --kiosk-focus-width:   4px;
+  --kiosk-focus-offset:  2px;
+  --kiosk-status-bg:     rgba(33, 19, 23, 0.92);
+  --kiosk-status-border: rgba(255, 255, 255, 0.20);
+  --kiosk-status-offline:#FFB020;
 
   /* Typography */
   --kiosk-title:       28px;
@@ -635,9 +1054,119 @@ export default {
   font-family: var(--kiosk-font);
   color: var(--kiosk-text);
 }
+
+.kiosk-app.kiosk-theme--light {
+  --kiosk-primary:       #E8001C;
+  --kiosk-primary-dark:  #A90014;
+  --kiosk-primary-soft:  #FFF0F2;
+  --kiosk-primary-light: rgba(232, 0, 28, 0.08);
+  --kiosk-success:       #1B8A3A;
+  --kiosk-error:         #C21E2F;
+  --kiosk-warning:       #B8730B;
+  --kiosk-info:          #2563EB;
+
+  --kiosk-bg:            #FFFBF5;
+  --kiosk-bg-2:          #FFFFFF;
+  --kiosk-bg-3:          #F7F3EC;
+  --kiosk-surface:       #FFFFFF;
+  --kiosk-surface-alt:   #F7F3EC;
+  --kiosk-surface-strong:#FFFFFF;
+  --kiosk-border:        #EEE6D9;
+  --kiosk-border-strong: #D9C9B8;
+
+  --kiosk-dark:          var(--kiosk-bg);
+  --kiosk-dark-2:        var(--kiosk-bg-2);
+  --kiosk-dark-3:        var(--kiosk-bg-3);
+
+  --kiosk-text:          #1A1A1A;
+  --kiosk-text-2:        #3F3435;
+  --kiosk-text-muted:    #5A5A5A;
+  --kiosk-text-mute:     #7D7374;
+  --kiosk-text-on-red:   #FFFFFF;
+  --kiosk-border-light:  rgba(0, 0, 0, 0.06);
+
+  --kiosk-page-bg:
+    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #E8001C 100%);
+  --kiosk-idle-text: #210006;
+  --kiosk-idle-muted: #4A2A2F;
+  --kiosk-idle-card-bg: #111111;
+  --kiosk-idle-card-text: #FFFFFF;
+  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%);
+  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90);
+
+  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
+  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
+  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
+  --kiosk-shadow-cta:    0 14px 30px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
+  --kiosk-overlay-modal: rgba(26, 26, 26, 0.55);
+  --kiosk-focus-ring:    #2563EB;
+  --kiosk-status-bg:     rgba(255, 255, 255, 0.94);
+  --kiosk-status-border: rgba(232, 0, 28, 0.18);
+  --kiosk-status-offline:#A94700;
+}
 .kiosk-app *, .kiosk-app *::before, .kiosk-app *::after {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+}
+
+.kiosk-app .connection-status-banner {
+  top: 14px;
+  left: 50%;
+  right: auto;
+  width: auto;
+  max-width: min(620px, calc(100vw - 160px));
+  min-height: 42px;
+  padding: 8px 44px 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--kiosk-status-border);
+  background: var(--kiosk-status-bg);
+  color: var(--kiosk-text);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.26);
+  transform: translateX(-50%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.kiosk-app .connection-status-banner--reconnecting,
+.kiosk-app .connection-status-banner--offline {
+  background: var(--kiosk-status-bg);
+}
+
+.kiosk-app .connection-status-banner--offline .connection-status-banner__text,
+.kiosk-app .connection-status-banner--reconnecting .connection-status-banner__text {
+  color: var(--kiosk-status-offline);
+}
+
+.kiosk-app .connection-status-banner__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 900;
+}
+
+.kiosk-app .connection-status-banner__close {
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.kiosk-app.kiosk-theme--light .connection-status-banner__close {
+  background: rgba(232, 0, 28, 0.08);
+  color: var(--kiosk-primary);
+}
+
+.kiosk-app:has(.kiosk-wizard) .connection-status-banner {
+  top: 20px;
+  left: 100px;
+  max-width: min(310px, calc(100vw - 220px));
+  transform: none;
 }
 </style>
 
@@ -655,11 +1184,48 @@ export default {
   touch-action: pan-y;
 }
 
+.kiosk-theme-toggle {
+  position: absolute;
+  top: 24px;
+  inset-inline-start: 24px;
+  z-index: 230;
+  width: 60px;
+  height: 60px;
+  min-width: var(--kiosk-touch-comfortable, 60px);
+  min-height: var(--kiosk-touch-comfortable, 60px);
+  border: 1.5px solid var(--kiosk-border-strong, rgba(255,255,255,0.26));
+  border-radius: 50%;
+  background: var(--kiosk-theme-control-bg);
+  color: var(--kiosk-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 900;
+  box-shadow: var(--kiosk-shadow-card);
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.kiosk-theme-toggle:active {
+  transform: scale(0.94);
+}
+
+.kiosk-theme-toggle:focus-visible {
+  outline: var(--kiosk-focus-width, 4px) solid var(--kiosk-focus-ring, #fff);
+  outline-offset: var(--kiosk-focus-offset, 2px);
+}
+
+[dir="rtl"] .kiosk-theme-toggle {
+  inset-inline-start: auto;
+  inset-inline-end: 24px;
+}
+
 /* Offline sync indicator */
 .kiosk-offline-indicator {
   position: absolute;
   top: 12px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
   background: rgba(255,165,0,0.15);
@@ -691,7 +1257,7 @@ export default {
 .kiosk-abandoned-indicator {
   position: absolute;
   top: 12px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
   background: rgba(232, 0, 28, 0.12);
@@ -716,11 +1282,33 @@ export default {
   flex-shrink: 0;
 }
 
+.kiosk-offline-conflict-cta {
+  position: absolute;
+  top: 92px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 201;
+  min-height: 44px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  background: var(--kiosk-primary, #E8001C);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(232, 0, 28, 0.22);
+}
+
+.kiosk-offline-conflict-cta:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 2px;
+}
+
 /* Barre panier flottante */
 .kiosk-cart-bar {
   position: absolute;
   bottom: 24px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 100;
   display: flex;
@@ -734,6 +1322,17 @@ export default {
   box-shadow: 0 8px 32px rgba(232, 0, 28, 0.4);
   cursor: pointer;
   gap: 16px;
+  border: none;
+  font: inherit;
+  text-align: start;
+  appearance: none;
+  -webkit-appearance: none;
+  color: inherit;
+}
+
+.kiosk-cart-bar:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563eb);
+  outline-offset: 3px;
 }
 
 .kiosk-cart-bar-left {
@@ -779,6 +1378,11 @@ export default {
   font-weight: 300;
 }
 
+[dir="rtl"] .kiosk-cart-bar-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
 /* Feedback tactile */
 .kiosk-touch-ripple {
   position: fixed;
@@ -789,24 +1393,6 @@ export default {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 9999;
-}
-
-/* Transitions entre pages */
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-left-enter-from { transform: translateX(100%); opacity: 0; }
-.slide-left-leave-to   { transform: translateX(-100%); opacity: 0; }
-.slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
-.slide-right-leave-to   { transform: translateX(100%); opacity: 0; }
-
-.kiosk-shell-static-enter-active,
-.kiosk-shell-static-leave-active {
-  transition: none;
 }
 
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
@@ -893,7 +1479,7 @@ export default {
 .kiosk-init-error { background: #fff5f5; }
 .kiosk-init-error-icon { font-size: 3.5rem; }
 .kiosk-init-error-title { font-size: 1.4rem; font-weight: 700; margin: 0; color: #1A1A1A; }
-.kiosk-init-error-sub { font-size: 0.95rem; color: #999; margin: 0; text-align: center; max-width: 400px; }
+.kiosk-init-error-sub { font-size: 0.95rem; color: #555; margin: 0; text-align: center; max-width: 400px; }
 .kiosk-init-retry-btn {
   background: #E8001C; color: #fff;
   border: none; border-radius: 50px;
@@ -902,16 +1488,4 @@ export default {
 }
 .kiosk-init-retry-btn:hover { background: #c0001a; }
 
-/* Zone secrète admin — coin bas-gauche, invisible */
-.kiosk-admin-trigger {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 60px;
-  height: 60px;
-  z-index: 9990;
-  cursor: default;
-  /* Invisible but tappable */
-  background: transparent;
-}
 </style>
