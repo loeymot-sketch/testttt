@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +45,22 @@ class OrderPayment extends Model
         'change_amount'  => 'decimal:2',
         'paid_at'        => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // [iter12 P1 PAYMENT 2026-05-09] BranchScope global scope.
+        //
+        // Closes cross-tenant leak in direct OrderPayment queries. Primary
+        // access is via Order::payments (already scoped via Order's BranchScope),
+        // but admin reports + sentinel tests query OrderPayment directly.
+        // SplitPaymentSentinelTest:155 explicitly asserts staff (branch A) cannot
+        // count payments from branch B — this gate now passes via global scope.
+        // BranchScope respects admin bypass (branch_id=0) so multi-branch
+        // dashboards continue to aggregate correctly.
+        static::addGlobalScope(new BranchScope());
+    }
 
     public function order(): BelongsTo
     {
