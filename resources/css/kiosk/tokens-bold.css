@@ -30,38 +30,39 @@
    LIGHT MODE — palette warm appétissante (default)
    ----------------------------------------------------------------------------- */
 :root {
-    /* Surfaces — jamais blanc/gris purs, toujours teinte warm */
-    --kiosk-bold-bg:                #FFF8F1; /* warm off-white */
+    /* FoodKing brand palette V2 (2026-05-10) — aligné mobile app Cayenne
+       Hiérarchie owner : NOIR primaire → ROUGE Cayenne accent → JAUNE highlight → BLANC bg */
+    --kiosk-bold-bg:                #FFFFFF; /* blanc pur — pas de teinte warm */
     --kiosk-bold-surface:           #FFFFFF; /* cards / modals */
-    --kiosk-bold-surface-subtle:    #FBF2E6; /* sections secondaires (sidebar) */
-    --kiosk-bold-surface-strong:    #1A1410; /* footer dramatique, ribbons */
-    --kiosk-bold-surface-overlay:   rgba(26, 20, 16, 0.65);
+    --kiosk-bold-surface-subtle:    #F7F7F7; /* sections secondaires (sidebar) — gris très clair neutre */
+    --kiosk-bold-surface-strong:    #0F0F0F; /* noir primaire — footer, ribbons, CTAs */
+    --kiosk-bold-surface-overlay:   rgba(15, 15, 15, 0.65);
 
-    /* Texte — warm near-black (jamais #000), warm taupe pour secondary */
-    --kiosk-bold-text-primary:      #1A1410;
-    --kiosk-bold-text-secondary:    #6B5D52;
-    --kiosk-bold-text-tertiary:     #9C8C7E;
-    --kiosk-bold-text-inverse:      #FFF5E8;
-    --kiosk-bold-text-on-primary:   #FFF5E8;
-    --kiosk-bold-text-on-accent:    #1A1410;
+    /* Texte — noir primaire, gris neutres (pas de warm taupe) */
+    --kiosk-bold-text-primary:      #0F0F0F;
+    --kiosk-bold-text-secondary:    #5A5A5A;
+    --kiosk-bold-text-tertiary:     #8A8A8A;
+    --kiosk-bold-text-inverse:      #FFFFFF;
+    --kiosk-bold-text-on-primary:   #FFFFFF;
+    --kiosk-bold-text-on-accent:    #0F0F0F;
 
-    /* Bordures warm */
-    --kiosk-bold-border:            #E8DDD4;
-    --kiosk-bold-border-strong:     #1A1410;
-    --kiosk-bold-border-emphasis:   #E63946;
+    /* Bordures neutres */
+    --kiosk-bold-border:            #E5E5E5;
+    --kiosk-bold-border-strong:     #0F0F0F;
+    --kiosk-bold-border-emphasis:   #F4501E;
 
-    /* Brand — rouge food saturé pour CTA principal */
-    --kiosk-bold-primary:           #E63946;
-    --kiosk-bold-primary-hover:     #C82333;
-    --kiosk-bold-primary-active:    #A91D2A;
-    --kiosk-bold-primary-soft:      #FFE5E8;
-    --kiosk-bold-primary-glow:      rgba(230, 57, 70, 0.32);
+    /* Brand — Rouge Cayenne orange-red saturé (mobile app match) */
+    --kiosk-bold-primary:           #F4501E;
+    --kiosk-bold-primary-hover:     #DC4517;
+    --kiosk-bold-primary-active:    #B83A12;
+    --kiosk-bold-primary-soft:      #FFE8DD;
+    --kiosk-bold-primary-glow:      rgba(244, 80, 30, 0.32);
 
-    /* Accent — doré chaud pour highlights, fidélité, badges promo */
-    --kiosk-bold-accent:            #FFB627;
-    --kiosk-bold-accent-hover:      #E69F1F;
-    --kiosk-bold-accent-soft:       #FFF3D6;
-    --kiosk-bold-accent-glow:       rgba(255, 182, 39, 0.28);
+    /* Accent — Jaune gold mobile app (highlights, fidélité, badges promo) */
+    --kiosk-bold-accent:            #F5C518;
+    --kiosk-bold-accent-hover:      #E0B214;
+    --kiosk-bold-accent-soft:       #FFF7D6;
+    --kiosk-bold-accent-glow:       rgba(245, 197, 24, 0.28);
 
     /* Sémantiques — warm-aligned */
     --kiosk-bold-success:           #2D6A4F;
@@ -74,19 +75,19 @@
     --kiosk-bold-danger-soft:       #FFE5E8;
     --kiosk-bold-danger-text:       #6B0820;
 
-    /* Élévation — ombres warm (jamais cool / pure black) */
-    --kiosk-shadow-card-bold:       0 4px 16px rgba(26, 20, 16, 0.08), 0 1px 4px rgba(26, 20, 16, 0.04);
-    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(26, 20, 16, 0.12), 0 2px 6px rgba(26, 20, 16, 0.06);
-    --kiosk-shadow-cta-bold:        0 12px 32px rgba(230, 57, 70, 0.32), 0 4px 12px rgba(230, 57, 70, 0.16);
-    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(230, 57, 70, 0.42), 0 6px 16px rgba(230, 57, 70, 0.20);
-    --kiosk-shadow-hero:            0 24px 64px rgba(26, 20, 16, 0.18), 0 8px 24px rgba(26, 20, 16, 0.10);
-    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(26, 20, 16, 0.06);
-    --kiosk-shadow-pop:             0 8px 24px rgba(26, 20, 16, 0.12);
-    --kiosk-shadow-modal-bold:      0 32px 80px rgba(26, 20, 16, 0.28), 0 12px 32px rgba(26, 20, 16, 0.12);
+    /* Élévation — ombres neutres aligned mobile app (subtiles, pas warm) */
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(15, 15, 15, 0.08), 0 1px 4px rgba(15, 15, 15, 0.04);
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.06);
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(244, 80, 30, 0.32), 0 4px 12px rgba(244, 80, 30, 0.16);
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(244, 80, 30, 0.42), 0 6px 16px rgba(244, 80, 30, 0.20);
+    --kiosk-shadow-hero:            0 24px 64px rgba(15, 15, 15, 0.18), 0 8px 24px rgba(15, 15, 15, 0.10);
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(15, 15, 15, 0.06);
+    --kiosk-shadow-pop:             0 8px 24px rgba(15, 15, 15, 0.12);
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(15, 15, 15, 0.28), 0 12px 32px rgba(15, 15, 15, 0.12);
 
     /* Backdrop blur — pour modals premium */
     --kiosk-backdrop-blur-bold:     blur(16px) saturate(180%);
-    --kiosk-backdrop-overlay-bold:  rgba(26, 20, 16, 0.55);
+    --kiosk-backdrop-overlay-bold:  rgba(15, 15, 15, 0.55);
 }
 
 /* -----------------------------------------------------------------------------

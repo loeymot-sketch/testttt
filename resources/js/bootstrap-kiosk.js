@@ -47,6 +47,21 @@ import '../css/kiosk/typography-bold.css';
 import { bootstrapKioskThemeEarly } from './composables/useKioskTheme';
 bootstrapKioskThemeEarly();
 
+// -- FoodKing brand V2 (2026-05-10) — Visual theme par défaut LIGHT ---------
+// KioskAppComponent (frozen) lit `localStorage.foodking:kiosk-theme` au mount
+// avec fallback `'dark'`. Owner gate : on force `'light'` par défaut sans
+// toucher le composant frozen, en pré-seedant la clé localStorage AVANT
+// Vue ne mount. L'utilisateur peut toujours basculer dark via le toggle
+// (l'écriture explicite localStorage prend précédence sur ce default).
+try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem('foodking:kiosk-theme');
+        if (!stored || !['dark', 'light'].includes(stored)) {
+            window.localStorage.setItem('foodking:kiosk-theme', 'light');
+        }
+    }
+} catch (_) { /* SSR / private mode — ignore */ }
+
 // -- Atoms barrel (re-export) --------------------------------------------------
 export {
     KsButton,

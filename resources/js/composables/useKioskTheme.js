@@ -74,9 +74,9 @@ export function useKioskTheme(injectedStore = null) {
      * Coerce une valeur arbitraire vers une préférence valide.
      */
     function coerce(value) {
-        if (typeof value !== 'string') return 'auto';
+        if (typeof value !== 'string') return 'light';
         const normalized = value.trim().toLowerCase();
-        return SUPPORTED_THEMES.includes(normalized) ? normalized : 'auto';
+        return SUPPORTED_THEMES.includes(normalized) ? normalized : 'light';
     }
 
     /**
@@ -112,7 +112,7 @@ export function useKioskTheme(injectedStore = null) {
      * Lit la préférence initiale depuis le store ou localStorage (fallback).
      */
     function readInitial() {
-        let initial = 'auto';
+        let initial = 'light';
 
         if (store?.state?.kioskSettings?.theme) {
             initial = coerce(store.state.kioskSettings.theme);
@@ -231,7 +231,9 @@ export function useKioskTheme(injectedStore = null) {
  */
 export function bootstrapKioskThemeEarly() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    let initial = 'auto';
+    // FoodKing brand V2 (2026-05-10) — light mode default forcé per owner.
+    // Si user a explicitement choisi dark/auto via toggle, on le respecte.
+    let initial = 'light';
     try {
         const fromLs = window.localStorage?.getItem('kiosk_theme_v1');
         if (fromLs && SUPPORTED_THEMES.includes(fromLs)) initial = fromLs;
