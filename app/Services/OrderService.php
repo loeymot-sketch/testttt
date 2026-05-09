@@ -1503,33 +1503,48 @@ class OrderService
             if ($auth) {
                 // Customer self-cancellation path — owner check only
                 if ($order->user_id == Auth::user()->id) {
-                    if ((int) $order->status === $targetStatus) {
+                    // [iter13 P1 LOCKFORUPDATE 2026-05-09] Self-cancel race fix.
+                    //
+                    // Two simultaneous mobile cancels could read the same status and
+                    // both write a final state — leading to duplicated cashback/loyalty
+                    // refund + corrupted state machine audit trail. Wrap mutate path
+                    // in DB::transaction + lockForUpdate so a single transition wins;
+                    // the second tx sees the new status and exits via the idempotent
+                    // early-return.
+                    [$order, $oldStatus, $skipped] = DB::transaction(function () use ($order, $request, $targetStatus) {
+                        $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                        if ((int) $locked->status === $targetStatus) {
+                            return [$locked, (int) $locked->status, true];
+                        }
+                        $previousStatus = (int) $locked->status;
+                        if ($request->reason) {
+                            $locked->reason = $request->reason;
+                        }
+                        if ($targetStatus === OrderStatus::REJECTED || $targetStatus === OrderStatus::CANCELED) {
+                            if ($locked->transaction) {
+                                app(PaymentService::class)->cashBack(
+                                    $locked,
+                                    'credit',
+                                    'TXN-' . \Illuminate\Support\Str::random(12)
+                                );
+                            }
+                            app(LoyaltyService::class)->refundPoints($locked, 'pos');
+                        }
+                        $locked->status = $request->status;
+                        $locked->save();
+                        OrderStateMachine::recordTransition(
+                            Order::class,
+                            (int) $locked->id,
+                            $previousStatus,
+                            (int) $request->status,
+                            Auth::check() ? (int) Auth::id() : null,
+                            $request->reason ?? null
+                        );
+                        return [$locked, $previousStatus, false];
+                    });
+                    if ($skipped) {
                         return $order;
                     }
-                    $oldStatus = $order->status;
-                    if ($request->reason) {
-                        $order->reason = $request->reason;
-                    }
-                    if ($targetStatus === OrderStatus::REJECTED || $targetStatus === OrderStatus::CANCELED) {
-                        if ($order->transaction) {
-                            app(PaymentService::class)->cashBack(
-                                $order,
-                                'credit',
-                                'TXN-' . \Illuminate\Support\Str::random(12)
-                            );
-                        }
-                        app(LoyaltyService::class)->refundPoints($order, 'pos');
-                    }
-                    $order->status = $request->status;
-                    $order->save();
-                    OrderStateMachine::recordTransition(
-                        Order::class,
-                        (int) $order->id,
-                        (int) $oldStatus,
-                        (int) $request->status,
-                        Auth::check() ? (int) Auth::id() : null,
-                        $request->reason ?? null
-                    );
                     SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
@@ -1713,14 +1728,23 @@ class OrderService
             $targetPaymentStatus = (int) $request->payment_status;
 
             if ($auth) {
-                // Branche customer self-service — INCHANGÉE (out of scope V1).
+                // Branche customer self-service.
                 if ($order->user_id == Auth::user()->id) {
-                    if ((int) $order->payment_status === $targetPaymentStatus) {
-                        return $order;
-                    }
-                    $order->payment_status = $request->payment_status;
-                    $order->save();
-                    return $order;
+                    // [iter13 P1 LOCKFORUPDATE 2026-05-09] Customer payment race fix.
+                    //
+                    // Rapid double-click on "Pay" could let two requests both observe
+                    // UNPAID and both transition to PAID, dispatching duplicate
+                    // webhook/notification side effects. Wrap in tx + lockForUpdate
+                    // so the second request sees the new state and exits idempotent.
+                    return DB::transaction(function () use ($order, $request, $targetPaymentStatus) {
+                        $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                        if ((int) $locked->payment_status === $targetPaymentStatus) {
+                            return $locked;
+                        }
+                        $locked->payment_status = $request->payment_status;
+                        $locked->save();
+                        return $locked;
+                    });
                 } else {
                     abort(403, 'Access denied: you do not have permission to modify this order.');
                 }

@@ -74,6 +74,19 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->when(fn () => (bool) config('catalog_v15.auto_86_preventive_cron.enabled', false));
 
+        // [iter13 P1 STOCK 2026-05-09] Daily quota stale reset.
+        //
+        // Lazy reset (in AvailabilityService::decrementForOrder) only fires
+        // on next order. Branches with no traffic across day boundary stay
+        // on yesterday's counter → permanent unavailable flip if quota was
+        // hit yesterday. Cron runs at 00:05 to clear stale rows even without
+        // traffic. Idempotent (only past-dated rows match WHERE clause).
+        $schedule->command('foodking:availability:reset-stale-quota')
+            ->dailyAt('00:05')
+            ->name('availability-reset-stale-quota')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
         $schedule->call(function () {
