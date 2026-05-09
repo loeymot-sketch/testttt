@@ -11,14 +11,20 @@ use App\Models\Order;
 use App\Enums\TaxType;
 use App\Models\Address;
 use App\Enums\OrderType;
+use App\Models\OrderDiscountLog;
 use App\Models\OrderItem;
 use App\Enums\OrderStatus;
 use App\Models\OrderCoupon;
 use App\Models\Transaction;
 use App\Enums\PaymentStatus;
+use App\Events\OrderCanceled; // allow: domain event class import — audit log written by ActionLog/AuditLogService at call sites.
+use App\Events\OrderCreated;
+use App\Events\OrderStatusChanged;
 use App\Events\SendOrderSms;
 use App\Models\OrderAddress;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
 use App\Libraries\AppLibrary;
@@ -29,6 +35,7 @@ use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\OrderRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\PaginateRequest;
@@ -45,10 +52,14 @@ use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
+use App\Services\Order\OrderQuoteService;
 use App\Services\Orders\OrderItemAllergenSnapshot;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingResult;
 use App\Services\Pricing\PricingService;
+use App\Services\Menu\AvailabilityService;
+use App\Services\DiningTableService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderService
 {
@@ -113,12 +124,12 @@ class OrderService
 
             return Order::with([
                 'transaction',
-                'orderItems.item.media',
-                'orderItems.item.category',
+                'orderItems.orderItem.media',
+                'orderItems.orderItem.category',
                 'branch',
                 'user'
             ])->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
@@ -145,7 +156,7 @@ class OrderService
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
                         } else {
-                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
+                            $this->applyOrderFilter($query, $key, $request);
                         }
                     }
 
@@ -188,7 +199,7 @@ class OrderService
                 $query->where('user_id', $user->id);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
-                        $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
+                        $this->applyOrderFilter($query, $key, $request);
                     }
                     if (in_array($key, $this->exceptFilter)) {
                         $explodes = explode('|', $request);
@@ -224,7 +235,7 @@ class OrderService
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
+                                    $this->applyOrderFilter($query, $key, $request);
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -256,12 +267,17 @@ class OrderService
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
+            $branchId = (int) (Auth::user()?->branch_id ?? 0);
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where('delivery_boy_id', Auth::user()->id)->where(
+            return Order::with('transaction', 'orderItems', 'branch', 'user')
+                    ->where('order_type', "!=", OrderType::POS)
+                    ->where('delivery_boy_id', Auth::user()->id)
+                    ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
+                    ->where(
                         function ($query) use ($requests) {
                             foreach ($requests as $key => $request) {
                                 if (in_array($key, $this->orderFilter)) {
-                                    $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
+                                    $this->applyOrderFilter($query, $key, $request);
                                 }
                                 if (in_array($key, $this->exceptFilter)) {
                                     $explodes = explode('|', $request);
@@ -299,7 +315,7 @@ class OrderService
                         'user_id'          => Auth::user()->id,
                         'status'           => OrderStatus::PENDING,
                         'order_datetime'   => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'            => 0,
                         'subtotal'         => 0,
                         'discount'         => 0,
@@ -356,6 +372,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
+
                     if (!blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             $dbItem = $dbItems[$item->item_id] ?? null;
@@ -367,6 +389,7 @@ class OrderService
                             }
                             $itemPrice = (float) $dbItem->price; // ← prix TOUJOURS depuis la DB
 
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $variationTotal = 0;
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
@@ -376,10 +399,12 @@ class OrderService
                                     if (!$dbVar) {
                                         throw new \InvalidArgumentException("Variation ID {$varId} introuvable.", 422);
                                     }
-                                    $variationTotal += (float) $dbVar->price;
+                                    $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                                    $variationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $extraTotal = 0;
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
@@ -389,7 +414,8 @@ class OrderService
                                     if (!$dbExt) {
                                         throw new \InvalidArgumentException("Extra ID {$extraId} introuvable.", 422);
                                     }
-                                    $extraTotal += (float) $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                                    $extraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -402,7 +428,10 @@ class OrderService
                             $taxName  = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate  = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
 
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
@@ -417,6 +446,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
                                 'item_extra_total'     => $extraTotal,
@@ -445,43 +475,14 @@ class OrderService
                     }
                 }
 
-                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
-                // lockForUpdate() is weak when no rows exist yet (first order of the day).
-                $today = date('Y-m-d');
-                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
-                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
-
-                try {
-                    $lock->block(5);
-
-                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
-                    // Both models use the same 'orders' table — use direct DB query with MAX() for true atomicity
-                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
-                        ->where('branch_id', $this->order->branch_id)
-                        ->whereDate('created_at', $today)
-                        ->whereNotNull('queue_number')
-                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
-                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
-                        ->value('max_num');
-
-                    $nextQueueNum = $maxQueueNum + 1;
-                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P2-F] 4 digits
-
-                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
-                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
-                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' — fallback queue number used.');
-                } finally {
-                    $lock->release();
-                }
-
-                // [AUDIT-FIX P0] Overwrite all financial fields with server-recalculated values
-                $this->order->order_serial_no = date('dmy') . $this->order->id;
-                $this->order->queue_number    = $queueNumber;
-                $this->order->subtotal        = $realSubtotal;
-                $this->order->total_tax       = $totalTax;
-                $this->order->discount        = $calculatedDiscount;
-                $this->order->total           = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
-                $this->order->save();
+                $this->saveOrderWithQueueNumber(function () use ($realSubtotal, $totalTax, $calculatedDiscount): void {
+                    // [AUDIT-FIX P0] Overwrite all financial fields with server-recalculated values.
+                    $this->order->order_serial_no = date('dmy') . $this->order->id;
+                    $this->order->subtotal        = $realSubtotal;
+                    $this->order->total_tax       = $totalTax;
+                    $this->order->discount        = $calculatedDiscount;
+                    $this->order->total           = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                }, 'web');
 
                 if ($request->address_id) {
                     $address = Address::find($request->address_id);
@@ -550,10 +551,34 @@ class OrderService
     {
         // [AUDIT-P49-BUG6] Idempotency: if the cashier double-clicks submit (slow network),
         // return the existing order instead of creating a duplicate.
+        //
+        // [W9-AUDIT PROD-2] Tenant-scope the lookup: previously the query ignored
+        // BranchScope for Admin (branch_id=0), which means the same idempotency key
+        // forwarded by two different branches would incorrectly resolve to the first
+        // matching order across the whole tenant — leaking an order from branch A
+        // to a cashier on branch B as their "duplicate". The intent of idempotency
+        // is per-(branch, key), not per-tenant. We resolve the target branch from
+        // the request payload (already validated against the cashier's own branch
+        // a few lines below for non-admin users), so the lookup is now safe across
+        // both Admin (branch_id=0) and cashier flows.
         $idempotencyKey = $request->header('X-Idempotency-Key');
+        $idempotencyLock = null;
         if ($idempotencyKey) {
-            $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+            $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency PROD-2 scoped lookup (not order-create)
+            // [AUDIT-F-006 Option A] Cache::lock préventif pour parité stricte POS↔Kiosk
+            // (HANDOFF invariant #5 : "POS et Kiosk ont le même comportement face à un
+            // duplicate idempotency_key"). Sans ce lock, un double-clic intense génère
+            // N INSERT dont N-1 échouent et catch QueryException 23000 → bruit logs +
+            // churn DB. Avec le lock, 1 INSERT + N-1 retournent l'existing depuis
+            // findExistingOrderForIdempotencyRecovery. Mirror Kiosk myOrderStore:141-145.
+            $idempotencyLock = Cache::lock(
+                'pos_order_idempotency_' . sha1($targetBranchId . '|' . $idempotencyKey),
+                10
+            );
+            $idempotencyLock->block(5);
+            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
             if ($existing) {
+                $idempotencyLock?->release();
                 return $existing;
             }
         }
@@ -574,9 +599,11 @@ class OrderService
                 }
 
                 // [AUDIT-P1-A] Validate branch_id ownership: cashier can only create orders for their own branch.
-                // Admin (branch_id=0) can create orders for any branch.
+                // Only a real global Admin (Admin role + branch_id=0) can create orders for any branch.
                 $authUser = \Illuminate\Support\Facades\Auth::user();
-                if ($authUser->branch_id !== 0 && (int) $request->branch_id !== (int) $authUser->branch_id) { // allow: defensive branch comparison (not a write)
+                $authBranchId = (int) ($authUser->branch_id ?? 0);
+                if (! $this->isGlobalAdmin($authUser)
+                    && ($authBranchId <= 0 || (int) $request->branch_id !== $authBranchId)) { // allow: defensive branch comparison (not a write)
                     throw new \InvalidArgumentException(
                         'Vous ne pouvez pas créer une commande pour une autre branche.',
                         403
@@ -590,7 +617,7 @@ class OrderService
                         'token' => $request->token,
                         'payment_status' => PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'    => 0,
                         'subtotal' => 0,
                         'discount' => 0,
@@ -618,6 +645,14 @@ class OrderService
                     $realSubtotal = $posSsotPricingResult->accumulatedSubtotal;
                     $totalTax = $posSsotPricingResult->totalTax;
                     $calculatedDiscount = $posSsotPricingResult->discount;
+                    if ((int) $request->coupon_id <= 0) {
+                        $this->assertPosManualDiscountAllowed(
+                            (float) $request->discount,
+                            (float) $posSsotPricingResult->subtotal,
+                            Auth::user(),
+                            (string) $request->discount_reason
+                        );
+                    }
                     // [POS-9.4.BL.1] Persist immutable allergen snapshot on each
                     // order_item row for NF525 fiscal traceability (must be frozen
                     // at order time, not read through a live FK join later).
@@ -649,6 +684,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
+
                     // [AUDIT-FIX P1-1] Single Tax::get() — removed duplicate dead query ($dbTaxes unused)
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                     $realSubtotal = 0;
@@ -666,6 +707,7 @@ class OrderService
 
                             // [PLAN_02 D-002] Calculer prix variations depuis DB (pas du payload)
                             // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $variationTotal = 0;
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
@@ -686,12 +728,14 @@ class OrderService
                                     422
                                 );
                             }
-                            $variationTotal += (float) $dbVar->price;
+                            $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                            $variationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
                             // [PLAN_02 D-002] Calculer prix extras depuis DB (pas du payload)
                             // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $extraTotal = 0;
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
@@ -712,7 +756,8 @@ class OrderService
                                     422
                                 );
                             }
-                            $extraTotal += (float) $dbExt->price;
+                            $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                            $extraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
                             
@@ -727,6 +772,9 @@ class OrderService
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
                             
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
                                 'branch_id'            => $this->order->branch_id,
@@ -740,6 +788,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
                                 'item_extra_total'     => $extraTotal,
@@ -773,6 +822,12 @@ class OrderService
                     } elseif ($request->discount > 0) {
                         // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                         $manualDiscount = (float) $request->discount;
+                        $this->assertPosManualDiscountAllowed(
+                            $manualDiscount,
+                            (float) $realSubtotal,
+                            Auth::user(),
+                            (string) $request->discount_reason
+                        );
                         if ($manualDiscount <= $realSubtotal) {
                             $calculatedDiscount = $manualDiscount;
                         }
@@ -780,89 +835,69 @@ class OrderService
                     }
                 }
 
-                // [AUDIT-P0-B] Atomic queue number allocation using Cache lock.
-                // lockForUpdate() is weak when no rows exist yet (first order of the day).
-                $today = date('Y-m-d');
-                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
-                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
-
-                try {
-                    $lock->block(5);
-
-                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
-                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
-                        ->where('branch_id', $this->order->branch_id)
-                        ->whereDate('created_at', $today)
-                        ->whereNotNull('queue_number')
-                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
-                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
-                        ->value('max_num');
-
-                    $nextQueueNum = $maxQueueNum + 1;
-                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P2-F] 4 digits
-
-                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
-                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
-                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' — fallback queue number used.');
-                } finally {
-                    $lock->release();
-                }
-
-                $this->order->order_serial_no = date('dmy') . $this->order->id;
-                $this->order->queue_number = $queueNumber;
-                if ($posSsotPricingResult instanceof PricingResult) {
-                    $this->order->total_tax = $posSsotPricingResult->totalTax;
-                    $this->order->subtotal = $posSsotPricingResult->subtotal;
-                    $this->order->discount = $posSsotPricingResult->discount;
-                    $this->order->total = $posSsotPricingResult->total;
-                } else {
-                    $this->order->total_tax = round($totalTax, 2);
-                    $this->order->subtotal = round($realSubtotal, 2);
-                    $this->order->discount = $calculatedDiscount;
-                    $this->order->total = round(max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
-                }
-
-                // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
-                // The client-side check in PosOrderRequest uses the client-sent total (may differ).
-                // This check uses the server-recalculated total to ensure correct cash handling.
-                if ($request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
-                    && $request->pos_received_amount !== null
-                    && (float) $request->pos_received_amount < $this->order->total) {
-                    throw new \InvalidArgumentException(
-                        'Le montant reçu (' . $request->pos_received_amount . '€) est inférieur au total réel (' . $this->order->total . '€).',
-                        422
-                    );
-                }
-
-                // Loyalty: store the customer code for AwardLoyaltyPointsOnDelivery listener.
-                // If cashier passes an explicit code, use it; otherwise derive from the selected customer.
-                if ($request->loyalty_customer_code) {
-                    $this->order->loyalty_customer_code = $request->loyalty_customer_code;
-                } else {
-                    $customer = \App\Models\User::find($request->customer_id);
-                    if ($customer && $customer->loyalty_code) {
-                        $this->order->loyalty_customer_code = $customer->loyalty_code;
+                $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey): void {
+                    $this->order->order_serial_no = date('dmy') . $this->order->id;
+                    if ($posSsotPricingResult instanceof PricingResult) {
+                        $this->order->total_tax = $posSsotPricingResult->totalTax;
+                        $this->order->subtotal = $posSsotPricingResult->subtotal;
+                        $this->order->discount = $posSsotPricingResult->discount;
+                        $this->order->total = $posSsotPricingResult->total;
+                    } else {
+                        $this->order->total_tax = round($totalTax, 2);
+                        $this->order->subtotal = round($realSubtotal, 2);
+                        $this->order->discount = $calculatedDiscount;
+                        $this->order->total = round(max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
                     }
-                }
-                $this->order->source_surface = 'pos';
 
-                $currentTime = Carbon::now();
-                $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
-                $start = $currentTime->format('H:i');
-                $end = $endTime->format('H:i');
-                $this->order->delivery_time = "$start - $end";
+                    app(OrderQuoteService::class)->sealForCommit(
+                        $request,
+                        'pos',
+                        (int) $this->order->id,
+                        (float) $this->order->total
+                    );
 
-                // [POS-9.4.BL.1] Reserve fiscal sequence number atomically right
-                // before persisting. FiscalSequenceService::next() runs its own
-                // Cache::lock + lockForUpdate + transaction so nesting inside our
-                // DB::transaction only creates a SAVEPOINT — if our outer
-                // transaction rolls back, no sequence number is effectively
-                // "consumed" (next call sees the same MAX again). NF525 requires
-                // strictly monotonic gap-free numbering per branch.
-                $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
-                    ->next((int) $this->order->branch_id);
+                    app(\App\Services\Stock\StockService::class)->decrementForOrder($this->order, $idempotencyKey);
 
-                $this->order->save();
+                    // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
+                    // The client-side check in PosOrderRequest uses the client-sent total (may differ).
+                    // This check uses the server-recalculated total to ensure correct cash handling.
+                    if ($request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
+                        && $request->pos_received_amount !== null
+                        && (float) $request->pos_received_amount < $this->order->total) {
+                        throw new \InvalidArgumentException(
+                            'Le montant reçu (' . $request->pos_received_amount . '€) est inférieur au total réel (' . $this->order->total . '€).',
+                            422
+                        );
+                    }
+
+                    // Loyalty: store the customer code for AwardLoyaltyPointsOnDelivery listener.
+                    // If cashier passes an explicit code, use it; otherwise derive from the selected customer.
+                    if ($request->loyalty_customer_code) {
+                        $this->order->loyalty_customer_code = $request->loyalty_customer_code;
+                    } else {
+                        $customer = \App\Models\User::find($request->customer_id);
+                        if ($customer && $customer->loyalty_code) {
+                            $this->order->loyalty_customer_code = $customer->loyalty_code;
+                        }
+                    }
+                    $this->order->source_surface = 'pos';
+
+                    $currentTime = Carbon::now();
+                    $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
+                    $start = $currentTime->format('H:i');
+                    $end = $endTime->format('H:i');
+                    $this->order->delivery_time = "$start - $end";
+
+                    // [POS-9.4.BL.1] Reserve fiscal sequence number atomically right
+                    // before persisting. FiscalSequenceService::next() runs its own
+                    // Cache::lock + lockForUpdate + transaction so nesting inside our
+                    // DB::transaction only creates a SAVEPOINT — if our outer
+                    // transaction rolls back, no sequence number is effectively
+                    // "consumed" (next call sees the same MAX again). NF525 requires
+                    // strictly monotonic gap-free numbering per branch.
+                    $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
+                        ->next((int) $this->order->branch_id);
+                }, 'pos');
 
                 // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order
                 if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
@@ -921,18 +956,37 @@ class OrderService
                     app(AuditLogService::class)->write([
                         'branch_id'   => (int) $this->order->branch_id,
                         'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                        'action'      => 'order.discount_applied',
+                        'action'      => OrderDiscountLog::ACTION,
                         'resource'    => 'order',
                         'resource_id' => (int) $this->order->id,
                         'payload'     => [
                             'order_serial_no'    => $this->order->order_serial_no,
+                            'actor_id'           => Auth::check() ? (int) Auth::id() : null,
                             'coupon_id'          => $request->coupon_id > 0 ? (int) $request->coupon_id : null,
+                            'discount_reason'    => $request->coupon_id > 0 ? null : trim((string) $request->discount_reason),
+                            'requested_discount' => round((float) $request->discount, 2),
                             'discount_amount'    => round((float) $calculatedDiscount, 2),
                             'discount_type'      => $request->coupon_id > 0 ? 'coupon' : 'manual_cashier',
                             'subtotal_before'    => round((float) $realSubtotal, 2),
+                            'backend_subtotal'   => round((float) $realSubtotal, 2),
                             'total_after'        => round((float) $this->order->total, 2),
                         ],
                     ]);
+                }
+
+                // [F-SPLIT-PAYMENT-001] Persist multi-tender breakdown when provided.
+                //
+                // - Strictly additive : legacy `pos_payment_method` + `pos_received_amount`
+                //   restent autoritaires pour les receipts/reports tant que le flag est OFF.
+                // - Tourne à L'INTÉRIEUR de la `DB::transaction` parente : si le service
+                //   throw une `ValidationException` (somme < total ou tranche malformée),
+                //   la création de la commande est rollback (atomicité).
+                // - Le total utilisé pour la validation est `$this->order->total` (SSOT
+                //   serveur), JAMAIS la valeur client.
+                $breakdown = (array) $request->input('payment_breakdown', []);
+                if (! empty($breakdown) && config('split_payment.enabled', false)) {
+                    app(\App\Services\Payments\SplitPaymentService::class)
+                        ->persistTranches($this->order, $breakdown);
                 }
 
                 $order = $this->order;
@@ -949,16 +1003,29 @@ class OrderService
                 } catch (\Exception $e) {
                     Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
                 }
+                // [MEGA 2.J / F-16] Dine-in: free floorplan table when this order is paid
+                // and still holds the table. SYMMETRY_NOTE: kiosk has no parallel dine-in
+                // table bind — FrontendOrderService unchanged.
+                try {
+                    app(DiningTableService::class)->tryReleaseTableAfterPosOrderPaid($order);
+                } catch (\Throwable $e) {
+                    Log::warning('[posOrderStore] floorplan table release: ' . $e->getMessage());
+                }
             }
             
             return $this->order;
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception;
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (\Illuminate\Database\QueryException $qe) {
             // [AUDIT-52-BUG6] Catch MySQL duplicate key (23000) on idempotency_key UNIQUE constraint.
             // This handles the race condition where two simultaneous requests both pass the pre-check
             // (both see NULL) but the second INSERT hits the DB-level unique constraint.
             // Return the existing order gracefully instead of a 500 error.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
-                $existing = Order::where('idempotency_key', $idempotencyKey)->first();
+                $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency recovery scope only
+                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
                 if ($existing) {
                     Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -988,7 +1055,7 @@ class OrderService
                         'user_id' => $request->customer_id,
                         'status' => OrderStatus::PENDING,
                         'order_datetime' => date('Y-m-d H:i:s'),
-                        'preparation_time' => Settings::group('order_setup')->get('order_setup_food_preparation_time'),
+                        'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total' => 0,
                         'subtotal' => 0,
                         'discount' => 0,
@@ -1043,6 +1110,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                        (int) $this->order->branch_id,
+                        $requestedItemIds,
+                        true
+                    );
+
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                     $realSubtotal = 0;
 
@@ -1062,6 +1135,7 @@ class OrderService
 
                             // [BUG-CRIT-2 FIX] Utiliser $dbVariations bulk-loadé au lieu de find() dans la boucle
                             // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
+                            // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $calcVariationTotal = 0;
                             if (isset($item->item_variations) && !empty($item->item_variations)) {
                                 foreach ($item->item_variations as $var) {
@@ -1079,11 +1153,13 @@ class OrderService
                                             422
                                         );
                                     }
-                                    $calcVariationTotal += $dbVar->price;
+                                    $varQuantity = max(1, (int) ($var->quantity ?? 1));
+                                    $calcVariationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
                             // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
+                            // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $calcExtraTotal = 0;
                             if (isset($item->item_extras) && !empty($item->item_extras)) {
                                 foreach ($item->item_extras as $ext) {
@@ -1101,7 +1177,8 @@ class OrderService
                                             422
                                         );
                                     }
-                                    $calcExtraTotal += $dbExt->price;
+                                    $extraQuantity = max(1, (int) ($ext->quantity ?? 1));
+                                    $calcExtraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
 
@@ -1113,7 +1190,11 @@ class OrderService
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = $taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100;
+                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+
+                            // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+
                             $itemsArray[$i] = [
                                 'order_id'             => $this->order->id,
                                 'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
@@ -1127,6 +1208,7 @@ class OrderService
                                 'price'                => $itemPrice,
                                 'item_variations'      => json_encode($item->item_variations ?? []),
                                 'item_extras'          => json_encode($item->item_extras ?? []),
+                                'composition_snapshot' => json_encode($compositionSnapshot),
                                 'instruction'          => $item->instruction ?? null,
                                 'item_variation_total' => $calcVariationTotal,
                                 'item_extra_total'     => $calcExtraTotal,
@@ -1163,55 +1245,27 @@ class OrderService
                     }
                 }
 
-                // [AUDIT-P47-BUG2] Atomic queue number allocation using Cache lock.
-                // lockForUpdate() is weak when no rows exist yet (first order of the day).
-                $today = date('Y-m-d');
-                $lockKey = 'queue_lock_' . $this->order->branch_id . '_' . $today;
-                $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+                $this->saveOrderWithQueueNumber(function () use ($tableSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount): void {
+                    $this->order->order_serial_no = date('dmy') . $this->order->id;
+                    if ($tableSsotPricingResult instanceof PricingResult) {
+                        $this->order->total_tax = $tableSsotPricingResult->totalTax;
+                        $this->order->subtotal = $tableSsotPricingResult->subtotal;
+                        $this->order->discount = $tableSsotPricingResult->discount;
+                        $this->order->total = $tableSsotPricingResult->total;
+                    } else {
+                        $this->order->total_tax = $totalTax;
+                        $this->order->subtotal = $realSubtotal;
+                        $this->order->discount = $calculatedDiscount;
+                        // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
+                        $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                    }
 
-                try {
-                    $lock->block(5);
-
-                    // [AUDIT-P51-BUG3] Single atomic query to prevent race condition between Order and FrontendOrder
-                    $maxQueueNum = (int) \Illuminate\Support\Facades\DB::table('orders')
-                        ->where('branch_id', $this->order->branch_id)
-                        ->whereDate('created_at', $today)
-                        ->whereNotNull('queue_number')
-                        ->whereRaw("queue_number REGEXP '^A[0-9]+$'")
-                        ->selectRaw("MAX(CAST(SUBSTRING(queue_number, 2) AS UNSIGNED)) as max_num")
-                        ->value('max_num');
-
-                    $nextQueueNum = $maxQueueNum + 1;
-                    $queueNumber = 'A' . str_pad($nextQueueNum, 4, '0', STR_PAD_LEFT); // [AUDIT-P47-BUG2] 4 digits
-
-                } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
-                    $queueNumber = 'A' . str_pad((int)(microtime(true) * 10) % 9999 + 1, 4, '0', STR_PAD_LEFT);
-                    \Illuminate\Support\Facades\Log::warning('[Queue] Lock timeout for branch ' . $this->order->branch_id . ' (table) — fallback used.');
-                } finally {
-                    $lock->release();
-                }
-
-                $this->order->order_serial_no = date('dmy') . $this->order->id;
-                $this->order->queue_number = $queueNumber;
-                if ($tableSsotPricingResult instanceof PricingResult) {
-                    $this->order->total_tax = $tableSsotPricingResult->totalTax;
-                    $this->order->subtotal = $tableSsotPricingResult->subtotal;
-                    $this->order->discount = $tableSsotPricingResult->discount;
-                    $this->order->total = $tableSsotPricingResult->total;
-                } else {
-                    $this->order->total_tax = $totalTax;
-                    $this->order->subtotal = $realSubtotal;
-                    $this->order->discount = $calculatedDiscount;
-                    // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
-                    $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
-                }
-
-                $currentTime = Carbon::now();
-                $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
-                $start = $currentTime->format('H:i');
-                $end = $endTime->format('H:i');
-                $this->order->delivery_time = "$start - $end";
-                $this->order->save();
+                    $currentTime = Carbon::now();
+                    $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
+                    $start = $currentTime->format('H:i');
+                    $end = $endTime->format('H:i');
+                    $this->order->delivery_time = "$start - $end";
+                }, 'table');
 
                 // [BUG-C3 FIX] Create OrderCoupon record for table orders — tracks coupon usage
                 if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
@@ -1269,8 +1323,11 @@ class OrderService
                     abort(403, 'Access denied: you do not have permission to access this order.');
                 }
             } else {
+                $this->assertOrderBranchVisible($order);
                 return $order;
             }
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1300,11 +1357,16 @@ class OrderService
     public function deliveryBoyOrderDetails(Order $order): Order|array
     {
         try {
-            if ($order->delivery_boy_id == Auth::user()->id) {
+            $user = Auth::user();
+            $userBranchId = (int) ($user?->branch_id ?? 0);
+            if ($order->delivery_boy_id == $user?->id
+                && ($userBranchId <= 0 || (int) $order->branch_id === $userBranchId)) {
                 return $order;
             } else {
                 abort(403, 'Access denied: you do not have permission to access this order.');
             }
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1322,6 +1384,8 @@ class OrderService
             } else {
                 abort(403, 'Access denied: you do not have permission to access this order.');
             }
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1335,13 +1399,16 @@ class OrderService
     {
         try {
             $order = new Order;
+            $branchId = (int) (Auth::user()?->branch_id ?? 0);
             $orderCountArray = [];
-            $orderCountArray['total_delivered'] = $order->where(
-                ['delivery_boy_id' => Auth::user()->id, 'status' => OrderStatus::DELIVERED]
-            )->count();
-            $orderCountArray['total_returned'] = $order->where(
-                ['delivery_boy_id' => Auth::user()->id, 'status' => OrderStatus::RETURNED]
-            )->count();
+            $orderCountArray['total_delivered'] = $order->newQuery()
+                ->where(['delivery_boy_id' => Auth::user()->id, 'status' => OrderStatus::DELIVERED])
+                ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
+                ->count();
+            $orderCountArray['total_returned'] = $order->newQuery()
+                ->where(['delivery_boy_id' => Auth::user()->id, 'status' => OrderStatus::RETURNED])
+                ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
+                ->count();
 
             return $orderCountArray;
         } catch (Exception $exception) {
@@ -1353,12 +1420,18 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function deliveryBoyOrderChangeStatus(Order $order, OrderStatusRequest $request): Order
+    public function deliveryBoyOrderChangeStatus(Order $order, Request $request): Order
     {
         try {
             // [FIX-54-1] Ownership check — same as deliveryBoyOrderDetails()
-            if ($order->delivery_boy_id != Auth::user()->id) {
+            $user = Auth::user();
+            if ($order->delivery_boy_id != $user?->id) {
                 abort(403, 'Access denied: this order is not assigned to you.');
+            }
+
+            $userBranchId = (int) ($user?->branch_id ?? 0);
+            if ($userBranchId > 0 && (int) $order->branch_id !== $userBranchId) {
+                abort(403, 'Access denied: this order is outside your branch.');
             }
 
             // [FIX-54-1] Enforce valid state machine transitions
@@ -1425,33 +1498,53 @@ class OrderService
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
 
+            $targetStatus = (int) $request->status;
+
             if ($auth) {
                 // Customer self-cancellation path — owner check only
                 if ($order->user_id == Auth::user()->id) {
-                    $oldStatus = $order->status;
-                    if ($request->reason) {
-                        $order->reason = $request->reason;
-                    }
-                    if ($request->status == OrderStatus::REJECTED || $request->status == OrderStatus::CANCELED) {
-                        if ($order->transaction) {
-                            app(PaymentService::class)->cashBack(
-                                $order,
-                                'credit',
-                                'TXN-' . \Illuminate\Support\Str::random(12)
-                            );
+                    // [iter13 P1 LOCKFORUPDATE 2026-05-09] Self-cancel race fix.
+                    //
+                    // Two simultaneous mobile cancels could read the same status and
+                    // both write a final state — leading to duplicated cashback/loyalty
+                    // refund + corrupted state machine audit trail. Wrap mutate path
+                    // in DB::transaction + lockForUpdate so a single transition wins;
+                    // the second tx sees the new status and exits via the idempotent
+                    // early-return.
+                    [$order, $oldStatus, $skipped] = DB::transaction(function () use ($order, $request, $targetStatus) {
+                        $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                        if ((int) $locked->status === $targetStatus) {
+                            return [$locked, (int) $locked->status, true];
                         }
-                        app(LoyaltyService::class)->refundPoints($order, 'pos');
+                        $previousStatus = (int) $locked->status;
+                        if ($request->reason) {
+                            $locked->reason = $request->reason;
+                        }
+                        if ($targetStatus === OrderStatus::REJECTED || $targetStatus === OrderStatus::CANCELED) {
+                            if ($locked->transaction) {
+                                app(PaymentService::class)->cashBack(
+                                    $locked,
+                                    'credit',
+                                    'TXN-' . \Illuminate\Support\Str::random(12)
+                                );
+                            }
+                            app(LoyaltyService::class)->refundPoints($locked, 'pos');
+                        }
+                        $locked->status = $request->status;
+                        $locked->save();
+                        OrderStateMachine::recordTransition(
+                            Order::class,
+                            (int) $locked->id,
+                            $previousStatus,
+                            (int) $request->status,
+                            Auth::check() ? (int) Auth::id() : null,
+                            $request->reason ?? null
+                        );
+                        return [$locked, $previousStatus, false];
+                    });
+                    if ($skipped) {
+                        return $order;
                     }
-                    $order->status = $request->status;
-                    $order->save();
-                    OrderStateMachine::recordTransition(
-                        Order::class,
-                        (int) $order->id,
-                        (int) $oldStatus,
-                        (int) $request->status,
-                        Auth::check() ? (int) Auth::id() : null,
-                        $request->reason ?? null
-                    );
                     SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
                     SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
@@ -1460,6 +1553,16 @@ class OrderService
                     } catch (\Exception $e) {
                         Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: ' . $e->getMessage());
                     }
+                    // [F-01] Compensating release of branch-scoped stock counters when an order
+                    // is cancelled (self-cancel path). Idempotent via the `released_qty` ledger
+                    // — safe even if dispatched more than once or paired with a future refund.
+                    if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                        try {
+                            OrderCanceled::dispatch($order); // allow: stock-release dispatch; ActionLog already recorded by self-cancel branch caller.
+                        } catch (\Exception $e) {
+                            Log::warning('[OrderService] OrderCanceled on self-cancel failed: ' . $e->getMessage()); // allow: warning only
+                        }
+                    }
                 } else {
                     // [FIX-54-7] Return 403 instead of silent 200 for non-owner
                     abort(403, 'Access denied: you do not own this order.');
@@ -1467,7 +1570,7 @@ class OrderService
             } else {
                 // [CYCLE-002b] Atomic branch check, cashback, status save + ActionLog; notifications after commit.
                 $oldStatusForBroadcast = null;
-                DB::transaction(function () use ($order, $request, &$oldStatusForBroadcast) {
+                DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast) {
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
                     // Use abort() so the 403 is a real HttpException and bubbles untouched through the generic catch below.
                     if (Auth::check() && !Auth::user()->hasRole('Admin')) {
@@ -1477,10 +1580,47 @@ class OrderService
                         }
                     }
 
-                    if ($request->status == OrderStatus::REJECTED || $request->status == OrderStatus::CANCELED) {
+                    $toStatus = $targetStatus;
+                    if ((int) $order->status === $toStatus) {
+                        return;
+                    }
+
+                    // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
+                    if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([
                             'reason' => 'required|max:700',
                         ]);
+
+                        // [P11-FZH / F-VERIFY-08-02] Sealed-Z guard for RETURNED only.
+                        // RETURNED is the fiscal counter-entry transition (CANCELED
+                        // & REJECTED are operational pre-payment). Refuse if order
+                        // is contained in closed Z window — caller must use
+                        // POST /api/admin/pos-order/{order}/refund-with-counter-entry.
+                        if ($toStatus === OrderStatus::RETURNED) {
+                            try {
+                                app(\App\Services\Order\SealedOrderGuard::class)
+                                    ->assertMutable($order, 'changeStatus → RETURNED');
+                            } catch (\App\Exceptions\OrderSealedException $sealedEx) {
+                                try {
+                                    app(\App\Services\Fiscal\AuditLogService::class)->write([
+                                        'branch_id'   => (int) $order->branch_id,
+                                        'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                                        'action'      => 'pos.refund.post_z_blocked',
+                                        'resource'    => 'order',
+                                        'resource_id' => (int) $order->id,
+                                        'payload'     => [
+                                            'attempted_transition' => 'RETURNED',
+                                            'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
+                                            'reason_supplied'      => (string) $request->input('reason'),
+                                        ],
+                                    ]);
+                                } catch (\Throwable) {
+                                    // best-effort audit; never block on audit failure
+                                }
+                                throw $sealedEx;
+                            }
+                        }
+
                         if ($request->reason) {
                             $order->reason = $request->reason;
                         }
@@ -1519,19 +1659,17 @@ class OrderService
                         ),
                     ]);
 
-                    // [POS-9.4.BL.2] NF525 audit trail on cancel/reject. Only these
-                    // two status transitions are fiscally sensitive (everything
-                    // else is internal workflow); the full state-machine event
-                    // trail is already persisted in order_status_transitions via
-                    // OrderStateMachine::recordTransition above.
-                    if ((int) $request->status === OrderStatus::CANCELED
-                        || (int) $request->status === OrderStatus::REJECTED) {
+                    // [POS-9.4.BL.2] NF525 — cancel / reject / return (contrepartie comptable ou clôture client).
+                    if (in_array((int) $request->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
+                        $action = (int) $request->status === OrderStatus::CANCELED
+                            ? 'order.cancelled'
+                            : ((int) $request->status === OrderStatus::REJECTED
+                                ? 'order.rejected'
+                                : 'order.returned');
                         app(AuditLogService::class)->write([
                             'branch_id'   => (int) $order->branch_id,
                             'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                            'action'      => (int) $request->status === OrderStatus::CANCELED
-                                ? 'order.cancelled'
-                                : 'order.rejected',
+                            'action'      => $action,
                             'resource'    => 'order',
                             'resource_id' => (int) $order->id,
                             'payload'     => [
@@ -1547,15 +1685,29 @@ class OrderService
                     }
                 });
 
-                SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-                SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+                if ($oldStatusForBroadcast === null) {
+                    return $order;
+                }
+
+                SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $targetStatus]);
+                SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $targetStatus]);
+                SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $targetStatus]);
 
                 // [PHASE-E] After commit; ShouldBroadcastNow — must not run inside DB::transaction
                 try {
-                    \App\Events\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, (int) $request->status);
+                    \App\Events\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, $targetStatus);
                 } catch (\Exception $e) {
                     Log::warning('OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                }
+                // [F-01] Compensating release of branch-scoped stock counters when an order
+                // is cancelled or rejected by admin / POS / branch staff. Idempotent ledger
+                // (order_items.released_qty) makes this safe to dispatch unconditionally.
+                if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                    try {
+                        OrderCanceled::dispatch($order); // allow: stock-release dispatch; AuditLogService::write already called above for order.cancelled / order.rejected.
+                    } catch (\Exception $e) {
+                        Log::warning('[OrderService] OrderCanceled on admin cancel failed: ' . $e->getMessage()); // allow: warning only
+                    }
                 }
             }
             return $order;
@@ -1573,24 +1725,109 @@ class OrderService
     public function changePaymentStatus(Order $order, PaymentStatusRequest $request, bool $auth = false): Order|array
     {
         try {
+            $targetPaymentStatus = (int) $request->payment_status;
+
             if ($auth) {
+                // Branche customer self-service.
                 if ($order->user_id == Auth::user()->id) {
-                    $order->payment_status = $request->payment_status;
-                    $order->save();
-                    return $order;
+                    // [iter13 P1 LOCKFORUPDATE 2026-05-09] Customer payment race fix.
+                    //
+                    // Rapid double-click on "Pay" could let two requests both observe
+                    // UNPAID and both transition to PAID, dispatching duplicate
+                    // webhook/notification side effects. Wrap in tx + lockForUpdate
+                    // so the second request sees the new state and exits idempotent.
+                    return DB::transaction(function () use ($order, $request, $targetPaymentStatus) {
+                        $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                        if ((int) $locked->payment_status === $targetPaymentStatus) {
+                            return $locked;
+                        }
+                        $locked->payment_status = $request->payment_status;
+                        $locked->save();
+                        return $locked;
+                    });
                 } else {
                     abort(403, 'Access denied: you do not have permission to modify this order.');
                 }
-            } else {
-                // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify their branch's orders.
-                // Use abort() so the 403 bubbles through the generic catch as a real HttpException.
-                if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-                    $userBranch = Auth::user()->branch_id ?? null;
-                    if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
-                        abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
-                    }
-                }
+            }
 
+            // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff
+            // can only modify their branch's orders. abort() so the 403 bubbles
+            // through the generic catch as a real HttpException.
+            if (Auth::check() && !Auth::user()->hasRole('Admin')) {
+                $userBranch = Auth::user()->branch_id ?? null;
+                if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
+                    abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+                }
+            }
+
+            // [F-VERIFY-09-01 P13] Idempotency-Key replay protection (defense-
+            // in-depth — the HTTP IdempotencyKeyMiddleware short-circuits at
+            // the route layer when `idempotency.enabled=true`). The service-
+            // level cache covers the flag=false rollout window without
+            // re-applying ActionLog / AuditLog / domain-event side effects.
+            $idempotencyKey = request()?->header('X-Idempotency-Key');
+            $cacheKey       = null;
+            if (is_string($idempotencyKey) && $idempotencyKey !== '') {
+                $cacheKey = sprintf(
+                    'change_payment_status:%d:%d:%s',
+                    (int) $order->branch_id,
+                    (int) $order->id,
+                    substr($idempotencyKey, 0, 64)
+                );
+                if (Cache::get($cacheKey) !== null) {
+                    return $order->fresh();
+                }
+            }
+
+            $oldPaymentStatus = (int) $order->payment_status;
+            if ($oldPaymentStatus === $targetPaymentStatus) {
+                return $order; // No-op early-return.
+            }
+
+            // [P11-FZH / F-VERIFY-08-02] Sealed-Z guard for REFUNDED only.
+            // REFUNDED is a fiscal counter-entry — refused if order is in a
+            // closed Z window. Caller must use refund-with-counter-entry.
+            if ($targetPaymentStatus === \App\Enums\PaymentStatus::REFUNDED) {
+                try {
+                    app(\App\Services\Order\SealedOrderGuard::class)
+                        ->assertMutable($order, 'changePaymentStatus → REFUNDED');
+                } catch (\App\Exceptions\OrderSealedException $sealedEx) {
+                    try {
+                        app(\App\Services\Fiscal\AuditLogService::class)->write([
+                            'branch_id'   => (int) $order->branch_id,
+                            'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                            'action'      => 'pos.refund.post_z_blocked',
+                            'resource'    => 'order',
+                            'resource_id' => (int) $order->id,
+                            'payload'     => [
+                                'attempted_transition' => 'REFUNDED',
+                                'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
+                            ],
+                        ]);
+                    } catch (\Throwable) {
+                        // best-effort audit
+                    }
+                    throw $sealedEx;
+                }
+            }
+
+            // [F-VERIFY-09-01 P13] State machine guard. Throws
+            // \InvalidArgumentException(422) for illegal transitions
+            // (e.g. PAID → anything under Option B).
+            \App\Domain\Order\PaymentStateMachine::assertCanTransition(
+                $oldPaymentStatus,
+                $targetPaymentStatus
+            );
+
+            // [F-VERIFY-09-01 P13] Atomic Order save + ActionLog + AuditLog +
+            // domain event dispatch. DispatchableAfterCommit defers the actual
+            // event firing until COMMIT (gate C9 — KI-001).
+            DB::transaction(function () use (
+                $order,
+                $request,
+                $oldPaymentStatus,
+                $targetPaymentStatus
+            ): void {
                 $order->payment_status = $request->payment_status;
                 $order->save();
 
@@ -1599,16 +1836,18 @@ class OrderService
                     'action'   => 'Statut paiement modifié',
                     'resource' => 'Commande #' . $order->order_serial_no,
                     'details'  => sprintf(
-                        'Statut paiement: %s | Par: %s (branch_id=%s)',
-                        $request->payment_status,
+                        'Statut paiement: %d → %d | Par: %s (branch_id=%s)',
+                        $oldPaymentStatus,
+                        $targetPaymentStatus,
                         Auth::check() ? Auth::user()->name : 'Système',
                         Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
                     ),
                 ]);
 
                 // [POS-9.4.BL.2] NF525 audit trail on payment_status change.
-                // Change of payment status is financially sensitive (especially
-                // PAID→UNPAID or PAID→REFUNDED, which impacts Z report totals).
+                // Financially sensitive (PAID→UNPAID / PAID→REFUNDED would
+                // impact Z report totals — but blocked under Option B by the
+                // state machine guard above).
                 app(AuditLogService::class)->write([
                     'branch_id'   => (int) $order->branch_id,
                     'user_id'     => Auth::check() ? (int) Auth::id() : null,
@@ -1616,17 +1855,36 @@ class OrderService
                     'resource'    => 'order',
                     'resource_id' => (int) $order->id,
                     'payload'     => [
-                        'order_serial_no'    => $order->order_serial_no,
-                        'to_payment_status'  => (int) $request->payment_status,
-                        'total'              => round((float) $order->total, 2),
-                        'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                        'order_serial_no'      => $order->order_serial_no,
+                        'from_payment_status'  => $oldPaymentStatus,
+                        'to_payment_status'    => $targetPaymentStatus,
+                        'total'                => round((float) $order->total, 2),
+                        'fiscal_sequence_no'   => $order->fiscal_sequence_no,
                     ],
                 ]);
 
-                return $order;
+                // [F-VERIFY-09-10 P13] Domain event for outbox / KDS / Z-report.
+                // DispatchableAfterCommit defers the dispatch until commit, so
+                // a rollback of any earlier statement above drops the event.
+                \App\Events\OrderPaymentStatusChanged::dispatch(
+                    $order,
+                    $oldPaymentStatus,
+                    $targetPaymentStatus
+                );
+            });
+
+            // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
+            if ($cacheKey !== null) {
+                Cache::put($cacheKey, $order->id, now()->addHours(24));
             }
+
+            return $order;
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
             throw $http;
+        } catch (\InvalidArgumentException $invalid) {
+            // [F-VERIFY-09-01 P13] State machine guard rejects illegal
+            // transitions — surface as proper HTTP 422.
+            throw new Exception($invalid->getMessage(), 422);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -1656,6 +1914,16 @@ class OrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    public function collectKioskCash(Order $order): Order
+    {
+        return app(PaymentService::class)->confirmCounterPayment(
+            $order,
+            \App\Enums\PosPaymentMethod::CASH,
+            (float) $order->total,
+            'Kiosk cash collected at POS.'
+        );
     }
 
     /**
@@ -1702,8 +1970,8 @@ class OrderService
         $actorBranchId = (int) ($actor->branch_id ?? 0);
         $orderBranchId = (int) $order->branch_id;
 
-        // Admin (branch_id=0) can destroy any; branch staff only own branch.
-        if ($actorBranchId > 0 && $actorBranchId !== $orderBranchId) {
+        // Only a real global Admin (Admin role + branch_id=0) can destroy across branches; branch staff only own branch.
+        if (! $this->isGlobalAdmin($actor) && ($actorBranchId <= 0 || $actorBranchId !== $orderBranchId)) {
             abort(403, 'Access denied: order does not belong to your branch.');
         }
 
@@ -1800,7 +2068,7 @@ class OrderService
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
+                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     $first_date = Date('Y-m-d', strtotime($requests['from_date']));
                     $last_date = Date('Y-m-d', strtotime($requests['to_date']));
                     $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
@@ -1829,7 +2097,7 @@ class OrderService
                         } else if ($key === 'source') {
                             $query->where($key, $request);
                         } else {
-                            $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
+                            $this->applyOrderFilter($query, $key, $request);
                         }
                     }
 
@@ -1867,6 +2135,206 @@ class OrderService
         $requestedDirection = strtolower($requestedDirection);
 
         return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
+    }
+
+    private function applyOrderFilter($query, string $key, $value): void
+    {
+        if ($key === 'branch_id') {
+            $query->where('branch_id', '=', (int) $value);
+            return;
+        }
+
+        $query->where($key, 'like', '%' . $this->escapeLike((string) $value) . '%');
+    }
+
+    private function isGlobalAdmin(?User $user): bool
+    {
+        return $user !== null
+            && $user->branch_id !== null
+            && (int) $user->branch_id === 0
+            && method_exists($user, 'hasRole')
+            && $user->hasRole('Admin');
+    }
+
+    private function assertOrderBranchVisible(Order $order): void
+    {
+        $user = Auth::user();
+        if ($this->isGlobalAdmin($user)) {
+            return;
+        }
+
+        $userBranchId = (int) ($user?->branch_id ?? 0);
+        if ($userBranchId <= 0 || $userBranchId !== (int) $order->branch_id) {
+            abort(403, 'Access denied: order does not belong to your branch.');
+        }
+    }
+
+    private function assertPosManualDiscountAllowed(float $discount, float $backendSubtotal, ?User $user, ?string $reason = null): void
+    {
+        if ($discount <= 0.0) {
+            return;
+        }
+
+        if (strlen(trim((string) $reason)) < 3) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount_reason' => 'A reason is required for any POS discount (min 3 characters).',
+            ]);
+        }
+
+        if ($backendSubtotal <= 0.0 || $discount > $backendSubtotal) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => 'Cannot apply discount without a valid backend subtotal.',
+            ]);
+        }
+
+        if (!$user) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => 'Authentication required to apply a discount.',
+            ]);
+        }
+
+        $pct = ($discount / $backendSubtotal) * 100.0;
+
+        if ($pct > 50.0 && !$user->can('pos-discount-unlimited')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => 'Only an owner can apply a discount above 50%.',
+            ]);
+        }
+
+        if ($pct > 10.0
+            && !$user->can('pos-discount-over-10-requires-manager')
+            && !$user->can('pos-discount-unlimited')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => 'Discount above 10% requires manager approval.',
+            ]);
+        }
+
+        if (!$user->can('pos-discount-up-to-10')
+            && !$user->can('pos-discount-over-10-requires-manager')
+            && !$user->can('pos-discount-unlimited')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => 'You do not have permission to apply POS discounts.',
+            ]);
+        }
+    }
+
+    private function saveOrderWithQueueNumber(callable $applyFields, string $context): void
+    {
+        $maxAttempts = 5;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $businessDate = $this->resolveBusinessDate($this->order->order_datetime ?? null);
+            $this->order->business_date = $businessDate;
+            $this->order->queue_number = $this->allocateQueueNumber(
+                (int) $this->order->branch_id,
+                $businessDate,
+                $context
+            );
+            $applyFields();
+            $this->order->business_date = $businessDate;
+
+            try {
+                $this->order->save();
+                return;
+            } catch (QueryException $exception) {
+                if (!$this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                    throw $exception;
+                }
+
+                Log::warning(sprintf(
+                    '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
+                    (string) $this->order->queue_number,
+                    (string) $this->order->branch_id,
+                    (string) $this->order->business_date,
+                    $context
+                ));
+            }
+        }
+    }
+
+    private function allocateQueueNumber(int $branchId, string $businessDate, string $context): string
+    {
+        $lockKey = 'queue_lock_' . $branchId . '_' . $businessDate;
+        $lock = Cache::lock($lockKey, 30);
+        $acquired = false;
+
+        try {
+            $lock->block(15);
+            $acquired = true;
+
+            $queueNumbers = DB::table('orders')
+                ->where('branch_id', $branchId)
+                ->where('business_date', $businessDate)
+                ->whereNotNull('queue_number')
+                ->where('queue_number', 'like', 'A%')
+                ->pluck('queue_number');
+
+            $maxQueueNum = (int) $queueNumbers
+                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
+                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
+                ->max();
+
+            return 'A' . str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT);
+        } catch (LockTimeoutException $exception) {
+            Log::warning(sprintf(
+                '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
+                $branchId,
+                $businessDate,
+                $context
+            ));
+
+            throw new HttpException(409, 'Queue number allocation is busy. Please retry.', $exception);
+        } finally {
+            if ($acquired) {
+                $lock->release();
+            }
+        }
+    }
+
+    private function resolveBusinessDate(mixed $orderDatetime): string
+    {
+        if ($orderDatetime instanceof \DateTimeInterface) {
+            return Carbon::instance($orderDatetime)->toDateString();
+        }
+
+        if (blank($orderDatetime)) {
+            return Carbon::now()->toDateString();
+        }
+
+        return Carbon::parse((string) $orderDatetime)->toDateString();
+    }
+
+    private function isQueueNumberUniqueViolation(QueryException $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return ($exception->getCode() === '23000' || str_contains($message, 'UNIQUE constraint failed'))
+            && (
+                str_contains($message, 'orders_branch_business_date_queue_unique')
+                || str_contains($message, 'orders_branch_queue_number_unique')
+                || (
+                    str_contains($message, 'orders.branch_id')
+                    && str_contains($message, 'orders.business_date')
+                    && str_contains($message, 'orders.queue_number')
+                )
+                || (
+                    str_contains($message, 'branch_id')
+                    && str_contains($message, 'business_date')
+                    && str_contains($message, 'queue_number')
+                )
+            );
+    }
+
+    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId): ?Order
+    {
+        if (blank($idempotencyKey) || $branchId <= 0) {
+            return null;
+        }
+
+        return Order::query()
+            ->where('idempotency_key', $idempotencyKey)
+            ->where('branch_id', $branchId)
+            ->first();
     }
 
     private function escapeLike(string $value): string

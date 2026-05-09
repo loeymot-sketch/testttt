@@ -6,20 +6,33 @@ use Exception;
 use App\Enums\Ask;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Enums\OrderType;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
+use App\Domain\Kds\KitchenReleaseRule;
 use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
 use App\Events\SendOrderPush;
 use App\Domain\Order\OrderStateMachine;
-use App\Events\OrderStatusChanged;
+use App\Listeners\DispatchKdsTicket;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
-use App\Http\Requests\OrderStatusRequest;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemOrderService
 {
     public object $order;
+    private bool $lastListOverflow = false;
+    private DispatchKdsTicket $kdsTicketDispatcher;
+
+    public function __construct(?DispatchKdsTicket $kdsTicketDispatcher = null)
+    {
+        $this->kdsTicketDispatcher = $kdsTicketDispatcher ?? app(DispatchKdsTicket::class);
+    }
+
     protected array $orderFilter = [
         'order_serial_no',
         'branch_id',
@@ -40,6 +53,7 @@ class KitchenDisplaySystemOrderService
     {
         try {
             $requests = $request->all();
+            $this->lastListOverflow = false;
             $allowedColumns = ['id', 'order_datetime', 'queue_number', 'order_serial_no', 'status', 'created_at'];
             $requestedColumn = (string) ($request->get('order_column') ?? 'id');
             $orderColumn = in_array($requestedColumn, $allowedColumns, true) ? $requestedColumn : 'id';
@@ -49,7 +63,15 @@ class KitchenDisplaySystemOrderService
             $userBranchId = auth()->user()->branch_id ?? 0;
 
             $query = Order::with('orderItems')
-                ->whereIn('status', [OrderStatus::ACCEPT, OrderStatus::PREPARING, OrderStatus::PREPARED]);
+                ->whereIn('status', KitchenReleaseRule::visibleStatuses())
+                ->where(function ($query) {
+                    $query->where('payment_status', PaymentStatus::PAID)
+                        ->orWhere('payment_status', PaymentStatus::PENDING_COUNTER)
+                        ->orWhere(function ($cashQuery) {
+                            $cashQuery->where('order_type', OrderType::POS)
+                                ->where('pos_payment_method', PosPaymentMethod::CASH);
+                        });
+                });
 
             // [FIX BUG-KDS-SYNC] Admin users have branch_id=0 → show all branches.
             // Branch-specific staff see only their own branch.
@@ -60,7 +82,7 @@ class KitchenDisplaySystemOrderService
             // [FIX-FRONT-05] Pagination KDS: limiter à 50 commandes actives maximum
             // [AUDIT-P51-BUG1] Fix: include advance orders scheduled for today OR overdue from yesterday+
             // Previously only showed yesterday's advance orders, causing "zombie" orders to persist unseen.
-            return $query->where(function ($query) {
+            $orders = $query->where(function ($query) {
                 // Standard orders: placed today (non-advance)
                 $query->where(function ($subQuery) {
                     $subQuery->whereDate('order_datetime', Carbon::today())
@@ -101,55 +123,104 @@ class KitchenDisplaySystemOrderService
                     }
                 }
             })->orderBy($orderColumn, $orderType)
-            ->limit(50)  // Max 50 commandes actives sur un KDS
+            ->limit(51)
             ->get();
+
+            $this->lastListOverflow = $orders->count() > 50;
+
+            return $orders->take(50)->values();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
 
+    public function lastListOverflow(): bool
+    {
+        return $this->lastListOverflow;
+    }
+
     /**
      * @throws Exception
      */
-    public function changeStatus(Order $order, OrderStatusRequest $request)
+    public function changeStatus(Order $order, Request $request)
     {
         try {
-            if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
-                throw new Exception(trans('all.message.invalid_status_transition'), 422);
-            }
+            $newStatus = (int) $request->input('status');
+            $expectedFrom = (int) $request->input('expected_status');
 
-            $oldStatus = $order->status;
+            $result = DB::transaction(function () use ($order, $newStatus, $expectedFrom) {
+                $locked = Order::query()
+                    ->whereKey($order->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-            // [GAP-21-1 + GAP-21-4] Wrap in DB::transaction so that if save() fails,
-            // no notifications are dispatched with a stale status.
-            // Notifications are dispatched AFTER the transaction commits (post-commit block)
-            // to mirror the same pattern used in FrontendOrderService::myOrderStore().
-            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
-                $order->status = $request->status;
-                $order->save();
+                $userBranchId = (int) (auth()->user()->branch_id ?? 0);
+                if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                    abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+                }
+
+                $fromLocked = (int) $locked->status;
+
+                if ($fromLocked !== $expectedFrom) {
+                    try {
+                        Log::channel('stack')->warning('[KDS_409]', [
+                            'op'                => 'kds.change_status',
+                            'order_id'          => $locked->id ?? null,
+                            'branch_id'         => $locked->branch_id ?? null,
+                            'current_status'    => $locked->status ?? null,
+                            'attempted_status'  => $newStatus,
+                            'user_id'           => auth()->id(),
+                            'reason'            => 'optimistic_lock_conflict',
+                        ]);
+                    } catch (\Throwable $logEx) { /* never break the abort flow */ }
+                    abort(409, 'Order status was updated elsewhere — please refresh the KDS.');
+                }
+
+                if ($fromLocked === $newStatus) {
+                    return ['model' => $locked->fresh(), 'from' => $fromLocked, 'changed' => false];
+                }
+
+                if (
+                    ! KitchenReleaseRule::canTransition($fromLocked, $newStatus)
+                    || ! OrderStateMachine::allows($fromLocked, $newStatus, auth()->user())
+                ) {
+                    throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                }
+
+                $locked->status = $newStatus;
+                $locked->save();
+
+                OrderStateMachine::recordTransition(
+                    Order::class,
+                    (int) $locked->id,
+                    $fromLocked,
+                    $newStatus,
+                    auth()->check() ? (int) auth()->id() : null,
+                    null
+                );
+
+                return ['model' => $locked->fresh(), 'from' => $fromLocked, 'changed' => true];
             });
 
-            OrderStateMachine::recordTransition(
-                Order::class,
-                (int) $order->id,
-                (int) $oldStatus,
-                (int) $request->status,
-                auth()->check() ? (int) auth()->id() : null,
-                null
-            );
+            $snapshot = $result['model'];
+            $oldStatus = $result['from'];
 
-            // Post-commit: dispatch notifications and broadcast now that DB is consistent.
-            SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderSms::dispatch(['order_id' => $order->id, 'status' => $request->status]);
-            SendOrderPush::dispatch(['order_id' => $order->id, 'status' => $request->status]);
+            if (! ($result['changed'] ?? false)) {
+                return;
+            }
 
-            // Broadcast status change so OSS and POS update in real-time
+            SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+
             try {
-                OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
+                $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus);
             } catch (\Exception $e) {
                 Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }
+        } catch (HttpException $e) {
+            throw $e;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -167,7 +238,7 @@ class KitchenDisplaySystemOrderService
             // [P3-2 FIX] Include ACCEPT orders so new POS orders appear on items board immediately
             // without waiting for chef to click "Start Preparing"
             $query = Order::with('orderItems')
-                ->whereIn('status', [OrderStatus::ACCEPT, OrderStatus::PREPARING]);
+                ->whereIn('status', KitchenReleaseRule::itemBoardStatuses());
 
             // Admin bypass: branch_id=0 sees all branches
             if ($userBranchId > 0) {
@@ -191,15 +262,24 @@ class KitchenDisplaySystemOrderService
             $mergedItems = $allItems->groupBy(function ($item) {
                 $variations = empty($item['item_variations']) ? '[]' : collect($item['item_variations'])->sortKeys()->toJson();
                 $extras = empty($item['item_extras']) ? '[]' : collect($item['item_extras'])->sortKeys()->toJson();
+                $addons = json_encode($this->normalizeAddonsForHash(data_get($item, 'composition_snapshot.addons', [])));
                 // [L2 FIX] Normalize instruction: trim whitespace and lowercase to avoid
                 // spurious KDS splits caused by minor formatting differences
                 $instruction = mb_strtolower(trim($item['instruction'] ?? ''));
+                // [Lot 2.I / G-5] split lines whose allergens snapshots differ — food safety.
+                // Two order_items sharing item_id+variations+extras+instruction MUST appear
+                // as 2 distinct KDS lines if their allergens_snapshot differ. Otherwise the
+                // chef sees "Burger x2" with allergens of the FIRST item only — masking the
+                // second customer's allergy declaration.
+                $allergensHash = sha1(json_encode($this->normalizeAllergensForHash($item['allergens_snapshot'] ?? [])));
 
                 return json_encode([
                     'item_id' => $item['item_id'],
                     'item_variations' => $variations,
                     'item_extras' => $extras,
+                    'item_addons' => $addons,
                     'instruction' => $instruction,
+                    'allergens_hash' => $allergensHash,
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();
@@ -212,5 +292,62 @@ class KitchenDisplaySystemOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * [Lot 2.I / G-5] Deterministic allergen hash input.
+     *
+     * Defensive against legacy data shapes (null, JSON object, scalar string)
+     * that may exist on rows pre-dating the 2026_04_18_140004 backfill. Empty
+     * snapshot, null, and non-array values all collapse to the same hash so
+     * items WITHOUT declared allergens still merge together (regression safe).
+     *
+     * @param  mixed  $snapshot
+     * @return array<int, string>
+     */
+    private function normalizeAllergensForHash($snapshot): array
+    {
+        if (! is_array($snapshot)) {
+            return [];
+        }
+
+        $normalized = array_values(array_unique(array_map(
+            'strval',
+            array_filter($snapshot, static fn ($value) => $value !== null && $value !== '')
+        )));
+
+        sort($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * Keep KDS merged item rows split when composer addons differ.
+     *
+     * @param  mixed  $addons
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeAddonsForHash($addons): array
+    {
+        if (! is_array($addons)) {
+            return [];
+        }
+
+        return collect($addons)
+            ->filter(fn ($addon): bool => is_array($addon))
+            ->map(fn (array $addon): array => [
+                'addon_id' => (int) ($addon['addon_id'] ?? 0),
+                'addon_item_id' => (int) ($addon['addon_item_id'] ?? 0),
+                'role' => (string) ($addon['role'] ?? ''),
+                'quantity' => (int) ($addon['quantity'] ?? 1),
+            ])
+            ->sortBy([
+                ['role', 'asc'],
+                ['addon_id', 'asc'],
+                ['addon_item_id', 'asc'],
+                ['quantity', 'asc'],
+            ])
+            ->values()
+            ->all();
     }
 }
