@@ -220,6 +220,27 @@
                                 {{ $t('button.split_equally') || 'Diviser à parts égales' }}
                             </button>
                         </div>
+                        <!-- [iter12 2026-05-09] Bidirectional split helpers -->
+                        <div class="pos-v5-split-divider__row" v-if="tranches.length >= 2">
+                            <button
+                                type="button"
+                                class="pos-v5-split-divider__btn"
+                                @click="autoBalanceFromIndex(0)"
+                                data-testid="pos-payment-auto-balance"
+                                :title="$t('label.auto_balance_help') || 'Le reste s’équilibre automatiquement sur la 2ème tranche'"
+                            >
+                                {{ $t('button.auto_balance') || 'Équilibrer le reste' }}
+                            </button>
+                            <button
+                                type="button"
+                                class="pos-v5-split-divider__btn"
+                                @click="suggestCashTendered"
+                                data-testid="pos-payment-suggest-tendered"
+                                :title="$t('label.suggest_tendered_help') || 'Arrondit les rendus monnaie au 5€ supérieur'"
+                            >
+                                {{ $t('button.suggest_tendered') || 'Suggérer les rendus monnaie' }}
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Liste des tranches -->
@@ -301,6 +322,8 @@ import {
     serializeTranches,
     totalChangeCents,
     makeTrancheId,
+    autoBalanceTranches,
+    suggestTenderedForCashTranches,
 } from "../../../helpers/posSplitPayment";
 
 export default {
@@ -383,6 +406,29 @@ export default {
         // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
         // never inherited (single-tender re-open ⇒ never multi).
         this.syncPaymentModeFromForm();
+
+        // [iter12 2026-05-09] Auto-refresh quote every 60s while modal is
+        // open. Quote TTL bumped to 300s server-side (config quote.ttl_seconds)
+        // but cashier multi-paiement entry can still exceed it. Refresh keeps
+        // signature alive so confirm never sees "Order quote expired".
+        // 60000ms × 4 refreshes = 240s coverage; well under 300s TTL.
+        this._quoteRefreshTimer = setInterval(() => {
+            try {
+                if (this.paymentMode !== 'multi') return;
+                if (this.loading?.isActive) return;
+                if (typeof this.refreshQuote === 'function') {
+                    this.refreshQuote(this.props?.form ?? {}).catch(() => {});
+                }
+            } catch (_e) {}
+        }, 60000);
+    },
+    beforeUnmount() {
+        // [iter12 2026-05-09] Clear quote-refresh timer to avoid leak +
+        // ghost POSTs after modal closes.
+        if (this._quoteRefreshTimer) {
+            clearInterval(this._quoteRefreshTimer);
+            this._quoteRefreshTimer = null;
+        }
     },
     watch: {
         // [CV1-POS-SPLIT-PAYMENT-001] String-path watcher (Vue 3 supports it for nested
@@ -513,6 +559,29 @@ export default {
             const n = Math.max(2, Math.min(20, Number(this.splitCount) || 2));
             const totalEur = splitFromCents(this.totalCents);
             this.tranches = splitEquallyHelper(totalEur, n);
+        },
+        /**
+         * [iter12 2026-05-09] Bidirectional split — auto-balance the
+         * non-edited tranche so the sum matches order total. Called by the
+         * "Équilibrer le reste" button. Owner reported manual balancing
+         * was slow and caused quote-expiry hangs.
+         */
+        autoBalanceFromIndex: function (editedIndex) {
+            if (!Array.isArray(this.tranches) || this.tranches.length < 2) return;
+            const idx = (typeof editedIndex === 'number' && editedIndex >= 0)
+                ? editedIndex
+                : 0;
+            const balanced = autoBalanceTranches(this.tranches, this.totalCents, idx);
+            this.tranches = balanced;
+        },
+        /**
+         * [iter12 2026-05-09] Suggest tendered (cash received) values for
+         * every CASH tranche by rounding amount UP to next €5. User can
+         * still override per-tranche. Triggered by "Suggérer les rendus"
+         * button after a split-equal between people.
+         */
+        suggestCashTendered: function () {
+            this.tranches = suggestTenderedForCashTranches(this.tranches, 5);
         },
         buildSplitPayload: function () {
             return serializeTranches(this.tranches);

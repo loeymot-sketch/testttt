@@ -224,6 +224,96 @@ export function totalChangeCents(tranches) {
     return tranches.reduce((acc, t) => acc + computeChangeCents(t), 0);
 }
 
+/**
+ * [iter12 2026-05-09] Bidirectional split — auto-balance helper.
+ *
+ * Use case observed by owner : cashier wants "10€ on card + remainder
+ * in cash" or vice versa. Today the multi-paiement modal forces manual
+ * entry of every amount, which is slow and error-prone (forgetting to
+ * balance results in "Order quote expired" because cashier hesitates).
+ *
+ * This helper takes the current tranche set + total + the index of the
+ * tranche the cashier just edited, and returns a new tranche array
+ * where the OTHER tranche(s) absorb the remainder so the sum equals
+ * total exactly. Two policies :
+ *
+ *   - 'auto-pair' (default) : if exactly 2 tranches, the non-edited
+ *     one absorbs the entire remainder. Most common cash-card split.
+ *   - 'last-tranche'        : if >2 tranches, the LAST tranche absorbs
+ *     remainder (matching splitEqually's tail-carries-remainder rule).
+ *
+ * Returns a new array (no mutation). If the totals don't need
+ * rebalancing or the tranche set is invalid, returns the input as-is.
+ */
+export function autoBalanceTranches(tranches, totalCents, editedIndex, policy = 'auto-pair') {
+    if (!Array.isArray(tranches) || tranches.length < 2) return tranches;
+    if (typeof totalCents !== 'number' || totalCents <= 0) return tranches;
+    if (typeof editedIndex !== 'number' || editedIndex < 0 || editedIndex >= tranches.length) return tranches;
+
+    const editedAmountCents = toCents(tranches[editedIndex].amount);
+    if (editedAmountCents < 0 || editedAmountCents > totalCents) return tranches;
+
+    const remainderCents = totalCents - editedAmountCents;
+
+    let absorberIndex;
+    if (tranches.length === 2 || policy === 'auto-pair') {
+        absorberIndex = (editedIndex + 1) % tranches.length;
+    } else {
+        absorberIndex = tranches.length - 1;
+        if (absorberIndex === editedIndex) absorberIndex = tranches.length - 2;
+    }
+
+    return tranches.map((t, i) => {
+        if (i !== absorberIndex) return { ...t };
+        const newAmountCents = remainderCents;
+        return {
+            ...t,
+            amount: fromCents(newAmountCents),
+        };
+    });
+}
+
+/**
+ * [iter12 2026-05-09] Compute remaining-due (cents) for a NEW tranche
+ * given current tranches + total. Used by "Add tranche" UI to pre-fill
+ * the next tranche amount with whatever's left.
+ *
+ * Returns 0 if already covered or overpaid.
+ */
+export function computeRemainderForNextTrancheCents(totalCents, tranches) {
+    const remaining = remainingCents(totalCents, tranches);
+    return Math.max(0, remaining);
+}
+
+/**
+ * [iter12 2026-05-09] Suggest tendered for CASH tranches in a split.
+ *
+ * After splitEqually() (or any auto-fill) creates CASH tranches, this
+ * helper rounds each amount UP to the next €5 to suggest a realistic
+ * cash-received value (cashier scenario : 3 people pay 10€ each, each
+ * hands a 10€ note, OR each hands a 20€ and gets 10€ change).
+ *
+ * Default rounding step = 5€ (matches typical Euro denominations).
+ * Pass step=10 for round-up to next 10€ if preferred.
+ *
+ * Returns NEW array; only CASH tranches with null/0 tendered are
+ * touched. If tendered already set by user, never overwrite.
+ */
+export function suggestTenderedForCashTranches(tranches, step = 5) {
+    if (!Array.isArray(tranches)) return tranches;
+    const stepCents = Math.max(1, Math.round(Number(step) * 100));
+
+    return tranches.map((t) => {
+        if (!isCashMode(t.mode)) return { ...t };
+        const tenderedCents = toCents(t.tendered);
+        if (tenderedCents > 0) return { ...t };
+        const amountCents = toCents(t.amount);
+        if (amountCents <= 0) return { ...t };
+        const suggested = Math.ceil(amountCents / stepCents) * stepCents;
+        return { ...t, tendered: fromCents(suggested) };
+    });
+}
+
 export default {
     toCents,
     fromCents,
@@ -239,4 +329,7 @@ export default {
     serializeTranches,
     totalChangeCents,
     makeTrancheId,
+    autoBalanceTranches,
+    computeRemainderForNextTrancheCents,
+    suggestTenderedForCashTranches,
 };

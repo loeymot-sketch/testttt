@@ -22,9 +22,29 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderQuoteService
 {
-    private const TTL_SECONDS = 60;
+    /**
+     * [P0-FIX iter12 2026-05-09] Default TTL bumped 60s → 300s.
+     *
+     * Bug visible on POS payment screen "Order quote expired" : cashier
+     * spends >60s entering split-payment tranches (multi-paiement modal)
+     * and quote silently expires before confirm — UX broken.
+     *
+     * Override via config('quote.ttl_seconds', 300) for per-env tuning
+     * (e.g. dev=60 to keep regression tests fast, prod=300+).
+     *
+     * Aligned with cashier OBSERVATIONAL median input time (~90s for
+     * 2-tranche split, ~3min for 4-tranche split with change calculation).
+     */
+    private const TTL_SECONDS_DEFAULT = 300;
     private const SURFACE_POS = 'pos';
     private const SURFACE_KIOSK = 'kiosk';
+
+    private function ttlSeconds(): int
+    {
+        $value = (int) config('quote.ttl_seconds', self::TTL_SECONDS_DEFAULT);
+
+        return $value > 0 ? $value : self::TTL_SECONDS_DEFAULT;
+    }
 
     public function __construct(
         private readonly PricingService $pricingService,
@@ -75,7 +95,7 @@ class OrderQuoteService
                 'delivery_charge' => $pricing->deliveryCharge,
                 'total_ttc' => $pricing->total,
                 'currency' => $canonicalPayload['currency'],
-                'expires_at' => now()->addSeconds(self::TTL_SECONDS),
+                'expires_at' => now()->addSeconds($this->ttlSeconds()),
             ]);
         }
 
