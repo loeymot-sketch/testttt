@@ -56646,7 +56646,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this.resolvedReport = null;
               _context.p = 1;
               _context.n = 2;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('/api/admin/fiscal/z-report');
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/fiscal/z-report');
             case 2:
               res = _context.v;
               rows = Array.isArray((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) ? res.data.data : [];
@@ -57319,7 +57319,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this.loading.isActive = true;
               _context.p = 1;
               _context.n = 2;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('/api/admin/stock/low-alerts');
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/stock/low-alerts');
             case 2:
               res = _context.v;
               _this.alerts = (_res$data$alerts = (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.alerts) !== null && _res$data$alerts !== void 0 ? _res$data$alerts : [];

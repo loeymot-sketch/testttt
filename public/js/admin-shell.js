@@ -12165,7 +12165,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.loading = true;
               _context.p = 2;
               _context.n = 3;
-              return axios.get('/api/admin/observability/outbox');
+              return axios.get('admin/observability/outbox');
             case 3:
               _yield$axios$get = _context.v;
               data = _yield$axios$get.data;
@@ -12197,7 +12197,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this3.retrying = true;
               _context2.p = 1;
               _context2.n = 2;
-              return axios.post('/api/admin/observability/outbox/retry-failed');
+              return axios.post('admin/observability/outbox/retry-failed');
             case 2:
               _context2.n = 3;
               return _this3.loadAll();
@@ -12220,7 +12220,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this4.draining = true;
               _context3.p = 1;
               _context3.n = 2;
-              return axios.post('/api/admin/observability/outbox/drain-failed', {
+              return axios.post('admin/observability/outbox/drain-failed', {
                 older_than_hours: 24
               });
             case 2:
@@ -21293,7 +21293,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.loading = true;
               _context.p = 2;
               _context.n = 3;
-              return Promise.all([axios.get('/api/admin/stock/scan-rupture/last-summary'), axios.get('/api/admin/stock/low-alerts')]);
+              return Promise.all([axios.get('admin/stock/scan-rupture/last-summary'), axios.get('admin/stock/low-alerts')]);
             case 3:
               _yield$Promise$all = _context.v;
               _yield$Promise$all2 = _slicedToArray(_yield$Promise$all, 2);
@@ -21326,7 +21326,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _context2.p = 1;
               branchId = ((_this3$summaries$ = _this3.summaries[0]) === null || _this3$summaries$ === void 0 ? void 0 : _this3$summaries$.branch_id) || ((_this3$currentlyUnava = _this3.currentlyUnavailable[0]) === null || _this3$currentlyUnava === void 0 ? void 0 : _this3$currentlyUnava.branch_id) || ((_this3$lowAlerts$ = _this3.lowAlerts[0]) === null || _this3$lowAlerts$ === void 0 ? void 0 : _this3$lowAlerts$.branch_id) || null;
               _context2.n = 2;
-              return axios.post('/api/admin/stock/scan-rupture/run', branchId ? {
+              return axios.post('admin/stock/scan-rupture/run', branchId ? {
                 branch_id: branchId
               } : {});
             case 2:

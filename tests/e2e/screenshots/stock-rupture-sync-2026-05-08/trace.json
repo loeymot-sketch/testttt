@@ -1,0 +1,18 @@
+[
+  {
+    "label": "fixtures",
+    "payload": {
+      "fx": {
+        "branches": [
+          1
+        ],
+        "item_with_extra_and_variation": null,
+        "item_active_fallback": null,
+        "extra_id": 172,
+        "variation_id": 262
+      },
+      "spaUp": true
+    },
+    "ts": "2026-05-08T10:47:06.781Z"
+  }
+]

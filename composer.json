@@ -90,7 +90,11 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": false
-        }
+        },
+        "platform": {
+            "php": "8.2.30"
+        },
+        "platform-check": false
     },
     "minimum-stability": "dev",
     "prefer-stable": true

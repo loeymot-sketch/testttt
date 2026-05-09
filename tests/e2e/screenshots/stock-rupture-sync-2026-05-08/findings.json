@@ -1,0 +1,10 @@
+[
+  {
+    "step": "SETUP",
+    "slug": "env",
+    "state": "spa-up",
+    "severity": "OK",
+    "note": "spaUp=true token=true branches=[1] itemId=null extraId=172 variationId=262",
+    "ts": "2026-05-08T10:47:06.781Z"
+  }
+]
