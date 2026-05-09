@@ -5,9 +5,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\OtpController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\Pos\CashDrawerController;
+use App\Http\Controllers\Admin\Pos\CashDrawerSessionController;
+use App\Http\Controllers\Admin\Pos\CustomerNfcLookupController;
+use App\Http\Controllers\Admin\Pos\FloorplanController;
+use App\Http\Controllers\Admin\Pos\ParkedOrderController;
+use App\Http\Controllers\Admin\Pos\PosReceiptPrintController;
+use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\ChefController;
 use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\ItemPhotoController;
 use App\Http\Controllers\Admin\MailController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\RoleController;
@@ -21,7 +29,10 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\WaiterController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\ComposerProfileController;
+use App\Http\Controllers\Admin\ComposerStepController;
 use App\Http\Controllers\Admin\CookiesController;
+use App\Http\Controllers\Admin\IngredientController;
 use App\Http\Controllers\Admin\LicenseController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\AnalyticController;
@@ -82,10 +93,13 @@ use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Auth\KioskMachineLoginController;
 use App\Http\Controllers\Admin\NotificationAlertController;
 use App\Http\Controllers\Admin\OrderStatusScreenController;
+use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\DeliveryBoyAddressController;
 use App\Http\Controllers\Admin\CreditBalanceReportController;
 use App\Http\Controllers\Admin\AdministratorAddressController;
 use App\Http\Controllers\Admin\KitchenDisplaySystemController;
+use App\Http\Controllers\Admin\KdsSyncController;
+use App\Http\Controllers\Admin\Observability\SyncOverviewController;
 use App\Http\Controllers\Table\OrderController as TableOrderController;
 use App\Http\Controllers\Frontend\ItemController as FrontendItemController;
 use App\Http\Controllers\Frontend\PageController as FrontendPageController;
@@ -226,6 +240,28 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
+// [BLUE 2026-05-08 / B3-S5 P1] Throttle séparé pour /menu/availability/toggle :
+// pendant rush, caissier toggle item OOS + submit commande peut hitter 429
+// self-DoS s'il partage le bucket admin-mutation (30/min) avec POST /admin/pos.
+// On extrait UNIQUEMENT le toggle availability avec un bucket dédié 60/min.
+// IMPORTANT : groupe sibling (PAS imbriqué) pour éviter le stacking — sinon
+// Laravel additionne les middlewares throttle et la limite effective devient
+// min(30, 60) = 30/min, ce qui ne résout PAS le self-DoS. Récurrent RED-R3
+// → ORCHESTRATOR → B3.
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:60,1'])->group(function () {
+    Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
+        ->name('menu.availability.toggle');
+
+    // [F-016a-BIS] Branch-scoped manual rupture endpoints for extras and
+    // variations. Same throttle bucket as the item toggle endpoint above
+    // because cashiers/managers may chain multiple 86 actions during rush
+    // and we don't want this to share the global admin-mutation bucket.
+    Route::post('/menu/availability/extra/toggle', [AvailabilityController::class, 'toggleExtra'])
+        ->name('menu.availability.extra.toggle');
+    Route::post('/menu/availability/variation/toggle', [AvailabilityController::class, 'toggleVariation'])
+        ->name('menu.availability.variation.toggle');
+});
+
 Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
@@ -235,8 +271,21 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [V1 SECTION 5] Dual-channel menu SSOT projection (read-only, admin-only).
     Route::get('/menu-projection', [MenuProjectionController::class, 'show'])
         ->name('menu-projection.show');
-    Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
-        ->name('menu.availability.toggle');
+    // [CV1-V1-CLOSEOUT-001 T-DEEP-AVAIL-API-01] Endpoint admin pour AvailabilityService::setMaxDailyQty (M2 V2 task 2.5).
+    Route::post('/menu/availability/max-daily-qty', [AvailabilityController::class, 'setMaxDailyQty'])
+        ->name('menu.availability.max-daily-qty');
+
+    // [F-016a-BIS] Read-only aggregate (items + extras + variations marked
+    // unavailable on the branch). Powers the StockManager dashboard.
+    Route::get('/menu/availability/branch/{branch}', [AvailabilityController::class, 'showBranchAvailability'])
+        ->whereNumber('branch')
+        ->name('menu.availability.branch.show');
+    Route::get('/stock/scan-rupture/last-summary', [StockRuptureDashboardController::class, 'lastSummary'])
+        ->name('stock.scan-rupture.last-summary');
+    Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])
+        ->name('stock.low-alerts');
+    Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
+        ->name('stock.scan-rupture.run');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -287,14 +336,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
         Route::prefix('item-category')->name('item-category.')->group(function () {
             Route::get('/', [ItemCategoryController::class, 'index']);
+            Route::get('/export', [ItemCategoryController::class, 'export']);
+            Route::get('/download-sample', [ItemCategoryController::class, 'downloadSample']);
+            Route::post('/import/file', [ItemCategoryController::class, 'import']);
             Route::get('/show/{itemCategory}', [ItemCategoryController::class, 'show']);
             Route::post('/', [ItemCategoryController::class, 'store']);
             Route::match(['post', 'put', 'patch'], '/{itemCategory}', [ItemCategoryController::class, 'update']);
             Route::delete('/{itemCategory}', [ItemCategoryController::class, 'destroy']);
             Route::post('/sort/category', [ItemCategoryController::class, 'sortCategory']);
-            Route::get('/export', [ItemCategoryController::class, 'export']);
-            Route::get('/download-sample', [ItemCategoryController::class, 'downloadSample']);
-            Route::post('/import/file', [ItemCategoryController::class, 'import']);
         });
 
         Route::prefix('item-attribute')->name('item-attribute.')->group(function () {
@@ -573,6 +622,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::match(['post', 'put', 'patch'], '/{coupon}', [CouponController::class, 'update']);
         Route::delete('/{coupon}', [CouponController::class, 'destroy']);
         Route::get('/export', [CouponController::class, 'export']);
+        // [PROMO-DASH-2026-05-06] Toggle status ACTIVE <-> INACTIVE
+        Route::post('/toggle-status/{coupon}', [CouponController::class, 'toggleStatus'])->name('toggleStatus');
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {
@@ -592,8 +643,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('item')->name('item.')->group(function () {
 
         Route::get('/', [ItemController::class, 'index']);
+        Route::get('/lookup-barcode/{code}', [ItemController::class, 'lookupBarcode'])->where('code', '[^/]+');
         Route::get('/show/{item}', [ItemController::class, 'show']);
         Route::post('/', [ItemController::class, 'store']);
+        Route::post('/{item}/duplicate', [ItemController::class, 'duplicate'])->name('duplicate');
         Route::match(['post', 'put', 'patch'], '/{item}', [ItemController::class, 'update']);
         Route::delete('/{item}', [ItemController::class, 'destroy']);
         Route::post('/change-image/{item}', [ItemController::class, 'changeImage']);
@@ -620,9 +673,164 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/addon/{item}', [ItemAddonController::class, 'store']);
         Route::delete('/addon/{item}/{itemAddon}', [ItemAddonController::class, 'destroy']);
     });
+    Route::post('/items/{item}/photo', [ItemPhotoController::class, 'store'])->name('items.photo.store');
+
+    Route::prefix('ingredients')->name('ingredients.')->middleware('permission:ingredients_manage')->group(function () {
+        Route::get('/', [IngredientController::class, 'index'])->name('index');
+        Route::get('/{globalId}/usage', [IngredientController::class, 'usage'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('usage');
+        Route::get('/{globalId}', [IngredientController::class, 'show'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('show');
+        Route::match(['put', 'patch'], '/{globalId}/availability', [IngredientController::class, 'toggleAvailability'])
+            ->where('globalId', '[a-z]+:[0-9]+')
+            ->name('availability.toggle');
+    });
+
+    Route::prefix('composer')->name('composer.')->group(function () {
+        Route::middleware('permission:catalog.compose')->group(function () {
+            Route::middleware('wizard.per_item_demo')->group(function () {
+                Route::get('/items/{item}/profile', [ComposerProfileController::class, 'show']);
+                Route::post('/items/{item}/profile', [ComposerProfileController::class, 'store']);
+                // [CV1-WIZARD-COMPOSABLE-001 T-WC-TEMPLATES-01] Apply named starter template
+                Route::post('/items/{item}/apply-template', [ComposerProfileController::class, 'applyTemplate']);
+                // [CV1-WIZARD-COMPOSABLE-001 T-WC-SOURCE-PICKER-01] Available source candidates for picker
+                Route::get('/items/{item}/available-sources', [ComposerProfileController::class, 'availableSources']);
+            });
+            Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
+            Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
+            Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
+            Route::middleware('wizard.per_item_profile_guard')->group(function () {
+                Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
+                Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
+                Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
+                Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
+                Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
+                Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
+            });
+        });
+        Route::post('/profiles/{profile}/publish', [ComposerProfileController::class, 'publish'])
+            ->middleware('permission:catalog.publish');
+    });
 
     Route::prefix('pos')->name('pos.')->group(function () {
-        Route::post('/', [PosController::class, 'store'])->middleware('throttle:pos-order-create');
+        Route::get('/walk-in-customer', [PosController::class, 'walkInCustomer'])
+            ->middleware('throttle:pos-quote')
+            ->name('walk-in-customer');
+        Route::post('/quote', [PosController::class, 'quote'])
+            ->middleware('throttle:pos-quote')
+            ->name('quote');
+        Route::post('/', [PosController::class, 'store'])->middleware(['throttle:pos-order-create', 'idempotency']);
+        Route::get('/counter-collect/pending', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $query = \App\Models\Order::with(['orderItems.orderItem'])
+                ->where('source_surface', 'kiosk')
+                ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
+                ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                ->orderBy('created_at');
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $query->where('branch_id', $branchId);
+            }
+
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(50)->get());
+        })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                $validated = $request->validate([
+                    'mode' => ['required', 'integer'],
+                    'received' => ['nullable', 'numeric', 'min:0'],
+                    'note' => ['nullable', 'string', 'max:255'],
+                ]);
+
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\PaymentService::class)->confirmCounterPayment(
+                    $order,
+                    (int) $validated['mode'],
+                    array_key_exists('received', $validated) ? (float) $validated['received'] : null,
+                    $validated['note'] ?? null
+                ));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $validation) {
+                throw $validation;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('counter-collect.confirm');
+        Route::post('/counter-collect/{order}/cancel', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                $validated = $request->validate([
+                    'reason' => ['nullable', 'string', 'max:255'],
+                ]);
+
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\PaymentService::class)->cancelCounterPayment(
+                    $order,
+                    $validated['reason'] ?? null
+                ));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $validation) {
+                throw $validation;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('counter-collect.cancel');
+        Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            try {
+                return new \App\Http\Resources\OrderDetailsResource(app(\App\Services\OrderService::class)->collectKioskCash($order));
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+                throw $http;
+            } catch (\Exception $exception) {
+                return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            }
+        })->middleware('throttle:pos-order-update')->name('collect-kiosk-cash');
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
+        Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
+            Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
+            Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
+            Route::get('/{id}', [ParkedOrderController::class, 'show'])->name('show');
+            Route::delete('/{id}', [ParkedOrderController::class, 'destroy'])->name('destroy');
+        });
+        Route::prefix('floorplan')->name('floorplan.')->group(function () {
+            Route::get('/state', [FloorplanController::class, 'state'])->name('state');
+            Route::post('/transfer', [FloorplanController::class, 'transfer'])->name('transfer');
+            Route::post('/{tableId}/assign', [FloorplanController::class, 'assign'])->name('assign');
+            Route::post('/{tableId}/release', [FloorplanController::class, 'release'])->name('release');
+        });
+        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->name('cash-drawer.open');
+        // [AUDIT-F-003] Cash drawer SESSION management — distinct du hardware open above.
+        Route::prefix('cash-drawer/sessions')->name('cash-drawer.sessions.')->group(function () {
+            Route::get('/current', [CashDrawerSessionController::class, 'current'])->name('current');
+            Route::post('/open', [CashDrawerSessionController::class, 'open'])->name('open');
+            Route::post('/{session}/close', [CashDrawerSessionController::class, 'close'])
+                ->whereNumber('session')
+                ->name('close');
+            Route::post('/{session}/reconcile', [CashDrawerSessionController::class, 'reconcile'])
+                ->whereNumber('session')
+                ->name('reconcile');
+            Route::get('/{session}/movements', [CashDrawerSessionController::class, 'movements'])
+                ->whereNumber('session')
+                ->name('movements');
+        });
+        Route::post('/customers/lookup-by-nfc', [CustomerNfcLookupController::class, 'lookup'])->name('customers.lookup-by-nfc');
+    });
+
+    Route::prefix('printers')->name('printers.')->group(function () {
+        Route::get('/', [PrinterController::class, 'index'])->name('index');
+        Route::post('/', [PrinterController::class, 'store'])->name('store');
+        Route::get('/{printer}', [PrinterController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/{printer}', [PrinterController::class, 'update'])->name('update');
+        Route::delete('/{printer}', [PrinterController::class, 'destroy'])->name('destroy');
+        Route::post('/{printer}/test-print', [PrinterController::class, 'testPrint'])->name('test-print');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
@@ -633,11 +841,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
             ->middleware('throttle:pos-order-update');
         Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency']);
         Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency']);
         // [SPRINT-5] Quick re-order — returns structured cart payload for rapid re-import
         Route::get('/reorder-items/{order}', [PosOrderController::class, 'reorderItems'])->name('reorderItems');
+        // [P11-FZH / F-VERIFY-08-02] NF525 counter-entry refund — creates a mirror order
+        // in the current Z window (parent stays immutable). Use this instead of
+        // changeStatus → RETURNED for orders sealed by a closed Z report.
+        Route::post('/{order}/refund-with-counter-entry', [PosOrderController::class, 'refundWithCounterEntry'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('refundWithCounterEntry');
     });
 
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {
@@ -647,8 +861,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
         Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus']);
-        Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy']);
+        Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
+        Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy'])->middleware('idempotency');
     });
 
     Route::prefix('table-order')->name('tableOrder.')->group(function () {
@@ -657,7 +871,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
         Route::get('/export', [AdminTableOrderController::class, 'export']);
         Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus']);
-        Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus']);
+        Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
 
@@ -777,6 +991,28 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [KitchenDisplaySystemController::class, 'index']);
         Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']);
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
+        // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.
+        Route::get('/sync', [KdsSyncController::class, 'sync']);
+    });
+
+    // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
+    Route::prefix('observability')->name('observability.')->group(function () {
+        Route::get('/sync-overview', [SyncOverviewController::class, 'index'])->name('sync-overview');
+        Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
+            ->middleware('throttle:60,1')
+            ->name('client-metrics');
+
+        // [CV1-OBSERVABILITY-OUTBOX-001] Outbox pipeline dashboard. Admin/Tenant
+        // Admin only — read aggregates the entire fleet (all branches), and
+        // retry / drain mutate the queue. Role gate is enforced inside the
+        // controller via `role:Admin|Tenant Admin` middleware (see __construct).
+        Route::get('/outbox', [SyncOverviewController::class, 'outboxOverview'])->name('outbox.index');
+        Route::post('/outbox/retry-failed', [SyncOverviewController::class, 'outboxRetryFailed'])
+            ->middleware('throttle:10,1')
+            ->name('outbox.retry');
+        Route::post('/outbox/drain-failed', [SyncOverviewController::class, 'outboxDrainFailed'])
+            ->middleware('throttle:5,1')
+            ->name('outbox.drain');
     });
     Route::prefix('oss-order')->name('ossOrder.')->group(function () {
         Route::get('/', [OrderStatusScreenController::class, 'index']);
@@ -846,10 +1082,18 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware('throttle:kiosk-orders');
+        Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
         Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
-        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm']);
+        Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
+    });
+
+    // [AUDIT-F-008] Payment confirm reconciliation queue — frontend persists TPE-approved
+    // transactions whose backend confirmation failed (network blip / app crash post-TPE)
+    // and replays them in batch on boot. Idempotent per UNIQUE(transaction_id).
+    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1'])->group(function () {
+        Route::post('/reconcile-pending', [\App\Http\Controllers\Frontend\PaymentReconcileController::class, 'reconcile']);
     });
 
     Route::prefix('offer')->name('offer.')->group(function () {
@@ -940,7 +1184,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // [C6] Kiosk observability — structured event logging for operators
     // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
         ->name('kiosk.event');
 
     /* ================================================================
@@ -953,22 +1197,22 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.4 — GET /api/frontend/menu : payload unifié (1 round-trip kiosk).
     Route::get('/menu', [\App\Http\Controllers\Frontend\MenuController::class, 'kiosk'])
-        ->middleware(['auth:sanctum', 'throttle:kiosk-menu'])
+        ->middleware(['auth:sanctum', 'throttle:kiosk-menu', 'kiosk.locale'])
         ->name('frontend.menu.kiosk');
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
     Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
-        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
         ->name('frontend.pricing.preview');
 
     // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
     Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'throttle:30,1', 'kiosk.locale'])
         ->name('frontend.promo.validate');
 
     // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
     Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
-        ->middleware(['auth:sanctum', 'throttle:60,1'])
+        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
         ->name('frontend.upsell.suggest');
 
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
@@ -984,9 +1228,21 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->name('frontend.loyalty.scan');
 
     // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
+    // [K-6.1] Same ability enforcement as /kiosk-event — both aliases must fail-closed. [T08b]
     Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
         ->name('frontend.kiosk.event');
+
+    // [C2 / K-9 ADR-5] POST /api/frontend/csp-report : endpoint anonyme pour
+    // les rapports CSP envoyés par le navigateur (report-uri du meta
+    // `Content-Security-Policy[-Report-Only]`). Throttle 20/min/IP. Route
+    // anonyme par design (CSP natif du navigateur envoie sans auth).
+    // Log-only vers canal `observability` (catégorie `csp_violation`) —
+    // aucune persistance DB (volume imprévisible). Aligné sur le worktree
+    // testttt-kiosk-p93 (référence canary).
+    Route::post('/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
+        ->middleware(['throttle:20,1'])
+        ->name('frontend.csp.report');
 });
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {

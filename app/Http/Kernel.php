@@ -38,6 +38,9 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CorrelationIdMiddleware::class,
+            // [RED-R2 §1 P2] CSP via HTTP header (replaces <meta http-equiv>).
+            // Mode piloté par env CSP_ENFORCE_MODE — défaut report_only.
+            \App\Http\Middleware\ContentSecurityPolicyHeader::class,
         ],
 
         'api' => [
@@ -76,5 +79,22 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'localization' => \App\Http\Middleware\localization::class,
         'installed' => \App\Http\Middleware\Installed::class,
+        // [T08b / K-6.1] Register Sanctum ability middleware aliases so routes
+        // can use `abilities:kiosk:order` / `ability:kiosk:order` without the
+        // full FQCN. Mirrors Sanctum's documented usage and aligns with the
+        // testttt-kiosk-p93 reference worktree.
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+        // [C4 / K-8] Validates `X-Kiosk-Locale` / `?lang=` against
+        // `Branch.available_locales` of the authenticated kiosk machine.
+        // Returns 400 LOCALE_NOT_ALLOWED_FOR_BRANCH when the requested
+        // locale is outside the branch allowlist. Aligned with the
+        // testttt-kiosk-p93 reference worktree.
+        'kiosk.locale' => \App\Http\Middleware\ValidateKioskLocale::class,
+        'wizard.per_item_demo' => \App\Http\Middleware\EnsureWizardPerItemDemoEnabled::class,
+        'wizard.per_item_profile_guard' => \App\Http\Middleware\EnsureProfileNotItemOwnedUnlessDemoEnabled::class,
+        // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
+        // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
+        'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
     ];
 }
