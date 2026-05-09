@@ -2,15 +2,16 @@
 
 namespace App\Events;
 
+use App\Contracts\BroadcastableOrder;
 use App\Events\Concerns\DispatchableAfterCommit;
 
-class CategoryCreated
+class OrderPaidAtCounter
 {
     use DispatchableAfterCommit;
 
     public function __construct(
-        public int $categoryId,
-        public ?int $branchId = null
+        public BroadcastableOrder $order,
+        public int $paymentMethod,
     ) {
     }
 }

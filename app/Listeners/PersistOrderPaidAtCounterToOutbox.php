@@ -3,52 +3,48 @@
 namespace App\Listeners;
 
 use App\Enums\EventType;
-use App\Events\OrderCreated;
+use App\Events\OrderPaidAtCounter;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class PersistOrderCreatedToOutbox
+class PersistOrderPaidAtCounterToOutbox
 {
-    public function handle(OrderCreated $event): void
+    public function handle(OrderPaidAtCounter $event): void
     {
         $order = $event->order;
 
-        // [iter14 SPECIALIST-2] OrderCreated is a one-shot per aggregate.
-        // sha1(event_type|aggregate_id) — no discriminator; second listener
-        // fire (e.g. queue retry) is silently absorbed by the UNIQUE index.
-        $idempotencyKey = sha1(EventType::ORDER_CREATED . '|' . $order->id);
+        // [iter14 SPECIALIST-2] OrderPaidAtCounter is a one-shot per aggregate.
+        // sha1(event_type|aggregate_id) — second listener fire (e.g. queue
+        // retry between persistence and post-commit dispatch) collapses on
+        // the UNIQUE index.
+        $idempotencyKey = sha1(EventType::ORDER_PAYMENT_CONFIRMED . '|' . $order->id);
 
         $domainEvent = DomainEvent::query()->firstOrCreate(
             ['idempotency_key' => $idempotencyKey],
             [
-                'event_type' => EventType::ORDER_CREATED,
+                'event_type' => EventType::ORDER_PAYMENT_CONFIRMED,
                 'aggregate_type' => get_class($order),
                 'aggregate_id' => $order->id,
                 'branch_id' => $order->branch_id,
                 'payload' => [
                     'order_id' => $order->id,
                     'queue_number' => $order->queue_number,
-                    '_origin' => $this->resolveOrigin($order),
-                    'payment_method' => $this->resolvePaymentMethod($order),
+                    '_origin' => (string) ($order->source_surface ?: 'kiosk'),
+                    'payment_method' => $event->paymentMethod,
                     'payment_status' => $order->payment_status,
-                    'payment_pending_counter' => (int) $order->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
-                    'status' => $order->status,
-                    'order_type' => $order->order_type,
-                    'total' => $order->total,
-                    'created_at' => $order->created_at?->toISOString(),
+                    'fiscal_sequence_no' => $order->fiscal_sequence_no,
                 ],
                 'channel' => json_encode(['private-branch.' . $order->branch_id]),
-                'broadcast_as' => 'OrderCreated',
+                'broadcast_as' => 'OrderPaidAtCounter',
                 'correlation_id' => $this->resolveCorrelationId(),
                 'occurred_at' => now(),
             ]
         );
 
         DB::afterCommit(function () use ($domainEvent): void {
-            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
             DispatchDomainEventsJob::dispatch($domainEvent->id);
         });
     }
@@ -69,29 +65,5 @@ class PersistOrderCreatedToOutbox
         }
 
         return (string) Str::uuid();
-    }
-
-    private function resolveOrigin(object $order): string
-    {
-        $surface = trim((string) ($order->source_surface ?? ''));
-
-        if ($surface !== '') {
-            return $surface;
-        }
-
-        if (($order->pos_payment_method ?? null) !== null) {
-            return 'pos';
-        }
-
-        return ($order->queue_number ?? null) !== null ? 'kiosk' : 'web';
-    }
-
-    private function resolvePaymentMethod(object $order): int|string|null
-    {
-        if (($order->pos_payment_method ?? null) !== null) {
-            return $order->pos_payment_method;
-        }
-
-        return $order->payment_method ?? null;
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
+use App\Events\Concerns\DispatchableAfterCommit;
 use App\Models\Item;
-use Illuminate\Foundation\Events\Dispatchable;
 
 /**
  * Plain domain event fired when an item's availability changes.
@@ -20,7 +20,7 @@ use Illuminate\Foundation\Events\Dispatchable;
  */
 class ItemAvailabilityChanged
 {
-    use Dispatchable;
+    use DispatchableAfterCommit;
 
     public int     $itemId;
     public int     $status;

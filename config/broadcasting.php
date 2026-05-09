@@ -19,6 +19,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Polling Fallback Contract
+    |--------------------------------------------------------------------------
+    |
+    | POS/KDS/OSS surfaces must stay correct when websocket broadcasting is
+    | disabled or unavailable. The backend remains the source of truth and the
+    | frontend switches to REST polling with a visible operator hint.
+    |
+    */
+
+    'polling_fallback' => [
+        'enabled' => env('BROADCAST_POLLING_FALLBACK_ENABLED', true),
+        'interval_ms' => (int) env('BROADCAST_POLLING_FALLBACK_MS', 30000),
+        'hint_when_off' => env('BROADCAST_POLLING_FALLBACK_HINT_WHEN_OFF', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Broadcast Connections
     |--------------------------------------------------------------------------
     |

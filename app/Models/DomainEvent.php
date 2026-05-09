@@ -18,6 +18,7 @@ class DomainEvent extends Model
         'channel',
         'broadcast_as',
         'correlation_id',
+        'idempotency_key',
         'occurred_at',
         'dispatched_at',
         'attempts',

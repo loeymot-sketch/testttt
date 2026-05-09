@@ -20,7 +20,8 @@ class OutboxRescueCommand extends Command
             ->get();
 
         foreach ($events as $event) {
-            DispatchDomainEventsJob::dispatch($event->id)->onQueue('high');
+            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+            DispatchDomainEventsJob::dispatch($event->id);
         }
 
         $this->info('Re-queued ' . $events->count() . ' stale domain events.');
