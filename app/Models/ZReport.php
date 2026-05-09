@@ -34,6 +34,12 @@ class ZReport extends Model
         'signature',
         'status',
         'archived_at',
+        // [AUDIT-F-003] Cash enrichment additive columns — NOT signed by HMAC.
+        // Remplis post-close par ZReportCashEnrichmentService::persistForClosedReport.
+        'cash_opening_amount',
+        'cash_closing_amount',
+        'cash_variance',
+        'cash_movements_count',
     ];
 
     protected $casts = [
@@ -52,5 +58,10 @@ class ZReport extends Model
         'cancel_count'      => 'integer',
         'refund_count'      => 'integer',
         'archived_at'       => 'datetime',
+        // [AUDIT-F-003] Cash enrichment casts.
+        'cash_opening_amount'  => 'float',
+        'cash_closing_amount'  => 'float',
+        'cash_variance'        => 'float',
+        'cash_movements_count' => 'integer',
     ];
 }

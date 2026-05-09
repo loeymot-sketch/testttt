@@ -45,7 +45,16 @@ class KioskMachineLoginController extends Controller
             ], 422);
         }
 
-        $kioskMachine = KioskMachine::where('username', $username)->first();
+        // [iter12 P1 KIOSK 2026-05-09] PRE-AUTH lookup: scope explicitly bypassed.
+        //
+        // Username is a public credential; resolution must succeed before the
+        // user is authenticated, so BranchScope (which runs only when
+        // Auth::check()=true) returns no rows here in practice anyway. We mark
+        // the bypass with `withoutGlobalScope` to make the intent explicit and
+        // survive any future BranchScope refactor that activates pre-auth.
+        $kioskMachine = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('username', $username)
+            ->first();
 
         if (!$kioskMachine) {
             return response()->json([
@@ -74,7 +83,13 @@ class KioskMachineLoginController extends Controller
         }
 
         DB::transaction(function () use ($kioskMachine) {
-            $lockedKiosk = KioskMachine::lockForUpdate()->find($kioskMachine->id);
+            // [iter12 P1 KIOSK 2026-05-09] In-transaction lookup runs while the
+            // user has not yet been authenticated for this request, so BranchScope
+            // would still skip; we bypass explicitly for intent + parity with the
+            // pre-auth lookup above.
+            $lockedKiosk = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->lockForUpdate()
+                ->find($kioskMachine->id);
             $user         = User::find($lockedKiosk->user_id);
 
             // Revoke all existing kiosk tokens for this user to allow clean re-login

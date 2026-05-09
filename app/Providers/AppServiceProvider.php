@@ -8,6 +8,10 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Hardware\PrinterTransport\NullPrinterTransport;
+use App\Services\Hardware\PrinterTransport\PrinterTransportInterface;
+use App\Services\Hardware\PrinterTransport\TcpPrinterTransport;
+use App\Services\Observability\SyncMetricsRecorder;
 use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +27,31 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->bind(PrinterTransportInterface::class, function () {
+            // [BYPASS-P3 / GATE_BYPASS_PRINTING_2026-05-08] NullPrinterTransport
+            // also when printing.bypass.enabled — short-circuits TCP/IP send for
+            // E2E flow validation. Production guard in boot() prevents activation
+            // in APP_ENV=production.
+            if ($this->app->environment('testing') || (bool) config('printing.bypass.enabled', false)) {
+                return new NullPrinterTransport();
+            }
+
+            return new TcpPrinterTransport();
+        });
+
+        // [NEW-04] Single recorder instance per request — keeps internal state
+        // (correlation cache, etc.) consistent across the call stack and avoids
+        // re-instantiating the service for every metric write.
+        $this->app->singleton(SyncMetricsRecorder::class);
+
+        // [F-VERIFY-09-02 / PLAN_P11] HTTP idempotency repository.
+        // Backed by Cache::store() — uses redis NX EX in prod, array in tests.
+        $this->app->bind(
+            \App\Services\Idempotency\IdempotencyKeyRepository::class,
+            fn ($app) => new \App\Services\Idempotency\RedisIdempotencyKeyRepository(
+                cacheStore: config('idempotency.cache_store'),
+            ),
+        );
     }
 
     /**
@@ -47,6 +76,25 @@ class AppServiceProvider extends ServiceProvider
         $this->registerSqliteRegexpIfNeeded();
 
         if (app()->environment('production')) {
+            // [BYPASS-P1 / GATE_BYPASS_MODE_2026-05-08] Production guard — refuse
+            // boot if any bypass flag is enabled in production. Bypass mode is
+            // strictly for local dev / staging E2E flow validation. Activating
+            // it in prod would skip TPE validation and TCP/IP printer spool.
+            if ((bool) config('payment.bypass.enabled', false)) {
+                throw new \RuntimeException(
+                    'PAYMENT_BYPASS_MODE=true is forbidden in production: bypass mode '
+                    . 'short-circuits TPE validation. Set PAYMENT_BYPASS_MODE=false in '
+                    . 'your .env file or unset it. See docs/runbooks/BYPASS_MODE_OPERATIONAL.md.'
+                );
+            }
+            if ((bool) config('printing.bypass.enabled', false)) {
+                throw new \RuntimeException(
+                    'PRINTING_BYPASS_MODE=true is forbidden in production: bypass mode '
+                    . 'short-circuits TCP/IP send to thermal printer. Set PRINTING_BYPASS_MODE=false '
+                    . 'in your .env file or unset it. See docs/runbooks/BYPASS_MODE_OPERATIONAL.md.'
+                );
+            }
+
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
                 throw new \RuntimeException(
                     'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '
@@ -57,6 +105,24 @@ class AppServiceProvider extends ServiceProvider
                 throw new \RuntimeException(
                     'QUEUE_CONNECTION must not be sync in production (expected: redis|database). '
                     . 'Set QUEUE_CONNECTION in your .env file.'
+                );
+            }
+
+            /*
+             * [W9-AUDIT B1-OPS] AuditLogService::write uses Cache::lock(audit_chain_b{n})
+             * to serialize hash-chain inserts across concurrent workers. With CACHE_DRIVER=array
+             * (or any in-process driver), the lock is per-process only, so two PHP-FPM workers
+             * can write rows that collide on the UNIQUE(branch_id, prev_hash) index OR worse,
+             * silently break the chain if the index is missing on a legacy install.
+             * Fail-fast at boot if a non-shared cache driver is configured in production.
+             */
+            $cacheDriver = config('cache.default');
+            $forbiddenCacheDrivers = ['array', 'null'];
+            if (in_array($cacheDriver, $forbiddenCacheDrivers, true)) {
+                throw new \RuntimeException(
+                    "CACHE_DRIVER='{$cacheDriver}' is forbidden in production: NF525 audit chain integrity "
+                    . 'requires a shared cache driver (redis or memcached) for cross-worker locks. '
+                    . 'Set CACHE_DRIVER=redis (recommended) or CACHE_DRIVER=memcached in your .env file.'
                 );
             }
         }
