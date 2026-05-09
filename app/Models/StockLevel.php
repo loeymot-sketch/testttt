@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,20 @@ use Illuminate\Database\Eloquent\Model;
 class StockLevel extends Model
 {
     use HasFactory;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // [iter12 P0 STOCK 2026-05-09] BranchScope global scope.
+        //
+        // Closes cross-tenant leak risk identified in Ultra-Review #4 STOCK :
+        // unscoped queries (e.g. `StockLevel::where('on_hand', 0)->count()` for
+        // a global rupture banner) would aggregate counts across all branches.
+        // Admin (branch_id=0) bypass + kiosk routing preserved by BranchScope.
+        // Existing access via Order/OrderItem aggregates remains unchanged.
+        static::addGlobalScope(new BranchScope());
+    }
 
     /**
      * [F-016a-BIS] Whitelist of accepted manual rupture reasons.
