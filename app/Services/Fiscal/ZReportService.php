@@ -303,11 +303,25 @@ class ZReportService
         // otherwise the signed totals would include untraceable rows
         // and silently break the "sequential, gap-free" invariant.
         //
-        // [POS-9-H.2.5 / F-B5]
-        // withoutGlobalScopes() drops BranchScope AND SoftDeletingScope
-        // — undesirable for soft-deletes, which must stay excluded so
-        // a cancelled-then-restored order is never double-counted.
-        // Scope reset to `BranchScope` only.
+        // [POS-9-H.2.5 / F-B5 — superseded by P0-FIX-1/2 iter15 owner G0-A]
+        // Historically the query reset only `BranchScope` so soft-deleted
+        // orders stayed excluded from Z totals. That assumption was unsafe
+        // post-iter6 Q2=B (archive-then-delete migration recoverable):
+        // operational workflows now soft-delete orders AFTER fiscal
+        // sequence allocation (e.g. archival, late corrections, retention
+        // janitor), and excluding them silently broke "every fiscally
+        // sequenced receipt appears in exactly one Z" — the core NF525
+        // gap-free invariant.
+        //
+        // P0-FIX-1/2 (owner G0-A — Option A) :
+        //   add `withTrashed()` so soft-deleted post-allocation orders
+        //   ARE counted in the Z aggregates. Logical exclusion of
+        //   refunded/cancelled rows is still handled via the
+        //   `$terminalStatuses` whitelist below (CANCELED/REJECTED/RETURNED),
+        //   not via soft-delete state. This preserves NF525 fiscal
+        //   continuity while remaining compatible with the iter6 archive
+        //   workflow (recoverable archive → delete).
+        //
         // [POS-9-H.2.6 / F-B3]
         // Half-open interval (from, to]:
         //   - lower bound STRICT (>): an order created at exactly $from
@@ -321,6 +335,7 @@ class ZReportService
         // When $from is null (first Z ever for this branch), the lower
         // bound is open (we accept the entire history up to $to).
         $baseQuery = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->withTrashed() // [P0-FIX-1/2] include soft-deleted post-allocation orders for NF525 fiscal continuity
             ->where('branch_id', $branchId)
             ->whereNotNull('fiscal_sequence_no')
             ->where('payment_status', '!=', PaymentStatus::UNPAID);

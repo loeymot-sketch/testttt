@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * [POS-9-H.2.4 / F-C4] + [POS-9-H.2.5 / F-B5]
+ * [POS-9-H.2.4 / F-C4] + [POS-9-H.2.5 / F-B5] + [P0-FIX-1/2 iter15 G0-A]
  *
  * ZReportService::aggregate() and XReportService::snapshot() must
  * aggregate ONLY orders that received a fiscal_sequence_no. Two
@@ -24,10 +24,15 @@ use Tests\TestCase;
  *    aggregates that could not be traced back to a sequential
  *    receipt — a hard NF525 violation.
  *
- * 2. Soft-deleted orders used to leak in because the previous
- *    `withoutGlobalScopes()` dropped BOTH BranchScope AND the Eloquent
- *    SoftDeletingScope. `withoutGlobalScope(BranchScope::class)` now
- *    keeps soft-delete exclusion.
+ * 2. [iter15 owner G0-A — Option A] Post-allocation soft-deleted
+ *    orders MUST be aggregated. Earlier behaviour (POS-9-H.2.5)
+ *    excluded them via the SoftDeletingScope, which broke the
+ *    "every fiscally sequenced receipt appears in exactly one Z"
+ *    NF525 invariant once iter6 Q2=B introduced the archive-then-
+ *    delete migration workflow. ZReportService now uses
+ *    `withTrashed()` so soft-delete is no longer a fiscal exclusion
+ *    criterion ; logical exclusion stays handled by terminal
+ *    statuses (CANCELED/REJECTED/RETURNED).
  */
 class ZReportAggregateFilterTest extends TestCase
 {
@@ -73,7 +78,27 @@ class ZReportAggregateFilterTest extends TestCase
         $this->assertEqualsWithDelta(42.00, (float) $totals['total_ttc'], 0.01);
     }
 
-    public function test_soft_deleted_orders_are_excluded(): void
+    /**
+     * [P0-FIX-1/2 iter15 owner G0-A — Option A]
+     *
+     * Post-allocation soft-deleted orders MUST appear in Z totals.
+     *
+     * Previous expectation (pre-iter15): soft-deletes were excluded
+     * to avoid double-counting cancel-then-restore flows. That logic
+     * was unsafe once iter6 Q2=B introduced archive-then-delete
+     * recoverable migrations: a fiscally sequenced order that is
+     * soft-deleted post-allocation would silently disappear from its
+     * Z aggregate, leaving a gap in the NF525 sequential trail.
+     *
+     * New contract:
+     *   - withTrashed() pulls every fiscally sequenced order
+     *     regardless of soft-delete state.
+     *   - terminal-status whitelist (CANCELED/REJECTED/RETURNED)
+     *     remains the only logical exclusion gate. Soft-deleting an
+     *     order without flipping its status is now treated as
+     *     archival, NOT cancellation.
+     */
+    public function test_soft_deleted_post_allocation_orders_are_counted(): void
     {
         $branch = Branch::factory()->create();
 
@@ -85,6 +110,8 @@ class ZReportAggregateFilterTest extends TestCase
             'fiscal_sequence_no' => 1,
         ]);
 
+        // Soft-delete AFTER fiscal sequence allocation: must still
+        // appear in the Z aggregate per NF525 fiscal continuity.
         $soft = Order::factory()->create([
             'branch_id'          => $branch->id,
             'status'             => OrderStatus::DELIVERED,
@@ -100,7 +127,57 @@ class ZReportAggregateFilterTest extends TestCase
             now()->addMinute(),
         );
 
-        $this->assertSame(1, $totals['order_count']);
+        $this->assertSame(
+            2,
+            $totals['order_count'],
+            'Soft-deleted post-allocation orders must be counted (NF525 fiscal continuity).'
+        );
+        $this->assertEqualsWithDelta(
+            1009.00,
+            (float) $totals['total_ttc'],
+            0.01,
+            'Z total_ttc must include soft-deleted post-allocation revenue.'
+        );
+    }
+
+    /**
+     * Companion test: terminal-status orders (CANCELED/REJECTED/RETURNED)
+     * stay excluded even when withTrashed() now pulls them through the
+     * base query. This guards the regression "soft-delete fix accidentally
+     * lets cancelled rows into Z totals".
+     */
+    public function test_terminal_status_orders_remain_excluded_even_when_soft_deleted(): void
+    {
+        $branch = Branch::factory()->create();
+
+        Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'status'             => OrderStatus::DELIVERED,
+            'payment_status'     => PaymentStatus::PAID,
+            'total'              => 10.00,
+            'fiscal_sequence_no' => 10,
+        ]);
+
+        $cancelled = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'status'             => OrderStatus::CANCELED,
+            'payment_status'     => PaymentStatus::PAID,
+            'total'              => 500.00,
+            'fiscal_sequence_no' => 11,
+        ]);
+        $cancelled->delete();                       // soft-delete on top of CANCELED
+
+        $totals = app(ZReportService::class)->aggregate(
+            $branch->id,
+            now()->subDay(),
+            now()->addMinute(),
+        );
+
+        $this->assertSame(
+            1,
+            $totals['order_count'],
+            'CANCELED/REJECTED/RETURNED orders must stay out of Z totals — soft-delete state irrelevant.'
+        );
         $this->assertEqualsWithDelta(10.00, (float) $totals['total_ttc'], 0.01);
     }
 
