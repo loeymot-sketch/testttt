@@ -182,34 +182,69 @@ final class OrderStateMachine
         ?Authenticatable $actor = null,
         ?string $reason = null
     ): void {
-        $from = (int) $order->status;
-
-        if ($from === $next) {
-            return;
-        }
-
-        if (!self::allows($from, $next, $actor)) {
+        // [iter15 P0-12 LOCKFORUPDATE 2026-05-10] Concurrent apply() race fix.
+        //
+        // Previously `$from = (int) $order->status` read the in-memory model
+        // BEFORE the transaction, so two concurrent apply($order, DELIVERED)
+        // calls both read the same source status, both passed allows(), and
+        // both wrote DELIVERED — duplicating audit rows and corrupting the
+        // state machine.
+        //
+        // Mirrors the pattern already used by OrderService::changeStatus
+        // (see app/Services/OrderService.php:1515 — iter13 P1 LOCKFORUPDATE):
+        //   - DB::transaction wraps lock + read + guard + write + audit
+        //   - Order::query()->whereKey($id)->lockForUpdate()->firstOrFail()
+        //     forces concurrent transactions to serialize on the row
+        //   - Idempotent early-return when the locked row already matches the
+        //     target status, so the second tx exits cleanly without writing
+        $modelClass = get_class($order);
+        $orderKey = $order->getKey();
+        if ($orderKey === null) {
             throw new IllegalTransitionException(
-                sprintf('Illegal transition %d → %d for %s#%s', $from, $next, get_class($order), $order->getKey())
+                sprintf('Cannot apply transition to unsaved %s instance.', $modelClass)
             );
         }
 
-        if (self::requiresReason($next) && (!is_string($reason) || trim($reason) === '')) {
-            throw new IllegalTransitionException(
-                sprintf('Transition to status %d requires a non-empty reason.', $next)
-            );
-        }
+        DB::transaction(function () use ($order, $modelClass, $orderKey, $next, $actor, $reason): void {
+            /** @var Model $locked */
+            $locked = $modelClass::query()->whereKey($orderKey)->lockForUpdate()->firstOrFail();
+            $from = (int) $locked->status;
 
-        DB::transaction(function () use ($order, $from, $next, $actor, $reason): void {
-            $order->status = $next;
-            if ($reason !== null && $order->isFillable('reason')) {
-                $order->reason = $reason;
+            // Idempotent: another concurrent transaction already applied the
+            // same target. Bail out without re-writing or re-auditing.
+            if ($from === $next) {
+                // Sync the caller-provided model instance with persisted state
+                // so its getStatus() reflects the winning transition.
+                $order->setRawAttributes($locked->getAttributes(), true);
+                return;
             }
-            $order->save();
+
+            if (!self::allows($from, $next, $actor)) {
+                throw new IllegalTransitionException(
+                    sprintf('Illegal transition %d → %d for %s#%s', $from, $next, $modelClass, $orderKey)
+                );
+            }
+
+            if (self::requiresReason($next) && (!is_string($reason) || trim($reason) === '')) {
+                throw new IllegalTransitionException(
+                    sprintf('Transition to status %d requires a non-empty reason.', $next)
+                );
+            }
+
+            $locked->status = $next;
+            if ($reason !== null && $locked->isFillable('reason')) {
+                $locked->reason = $reason;
+            }
+            $locked->save();
+
+            // Keep the caller-provided instance in sync with the persisted row
+            // so post-apply reads on $order observe the new status without
+            // requiring an explicit ->refresh().
+            $order->setRawAttributes($locked->getAttributes(), true);
 
             self::recordTransition(
-                get_class($order),
-                (int) $order->getKey(),
+                $modelClass,
+                (int) $orderKey,
                 $from,
                 $next,
                 $actor?->getAuthIdentifier() ? (int) $actor->getAuthIdentifier() : null,
