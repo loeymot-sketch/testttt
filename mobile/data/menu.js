@@ -93,6 +93,30 @@
     { id: 'f-boisson', name: 'Ajouter Boisson',          price: 2.00, has_drink: true },
   ];
 
+  // Frites style upgrades (cf. migration 2026_05_10_040000_add_frites_style_upgrade_extras
+  // + KioskStepFritesStyleComponent.vue:7-23 + 25-48)
+  // Nature = default (id null = pas d'upgrade row)
+  // Cheddar fondu = +1.00€ (DB row group_label='frites_style')
+  // Cheddar + Oignons croustillants = +1.50€ (DB row group_label='frites_style')
+  const FRITES_STYLES = [
+    { id: null,               name: 'Nature',                       price: 0,    is_default: true,  emoji: '🍟' },
+    { id: 'fs-cheddar',        name: 'Cheddar fondu',                price: 1.00, emoji: '🧀' },
+    { id: 'fs-cheddar-oignon', name: 'Cheddar + Oignons croustillants', price: 1.50, emoji: '🧅' },
+  ];
+
+  // Boissons formule menu (subset = boissons en cat 12 vendues solo également)
+  // Référence kiosk : KioskStepMenuComponent.vue boissonList
+  const FORMULE_DRINKS = [
+    { id: 'd-coca',      name: 'Coca-Cola 33cl',     emoji: '🥤' },
+    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤' },
+    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊' },
+    { id: 'd-sprite',    name: 'Sprite 33cl',         emoji: '🍋' },
+    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴' },
+    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊' },
+    { id: 'd-eau',       name: 'Eau Plate 50cl',      emoji: '💧' },
+    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃' },
+  ];
+
   // -------------------------------------------------------------------------
   // CATEGORIES (cf. config/menu.php categories — 13 catégories)
   // -------------------------------------------------------------------------
@@ -101,11 +125,11 @@
     { id: 2,  slug: 'nos-sandwichs',          name: 'Nos Sandwichs',          icon: '🥖', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwichs gourmands et généreux' },
     { id: 3,  slug: 'nos-burgers',            name: 'Nos Burgers',            icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Burgers maison 100% frais' },
     { id: 4,  slug: 'nos-assiettes',          name: 'Nos Assiettes',          icon: '🍽️', sort: 4,  wizard_template: 'assiette', has_menu: false, description: 'Assiettes complètes avec garnitures' },
-    { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'simple',   has_menu: false, description: 'Ojja traditionnelle' },
+    { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'omelette', has_menu: false, description: 'Ojja traditionnelle' },
     { id: 6,  slug: 'omelettes',              name: 'Omelettes',              icon: '🥚', sort: 6,  wizard_template: 'omelette', has_menu: false, description: 'Omelettes faites maison' },
     { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: false, description: 'Salades fraîches et légères' },
     { id: 8,  slug: 'chicken-tenders',        name: 'Poulet croustillant',    icon: '🍗', sort: 8,  wizard_template: 'snacking', has_menu: false, description: 'Ailes et filets de poulet croustillants' },
-    { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'simple',   has_menu: false, description: 'Pour les petits gourmands' },
+    { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'omelette', has_menu: false, description: 'Pour les petits gourmands' },
     { id: 10, slug: 'frites-accompagnements', name: 'Frites & Accompagnements', icon: '🍟', sort: 10, wizard_template: 'simple', has_menu: false, description: 'Frites et accompagnements' },
     { id: 11, slug: 'nos-desserts',           name: 'Nos Desserts',           icon: '🍰', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands' },
     { id: 12, slug: 'nos-boissons',           name: 'Nos Boissons',           icon: '🥤', sort: 12, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches' },
@@ -131,12 +155,13 @@
       is_spicy: !!opts.is_spicy,
       is_halal: opts.is_halal !== false,    // default true
       is_vegetarian: !!opts.is_vegetarian,
-      // Composition flags (cf. config/menu.php)
+      // Composition flags (cf. config/menu.php + audit 2026-05-10)
       viandes: opts.viandes ?? 0,
       has_sauce: opts.has_sauce !== false,
       has_crudites: !!opts.has_crudites,
       has_supplements: opts.has_supplements !== false,
       has_menu_addon: !!opts.has_menu_addon,
+      has_frites_style: !!opts.has_frites_style,   // cat 10 sides only — DB items 402/403 frites_style extras
       // Allergens
       allergens: opts.allergens || ['gluten', 'lactose'],
     };
@@ -212,15 +237,20 @@
   ];
 
   // ====== MENUS ENFANTS (cat 9) ======
+  // [Audit 2026-05-10 D2 owner-gate] Mobile aligned to DB: has_sauce=true (sauce attr 311 attached
+  // items 400/401 in DB; V3.8 migration 070000 aligned cat 314 to 'omelette' template which includes sauce step).
   const MENUS_ENFANTS = [
-    mkItem(901, 'menu-cheese-enfant',  9, 'Menu Cheese Burger (Enfant)', 6.00, '1 steak + 1 cheddar + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
-    mkItem(902, 'menu-nuggets-enfant', 9, 'Menu Nuggets (Enfant)',       6.00, '6 Nuggets de poulet + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
+    mkItem(901, 'menu-cheese-enfant',  9, 'Menu Cheese Burger (Enfant)', 6.00, '1 steak + 1 cheddar + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
+    mkItem(902, 'menu-nuggets-enfant', 9, 'Menu Nuggets (Enfant)',       6.00, '6 Nuggets de poulet + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
   ];
 
   // ====== FRITES & ACCOMPAGNEMENTS (cat 10) ======
+  // [Audit 2026-05-10 F-03] DB items 402/403 carry frites_style extras (Cheddar fondu / Cheddar+Oignons).
+  // Cf. migration 2026_05_10_040000_add_frites_style_upgrade_extras + KioskStepFritesStyleComponent.vue.
+  // Nature = default (no extra), Cheddar fondu +1€, Cheddar+Oignons croustillants +1.50€.
   const SIDES = [
-    mkItem(1001, 'frites-moyenne', 10, 'Frites Moyenne', 2.50, 'Portion moyenne de frites', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 4, emoji: '🍟' }),
-    mkItem(1002, 'frites-grande',  10, 'Frites Grande',  4.00, 'Grande portion de frites',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 5, emoji: '🍟' }),
+    mkItem(1001, 'frites-moyenne', 10, 'Frites Moyenne', 2.50, 'Portion moyenne de frites', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 4, emoji: '🍟' }),
+    mkItem(1002, 'frites-grande',  10, 'Frites Grande',  4.00, 'Grande portion de frites',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 5, emoji: '🍟' }),
   ];
 
   // ====== DESSERTS (cat 11) ======
@@ -283,6 +313,15 @@
       const f = FORMULES.find(x => x.id === opts.formuleId);
       if (f) total += f.price;
     }
+    // Frites style upgrade (catégorie 10 standalone OU formule menu/frites cascade)
+    if (opts.fritesStyleId) {
+      const fs = FRITES_STYLES.find(x => x.id === opts.fritesStyleId);
+      if (fs) total += fs.price;
+    }
+    // Sauce frites (cascade formule menu — 1 gratuite, +0.50€/sauce additionnelle)
+    if (Array.isArray(opts.fritesSauceIds) && opts.fritesSauceIds.length > 1) {
+      total += (opts.fritesSauceIds.length - 1) * 0.50;
+    }
     return total * (opts.qty || 1);
   }
 
@@ -308,6 +347,8 @@
     crudites: CRUDITES,
     supplements: SUPPLEMENTS,
     formules: FORMULES,
+    fritesStyles: FRITES_STYLES,
+    formuleDrinks: FORMULE_DRINKS,
     findItem(idOrSlug) {
       return ITEMS.find(i => i.id === idOrSlug || i.slug === idOrSlug);
     },
