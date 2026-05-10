@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `9b86e1e73` (mobile wizard multi-page refactor + E2E suite 12/12 GO)
-- **Last update** : 2026-05-10 (refactor wizard kiosk-aligned + 12/12 catégories E2E green)
+- **HEAD** : `8b63e678d` (mobile-loyalty E2E 20/20 GREEN + audit 7-agent adversarial closed)
+- **Last update** : 2026-05-11 (mobile loyalty system V0 livré — audit + 6 commits + 20 specs)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,46 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Mobile loyalty system V0 — 7-agent adversarial audit + 6 commits 2026-05-10/11** :
+- **Audit massif 7 sub-agents** (Architect / Security / DBA / UX / Wallet /
+  Tester / Adversarial) — 8 rapports `reports/review/mobile-loyalty-audit-2026-05-10/`
+  (3120 lignes md, ~750k tokens cumulés). Cross-validation 5 P0 confirmés
+  multi-agents : QR format D-B (LECAY-LOYALTY-*) dead-on-arrival vs backend
+  parser, LoyaltyReward model + /loyalty/rewards N'EXISTENT PAS, rate drift
+  1pt/€ mobile vs 10pt/€ backend, loyalty_code keyspace hex⁸ (4.3B, not
+  alphanum⁸ 2.8T) — brute-force feasible avec 10 stolen kiosk tokens,
+  loyalty_transactions absent NF525 audit chain (regulatory blocker).
+- **99_VERDICT.md** : 20 décisions consolidées (DEC-01..DEC-20), 8 disputes
+  inter-agents reconciliées, **8 P0/P1 backend backlog** (B-01..B-08) hors
+  scope mobile V0 — à fermer avant Phase 6 wire-up.
+- **Mobile V0 livré 6 commits** :
+  - commit-1 (`0b742402e`) audit reports
+  - commit-2 (`aea80b52b`) data layer aligné backend SSOT — earn_ratio 1→10,
+    QR `FK:<loyalty_code>` (D-A), EARN_METHODS catalog 10 méthodes, REWARDS
+    banner mock-only, reward FSM 7 états, idempotency localStorage Map +
+    dev-helpers window.LC.dev.*
+  - commit-3 (`900de52d9`) hooks (useLoyaltyQR chained setTimeout +
+    visibilitychange + ref guard) + LoyaltyQR memoized + BarcodeMock +
+    a11y WCAG AA (--gray-3 #8A857B → #6F6A60, --green-dark)
+  - commit-4 (`8793ef235`) Wallet V0 boutons stub SVG + ModalWalletV0Notice
+    + WALLET_PLAN.md Phase 6 (~280 lignes) + wallet-spec.js
+  - commit-5 (`4c937155e`) WizardRedeem 3-step bottom-sheet + idempotency
+    déterministe fenêtre 10min + ModalOptOutConfirm RGPD
+  - commit-6 (`8b63e678d`) 15 E2E specs + 5 adversarial + screenshots —
+    **20/20 GREEN** (54.9s wall-clock)
+- **Mobile loyalty acceptance criteria 100% GO V0** : 0 hardcoded value
+  ScreenLoyalty, multi-sections HERO/POINTS/ACTIONS/TABS/INFOS, QR avec
+  TTL countdown + barcode toggle + persist localStorage, WizardRedeem
+  3-step avec idempotency 10min-window, RGPD opt-out fonctionnel,
+  empty/loading/error states, 18+ data-testid, 20 specs green.
+- **Honnêteté maintenue** : chaque mock V0 explicitement étiqueté "MOCK"
+  avec pointeur vers backlog backend (B-XX). REWARDS array banner +
+  EARN_METHODS catalog status='wired'|'mock'|'planned'. Wallet stubs SVG
+  (pas asset officiel Apple/Google) avec aria-label "placeholder V0".
+- Frozen-zones intactes : KioskLoyaltyComponent.vue / KioskWizard /
+  KioskApp / KioskUpsell / pos-wizard.js / FiscalSequence / BranchScope /
+  PricingService / OrderState : 0 ligne diff vs HEAD.
 
 **Mobile wizard multi-page kiosk-aligned 2026-05-10** (HEAD `9b86e1e73`,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
