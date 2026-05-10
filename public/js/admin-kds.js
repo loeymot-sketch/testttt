@@ -1480,7 +1480,7 @@ var _hoisted_91 = {
 var _hoisted_92 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_93 = ["title", "onClick"];
+var _hoisted_93 = ["title", "aria-label", "onClick"];
 var _hoisted_94 = ["onClick"];
 var _hoisted_95 = ["onClick"];
 var _hoisted_96 = {
@@ -1581,7 +1581,7 @@ var _hoisted_128 = {
 var _hoisted_129 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_130 = ["title", "onClick"];
+var _hoisted_130 = ["title", "aria-label", "onClick"];
 var _hoisted_131 = ["onClick"];
 var _hoisted_132 = ["onClick"];
 var _hoisted_133 = {
@@ -1689,7 +1689,7 @@ var _hoisted_167 = {
 var _hoisted_168 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_169 = ["title", "onClick"];
+var _hoisted_169 = ["title", "aria-label", "onClick"];
 var _hoisted_170 = ["onClick"];
 var _hoisted_171 = ["onClick"];
 var _hoisted_172 = {
@@ -1793,7 +1793,7 @@ var _hoisted_204 = {
 var _hoisted_205 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_206 = ["title", "onClick"];
+var _hoisted_206 = ["title", "aria-label", "onClick"];
 var _hoisted_207 = ["onClick"];
 var _hoisted_208 = ["onClick"];
 var _hoisted_209 = {
@@ -2087,16 +2087,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_92, [!$options.kdsIsBumped(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_92, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5",
         title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(dineinOrder, item);
         }, ["prevent", "stop"])
       }, _toConsumableArray(_cache[29] || (_cache[29] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "fa-solid fa-arrow-right"
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
       }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_93)) : $options.kdsCanRecall(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
@@ -2202,16 +2204,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_129, [!$options.kdsIsBumped(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_129, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5",
         title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(onlineOrder, item);
         }, ["prevent", "stop"])
       }, _toConsumableArray(_cache[33] || (_cache[33] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "fa-solid fa-arrow-right"
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
       }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_130)) : $options.kdsCanRecall(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
@@ -2315,16 +2319,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_168, [!$options.kdsIsBumped(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_168, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5",
         title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(takeawayOrder, item);
         }, ["prevent", "stop"])
       }, _toConsumableArray(_cache[38] || (_cache[38] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "fa-solid fa-arrow-right"
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
       }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_169)) : $options.kdsCanRecall(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
@@ -2435,16 +2441,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_205, [!$options.kdsIsBumped(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_205, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5",
         title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(kioskOrder, item);
         }, ["prevent", "stop"])
       }, _toConsumableArray(_cache[43] || (_cache[43] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "fa-solid fa-arrow-right"
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
       }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_206)) : $options.kdsCanRecall(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",

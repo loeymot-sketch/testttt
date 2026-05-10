@@ -234,7 +234,12 @@ export default {
       // Phase 5 — healthcheck + hardware listeners
       _healthcheckTimer: null,
       _hardwareUnsub: null,
-      themeMode: 'dark',
+      // [iter15-mega-fix C-011 round-7 2026-05-10] Owner mandate (palette
+      // mobile app : noir/rouge/jaune/blanc). Default theme is now LIGHT,
+      // matching the FoodKing brand on the mobile app. The toggle still lets
+      // operators switch to dark for low-light kiosk placements; choice is
+      // persisted in localStorage `foodking:kiosk-theme`.
+      themeMode: 'light',
     };
   },
   computed: {
@@ -329,6 +334,22 @@ export default {
       this.$refs.toast?.show('File saturée. Veuillez relancer la borne.', 'error', 6000);
     };
     window.addEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
+
+    // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Surface kiosk auth
+    // failures (terminal 401 after coalesced re-login) so the playwright
+    // mega-audit specs can assert on the toast instead of staring at an
+    // empty error overlay. Counterpart of the `kiosk-auth-failed`
+    // CustomEvent dispatched from app.js when a kiosk-context request
+    // exhausts its `__retry401Kiosk` budget.
+    this._authFailedListener = (evt) => {
+      const url = evt?.detail?.url || '';
+      const reason = evt?.detail?.reason || null;
+      const label = reason === 'no-retry'
+        ? 'Borne déconnectée. Reconnexion en cours…'
+        : `Borne déconnectée (${url || 'API'}). Reconnexion en cours…`;
+      this.$refs.toast?.show(label, 'error', 6000);
+    };
+    window.addEventListener('kiosk-auth-failed', this._authFailedListener);
     if (window._wsService) {
       this._onWsReconnect = () => {
         if (getPendingCount() > 0) {
@@ -364,6 +385,12 @@ export default {
     if (this._offlineQuotaListener) {
       window.removeEventListener('kiosk-offline-queue:quota-exceeded', this._offlineQuotaListener);
     }
+    // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Symmetric removal of
+    // the kiosk-auth-failed bridge.
+    if (this._authFailedListener) {
+      window.removeEventListener('kiosk-auth-failed', this._authFailedListener);
+      this._authFailedListener = null;
+    }
     if (this._staleToastDebounceTimer) {
       clearTimeout(this._staleToastDebounceTimer);
       this._staleToastDebounceTimer = null;
@@ -380,7 +407,11 @@ export default {
     loadKioskTheme() {
       let stored = null;
       try { stored = window.localStorage?.getItem('foodking:kiosk-theme'); } catch (_) {}
-      const next = ['dark', 'light'].includes(stored) ? stored : 'dark';
+      // [iter15-mega-fix C-011 round-7 2026-05-10] Default fallback flipped
+      // from 'dark' to 'light' to match owner's brand palette (mobile app
+      // light mode : noir/rouge/jaune/blanc). Persisted preference still wins
+      // when present so operator-customized kiosks are not overridden.
+      const next = ['dark', 'light'].includes(stored) ? stored : 'light';
       this.themeMode = next;
       this.applyKioskTheme(next);
     },

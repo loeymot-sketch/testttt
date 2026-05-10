@@ -343,7 +343,15 @@ export default {
     name: "ReceiptComponent",
     components: { ReceiptDuplicataMarker },
     props: {
-        order: Object
+        order: Object,
+        // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
+        // Gate the cart reset behavior to the FRESH-PAYMENT receipt only.
+        // PaymentComponent passes `true` because the receipt is acting as a
+        // freeze-frame of the order that was just paid. The re-print path in
+        // PosOrdersTrackerComponent leaves this `false` (default) so closing
+        // a re-print preview does NOT silently destroy the active cashier
+        // cart that may already be in progress on /admin/pos.
+        clearCartOnClose: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -438,6 +446,18 @@ export default {
     methods: {
         reset: function () {
             appService.modalHide();
+            // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
+            // Cart reset moved here from PaymentComponent.confirmOrderWithAuthRetry,
+            // and now GATED by `clearCartOnClose`. Only the post-payment receipt
+            // (PaymentComponent) opts into the reset. Re-print flows from
+            // PosOrdersTrackerComponent leave this prop at its default `false`,
+            // so closing a re-print preview can no longer destroy an active
+            // cashier cart that's still being built on /admin/pos.
+            if (this.clearCartOnClose) {
+                try {
+                    this.$store?.dispatch('posCart/resetCart')?.catch?.(() => {});
+                } catch (_) { /* never block modal close on cart reset */ }
+            }
         },
         paymentMethodLabel: function (method) {
             const n = Number(method);

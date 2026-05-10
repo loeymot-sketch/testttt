@@ -26,7 +26,7 @@
 const { test, expect } = require('@playwright/test');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { loginAsAdmin, loginAsPosOperator, loginAsKiosk } = require('./helpers/login');
+const { loginAsAdmin, loginAsPosOperator, loginAsKiosk, cleanupOrphanTestOrders } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 
 const SCREENSHOT_DIR = path.resolve(__dirname, '__screenshots__/iter15-mega-rupture');
@@ -51,6 +51,13 @@ function setItemAvailability(itemId, branchId, available, reason = null) {
 
 test.describe('iter15 mega — Wave D (admin UI rupture cascade POS + Kiosk)', () => {
   test.setTimeout(240_000);
+
+  // [iter15-mega-fix B-004 round-7 2026-05-10] sweep orphan test orders before
+  // the rupture cascade runs so the captured POS/Kiosk DOMs only reflect the
+  // current cycle's data.
+  test.beforeAll(() => {
+    cleanupOrphanTestOrders();
+  });
 
   test.afterAll(async () => {
     // Belt-and-suspenders : never leave Sprite 33cl ruptured, even if the

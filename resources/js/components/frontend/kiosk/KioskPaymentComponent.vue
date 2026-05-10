@@ -1137,8 +1137,13 @@ export default {
   min-height: 92px;
   height: auto;
   padding: 20px 32px;
-  background: var(--kiosk-primary);
-  color: var(--kiosk-text-on-red);
+  /* [iter15-mega-fix C-012 round-7 2026-05-10] Pin the Confirmer CTA to the
+     Cayenne brand-red token directly with a solid fallback (#F4501E) instead
+     of relying on the resolved `--kiosk-primary` chain. With the default
+     theme now being light (C-011), `--kiosk-primary` = #F4501E ; we still
+     keep the var() so dark-mode operators get the correct brand red. */
+  background: var(--kiosk-primary, #F4501E);
+  color: var(--kiosk-text-on-red, #FFFFFF);
   border: none;
   border-radius: 30px;
   font-size: 26px;
@@ -1153,7 +1158,13 @@ export default {
 }
 
 .kiosk-btn-confirm:disabled {
-  opacity: 0.4;
+  /* [iter15-mega-fix C-012 round-7 2026-05-10] Raise opacity from 0.4 to
+     0.65 so disabled state stays readable (WCAG AA against white kiosk bg).
+     Add an explicit dark-grey overlay so the disabled button no longer reads
+     as "pale pink" against the soft Cayenne bg. */
+  opacity: 0.65;
+  background: #C9C9C9;
+  color: #4A4A4A;
   cursor: not-allowed;
   box-shadow: none;
 }

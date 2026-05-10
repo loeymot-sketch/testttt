@@ -1,15 +1,5 @@
 [
   {
-    "level": "warning",
-    "text": "Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined. You are running the esm-bundler build of Vue, which expects these compile-time feature flags to be globally injected via the bundler config in order to get better tree-shaking in the production bundle.\n\nFor more details, see https://link.vuejs.org/feature-flags.",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/app.js?id=b70349381185d801162107a7ab787bd1",
-      "lineNumber": 29004,
-      "columnNumber": 12
-    },
-    "ts": 1778384563897
-  },
-  {
     "level": "error",
     "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
     "location": {
@@ -17,27 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778384563925
-  },
-  {
-    "level": "warning",
-    "text": "Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined. You are running the esm-bundler build of Vue, which expects these compile-time feature flags to be globally injected via the bundler config in order to get better tree-shaking in the production bundle.\n\nFor more details, see https://link.vuejs.org/feature-flags.",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/app.js?id=b70349381185d801162107a7ab787bd1",
-      "lineNumber": 29004,
-      "columnNumber": 12
-    },
-    "ts": 1778384568561
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778384568573
+    "ts": 1778427565847
   },
   {
     "level": "error",
@@ -47,6 +17,26 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778384568577
+    "ts": 1778427567789
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778427570705
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778427570719
   }
 ]

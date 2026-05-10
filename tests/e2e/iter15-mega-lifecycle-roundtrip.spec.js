@@ -36,7 +36,7 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
-const { loginAsPosOperator, loginAsChefOperator } = require('./helpers/login');
+const { loginAsPosOperator, loginAsChefOperator, cleanupOrphanTestOrders } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
@@ -133,6 +133,13 @@ async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
 
 test.describe('iter15 mega — Wave B (POS → KDS lifecycle round-trip)', () => {
   test.setTimeout(180_000);
+
+  // [iter15-mega-fix B-004 round-7 2026-05-10] sweep orphan AUDIT-/RED-TEAM-/
+  // ZZ-TEST- orders out of the live KDS pile so the dom.html artifacts only
+  // capture the current run's order, not pollution from prior cycles.
+  test.beforeAll(() => {
+    cleanupOrphanTestOrders();
+  });
 
   test('POS cash payment → KDS pickup → preparing → ready → delivered (best-effort)', async ({ browser }) => {
     // Clean stale DEBUG quartets from prior runs so reviewers only see the

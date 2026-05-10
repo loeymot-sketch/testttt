@@ -166,6 +166,19 @@ import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 export default {
   name: 'KioskConfirmationComponent',
   mixins: [kioskPriceMixin],
+  // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+  // KioskAppComponent's <router-view> binds shell-level listeners
+  // (add-to-cart / go-to-cart / start-order / reset-kiosk) on every routed
+  // child. This component renders a fragment (two sibling root elements:
+  // `.kiosk-confirmation` + `#kiosk-print-receipt`), so Vue 3 cannot auto-
+  // inherit those listeners and warns:
+  //   "Extraneous non-emits event listeners (addToCart, goToCart, startOrder,
+  //    resetKiosk) were passed to component but could not be automatically
+  //    inherited because component renders fragment or text root nodes."
+  // Declaring them in `emits` tells Vue these events are intentionally not
+  // emitted from this confirmation screen (the cart shell drives them
+  // elsewhere) and silences the warning without weakening the contract.
+  emits: ['add-to-cart', 'go-to-cart', 'start-order', 'reset-kiosk'],
   props: {
     // Populated from route.query by kioskRoutes.js
     orderNumber: { type: String, default: '' },

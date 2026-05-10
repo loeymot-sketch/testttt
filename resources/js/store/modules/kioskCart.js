@@ -12,6 +12,13 @@ import { KIOSK_ERROR_CODES, normalizeKioskErrorCode } from "../../helpers/kioskA
 const SOURCE_KIOSK = 5;
 const KIOSK_IS_ADVANCE_ORDER_NO = 10;
 
+// [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Module-scoped in-flight
+// guard — see `kioskLogin` action below for the full rationale. Module scope
+// (not store state) is intentional : the coalescing window is the lifetime of
+// the network call, never persisted, never replayed across reloads, and the
+// store's reactivity does not need to track it.
+let _inFlightKioskLogin = null;
+
 const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
 const ELECTRONIC_PAYMENT_METHODS = new Set(['card', 'tr']);
 const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
@@ -427,17 +434,47 @@ export const kioskCart = {
          * Authenticate this kiosk machine against the backend.
          * Stores the Sanctum token in state (persisted via vuex-persistedstate).
          * The app.js interceptor will pick it up automatically.
+         *
+         * [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Coalesce concurrent
+         * calls. Three call sites can race on a fresh kiosk context :
+         *   1. router beforeEnter `requireKioskAuth` (kioskRoutes.js)
+         *   2. `KioskLoginComponent.startAutoLogin()` mounted hook
+         *   3. `app.js` 401 response interceptor — fires PER 401, so a single
+         *      catalog mount that triggers 7 parallel `/frontend/menu` (the
+         *      symptom in `03-kiosk-blocked-no-frites.network.json`) would
+         *      dispatch 7 concurrent kioskLogin's.
+         *
+         * Each concurrent login deletes prior `kiosk-token` rows in
+         * KioskMachineLoginController::login (DB transaction line 96), so the
+         * loser tokens are immediately revoked → the in-flight retried
+         * requests carry stale Bearers → terminal 401 (because
+         * `__retry401Kiosk` blocks a second retry on the same request). By
+         * sharing one in-flight Promise we get exactly one server-side
+         * rotation, and every dependent call (menu, kiosk-event, Echo auth)
+         * waits on the same token.
          */
-        async kioskLogin({ commit }, { username, password }) {
-            const res = await axios.post('auth/kiosk-login', {
-                username: String(username || '').trim(),
-                password,
-            });
-            const token = res?.data?.token;
-            const machineId = res?.data?.kiosk?.id || null;
-            if (!token) throw new Error('No token received');
-            commit('SET_KIOSK_TOKEN', { token, machineId });
-            return res.data;
+        async kioskLogin({ commit, state }, { username, password }) {
+            if (_inFlightKioskLogin) {
+                return _inFlightKioskLogin;
+            }
+            _inFlightKioskLogin = (async () => {
+                try {
+                    const res = await axios.post('auth/kiosk-login', {
+                        username: String(username || '').trim(),
+                        password,
+                    });
+                    const token = res?.data?.token;
+                    const machineId = res?.data?.kiosk?.id || null;
+                    if (!token) throw new Error('No token received');
+                    commit('SET_KIOSK_TOKEN', { token, machineId });
+                    return res.data;
+                } finally {
+                    // Always clear, success OR failure — otherwise a single
+                    // failed login would permanently block further attempts.
+                    _inFlightKioskLogin = null;
+                }
+            })();
+            return _inFlightKioskLogin;
         },
         async kioskLogout({ commit, state }) {
             try {

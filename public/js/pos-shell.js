@@ -3056,8 +3056,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
               this.$emit("payment-form:reset");
               this.resetPaymentInputs();
-              _context3.n = 3;
-              return this.$store.dispatch('posCart/resetCart')["catch"](function () {});
+              // [iter15-mega-fix B-009 round-7 2026-05-10] Defer cart reset until
+              // the receipt modal is dismissed. Previously the cart was nuked here,
+              // immediately before showReceiptModalFromDom() — meaning the cart
+              // sub-total flashed to 0,00 € the moment the receipt overlay opened.
+              // Owner expects the receipt to act as a freeze-frame of the order
+              // that was just paid. The reset is now triggered from
+              // ReceiptComponent.reset() (the close button) so the chip stays
+              // visible while the cashier reads the ticket.
+              // await this.$store.dispatch('posCart/resetCart').catch(() => {});
             case 3:
               return _context3.a(2);
           }
@@ -3557,6 +3564,17 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       return this.$store.getters["posCategory/lists"];
     },
     items: function items() {
+      return this.$store.getters["item/lists"];
+    },
+    // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+    // Alias `itemsRaw` -> same store-backed catalog list. The D-003 rupture
+    // banner + availability broadcast handlers reference `this.itemsRaw` as
+    // the canonical POS catalog cache. Without this computed, Vue 3 emits
+    // "Property 'itemsRaw' was accessed during render but is not defined on
+    // instance" on every render of `unavailableCatalogItems`. Defining it as
+    // a 1-liner computed (instead of duplicating data) keeps a single source
+    // of truth and silences the warning cleanly.
+    itemsRaw: function itemsRaw() {
       return this.$store.getters["item/lists"];
     },
     loadingItems: function loadingItems() {
@@ -6522,7 +6540,18 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     ReceiptDuplicataMarker: _ReceiptDuplicataMarker_vue__WEBPACK_IMPORTED_MODULE_7__["default"]
   },
   props: {
-    order: Object
+    order: Object,
+    // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
+    // Gate the cart reset behavior to the FRESH-PAYMENT receipt only.
+    // PaymentComponent passes `true` because the receipt is acting as a
+    // freeze-frame of the order that was just paid. The re-print path in
+    // PosOrdersTrackerComponent leaves this `false` (default) so closing
+    // a re-print preview does NOT silently destroy the active cashier
+    // cart that may already be in progress on /admin/pos.
+    clearCartOnClose: {
+      type: Boolean,
+      "default": false
+    }
   },
   data: function data() {
     return {
@@ -6605,6 +6634,19 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   methods: {
     reset: function reset() {
       _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].modalHide();
+      // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
+      // Cart reset moved here from PaymentComponent.confirmOrderWithAuthRetry,
+      // and now GATED by `clearCartOnClose`. Only the post-payment receipt
+      // (PaymentComponent) opts into the reset. Re-print flows from
+      // PosOrdersTrackerComponent leave this prop at its default `false`,
+      // so closing a re-print preview can no longer destroy an active
+      // cashier cart that's still being built on /admin/pos.
+      if (this.clearCartOnClose) {
+        try {
+          var _this$$store, _this$$store$catch;
+          (_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.dispatch('posCart/resetCart')) === null || _this$$store === void 0 || (_this$$store$catch = _this$$store["catch"]) === null || _this$$store$catch === void 0 || _this$$store$catch.call(_this$$store, function () {});
+        } catch (_) {/* never block modal close on cart reset */}
+      }
     },
     paymentMethodLabel: function paymentMethodLabel(method) {
       var n = Number(method);
@@ -8595,14 +8637,16 @@ var _hoisted_93 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_SwiperSlide = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SwiperSlide");
   var _component_Swiper = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("Swiper");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5-DESIGN-CONVERGENCE 2026-05-02 R2] Tiles produits avec photo hero.\n      - Photo aspect-ratio 4/3 si `item.thumb` existe, sinon fallback emoji 🍴\n      - Body sous photo : nom (clamp 2 lignes) + prix rouge brand + bouton \"+\" rond\n      - Hover : lift + scale image + bouton \"+\" devient rouge brand plein\n      - Disponibilité : overlay rouge translucide centré \"Indisponible\"\n      - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.items, function (item) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5-DESIGN-CONVERGENCE 2026-05-02 R2] Tiles produits avec photo hero.\n      - Photo aspect-ratio 4/3 si `item.thumb` existe, sinon fallback emoji 🍴\n      - Body sous photo : nom (clamp 2 lignes) + prix rouge brand + bouton \"+\" rond\n      - Hover : lift + scale image + bouton \"+\" devient rouge brand plein\n      - Disponibilité : overlay rouge translucide centré \"Indisponible\"\n      - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-010 round-7 2026-05-10] aria-label must reflect tile state: when disabled (rupture), 'Ajouter' is misleading "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.items, function (item) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: item.id || item,
       type: "button",
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-tile', $options.tileClassList(item)]),
       "aria-disabled": $options.isCatalogTileUnavailable(item) ? 'true' : 'false',
       disabled: $options.isCatalogTileUnavailable(item),
-      "aria-label": _ctx.$t('a11y.add_item', {
+      "aria-label": $options.isCatalogTileUnavailable(item) ? _ctx.$t('a11y.unavailable_item', {
+        item: item.name
+      }) : _ctx.$t('a11y.add_item', {
         item: item.name,
         price: $options.itemOfferPrice(item)
       }),
@@ -9329,9 +9373,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "data-testid": "pos-payment-confirm"
   }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_49)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_49)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close=\"true\"\n         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired\n         when the cashier dismisses the modal. Re-print receipts in\n         PosOrdersTrackerComponent omit the prop (default false) and never destroy\n         a parallel cart in progress. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
     ref: "receiptRoot",
-    order: $data.order
+    order: $data.order,
+    "clear-cart-on-close": true
   }, null, 8 /* PROPS */, ["order"])], 64 /* STABLE_FRAGMENT */);
 }
 

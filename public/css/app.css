@@ -6536,6 +6536,9 @@ input:checked + div svg {
 .max-w-\[148px\] {
   max-width: 148px;
 }
+.max-w-\[160px\] {
+  max-width: 160px;
+}
 .max-w-\[1760px\] {
   max-width: 1760px;
 }
@@ -6547,6 +6550,9 @@ input:checked + div svg {
 }
 .max-w-\[250px\] {
   max-width: 250px;
+}
+.max-w-\[260px\] {
+  max-width: 260px;
 }
 .max-w-\[265px\] {
   max-width: 265px;

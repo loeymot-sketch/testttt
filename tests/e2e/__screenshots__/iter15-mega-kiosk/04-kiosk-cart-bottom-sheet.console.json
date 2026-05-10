@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.prompt.frites_style' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778427588705
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.prompt.frites_style' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778427588706
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.prompt.frites_style' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778427588707
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.prompt.frites_style' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778427588707
+  }
+]

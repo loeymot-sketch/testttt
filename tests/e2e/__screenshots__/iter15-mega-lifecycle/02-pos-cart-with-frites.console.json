@@ -3,21 +3,21 @@
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778383705",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427611",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778383717403
+    "ts": 1778427623594
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778383705",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427611",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778383717403
+    "ts": 1778427623594
   },
   {
     "level": "error",
@@ -27,6 +27,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778383720614
+    "ts": 1778427626339
   }
 ]

@@ -26,7 +26,7 @@
 const { test, expect } = require('@playwright/test');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { loginAsKiosk, loginAsChefOperator, loginAsPosOperator } = require('./helpers/login');
+const { loginAsKiosk, loginAsChefOperator, loginAsPosOperator, cleanupOrphanTestOrders } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 // [iter15-mega-fix C-001 2026-05-10] Canonical KDS-relevant OrderStatus values.
 // Mirrors resources/js/enums/modules/orderStatusEnum.js + app/Enums/OrderStatus.php.
@@ -118,6 +118,12 @@ async function safeSnap(snap, name, label) {
 
 test.describe('iter15 mega — Wave C (kiosk roundtrip → KDS + POS suivi)', () => {
   test.setTimeout(240_000);
+
+  // [iter15-mega-fix B-004 round-7 2026-05-10] sweep orphan test orders so the
+  // captured KDS dom.html only contains the current cycle's kiosk order.
+  test.beforeAll(() => {
+    cleanupOrphanTestOrders();
+  });
 
   test('kiosk order cascades to KDS pile AND POS suivi (3 surfaces)', async ({ browser }) => {
     const t0Sec = Math.floor(Date.now() / 1000);

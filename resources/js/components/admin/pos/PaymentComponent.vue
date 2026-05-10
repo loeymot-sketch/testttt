@@ -291,7 +291,12 @@
         </div>
     </div>
 
-    <ReceiptComponent ref="receiptRoot" :order="order" />
+    <!-- [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close="true"
+         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired
+         when the cashier dismisses the modal. Re-print receipts in
+         PosOrdersTrackerComponent omit the prop (default false) and never destroy
+         a parallel cart in progress. -->
+    <ReceiptComponent ref="receiptRoot" :order="order" :clear-cart-on-close="true" />
 </template>
 <script>
 import _ from "lodash";
@@ -790,7 +795,15 @@ export default {
 
             this.$emit("payment-form:reset");
             this.resetPaymentInputs();
-            await this.$store.dispatch('posCart/resetCart').catch(() => {});
+            // [iter15-mega-fix B-009 round-7 2026-05-10] Defer cart reset until
+            // the receipt modal is dismissed. Previously the cart was nuked here,
+            // immediately before showReceiptModalFromDom() — meaning the cart
+            // sub-total flashed to 0,00 € the moment the receipt overlay opened.
+            // Owner expects the receipt to act as a freeze-frame of the order
+            // that was just paid. The reset is now triggered from
+            // ReceiptComponent.reset() (the close button) so the chip stays
+            // visible while the cashier reads the ticket.
+            // await this.$store.dispatch('posCart/resetCart').catch(() => {});
         },
         showReceiptModalFromDom: function () {
             appService.modalShow('#receiptModal');

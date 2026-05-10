@@ -75,6 +75,13 @@ export default {
       newReadyIds: new Set(),
       newReadyFlash: false,
       _flashTimer: null,
+      // [iter15-mega-fix C-034 round-7 2026-05-10] AudioContext is now
+      // lazy-initialized on the first user gesture. Prior implementation
+      // created a fresh suspended context on EVERY Echo `prepared` event, which
+      // flooded the customer screen console with autoplay warnings (~8x per
+      // session) because Chrome blocks AudioContext until a user gesture.
+      _audioCtx: null,
+      _audioInitListener: null,
     };
   },
   computed: {},
@@ -84,6 +91,20 @@ export default {
     this.subscribeEcho();
     this._bindWsService();
     this.startOssSync();
+    // [iter15-mega-fix C-034 round-7 2026-05-10] Wire a one-shot user-gesture
+    // listener that creates the shared AudioContext. Until the user clicks
+    // anywhere on the screen, _playReadySound() is a silent no-op so the
+    // browser does not log "AudioContext was not allowed to start" warnings.
+    this._audioInitListener = () => {
+      try {
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        if (Ctor) this._audioCtx = new Ctor();
+      } catch (_) { this._audioCtx = null; }
+    };
+    try {
+      window.addEventListener('pointerdown', this._audioInitListener, { once: true, passive: true });
+      window.addEventListener('keydown', this._audioInitListener, { once: true, passive: true });
+    } catch (_) { /* never block mount on listener wiring */ }
   },
   beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
@@ -91,6 +112,17 @@ export default {
     this._unbindWsService();
     this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
+    // [iter15-mega-fix C-034 round-7 2026-05-10] Tear down audio listeners +
+    // close the context so the next mount starts clean.
+    try {
+      if (this._audioInitListener) {
+        window.removeEventListener('pointerdown', this._audioInitListener);
+        window.removeEventListener('keydown', this._audioInitListener);
+      }
+    } catch (_) { /* noop */ }
+    try { this._audioCtx?.close?.(); } catch (_) { /* noop */ }
+    this._audioCtx = null;
+    this._audioInitListener = null;
   },
   methods: {
     authBranchId() {
@@ -219,8 +251,22 @@ export default {
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
     _playReadySound() {
+      // [iter15-mega-fix C-034 round-7 2026-05-10] Lazy-init pattern: bail out
+      // silently if the user has not yet interacted with the screen. We do
+      // NOT create a fresh AudioContext per call (that was flooding the
+      // console with `AudioContext was not allowed to start` warnings on the
+      // customer screen which never receives user gestures). When _audioCtx
+      // exists but is suspended (Safari, screen-saver wake), best-effort
+      // resume() before playing.
+      const ctx = this._audioCtx;
+      if (!ctx) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') {
+          // resume() returns a Promise — fire-and-forget; if it rejects we
+          // skip this chime rather than spam the console.
+          ctx.resume?.().catch(() => {});
+          if (ctx.state !== 'running') return;
+        }
         [523, 659, 784, 1047].forEach((freq, i) => {
           const osc  = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -233,7 +279,7 @@ export default {
           osc.start(ctx.currentTime + i * 0.15);
           osc.stop(ctx.currentTime + i * 0.15 + 0.4);
         });
-      } catch (_) {}
+      } catch (_) { /* never throw from chime */ }
     },
     _hydrateFromRows(rows) {
       const prevPreparedIds = new Set(this.preparedItems.map(i => i.id));

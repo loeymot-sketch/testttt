@@ -20,8 +20,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=c38d46b3e604e5fff5786aa5bb299b36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778384553">
+    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427555">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -2407,8 +2407,8 @@ to { transform: rotate(360deg);
 }
 .ks-filter-chip--active[data-v-1cfa7798] {
     background: var(--kiosk-primary-soft, #FFF0F2);
-    border-color: var(--kiosk-primary, #E8001C);
-    color: var(--kiosk-primary, #E8001C);
+    border-color: var(--kiosk-primary, #F4501E);
+    color: var(--kiosk-primary, #F4501E);
 }
 .ks-filter-chip--disabled[data-v-1cfa7798] {
     opacity: 0.5;
@@ -3151,7 +3151,7 @@ to { transform: rotate(360deg);
     gap: 20px;
 }
 .kiosk-inactivity-icon[data-v-5667749c] {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 .kiosk-inactivity-title[data-v-5667749c] {
     font-family: var(--kiosk-font-display, inherit);
@@ -3167,7 +3167,7 @@ to { transform: rotate(360deg);
     line-height: 1.4;
 }
 .kiosk-inactivity-countdown[data-v-5667749c] {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
     font-weight: 900;
     font-variant-numeric: tabular-nums;
 }
@@ -4362,6 +4362,59 @@ to   { transform: translateY(0);
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* V3.4 (2026-05-10) Owner gate : thumbnail produit devant chaque ligne récap
+   pour scan visuel rapide. Image produit OU emoji fallback selon disponibilité. */
+.kiosk-summary-row-thumb[data-v-69099624] {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FAFAFA;
+  border: 1px solid #EFEFEF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1;
+}
+.kiosk-summary-row-thumb img[data-v-69099624] {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+.kiosk-summary-row-name[data-v-69099624] {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kiosk-tag-thumb[data-v-69099624] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  margin-right: 6px;
+  overflow: hidden;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.kiosk-tag-thumb img[data-v-69099624] {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+.kiosk-tag[data-v-69099624] {
+  display: inline-flex;
+  align-items: center;
+}
 .kiosk-summary-row.boisson[data-v-69099624] {
   padding-inline-start: 14px;
   color: var(--kiosk-text-2, var(--kiosk-text-muted));
@@ -5370,8 +5423,8 @@ to { transform: rotate(360deg);
     width: 100%;
     overflow: hidden;
     background: linear-gradient(90deg, var(--kiosk-primary-soft, #FFF0F2), var(--kiosk-surface-alt, #F7F3EC));
-    border-top: 2px solid var(--kiosk-primary, #E8001C);
-    border-bottom: 2px solid var(--kiosk-primary, #E8001C);
+    border-top: 2px solid var(--kiosk-primary, #F4501E);
+    border-bottom: 2px solid var(--kiosk-primary, #F4501E);
     padding: var(--kiosk-space-3, 12px) 0;
 }
 .kiosk-promo-track[data-v-26cfc002] {
@@ -5398,7 +5451,7 @@ to   { transform: translateX(-33%);
 }
 .kiosk-promo-card[data-v-26cfc002] {
     background: var(--kiosk-surface, #FFFFFF);
-    border: 2px solid var(--kiosk-primary, #E8001C);
+    border: 2px solid var(--kiosk-primary, #F4501E);
     border-radius: var(--kiosk-radius-3, 14px);
     padding: var(--kiosk-space-3, 12px) var(--kiosk-space-4, 16px);
     min-width: 280px;
@@ -5413,14 +5466,14 @@ to   { transform: translateX(-33%);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 .kiosk-promo-card__value[data-v-26cfc002] {
     font-family: var(--kiosk-font-display, inherit);
     font-weight: 900;
     font-size: calc(32px * var(--kiosk-text-scale, 1));
     line-height: 1;
-    color: var(--kiosk-primary-dark, #B8000F);
+    color: var(--kiosk-primary-dark, #DC4517);
 }
 .kiosk-promo-card__min[data-v-26cfc002] {
     font-size: calc(13px * var(--kiosk-text-scale, 1));
@@ -5542,8 +5595,8 @@ to   { transform: translateX(-33%);
   height: auto;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border: 2px solid var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 900;
@@ -5675,8 +5728,8 @@ to { transform: rotate(360deg);
   transform: scale(0.98);
 }
 .kiosk-sidebar-item.active[data-v-9a1bc680] {
-  border-color: var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border-color: var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   box-shadow: var(--kiosk-shadow-card);
 }
 .kiosk-sidebar-thumb-wrap[data-v-9a1bc680] {
@@ -6040,8 +6093,8 @@ to { transform: rotate(360deg);
 
 /* TOP CHIP — compte client */
 .kiosk-top-chip[data-v-9a1bc680] {
-  border-color: var(--kiosk-bold-primary-dark, #B8000F);
-  background: var(--kiosk-bold-primary-dark, #B8000F);
+  border-color: var(--kiosk-bold-primary-dark, #DC4517);
+  background: var(--kiosk-bold-primary-dark, #DC4517);
   color: #FFFFFF;
   font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
   font-weight: var(--kiosk-font-weight-bold, 700);
@@ -6130,7 +6183,7 @@ to { transform: rotate(360deg);
               background var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-product-add[data-v-9a1bc680]:hover:not(:disabled) {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: scale(1.08);
 }
 .kiosk-product-add[data-v-9a1bc680]:active:not(:disabled) {
@@ -6195,7 +6248,7 @@ to { transform: rotate(360deg);
               box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-bottom-pay[data-v-9a1bc680]:not(:disabled):hover {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: translateY(-2px);
   box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
 }
@@ -7204,20 +7257,20 @@ input[readonly] {
 
 <body style="overflow-y: auto;">
     
-    <div id="app" data-v-app=""><div dir="ltr"><!--v-if--><!--v-if--><div><main class="db-main expand"><div class="backdrop"></div><header class="db-header"><a href="/home" class="w-32 flex-shrink-0"><img class="w-full" alt="logo" src="http://127.0.0.1:8000/images/theme/theme-logo.png"></a><div class="flex items-center justify-end w-full gap-4"><div class="sub-header flex items-center gap-4 transition justify-between xh:top-10 xh:fixed xh:left-0 xh:w-full xh:p-4 xh:border-y xh:border-[#EFF0F6] xh:bg-white" style="top: 52px;"><button type="button" aria-label="Plein écran" class="hidden db-header-toggle lg:flex items-center justify-center w-9 h-9 px-3 rounded-lg bg-[#E0FFED]"><i class="lab lab-maximize lab-font-size-24 text-[#1AB759]" aria-hidden="true"></i></button><!--v-if--><div class="flex items-center gap-4"><div class="relative dropdown-group"><a aria-current="page" href="/admin/order-status-screen" class="active router-link-exact-active flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]"><i class="lab-font-size-17 text-primary lab lab-monitor"></i><span class="md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">Suivi client</span></a></div><div class="flex items-center justify-between md:justify-center gap-4"><!--v-if--><!--v-if--></div></div></div><!--v-if--><div class="dropdown-group"><button class="dropdown-btn flex items-center gap-2"><img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" src="http://127.0.0.1:8000/images/default/profile.png" alt="avatar"><h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">Bonjour <b class="block font-semibold text-[#111827]">Admin Le Cayenn..</b></h3><i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i></button><div class="dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100dvh_-_75px)] overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white transition-all duration-300 scale-y-0 origin-top"><div class="w-fit mx-auto text-center mb-5"><figure class="relative z-10 w-[98px] h-[98px] border-2 border-dashed rounded-full inline-flex items-center justify-center border-white bg-gradient-to-t from-[#FF7A00] to-[#FF016C] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-24 before:h-24 before:rounded-full before:-z-10 before:bg-white"><img class="w-[90px] h-[90px] rounded-full shadow-avatar" src="http://127.0.0.1:8000/images/default/profile.png" alt="avatar"></figure><label for="imageProperty" class="block w-11 h-11 mx-auto -mt-7 mb-3 relative z-10 rounded-full border-2 cursor-pointer bg-heading border-white"><input accept="image/png, image/jpeg, image/jpg" type="file" id="imageProperty" aria-label="Modifier le profil" class="w-full h-full rounded-full opacity-0 cursor-pointer" style=""><i class="lab lab-edit-2 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -z-10 lab-font-size-24 lab-font-color-1"></i></label><h3 class="font-medium text-sm leading-6 capitalize mb-0.5">Admin Le Cayenne</h3><p class="text-xs mb-0.5">admin@lecayenne.fr</p><p dir="ltr" class="text-xs">+330600000000</p><h3 class="font-medium text-sm leading-6 capitalize mb-0.5">0.00€</h3></div><nav><a href="/admin/profile/edit-profile" class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-edit lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Modifier le profil</span></a><a href="/admin/profile/change-password" class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-key lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Changer le mot de passe</span></a><button class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-logout lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Déconnexion</span></button></nav></div></div></div></header><!--v-if--><aside class="db-sidebar hidden"><div class="db-sidebar-header"><a href="/home" class="w-24"><img alt="logo" src="http://127.0.0.1:8000/images/theme/theme-logo.png"></a><button class="fa-solid fa-xmark xmark-btn close-db-menu"></button></div><!--        {{ menus }}--><nav class="db-sidebar-nav"><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/dashboard" class="db-sidebar-nav-menu"><i class="text-sm lab lab-dashboard"></i><span class="text-base flex-auto">Tableau de bord</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/pos" class="db-sidebar-nav-menu"><i class="text-sm lab lab-pos-bold"></i><span class="text-base flex-auto">POS</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/stock/rupture" class="db-sidebar-nav-menu"><i class="text-sm lab lab-stock"></i><span class="text-base flex-auto">Tableau de bord stock</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><!--v-if--><li class="db-sidebar-nav-item"><a href="/admin/items/studio" class="db-sidebar-nav-menu"><i class="text-sm lab lab-list"></i><span class="text-base flex-auto">Catalogue</span></a></li><li class="db-sidebar-nav-item"><a href="/admin/settings/item-attributes/list" class="db-sidebar-nav-menu"><i class="text-sm lab lab-item-attributes"></i><span class="text-base flex-auto">Attribut d’articles</span></a></li></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/ingredients" class="db-sidebar-nav-menu"><i class="text-sm lab lab-item-attributes"></i><span class="text-base flex-auto">Ingrédients</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/pos-orders" class="db-sidebar-nav-menu"><i class="text-sm lab lab-pos-orders"></i><span class="text-base flex-auto">Commandes caisse</span></a></li><!--v-if--></ul></nav></aside><!--
+    <div id="app" data-v-app=""><div dir="ltr"><!--v-if--><!--v-if--><div><main class="db-main expand"><div class="backdrop"></div><header class="db-header"><a href="/home" class="w-32 flex-shrink-0"><img class="w-full" alt="logo" src="http://127.0.0.1:8000/images/theme/theme-logo.png"></a><div class="flex items-center justify-end w-full gap-4"><div class="sub-header flex items-center gap-4 transition justify-between xh:top-10 xh:fixed xh:left-0 xh:w-full xh:p-4 xh:border-y xh:border-[#EFF0F6] xh:bg-white" style="top: 52px;"><button type="button" aria-label="Plein écran" class="hidden db-header-toggle lg:flex items-center justify-center w-9 h-9 px-3 rounded-lg bg-[#E0FFED]"><i class="lab lab-maximize lab-font-size-24 text-[#1AB759]" aria-hidden="true"></i></button><!--v-if--><div class="flex items-center gap-4"><div class="relative dropdown-group"><a aria-current="page" href="/admin/order-status-screen" class="active router-link-exact-active flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]"><i class="lab-font-size-17 text-primary lab lab-monitor"></i><span class="md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">Suivi client</span></a></div><div class="flex items-center justify-between md:justify-center gap-4"><!--v-if--><!--v-if--></div></div></div><!--v-if--><div class="dropdown-group"><button class="dropdown-btn flex items-center gap-2"><img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" src="http://127.0.0.1:8000/images/default/profile.png" alt="avatar"><!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] No JS chop ".."; CSS ellipsis + :title for full name on hover/SR --><h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">Bonjour <b title="Admin Le Cayenne" class="block font-semibold text-[#111827] overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px]">Admin Le Cayenne</b></h3><i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i></button><div class="dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100dvh_-_75px)] overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white transition-all duration-300 scale-y-0 origin-top"><div class="w-fit mx-auto text-center mb-5"><figure class="relative z-10 w-[98px] h-[98px] border-2 border-dashed rounded-full inline-flex items-center justify-center border-white bg-gradient-to-t from-[#FF7A00] to-[#FF016C] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-24 before:h-24 before:rounded-full before:-z-10 before:bg-white"><img class="w-[90px] h-[90px] rounded-full shadow-avatar" src="http://127.0.0.1:8000/images/default/profile.png" alt="avatar"></figure><label for="imageProperty" class="block w-11 h-11 mx-auto -mt-7 mb-3 relative z-10 rounded-full border-2 cursor-pointer bg-heading border-white"><input accept="image/png, image/jpeg, image/jpg" type="file" id="imageProperty" aria-label="Modifier le profil" class="w-full h-full rounded-full opacity-0 cursor-pointer" style=""><i class="lab lab-edit-2 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -z-10 lab-font-size-24 lab-font-color-1"></i></label><!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] Render full name + title fallback; CSS handles overflow --><h3 title="Admin Le Cayenne" class="font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto">Admin Le Cayenne</h3><p class="text-xs mb-0.5">admin@lecayenne.fr</p><p dir="ltr" class="text-xs">+330600000000</p><h3 class="font-medium text-sm leading-6 capitalize mb-0.5">0.00€</h3></div><nav><a href="/admin/profile/edit-profile" class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-edit lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Modifier le profil</span></a><a href="/admin/profile/change-password" class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-key lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Changer le mot de passe</span></a><button class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"><i class="lab lab-logout lab-font-size-17"></i><span class="text-sm leading-6 capitalize">Déconnexion</span></button></nav></div></div></div></header><!--v-if--><aside class="db-sidebar hidden"><div class="db-sidebar-header"><a href="/home" class="w-24"><img alt="logo" src="http://127.0.0.1:8000/images/theme/theme-logo.png"></a><button class="fa-solid fa-xmark xmark-btn close-db-menu"></button></div><!--        {{ menus }}--><nav class="db-sidebar-nav"><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/dashboard" class="db-sidebar-nav-menu"><i class="text-sm lab lab-dashboard"></i><span class="text-base flex-auto">Tableau de bord</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/pos" class="db-sidebar-nav-menu"><i class="text-sm lab lab-pos-bold"></i><span class="text-base flex-auto">POS</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/stock/rupture" class="db-sidebar-nav-menu"><i class="text-sm lab lab-stock"></i><span class="text-base flex-auto">Tableau de bord stock</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><!--v-if--><li class="db-sidebar-nav-item"><a href="/admin/items/studio" class="db-sidebar-nav-menu"><i class="text-sm lab lab-list"></i><span class="text-base flex-auto">Catalogue</span></a></li><li class="db-sidebar-nav-item"><a href="/admin/settings/item-attributes/list" class="db-sidebar-nav-menu"><i class="text-sm lab lab-item-attributes"></i><span class="text-base flex-auto">Attribut d’articles</span></a></li></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/ingredients" class="db-sidebar-nav-menu"><i class="text-sm lab lab-item-attributes"></i><span class="text-base flex-auto">Ingrédients</span></a></li><!--v-if--></ul><ul class="db-sidebar-nav-list"><li class="db-sidebar-nav-item"><a href="/admin/pos-orders" class="db-sidebar-nav-menu"><i class="text-sm lab lab-pos-orders"></i><span class="text-base flex-auto">Commandes caisse</span></a></li><!--v-if--></ul></nav></aside><!--
     [iter15-mega-fix B-003/D-002 2026-05-10] suppress-transient: the global
     "Reconnexion en cours…" banner is suppressed on the OSS surface because
     the customer-facing screen already conveys the connection state via the
     fallback polling — no need to show a permanent yellow bar in addition.
     session_invalid (terminal) still surfaces via this component.
-  --><!--v-if--><div class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 velmld-parent" role="main" aria-label="Écran de statut des commandes"><div data-v-2964abc9="" class="velmld-full-screen velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="16" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate></rect></svg><!----></div></div><div class="col-span-2 md:block hidden" role="region" aria-label="Articles populaires"><div class="customer-screen db-card rounded-[10px] h-screen md:h-[calc(100vh-117px)] overflow-hidden pb-20"><div class="p-3 pb-2 mb-6"><h3 class="text-[22px] font-semibold text-[#0057B7]">Articles à préparer</h3></div><div class="p-3 grid grid-cols-2 lg:grid-cols-3 gap-11 overflow-auto thin-scrolling h-full"><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/16/frites.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Frites Seules</h6><p class="text-lg font-semibold text-[#1F1F39]">2.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/18/tacos.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Tacos M (1 Viande)</h6><p class="text-lg font-semibold text-[#1F1F39]">6.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/68/eau.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Eau Plate 50cl</h6><p class="text-lg font-semibold text-[#1F1F39]">1.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/24/item-default.svg" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Le Suprême</h6><p class="text-lg font-semibold text-[#1F1F39]">7.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/19/tacos.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Tacos L (2 Viandes)</h6><p class="text-lg font-semibold text-[#1F1F39]">8.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/20/tacos.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Tacos XL (3 Viandes)</h6><p class="text-lg font-semibold text-[#1F1F39]">10.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/21/tacos.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Tacos XXL (4 Viandes)</h6><p class="text-lg font-semibold text-[#1F1F39]">12.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/22/item-default.svg" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Le Méga</h6><p class="text-lg font-semibold text-[#1F1F39]">8.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/23/item-default.svg" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Le Terminator</h6><p class="text-lg font-semibold text-[#1F1F39]">9.00€</p></div></div></div></div><div class="col-span-2 grid grid-cols-2 gap-4 md:mt-0 mt-[-20px] velmld-parent"><div data-v-2964abc9="" data-v-3aa5d0ca="" class="velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="16" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate></rect></svg><!----></div></div><!--
+  --><!--v-if--><div class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 velmld-parent" role="main" aria-label="Écran de statut des commandes"><div data-v-2964abc9="" class="velmld-full-screen velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="16" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate></rect></svg><!----></div></div><div class="col-span-2 md:block hidden" role="region" aria-label="Articles populaires"><div class="customer-screen db-card rounded-[10px] h-screen md:h-[calc(100vh-117px)] overflow-hidden pb-20"><div class="p-3 pb-2 mb-6"><h3 class="text-[22px] font-semibold text-[#0057B7]">Articles à préparer</h3></div><div class="p-3 grid grid-cols-2 lg:grid-cols-3 gap-11 overflow-auto thin-scrolling h-full"><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/16/frites.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Frites Seules</h6><p class="text-lg font-semibold text-[#1F1F39]">2.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/18/tacos.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Tacos M (1 Viande)</h6><p class="text-lg font-semibold text-[#1F1F39]">6.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/68/eau.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Eau Plate 50cl</h6><p class="text-lg font-semibold text-[#1F1F39]">1.00€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/46/omelette_champignons.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Omelette Champignons Fromage</h6><p class="text-lg font-semibold text-[#1F1F39]">9.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/67/orangina.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Orangina 33cl</h6><p class="text-lg font-semibold text-[#1F1F39]">1.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/64/fanta.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Fanta Orange 33cl</h6><p class="text-lg font-semibold text-[#1F1F39]">1.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/63/coca_zero.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Coca-Cola Zero 33cl</h6><p class="text-lg font-semibold text-[#1F1F39]">1.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/44/omelette.png" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Omelette Nature</h6><p class="text-lg font-semibold text-[#1F1F39]">7.50€</p></div><div class="flex flex-col items-center"><div class="max-w-[148px] w-full h-[102px] rounded-full mb-4"><img class="w-full h-full rounded-full" src="/storage/24/item-default.svg" alt=""></div><h6 class="text-base font-medium text-[#6E7191]">Le Suprême</h6><p class="text-lg font-semibold text-[#1F1F39]">7.00€</p></div></div></div></div><div class="col-span-2 grid grid-cols-2 gap-4 md:mt-0 mt-[-20px] velmld-parent"><div data-v-2964abc9="" data-v-3aa5d0ca="" class="velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="16" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate></rect></svg><!----></div></div><!--
     [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —
     duplicate of the global ConnectionStatusBanner mounted by the parent
     OrderStatusScreenComponent. Showing two banners simultaneously
     ("Reconnexion en cours…" + "Mode secours actif") was UX clutter flagged
     in iter15 mega-audit Wave B/D. The global banner debounces 5s and is
     hidden in dev via foodkingConfig.appEnv.
-  --><!-- Colonne EN PRÉPARATION --><div data-v-3aa5d0ca="" class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden" role="region" aria-label="En préparation"><h3 data-v-3aa5d0ca="" class="text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center">En préparation</h3><div data-v-3aa5d0ca="" class="content-wrapper p-3 overflow-auto thin-scrolling h-full"><ul data-v-3aa5d0ca="" class="[&amp;_li]:mb-6 [&amp;_li]:text-[40px] [&amp;_li]:font-semibold [&amp;_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0020</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0026</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0019</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0036</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0023</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0024</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0034</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0032</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0004</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0030</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0022</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0015</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0017</li></ul><!--v-if--></div></div><!-- Colonne PRÊT --><div data-v-3aa5d0ca="" class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden oss-ready-flash" role="region" aria-label="Prêt"><h3 data-v-3aa5d0ca="" class="text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center">Prêt</h3><div data-v-3aa5d0ca="" class="content-wrapper p-3 overflow-auto thin-scrolling h-full"><ul data-v-3aa5d0ca="" class="[&amp;_li]:mb-6 [&amp;_li]:text-[40px] [&amp;_li]:font-semibold [&amp;_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"><li data-v-3aa5d0ca="" class="text-[#2AC769] font-extrabold oss-new-ready">N°A0028</li></ul><!--v-if--></div></div></div></div></main><!--v-if--></div><!--v-if--></div></div>
+  --><!-- Colonne EN PRÉPARATION --><div data-v-3aa5d0ca="" class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden" role="region" aria-label="En préparation"><h3 data-v-3aa5d0ca="" class="text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center">En préparation</h3><div data-v-3aa5d0ca="" class="content-wrapper p-3 overflow-auto thin-scrolling h-full"><ul data-v-3aa5d0ca="" class="[&amp;_li]:mb-6 [&amp;_li]:text-[40px] [&amp;_li]:font-semibold [&amp;_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0020</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0026</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0019</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0039</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0036</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0040</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0023</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0024</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0034</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0032</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0004</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0030</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0022</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0015</li><li data-v-3aa5d0ca="" class="text-[#991B1B]">N°A0017</li></ul><!--v-if--></div></div><!-- Colonne PRÊT --><div data-v-3aa5d0ca="" class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden oss-ready-flash" role="region" aria-label="Prêt"><h3 data-v-3aa5d0ca="" class="text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center">Prêt</h3><div data-v-3aa5d0ca="" class="content-wrapper p-3 overflow-auto thin-scrolling h-full"><ul data-v-3aa5d0ca="" class="[&amp;_li]:mb-6 [&amp;_li]:text-[40px] [&amp;_li]:font-semibold [&amp;_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"><li data-v-3aa5d0ca="" class="text-[#2AC769] font-extrabold oss-new-ready">N°A0028</li></ul><!--v-if--></div></div></div></div></main><!--v-if--></div><!--v-if--></div></div>
 
     
     
@@ -7294,7 +7347,7 @@ input[readonly] {
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=b70349381185d801162107a7ab787bd1"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=f98357a5999f3a959e266743b50b9d70"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -7309,7 +7362,7 @@ input[readonly] {
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778384553"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427555"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

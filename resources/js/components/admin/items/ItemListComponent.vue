@@ -13,20 +13,21 @@
                 </div>
             </div>
 
+            <!-- [iter15-mega-fix A-010 round-7 2026-05-10] :title attribute exposes full label even when CSS clips, and aria-label keeps SR action context -->
             <div class="catalog-control-plane__metrics" aria-label="Résumé catalogue">
-                <button type="button" class="catalog-control-plane__metric" @click.prevent="clear">
+                <button type="button" class="catalog-control-plane__metric" :title="`${itemsCount} produits`" :aria-label="`Filtrer ${itemsCount} produits`" @click.prevent="clear">
                     <span>{{ itemsCount }}</span>
                     <small>produits</small>
                 </button>
-                <router-link class="catalog-control-plane__metric" :to="{ name: 'admin.settings.itemCategory.list' }">
+                <router-link class="catalog-control-plane__metric" :title="`${categoriesCount} catégories`" :aria-label="`Voir ${categoriesCount} catégories`" :to="{ name: 'admin.settings.itemCategory.list' }">
                     <span>{{ categoriesCount }}</span>
                     <small>catégories</small>
                 </router-link>
-                <button type="button" class="catalog-control-plane__metric" @click.prevent="filterActiveItems">
+                <button type="button" class="catalog-control-plane__metric" :title="`${activeItemsCount} actifs`" :aria-label="`Filtrer ${activeItemsCount} produits actifs`" @click.prevent="filterActiveItems">
                     <span>{{ activeItemsCount }}</span>
                     <small>actifs</small>
                 </button>
-                <button type="button" class="catalog-control-plane__metric catalog-control-plane__metric--alert" @click.prevent="focusAvailability">
+                <button type="button" class="catalog-control-plane__metric catalog-control-plane__metric--alert" :title="`${unavailableItemsCount} indisponibles`" :aria-label="`Filtrer ${unavailableItemsCount} produits indisponibles`" @click.prevent="focusAvailability">
                     <span>{{ unavailableItemsCount }}</span>
                     <small>indisponibles</small>
                 </button>

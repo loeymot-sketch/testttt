@@ -1,6 +1,29 @@
 "use strict";
 (self["webpackChunk"] = self["webpackChunk"] || []).push([["kiosk-wizard-step"],{
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css":
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-frites-style[data-v-6ef0c3a6] {\n    padding: 24px 16px 32px;\n    text-align: center;\n}\n.kiosk-step-title[data-v-6ef0c3a6] {\n    font-size: 1.6rem;\n    font-weight: 900;\n    color: #0F0F0F;\n    margin: 0 0 8px;\n    letter-spacing: -0.3px;\n}\n.kiosk-step-subtitle[data-v-6ef0c3a6] {\n    font-size: 1rem;\n    color: #5A5A5A;\n    margin: 0 0 28px;\n}\n\n/* Grid 3 columns équivalentes ; le visuel \"20% plus grand\" est porté par la\n   taille du media (image) et le padding interne, pas par la largeur de la\n   colonne (sinon le texte tronque). Centered.\n   V3.6 owner gate (2026-05-10) : marketing psychology via image+padding +\n   border-color hover, pas via grid stretch. */\n.kiosk-frites-style-grid[data-v-6ef0c3a6] {\n    display: grid;\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n    gap: 18px;\n    align-items: stretch;\n    justify-items: center;\n    max-width: 980px;\n    margin: 0 auto;\n}\n.kiosk-frites-style-card[data-v-6ef0c3a6] {\n    background: #FFFFFF;\n    border: 2.5px solid #E5E5E5;\n    border-radius: 22px;\n    padding: 18px 14px 16px;\n    cursor: pointer;\n    transition: border-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    gap: 10px;\n    width: 100%;\n    -webkit-tap-highlight-color: transparent;\n}\n.kiosk-frites-style-card[data-v-6ef0c3a6]:hover {\n    border-color: #F4501E;\n    box-shadow: 0 8px 24px rgba(244, 80, 30, 0.12);\n}\n.kiosk-frites-style-card.selected[data-v-6ef0c3a6] {\n    border-color: #F4501E;\n    background: #FFF8F4;\n    box-shadow: 0 12px 32px rgba(244, 80, 30, 0.20);\n}\n.kiosk-frites-style-card[data-v-6ef0c3a6]:active {\n    transform: scale(0.98);\n}\n.kiosk-frites-style-card[data-v-6ef0c3a6]:focus-visible {\n    outline: 3px solid #2563EB;\n    outline-offset: 2px;\n}\n\n/* Card NATURE — taille normale (100%) */\n.kiosk-frites-style-card--nature .kiosk-frites-style-media[data-v-6ef0c3a6] {\n    width: 110px;\n    height: 110px;\n}\n\n/* Cards UPGRADE — 20% plus grand (psychologique marketing) */\n.kiosk-frites-style-card--upgrade .kiosk-frites-style-media[data-v-6ef0c3a6] {\n    width: 132px;\n    height: 132px;\n}\n.kiosk-frites-style-media[data-v-6ef0c3a6] {\n    border-radius: 16px;\n    overflow: hidden;\n    background: #FAFAFA;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    border: 1px solid #EFEFEF;\n    flex-shrink: 0;\n}\n.kiosk-frites-style-img[data-v-6ef0c3a6] {\n    width: 100%;\n    height: 100%;\n    -o-object-fit: cover;\n       object-fit: cover;\n    display: block;\n}\n.kiosk-frites-style-emoji[data-v-6ef0c3a6] {\n    font-size: 56px;\n    line-height: 1;\n}\n.kiosk-frites-style-card--upgrade .kiosk-frites-style-emoji[data-v-6ef0c3a6] {\n    font-size: 64px;\n}\n.kiosk-frites-style-name[data-v-6ef0c3a6] {\n    font-size: 1rem;\n    font-weight: 700;\n    color: #0F0F0F;\n    text-align: center;\n    line-height: 1.25;\n    min-height: 2.5em;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n.kiosk-frites-style-card--upgrade .kiosk-frites-style-name[data-v-6ef0c3a6] {\n    font-size: 1.05rem;\n}\n.kiosk-frites-style-price[data-v-6ef0c3a6] {\n    font-size: 1.1rem;\n    font-weight: 900;\n    color: #F4501E;\n    line-height: 1;\n    letter-spacing: -0.2px;\n    background: #FFE8DD;\n    padding: 6px 14px;\n    border-radius: 999px;\n}\n\n/* Reduced motion */\n@media (prefers-reduced-motion: reduce) {\n.kiosk-frites-style-card[data-v-6ef0c3a6] {\n        transition: border-color 80ms ease;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=style&index=0&id=c58a99e8&scoped=true&lang=css":
 /*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=style&index=0&id=c58a99e8&scoped=true&lang=css ***!
@@ -182,6 +205,89 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-viande[data-v-1cf2e852] 
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js":
+/*!*********************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+
+
+/**
+ * KioskStepFritesStyleComponent — Choix progressif du style des frites.
+ * -----------------------------------------------------------------------------
+ * Owner gate (2026-05-10) : 3 niveaux exclusifs (radio) :
+ *  - Nature (default — aucun extra, pas de prix label)
+ *  - Cheddar fondu (+1€) — image 20% plus grande pour aspect marketing
+ *  - Cheddar + Oignons croustillants (+2€) — même taille que cheddar fondu
+ *
+ * Source de données : `item.extras` filtrés par `group_label === 'frites_style'`.
+ * Migration DB : 2026_05_10_040000_add_frites_style_upgrade_extras (8 rows).
+ *
+ * Sélection via state : `selections.fritesStyleExtraId = number | null`
+ *  - null = Nature (default, aucun supplément ajouté à l'order payload)
+ *  - id = extra sélectionné (id 709|711 Cheddar fondu, 710|712 Cheddar+Oignons
+ *         selon item parent ; le payload submitted au backend inclut cet id
+ *         dans item_extras → PricingService applique le prix à l'order →
+ *         synchro POS naturelle via DB partagée).
+ */
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskStepFritesStyle',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_0__.kioskPriceMixin],
+  props: {
+    item: {
+      type: Object,
+      required: true
+    },
+    selections: {
+      type: Object,
+      required: true
+    }
+  },
+  emits: ['update'],
+  computed: {
+    upgradeExtras: function upgradeExtras() {
+      var _this$item;
+      var extras = Array.isArray((_this$item = this.item) === null || _this$item === void 0 ? void 0 : _this$item.extras) ? this.item.extras : [];
+      return extras.filter(function (e) {
+        return (e === null || e === void 0 ? void 0 : e.group_label) === 'frites_style';
+      }).sort(function (a, b) {
+        return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+      });
+    },
+    selectedExtraId: function selectedExtraId() {
+      var _this$selections;
+      var id = (_this$selections = this.selections) === null || _this$selections === void 0 ? void 0 : _this$selections.fritesStyleExtraId;
+      return id == null ? null : Number(id);
+    },
+    natureImage: function natureImage() {
+      var _this$item2, _this$item3, _this$item4;
+      return ((_this$item2 = this.item) === null || _this$item2 === void 0 ? void 0 : _this$item2.thumb) || ((_this$item3 = this.item) === null || _this$item3 === void 0 ? void 0 : _this$item3.cover) || ((_this$item4 = this.item) === null || _this$item4 === void 0 ? void 0 : _this$item4.image) || null;
+    },
+    natureLabel: function natureLabel() {
+      return this.$t('kiosk.wizard.step.frites_style.nature') || 'Frites nature';
+    },
+    stepTitle: function stepTitle() {
+      return this.$t('kiosk.wizard.step.frites_style.title') || 'Personnalisez vos frites';
+    },
+    stepSubtitle: function stepSubtitle() {
+      return this.$t('kiosk.wizard.step.frites_style.subtitle') || 'Choisissez votre style préféré';
+    }
+  },
+  methods: {
+    select: function select(extraId) {
+      this.$emit('update', 'fritesStyleExtraId', extraId);
+    }
+  }
+});
 
 /***/ }),
 
@@ -1827,6 +1933,115 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true":
+/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true ***!
+  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "kiosk-step-frites-style",
+  "data-testid": "kiosk-step-frites-style"
+};
+var _hoisted_2 = {
+  "class": "kiosk-step-title"
+};
+var _hoisted_3 = {
+  "class": "kiosk-step-subtitle"
+};
+var _hoisted_4 = ["aria-label"];
+var _hoisted_5 = ["aria-checked"];
+var _hoisted_6 = {
+  "class": "kiosk-frites-style-media"
+};
+var _hoisted_7 = ["src"];
+var _hoisted_8 = {
+  key: 1,
+  "class": "kiosk-frites-style-emoji",
+  "aria-hidden": "true"
+};
+var _hoisted_9 = {
+  "class": "kiosk-frites-style-name"
+};
+var _hoisted_10 = ["aria-checked", "data-testid", "onClick", "onKeydown"];
+var _hoisted_11 = {
+  "class": "kiosk-frites-style-media"
+};
+var _hoisted_12 = ["src"];
+var _hoisted_13 = {
+  key: 1,
+  "class": "kiosk-frites-style-emoji",
+  "aria-hidden": "true"
+};
+var _hoisted_14 = {
+  "class": "kiosk-frites-style-name"
+};
+var _hoisted_15 = {
+  "class": "kiosk-frites-style-price"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stepTitle), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stepSubtitle), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-frites-style-grid",
+    role: "radiogroup",
+    "aria-label": $options.stepTitle
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card NATURE (default — no extra selected, no price label) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-frites-style-card kiosk-frites-style-card--nature", {
+      selected: !$options.selectedExtraId
+    }]),
+    role: "radio",
+    "aria-checked": !$options.selectedExtraId,
+    tabindex: "0",
+    "data-testid": "kiosk-frites-style-nature",
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return $options.select(null);
+    }),
+    onKeydown: [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.select(null);
+    }, ["prevent"]), ["enter"])), _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.select(null);
+    }, ["prevent"]), ["space"]))]
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [$options.natureImage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    key: 0,
+    src: $options.natureImage,
+    alt: "",
+    "class": "kiosk-frites-style-img",
+    loading: "lazy"
+  }, null, 8 /* PROPS */, _hoisted_7)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8, "🍟"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.natureLabel), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_5), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cards UPGRADE (Cheddar fondu, Cheddar + Oignons) — 20% larger psychologique "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.upgradeExtras, function (extra) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: extra.id,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-frites-style-card kiosk-frites-style-card--upgrade", {
+        selected: $options.selectedExtraId === extra.id
+      }]),
+      role: "radio",
+      "aria-checked": $options.selectedExtraId === extra.id,
+      tabindex: "0",
+      "data-testid": "kiosk-frites-style-upgrade-".concat(extra.id),
+      onClick: function onClick($event) {
+        return $options.select(extra.id);
+      },
+      onKeydown: [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.select(extra.id);
+      }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.select(extra.id);
+      }, ["prevent"]), ["space"])]
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [$options.natureImage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: $options.natureImage,
+      alt: "",
+      "class": "kiosk-frites-style-img",
+      loading: "lazy"
+    }, null, 8 /* PROPS */, _hoisted_12)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, "🍟"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(parseFloat(extra.price) || 0)), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_10);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_4)]);
+}
+
+/***/ }),
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=template&id=c58a99e8&scoped=true":
 /*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=template&id=c58a99e8&scoped=true ***!
@@ -3019,6 +3234,35 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ }),
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css":
+/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_style_index_0_id_6ef0c3a6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_style_index_0_id_6ef0c3a6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_style_index_0_id_6ef0c3a6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=style&index=0&id=c58a99e8&scoped=true&lang=css":
 /*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepGarnituresComponent.vue?vue&type=style&index=0&id=c58a99e8&scoped=true&lang=css ***!
@@ -3248,6 +3492,79 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepViandeComponent_vue_vue_type_style_index_0_id_1cf2e852_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue":
+/*!****************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue ***!
+  \****************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskStepFritesStyleComponent_vue_vue_type_template_id_6ef0c3a6_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true */ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true");
+/* harmony import */ var _KioskStepFritesStyleComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskStepFritesStyleComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskStepFritesStyleComponent_vue_vue_type_style_index_0_id_6ef0c3a6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskStepFritesStyleComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskStepFritesStyleComponent_vue_vue_type_template_id_6ef0c3a6_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-6ef0c3a6"],['__file',"resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js":
+/*!****************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js ***!
+  \****************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskStepFritesStyleComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css":
+/*!************************************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css ***!
+  \************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_style_index_0_id_6ef0c3a6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=style&index=0&id=6ef0c3a6&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true":
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true ***!
+  \**********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_template_id_6ef0c3a6_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskStepFritesStyleComponent_vue_vue_type_template_id_6ef0c3a6_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/steps/KioskStepFritesStyleComponent.vue?vue&type=template&id=6ef0c3a6&scoped=true");
+
 
 /***/ }),
 

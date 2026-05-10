@@ -18,13 +18,19 @@
 
 const { test, expect } = require('@playwright/test');
 const path = require('path');
-const { loginAsAdmin } = require('./helpers/login');
+const { loginAsAdmin, cleanupOrphanTestOrders } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 
 const SCREENSHOT_DIR = path.resolve(__dirname, '__screenshots__/iter15-mega-admin');
 
 test.describe('iter15 mega — Wave A (admin visual page-by-page)', () => {
   test.setTimeout(180_000);
+
+  // [iter15-mega-fix B-004 round-7 2026-05-10] sweep orphan test orders so the
+  // captured admin DOMs (KDS row, dashboard widgets) don't show ghost orders.
+  test.beforeAll(() => {
+    cleanupOrphanTestOrders();
+  });
 
   test('admin pages full visual capture', async ({ page }) => {
     const { snap, dispose } = attachMegaAuditRecorder(page, SCREENSHOT_DIR);

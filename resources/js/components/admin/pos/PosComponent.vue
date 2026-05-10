@@ -1302,6 +1302,17 @@ export default {
         items: function () {
             return this.$store.getters["item/lists"];
         },
+        // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+        // Alias `itemsRaw` -> same store-backed catalog list. The D-003 rupture
+        // banner + availability broadcast handlers reference `this.itemsRaw` as
+        // the canonical POS catalog cache. Without this computed, Vue 3 emits
+        // "Property 'itemsRaw' was accessed during render but is not defined on
+        // instance" on every render of `unavailableCatalogItems`. Defining it as
+        // a 1-liner computed (instead of duplicating data) keeps a single source
+        // of truth and silences the warning cleanly.
+        itemsRaw: function () {
+            return this.$store.getters["item/lists"];
+        },
         loadingItems: function () {
             return this.posItemsFetchPending && this.$store.getters["item/lists"].length === 0;
         },

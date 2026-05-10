@@ -1,5 +1,27 @@
 const { expect } = require('@playwright/test');
+const path = require('path');
+const { execFileSync } = require('child_process');
 const { clearFoodKingRateLimits } = require('./rate-limit');
+
+/**
+ * [iter15-mega-fix B-004 round-7 2026-05-10]
+ * Sweep orphan AUDIT-/RED-TEAM-/ZZ-TEST-/TEST-/E2E- orders off the live KDS
+ * pile before the mega specs run. Best-effort: logs failure but never throws,
+ * so a missing tinker shell does not block the test run itself.
+ */
+function cleanupOrphanTestOrders() {
+  try {
+    execFileSync('php', ['artisan', 'iter15:cleanup-test-orders', '--apply'], {
+      cwd: path.resolve(__dirname, '../../..'),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 15_000,
+    });
+  } catch (err) {
+    // soft-fail — the spec assertions catch a polluted DB anyway
+    console.warn('[iter15] cleanupOrphanTestOrders warning:', err?.message || err);
+  }
+}
 
 /**
  * Login FoodKing — cible les ids du LoginComponent (évite le champ recherche header type="text").
@@ -124,4 +146,4 @@ async function loginAsAdmin(
   await expect(page).toHaveURL(/\/admin/, { timeout: 25_000 });
 }
 
-module.exports = { login, loginAsKiosk, loginAsPosOperator, loginAsChefOperator, loginAsAdmin };
+module.exports = { login, loginAsKiosk, loginAsPosOperator, loginAsChefOperator, loginAsAdmin, cleanupOrphanTestOrders };

@@ -34,6 +34,7 @@
         "decrease_qty": "Diminuer la quantité — {item}",
         "remove_item": "Retirer {item} du panier",
         "add_item": "Ajouter {item}, {price}",
+        "unavailable_item": "Indisponible : {item}",
         "loading_items": "Chargement des articles",
         "cart_updated": "Panier mis à jour"
     },

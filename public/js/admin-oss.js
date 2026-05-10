@@ -172,16 +172,46 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
       newReadyIds: new Set(),
       newReadyFlash: false,
-      _flashTimer: null
+      _flashTimer: null,
+      // [iter15-mega-fix C-034 round-7 2026-05-10] AudioContext is now
+      // lazy-initialized on the first user gesture. Prior implementation
+      // created a fresh suspended context on EVERY Echo `prepared` event, which
+      // flooded the customer screen console with autoplay warnings (~8x per
+      // session) because Chrome blocks AudioContext until a user gesture.
+      _audioCtx: null,
+      _audioInitListener: null
     };
   },
   computed: {},
   mounted: function mounted() {
+    var _this = this;
     this.list();
     window.addEventListener('realtime-order-update', this.list);
     this.subscribeEcho();
     this._bindWsService();
     this.startOssSync();
+    // [iter15-mega-fix C-034 round-7 2026-05-10] Wire a one-shot user-gesture
+    // listener that creates the shared AudioContext. Until the user clicks
+    // anywhere on the screen, _playReadySound() is a silent no-op so the
+    // browser does not log "AudioContext was not allowed to start" warnings.
+    this._audioInitListener = function () {
+      try {
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        if (Ctor) _this._audioCtx = new Ctor();
+      } catch (_) {
+        _this._audioCtx = null;
+      }
+    };
+    try {
+      window.addEventListener('pointerdown', this._audioInitListener, {
+        once: true,
+        passive: true
+      });
+      window.addEventListener('keydown', this._audioInitListener, {
+        once: true,
+        passive: true
+      });
+    } catch (_) {/* never block mount on listener wiring */}
   },
   beforeUnmount: function beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
@@ -189,6 +219,20 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     this._unbindWsService();
     this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
+    // [iter15-mega-fix C-034 round-7 2026-05-10] Tear down audio listeners +
+    // close the context so the next mount starts clean.
+    try {
+      if (this._audioInitListener) {
+        window.removeEventListener('pointerdown', this._audioInitListener);
+        window.removeEventListener('keydown', this._audioInitListener);
+      }
+    } catch (_) {/* noop */}
+    try {
+      var _this$_audioCtx, _this$_audioCtx$close;
+      (_this$_audioCtx = this._audioCtx) === null || _this$_audioCtx === void 0 || (_this$_audioCtx$close = _this$_audioCtx.close) === null || _this$_audioCtx$close === void 0 || _this$_audioCtx$close.call(_this$_audioCtx);
+    } catch (_) {/* noop */}
+    this._audioCtx = null;
+    this._audioInitListener = null;
   },
   methods: {
     authBranchId: function authBranchId() {
@@ -207,15 +251,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return 0;
     },
     _bindWsService: function _bindWsService() {
-      var _this = this;
+      var _this2 = this;
       var ws = window._wsService;
       if (!ws) return;
       this._onWsConnected = function () {
-        _this.wsConnected = true;
-        _this.list();
+        _this2.wsConnected = true;
+        _this2.list();
       };
       this._onWsDisconnected = function () {
-        _this.wsConnected = false;
+        _this2.wsConnected = false;
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -227,15 +271,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     startOssSync: function startOssSync() {
-      var _this2 = this;
+      var _this3 = this;
       this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('sync', function (_ref) {
         var _ref$rows = _ref.rows,
           rows = _ref$rows === void 0 ? [] : _ref$rows;
-        _this2._hydrateFromRows(rows);
+        _this3._hydrateFromRows(rows);
       }));
       this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('ws_state', function (_ref2) {
         var state = _ref2.state;
-        _this2.wsConnected = String(state || '').toLowerCase() === 'connected';
+        _this3.wsConnected = String(state || '').toLowerCase() === 'connected';
       }));
       _services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].start({
         store: this.$store,
@@ -254,7 +298,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.ossSyncUnsubscribers = [];
     },
     subscribeEcho: function subscribeEcho() {
-      var _this3 = this;
+      var _this4 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return;
@@ -270,16 +314,16 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
             // Solution: pre-register the ID in _echoMarkedReady so list() skips it.
             if (parseInt(data.new_status, 10) === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARED) {
               var oid = parseInt(data.order_id, 10);
-              _this3._echoMarkedReady = _this3._echoMarkedReady || new Set();
-              _this3._echoMarkedReady.add(oid);
-              _this3._markNewReady(oid);
+              _this4._echoMarkedReady = _this4._echoMarkedReady || new Set();
+              _this4._echoMarkedReady.add(oid);
+              _this4._markNewReady(oid);
             }
-            _this3.list();
+            _this4.list();
           }
         }, {
           broadcastAs: 'OrderCreated',
           handler: function handler() {
-            _this3.list();
+            _this4.list();
           }
         }]);
         // [P13_LOG_HYGIENE] console.log(`[OSS] Echo subscribed to branch.${branchId}`);
@@ -301,26 +345,41 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     // Mark an order as newly ready: plays sound + triggers flash animation for 4s
     _markNewReady: function _markNewReady(orderId) {
-      var _this4 = this;
+      var _this5 = this;
       if (!orderId) return;
       this.newReadyIds = new Set([].concat(_toConsumableArray(this.newReadyIds), [parseInt(orderId)]));
       this._playReadySound();
       this.newReadyFlash = true;
       if (this._flashTimer) clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(function () {
-        _this4.newReadyFlash = false;
+        _this5.newReadyFlash = false;
         // Clear the highlight after 6s so it doesn't persist forever
         setTimeout(function () {
-          var ids = new Set(_this4.newReadyIds);
+          var ids = new Set(_this5.newReadyIds);
           ids["delete"](parseInt(orderId));
-          _this4.newReadyIds = ids;
+          _this5.newReadyIds = ids;
         }, 2000);
       }, 4000);
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
     _playReadySound: function _playReadySound() {
+      // [iter15-mega-fix C-034 round-7 2026-05-10] Lazy-init pattern: bail out
+      // silently if the user has not yet interacted with the screen. We do
+      // NOT create a fresh AudioContext per call (that was flooding the
+      // console with `AudioContext was not allowed to start` warnings on the
+      // customer screen which never receives user gestures). When _audioCtx
+      // exists but is suspended (Safari, screen-saver wake), best-effort
+      // resume() before playing.
+      var ctx = this._audioCtx;
+      if (!ctx) return;
       try {
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') {
+          var _ctx$resume;
+          // resume() returns a Promise — fire-and-forget; if it rejects we
+          // skip this chime rather than spam the console.
+          (_ctx$resume = ctx.resume) === null || _ctx$resume === void 0 || _ctx$resume.call(ctx)["catch"](function () {});
+          if (ctx.state !== 'running') return;
+        }
         [523, 659, 784, 1047].forEach(function (freq, i) {
           var osc = ctx.createOscillator();
           var gain = ctx.createGain();
@@ -333,10 +392,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           osc.start(ctx.currentTime + i * 0.15);
           osc.stop(ctx.currentTime + i * 0.15 + 0.4);
         });
-      } catch (_) {}
+      } catch (_) {/* never throw from chime */}
     },
     _hydrateFromRows: function _hydrateFromRows(rows) {
-      var _this5 = this;
+      var _this6 = this;
       var prevPreparedIds = new Set(this.preparedItems.map(function (i) {
         return i.id;
       }));
@@ -352,7 +411,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       var echoMarked = this._echoMarkedReady || new Set();
       newPrepared.forEach(function (item) {
         if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
-          _this5._markNewReady(item.id);
+          _this6._markNewReady(item.id);
         }
       });
       // Clear the echo-marked set after list() processes it (one-shot guard)
@@ -360,15 +419,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.preparedItems = newPrepared;
     },
     list: function list() {
-      var _this6 = this;
+      var _this7 = this;
       this.loading.isActive = true;
       this.$store.dispatch("orderStatusScreenOrder/lists").then(function (res) {
-        _this6._hydrateFromRows(res.data.data || []);
-        _this6.loading.isActive = false;
+        _this7._hydrateFromRows(res.data.data || []);
+        _this7.loading.isActive = false;
       })["catch"](function (err) {
         var _err$response;
-        _this6.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this6.$t('message.something_wrong'));
+        _this7.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this7.$t('message.something_wrong'));
       });
     }
   }

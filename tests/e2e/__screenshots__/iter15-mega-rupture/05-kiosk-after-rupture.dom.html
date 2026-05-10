@@ -21,8 +21,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=c38d46b3e604e5fff5786aa5bb299b36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778383636">
+    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427522">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -2408,8 +2408,8 @@ to { transform: rotate(360deg);
 }
 .ks-filter-chip--active[data-v-1cfa7798] {
     background: var(--kiosk-primary-soft, #FFF0F2);
-    border-color: var(--kiosk-primary, #E8001C);
-    color: var(--kiosk-primary, #E8001C);
+    border-color: var(--kiosk-primary, #F4501E);
+    color: var(--kiosk-primary, #F4501E);
 }
 .ks-filter-chip--disabled[data-v-1cfa7798] {
     opacity: 0.5;
@@ -3152,7 +3152,7 @@ to { transform: rotate(360deg);
     gap: 20px;
 }
 .kiosk-inactivity-icon[data-v-5667749c] {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 .kiosk-inactivity-title[data-v-5667749c] {
     font-family: var(--kiosk-font-display, inherit);
@@ -3168,7 +3168,7 @@ to { transform: rotate(360deg);
     line-height: 1.4;
 }
 .kiosk-inactivity-countdown[data-v-5667749c] {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
     font-weight: 900;
     font-variant-numeric: tabular-nums;
 }
@@ -4363,6 +4363,59 @@ to   { transform: translateY(0);
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* V3.4 (2026-05-10) Owner gate : thumbnail produit devant chaque ligne récap
+   pour scan visuel rapide. Image produit OU emoji fallback selon disponibilité. */
+.kiosk-summary-row-thumb[data-v-69099624] {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FAFAFA;
+  border: 1px solid #EFEFEF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1;
+}
+.kiosk-summary-row-thumb img[data-v-69099624] {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+.kiosk-summary-row-name[data-v-69099624] {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kiosk-tag-thumb[data-v-69099624] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  margin-right: 6px;
+  overflow: hidden;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.kiosk-tag-thumb img[data-v-69099624] {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+.kiosk-tag[data-v-69099624] {
+  display: inline-flex;
+  align-items: center;
+}
 .kiosk-summary-row.boisson[data-v-69099624] {
   padding-inline-start: 14px;
   color: var(--kiosk-text-2, var(--kiosk-text-muted));
@@ -5371,8 +5424,8 @@ to { transform: rotate(360deg);
     width: 100%;
     overflow: hidden;
     background: linear-gradient(90deg, var(--kiosk-primary-soft, #FFF0F2), var(--kiosk-surface-alt, #F7F3EC));
-    border-top: 2px solid var(--kiosk-primary, #E8001C);
-    border-bottom: 2px solid var(--kiosk-primary, #E8001C);
+    border-top: 2px solid var(--kiosk-primary, #F4501E);
+    border-bottom: 2px solid var(--kiosk-primary, #F4501E);
     padding: var(--kiosk-space-3, 12px) 0;
 }
 .kiosk-promo-track[data-v-26cfc002] {
@@ -5399,7 +5452,7 @@ to   { transform: translateX(-33%);
 }
 .kiosk-promo-card[data-v-26cfc002] {
     background: var(--kiosk-surface, #FFFFFF);
-    border: 2px solid var(--kiosk-primary, #E8001C);
+    border: 2px solid var(--kiosk-primary, #F4501E);
     border-radius: var(--kiosk-radius-3, 14px);
     padding: var(--kiosk-space-3, 12px) var(--kiosk-space-4, 16px);
     min-width: 280px;
@@ -5414,14 +5467,14 @@ to   { transform: translateX(-33%);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 .kiosk-promo-card__value[data-v-26cfc002] {
     font-family: var(--kiosk-font-display, inherit);
     font-weight: 900;
     font-size: calc(32px * var(--kiosk-text-scale, 1));
     line-height: 1;
-    color: var(--kiosk-primary-dark, #B8000F);
+    color: var(--kiosk-primary-dark, #DC4517);
 }
 .kiosk-promo-card__min[data-v-26cfc002] {
     font-size: calc(13px * var(--kiosk-text-scale, 1));
@@ -5543,8 +5596,8 @@ to   { transform: translateX(-33%);
   height: auto;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border: 2px solid var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 900;
@@ -5676,8 +5729,8 @@ to { transform: rotate(360deg);
   transform: scale(0.98);
 }
 .kiosk-sidebar-item.active[data-v-9a1bc680] {
-  border-color: var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border-color: var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   box-shadow: var(--kiosk-shadow-card);
 }
 .kiosk-sidebar-thumb-wrap[data-v-9a1bc680] {
@@ -6041,8 +6094,8 @@ to { transform: rotate(360deg);
 
 /* TOP CHIP — compte client */
 .kiosk-top-chip[data-v-9a1bc680] {
-  border-color: var(--kiosk-bold-primary-dark, #B8000F);
-  background: var(--kiosk-bold-primary-dark, #B8000F);
+  border-color: var(--kiosk-bold-primary-dark, #DC4517);
+  background: var(--kiosk-bold-primary-dark, #DC4517);
   color: #FFFFFF;
   font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
   font-weight: var(--kiosk-font-weight-bold, 700);
@@ -6131,7 +6184,7 @@ to { transform: rotate(360deg);
               background var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-product-add[data-v-9a1bc680]:hover:not(:disabled) {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: scale(1.08);
 }
 .kiosk-product-add[data-v-9a1bc680]:active:not(:disabled) {
@@ -6196,7 +6249,7 @@ to { transform: rotate(360deg);
               box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-bottom-pay[data-v-9a1bc680]:not(:disabled):hover {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: translateY(-2px);
   box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
 }
@@ -7276,7 +7329,7 @@ input[readonly] {
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=b70349381185d801162107a7ab787bd1"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=f98357a5999f3a959e266743b50b9d70"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -7291,7 +7344,7 @@ input[readonly] {
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778383636"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427522"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

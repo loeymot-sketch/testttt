@@ -95,8 +95,10 @@
             <div class="dropdown-group">
                 <button class="dropdown-btn flex items-center gap-2">
                     <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
+                        <!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] No JS chop ".."; CSS ellipsis + :title for full name on hover/SR -->
                         <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
-                            class="block font-semibold text-[#111827]">{{ textShortener(authInfo.name, 15) }}</b></h3>
+                            :title="authInfo.name"
+                            class="block font-semibold text-[#111827] overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px]">{{ authInfo.name }}</b></h3>
                     <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i>
                 </button>
                 <div
@@ -118,8 +120,8 @@
                                 class="lab lab-edit-2 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -z-10 lab-font-size-24 lab-font-color-1"></i>
                         </label>
 
-                        <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ textShortener(authInfo.name, 20)
-                        }}
+                        <!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] Render full name + title fallback; CSS handles overflow -->
+                        <h3 :title="authInfo.name" class="font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto">{{ authInfo.name }}
                         </h3>
                         <p class="text-xs mb-0.5">{{ authInfo.email }}</p>
                         <p dir="ltr" class="text-xs">{{ authInfo.country_code }}{{ authInfo.phone }}</p>

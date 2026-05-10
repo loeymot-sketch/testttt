@@ -1,4 +1,22 @@
 const mix = require('laravel-mix');
+const webpack = require('webpack');
+
+// [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+// Inject Vue 3 esm-bundler compile-time feature flags so the build no longer
+// emits the runtime warning:
+//   "Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly
+//    defined. You are running the esm-bundler build of Vue..."
+// These globals also unlock dead-code elimination of Options API / devtools
+// helpers in the production bundle (cf. https://link.vuejs.org/feature-flags).
+mix.webpackConfig({
+    plugins: [
+        new webpack.DefinePlugin({
+            __VUE_OPTIONS_API__: JSON.stringify(true),
+            __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+            __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        }),
+    ],
+});
 /*
  |--------------------------------------------------------------------------
  | Mix Asset Management

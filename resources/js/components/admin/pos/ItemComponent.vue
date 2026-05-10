@@ -8,12 +8,15 @@
       - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)
     -->
     <div ref="itemsGrid" class="pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8 md:mb-0">
+        <!-- [iter15-mega-fix D-010 round-7 2026-05-10] aria-label must reflect tile state: when disabled (rupture), 'Ajouter' is misleading -->
         <button v-for="item in items" :key="item.id || item"
             type="button"
             :class="['pos-v5-tile', tileClassList(item)]"
             :aria-disabled="isCatalogTileUnavailable(item) ? 'true' : 'false'"
             :disabled="isCatalogTileUnavailable(item)"
-            :aria-label="$t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
+            :aria-label="isCatalogTileUnavailable(item)
+                ? $t('a11y.unavailable_item', { item: item.name })
+                : $t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
             :data-pos-item-id="item.id"
             @keyup.enter.prevent="addItem(item)"
             @keyup.space.prevent="addItem(item)">

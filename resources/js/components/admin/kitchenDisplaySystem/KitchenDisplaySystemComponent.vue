@@ -321,10 +321,13 @@
                         >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(dineinOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
-                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(dineinOrder, item)">
-                          <i class="fa-solid fa-arrow-right"></i>
+                          :title="$t('button.kds_bump')"
+                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          @click.prevent.stop="kdsBump(dineinOrder, item)">
+                          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(dineinOrder.id, item.id)" type="button"
                           class="text-[11px] font-semibold text-primary underline decoration-primary/50"
@@ -464,10 +467,13 @@
                         >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(onlineOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
-                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(onlineOrder, item)">
-                          <i class="fa-solid fa-arrow-right"></i>
+                          :title="$t('button.kds_bump')"
+                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          @click.prevent.stop="kdsBump(onlineOrder, item)">
+                          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(onlineOrder.id, item.id)" type="button"
                           class="text-[11px] font-semibold text-primary underline decoration-primary/50"
@@ -607,10 +613,13 @@
                         >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(takeawayOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
-                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(takeawayOrder, item)">
-                          <i class="fa-solid fa-arrow-right"></i>
+                          :title="$t('button.kds_bump')"
+                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          @click.prevent.stop="kdsBump(takeawayOrder, item)">
+                          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(takeawayOrder.id, item.id)" type="button"
                           class="text-[11px] font-semibold text-primary underline decoration-primary/50"
@@ -753,10 +762,13 @@
                         >{{ item.instruction }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                        <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(kioskOrder.id, item.id)" type="button"
                           class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
-                          :title="$t('button.kds_bump')" @click.prevent.stop="kdsBump(kioskOrder, item)">
-                          <i class="fa-solid fa-arrow-right"></i>
+                          :title="$t('button.kds_bump')"
+                          :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
+                          @click.prevent.stop="kdsBump(kioskOrder, item)">
+                          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(kioskOrder.id, item.id)" type="button"
                           class="text-[11px] font-semibold text-primary underline decoration-primary/50"

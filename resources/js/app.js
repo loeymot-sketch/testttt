@@ -98,6 +98,12 @@ axios.interceptors.response.use(
 
             const cfg = error.config;
             if (canSilent && cfg && !cfg.__retry401Kiosk) {
+                // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] The action is
+                // now coalesced (kioskCart.js _inFlightKioskLogin), so N parallel
+                // 401s on `/frontend/menu` will share ONE re-login round-trip
+                // and ONE server-side token rotation — solving the burst race
+                // documented in `03-kiosk-blocked-no-frites.network.json` (7×
+                // 401 within 780ms before the fix).
                 return store
                     .dispatch('kioskCart/kioskLogin', {
                         username: String(auto.username).trim(),
@@ -106,12 +112,30 @@ axios.interceptors.response.use(
                     .then(() => axios.request({ ...cfg, __retry401Kiosk: true }))
                     .catch((e) => {
                         store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+                        // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Surface
+                        // a UI toast on terminal kiosk auth failure so the borne
+                        // operator (and the Wave-D / Wave-C playwright spec)
+                        // can detect it instead of seeing only the empty
+                        // `<!--v-if-->` error overlay. KioskAppComponent listens
+                        // on `kiosk-auth-failed` and routes the message through
+                        // its KioskToastComponent — same affordance owned by
+                        // every other kiosk failure path.
+                        try {
+                            window.dispatchEvent(new CustomEvent('kiosk-auth-failed', {
+                                detail: { url: cfg?.url || null, status: 401 },
+                            }));
+                        } catch (_) { /* ignore — never let dispatch break the chain */ }
                         router.push({ name: 'kiosk.login' }).catch(() => {});
                         return Promise.reject(e);
                     });
             }
 
             store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
+            try {
+                window.dispatchEvent(new CustomEvent('kiosk-auth-failed', {
+                    detail: { url: cfg?.url || null, status: 401, reason: 'no-retry' },
+                }));
+            } catch (_) { /* ignore */ }
             router.push({ name: 'kiosk.login' }).catch(() => {});
             return Promise.reject(error);
         }
