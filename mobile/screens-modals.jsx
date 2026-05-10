@@ -242,4 +242,37 @@ function Toast({ message, kind = 'info', onClose }) {
   );
 }
 
-Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ScreenOrderDetail, Toast });
+// ---------- Wallet V0 notice modal (commit-4 — DEC-10) ----------
+// V0 = informant modal explaining Apple/Google Wallet is pending production
+// deployment. Wired from ScreenLoyalty ACTIONS RAPIDES pills.
+// Phase 6 : when walletSpec.v0_mock === false, the pill swaps to fetch(endpoint)
+// flow returning .pkpass or save_url. See mobile/WALLET_PLAN.md.
+function ModalWalletV0Notice({ onClose, onSeeQR, kind = 'apple' }) {
+  const isApple = kind === 'apple';
+  const title = isApple ? 'Apple Wallet' : 'Google Wallet';
+  return (
+    <div data-testid="modal" data-modal-kind={'wallet-' + kind} role="dialog" aria-modal="true" aria-labelledby="modal-wallet-title">
+      <ModalShell onClose={onClose}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isApple ? 'var(--ink)' : 'var(--paper)', color: isApple ? '#fff' : 'var(--ink)', border: isApple ? 'none' : '1px solid var(--gray-2)', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          {isApple ? '' : 'G'} {title}
+        </div>
+        <h2 id="modal-wallet-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Bientôt<br/>disponible</h2>
+        <p style={{ margin: '0 0 18px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
+          Cette fonctionnalité sera disponible lors du déploiement en production. Pour l'instant, présente ton QR fidélité directement depuis l'app.
+        </p>
+        <div style={{ background: 'var(--cream)', borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 11, color: 'var(--gray-4)', lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>Pourquoi ?</div>
+          {isApple
+            ? 'Apple Wallet nécessite un Pass Type ID et un certificat WWDR (Apple Developer Program). En cours de provisioning.'
+            : 'Google Wallet nécessite un Issuer ID et un compte de service Google Cloud. En cours de provisioning.'}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50 }}>Fermer</button>
+          <button onClick={onSeeQR} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 50 }}>Voir mon QR</button>
+        </div>
+      </ModalShell>
+    </div>
+  );
+}
+
+Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ScreenOrderDetail, Toast });

@@ -986,14 +986,29 @@ function ScreenLoyalty({ go }) {
           )}
         </div>
 
-        {/* ACTIONS RAPIDES — wallet pills (filled in commit-4) + plastic card */}
+        {/* ACTIONS RAPIDES — Apple Wallet + Google Wallet + plastic card (DEC-10) */}
         {!isOptedOut && (
           <div style={{ padding: '14px 20px 0', display: 'flex', gap: 8, overflowX: 'auto' }}>
-            {/* commit-4 will insert wallet-apple-btn + wallet-google-btn pills here */}
+            <button
+              data-testid="wallet-apple-btn"
+              onClick={() => go('walletApple')}
+              aria-label="Ajouter à Apple Wallet"
+              style={{ flexShrink: 0, padding: 0, background: 'transparent', border: 0, cursor: 'pointer', borderRadius: 10 }}
+            >
+              <img src="uploads/add-to-apple-wallet-fr-stub.svg" alt="" height="40" style={{ display: 'block', borderRadius: 10 }}/>
+            </button>
+            <button
+              data-testid="wallet-google-btn"
+              onClick={() => go('walletGoogle')}
+              aria-label="Ajouter à Google Wallet"
+              style={{ flexShrink: 0, padding: 0, background: 'transparent', border: 0, cursor: 'pointer', borderRadius: 10 }}
+            >
+              <img src="uploads/add-to-google-wallet-fr-stub.svg" alt="" height="40" style={{ display: 'block', borderRadius: 10 }}/>
+            </button>
             <button
               data-testid="link-plastic-card-btn"
               onClick={() => go('link')}
-              style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--ink)', color: '#fff', border: 0, borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}
+              style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--ink)', color: '#fff', border: 0, borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', minHeight: 40 }}
             >
               <I.Card size={14}/>
               {account.plastic_card_linked ? 'Carte liée ✓' : 'Lier carte plastique'}

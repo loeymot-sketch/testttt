@@ -68,6 +68,7 @@
 <script src="data/loyaltyRewardState.js"></script>
 <script src="data/orders.js"></script>
 <script src="data/user.js"></script>
+<script src="data/wallet-spec.js"></script>
 <!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
 <script src="data/dev-helpers.js"></script>
 
@@ -132,6 +133,8 @@ function App() {
     if (s === 'gain')   { setModal('gain');   return; }
     if (s === 'redeem') { setModal('redeem'); return; }
     if (s === 'link')   { setModal('link');   return; }
+    if (s === 'walletApple')  { setModal('walletApple');  return; }
+    if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
     if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
     if (s === 'logout') {
       storage.clearAuth();
@@ -192,7 +195,9 @@ function App() {
       {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {modal === 'gain' && <ModalPointsGain onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <ModalRedeem onClose={()=>setModal(null)} onConfirm={()=>{ setModal(null); setToast({m:'Récompense activée — appliquée à ta prochaine commande', k:'success'}); }}/>}
-      {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+      {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+      {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {toast && <Toast message={toast.m} kind={toast.k} onClose={()=>setToast(null)}/>}
     </div>
   );
