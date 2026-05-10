@@ -1,0 +1,259 @@
+{
+  "wave": "D",
+  "run_n": 5,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410) — re-score after run-4 stash-pop restoration of run-2/3 fixes (D-001 kiosk-login limiter, D-003 pos-availability-banner, D-004/D2-005 Affichering, D-005 cashier widget perm gates, D-006 csp-report relocated, D2-001/C-007 kiosk meta CSP removed, D3-001 button.menu, D3-002 kiosk.order_type.*). Run-5 captured 2026-05-10. 8 states.",
+  "run4_verification": [
+    {
+      "run4_id": "D-001",
+      "run4_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "05-kiosk-after-rupture.network.json is `[]` (zero 4xx). 05-kiosk-after-rupture.dom.html: zero matches for `Request failed with status`, `axios`, `429`, `kiosk-login`. Kiosk surface renders /kiosk/idle cleanly (`Bienvenue !` h2 + `Sur place` + `À emporter` CTAs all present, exactly 1 match each). The named limiter `kiosk-login` (30/min) is back in effect; auto-reconnect bursts no longer stampede."
+    },
+    {
+      "run4_id": "D-002",
+      "run4_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "Spec tests/e2e/iter15-mega-admin-rupture-cascade.spec.js still uses `posPage.goto('/admin/pos', { waitUntil: 'domcontentloaded' })` at lines 189 and 292 to capture rupture/restore states. Every captured console contains `WebSocket connection to 'ws(s)://127.0.0.1:6001/app/app-key' failed: ERR_CONNECTION_REFUSED`. AvailabilityChannel push remains unverified end-to-end; cascade only proven via reload. appEnv-driven banner gating is still in place (no live `connection-status-banner--offline` element rendered in any DOM)."
+    },
+    {
+      "run4_id": "D-003",
+      "run4_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — HERO FIX RE-RESTORED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html contains: `<div data-v-7a8fd462=\"\" role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\" style=\"…background: rgb(255, 244, 244); border: 1px solid rgb(245, 191, 191); color: rgb(153, 27, 27)…\"><i class=\"fa-solid fa-circle-exclamation\" aria-hidden=\"true\"></i><span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span><button type=\"button\" class=\"pos-availability-banner__dismiss\" aria-label=\"Fermer\">×</button></div>`. PNG visually confirms a red banner at top of POS shell with the exact 'Article indisponible : Sprite 33cl' copy. State 07 (clean restore) has 0 matches for `pos-availability-banner` — banner unmounts on restore. The iter15 hero fix is durable in run-5."
+    },
+    {
+      "run4_id": "D-004",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "grep `Affichering` across 4 admin DOMs (01-admin-items-list, 02-admin-row-found, 03-admin-toggle-clicked-now-unavailable, 06-admin-row-restored) → 0/0/0/0. grep `Affichage de` → 1/1/1/1. State 03 footer renders `Affichage de 1 à 1 sur 1 entrées`; state 01-admin-items-list renders `Affichage de 1 à 10 sur 63 entrées`. FR DataTables locale fix landed again."
+    },
+    {
+      "run4_id": "D-005",
+      "run4_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "01-pos-with-sprite-available.network.json is `[]`. No `/api/admin/stock/low-alerts` and no `/api/admin/fiscal/z-report` 403s on cashier session. Cashier widget perm gates working as in run-2/3."
+    },
+    {
+      "run4_id": "D-006",
+      "run4_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "All 8 network.json files are `[]`. Zero `csp-report` 4xx entries (zero 400 Bad Request, zero 429 Too Many Requests). The compounded D4-001 (csp-report 400 mode) regression from run-4 is also gone. CSP-report endpoint relocation re-applied successfully."
+    },
+    {
+      "run4_id": "D-007",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "05-kiosk-after-rupture.dom.html zero matches for `Request failed with status`, `axios`, `too many requests`, `429`. Raw English error no longer leaks to kiosk surface — same posture as run-2/3."
+    },
+    {
+      "run4_id": "D-008",
+      "run4_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "01-pos-with-sprite-available.console.json has no untraced `Failed to load resource: 400` entries. Only allowlisted WS-refused noise + Vue feature-flag warnings (D-009 territory) + Vue itemsRaw warnings (D3-003 territory) remain."
+    },
+    {
+      "run4_id": "D-009",
+      "run4_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "Vue `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined` warning is back in run-5: 7 occurrences across 5 console.json (01-admin-items-list ×2, 01-pos ×2, 04-pos ×1, 05-kiosk ×1, 07-pos ×1). Run-4 verdict was PASS (vite.config.js define-injection had landed); run-5 has lost it. Stash-pop restoration appears to have reverted the vite.config.js feature-flag injection along with the broader run-2/3 fix bundle."
+    },
+    {
+      "run4_id": "D-010",
+      "run4_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html: `<button … class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\" aria-label=\"Ajouter Sprite 33cl, 1.50€\" data-pos-item-id=\"410\">`. aria-label still says 'Ajouter' on a disabled tile. The `pos-item-86-badge` overlay span still has no `role=\"status\"`. The role=alert banner now PARTIALLY compensates by announcing 'Article indisponible : Sprite 33cl' globally, but the tile-level a11y label is still misleading on focus."
+    },
+    {
+      "run4_id": "D-011",
+      "run4_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "03-admin-toggle-clicked-now-unavailable.dom.html shows the row state mutation correctly: `<span class=\"db-badge db-table-badge text-red-900 bg-red-100\">Rupture</span>` + `<button … class=\"… bg-rose-700\">Marquer disponible</button>` + `<span class=\"sr-only\" data-testid=\"admin-availability-status-410\">false</span>`. Visual + sr-only feedback exist. However NO rendered swal2-toast / aria-live region in the captured DOM (swal2 CSS bundles present but no live notification element). Toggle confirmation cue remains non-deterministic (auto-dismiss timing)."
+    },
+    {
+      "run4_id": "D-012",
+      "run4_severity": "P3",
+      "category": "visual_hash_drift",
+      "verdict": "PASS",
+      "evidence": "Restore path verified clean. State 07 Sprite tile: `class=\"pos-v5-tile pos-item-tile\" aria-disabled=\"false\"` (no `is-unavailable`), and 0 matches for `pos-availability-banner`. State 06 admin row: 0 `Rupture`, sr-only status `true`, button label `Marquer indisponible`."
+    },
+    {
+      "run4_id": "D-013",
+      "run4_severity": "P2",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Network capture filter (status>=400 OR duration>2000ms) still hides the 200-OK availability toggle XHR. No `/availability/snapshot` or broadcast-id evidence. Spec instrumentation unchanged since run-1."
+    },
+    {
+      "run4_id": "D2-001",
+      "run4_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "05-kiosk-after-rupture.dom.html: 0 matches for `Content-Security-Policy-Report-Only`. 05-kiosk-after-rupture.console.json: 0 matches for `report-only Content Security Policy`. Kiosk meta CSP removed again, browser no longer rejects + logs."
+    },
+    {
+      "run4_id": "D2-002",
+      "run4_severity": "P1",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Kiosk reaches /kiosk/idle (improvement vs run-4 where it was blocked at connection-error card), but spec idle-bypass click pattern still does not reach catalog: 0 matches for `Sprite` substring in 05-kiosk-after-rupture.dom.html. Cascade observability on borne remains indirect — we cannot visually confirm Sprite is rendered as épuisé on the kiosk catalog."
+    },
+    {
+      "run4_id": "D2-003",
+      "run4_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Same root cause as D-010. Tile aria-label still 'Ajouter Sprite 33cl, 1.50€' while aria-disabled=true. Overlay span still without role=\"status\"."
+    },
+    {
+      "run4_id": "D2-004",
+      "run4_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Both `ws://127.0.0.1:6001/app/app-key` and `wss://127.0.0.1:6001/app/app-key` ERR_CONNECTION_REFUSED entries persist on every captured console (14 total error occurrences across 8 captures). Allowlist explicitly mentions only `wss://127.0.0.1:6001` — `ws://` variant is technically not allowlisted but is the same dev-env class. WS server still down."
+    },
+    {
+      "run4_id": "D2-005",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — RE-RESTORED",
+      "evidence": "Same as D-004 verification — DataTables FR locale fixed."
+    },
+    {
+      "run4_id": "D3-001",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `button.menu` across all 8 dom.html and all 8 console.json → 0/0. POS hamburger raw-key leak still resolved."
+    },
+    {
+      "run4_id": "D3-002",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `kiosk.order_type` across all 8 dom.html and all 8 console.json → 0/0. grep `intlify.*Not found` across all 8 console.json → 0. No raw-key leaks and no missing-key warnings on any surface."
+    },
+    {
+      "run4_id": "D3-003",
+      "run4_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent…>` is back in run-5: 3 occurrences (01-pos-with-sprite-available, 04-pos-sprite-shows-rupture, 07-pos-sprite-clean-after-restore — every POS state). Run-4 verdict was PASS. Stash-pop restoration appears to have reverted PosComponent.vue's itemsRaw fix along with the broader bundle."
+    },
+    {
+      "run4_id": "D3-004",
+      "run4_severity": "P3",
+      "category": "silent_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "Same 8-state shape as run-3/run-4. Informational only."
+    },
+    {
+      "run4_id": "D4-001",
+      "run4_severity": "P0",
+      "category": "unexpected_4xx",
+      "verdict": "PASS — RESOLVED",
+      "evidence": "csp-report 400 Bad Request payload-validation failure mode from run-4 is gone. All network.json `[]`. Combined with D-006 PASS, csp-report ingest is clean (no 400s, no 429s)."
+    },
+    {
+      "run4_id": "D4-002",
+      "run4_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — RESOLVED",
+      "evidence": "grep `img-src` across all 8 console.json → 0. The localhost↔127.0.0.1 CSP img-src violation storm from run-4 is no longer firing. No `Loading the image '…/storage/…' violates the following Content Security Policy directive` entries on any state."
+    },
+    {
+      "run4_id": "D4-003",
+      "run4_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS — RESOLVED",
+      "evidence": "Confirms D-003 PASS — pos-availability-banner is back, mounted on rupture, unmounted on restore. The hero fix unmount regression is healed."
+    },
+    {
+      "run4_id": "D4-004",
+      "run4_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS — RESOLVED",
+      "evidence": "Confirms D-007 PASS — no raw axios error text rendered to kiosk surface."
+    },
+    {
+      "run4_id": "D4-005",
+      "run4_severity": "P1",
+      "category": "silent_error",
+      "verdict": "PASS — RESOLVED",
+      "evidence": "Confirms D-001 PASS — kiosk reaches /kiosk/idle (`Bienvenue !` + `Sur place` + `À emporter` all present). No longer blocked at connection-error card. Cascade-observability on borne is back to 'indirect-but-reachable' (still gated on D2-002 idle-bypass spec fix to reach catalog)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "D5-001",
+      "state_artifact": "iter15-mega-rupture/01-admin-items-list.console.json (+01-pos, +04-pos, +05-kiosk, +07-pos)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Vue feature-flag warning `Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined. You are running the esm-bundler build of Vue, which expects these compile-time feature flags to be globally injected via the bundler config in order to get better tree-shaking…` is back in run-5 (7 total occurrences across 5 console.json files). Run-4 had this fixed via vite.config.js define-injection; the stash-pop restoration appears to have reverted the vite.config.js change. Not user-facing but signals a build-hygiene regression that the previously-merged fix was lost.",
+      "fix_hint": "Re-apply the vite.config.js `define:` block injecting `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false` and the other Vue feature flags. Verify the change is committed (not just stash-popped) so it does not regress on the next stash cycle. See https://link.vuejs.org/feature-flags."
+    },
+    {
+      "id": "D5-002",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.console.json (+04-pos, +07-pos)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined on instance. at <PosComponent onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< undefined > > at <RouterView> at <DefaultComponent> at <App>` is back in run-5 (3 occurrences across all 3 POS states: 01, 04, 07). Run-4 had this fixed; the stash-pop restoration appears to have reverted PosComponent.vue's itemsRaw declaration. Render-time access to undefined data — symptom of a template binding referencing a missing data property or a race vs the async catalog fetch.",
+      "fix_hint": "Re-apply the PosComponent.vue itemsRaw fix: declare `itemsRaw: []` (or its equivalent computed/setup ref) so the template binding has a sane default before the catalog resolves. Verify the change is committed, not just stash-popped. Add a Playwright assertion that POS console contains zero Vue warns matching `/itemsRaw/` so the fix does not silently regress."
+    },
+    {
+      "id": "D5-003",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Carry-over of D2-002 / D4-005: kiosk surface in run-5 only reaches /kiosk/idle (`Bienvenue !` + `Sur place` + `À emporter` rendered) and never advances into the catalog. grep `Sprite` on 05-kiosk-after-rupture.dom.html → 0 matches; grep `data-pos-item-id=\"410\"` → 0. The cascade contract on the borne therefore remains visually unverified — we cannot prove Sprite is rendered as épuisé on the kiosk catalog screen. This is not new code defect (kiosk render path now works since D-001 is fixed) but is a SPEC-instrumentation gap that needs to be closed for run-N convergence.",
+      "fix_hint": "Spec: extend the idle-bypass click pattern in tests/e2e/iter15-mega-admin-rupture-cascade.spec.js (around line 229-248) to cover the actual idle CTAs `Sur place|À emporter`. Then assert the catalog mounts — locator for `kiosk-product-card` with at least N tiles — before snapping state 05. Until the kiosk reaches catalog the cascade contract on borne is structurally untested in this artifact set."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 1, "P2": 2, "P3": 0 },
+  "states_reviewed": 8,
+  "set_diff_vs_run4": {
+    "fixed_in_run5": [
+      "D-001 (P0: kiosk-login 429 storm + raw axios message) — stash-pop restored, network.json `[]`, kiosk reaches /kiosk/idle cleanly",
+      "D-003 (P0: pos-availability-banner role=alert hero fix) — stash-pop restored, banner durable in DOM with role=alert + aria-live=polite + 'Article indisponible : Sprite 33cl' copy",
+      "D-004 / D2-005 (P1: DataTables FR locale 'Affichering') — stash-pop restored, all 4 admin DOMs render 'Affichage de … à … sur … entrées'",
+      "D-005 (P1: cashier 403 on /api/admin/stock/low-alerts + /api/admin/fiscal/z-report) — stash-pop restored, network.json `[]`",
+      "D-006 (P1: csp-report 429 storm + D4-001 P0 csp-report 400 payload bug) — stash-pop restored, network.json `[]`",
+      "D-007 (P1: raw English axios message on kiosk) — stash-pop restored, no leak",
+      "D2-001 (P1: kiosk CSP report-only meta tag) — stash-pop restored, no meta tag, no console error",
+      "D4-002 (P0: CSP img-src localhost↔127.0.0.1 violation storm) — RESOLVED via D-006 fix bundle, 0 img-src console entries",
+      "D4-003 (P0: pos-availability-banner unmount) — RESOLVED via D-003 stash-pop",
+      "D4-004 (P1: kiosk axios error i18n leak) — RESOLVED via D-001/D-007 stash-pop",
+      "D4-005 (P1: kiosk fully blocked at connection-error card) — RESOLVED via D-001 stash-pop"
+    ],
+    "regressed_in_run5": [
+      "D-009 (P2: Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ feature-flag warning) — was PASS in run-4 (vite.config.js define-injection had landed), now FAIL with 7 occurrences across 5 consoles. Stash-pop did not include the vite.config.js fix.",
+      "D3-003 (P2: Vue warn 'itemsRaw' undefined on POS render) — was PASS in run-4, now FAIL with 3 occurrences across all 3 POS states. Stash-pop did not include the PosComponent.vue fix."
+    ],
+    "unchanged_open": [
+      "D-002 (P0 partial: spec still goto-reloads POS at line 189/292; WS still refused on every state; realtime cascade unverified end-to-end)",
+      "D-010 / D2-003 (P2: rupture tile aria-label still 'Ajouter Sprite 33cl, 1.50€' on disabled tile; overlay span still no role=status)",
+      "D-011 (P2 partial: admin toggle has visual RUPTURE pill + sr-only false but no rendered swal2-toast / aria-live region for the confirmation cue)",
+      "D-013 (P2: 200-OK toggle XHR still invisible to network capture; no /availability/snapshot evidence)",
+      "D2-002 (P1: kiosk reaches /kiosk/idle but spec idle-bypass does not reach catalog; cascade on borne still unverified visually)",
+      "D2-004 (P2: ws:// + wss:// 6001 ERR_CONNECTION_REFUSED on every state; WS server not started; allowlist hygiene gap on ws:// variant)",
+      "D3-004 (P3: 8-state shape inserted in run-3 still undocumented in spec docstring)"
+    ],
+    "new_in_run5": [
+      "D5-001 (P2: Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ warning back — stash-pop did not include vite.config.js fix)",
+      "D5-002 (P2: Vue warn 'itemsRaw' undefined back across all 3 POS states — stash-pop did not include PosComponent.vue fix)",
+      "D5-003 (P1: kiosk surface still capped at /kiosk/idle; cascade observability on borne remains indirect — same defect class as D2-002 but flagged as new because the underlying enabler D-001 is now fixed and the spec gap is the only remaining blocker on this contract)"
+    ]
+  },
+  "verdict": "AMBER → green-leaning. Run-5 is a strong recovery from the run-4 regression cliff: 11 prior P0/P1 findings fixed by the stash-pop restoration (including the iter15 hero fix D-003 pos-availability-banner, the kiosk surface unblock D-001, the DataTables Affichering i18n D-004, the cashier 403 gate D-005, the csp-report storm + 400 mode D-006/D4-001, the raw axios leak D-007, the kiosk meta CSP D2-001, the CSP img-src storm D4-002). P0 count: 0 (run-2/3 levels restored after run-4 spike to 3). P1 count: 1 (D5-003 = D2-002 carry-over). P2 count: 2 (D-009 / D3-003 stash-pop misses on the vite.config.js + PosComponent.vue fixes — flagged as D5-001/D5-002). All network.json `[]` across 8 states, zero 4xx/5xx of any kind. All `intlify Not found` warnings = 0. All `button.menu` raw aria-labels = 0. All `kiosk.order_type` raw keys = 0. The owner's central question on POS user-visibility cascade is answered YES: a real cashier sees the red `role=\"alert\" aria-live=\"polite\"` banner with copy 'Article indisponible : Sprite 33cl' the moment the rupture lands. Convergence is reachable in run-6 with two trivial commits (re-apply vite.config.js define-block + PosComponent.vue itemsRaw declaration) plus the spec idle-bypass extension (D5-003) — if those land, run-6 should be green on user-visibility. The structural D-002 caveat (WS server down, cascade only proven via reload) remains and is a HOLD on iter15 final sign-off until either (a) WS server is started locally and AvailabilityChannel push asserted on a non-reloading POS context, or (b) a documented architecture decision accepts reload-driven cascade as the V1 contract.",
+  "answer_to_owner_question": "YES — RUPTURE CASCADE VISIBLE FEEDBACK RESTORED (D-003). Quoted from 04-pos-sprite-shows-rupture.dom.html: `<div data-v-7a8fd462=\"\" role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\" …><i class=\"fa-solid fa-circle-exclamation\" aria-hidden=\"true\"></i><span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span><button type=\"button\" class=\"pos-availability-banner__dismiss\" aria-label=\"Fermer\">×</button></div>`. The PNG visually confirms a red rupture banner at the top of the POS shell (light red bg, dark red text, fa-circle-exclamation icon, dismiss button labeled 'Fermer'). A real cashier WILL see and a screen-reader user WILL hear (aria-live=polite) the rupture event. The Sprite tile also flips to `is-unavailable` with the 'Épuisé' overlay. The unmount in state 07 (clean restore) is also verified. CAVEAT (unchanged from runs 1–4): this banner appears AFTER `posPage.goto('/admin/pos')` reload at spec line 189; the websocket connection to :6001 is still refused on every captured state, so we cannot prove the same banner appears via AvailabilityChannel push without a navigation. In a real restaurant where the cashier never reloads, the banner only fires if the WS path actually delivers — that is still unverified end-to-end. Block iter15 final sign-off until WS broadcast is asserted on a non-reloading POS context. Convergence verdict: GO on user-visibility cascade (3 successful runs out of 4 captures: run-2 + run-3 + run-5; only run-4 lost it via stash drift). HOLD on real-time-sync verification + minor build-hygiene regressions (D5-001/D5-002) + kiosk catalog reachability (D5-003)."
+}

@@ -1,0 +1,240 @@
+{
+  "wave": "D",
+  "run_n": 4,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410) — re-score after run-3 'fixes' (focus: D3-001 button.menu, D3-002 kiosk.order_type.*, appEnv injection / banner gating). Run-4 captured 2026-05-10 04:55. Same 8 states as run-3.",
+  "run3_verification": [
+    {
+      "run3_id": "D3-001",
+      "run3_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS",
+      "evidence": "grep `aria-label=\"button.menu\"` across all 8 dom.html → 0 matches. grep `button.menu` across all 8 console.json → 0 matches. The POS hamburger raw-key leak from run-3 is fully resolved."
+    },
+    {
+      "run3_id": "D3-002",
+      "run3_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS",
+      "evidence": "grep `kiosk.order_type` across all 8 dom.html and console.json → 0 matches. The 16 intlify 'Not found' kiosk.order_type.* warnings observed in run-3 are gone in run-4. Kiosk surface still renders /kiosk/idle but no longer leaks the raw-key warnings."
+    },
+    {
+      "run3_id": "D3-003",
+      "run3_severity": "P2",
+      "category": "console_error",
+      "verdict": "PASS",
+      "evidence": "grep `itemsRaw` across all 8 console.json → 0 matches. The Vue `[Vue warn]: Property \"itemsRaw\" was accessed during render but is not defined` from run-3 POS states is no longer firing."
+    },
+    {
+      "run3_id": "D3-004",
+      "run3_severity": "P3",
+      "category": "silent_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "Same 8-state shape as run-3 (01-admin-items-list still inserted before 01-pos). Informational: still undocumented in spec docstring, but no longer a delta vs prior run."
+    },
+    {
+      "run3_id": "D-001",
+      "run3_severity": "P0",
+      "category": "silent_error",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "05-kiosk-after-rupture.network.json now contains 2x `POST /api/auth/kiosk-login → 429 Too Many Requests`. 05-kiosk-after-rupture.dom.html contains the visible text `Request failed with status code 429`. The named limiter that was loosened in run-2 has regressed — the 429 storm + raw axios message leak both returned. Run-2 / run-3 verdict was PASS; run-4 is a hard regression on a closed P0."
+    },
+    {
+      "run3_id": "D-002",
+      "run3_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "Spec still uses `posPage.goto('/admin/pos')` to capture rupture state. WS path is still REFUSED on every state console (ws:// + wss:// 6001 ERR_CONNECTION_REFUSED). Same gap as run-1/2/3. Realtime cascade via AvailabilityChannel still unverified end-to-end. The `appEnv`-driven banner gating IS working (no live `<div class=\"connection-status-banner...\">` element rendered, only CSS rules) — but that is cosmetic not protocol-level."
+    },
+    {
+      "run3_id": "D-003",
+      "run3_severity": "P0",
+      "category": "silent_error",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html now has ZERO matches for `pos-availability-banner`, `data-testid=\"pos-availability-banner\"`, `role=\"alert\"`, or visible text `Article indisponible`. The POS user-visibility cascade banner that was the run-1 → run-2 fix has DISAPPEARED. The Sprite tile still flips to `is-unavailable` (cascade tile-level still works) but there is now NO accessible role=alert + aria-live notification to the cashier. A real cashier mid-order will receive zero in-shell notification when an item flips épuisé. This is a P0-grade silent-state-change regression on what was the iter15 hero fix."
+    },
+    {
+      "run3_id": "D-004",
+      "run3_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "All 4 admin DataTables footers render `Affichering 1 to 1 of 1 entries` (states 02, 03, 06) and `Affichering 1 to 10 of 63 entries` (state 01-admin-items-list). Run-2 / run-3 had this fixed to `Affichage de … à … sur … entrées`. Run-4 has fully regressed to the run-1 broken concatenation."
+    },
+    {
+      "run3_id": "D-005",
+      "run3_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "01-pos-with-sprite-available.network.json contains `GET /api/admin/stock/low-alerts → 403` AND `GET /api/admin/fiscal/z-report → 403` on cashier session bootstrap. Console mirrors both as errors. Run-2 / run-3 had both gated out (network.json was []); run-4 has them back. Cashier role still hits admin-only endpoints on every POS open."
+    },
+    {
+      "run3_id": "D-006",
+      "run3_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "csp-report storm is back on every captured state: 01-admin-items-list 20× POST /api/frontend/csp-report → 400 Bad Request + 4× 429 (24 total), 01-pos 77× 429, 04-pos 63× 429, 07-pos 63× 429, 02/03/06-admin 1× 429 each. Run-2 / run-3 verdict was PASS (all network.json were `[]`); run-4 not only restores the 429 storm but introduces a NEW failure mode: csp-report endpoint now returns 400 (validation/payload bug) before throttling kicks in. Compounded regression."
+    },
+    {
+      "run3_id": "D-007",
+      "run3_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "05-kiosk-after-rupture.dom.html now contains the literal English string `Request failed with status code 429` rendered to the kiosk surface. Run-2 / run-3 had this as 0 matches. Coupled with D-001 regression, the raw axios error is once again leaking to end users on the borne."
+    },
+    {
+      "run3_id": "D-008",
+      "run3_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "POS state 01 console no longer emits the 5x 'Failed to load resource: 400 (Bad Request)' from unidentified source. The 400s now visible are explicitly tied to /api/frontend/csp-report (D-006 territory), not the unknown POS-bootstrap source from run-1."
+    },
+    {
+      "run3_id": "D-009",
+      "run3_severity": "P2",
+      "category": "console_error",
+      "verdict": "PASS",
+      "evidence": "grep `VUE_PROD_HYDRATION` across all 8 console.json → 0 matches. The Vue feature-flag warning that persisted across run-1/2/3 is finally absent. vite.config.js define-injection appears to have landed in run-4."
+    },
+    {
+      "run3_id": "D-010",
+      "run3_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html: `<button … class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\" aria-label=\"Ajouter Sprite 33cl, 1.50€\" data-pos-item-id=\"410\">`. aria-label still says 'Ajouter' on a disabled tile. Worse than prior runs because D-003 regression means the accompanying role=alert banner is also gone — SR users now have ZERO accessible signal of the rupture event."
+    },
+    {
+      "run3_id": "D-011",
+      "run3_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "PARTIAL — UNCHANGED",
+      "evidence": "03-admin-toggle-clicked-now-unavailable.dom.html still shows the visual RUPTURE pill + button label flip but no swal2-toast / role=status aria-live region. Same non-deterministic toast cue as runs 1–3."
+    },
+    {
+      "run3_id": "D-012",
+      "run3_severity": "P3",
+      "category": "visual_hash_drift",
+      "verdict": "PASS",
+      "evidence": "Restore path remains clean. State 07 Sprite tile: `class=\"pos-v5-tile pos-item-tile\" aria-disabled=\"false\"` (no is-unavailable). DOM-level cascade restore is genuine."
+    },
+    {
+      "run3_id": "D-013",
+      "run3_severity": "P2",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Network capture filter (status>=400 OR duration>2000ms) still hides the 200-OK availability toggle XHR. No /availability/snapshot or broadcast-id evidence. Spec instrumentation unchanged."
+    },
+    {
+      "run3_id": "D2-001",
+      "run3_severity": "P1",
+      "category": "console_error",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "05-kiosk-after-rupture.dom.html contains `<meta http-equiv=\"Content-Security-Policy-Report-Only\" …>` AGAIN. Console emits `The report-only Content Security Policy '…' was delivered via a <meta> element, which is disallowed. The policy has been ignored.` Run-2 marked this as new finding, run-3 marked PASS (meta tag removed). Run-4 has the meta tag and the browser-rejection error back. CSP enforcement on kiosk is structurally dead again."
+    },
+    {
+      "run3_id": "D2-002",
+      "run3_severity": "P1",
+      "category": "silent_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Kiosk state 05 still renders /kiosk/idle. `Bienvenue !` h2 not found in run-4 DOM (0 matches), and `Sprite` substring is also 0 — kiosk did not advance past the connection-error card AT ALL because of the D-001 regression (kiosk-login 429 → axios error → connection card renders the raw 'Request failed with status code 429' message). Cascade observation on borne is REGRESSED from indirect-but-reachable to fully blocked."
+    },
+    {
+      "run3_id": "D2-003",
+      "run3_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Same root cause as D-010. Tile aria-label still 'Ajouter Sprite 33cl, 1.50€' while aria-disabled=true. Overlay span still without role=\"status\"."
+    },
+    {
+      "run3_id": "D2-004",
+      "run3_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Both `ws://127.0.0.1:6001/app/app-key` and `wss://127.0.0.1:6001/app/app-key` ERR_CONNECTION_REFUSED entries persist on every POS/admin/kiosk console. WS server still down."
+    },
+    {
+      "run3_id": "D2-005",
+      "run3_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "FAIL — REGRESSED",
+      "evidence": "Same regression as D-004: `Affichering` is back across all 4 admin DOMs."
+    }
+  ],
+  "findings": [
+    {
+      "id": "D4-001",
+      "state_artifact": "iter15-mega-rupture/01-admin-items-list.network.json (+ 01-admin-items-list.console.json)",
+      "category": "unexpected_4xx",
+      "severity": "P0",
+      "evidence": "NEW failure mode on the CSP-report ingest: 20 entries of `POST /api/frontend/csp-report → 400 Bad Request` on admin first paint, BEFORE the throttle (which then kicks in at 4× 429 after the 400 burst). Run-1 only saw 429s; run-4 has the upstream endpoint silently rejecting payloads as malformed. Compounded with the 429 storm (D-006 regression), CSP signal on admin is now lost two ways: rejected-as-malformed early, then throttled-to-drop late. P0 because security telemetry is a production-facing signal and this represents new payload-validation breakage in addition to the throttling regression.",
+      "fix_hint": "Inspect the request body of the POST /api/frontend/csp-report calls — likely the CSP browser-report payload format changed (CSP3 nested `csp-report` envelope vs flat) and the Laravel controller's request validation rejects the new shape. Fix the controller's `Request::validate()` rules to accept both legacy and CSP3 payload shapes. After payload-validation is fixed, re-size the throttle bucket so first-paint bursts do not 429 (this is the run-1 root cause that was 'fixed' but has regressed)."
+    },
+    {
+      "id": "D4-002",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.dom.html, 04-pos-sprite-shows-rupture.dom.html, 07-pos-sprite-clean-after-restore.dom.html, plus all admin/POS console.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "CSP report-only directive blocks every storage image: 11+ entries per POS state of `Loading the image 'http://localhost:8000/storage/<id>/<file>.png' violates the following Content Security Policy directive: \"img-src 'self' data: blob: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.` This explains the csp-report 429 storm (D-006 regression) — every product image triggers a violation. Root cause: the CSP `img-src` allows `'self'` (which is 127.0.0.1:8000) but the rendered image URLs use `localhost:8000` (different origin under same-site rules). When the CSP enforces (drops report-only), every product image will be BLOCKED and the POS catalog will render with broken-image placeholders. Today it is silent (report-only). On enforcement day it is a full UI break.",
+      "fix_hint": "Either (a) normalize image URLs to use the same host as the page (127.0.0.1 ↔ localhost — pick one; AppServiceProvider URL::forceRootUrl + asset() helper consistency), or (b) add `localhost:8000` to the CSP img-src directive, or (c) prefer relative URLs / `Storage::url()` outputs that inherit the request host. Audit menu/item image storage paths globally — this is wave-A/POS-bootstrap territory."
+    },
+    {
+      "id": "D4-003",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.dom.html (compared to run-2 + run-3)",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "The `pos-availability-banner` user-visibility component delivered as the run-1 → run-2 hero fix for the rupture cascade is COMPLETELY ABSENT in run-4. The DOM for the rupture state (04) has 0 matches for `pos-availability-banner`, 0 matches for `data-testid=\"pos-availability-banner\"`, 0 matches for `role=\"alert\"`, and 0 matches for visible text 'Article indisponible'. The Sprite tile still flips to `is-unavailable` (catalog cascade still functions at the data layer) but there is now no in-shell role=alert + aria-live notification, and the misleading aria-label='Ajouter Sprite 33cl, 1.50€' (D-010) is now the ONLY signal a screen reader gets. This is a hard P0 regression of the iter15 cashier-visibility contract — the same contract the owner asked us to verify.",
+      "fix_hint": "Investigate why the `<PosAvailabilityBanner>` component (likely resources/js/views/pos/PosAvailabilityBanner.vue or similar) is no longer mounting in PosShell on rupture. Likely candidates: (a) Vuex store mutation `availability/setItemUnavailable` no longer triggers reactive re-render (state shape changed), (b) v-if guard now references a removed property, (c) component was removed from PosShell template by accident. Re-add the banner mount + add a Playwright regression assertion: spec line ~190 should `expect(posPage.locator('[data-testid=pos-availability-banner]')).toBeVisible()` BEFORE moving on to capture state 04, so a future regression fails the test rather than silently passes."
+    },
+    {
+      "id": "D4-004",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Compounded regression of D-001 + D-007: kiosk surface in run-4 renders the literal English error text `Request failed with status code 429` directly in the page DOM (presumably inside a kiosk-error / connection card). This is BOTH an i18n leak (untranslated English on a French-locale borne) AND a UX failure (axios technical error shown to a customer or shift staff). Same defect class as run-1 D-007, marked PASS in run-2/3, regressed in run-4.",
+      "fix_hint": "Re-introduce the kiosk axios-error handler that maps any axios `error.message` to a translated user-facing string ('Connexion temporairement indisponible. La borne réessaie automatiquement.'). The fact that this regressed AND the kiosk-login throttle regressed AND the CSP-meta-tag regressed simultaneously suggests the kiosk Blade template / kiosk Vue entry was reverted between run-3 and run-4 — investigate the kiosk-related git history since 2026-05-08."
+    },
+    {
+      "id": "D4-005",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html (vs run-3 same file)",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Run-3 D2-002 finding noted the kiosk reached /kiosk/idle but did not advance into the catalog. Run-4 is WORSE: the kiosk surface is now blocked at the connection-error card (rendering 'Request failed with status code 429') and never even reaches /kiosk/idle. grep `Bienvenue` and `Sur place` and `À emporter` on 05-kiosk-after-rupture.dom.html → 0 matches each. The previous indirect-but-reachable cascade observation is now FULLY blocked. The owner-facing question 'does the rupture cascade reach the borne?' is now unanswerable in run-4.",
+      "fix_hint": "Fix D-001 first (kiosk-login 429 limiter) — that unblocks /kiosk/idle. Then fix D2-002 (idle-bypass click pattern) — that gets the spec to the catalog. Until both are restored, the kiosk surface of the cascade contract is unverifiable."
+    }
+  ],
+  "summary": { "P0": 3, "P1": 2, "P2": 0, "P3": 0 },
+  "states_reviewed": 8,
+  "set_diff_vs_run3": {
+    "fixed_in_run4": [
+      "D3-001 (POS hamburger button.menu raw aria-label) — verified PASS, 0 matches across all 8 DOMs + consoles",
+      "D3-002 (kiosk.order_type.* missing keys, 16 intlify warnings) — verified PASS, 0 matches across all 8 consoles",
+      "D3-003 (Vue warn 'itemsRaw' undefined on POS render) — verified PASS, 0 matches",
+      "D-009 (Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ feature-flag warning) — finally PASS in run-4 (was FAIL in run-3 reviewer-corrected verdict). vite.config.js define-injection landed."
+    ],
+    "regressed_in_run4": [
+      "D-001 (P0: kiosk-login 429 storm + raw axios error message rendered to kiosk surface) — was PASS in run-2 + run-3, now FAIL in run-4",
+      "D-003 (P0: POS pos-availability-banner role=alert user-visibility cue on rupture) — was PASS in run-2 + run-3, now COMPLETELY ABSENT in run-4 — iter15 hero fix lost",
+      "D-004 / D2-005 (P1: DataTables FR locale 'Affichering 1 to N of M entries') — was PASS in run-2 + run-3, now back to broken concatenation in 4 admin DOMs",
+      "D-005 (P1: cashier session 403 on /api/admin/stock/low-alerts + /api/admin/fiscal/z-report) — was PASS in run-2 + run-3, both endpoints back on POS bootstrap",
+      "D-006 (P1: csp-report 429 storm across all states) — was PASS in run-2 + run-3 (all network.json `[]`), now back at 24/79/63/63 entries per state",
+      "D-007 (P1: raw English 'Request failed with status code 429' rendered to kiosk surface) — was PASS in run-2 + run-3, now back",
+      "D2-001 (P1: kiosk CSP report-only delivered via <meta> tag, browser-rejected, console error) — was PASS in run-3, now back"
+    ],
+    "unchanged_open": [
+      "D-002 (P0: spec still goto-reloads POS at line 189/292; WS still refused; realtime cascade unverified — partial mitigation only)",
+      "D-010 / D2-003 (P2: POS rupture tile aria-label still 'Ajouter Sprite 33cl, 1.50€' on disabled tile)",
+      "D-011 (P2: admin toggle has no aria-live status cue)",
+      "D-013 (P2: 200-OK toggle XHR still invisible to network capture; no /availability/snapshot evidence)",
+      "D2-002 (P1: kiosk still cannot reach catalog — now WORSE because of D-001 regression, not even at /kiosk/idle)",
+      "D2-004 (P2: ws:// + wss:// 6001 ERR_CONNECTION_REFUSED on every state; WS server still not started)",
+      "D3-004 (P3: 8-state shape inserted in run-3 still undocumented)"
+    ],
+    "new_in_run4": [
+      "D4-001 (P0: NEW csp-report 400 Bad Request failure mode in addition to 429 throttling — payload validation bug compounding D-006)",
+      "D4-002 (P0: CSP img-src violations on every product image because URLs use localhost while CSP self uses 127.0.0.1 — silent today, full UI break on CSP-enforce day)",
+      "D4-003 (P0: pos-availability-banner component silently absent on rupture state — iter15 hero fix unmounted between run-3 and run-4)",
+      "D4-004 (P1: raw axios error 'Request failed with status code 429' leaks to kiosk surface — i18n + UX defect compounding D-001 + D-007 regressions)",
+      "D4-005 (P1: kiosk surface no longer reaches /kiosk/idle in run-4 — fully blocked at connection-error card, cascade observability on borne is now FULLY OFF)"
+    ]
+  },
+  "verdict": "RED — convergence VIOLATED. Run-4 is a hard regression run. Three of the four explicit run-3 fixes verified PASS (D3-001 button.menu, D3-002 kiosk.order_type, D3-003 itemsRaw, D-009 Vue feature flag), and the appEnv banner-gating IS working (no live connection-status-banner in DOM). HOWEVER seven prior closed findings have regressed at once: D-001 (P0 kiosk-login 429), D-003 (P0 POS rupture banner GONE — the iter15 hero fix), D-004/D2-005 (P1 Affichering), D-005 (P1 cashier 403s), D-006 (P1 csp-report storm + new 400 mode), D-007 (P1 raw axios on kiosk), D2-001 (P1 CSP meta tag). Plus 5 NEW findings: D4-001 (csp-report 400 payload-validation bug, P0), D4-002 (CSP img-src localhost↔127.0.0.1 mismatch, P0), D4-003 (pos-availability-banner unmount, P0), D4-004 (axios error i18n leak, P1), D4-005 (kiosk fully blocked, P1). P0 count went from 0 (run-2/3) to 3 (run-4). The pattern of simultaneous regressions on kiosk Blade (CSP meta tag + kiosk-login throttle + axios error handler), POS Vue (availability-banner component + admin endpoint gating), and DataTables locale strongly suggests a branch revert / merge-conflict resolution that dropped run-2 fixes. BLOCK iter15 sign-off. Investigate the git history between run-3 capture and run-4 capture.",
+  "answer_to_owner_question": "NO — REGRESSED. The cashier user-visibility cascade no longer fires: the `pos-availability-banner` (red role=alert + aria-live='polite' banner with copy 'Article indisponible : Sprite 33cl' that landed in run-2) is COMPLETELY ABSENT from run-4 rupture state. The Sprite tile still flips to `is-unavailable` at the data layer, but a real cashier mid-order has no in-shell notification. SR users get the misleading aria-label 'Ajouter Sprite 33cl, 1.50€' (D-010 unchanged) as their only signal. On the kiosk side the situation is worse: the surface no longer reaches /kiosk/idle because the kiosk-login throttle regression (D-001) blocks bootstrap, and the raw English axios error 'Request failed with status code 429' is rendered directly to the borne. Compared to run-3 the system is materially less safe, not more. Block iter15 sign-off. Recommend: run `git log --oneline run-3-capture-time..run-4-capture-time` on resources/js/views/pos/, lang/fr.json, app/Http/Controllers/CspReportController, and resources/views/kiosk/ to find the revert."
+}

@@ -1,0 +1,56 @@
+{
+  "wave": "A",
+  "run_n": 5,
+  "findings": [
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown still renders 'Bonjour Admin Le Cayenn..' with literal '..' suffix on every captured admin state. 6/6 DOMs (01-dashboard-default, 01-dashboard-1920, 02-items-list-default, 03-items-toggle-row-visible, 04-order-status-screen-default, 05-observability-default) contain 'Cayenn..' (1 occurrence each). Hard-coded JS slice still chops trailing 'e' and appends '..'. No title attribute. Visual confirmation in 01-dashboard-default.png header dropdown. Identical to run-1/run-2/run-3/run-4 A-009.",
+      "fix_hint": "Same as run-1 — remove the substring slice in the shared AppHeader user-display computed prop or replace with CSS text-overflow: ellipsis + title attribute."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (DOM contains <small data-v-cc7abcfc=\"\">indisponibles</small>, displayed via text-transform: uppercase) still visually clipped to 'INDISPONIB(' in 02-items-list-default.png and 03-items-toggle-row-visible.png. The closing letters and any tooltip arrow get cut by the next tile's bounding box. No title attribute on the <small>. Identical to run-1/run-2/run-3/run-4 A-010.",
+      "fix_hint": "Same as run-1 — increase metric tile min-width (catalog-control-plane__metric class) or shorten label, plus add title attribute fallback."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown on customer-facing order-status-screen still renders 'Admin Le Cayenn..' with same hard-coded chop as A-009. Truncation propagates to all 6 captured states sharing AppHeader. Identical to run-1/run-2/run-3/run-4 A-012.",
+      "fix_hint": "Same fix as A-009 — fix the shared AppHeader once."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 0, "P2": 3, "P3": 0 },
+  "states_reviewed": 6,
+  "run_4_p0_p1_verification": [
+    { "id": "A-001", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "Observability page now renders the real 'Pipeline outbox & événements' dashboard. 05-observability-default.dom.html contains 7 occurrences of outbox/queue:work/websockets:serve/Pipeline outbox/événements; 0 occurrences of '404.gif' or 'Page non trouv' anywhere in the 6 DOMs. Screenshot confirms dashboard with queue:work DOWN + websockets:serve DOWN health cards, 327 queued events table, Rafraîchir / Rejouer Les Échecs / Purger Échecs > 24h CTAs." },
+    { "id": "A-002", "category": "i18n_leak", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of '/admin/undefined' or 'menu.undefined' as rendered DOM in any of the 6 DOMs. FrontendNavBar guards holding." },
+    { "id": "A-003", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of class='ws-reconnect-banner' as rendered DOM. The 3 textual matches in 04-order-status-screen-default.dom.html at lines 7159/7214/7256 are inside CSS comment, HTML comment, and JS comment respectively, all documenting the fix. Screenshot confirms no banner. appEnv: 'local' is correctly injected at line 7259 of the OSS DOM (master.blade.php line 141 fix sticks). Customer screen renders 12 orders in 'En préparation' and N°A0028 in 'Prêt' — both columns populated, no banner." },
+    { "id": "A-004", "category": "i18n_leak", "severity": "P1", "verdict": "PASS", "note": "Same root-cause as A-002 — fixed and stable." },
+    { "id": "A-005", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "0 'intlify' / 'Not found .* key' warnings across all 6 console.json files. lang/{fr,en,ar}.json button.menu fix from F3.1 holds clean across run-5." },
+    { "id": "A-006", "category": "unexpected_4xx", "severity": "P1", "verdict": "PASS", "note": "All 6 network.json files are empty arrays []. CSP-report endpoint relocation outside apiKey middleware (returning 204) holds — no 400 or 429 entries anywhere." },
+    { "id": "A-007", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "02-items-list-default.console.json contains only 1 generic Vue feature-flag warning + 2 allowlisted Pusher WS errors (ws + wss ERR_CONNECTION_REFUSED). 0 csp-report 400/429 noise." },
+    { "id": "A-008", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "04-order-status-screen-default.console.json contains 1 Vue feature-flag warning + 2 allowlisted Pusher WS errors + 4 AudioContext autoplay warnings (browser policy, level=warning not error, not in P1 scope). 0 csp-report 429 noise." }
+  ],
+  "run_4_to_run_5_regression_recovery": {
+    "regressions_recovered_in_run_5": ["A-001", "A-002", "A-003", "A-004", "A-006", "A-007", "A-008", "A-013", "A-014"],
+    "note": "All 9 run-4 regressions (3 P0 + 4 P1 + 1 P2 + 1 P3) recovered. The git stash pop restored the run-2/run-3 fix commits AND injected appEnv into master.blade.php line 141 ('appEnv: @json((string) app()->environment())'). The OSS ws-reconnect-banner gate now actually reads a real value instead of undefined. observability route + menu guard + csp-report relocation all hold simultaneously for the first time."
+  },
+  "set_equality_check_vs_run_2_run_3": {
+    "run_2_residuals": ["A-009", "A-010", "A-011", "A-012"],
+    "run_3_residuals": ["A-005-regression", "A-009", "A-010", "A-011", "A-012"],
+    "run_5_residuals": ["A-009", "A-010", "A-012"],
+    "delta": "A-011 (Prêt empty-state em-dash) NOT observable in run-5 — both OSS columns happen to be populated with real orders (12 in 'En préparation', N°A0028 in 'Prêt'), so the empty-state code path did not render. The underlying empty-state UX weakness still exists in code (no 'Aucune commande' copy / illustration), but per protocol category 5 the defect is detected on rendered DOM, not source — dropping from active findings list. Note for orchestrator: future runs with empty data may resurface A-011.",
+    "carried_over_unchanged": ["A-009", "A-010", "A-012"],
+    "new_in_run_5": []
+  },
+  "convergence_verdict": "GREEN — CONVERGENT. P0+P1 = 0. All 8 run-1/run-4 P0/P1 findings PASS. The cumulative fix bundle (A-001 observability route, A-002 menu.undefined FrontendNavBar guard, A-003 OSS appEnv-gated banner, A-005 i18n cluster, A-006/A-007/A-008 csp-report relocation outside apiKey middleware) all hold simultaneously. The critical injection (master.blade.php line 141 appEnv: @json((string) app()->environment())) is verified present in OSS DOM at line 7259 ('appEnv: \"local\"'), confirming the gates fire correctly. Wave A is merge-ready from a P0/P1 perspective. 3 P2 truncation residuals (A-009, A-010, A-012) carry over unchanged — non-blocking per protocol category 1 severity table, but a single AppHeader fix would resolve A-009+A-012 across the entire admin shell. No new issues introduced.",
+  "new_issues_introduced": []
+}
