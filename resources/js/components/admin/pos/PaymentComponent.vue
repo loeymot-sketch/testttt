@@ -820,6 +820,17 @@ export default {
                 return;
             }
 
+            // [test-e2e fix A-002 round-2 2026-05-10] 429 silent on POS order create —
+            // the global axios interceptor (bootstrap.js cluster-1 fix) already
+            // renders a localized `error.rate_limited` toast with role=alert.
+            // Suppress the local fallback here so the cashier does not see a
+            // duplicate toast where the second copy is raw English Laravel default
+            // ("Too Many Attempts."). The global interceptor is the single source
+            // of truth for 429 cashier feedback.
+            if (err?.response?.status === 429) {
+                return;
+            }
+
             const errors = err?.response?.data?.errors;
             if (errors && typeof errors === 'object') {
                 _.forEach(errors, (error) => {

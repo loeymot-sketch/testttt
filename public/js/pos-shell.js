@@ -3079,7 +3079,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].modalShow('#receiptModal');
     },
     handlePaymentError: function handlePaymentError(err) {
-      var _err$response2, _err$response3;
+      var _err$response2, _err$response3, _err$response4;
       if (err !== null && err !== void 0 && err._paymentTimeout) {
         _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err.message);
         return;
@@ -3090,14 +3090,25 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err.message);
         return;
       }
-      var errors = err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.errors;
+
+      // [test-e2e fix A-002 round-2 2026-05-10] 429 silent on POS order create —
+      // the global axios interceptor (bootstrap.js cluster-1 fix) already
+      // renders a localized `error.rate_limited` toast with role=alert.
+      // Suppress the local fallback here so the cashier does not see a
+      // duplicate toast where the second copy is raw English Laravel default
+      // ("Too Many Attempts."). The global interceptor is the single source
+      // of truth for 429 cashier feedback.
+      if ((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 ? void 0 : _err$response2.status) === 429) {
+        return;
+      }
+      var errors = err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.errors;
       if (errors && _typeof(errors) === 'object') {
         lodash__WEBPACK_IMPORTED_MODULE_0___default().forEach(errors, function (error) {
           _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(error[0]);
         });
         return;
       }
-      _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau. Veuillez réessayer.');
+      _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau. Veuillez réessayer.');
     },
     confirmOrder: function () {
       var _confirmOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
@@ -6375,7 +6386,7 @@ var FRESH_HIGHLIGHT_MS = 6000;
     confirmCancelOrder: function confirmCancelOrder() {
       var _this1 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var dlg, reason, _e$response2, _e$response3, msg, _t4;
+        var dlg, reason, _e$response2, _e$response3, _e$response4, status, backendMsg, msg, _t4;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.p = _context4.n) {
             case 0:
@@ -6415,9 +6426,30 @@ var FRESH_HIGHLIGHT_MS = 6000;
             case 6:
               _context4.p = 6;
               _t4 = _context4.v;
+              // [test-e2e/pos-kds-sync round-3 E-001 P0] silent-error visibility:
+              // backend 422/4xx on /pos-order/change-status was previously written
+              // only into cancelDialog.error inside the modal. Audit Wave E state 14
+              // showed zero [role=alert] / .toast in DOM → operator had no signal
+              // when the cancel was rejected (e.g. status already advanced past
+              // CANCELED-eligible). Now we ALSO fire alertService.error (vue-toastification
+              // toast with role="alert") so the rejection is visible at the page level,
+              // and we use a dedicated friendly message for HTTP 422 (rule violation).
               _this1.cancelDialog.busy = false;
-              msg = (_t4 === null || _t4 === void 0 || (_e$response2 = _t4.response) === null || _e$response2 === void 0 || (_e$response2 = _e$response2.data) === null || _e$response2 === void 0 ? void 0 : _e$response2.message) || (_t4 === null || _t4 === void 0 || (_e$response3 = _t4.response) === null || _e$response3 === void 0 || (_e$response3 = _e$response3.data) === null || _e$response3 === void 0 || (_e$response3 = _e$response3.errors) === null || _e$response3 === void 0 || (_e$response3 = _e$response3.reason) === null || _e$response3 === void 0 ? void 0 : _e$response3[0]) || _this1.$t('pos.cancel_order_error');
+              status = Number(_t4 === null || _t4 === void 0 || (_e$response2 = _t4.response) === null || _e$response2 === void 0 ? void 0 : _e$response2.status) || 0;
+              backendMsg = (_t4 === null || _t4 === void 0 || (_e$response3 = _t4.response) === null || _e$response3 === void 0 || (_e$response3 = _e$response3.data) === null || _e$response3 === void 0 ? void 0 : _e$response3.message) || (_t4 === null || _t4 === void 0 || (_e$response4 = _t4.response) === null || _e$response4 === void 0 || (_e$response4 = _e$response4.data) === null || _e$response4 === void 0 || (_e$response4 = _e$response4.errors) === null || _e$response4 === void 0 || (_e$response4 = _e$response4.reason) === null || _e$response4 === void 0 ? void 0 : _e$response4[0]);
+              if (status === 422) {
+                msg = backendMsg || _this1.$t('error.order_cancel_rejected');
+              } else if (status === 401 || status === 403) {
+                msg = backendMsg || _this1.$t('error.order_cancel_unauthorized');
+              } else if (status >= 400 && status < 500) {
+                msg = backendMsg || _this1.$t('pos.cancel_order_error');
+              } else {
+                msg = backendMsg || _this1.$t('pos.cancel_order_error');
+              }
               _this1.cancelDialog.error = msg;
+              try {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error(msg);
+              } catch (_) {/* defensive — never block dialog */}
             case 7:
               return _context4.a(2);
           }
