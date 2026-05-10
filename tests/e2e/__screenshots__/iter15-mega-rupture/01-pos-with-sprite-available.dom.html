@@ -20,8 +20,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427506">
+    <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778429390">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -628,6 +628,28 @@
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;
     --kiosk-product-media-bg: #FAFAFA !important;
+}
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
 }
 </style><style>/* =============================================================================
    FoodKing Kiosk — Typography "Bold Appétissant" (V1.2)
@@ -3779,7 +3801,14 @@ to { transform: rotate(360deg);
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  background: #1A1410;
+  /* [iter15-mega-fix C-042 round-8 2026-05-10] Was hardcoded `#1A1410` (dark
+     brown) which ignored the `--kiosk-idle-bg` light-theme override defined in
+     tokens-bold.css (white → #FFE8DD → Cayenne #F4501E gradient under
+     `.kiosk-app.kiosk-theme--light`). The body class is now correct
+     (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
+     consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
+     mandate (black/red Cayenne/yellow/white — no warm browns). */
+  background: var(--kiosk-idle-bg, #FFFFFF);
   /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
      vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
      en dark mode) — on fixe la couleur claire en dur. */
@@ -9867,7 +9896,7 @@ to { transform: rotate(360deg);
                   Aucun popup, aucun son — juste un signal visuel pour le caissier.
                   [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
                   réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
-                --><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--tracker pos-v5-btn--md is-tone-ready" data-testid="pos-tracker-open" title="Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">📋</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Suivi commandes</span></span><span data-v-8bcb670a="" class="pos-v5-btn__badge">16</span></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md" target="_blank" rel="noopener" title="Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🖥️</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Écran client</span></span><!--v-if--></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md pos-v4-floorplan-link" title="Plan de salle"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🪑</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Plan de salle</span></span><!--v-if--></a><!--
+                --><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--tracker pos-v5-btn--md is-tone-ready" data-testid="pos-tracker-open" title="Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">📋</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Suivi commandes</span></span><span data-v-8bcb670a="" class="pos-v5-btn__badge">19</span></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md" target="_blank" rel="noopener" title="Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🖥️</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Écran client</span></span><!--v-if--></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md pos-v4-floorplan-link" title="Plan de salle"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🪑</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Plan de salle</span></span><!--v-if--></a><!--
                   [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
                   Discoverable mais ne compete jamais avec paiement / tracker.
                   Backend bridge kioskHardware.openDrawer() inchangé.
@@ -9942,4 +9971,4 @@ to { transform: rotate(360deg);
           PAYMENT MODAL PART END
       =====================================--><!--====================================
       ADDRESS MODAL PART START
-  =====================================--><div data-v-2964abc9="" class="velmld-full-screen velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.15s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="16" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0.3s" dur="0.6s" repeatCount="indefinite"></animate></rect></svg><!----></div></div><div id="addressModal" class="modal"><div class="modal-dialog"><div class="modal-header"><h3 class="modal-title">Adresse</h3><button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"></button></div><div class="modal-body"><form><div class="form-row"><div class="form-col-12 map-height"><!--v-if--></div><div class="form-col-12"><label for="apartment" class="db-field-title font-medium text-sm my-0"></label></div><div class="form-col-12"><label for="apartment" class="db-field-title">Appartement</label><input class="db-field-control" type="text" id="apartment" style=""><!--v-if--></div><div class="form-col-12"><label for="home" class="db-field-title required">Label</label><div class="db-field-radio-group"><div class="db-field-radio"><div class="custom-radio"><input type="radio" id="home" class="custom-radio-f
+  =====================================--><div data-v-2964abc9="" class="velmld-full-screen velmld-overlay" style="background-color: rgba(255, 255, 255, 0.9); display: none;"><div data-v-2964abc9="" class="velmld-spinner"><svg data-v-2964abc9="" data-v-2964abc9-s="" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 24 30" xml:space="preserve"><rect x="0" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attributeName="opacity" attributeType="XML" values="0.2; 1; .2" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="height" attributeType="XML" values="10; 20; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate><animate attributeName="y" attributeType="XML" values="10; 5; 10" begin="0s" dur="0.6s" repeatCount="indefinite"></animate></rect><rect x="8" y="10" width="4" height="10" fill="#696cff" opacity="0.2"><animate attri

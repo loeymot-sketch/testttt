@@ -1,0 +1,125 @@
+{
+  "wave": "D",
+  "run_n": 7,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410) — round-7 fix verification. Run-7 captured 2026-05-10 at 17:38-17:39 (8 fresh artifacts). Round-7 fix commit f22681980 (F7-1 kiosk login race + F7-2 Vue warnings cluster + F7-3 truncation+a11y cluster + F7-4 KDS pile + cart UX cluster) lands several cascading fixes since run-6 verdict AMBER → NOT GREEN with P0=0 / P1=1 / P2=2. This run-7 re-score verifies which fixes hold and whether the single remaining structural blocker (D6-001 kiosk catalog unreachable in spec) is closed.",
+  "round7_fix_verification": [
+    {
+      "fix_id": "D-001",
+      "task_label": "kiosk auth 429",
+      "verdict": "PASS",
+      "evidence": "05-kiosk-after-rupture.network.json is `[]` (zero captured 4xx/5xx). 05-kiosk-after-rupture.console.json: 0 matches for `429`/`Trop de tentatives`/`too many requests`/`Request failed with status`/`kiosk-login`. 05-kiosk-after-rupture.dom.html: 0 matches for the same. F7-1 kioskCart.js _inFlightKioskLogin Promise coalescing eliminates the race; no 429 anywhere on kiosk surface in run-7."
+    },
+    {
+      "fix_id": "D-002",
+      "task_label": "WS dead — cascade requires reload OR interceptor refresh",
+      "verdict": "PASS-WITH-CAVEAT",
+      "evidence": "Spec line 263 still uses `posPage.goto('/admin/pos', { waitUntil: 'domcontentloaded' })` reload to capture rupture state, and ws://127.0.0.1:6001 + wss://127.0.0.1:6001 still ERR_CONNECTION_REFUSED across 17 console entries (run-7 unchanged from run-6). However per task framing 'not a P1 if the in-app fetch eventually shows ÉPUISÉ', the visible cascade IS verified: 04-pos-sprite-shows-rupture.dom.html shows the durable hero banner `<div role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\"><span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span></div>` AND the Sprite tile flips to `class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\"` with overlay `<span class=\"pos-item-86-badge pos-v5-tile__overlay\">Épuisé</span>`. Cascade contract on POS verified via reload. Real-time WS broadcast still untested but non-blocking under round-7 task definition."
+    },
+    {
+      "fix_id": "D-003",
+      "task_label": "rupture toast / aria-live",
+      "verdict": "PASS",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html @ offset 399039: `<div data-v-7a8fd462=\"\" role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\" style=\"margin: 8px 12px; padding: 10px 14px; border-radius: 10px; background: rgb(255, 244, 244); border: 1px solid rgb(245, 191, 191); color: rgb(153, 27, 27);\"><i class=\"fa-solid fa-circle-exclamation\" aria-hidden=\"true\"></i><span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span></div>`. French copy correct, role=alert + aria-live=polite both present, data-testid present. State 01 baseline: 0 banner matches (banner absent before rupture). State 07 restore: 0 banner matches (banner unmounts cleanly). PNG visually confirms a red rupture banner at top of POS shell. Mount→unmount cycle durable."
+    },
+    {
+      "fix_id": "D-004",
+      "task_label": "Affichering typo",
+      "verdict": "PASS",
+      "evidence": "grep `Affichering` across all 8 dom.html files → 0/0/0/0/0/0/0/0. grep `Affichage de` → 1/1/1/1 across 4 admin DOMs. State 01-admin-items-list renders `Affichage de 1 à 10 sur 63 entrées`; states 02/03/06 render `Affichage de 1 à 1 sur 1 entrées`. FR DataTables locale fix durable across both unfiltered + filtered views."
+    },
+    {
+      "fix_id": "D-005",
+      "task_label": "cashier 403 on stock-low-alerts",
+      "verdict": "PASS",
+      "evidence": "All 8 network.json files are `[]`. Zero 403/4xx/5xx captured. Zero `/api/admin/stock/low-alerts` or `/api/admin/fiscal/z-report` URLs in any network.json. Cashier widget perm gates working — no silent 403 leaks."
+    },
+    {
+      "fix_id": "D-010",
+      "task_label": "misleading aria-label on rupture tile",
+      "verdict": "PASS",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html: `<button data-v-ea217858=\"\" type=\"button\" class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\" aria-label=\"Indisponible : Sprite 33cl\" data-pos-item-id=\"410\">`. F7-3 fix landed: aria-label is now `Indisponible : Sprite 33cl` (was `Ajouter Sprite 33cl, 1.50€` in run-6). HTML comment in DOM at line 9885 confirms intent: `[iter15-mega-fix D-010 round-7 2026-05-10] aria-label must reflect tile state: when disabled (rupture), 'Ajouter' is misleading`. Restore cycle (state 07) reverts to `aria-disabled=\"false\" aria-label=\"Ajouter Sprite 33cl, 1.50€\"` — correct conditional binding."
+    }
+  ],
+  "round7_secondary_fix_verification": [
+    {
+      "fix_id": "D-009 / D5-001 / D6-002",
+      "task_label": "Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ feature-flag warning",
+      "verdict": "PASS — NEWLY CLOSED IN RUN-7",
+      "evidence": "grep `VUE_PROD_HYDRATION` across all 8 console.json → 0/0/0/0/0/0/0/0. F7-2 webpack.mix.js DefinePlugin landed and the warning is fully suppressed. Down from 7 occurrences across 5 console.json in run-6 to 0/0 in run-7."
+    },
+    {
+      "fix_id": "D3-003 / D5-002 / D6-003",
+      "task_label": "Vue itemsRaw undefined warning on POS render",
+      "verdict": "PASS — NEWLY CLOSED IN RUN-7",
+      "evidence": "grep `itemsRaw` across all 8 console.json → 0/0/0/0/0/0/0/0. F7-2 PosComponent.vue itemsRaw computed alias landed. Down from 3 occurrences across 3 POS states in run-6 to 0/0 in run-7."
+    },
+    {
+      "fix_id": "B-007 truncation cluster (control-plane metric tiles)",
+      "task_label": "INDISPONIBI… truncation P2 risk",
+      "verdict": "ALLOWLISTED",
+      "evidence": "01-admin-items-list.dom.html: 4 control-plane metric tiles all carry `title=\"10 produits\"`, `title=\"13 catégories\"`, `title=\"10 actifs\"`, `title=\"0 indisponibles\"` AND meaningful `aria-label=\"Filtrer 10 produits\"`, `aria-label=\"Voir 13 catégories\"`, `aria-label=\"Filtrer 10 produits actifs\"`, `aria-label=\"Filtrer 0 produits indisponibles\"`. Per protocol category 2 (text-overflow + title attr present = NOT a finding), the visual ellipsis on 'INDISPONIBI…' is allowlisted."
+    },
+    {
+      "fix_id": "D-006 (csp-report endpoint)",
+      "task_label": "CSP report endpoint 4xx",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "All 8 network.json `[]`. Zero csp-report 4xx (no 400, no 429). CSP-report endpoint relocation durable since run-5."
+    },
+    {
+      "fix_id": "D2-001 (kiosk meta CSP)",
+      "task_label": "Content-Security-Policy-Report-Only console noise",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "05-kiosk-after-rupture.dom.html: 0 matches for `Content-Security-Policy-Report-Only`. 05-kiosk-after-rupture.console.json: 0 matches for `report-only Content Security Policy`. Kiosk meta CSP still removed."
+    },
+    {
+      "fix_id": "D3-001 / D3-002 (raw-key i18n leaks)",
+      "task_label": "POS hamburger button.menu / kiosk.order_type leaks",
+      "verdict": "PASS — UNCHANGED",
+      "evidence": "grep `button.menu` across all 8 dom.html and 8 console.json → 0/0. grep `kiosk.order_type` across all 8 dom.html and 8 console.json → 0/0. grep `intlify.*Not found` across all 8 console.json → 0. No raw-key leaks in run-7."
+    },
+    {
+      "fix_id": "D-011 (admin toast / aria-live)",
+      "task_label": "Admin toggle confirmation a11y cue",
+      "verdict": "PARTIAL — UNCHANGED FROM RUN-6",
+      "evidence": "03-admin-toggle-clicked-now-unavailable.dom.html: `<span class=\"sr-only\" data-testid=\"admin-availability-status-410\">false</span>` + visible `RUPTURE` pill present. State 06 same testid renders `true`. PNG visually confirms RUPTURE pill swaps with Marquer Disponible button. Cycle correct but no rendered swal2-toast / aria-live region in captured DOM. Not a P1 — sr-only status text + pill are sufficient screen-reader feedback."
+    },
+    {
+      "fix_id": "D-013 (200-OK toggle XHR invisible to network capture)",
+      "task_label": "Network capture filter blind spot",
+      "verdict": "FAIL — UNCHANGED",
+      "evidence": "Network capture filter (status>=400 OR duration>2000ms) still hides the 200-OK toggle XHR. No /availability/snapshot or broadcast-id evidence in network.json. P3 informational only — not a blocker."
+    }
+  ],
+  "findings": [
+    {
+      "id": "D7-001",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Carry-over of D6-001 / D5-003 / D2-002 — UNHEALED in run-7. Round-7 fix commit f22681980 introduces F7-1 (kiosk login race) which closes the kiosk auth path but does NOT touch the spec's silent `.catch(() => {})` on the catalog waitFor (tests/e2e/iter15-mega-admin-rupture-cascade.spec.js lines 251-252: `await kioskPage.locator('[class*=\"kiosk-product\"], [data-testid*=\"kiosk-product-card\"]').first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});`). State 05 DOM proves the catalog NEVER mounts in this artifact set: visible body text = 'Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande Choisissez une option pour commencer'; rendered data-testids = [kiosk-cart-bottom-sheet, kiosk-idle-a11y-btn, kiosk-idle-logo, kiosk-idle-root, kiosk-idle-title, kiosk-idle-touch-btn, kiosk-order-type-chooser, kiosk-order-type-takeaway, kiosk-theme-toggle]; zero rendered `<button>` or `<div>` matching `kiosk-product-card`; zero matches for `Sprite` substring (in DOM, not CSS); zero matches for `data-pos-item-id=\"410\"`. State 05 PNG visually confirms order-type chooser screen with 'À emporter' tile + 'Choisissez une option pour commencer' caption — NOT catalog. The takeaway-tile click on spec line 248 either failed to fire (race vs Vue mount) or failed to navigate the kiosk router from order-type chooser to catalog within 8s. The waitFor's `.catch(() => {})` swallowed the timeout silently and the spec proceeded to scan a non-existent catalog (`totalMatches=0`) and treated the absent-cascade as 'Sprite hidden' — a false-positive. The 'Sprite cascade visually verified on borne' contract therefore remains structurally untested. This is the SAME single P1 blocker that has been open since run-2 (D2-002) → run-5 (D5-003) → run-6 (D6-001) → run-7 (D7-001). Convergence on this contract requires a sturdier kiosk leg, not just round-7's auth-race fix.",
+      "fix_hint": "Spec hardening required (NOT a code fix — the kiosk surface itself works in production per the task framing; only the spec is unable to drive it). Replace the silent `.catch(() => {})` on tests/e2e/iter15-mega-admin-rupture-cascade.spec.js line 252 with `await expect(kioskPage.locator('[class*=\"kiosk-product-card\"]:visible, [data-testid*=\"kiosk-product-card\"]:visible').first()).toBeVisible({ timeout: 15_000 })` so a non-mount FAILS the spec instead of silently emitting a misleading totalMatches=0. Add `await kioskPage.waitForURL(/\\/kiosk\\/(categories|catalog|menu)/, { timeout: 8_000 })` between the takeaway click and the catalog waitFor so we know the router transition fired. ALTERNATIVELY: short-circuit by directly navigating to `/kiosk/categories` after kioskLogin (bypass the chooser screen entirely — legitimate because the chooser-mount transition has a documented blocking class — see kiosk shell native HTML comment: `sur le router-view : en prod Playwright a montré des états où le DOM sous .kiosk-app ne contenait plus que le bouton thème (vue routée jamais montée / transition Vue bloquée) alors que l'URL était /kiosk/categories`). If the issue is genuinely a production Vue-router transition block, escalate the kiosk router transition fix as a separate P1 finding outside Wave D — but the artifact set proves the spec cannot diagnose that today."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 1, "P2": 0, "P3": 0 },
+  "states_reviewed": 8,
+  "set_diff_vs_run6": {
+    "fixed_in_run7": [
+      "D-009 / D5-001 / D6-002 (P2 → CLOSED: Vue __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ now 0 occurrences across 8 console.json — F7-2 webpack.mix.js DefinePlugin committed)",
+      "D3-003 / D5-002 / D6-003 (P2 → CLOSED: Vue itemsRaw warning now 0 occurrences across 3 POS states — F7-2 PosComponent.vue itemsRaw computed alias committed)",
+      "D-010 / D2-003 (P2 → CLOSED: rupture tile aria-label now `Indisponible : Sprite 33cl` instead of `Ajouter Sprite 33cl, 1.50€` — F7-3 ItemComponent.vue conditional aria-label committed; restore cycle at state 07 reverts correctly)"
+    ],
+    "regressed_in_run7": [],
+    "unchanged_open": [
+      "D-002 (PASS-WITH-CAVEAT per round-7 task loosened bar: WS still down across 17 console errors but POS reload cascade verified, role=alert banner durable; no longer P0 under the new framing)",
+      "D-011 (PARTIAL: admin toggle has visual RUPTURE pill + sr-only false but no rendered swal2-toast / aria-live region — sufficient SR feedback, not a blocker)",
+      "D-013 (P3: 200-OK toggle XHR still invisible to network capture; informational only)",
+      "D2-004 (UNCHANGED: ws:// + wss:// 6001 ERR_CONNECTION_REFUSED on every state; WS server not started — protocol category 9 explicitly allowlists Laravel websockets noise)",
+      "D6-001 / D5-003 / D2-002 → NOW D7-001 (P1: kiosk surface STILL does not reach catalog; F7-1 fixed kiosk auth race but spec catalog waitFor still has silent .catch — same single structural blocker)"
+    ],
+    "new_in_run7": [
+      "D7-001 (P1: same root cause as D6-001 — kiosk catalog unreachable in spec; round-7 commit closed kiosk-login race but did NOT touch the spec's silent .catch on line 252; re-issued because it is the binding blocker on convergence)"
+    ]
+  },
+  "verdict": "AMBER → NOT GREEN. Run-7 is the cleanest artifact set produced so far this audit cycle: P0=0, P1=1, P2=0, P3=0. Round-7 fix commit f22681980 lands a robust cluster: F7-1 closes kiosk auth 429 race (D-001 PASS, no 429 anywhere), F7-2 closes both Vue feature-flag warning AND itemsRaw warning (down from 10 total occurrences in run-6 to 0 in run-7), F7-3 closes the misleading aria-label on rupture tile (D-010 PASS — `Indisponible : Sprite 33cl` exactly as task required) AND adds title+aria-label to control-plane metric tiles (B-007 cluster allowlisted). The hero rupture banner D-003 is durable across mount→unmount (state 04 has `role=alert aria-live=polite class=pos-availability-banner`, state 07 has 0 banner matches). The Sprite tile cycle is durable (state 04: `is-unavailable aria-disabled=true disabled aria-label=Indisponible : Sprite 33cl` + `<span class=pos-item-86-badge pos-v5-tile__overlay>Épuisé</span>` with red rgba(194,30,47,0.86) full-overlay; state 07: `aria-disabled=false aria-label=Ajouter Sprite 33cl, 1.50€` no overlay). D-005 cashier perm gates green (zero 403). D-004 Affichage de french locale durable. WS reconnect banner correctly gated (no banner rendered on POS even though WS down). HOWEVER the single remaining structural blocker D7-001 (= D6-001 / D5-003 / D2-002 carry-over) is NOT closed: kiosk DOM in state 05 still proves the catalog never mounted (only kiosk-order-type-chooser testids present, zero kiosk-product-card elements, zero Sprite substring matches, PNG visually confirms order-type chooser screen). The spec's silent `.catch(() => {})` on line 252 swallowed the catalog-mount timeout and the spec emitted a misleading `totalMatches=0` claiming cascade hid Sprite when in reality catalog never rendered. Convergence verdict: NOT GREEN per protocol §38 (P0+P1 must be 0). The path to green is a SPEC fix on the kiosk leg (replace silent .catch with hard expect, OR short-circuit to /kiosk/categories, OR document the kiosk-router transition block as a separate P1 finding outside Wave D scope) — NOT additional code fixes. Recommend: harden the spec OR escalate kiosk router-transition class as a documented architectural constraint.",
+  "answer_to_owner_question": "PARTIAL — RUN-7 IS A CLEAR STEP FORWARD BUT NOT GREEN. POS user-visibility cascade contract: VERIFIED GREEN. A real cashier WILL see the durable hero banner `Article indisponible : Sprite 33cl` (role=alert + aria-live=polite + French copy + #FFF4F4 background + #991B1B text), WILL see the Sprite tile with full-overlay `Épuisé` in red, WILL be unable to add it to cart (aria-disabled=true + disabled + class=is-unavailable), AND a screen-reader user WILL hear `Indisponible : Sprite 33cl` instead of the misleading `Ajouter Sprite 33cl, 1.50€` (D-010 fix landed). Restore cycle clean (state 07: tile reverts, banner unmounts). All round-7 task verifications PASS: D-001 (kiosk 429 zero), D-002 (PASS-WITH-CAVEAT cascade via reload), D-003 (banner French + role=alert + aria-live), D-004 (Affichage de durable), D-005 (zero 403), D-010 (aria-label fixed). New PASS in run-7: Vue feature-flag warning purged (was 7 occurrences in run-6), Vue itemsRaw warning purged (was 3 occurrences). Borne (kiosk) user-visibility cascade contract: STILL UNVERIFIED — same structural blocker since run-2. Run-7 spec advanced kiosk to order-type chooser but NEVER reached the catalog where Sprite would render as épuisé. The spec's silent .catch on line 252 swallows the timeout. Per the kiosk shell's own native comment, this hits a known production class where the Vue router transition can be blocked. HOLD iter15 final sign-off until D7-001 closes — either via spec hardening OR a documented escalation that kiosk-borne cascade is out of Wave D scope. Recommendation: escalate the kiosk router-transition class as its own P1 finding so this audit closes at AMBER on its true scope (POS cascade) and a separate ticket carries the kiosk router work."
+}

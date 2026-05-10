@@ -20,8 +20,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427611">
+    <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778429491">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -628,6 +628,28 @@
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;
     --kiosk-product-media-bg: #FAFAFA !important;
+}
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
 }
 </style><style>/* =============================================================================
    FoodKing Kiosk — Typography "Bold Appétissant" (V1.2)
@@ -3779,7 +3801,14 @@ to { transform: rotate(360deg);
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  background: #1A1410;
+  /* [iter15-mega-fix C-042 round-8 2026-05-10] Was hardcoded `#1A1410` (dark
+     brown) which ignored the `--kiosk-idle-bg` light-theme override defined in
+     tokens-bold.css (white → #FFE8DD → Cayenne #F4501E gradient under
+     `.kiosk-app.kiosk-theme--light`). The body class is now correct
+     (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
+     consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
+     mandate (black/red Cayenne/yellow/white — no warm browns). */
+  background: var(--kiosk-idle-bg, #FFFFFF);
   /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
      vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
      en dark mode) — on fixe la couleur claire en dur. */
@@ -10202,7 +10231,7 @@ to { transform: rotate(360deg);
                   Aucun popup, aucun son — juste un signal visuel pour le caissier.
                   [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
                   réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
-                --><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--tracker pos-v5-btn--md is-tone-ready" data-testid="pos-tracker-open" title="Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">📋</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Suivi commandes</span></span><span data-v-8bcb670a="" class="pos-v5-btn__badge">16</span></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md" target="_blank" rel="noopener" title="Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🖥️</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Écran client</span></span><!--v-if--></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md pos-v4-floorplan-link" title="Plan de salle"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🪑</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Plan de salle</span></span><!--v-if--></a><!--
+                --><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--tracker pos-v5-btn--md is-tone-ready" data-testid="pos-tracker-open" title="Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">📋</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Suivi commandes</span></span><span data-v-8bcb670a="" class="pos-v5-btn__badge">20</span></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md" target="_blank" rel="noopener" title="Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)."><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🖥️</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Écran client</span></span><!--v-if--></a><a data-v-8bcb670a="" data-v-7a8fd462="" class="pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md pos-v4-floorplan-link" title="Plan de salle"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">🪑</span><span data-v-8bcb670a="" class="pos-v5-btn__label"><span data-v-7a8fd462="" class="hidden lg:inline">Plan de salle</span></span><!--v-if--></a><!--
                   [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
                   Discoverable mais ne compete jamais avec paiement / tracker.
                   Backend bridge kioskHardware.openDrawer() inchangé.
@@ -10246,6 +10275,4 @@ to { transform: rotate(360deg);
                   [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a
                   positive discount is set without a 3+ char reason. Backend
                   enforces this (OrderService L2007-2011) — mirror client-side.
-                --><button data-v-7a8fd462="" type="button" aria-disabled="false" data-testid="pos-discount-apply" class="flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition">Appliquer</button></div><div data-v-7a8fd462="" class="mb-3"><label data-v-7a8fd462="" for="pos-discount-reason" class="flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"><span data-v-7a8fd462="">Motif <!--v-if--></span><span data-v-7a8fd462="" class="text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case">0/255</span></label><input data-v-7a8fd462="" id="pos-discount-reason" type="text" maxlength="255" placeholder="Motif de la remise (3 caractères minimum)" data-testid="pos-discount-reason" class="w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)] border-[var(--pos-v5-border)]" style=""><!--v-if--></div><!--v-if--><div data-v-7a8fd462="" role="status" aria-live="polite" aria-atomic="true" class="mb-3"><div data-v-16cd6aff="" data-v-7a8fd462="" class="pos-v5-total-row pos-v5-total-row--default"><span data-v-16cd6aff="" class="pos-v5-total-row__label">Sous-total</span><span data-v-16cd6aff="" class="pos-v5-total-row__value"><!--v-if--><span data-v-16cd6aff="" class="pos-v5-total-row__amount pos-v5-tabular">2.00€</span></span></div><!--v-if--><!--v-if--><div data-v-16cd6aff="" data-v-7a8fd462="" class="pos-v5-total-row pos-v5-total-row--hero pos-v4-total-row" data-testid="pos-grand-total"><span data-v-16cd6aff="" class="pos-v5-total-row__label">Total</span><span data-v-16cd6aff="" class="pos-v5-total-row__value"><!--v-if--><span data-v-16cd6aff="" class="pos-v5-total-row__amount pos-v5-tabular">2.00€</span></span></div></div><!--v-if--><div data-v-7a8fd462="" class="flex flex-col gap-2"><button data-v-8bcb670a="" data-v-7a8fd462="" type="button" class="pos-v5-btn pos-v5-btn--primary-pay pos-v5-btn--xl pos-v5-btn--block pos-v4-action-pay" data-testid="pos-v5-pay"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">💳</span><span data-v-8bcb670a="" class="pos-v5-btn__label"> Commande · 2.00€</span><!--v-if--></button><button data-v-8bcb670a="" data-v-7a8fd462="" type="button" class="pos-v5-btn pos-v5-btn--danger-ghost pos-v5-btn--sm pos-v5-btn--block pos-v4-action-cancel"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">↻</span><span data-v-8bcb670a="" class="pos-v5-btn__label"> Annuler</span><!--v-if--></button></div></footer></aside><!--====================================
-        ADD CUSTOMER MODAL PART START
-=====================================--><div data-v-7a8fd462="" id="addCustomer" class="modal"><div data-v-7a8fd462="" class="modal-dialog"><div data-v-7a8fd462="" class="modal-header pb-3 border-b border-[#D9DBE9]"><h3 data-v-7a8fd462="" class="capitalize font-medium">Ajouter un client</h3><button data-v-7a8fd462="" type="button" class="modal-close fa-regular fa-circle-xmark" aria-label="Fermer"></button></div><div data-v-7a8fd462="" class="modal-body"><form data-v-7a8fd462=""><div data-v-7a8fd462="" class="row mb-3"><div data-v-7a8fd462="" class="col-12 sm:col-6"><label data-v-7a8fd462="" class="db-field-title required">Nom</label><input data-v-7a8fd462="" type="text" class="w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]" id="name" style=""><!--v-if--></div><div data-v-7a8fd462="" class="col-12 sm:col-6"><label data-v-7a8fd462="" for="phone" class="db-field-title">Téléphone</label><div data-v-7a8fd462="" class="w-full h-12 rounded-lg border px-4 flex items-center border-[#D9DBE9]"><div data-v-7a8fd462="" class="w-fit flex-shrink-0 dropdown-group"><button data-v-7a8fd462="" type="button" class="flex items-center gap-1 dropdown-btn">🇫🇷 <span data-v-7a8fd462="" class="whit
+                --><button data-v-7a8fd462="" type="button" aria-disabled="false" data-testid="pos-discount-apply" class="flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition">Appliquer</button></div><div data-v-7a8fd462="" class="mb-3"><label data-v-7a8fd462="" for="pos-discount-reason" class="flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"><span data-v-7a8fd462="">Motif <!--v-if--></span><span data-v-7a8fd462="" class="text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case">0/255</span></label><input data-v-7a8fd462="" id="pos-discount-reason" type="text" maxlength="255" placeholder="Motif de la remise (3 caractères minimum)" data-testid="pos-discount-reason" class="w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)] border-[var(--pos-v5-border)]" style=""><!--v-if--></div><!--v-if--><div data-v-7a8fd462="" role="status" aria-live="polite" aria-atomic="true" class="mb-3"><div data-v-16cd6aff="" data-v-7a8fd462="" class="pos-v5-total-row pos-v5-total-row--default"><span data-v-16cd6aff="" class="pos-v5-total-row__label">Sous-total</span><span data-v-16cd6aff="" class="pos-v5-total-row__value"><!--v-if--><span data-v-16cd6aff="" class="pos-v5-total-row__amount pos-v5-tabular">2.00€</span></span></div><!--v-if--><!--v-if--><div data-v-16cd6aff="" data-v-7a8fd462="" class="pos-v5-total-row pos-v5-total-row--hero pos-v4-total-row" data-testid="pos-grand-total"><span data-v-16cd6aff="" class="pos-v5-total-row__label">Total</span><span data-v-16cd6aff="" class="pos-v5-total-row__value"><!--v-if--><span data-v-16cd6aff="" class="pos-v5-total-row__amount pos-v5-tabular">2.00€</span></span></div></div><!--v-if--><div data-v-7a8fd462="" class="flex flex-col gap-2"><button data-v-8bcb670a="" data-v-7a8fd462="" type="button" class="pos-v5-btn pos-v5-btn--primary-pay pos-v5-btn--xl pos-v5-btn--block pos-v4-action-pay" data-testid="pos-v5-pay"><span data-v-8bcb670a="" class="pos-v5-btn__icon" aria-hidden="true">💳</span><span data-v-8bc

@@ -21,8 +21,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427586">
+    <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778429461">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -629,6 +629,28 @@
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;
     --kiosk-product-media-bg: #FAFAFA !important;
+}
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
 }
 </style><style>/* =============================================================================
    FoodKing Kiosk — Typography "Bold Appétissant" (V1.2)
@@ -3780,7 +3802,14 @@ to { transform: rotate(360deg);
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  background: #1A1410;
+  /* [iter15-mega-fix C-042 round-8 2026-05-10] Was hardcoded `#1A1410` (dark
+     brown) which ignored the `--kiosk-idle-bg` light-theme override defined in
+     tokens-bold.css (white → #FFE8DD → Cayenne #F4501E gradient under
+     `.kiosk-app.kiosk-theme--light`). The body class is now correct
+     (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
+     consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
+     mandate (black/red Cayenne/yellow/white — no warm browns). */
+  background: var(--kiosk-idle-bg, #FFFFFF);
   /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
      vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
      en dark mode) — on fixe la couleur claire en dur. */
@@ -7387,11 +7416,9 @@ input[readonly] {
        Owner spec :
         - Image produit + nom + prix + boutons +/− + delete (− avec count=1)
         - Affichage permanent quand cartCount > 0
-        - Design flat (pas marketing-heavy) --><!--v-if--><div data-v-9a1bc680="" class="kiosk-bottom-bar" role="region" aria-label="Panier et paiement" data-testid="kiosk-categories-bottom-bar"><div data-v-9a1bc680="" class="kiosk-bottom-summary"><button data-v-9a1bc680="" type="button" class="kiosk-bottom-cart" disabled="" aria-label="Ouvrir le panier — 0 articles" data-testid="kiosk-categories-cart-indicator"><span class="kiosk-bottom-cart-icon" aria-hidden="true" data-v-9a1bc680=""><svg width="20" height="20" viewBox="0 0 24 24" fill="none" data-v-9a1bc680=""><path d="M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-v-9a1bc680=""></path><circle cx="10" cy="19" r="1.6" fill="currentColor" data-v-9a1bc680=""></circle><circle cx="17" cy="19" r="1.6" fill="currentColor" data-v-9a1bc680=""></circle></svg></span><span data-v-9a1bc680="">0 article</span></button><div data-v-9a1bc680="" class="kiosk-bottom-total" data-testid="kiosk-categories-cart-total">€0,00</div></div><div data-v-9a1bc680="" class="kiosk-bottom-actions"><button data-v-9a1bc680="" type="button" class="kiosk-bottom-abandon" data-testid="kiosk-categories-abandon">Abandonner ma commande</button><button data-v-9a1bc680="" type="button" class="kiosk-bottom-pay" disabled="" data-testid="kiosk-categories-pay">Payer</button></div></div><div data-v-9a1bc680="" class="kiosk-wizard-overlay slide-up-enter-active slide-up-enter-to"><!-- V3.6.1 (2026-05-10) Adversarial fix P1-8 : :key force remount sur
-             changement d'item, garantit selections fresh (pas de ghost
-             fritesStyleExtraId carried-over d'un produit précédent). --><div data-v-ccf7fd5e="" data-v-9a1bc680="" class="kiosk-wizard" role="dialog" aria-modal="true" aria-labelledby="kiosk-wizard-title" tabindex="-1"><!-- Chargement item depuis route (mode edit) --><!-- Wizard complet --><h1 data-v-ccf7fd5e="" id="kiosk-wizard-title" class="kiosk-wizard-sr-only">Frites Seules</h1><div data-v-ccf7fd5e="" class="kiosk-wizard-header"><div data-v-ccf7fd5e="" class="kiosk-item-info"><h2 data-v-ccf7fd5e="" class="kiosk-item-name">Frites Seules</h2><!-- Kiosk Phase 9.1.2 — Badge allergènes persistent en header.
-               Safety FIC UE 1169/2011 + EAA 2025 : le client doit voir en permanence
-               les allergènes avant d'ajouter au panier, sans avoir à cliquer. --><!--v-if--></div><button data-v-ccf7fd5e="" type="button" class="kiosk-wizard-close" aria-label="Fermer la personnalisation"> × </button></div><div data-v-ccf7fd5e="" class="kiosk-step-visuals"><div data-v-ccf7fd5e="" class="kiosk-step-visual active"><div data-v-ccf7fd5e="" class="kiosk-step-visual-icon"><span data-v-ccf7fd5e="" class="kiosk-step-visual-fallback">•</span><span data-v-ccf7fd5e="" class="kiosk-step-visual-index">1</span></div><span data-v-ccf7fd5e="" class="kiosk-step-visual-label">Style frites</span></div><div data-v-ccf7fd5e="" class="kiosk-step-visual"><div data-v-ccf7fd5e="" class="kiosk-step-visual-icon"><img data-v-ccf7fd5e="" src="/storage/16/frites.png" alt="RÉCAP" class="kiosk-step-visual-img"><span data-v-ccf7fd5e="" class="kiosk-step-visual-index">2</span></div><span data-v-ccf7fd5e="" class="kiosk-step-visual-label">RÉCAP</span></div></div><div data-v-ccf7fd5e="" class="kiosk-progress-bar"><button data-v-ccf7fd5e="" type="button" class="kiosk-progress-arrow" aria-label="PRÉCÉDENT" disabled=""> ‹ </button><div data-v-ccf7fd5e="" class="kiosk-progress-track"><div data-v-ccf7fd5e="" class="kiosk-step-dot active"><span data-v-ccf7fd5e="" class="kiosk-step-number">1</span></div><div data-v-ccf7fd5e="" class="kiosk-step-dot"><span data-v-ccf7fd5e="" class="kiosk-step-number">2</span></div></div><button data-v-ccf7fd5e="" type="button" class="kiosk-progress-arrow" aria-label="SUIVANT"> › </button></div><div data-v-ccf7fd5e="" class="kiosk-live-composition" role="region" aria-label="Composition en direct" data-testid="kiosk-wizard-live-composition"><span data-v-ccf7fd5e="" class="kiosk-live-composition-title">Votre composition</span><div data-v-ccf7fd5e="" class="kiosk-live-composition-list"><span data-v-ccf7fd5e="" class="kiosk-live-composition-empty" data-testid="kiosk-composition-empty">Vos choix s'ajoutent ici au fur et à mesure.</span></div></div><div data-v-ccf7fd5e="" class="kiosk-step-question">Style frites</div><div data-v-ccf7fd5e="" class="kiosk-step-content"><div data-v-6ef0c3a6="" data-v-ccf7fd5e="" class="kiosk-step-frites-style step-slide-enter-from step-slide-enter-active" data-testid="kiosk-step-frites-style" step="[object Object]"><h3 data-v-6ef0c3a6="" class="kiosk-step-title">Personnalisez vos frites</h3><p data-v-6ef0c3a6="" class="kiosk-step-subtitle">Choisissez votre style préféré</p><div data-v-6ef0c3a6="" class="kiosk-frites-style-grid" role="radiogroup" aria-label="Personnalisez vos frites"><!-- Card NATURE (default — no extra selected, no price label) --><div data-v-6ef0c3a6="" class="kiosk-frites-style-card kiosk-frites-style-card--nature selected" role="radio" aria-checked="true" tabindex="0" data-testid="kiosk-frites-style-nature"><div data-v-6ef0c3a6="" class="kiosk-frites-style-media"><img data-v-6ef0c3a6="" src="/storage/16/frites.png" alt="" class="kiosk-frites-style-img" loading="lazy"></div><span data-v-6ef0c3a6="" class="kiosk-frites-style-name">Frites nature</span></div><!-- Cards UPGRADE (Cheddar fondu, Cheddar + Oignons) — 20% larger psychologique --><div data-v-6ef0c3a6="" class="kiosk-frites-style-card kiosk-frites-style-card--upgrade" role="radio" aria-checked="false" tabindex="0" data-testid="kiosk-frites-style-upgrade-715"><div data-v-6ef0c3a6="" class="kiosk-frites-style-media"><img data-v-6ef0c3a6="" src="/storage/16/frites.png" alt="" class="kiosk-frites-style-img" loading="lazy"></div><span data-v-6ef0c3a6="" class="kiosk-frites-style-name">Cheddar fondu</span><span data-v-6ef0c3a6="" class="kiosk-frites-style-price">+€1,00</span></div><div data-v-6ef0c3a6="" class="kiosk-frites-style-card kiosk-frites-style-card--upgrade" role="radio" aria-checked="false" tabindex="0" data-testid="kiosk-frites-style-upgrade-716"><div data-v-6ef0c3a6="" class="kiosk-frites-style-media"><img data-v-6ef0c3a6="" src="/storage/16/frites.png" alt="" class="kiosk-frites-style-img" loading="lazy"></div><span data-v-6ef0c3a6="" class="kiosk-frites-style-name">Cheddar + Oignons croustillants</span><span data-v-6ef0c3a6="" class="kiosk-frites-style-price">+€2,00</span></div></div></div></div><!--v-if--><div data-v-ccf7fd5e="" class="kiosk-nav"><div data-v-ccf7fd5e="" class="kiosk-nav-actions"><button data-v-ccf7fd5e="" type="button" class="kiosk-btn-abandon">ABANDONNER L'ARTICLE</button><button data-v-ccf7fd5e="" type="button" class="kiosk-btn-back" disabled="">PRÉCÉDENT</button><button data-v-ccf7fd5e="" type="button" class="kiosk-btn-next" aria-label="SUIVANT"><span data-v-ccf7fd5e="">SUIVANT</span></button></div><div data-v-ccf7fd5e="" class="kiosk-nav-total">Total €2,00</div></div><!-- P2 : confirmation avant abandon (évite erreur tactile) --><!--v-if--></div></div></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
+        - Design flat (pas marketing-heavy) --><div data-v-01b8ee94="" data-v-9a1bc680="" class="kiosk-cart-strip" role="region" aria-label="Aperçu de votre panier" data-testid="kiosk-cart-bottom-sheet"><div data-v-01b8ee94="" class="kiosk-cart-strip-header"><span data-v-01b8ee94="" class="kiosk-cart-strip-title">Votre commande</span><span data-v-01b8ee94="" class="kiosk-cart-strip-count" data-testid="kiosk-cart-bottom-sheet-count">1 article</span></div><div data-v-01b8ee94="" class="kiosk-cart-strip-list" role="list"><div data-v-01b8ee94="" class="kiosk-cart-strip-item" role="listitem" data-testid="kiosk-cart-bottom-sheet-item-0"><!-- V3 layout horizontal compact (owner request 2026-05-10) :
+               [IMG 64×64] Nom + prix          [- N +]
+               Card height ~80px, sheet total ~150px (-60% vs v2). --><div data-v-01b8ee94="" class="kiosk-cart-strip-thumb"><img data-v-01b8ee94="" src="/storage/16/frites.png" alt="Frites Seules" class="kiosk-cart-strip-img" loading="lazy"></div><div data-v-01b8ee94="" class="kiosk-cart-strip-info"><div data-v-01b8ee94="" class="kiosk-cart-strip-name">Frites Seules</div><div data-v-01b8ee94="" class="kiosk-cart-strip-price">€2,00</div></div><div data-v-01b8ee94="" class="kiosk-cart-strip-qty" role="group" aria-label="Quantité"><button data-v-01b8ee94="" type="button" class="kiosk-cart-strip-btn kiosk-cart-strip-btn--minus" aria-label="Supprimer du panier" data-testid="kiosk-cart-bottom-sheet-decrement-0"><svg data-v-01b8ee94="" width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path data-v-01b8ee94="" d="M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><span data-v-01b8ee94="" class="kiosk-cart-strip-quantity" data-testid="kiosk-cart-bottom-sheet-qty-0">1</span><button data-v-01b8ee94="" type="button" class="kiosk-cart-strip-btn kiosk-cart-strip-btn--plus" aria-label="Ajouter un" data-testid="kiosk-cart-bottom-sheet-increment-0"><svg data-v-01b8ee94="" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path data-v-01b8ee94="" d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg></button></div></div></div></div><div data-v-9a1bc680="" class="kiosk-bottom-bar" role="region" aria-label="Panier et paiement" data-testid="kiosk-categories-bottom-bar"><div data-v-9a1bc680="" class="kiosk-bottom-summary"><button data-v-9a1bc680="" type="button" class="kiosk-bottom-cart" aria-label="Ouvrir le panier — 1 articles" data-testid="kiosk-categories-cart-indicator"><span class="kiosk-bottom-cart-icon" aria-hidden="true" data-v-9a1bc680=""><svg width="20" height="20" viewBox="0 0 24 24" fill="none" data-v-9a1bc680=""><path d="M3 5h2l2.2 9.2a1 1 0 0 0 .98.8H18a1 1 0 0 0 .98-.8L21 8H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-v-9a1bc680=""></path><circle cx="10" cy="19" r="1.6" fill="currentColor" data-v-9a1bc680=""></circle><circle cx="17" cy="19" r="1.6" fill="currentColor" data-v-9a1bc680=""></circle></svg></span><span data-v-9a1bc680="">1 article</span></button><div data-v-9a1bc680="" class="kiosk-bottom-total" data-testid="kiosk-categories-cart-total">€2,00</div></div><div data-v-9a1bc680="" class="kiosk-bottom-actions"><button data-v-9a1bc680="" type="button" class="kiosk-bottom-abandon" data-testid="kiosk-categories-abandon">Abandonner ma commande</button><button data-v-9a1bc680="" type="button" class="kiosk-bottom-pay" data-testid="kiosk-categories-pay">Payer</button></div></div><!--v-if--></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
          Remplace le modal "Still here" simplifié par un overlay avec countdown
          + 2 CTA (Je suis là / Abandonner). Conforme WAI-ARIA 1.2 alertdialog. --><!--v-if--><!--v-if--><!-- Toast notifications globales --><div data-v-60fd5967="" data-v-6ffab5ed="" class="kiosk-toast-container" role="status" aria-live="polite" aria-relevant="additions text"></div></div></div>
 
@@ -7470,7 +7497,7 @@ input[readonly] {
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=d8507211bcd416f0c14ac714b0f56543"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -7485,7 +7512,7 @@ input[readonly] {
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427586"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778429461"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

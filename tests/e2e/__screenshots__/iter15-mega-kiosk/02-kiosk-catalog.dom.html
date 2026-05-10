@@ -21,8 +21,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=dbcfdfcf67431b867a03f7ba6bd03e36">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778427584">
+    <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778429459">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -629,6 +629,28 @@
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;
     --kiosk-product-media-bg: #FAFAFA !important;
+}
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
 }
 </style><style>/* =============================================================================
    FoodKing Kiosk — Typography "Bold Appétissant" (V1.2)
@@ -3780,7 +3802,14 @@ to { transform: rotate(360deg);
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  background: #1A1410;
+  /* [iter15-mega-fix C-042 round-8 2026-05-10] Was hardcoded `#1A1410` (dark
+     brown) which ignored the `--kiosk-idle-bg` light-theme override defined in
+     tokens-bold.css (white → #FFE8DD → Cayenne #F4501E gradient under
+     `.kiosk-app.kiosk-theme--light`). The body class is now correct
+     (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
+     consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
+     mandate (black/red Cayenne/yellow/white — no warm browns). */
+  background: var(--kiosk-idle-bg, #FFFFFF);
   /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
      vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
      en dark mode) — on fixe la couleur claire en dur. */
@@ -7527,7 +7556,7 @@ to { transform: rotate(360deg);
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=37c81c80d3c4d4f93cafd3dd2e6aceab"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=d8507211bcd416f0c14ac714b0f56543"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -7542,7 +7571,7 @@ to { transform: rotate(360deg);
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778427584"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778429459"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>
