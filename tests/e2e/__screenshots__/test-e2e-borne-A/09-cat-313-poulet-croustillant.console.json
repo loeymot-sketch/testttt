@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/51/chicken_wings.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442526145
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/53/tenders.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442526145
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/52/chicken_wings.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442526145
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/54/tenders.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442526146
+  }
+]

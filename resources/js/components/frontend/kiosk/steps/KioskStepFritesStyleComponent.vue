@@ -16,15 +16,8 @@
         @keydown.enter.prevent="select(null)"
         @keydown.space.prevent="select(null)"
       >
-        <div class="kiosk-frites-style-media">
-          <img
-            v-if="natureImage"
-            :src="natureImage"
-            alt=""
-            class="kiosk-frites-style-img"
-            loading="lazy"
-          />
-          <span v-else class="kiosk-frites-style-emoji" aria-hidden="true">🍟</span>
+        <div class="kiosk-frites-style-media kiosk-frites-style-media--nature">
+          <span class="kiosk-frites-style-emoji" aria-hidden="true">🍟</span>
         </div>
         <span class="kiosk-frites-style-name">{{ natureLabel }}</span>
       </div>
@@ -34,7 +27,7 @@
         v-for="extra in upgradeExtras"
         :key="extra.id"
         class="kiosk-frites-style-card kiosk-frites-style-card--upgrade"
-        :class="{ selected: selectedExtraId === extra.id }"
+        :class="[{ selected: selectedExtraId === extra.id }, variantClass(extra)]"
         role="radio"
         :aria-checked="selectedExtraId === extra.id"
         tabindex="0"
@@ -43,15 +36,12 @@
         @keydown.enter.prevent="select(extra.id)"
         @keydown.space.prevent="select(extra.id)"
       >
-        <div class="kiosk-frites-style-media">
-          <img
-            v-if="natureImage"
-            :src="natureImage"
-            alt=""
-            class="kiosk-frites-style-img"
-            loading="lazy"
-          />
-          <span v-else class="kiosk-frites-style-emoji" aria-hidden="true">🍟</span>
+        <div
+          class="kiosk-frites-style-media"
+          :class="`kiosk-frites-style-media--${variantSlug(extra)}`"
+        >
+          <span class="kiosk-frites-style-emoji" aria-hidden="true">{{ variantEmoji(extra) }}</span>
+          <span class="kiosk-frites-style-emoji-overlay" aria-hidden="true">🍟</span>
         </div>
         <span class="kiosk-frites-style-name">{{ extra.name }}</span>
         <span class="kiosk-frites-style-price">+{{ formatPrice(parseFloat(extra.price) || 0) }}</span>
@@ -100,9 +90,6 @@ export default {
             const id = this.selections?.fritesStyleExtraId;
             return id == null ? null : Number(id);
         },
-        natureImage() {
-            return this.item?.thumb || this.item?.cover || this.item?.image || null;
-        },
         natureLabel() {
             return this.$t('kiosk.wizard.step.frites_style.nature') || 'Frites nature';
         },
@@ -117,6 +104,30 @@ export default {
     methods: {
         select(extraId) {
             this.$emit('update', 'fritesStyleExtraId', extraId);
+        },
+        /**
+         * V3.7 (2026-05-10) — round 3 fix C-002 P1.
+         * Owner gate (Round 3) : la borne ne doit JAMAIS afficher l'image de
+         * l'item parent (salade/tenders) sur les cards `frites_style`. Comme
+         * `item_extras` ne possède pas de colonne thumb/image_url et qu'aucun
+         * asset dédié n'a été commit, on rend chaque card visuellement distincte
+         * via un emoji principal + emoji frites en overlay + une teinte de
+         * fond unique. Discriminant : nom de l'extra (case-insensitive).
+         */
+        variantSlug(extra) {
+            const name = String(extra?.name || '').toLowerCase();
+            if (name.includes('oignon')) return 'cheddar-oignons';
+            if (name.includes('cheddar')) return 'cheddar';
+            return 'upgrade';
+        },
+        variantClass(extra) {
+            return `kiosk-frites-style-card--${this.variantSlug(extra)}`;
+        },
+        variantEmoji(extra) {
+            const slug = this.variantSlug(extra);
+            if (slug === 'cheddar-oignons') return '🧅';
+            if (slug === 'cheddar') return '🧀';
+            return '🍟';
         },
     },
 };
@@ -213,6 +224,24 @@ export default {
     justify-content: center;
     border: 1px solid #EFEFEF;
     flex-shrink: 0;
+    position: relative;
+}
+
+/* V3.7 (2026-05-10) round 3 fix C-002 — fond distinct par variante pour
+   ne plus jamais afficher l'image de l'item parent. */
+.kiosk-frites-style-media--nature {
+    background: linear-gradient(135deg, #FFF8E5 0%, #FFE9B4 100%);
+    border-color: #F4B400;
+}
+
+.kiosk-frites-style-media--cheddar {
+    background: linear-gradient(135deg, #FFEFC2 0%, #FFC85A 100%);
+    border-color: #F2A33C;
+}
+
+.kiosk-frites-style-media--cheddar-oignons {
+    background: linear-gradient(135deg, #FFE2C2 0%, #F08C3D 100%);
+    border-color: #C25A1F;
 }
 
 .kiosk-frites-style-img {
@@ -229,6 +258,18 @@ export default {
 
 .kiosk-frites-style-card--upgrade .kiosk-frites-style-emoji {
     font-size: 64px;
+}
+
+/* Overlay frites emoji to keep "frites" identity on upgrade cards while the
+   primary emoji communicates the topping (cheddar / oignons). */
+.kiosk-frites-style-emoji-overlay {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 28px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+    pointer-events: none;
 }
 
 .kiosk-frites-style-name {

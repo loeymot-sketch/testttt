@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/47/salade_chevre.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442525536
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/48/salade_royale.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442525537
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/49/salade_saumon.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442525537
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/storage/50/salade_tunisienne.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778442525537
+  }
+]

@@ -21,8 +21,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778440353">
+    <link rel="stylesheet" href="/css/app.css?id=98d6dc50e323d2f7a7fa74f571a8684d">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778442598">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -7821,6 +7821,22 @@ to {
     justify-content: center;
     border: 1px solid #EFEFEF;
     flex-shrink: 0;
+    position: relative;
+}
+
+/* V3.7 (2026-05-10) round 3 fix C-002 — fond distinct par variante pour
+   ne plus jamais afficher l'image de l'item parent. */
+.kiosk-frites-style-media--nature[data-v-6ef0c3a6] {
+    background: linear-gradient(135deg, #FFF8E5 0%, #FFE9B4 100%);
+    border-color: #F4B400;
+}
+.kiosk-frites-style-media--cheddar[data-v-6ef0c3a6] {
+    background: linear-gradient(135deg, #FFEFC2 0%, #FFC85A 100%);
+    border-color: #F2A33C;
+}
+.kiosk-frites-style-media--cheddar-oignons[data-v-6ef0c3a6] {
+    background: linear-gradient(135deg, #FFE2C2 0%, #F08C3D 100%);
+    border-color: #C25A1F;
 }
 .kiosk-frites-style-img[data-v-6ef0c3a6] {
     width: 100%;
@@ -7835,6 +7851,18 @@ to {
 }
 .kiosk-frites-style-card--upgrade .kiosk-frites-style-emoji[data-v-6ef0c3a6] {
     font-size: 64px;
+}
+
+/* Overlay frites emoji to keep "frites" identity on upgrade cards while the
+   primary emoji communicates the topping (cheddar / oignons). */
+.kiosk-frites-style-emoji-overlay[data-v-6ef0c3a6] {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 28px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+    pointer-events: none;
 }
 .kiosk-frites-style-name[data-v-6ef0c3a6] {
     font-size: 1rem;
@@ -8183,7 +8211,10 @@ to {
             ossFallbackPolling: {
                 enabled: true,
                 intervalMsWhenConnected: 60000,
-                intervalMsWhenDisconnected: 5000,
+                // [test-e2e round-2 cluster-6 D-002 2026-05-10] Fallback aligned
+                // with catalog_v15.php (2000ms) so the polling cadence meets the
+                // SYNC-2 8s budget when WS is down.
+                intervalMsWhenDisconnected: 2000,
             },
             kdsFallbackPolling: {
                 highActivityBaseMs: 3000,
@@ -8238,7 +8269,7 @@ to {
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=4660aac139afa8c8e894d69a979ffb9d"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=3ed00836bb4932f0bbbc3ec33390f313"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -8253,7 +8284,7 @@ to {
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778440353"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778442598"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>
