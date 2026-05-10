@@ -92,59 +92,11 @@
       </div>
     </div>
 
-    <!-- Upgrade frites (catalogue extras) — avant boisson / sauces -->
-    <div v-if="showMenuFritesUpgrade" class="kiosk-boisson-section kiosk-frites-upgrade-section">
-      <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_upgrade_title') }}</h4>
-      <p class="kiosk-upgrade-hint">{{ $t('kiosk.wizard.menu.frites_upgrade_hint') }}</p>
-      <div class="kiosk-menu-options kiosk-upgrade-grid" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.frites_upgrade_title')">
-        <div
-          class="kiosk-menu-card kiosk-upgrade-card"
-          :class="{ selected: selectedBundledUpgradeId === null }"
-          role="radio"
-          tabindex="0"
-          :aria-checked="selectedBundledUpgradeId === null"
-          :aria-label="$t('kiosk.wizard.menu.frites_upgrade_standard')"
-          @click="applyBundledUpgradeSelection(null)"
-          @keydown.enter.prevent="applyBundledUpgradeSelection(null)"
-          @keydown.space.prevent="applyBundledUpgradeSelection(null)"
-        >
-          <span class="kiosk-menu-emoji">🍟</span>
-          <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_upgrade_standard') }}</span>
-          <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.frites_upgrade_standard_desc') }}</span>
-          <span v-if="selectedBundledUpgradeId === null" class="kiosk-menu-action active">✓</span>
-          <span v-else class="kiosk-menu-action">+</span>
-        </div>
-        <div
-          v-for="row in menuFritesUpgradeRows"
-          :key="row.id"
-          class="kiosk-menu-card kiosk-upgrade-card"
-          :class="{ selected: selectedBundledUpgradeId === row.id }"
-          role="radio"
-          tabindex="0"
-          :aria-checked="selectedBundledUpgradeId === row.id"
-          :aria-label="row.name"
-          @click="applyBundledUpgradeSelection(row.id)"
-          @keydown.enter.prevent="applyBundledUpgradeSelection(row.id)"
-          @keydown.space.prevent="applyBundledUpgradeSelection(row.id)"
-        >
-          <div class="kiosk-boisson-visual">
-            <img
-              v-if="row.thumb && !brokenUpgradeThumbs[String(row.id)]"
-              :src="row.thumb"
-              :alt="row.name"
-              class="kiosk-boisson-img"
-              loading="lazy"
-              @error="onUpgradeThumbError(row.id)"
-            />
-            <span v-else class="kiosk-boisson-emoji">🧀</span>
-          </div>
-          <span class="kiosk-menu-name">{{ row.name }}</span>
-          <span class="kiosk-menu-desc">+{{ formatPrice(row.price) }}</span>
-          <span v-if="selectedBundledUpgradeId === row.id" class="kiosk-menu-action active">✓</span>
-          <span v-else class="kiosk-menu-action">+</span>
-        </div>
-      </div>
-    </div>
+    <!-- [Round 5 — 2026-05-10] Inline frites_style upgrade section REMOVED.
+         Owner feedback: la duplication entre la page Menu et la page dédiée
+         « Quel style de frites ? » nuisait à la fluidité. Le choix Nature /
+         Cheddar fondu / Cheddar + Oignons est désormais EXCLUSIVEMENT porté
+         par KioskStepFritesStyleComponent (étape dédiée). -->
 
     <div v-if="showBoissonChoice && boissonList.length > 0" class="kiosk-boisson-section">
       <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
@@ -246,7 +198,9 @@ import {
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 import { getKioskExtraSauceUnitPrice, getKioskMenuAddonPrice } from '../../../../helpers/kioskPricing';
 import { kioskSauceVariationRowsForItem } from '../../../../helpers/kioskSauceCatalog';
-import { kioskIsBundledFritesMenuUpgradeExtra } from '../../../../helpers/kioskMenuBundledExtras';
+// [Round 5 — 2026-05-10] kioskIsBundledFritesMenuUpgradeExtra import removed
+// after suppression of the inline frites_style duplication section. The dedicated
+// KioskStepFritesStyleComponent is now the sole UI source for the upgrade.
 
 export default {
   name: 'KioskStepMenu',
@@ -266,7 +220,6 @@ export default {
       localFritesSauceOrder: this.normalizeFritesSauceOrder(this.selections),
       brokenBoissonThumbs: {},
       brokenFritesSauceThumbs: {},
-      brokenUpgradeThumbs: {},
     };
   },
   computed: {
@@ -302,29 +255,11 @@ export default {
       if (this.sauceIncludedFromCategory) return false;
       return true;
     },
-    menuFritesUpgradeRows() {
-      if (!this.item?.extras || !this.item.has_menu) return [];
-      return this.item.extras
-        .filter((e) => kioskIsBundledFritesMenuUpgradeExtra(e, this.item))
-        .map((e) => ({
-          id: e.id,
-          name: e.name,
-          price: parseFloat(e.convert_price || e.price || 0),
-          thumb: kioskResolveImageSrc(e),
-        }));
-    },
-    showMenuFritesUpgrade() {
-      return (
-        (this.localChoice === 'full' || this.localChoice === 'frites') &&
-        this.menuFritesUpgradeRows.length > 0
-      );
-    },
-    selectedBundledUpgradeId() {
-      for (const r of this.menuFritesUpgradeRows) {
-        if (this.selections.supplements?.[r.id]) return r.id;
-      }
-      return null;
-    },
+    // [Round 5 — 2026-05-10] menuFritesUpgradeRows / showMenuFritesUpgrade /
+    // selectedBundledUpgradeId computeds removed alongside the inline section.
+    // The dedicated KioskStepFritesStyleComponent now reads item.extras with
+    // group_label='frites_style' directly and writes to selections.fritesStyleExtraId.
+
     /**
      * Backward-compat alias: anciens tests / code externe utilisent `fritesSauceList`.
      */
@@ -437,20 +372,10 @@ export default {
     }
   },
   methods: {
-    bundledUpgradeExtraIds() {
-      return this.menuFritesUpgradeRows.map((r) => r.id);
-    },
-    applyBundledUpgradeSelection(extraId) {
-      const ids = this.bundledUpgradeExtraIds();
-      const next = { ...(this.selections.supplements || {}) };
-      for (const id of ids) {
-        next[id] = extraId != null && id === extraId;
-      }
-      this.$emit('update', 'supplements', next);
-    },
-    clearBundledUpgrades() {
-      this.applyBundledUpgradeSelection(null);
-    },
+    // [Round 5 — 2026-05-10] bundledUpgradeExtraIds / applyBundledUpgradeSelection
+    // / clearBundledUpgrades methods removed. The dedicated KioskStepFritesStyle
+    // step now owns the frites_style upgrade selection (writes to
+    // selections.fritesStyleExtraId, not selections.supplements[id]).
     normalizeFritesSauceOrder(sel) {
       if (Array.isArray(sel.fritesSauceOrder) && sel.fritesSauceOrder.length) {
         return [...sel.fritesSauceOrder];
@@ -467,9 +392,6 @@ export default {
     },
     onFritesSauceThumbError(key) {
       this.brokenFritesSauceThumbs = { ...this.brokenFritesSauceThumbs, [key]: true };
-    },
-    onUpgradeThumbError(id) {
-      this.brokenUpgradeThumbs = { ...this.brokenUpgradeThumbs, [String(id)]: true };
     },
     mapBoissonAddonRow(b) {
       const rawAddonItemId = b.item_addon_id ?? b.addon_item_id;
@@ -561,9 +483,10 @@ export default {
         this.$emit('update', 'fritesSauceOrder', []);
         this.$emit('update', 'fritesSauce', null);
       }
-      if (choice === 'none' || choice === 'boisson') {
-        this.clearBundledUpgrades();
-      }
+      // [Round 5 — 2026-05-10] clearBundledUpgrades() call removed alongside the
+      // inline upgrade picker. Wizard parent already clears
+      // selections.fritesStyleExtraId on menuChoice='none'|'boisson' (see
+      // KioskWizardComponent.vue ~line 1289).
       if (choice === 'none' || choice === 'frites') {
         this.localBoisson = null;
         this.$emit('update', 'boissonChoice', null);
@@ -649,18 +572,6 @@ export default {
   margin-right: auto;
 }
 
-.kiosk-upgrade-grid {
-  max-width: 900px;
-}
-
-.kiosk-upgrade-hint {
-  text-align: center;
-  font-size: 12px;
-  color: var(--kiosk-text-muted, #888);
-  margin: -6px 12px 14px;
-  line-height: 1.35;
-}
-
 .kiosk-boisson-included {
   text-align: center;
   font-size: 12px;
@@ -687,10 +598,6 @@ export default {
     background-color 0.18s ease,
     box-shadow 0.18s ease;
   position: relative;
-}
-
-.kiosk-upgrade-card {
-  min-height: 168px;
 }
 
 .kiosk-menu-card:active {
@@ -721,12 +628,6 @@ export default {
   font-size: 48px;
   margin-bottom: 12px;
   transition: transform 0.2s;
-}
-
-.kiosk-upgrade-card .kiosk-menu-emoji {
-  width: 88px;
-  height: 88px;
-  font-size: 36px;
 }
 
 .kiosk-menu-card.selected .kiosk-menu-emoji {

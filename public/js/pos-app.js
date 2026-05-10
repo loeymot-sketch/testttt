@@ -64982,6 +64982,13 @@ function resolveExplicitStepType(step) {
             return _this2.shouldShowStep(s.type);
           });
         case 'assiette':
+          // [owner-feedback 2026-05-10 round-5] Assiettes contiennent DÉJÀ
+          // frites + salade + pain + sauce de base (cf. description DB).
+          // Owner: "on va pas proposer un menu, on va proposer que le boisson
+          // et la sauce pour les frites". Pipeline simplifié = sauce + recap.
+          // Boisson upsell est géré post-cart via KioskUpsellComponent.
+          // Supplements/garnitures retirés du wizard pour ne pas alourdir
+          // l'UX (customer peut tap sur cat 318 sidebar pour add direct).
           return [].concat(_toConsumableArray(hasViandes ? [{
             type: 'viande',
             label: 'Viande(s)',
@@ -64990,14 +64997,6 @@ function resolveExplicitStepType(step) {
             type: 'sauce',
             label: 'Sauce',
             component: 'KioskStepSauce'
-          }, {
-            type: 'garnitures',
-            label: 'Garnitures',
-            component: 'KioskStepGarnitures'
-          }, {
-            type: 'supplements',
-            label: 'Suppléments',
-            component: 'KioskStepSupplements'
           }, {
             type: 'recap',
             label: 'Récap',
@@ -65033,23 +65032,15 @@ function resolveExplicitStepType(step) {
             return _this2.shouldShowStep(s.type);
           });
         case 'omelette':
-          // V3.8 (2026-05-10) Owner audit : Omelettes + Ojja contiennent DÉJÀ
-          // des frites dans le prix base ("+ Frites + Pain" en description DB).
-          // Phase D's menu+frites_style étaient FAUX (offre redondante).
-          // → revert : sauce + garnitures + supplements + recap (no menu).
-          // L'upsell boisson est géré post-cart via KioskUpsellComponent.
+          // [owner-feedback 2026-05-10 round-5] Omelettes + Ojja + Menus Enfants
+          // contiennent DÉJÀ frites + pain dans le prix base. Owner: "on va
+          // proposer que le boisson et la sauce pour les frites" — pipeline
+          // simplifié à sauce + recap. Boisson upsell géré post-cart via
+          // KioskUpsellComponent. Supplements/garnitures retirés du wizard.
           return [{
             type: 'sauce',
             label: 'Sauce',
             component: 'KioskStepSauce'
-          }, {
-            type: 'garnitures',
-            label: 'Garnitures',
-            component: 'KioskStepGarnitures'
-          }, {
-            type: 'supplements',
-            label: 'Suppléments',
-            component: 'KioskStepSupplements'
           }, {
             type: 'recap',
             label: 'Récap',
@@ -130796,11 +130787,14 @@ var kioskMenu = {
       // supplément cliqué standalone ne sait à quel produit il s'attache).
       // On la cache du welcome screen mais les items restent au catalog
       // pour POS staff + addons backend (360-403)."
-      // [A-001 round-2] Owner gate étendu : cats 306 (Tacos), 307 (Sandwichs),
-      // 308 (Burgers) doivent être masquées de la borne (audit owner
-      // 2026-05-10 — "scape les sandwich, burger et tacos"). Items restent
-      // au catalog pour POS staff + addons backend.
-      var KIOSK_HIDDEN_CATEGORY_IDS = new Set([306, 307, 308, 315]);
+      // [owner-feedback 2026-05-10 round-5] Cats 306/307/308 (sandwich/burger/
+      // tacos) restent VISIBLES sur la borne. Le précédent gating était une
+      // mis-interprétation de "scape les sandwich, burger et tacos" — l'intent
+      // owner était de SAUTER ces cats dans le scope de l'audit test E2E
+      // uniquement, pas de les retirer de l'UI.
+      // Cat 315 (Frites & Accompagnements) reste masquée — ses items sont
+      // des addons d'autres produits, accédés via les steps wizard.
+      var KIOSK_HIDDEN_CATEGORY_IDS = new Set([315]);
       var filtered = (s.categories || []).filter(function (c) {
         return !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10));
       });

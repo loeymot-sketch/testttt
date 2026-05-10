@@ -86,7 +86,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-menu[data-v-21dc92ce] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-21dc92ce] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-validation-hint.kiosk-menu-validation-hint[data-v-21dc92ce] {\n  text-align: center;\n  margin: 0 12px 12px;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));\n  border-radius: 12px;\n}\n.kiosk-validation-hint.kiosk-boisson-validation-hint[data-v-21dc92ce],\n.kiosk-validation-hint.kiosk-frites-sauce-validation-hint[data-v-21dc92ce] {\n  text-align: center;\n  margin: 0 0 12px;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));\n  border-radius: 12px;\n}\n.kiosk-menu-info[data-v-21dc92ce] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-21dc92ce] {\n  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));\n  border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));\n  color: var(--kiosk-primary, #f4501e);\n  padding: 6px 16px;\n  border-radius: 50px;\n  font-size: 12px;\n  font-weight: 700;\n}\n.kiosk-menu-price[data-v-21dc92ce] {\n  font-size: 16px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));\n  padding: 4px 12px;\n  border-radius: 50px;\n}\n.kiosk-menu-options[data-v-21dc92ce] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 22px 18px;\n  margin-bottom: 20px;\n  max-width: 820px;\n  margin-left: auto;\n  margin-right: auto;\n}\n.kiosk-upgrade-grid[data-v-21dc92ce] {\n  max-width: 900px;\n}\n.kiosk-upgrade-hint[data-v-21dc92ce] {\n  text-align: center;\n  font-size: 12px;\n  color: var(--kiosk-text-muted, #888);\n  margin: -6px 12px 14px;\n  line-height: 1.35;\n}\n.kiosk-boisson-included[data-v-21dc92ce] {\n  text-align: center;\n  font-size: 12px;\n  font-weight: 600;\n  color: var(--kiosk-success, #2e7d32);\n  margin: -6px 0 12px;\n}\n.kiosk-menu-card[data-v-21dc92ce] {\n  min-height: 196px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 14px 12px 16px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-upgrade-card[data-v-21dc92ce] {\n  min-height: 168px;\n}\n.kiosk-menu-card[data-v-21dc92ce]:active {\n  transform: scale(0.96);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — cards are role=radio / radiogroup. */\n.kiosk-menu-card[data-v-21dc92ce]:focus-visible,\n.kiosk-boisson-card[data-v-21dc92ce]:focus-visible {\n  outline: 3px solid rgba(244, 80, 30, 0.55);\n  outline-offset: 3px;\n}\n.kiosk-menu-card.selected[data-v-21dc92ce] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-menu-emoji[data-v-21dc92ce] {\n  width: 118px;\n  height: 118px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 48px;\n  margin-bottom: 12px;\n  transition: transform 0.2s;\n}\n.kiosk-upgrade-card .kiosk-menu-emoji[data-v-21dc92ce] {\n  width: 88px;\n  height: 88px;\n  font-size: 36px;\n}\n.kiosk-menu-card.selected .kiosk-menu-emoji[data-v-21dc92ce] {\n  transform: scale(1.1);\n}\n.kiosk-menu-name[data-v-21dc92ce] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n}\n.kiosk-menu-desc[data-v-21dc92ce] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n  text-align: center;\n  margin-top: 3px;\n}\n.kiosk-menu-card.selected .kiosk-menu-name[data-v-21dc92ce] {\n  color: var(--kiosk-primary, #f4501e);\n}\n.kiosk-boisson-section[data-v-21dc92ce] {\n  border-top: 1px solid var(--kiosk-border, #e0e0e0);\n  padding-top: 16px;\n  animation: fadeInUp-21dc92ce 0.3s ease;\n}\n@keyframes fadeInUp-21dc92ce {\nfrom {\n    opacity: 0;\n    transform: translateY(12px);\n}\nto {\n    opacity: 1;\n    transform: translateY(0);\n}\n}\n.kiosk-subtitle[data-v-21dc92ce] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 14px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-boisson-grid[data-v-21dc92ce] {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 20px 18px;\n  max-width: 900px;\n  margin: 0 auto;\n}\n.kiosk-boisson-card[data-v-21dc92ce] {\n  min-height: 170px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 12px 10px 14px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-boisson-card[data-v-21dc92ce]:active {\n  transform: scale(0.95);\n}\n.kiosk-boisson-card.selected[data-v-21dc92ce] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-boisson-visual[data-v-21dc92ce] {\n  width: 102px;\n  height: 102px;\n  margin-bottom: 10px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-boisson-img[data-v-21dc92ce] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-boisson-emoji[data-v-21dc92ce] {\n  width: 102px;\n  height: 102px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 40px;\n}\n.kiosk-boisson-name[data-v-21dc92ce] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  line-height: 1.2;\n  text-transform: uppercase;\n}\n.kiosk-boisson-card.selected .kiosk-boisson-name[data-v-21dc92ce] {\n  color: var(--kiosk-primary, #f4501e);\n}\n.kiosk-boisson-placeholder[data-v-21dc92ce] {\n  text-align: center;\n  color: var(--kiosk-text-muted, #999);\n  font-size: 14px;\n  padding: 16px 0;\n}\n.kiosk-frites-sauce-section[data-v-21dc92ce] {\n  border-top: 1px solid var(--kiosk-border, #e0e0e0);\n  padding-top: 20px;\n  margin-top: 8px;\n  animation: fadeInUp-21dc92ce 0.3s ease;\n}\n.kiosk-frites-sauce-price[data-v-21dc92ce] {\n  font-size: 11px;\n  font-weight: 700;\n  color: var(--kiosk-text, #333);\n  margin-top: 4px;\n  min-height: 14px;\n}\n.kiosk-frites-sauce-section .kiosk-sauce-order[data-v-21dc92ce] {\n  position: absolute;\n  top: 12px;\n  right: 20px;\n  width: 28px;\n  height: 28px;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 12px;\n  font-weight: 800;\n}\n.kiosk-menu-action[data-v-21dc92ce] {\n  position: absolute;\n  top: 12px;\n  right: 20px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: 0 3px 10px rgba(215, 38, 61, 0.2);\n  outline: 2px solid rgba(255, 255, 255, 0.85);\n}\n.kiosk-menu-action.active[data-v-21dc92ce] {\n  font-size: 13px;\n  font-weight: 800;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-menu[data-v-21dc92ce] {\n  padding: 6px 18px 24px;\n  background: transparent;\n  min-height: 100%;\n}\n.kiosk-step-title[data-v-21dc92ce] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 12px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-validation-hint.kiosk-menu-validation-hint[data-v-21dc92ce] {\n  text-align: center;\n  margin: 0 12px 12px;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));\n  border-radius: 12px;\n}\n.kiosk-validation-hint.kiosk-boisson-validation-hint[data-v-21dc92ce],\n.kiosk-validation-hint.kiosk-frites-sauce-validation-hint[data-v-21dc92ce] {\n  text-align: center;\n  margin: 0 0 12px;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));\n  border-radius: 12px;\n}\n.kiosk-menu-info[data-v-21dc92ce] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  margin-bottom: 14px;\n}\n.kiosk-info-badge[data-v-21dc92ce] {\n  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));\n  border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));\n  color: var(--kiosk-primary, #f4501e);\n  padding: 6px 16px;\n  border-radius: 50px;\n  font-size: 12px;\n  font-weight: 700;\n}\n.kiosk-menu-price[data-v-21dc92ce] {\n  font-size: 16px;\n  font-weight: 800;\n  color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));\n  padding: 4px 12px;\n  border-radius: 50px;\n}\n.kiosk-menu-options[data-v-21dc92ce] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 22px 18px;\n  margin-bottom: 20px;\n  max-width: 820px;\n  margin-left: auto;\n  margin-right: auto;\n}\n.kiosk-boisson-included[data-v-21dc92ce] {\n  text-align: center;\n  font-size: 12px;\n  font-weight: 600;\n  color: var(--kiosk-success, #2e7d32);\n  margin: -6px 0 12px;\n}\n.kiosk-menu-card[data-v-21dc92ce] {\n  min-height: 196px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 14px 12px 16px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-menu-card[data-v-21dc92ce]:active {\n  transform: scale(0.96);\n}\n\n/* [AUDIT 2026-04-17 C6] Keyboard focus ring — cards are role=radio / radiogroup. */\n.kiosk-menu-card[data-v-21dc92ce]:focus-visible,\n.kiosk-boisson-card[data-v-21dc92ce]:focus-visible {\n  outline: 3px solid rgba(244, 80, 30, 0.55);\n  outline-offset: 3px;\n}\n.kiosk-menu-card.selected[data-v-21dc92ce] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-menu-emoji[data-v-21dc92ce] {\n  width: 118px;\n  height: 118px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 48px;\n  margin-bottom: 12px;\n  transition: transform 0.2s;\n}\n.kiosk-menu-card.selected .kiosk-menu-emoji[data-v-21dc92ce] {\n  transform: scale(1.1);\n}\n.kiosk-menu-name[data-v-21dc92ce] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  text-transform: uppercase;\n}\n.kiosk-menu-desc[data-v-21dc92ce] {\n  font-size: 11px;\n  color: var(--kiosk-text-muted, #999);\n  text-align: center;\n  margin-top: 3px;\n}\n.kiosk-menu-card.selected .kiosk-menu-name[data-v-21dc92ce] {\n  color: var(--kiosk-primary, #f4501e);\n}\n.kiosk-boisson-section[data-v-21dc92ce] {\n  border-top: 1px solid var(--kiosk-border, #e0e0e0);\n  padding-top: 16px;\n  animation: fadeInUp-21dc92ce 0.3s ease;\n}\n@keyframes fadeInUp-21dc92ce {\nfrom {\n    opacity: 0;\n    transform: translateY(12px);\n}\nto {\n    opacity: 1;\n    transform: translateY(0);\n}\n}\n.kiosk-subtitle[data-v-21dc92ce] {\n  font-size: 15px;\n  font-weight: 600;\n  text-align: center;\n  margin: 0 0 14px;\n  color: var(--kiosk-text, #333);\n}\n.kiosk-boisson-grid[data-v-21dc92ce] {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 20px 18px;\n  max-width: 900px;\n  margin: 0 auto;\n}\n.kiosk-boisson-card[data-v-21dc92ce] {\n  min-height: 170px;\n  border-radius: 20px;\n  border: 1px solid var(--kiosk-border, #efefef);\n  background: var(--kiosk-surface, #fff);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 12px 10px 14px;\n  cursor: pointer;\n  touch-action: manipulation;\n  transition:\n    transform 0.18s ease,\n    border-color 0.18s ease,\n    background-color 0.18s ease,\n    box-shadow 0.18s ease;\n  position: relative;\n}\n.kiosk-boisson-card[data-v-21dc92ce]:active {\n  transform: scale(0.95);\n}\n.kiosk-boisson-card.selected[data-v-21dc92ce] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));\n  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);\n}\n.kiosk-boisson-visual[data-v-21dc92ce] {\n  width: 102px;\n  height: 102px;\n  margin-bottom: 10px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-boisson-img[data-v-21dc92ce] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.kiosk-boisson-emoji[data-v-21dc92ce] {\n  width: 102px;\n  height: 102px;\n  border-radius: 50%;\n  background: var(--kiosk-product-media-bg, #f7f7f8);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 40px;\n}\n.kiosk-boisson-name[data-v-21dc92ce] {\n  font-size: 12px;\n  font-weight: 700;\n  color: var(--kiosk-text, #444);\n  text-align: center;\n  line-height: 1.2;\n  text-transform: uppercase;\n}\n.kiosk-boisson-card.selected .kiosk-boisson-name[data-v-21dc92ce] {\n  color: var(--kiosk-primary, #f4501e);\n}\n.kiosk-boisson-placeholder[data-v-21dc92ce] {\n  text-align: center;\n  color: var(--kiosk-text-muted, #999);\n  font-size: 14px;\n  padding: 16px 0;\n}\n.kiosk-frites-sauce-section[data-v-21dc92ce] {\n  border-top: 1px solid var(--kiosk-border, #e0e0e0);\n  padding-top: 20px;\n  margin-top: 8px;\n  animation: fadeInUp-21dc92ce 0.3s ease;\n}\n.kiosk-frites-sauce-price[data-v-21dc92ce] {\n  font-size: 11px;\n  font-weight: 700;\n  color: var(--kiosk-text, #333);\n  margin-top: 4px;\n  min-height: 14px;\n}\n.kiosk-frites-sauce-section .kiosk-sauce-order[data-v-21dc92ce] {\n  position: absolute;\n  top: 12px;\n  right: 20px;\n  width: 28px;\n  height: 28px;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 12px;\n  font-weight: 800;\n}\n.kiosk-menu-action[data-v-21dc92ce] {\n  position: absolute;\n  top: 12px;\n  right: 20px;\n  width: 28px;\n  height: 28px;\n  border-radius: 50%;\n  background: var(--kiosk-primary, #d7263d);\n  color: var(--kiosk-text-on-red, white);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 20px;\n  line-height: 1;\n  box-shadow: 0 3px 10px rgba(215, 38, 61, 0.2);\n  outline: 2px solid rgba(255, 255, 255, 0.85);\n}\n.kiosk-menu-action.active[data-v-21dc92ce] {\n  font-size: 13px;\n  font-weight: 800;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -641,7 +641,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
 /* harmony import */ var _helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../helpers/kioskPricing */ "./resources/js/helpers/kioskPricing.js");
 /* harmony import */ var _helpers_kioskSauceCatalog__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../../helpers/kioskSauceCatalog */ "./resources/js/helpers/kioskSauceCatalog.js");
-/* harmony import */ var _helpers_kioskMenuBundledExtras__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../../helpers/kioskMenuBundledExtras */ "./resources/js/helpers/kioskMenuBundledExtras.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -650,16 +649,18 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" 
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 
 
 
 
+// [Round 5 — 2026-05-10] kioskIsBundledFritesMenuUpgradeExtra import removed
+// after suppression of the inline frites_style duplication section. The dedicated
+// KioskStepFritesStyleComponent is now the sole UI source for the upgrade.
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: 'KioskStepMenu',
@@ -681,8 +682,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       localBoisson: this.selections.boissonChoice || null,
       localFritesSauceOrder: this.normalizeFritesSauceOrder(this.selections),
       brokenBoissonThumbs: {},
-      brokenFritesSauceThumbs: {},
-      brokenUpgradeThumbs: {}
+      brokenFritesSauceThumbs: {}
     };
   },
   computed: {
@@ -718,40 +718,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (this.sauceIncludedFromCategory) return false;
       return true;
     },
-    menuFritesUpgradeRows: function menuFritesUpgradeRows() {
-      var _this$item,
-        _this = this;
-      if (!((_this$item = this.item) !== null && _this$item !== void 0 && _this$item.extras) || !this.item.has_menu) return [];
-      return this.item.extras.filter(function (e) {
-        return (0,_helpers_kioskMenuBundledExtras__WEBPACK_IMPORTED_MODULE_5__.kioskIsBundledFritesMenuUpgradeExtra)(e, _this.item);
-      }).map(function (e) {
-        return {
-          id: e.id,
-          name: e.name,
-          price: parseFloat(e.convert_price || e.price || 0),
-          thumb: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__.kioskResolveImageSrc)(e)
-        };
-      });
-    },
-    showMenuFritesUpgrade: function showMenuFritesUpgrade() {
-      return (this.localChoice === 'full' || this.localChoice === 'frites') && this.menuFritesUpgradeRows.length > 0;
-    },
-    selectedBundledUpgradeId: function selectedBundledUpgradeId() {
-      var _iterator = _createForOfIteratorHelper(this.menuFritesUpgradeRows),
-        _step;
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var _this$selections$supp;
-          var r = _step.value;
-          if ((_this$selections$supp = this.selections.supplements) !== null && _this$selections$supp !== void 0 && _this$selections$supp[r.id]) return r.id;
-        }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
-      }
-      return null;
-    },
+    // [Round 5 — 2026-05-10] menuFritesUpgradeRows / showMenuFritesUpgrade /
+    // selectedBundledUpgradeId computeds removed alongside the inline section.
+    // The dedicated KioskStepFritesStyleComponent now reads item.extras with
+    // group_label='frites_style' directly and writes to selections.fritesStyleExtraId.
     /**
      * Backward-compat alias: anciens tests / code externe utilisent `fritesSauceList`.
      */
@@ -790,15 +760,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     // la sauce principale couvre aussi les frites — on masque la section
     // « sauce frites » pour éviter le doublon visuel.
     sauceIncludedFromCategory: function sauceIncludedFromCategory() {
-      var _this$item2;
-      return Boolean((_this$item2 = this.item) === null || _this$item2 === void 0 ? void 0 : _this$item2.sauce_included_menu);
+      var _this$item;
+      return Boolean((_this$item = this.item) === null || _this$item === void 0 ? void 0 : _this$item.sauce_included_menu);
     },
     boissonList: function boissonList() {
-      var _this2 = this;
+      var _this = this;
       var boissonAddons = (0,_helpers_kioskDrinkAddons__WEBPACK_IMPORTED_MODULE_1__.kioskDrinkAddonRowsFromItem)(this.item);
       if (boissonAddons.length > 0) {
         return boissonAddons.map(function (b) {
-          return _this2.mapBoissonAddonRow(b);
+          return _this.mapBoissonAddonRow(b);
         });
       }
       return this.globalBoissonCatalogRows;
@@ -808,29 +778,29 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         _this$$store2,
         _this$$store3,
         _this$$store4,
-        _this3 = this;
+        _this2 = this;
       var items = ((_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.getters) === null || _this$$store === void 0 ? void 0 : _this$$store['kioskMenu/allItems']) || ((_this$$store2 = this.$store) === null || _this$$store2 === void 0 || (_this$$store2 = _this$$store2.state) === null || _this$$store2 === void 0 || (_this$$store2 = _this$$store2.kioskMenu) === null || _this$$store2 === void 0 ? void 0 : _this$$store2.items) || [];
       if (!Array.isArray(items) || items.length === 0) return [];
       var categories = ((_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3 = _this$$store3.getters) === null || _this$$store3 === void 0 ? void 0 : _this$$store3['kioskMenu/categories']) || ((_this$$store4 = this.$store) === null || _this$$store4 === void 0 || (_this$$store4 = _this$$store4.state) === null || _this$$store4 === void 0 || (_this$$store4 = _this$$store4.kioskMenu) === null || _this$$store4 === void 0 ? void 0 : _this$$store4.categories) || [];
       var drinkCategoryIds = new Set((Array.isArray(categories) ? categories : []).filter(function (cat) {
-        return _this3.isDrinkCategory(cat);
+        return _this2.isDrinkCategory(cat);
       }).map(function (cat) {
         return String(cat.id);
       }));
       var seen = new Set();
       return items.filter(function (row) {
-        return _this3.isDrinkCatalogItem(row, drinkCategoryIds);
+        return _this2.isDrinkCatalogItem(row, drinkCategoryIds);
       }).map(function (row) {
         var _ref, _ref2, _row$id, _ref3;
         var id = (_ref = (_ref2 = (_row$id = row.id) !== null && _row$id !== void 0 ? _row$id : row.item_id) !== null && _ref2 !== void 0 ? _ref2 : row.addon_item_id) !== null && _ref !== void 0 ? _ref : row.name;
         var key = String((_ref3 = id !== null && id !== void 0 ? id : row.name) !== null && _ref3 !== void 0 ? _ref3 : '');
         if (!key || seen.has(key)) return null;
         seen.add(key);
-        var name = row.name || row.item_name || _this3.$t('kiosk.wizard.menu.drink_fallback_name');
+        var name = row.name || row.item_name || _this2.$t('kiosk.wizard.menu.drink_fallback_name');
         return {
           id: id,
           name: name,
-          emoji: _this3.getEmojiForBoisson(name),
+          emoji: _this2.getEmojiForBoisson(name),
           displayThumb: (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__.kioskResolveImageSrc)(row),
           _item: row
         };
@@ -851,41 +821,20 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }
   },
   mounted: function mounted() {
-    var _this$item3, _this$item4;
+    var _this$item2, _this$item3;
     // [AUDIT 2026-04-17 C5] Politique catégorie default_menu_kiosk :
     // si la catégorie impose la formule par défaut ET que le client n'a
     // encore rien choisi ET que l'item a réellement un menu disponible,
     // pré-sélectionner « full » pour réduire la friction.
-    if (this.localChoice === null && (_this$item3 = this.item) !== null && _this$item3 !== void 0 && _this$item3.has_menu && (_this$item4 = this.item) !== null && _this$item4 !== void 0 && _this$item4.default_menu_kiosk && this.boissonList.length > 0) {
+    if (this.localChoice === null && (_this$item2 = this.item) !== null && _this$item2 !== void 0 && _this$item2.has_menu && (_this$item3 = this.item) !== null && _this$item3 !== void 0 && _this$item3.default_menu_kiosk && this.boissonList.length > 0) {
       this.selectChoice('full');
     }
   },
   methods: {
-    bundledUpgradeExtraIds: function bundledUpgradeExtraIds() {
-      return this.menuFritesUpgradeRows.map(function (r) {
-        return r.id;
-      });
-    },
-    applyBundledUpgradeSelection: function applyBundledUpgradeSelection(extraId) {
-      var ids = this.bundledUpgradeExtraIds();
-      var next = _objectSpread({}, this.selections.supplements || {});
-      var _iterator2 = _createForOfIteratorHelper(ids),
-        _step2;
-      try {
-        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-          var id = _step2.value;
-          next[id] = extraId != null && id === extraId;
-        }
-      } catch (err) {
-        _iterator2.e(err);
-      } finally {
-        _iterator2.f();
-      }
-      this.$emit('update', 'supplements', next);
-    },
-    clearBundledUpgrades: function clearBundledUpgrades() {
-      this.applyBundledUpgradeSelection(null);
-    },
+    // [Round 5 — 2026-05-10] bundledUpgradeExtraIds / applyBundledUpgradeSelection
+    // / clearBundledUpgrades methods removed. The dedicated KioskStepFritesStyle
+    // step now owns the frites_style upgrade selection (writes to
+    // selections.fritesStyleExtraId, not selections.supplements[id]).
     normalizeFritesSauceOrder: function normalizeFritesSauceOrder(sel) {
       if (Array.isArray(sel.fritesSauceOrder) && sel.fritesSauceOrder.length) {
         return _toConsumableArray(sel.fritesSauceOrder);
@@ -903,9 +852,6 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     onFritesSauceThumbError: function onFritesSauceThumbError(key) {
       this.brokenFritesSauceThumbs = _objectSpread(_objectSpread({}, this.brokenFritesSauceThumbs), {}, _defineProperty({}, key, true));
-    },
-    onUpgradeThumbError: function onUpgradeThumbError(id) {
-      this.brokenUpgradeThumbs = _objectSpread(_objectSpread({}, this.brokenUpgradeThumbs), {}, _defineProperty({}, String(id), true));
     },
     mapBoissonAddonRow: function mapBoissonAddonRow(b) {
       var _b$item_addon_id;
@@ -932,8 +878,8 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return /\b(boisson|boissons|drink|drinks|soda|sodas|beverage|beverages)\b/i.test(haystack);
     },
     isDrinkCatalogItem: function isDrinkCatalogItem(row, drinkCategoryIds) {
-      var _this$item5, _ref5, _row$item_category_id;
-      if (!row || row.id === ((_this$item5 = this.item) === null || _this$item5 === void 0 ? void 0 : _this$item5.id)) return false;
+      var _this$item4, _ref5, _row$item_category_id;
+      if (!row || row.id === ((_this$item4 = this.item) === null || _this$item4 === void 0 ? void 0 : _this$item4.id)) return false;
       if (row.is_available === false) return false;
       var status = Number(row.status);
       if (status === 0 || status === 2 || status === 10) return false;
@@ -1002,9 +948,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         this.$emit('update', 'fritesSauceOrder', []);
         this.$emit('update', 'fritesSauce', null);
       }
-      if (choice === 'none' || choice === 'boisson') {
-        this.clearBundledUpgrades();
-      }
+      // [Round 5 — 2026-05-10] clearBundledUpgrades() call removed alongside the
+      // inline upgrade picker. Wizard parent already clears
+      // selections.fritesStyleExtraId on menuChoice='none'|'boisson' (see
+      // KioskWizardComponent.vue ~line 1289).
       if (choice === 'none' || choice === 'frites') {
         this.localBoisson = null;
         this.$emit('update', 'boissonChoice', null);
@@ -2310,130 +2257,81 @@ var _hoisted_27 = {
 };
 var _hoisted_28 = {
   key: 1,
-  "class": "kiosk-boisson-section kiosk-frites-upgrade-section"
+  "class": "kiosk-boisson-section"
 };
 var _hoisted_29 = {
   "class": "kiosk-subtitle"
 };
 var _hoisted_30 = {
-  "class": "kiosk-upgrade-hint"
-};
-var _hoisted_31 = ["aria-label"];
-var _hoisted_32 = ["aria-checked", "aria-label"];
-var _hoisted_33 = {
-  "class": "kiosk-menu-name"
-};
-var _hoisted_34 = {
-  "class": "kiosk-menu-desc"
-};
-var _hoisted_35 = {
-  key: 0,
-  "class": "kiosk-menu-action active"
-};
-var _hoisted_36 = {
-  key: 1,
-  "class": "kiosk-menu-action"
-};
-var _hoisted_37 = ["aria-checked", "aria-label", "onClick", "onKeydown"];
-var _hoisted_38 = {
-  "class": "kiosk-boisson-visual"
-};
-var _hoisted_39 = ["src", "alt", "onError"];
-var _hoisted_40 = {
-  key: 1,
-  "class": "kiosk-boisson-emoji"
-};
-var _hoisted_41 = {
-  "class": "kiosk-menu-name"
-};
-var _hoisted_42 = {
-  "class": "kiosk-menu-desc"
-};
-var _hoisted_43 = {
-  key: 0,
-  "class": "kiosk-menu-action active"
-};
-var _hoisted_44 = {
-  key: 1,
-  "class": "kiosk-menu-action"
-};
-var _hoisted_45 = {
-  key: 2,
-  "class": "kiosk-boisson-section"
-};
-var _hoisted_46 = {
-  "class": "kiosk-subtitle"
-};
-var _hoisted_47 = {
   key: 0,
   "class": "kiosk-boisson-included"
 };
-var _hoisted_48 = {
+var _hoisted_31 = {
   key: 1,
   "class": "kiosk-validation-hint kiosk-boisson-validation-hint",
   role: "status"
 };
-var _hoisted_49 = ["aria-label"];
-var _hoisted_50 = ["aria-checked", "aria-label", "onClick", "onKeydown"];
-var _hoisted_51 = {
+var _hoisted_32 = ["aria-label"];
+var _hoisted_33 = ["aria-checked", "aria-label", "onClick", "onKeydown"];
+var _hoisted_34 = {
   "class": "kiosk-boisson-visual"
 };
-var _hoisted_52 = ["src", "alt", "onError"];
-var _hoisted_53 = {
+var _hoisted_35 = ["src", "alt", "onError"];
+var _hoisted_36 = {
   key: 1,
   "class": "kiosk-boisson-emoji"
 };
-var _hoisted_54 = {
+var _hoisted_37 = {
   "class": "kiosk-boisson-name"
 };
-var _hoisted_55 = {
+var _hoisted_38 = {
   key: 0,
   "class": "kiosk-menu-action active"
 };
-var _hoisted_56 = {
+var _hoisted_39 = {
   key: 1,
   "class": "kiosk-menu-action"
 };
-var _hoisted_57 = {
-  key: 3,
+var _hoisted_40 = {
+  key: 2,
   "class": "kiosk-boisson-section"
 };
-var _hoisted_58 = {
+var _hoisted_41 = {
   "class": "kiosk-boisson-placeholder"
 };
-var _hoisted_59 = {
-  key: 4,
+var _hoisted_42 = {
+  key: 3,
   "class": "kiosk-boisson-section kiosk-frites-sauce-section"
 };
-var _hoisted_60 = {
+var _hoisted_43 = {
   "class": "kiosk-subtitle"
 };
-var _hoisted_61 = {
+var _hoisted_44 = {
   key: 0,
   "class": "kiosk-validation-hint kiosk-frites-sauce-validation-hint",
   role: "status"
 };
-var _hoisted_62 = ["aria-label"];
-var _hoisted_63 = ["aria-checked", "aria-label", "onClick", "onKeydown"];
-var _hoisted_64 = {
+var _hoisted_45 = ["aria-label"];
+var _hoisted_46 = ["aria-checked", "aria-label", "onClick", "onKeydown"];
+var _hoisted_47 = {
   "class": "kiosk-boisson-visual"
 };
-var _hoisted_65 = ["src", "alt", "onError"];
-var _hoisted_66 = {
+var _hoisted_48 = ["src", "alt", "onError"];
+var _hoisted_49 = {
   key: 1,
   "class": "kiosk-boisson-emoji"
 };
-var _hoisted_67 = {
+var _hoisted_50 = {
   "class": "kiosk-boisson-name"
 };
-var _hoisted_68 = {
+var _hoisted_51 = {
   "class": "kiosk-frites-sauce-price"
 };
-var _hoisted_69 = {
+var _hoisted_52 = {
   key: 0,
   "class": "kiosk-sauce-order"
 };
-var _hoisted_70 = {
+var _hoisted_53 = {
   key: 1,
   "class": "kiosk-menu-action"
 };
@@ -2458,7 +2356,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectChoice('full');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-menu-emoji"
   }, "🍟🥤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.full_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.full_desc')), 1 /* TEXT */), $data.localChoice === 'full' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_12, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-menu-card", {
@@ -2476,7 +2374,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectChoice('frites');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-menu-emoji"
   }, "🍟", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_desc')), 1 /* TEXT */), $data.localChoice === 'frites' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_13), $props.showBoissonOnlyMenuCard ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
@@ -2495,7 +2393,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectChoice('boisson');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-menu-emoji"
   }, "🥤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_desc')), 1 /* TEXT */), $data.localChoice === 'boisson' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_21, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_18)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-menu-card", {
@@ -2513,59 +2411,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectChoice('none');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-menu-emoji"
-  }, "🚫", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.none_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.none_desc')), 1 /* TEXT */), $data.localChoice === 'none' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_26, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_27, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_23)], 8 /* PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Upgrade frites (catalogue extras) — avant boisson / sauces "), $options.showMenuFritesUpgrade ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_upgrade_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_upgrade_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "kiosk-menu-options kiosk-upgrade-grid",
-    role: "radiogroup",
-    "aria-label": _ctx.$t('kiosk.wizard.menu.frites_upgrade_title')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-menu-card kiosk-upgrade-card", {
-      selected: $options.selectedBundledUpgradeId === null
-    }]),
-    role: "radio",
-    tabindex: "0",
-    "aria-checked": $options.selectedBundledUpgradeId === null,
-    "aria-label": _ctx.$t('kiosk.wizard.menu.frites_upgrade_standard'),
-    onClick: _cache[12] || (_cache[12] = function ($event) {
-      return $options.applyBundledUpgradeSelection(null);
-    }),
-    onKeydown: [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
-      return $options.applyBundledUpgradeSelection(null);
-    }, ["prevent"]), ["enter"])), _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
-      return $options.applyBundledUpgradeSelection(null);
-    }, ["prevent"]), ["space"]))]
-  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
-    "class": "kiosk-menu-emoji"
-  }, "🍟", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_upgrade_standard')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_upgrade_standard_desc')), 1 /* TEXT */), $options.selectedBundledUpgradeId === null ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_32), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.menuFritesUpgradeRows, function (row) {
-    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-      key: row.id,
-      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-menu-card kiosk-upgrade-card", {
-        selected: $options.selectedBundledUpgradeId === row.id
-      }]),
-      role: "radio",
-      tabindex: "0",
-      "aria-checked": $options.selectedBundledUpgradeId === row.id,
-      "aria-label": row.name,
-      onClick: function onClick($event) {
-        return $options.applyBundledUpgradeSelection(row.id);
-      },
-      onKeydown: [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
-        return $options.applyBundledUpgradeSelection(row.id);
-      }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
-        return $options.applyBundledUpgradeSelection(row.id);
-      }, ["prevent"]), ["space"])]
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [row.thumb && !$data.brokenUpgradeThumbs[String(row.id)] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
-      key: 0,
-      src: row.thumb,
-      alt: row.name,
-      "class": "kiosk-boisson-img",
-      loading: "lazy",
-      onError: function onError($event) {
-        return $options.onUpgradeThumbError(row.id);
-      }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_39)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_40, "🧀"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(row.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(row.price)), 1 /* TEXT */), $options.selectedBundledUpgradeId === row.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_43, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_44, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_37);
-  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_31)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.showBoissonChoice && $options.boissonList.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_section_title')), 1 /* TEXT */), $data.localChoice === 'full' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_one_included')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.needsExplicitBoissonSelection ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, "🚫", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.none_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.none_desc')), 1 /* TEXT */), $data.localChoice === 'none' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_26, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_27, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_23)], 8 /* PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Round 5 — 2026-05-10] Inline frites_style upgrade section REMOVED.\n         Owner feedback: la duplication entre la page Menu et la page dédiée\n         « Quel style de frites ? » nuisait à la fluidité. Le choix Nature /\n         Cheddar fondu / Cheddar + Oignons est désormais EXCLUSIVEMENT porté\n         par KioskStepFritesStyleComponent (étape dédiée). "), $options.showBoissonChoice && $options.boissonList.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_section_title')), 1 /* TEXT */), $data.localChoice === 'full' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_one_included')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.needsExplicitBoissonSelection ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-boisson-grid",
     role: "radiogroup",
     "aria-label": _ctx.$t('kiosk.wizard.menu.boisson_section_title')
@@ -2588,7 +2436,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.selectBoisson(boisson);
       }, ["prevent"]), ["space"])]
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [boisson.displayThumb && !$data.brokenBoissonThumbs[$options.boissonThumbKey(boisson)] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [boisson.displayThumb && !$data.brokenBoissonThumbs[$options.boissonThumbKey(boisson)] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: boisson.displayThumb,
       alt: boisson.name,
@@ -2597,8 +2445,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onBoissonThumbError(boisson);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_52)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(boisson.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(boisson.name), 1 /* TEXT */), $data.localBoisson === ((_boisson$id4 = boisson.id) !== null && _boisson$id4 !== void 0 ? _boisson$id4 : boisson.name) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_55, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_56, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_50);
-  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_49)])) : $options.showBoissonChoice ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_counter')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Sauces frites — catalogue variations (comme étape sauce), en bas "), $options.showFritesSauce ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_sauce_title')), 1 /* TEXT */), $options.needsExplicitFritesSauceSelection ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_sauce_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_35)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(boisson.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(boisson.name), 1 /* TEXT */), $data.localBoisson === ((_boisson$id4 = boisson.id) !== null && _boisson$id4 !== void 0 ? _boisson$id4 : boisson.name) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_38, "✓")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_39, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_33);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_32)])) : $options.showBoissonChoice ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.boisson_counter')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Sauces frites — catalogue variations (comme étape sauce), en bas "), $options.showFritesSauce ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_sauce_title')), 1 /* TEXT */), $options.needsExplicitFritesSauceSelection ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.wizard.menu.frites_sauce_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-boisson-grid",
     role: "group",
     "aria-label": _ctx.$t('kiosk.wizard.menu.frites_sauce_title')
@@ -2620,7 +2468,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.toggleFritesSauce(sauce);
       }, ["prevent"]), ["space"])]
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [sauce.thumb && !$data.brokenFritesSauceThumbs[sauce.key] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [sauce.thumb && !$data.brokenFritesSauceThumbs[sauce.key] ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: sauce.thumb,
       alt: sauce.name,
@@ -2629,8 +2477,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onError: function onError($event) {
         return $options.onFritesSauceThumbError(sauce.key);
       }
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_65)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.fritesSaucePriceLabel(sauce.key)), 1 /* TEXT */), $options.getFritesSauceOrder(sauce.key) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getFritesSauceOrder(sauce.key)), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_70, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_63);
-  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_62)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_48)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.emoji), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(sauce.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.fritesSaucePriceLabel(sauce.key)), 1 /* TEXT */), $options.getFritesSauceOrder(sauce.key) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getFritesSauceOrder(sauce.key)), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_53, "+"))], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_46);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_45)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
 }
 
 /***/ }),
