@@ -1,29 +1,29 @@
-// Le Cayenne — Catalogue mobile (V0 standalone, schéma aligné FoodKing)
+// Le Cayenne — Catalogue mobile aligné FoodKing config/menu.php (SSOT)
 //
-// Mapping vers schéma backend (cf. CONNECTION_PLAN.md) :
-//   categories  ↔ item_categories
-//   items       ↔ items + media
-//   variations  ↔ item_variations (taille / déclinaison)
-//   extras      ↔ item_extras (suppléments)
-//   addons      ↔ item_addons (composants boxe : drink/side/dessert)
-//   wizard      ↔ item_wizard_profiles + item_wizard_steps
-//   attributes  ↔ item_attributes (règles min/max sur variations)
+// Source de vérité : /config/menu.php (Le Cayenne FR/EUR)
+// Logique kiosk reflétée : viandes + sauce + crudités + extras + formule menu
 //
-// Le calcul de prix reste autorité backend (PricingService) en prod ;
-// ici simulation locale pour V0 (le total affiché est indicatif).
+// Mapping schéma :
+//   categories      ↔ item_categories  (avec wizard_template + has_menu)
+//   items           ↔ items + Item.is_featured/is_new/is_spicy/is_halal
+//   meats           ↔ choix viande dynamique selon item.viandes
+//   sauces          ↔ ItemAttribute "Sauce" min=1 max=1 (1 gratuite)
+//   crudites        ↔ ItemAttribute "Crudités" toggleable (Salade/Tomate/Oignon)
+//   supplements     ↔ ItemExtra (toggleable, prix unitaire)
+//   addons          ↔ ItemAddon role=menu_component (formule +3€)
 
 (function () {
   'use strict';
 
   // -------------------------------------------------------------------------
-  // BRANCH
+  // BRANCH (cf. BranchTableSeeder + design Hénin-Beaumont)
   // -------------------------------------------------------------------------
   const BRANCH = {
     id: 1,
     name: 'Le Cayenne',
     city: 'Hénin-Beaumont',
     zip: '62210',
-    address: 'Rue principale, 62210 Hénin-Beaumont',
+    address: 'Le Cayenne, 62210 Hénin-Beaumont',
     phone: '+33 6 51 30 00 00',
     is_open: true,
     hours: '11h — 00h',
@@ -33,612 +33,266 @@
   };
 
   // -------------------------------------------------------------------------
-  // CATEGORIES (cf. ItemCategory)
+  // SHARED OPTIONS (cf. config/menu.php)
+  // -------------------------------------------------------------------------
+
+  // 9 viandes au choix (config/menu.php meats)
+  const MEATS = [
+    { id: 'm-merguez',   name: 'Merguez',           price: 0, is_spicy: true,  emoji: '🌶️' },
+    { id: 'm-kefta',     name: 'Kefta',             price: 0, emoji: '🥩' },
+    { id: 'm-mexicain',  name: 'Mexicain',          price: 0, is_spicy: true,  emoji: '🌶️' },
+    { id: 'm-cordon',    name: 'Cordon Bleu',       price: 0, emoji: '🍗' },
+    { id: 'm-hachee',    name: 'Viande Hachée',     price: 0, emoji: '🥩' },
+    { id: 'm-nuggets',   name: 'Nuggets',           price: 0, emoji: '🍗' },
+    { id: 'm-escalope',  name: 'Escalope de poulet', price: 0, emoji: '🍗' },
+    { id: 'm-tenders',   name: 'Tenders',           price: 0, emoji: '🍗' },
+    { id: 'm-fricand',   name: 'Fricandelle',       price: 0, emoji: '🥩' },
+  ];
+
+  // 15 sauces (1 gratuite, sup 0.50€)
+  const SAUCES = [
+    { id: 's-ketchup',    name: 'Ketchup',          price: 0 },
+    { id: 's-mayo',       name: 'Mayonnaise',       price: 0 },
+    { id: 's-algerien',   name: 'Algérienne',       price: 0 },
+    { id: 's-curry',      name: 'Curry',            price: 0 },
+    { id: 's-andalouse',  name: 'Andalouse',        price: 0 },
+    { id: 's-burger',     name: 'Burger',           price: 0 },
+    { id: 's-samurai',    name: 'Samouraï',         price: 0 },
+    { id: 's-bbq',        name: 'Barbecue',         price: 0 },
+    { id: 's-cocktail',   name: 'Cocktail',         price: 0 },
+    { id: 's-americaine', name: 'Américaine',       price: 0 },
+    { id: 's-hannibal',   name: 'Hannibal',         price: 0, is_spicy: true },
+    { id: 's-harissa',    name: 'Harissa',          price: 0, is_spicy: true },
+    { id: 's-blanche',    name: 'Blanche',          price: 0 },
+    { id: 's-poivre',     name: 'Poivre',           price: 0 },
+    { id: 's-sans',       name: 'Sans Sauce',       price: 0, is_no_sauce: true },
+  ];
+
+  // Crudités (toggle, default ON)
+  const CRUDITES = [
+    { id: 'c-salade', name: 'Salade',  default: true },
+    { id: 'c-tomate', name: 'Tomate',  default: true },
+    { id: 'c-oignon', name: 'Oignon',  default: true },
+  ];
+
+  // Suppléments payants (cf. config/menu.php supplements)
+  const SUPPLEMENTS = [
+    { id: 'sup-jambon',   name: 'Jambon de dinde',         price: 1.00, group: 'Suppléments' },
+    { id: 'sup-boursin',  name: 'Boursin',                 price: 1.00, group: 'Fromages' },
+    { id: 'sup-raclette', name: 'Fromage à raclette',      price: 1.00, group: 'Fromages' },
+    { id: 'sup-fromage',  name: 'Fromage',                 price: 1.00, group: 'Fromages' },
+    { id: 'sup-oeuf',     name: 'Œuf',                     price: 1.00, group: 'Suppléments' },
+    { id: 'sup-galette',  name: 'Galette pommes de terre', price: 1.00, group: 'Suppléments' },
+    { id: 'sup-sauce',    name: 'Sauce supplémentaire',    price: 0.50, group: 'Sauces' },
+  ];
+
+  // Formules menu (cf. config/menu.php addons)
+  const FORMULES = [
+    { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 3.00, has_drink: true, has_fries: true },
+    { id: 'f-frites',  name: 'Ajouter Frites',           price: 2.00, has_fries: true },
+    { id: 'f-boisson', name: 'Ajouter Boisson',          price: 2.00, has_drink: true },
+  ];
+
+  // -------------------------------------------------------------------------
+  // CATEGORIES (cf. config/menu.php categories — 13 catégories)
   // -------------------------------------------------------------------------
   const CATEGORIES = [
-    { id: 1, slug: 'box',           name: 'Box',           icon: '🔥', sort: 1, kiosk_label: 'Box' },
-    { id: 2, slug: 'smash-burgers', name: 'Smash burgers', icon: '🍔', sort: 2, kiosk_label: 'Smash' },
-    { id: 3, slug: 'tacos',         name: 'Tacos',         icon: '🌮', sort: 3, kiosk_label: 'Tacos' },
-    { id: 4, slug: 'bowls',         name: 'Bowls',         icon: '🥣', sort: 4, kiosk_label: 'Bowls' },
-    { id: 5, slug: 'wraps',         name: 'Wraps',         icon: '🌯', sort: 5, kiosk_label: 'Wraps' },
-    { id: 6, slug: 'buckets',       name: 'Buckets',       icon: '🍗', sort: 6, kiosk_label: 'Buckets' },
-    { id: 7, slug: 'sides',         name: 'Accompagnements', icon: '🍟', sort: 7, kiosk_label: 'Sides' },
-    { id: 8, slug: 'drinks',        name: 'Boissons',      icon: '🥤', sort: 8, kiosk_label: 'Boissons' },
-    { id: 9, slug: 'desserts',      name: 'Desserts',      icon: '🍩', sort: 9, kiosk_label: 'Desserts' },
+    { id: 1,  slug: 'nos-tacos',              name: 'Nos Tacos',              icon: '🌮', sort: 1,  wizard_template: 'tacos',    has_menu: true,  description: 'Nos délicieux tacos avec viandes au choix' },
+    { id: 2,  slug: 'nos-sandwichs',          name: 'Nos Sandwichs',          icon: '🥖', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwichs gourmands et généreux' },
+    { id: 3,  slug: 'nos-burgers',            name: 'Nos Burgers',            icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Burgers maison 100% frais' },
+    { id: 4,  slug: 'nos-assiettes',          name: 'Nos Assiettes',          icon: '🍽️', sort: 4,  wizard_template: 'assiette', has_menu: false, description: 'Assiettes complètes avec garnitures' },
+    { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'simple',   has_menu: false, description: 'Ojja traditionnelle' },
+    { id: 6,  slug: 'omelettes',              name: 'Omelettes',              icon: '🥚', sort: 6,  wizard_template: 'omelette', has_menu: false, description: 'Omelettes faites maison' },
+    { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: false, description: 'Salades fraîches et légères' },
+    { id: 8,  slug: 'chicken-tenders',        name: 'Poulet croustillant',    icon: '🍗', sort: 8,  wizard_template: 'snacking', has_menu: false, description: 'Ailes et filets de poulet croustillants' },
+    { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'simple',   has_menu: false, description: 'Pour les petits gourmands' },
+    { id: 10, slug: 'frites-accompagnements', name: 'Frites & Accompagnements', icon: '🍟', sort: 10, wizard_template: 'simple', has_menu: false, description: 'Frites et accompagnements' },
+    { id: 11, slug: 'nos-desserts',           name: 'Nos Desserts',           icon: '🍰', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands' },
+    { id: 12, slug: 'nos-boissons',           name: 'Nos Boissons',           icon: '🥤', sort: 12, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches' },
+    { id: 13, slug: 'supplements',            name: 'Suppléments',            icon: '➕', sort: 13, wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément' },
   ];
 
   // -------------------------------------------------------------------------
-  // ATTRIBUTES (cf. ItemAttribute) — règles min/max appliquées aux variations
-  // -------------------------------------------------------------------------
-  const ATTRIBUTES = [
-    { id: 1, name: 'Taille',  min_select: 1, max_select: 1, allow_repeat: false },
-    { id: 2, name: 'Cuisson', min_select: 1, max_select: 1, allow_repeat: false },
-    { id: 3, name: 'Viande',  min_select: 1, max_select: 3, allow_repeat: true  },
-  ];
-
-  // -------------------------------------------------------------------------
-  // EXTRAS LIBRARY (cf. ItemExtra) — suppléments réutilisés sur plusieurs items
-  // -------------------------------------------------------------------------
-  const EXTRAS_BURGER = [
-    { id: 101, name: 'Oignon caramélisé',         price: 0.00, group_label: 'Garniture', default: true  },
-    { id: 102, name: 'Oignons frits',             price: 0.00, group_label: 'Garniture', default: true  },
-    { id: 103, name: 'Cornichons',                price: 0.00, group_label: 'Garniture', default: false },
-    { id: 104, name: 'Salade',                    price: 0.00, group_label: 'Garniture', default: true  },
-    { id: 105, name: 'Tomate',                    price: 0.00, group_label: 'Garniture', default: true  },
-    { id: 110, name: 'Cheddar fondu',             price: 1.00, group_label: 'Fromage' },
-    { id: 111, name: 'Raclette',                  price: 1.00, group_label: 'Fromage' },
-    { id: 112, name: 'Fromage de chèvre',         price: 1.00, group_label: 'Fromage' },
-    { id: 113, name: 'Mozzarella',                price: 1.00, group_label: 'Fromage' },
-    { id: 120, name: 'Bacon',                     price: 1.50, group_label: 'Charcuterie', is_pork: true },
-    { id: 121, name: 'Pastrami',                  price: 2.00, group_label: 'Charcuterie' },
-    { id: 122, name: 'Viande hachée supplémentaire', price: 2.50, group_label: 'Viande' },
-    { id: 130, name: 'Jalapeños',                 price: 1.00, group_label: 'Épicé', is_spicy: true },
-    { id: 131, name: 'Galette de pomme de terre', price: 1.50, group_label: 'Garniture' },
-    { id: 132, name: 'Œuf',                       price: 1.00, group_label: 'Garniture' },
-    { id: 140, name: 'Sauce maison',              price: 0.00, group_label: 'Sauce', default: true },
-  ];
-
-  const EXTRAS_TACOS = [
-    { id: 201, name: 'Cheddar fondu',             price: 1.00, group_label: 'Fromage' },
-    { id: 202, name: 'Raclette',                  price: 1.00, group_label: 'Fromage' },
-    { id: 203, name: 'Mozzarella',                price: 1.00, group_label: 'Fromage' },
-    { id: 204, name: 'Viande hachée supplémentaire', price: 2.50, group_label: 'Viande' },
-    { id: 205, name: 'Jalapeños',                 price: 1.00, group_label: 'Épicé', is_spicy: true },
-    { id: 206, name: 'Œuf',                       price: 1.00, group_label: 'Garniture' },
-  ];
-
-  const EXTRAS_BOWL = [
-    { id: 301, name: 'Cheddar supplémentaire',    price: 1.00, group_label: 'Fromage' },
-    { id: 302, name: 'Avocat',                    price: 2.00, group_label: 'Garniture' },
-    { id: 303, name: 'Œuf',                       price: 1.00, group_label: 'Garniture' },
-    { id: 304, name: 'Sauce maison',              price: 0.00, group_label: 'Sauce', default: true },
-    { id: 305, name: 'Jalapeños',                 price: 1.00, group_label: 'Épicé', is_spicy: true },
-  ];
-
-  // -------------------------------------------------------------------------
-  // ITEMS (cf. Item) — projection plate alignée KioskMenuService::projectItems
+  // ITEMS (cf. config/menu.php items — 47 items réels)
+  // Schéma item : { viandes (0-4), has_sauce, has_crudites, has_supplements, has_menu_addon }
   // -------------------------------------------------------------------------
 
-  // SMASH BURGERS (cat 2) — utilisés comme items autonomes ET comme options pour les Box
-  const SMASH = [
-    {
-      id: 1001, slug: 'cheese-smash', name: 'Le Cheese Smash', category_id: 2,
-      price: 9.50, description: 'Pain brioché smashé, double cheddar fondant, sauce maison.',
-      thumb: 'item-cheese', kiosk_emoji: '🍔', time: 12,
-      tags: ['SIGNATURE'],
-      is_featured: true, is_new: false, is_spicy: false, is_halal: true, is_vegetarian: false,
-      variations: [],
-      extras: EXTRAS_BURGER,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose', 'œuf'],
-    },
-    {
-      id: 1002, slug: 'gourmet', name: 'Le Gourmet', category_id: 2,
-      price: 10.50, description: 'Smash beef, oignon caramélisé, raclette, sauce truffe.',
-      thumb: 'item-gourmet', kiosk_emoji: '🧀', time: 14,
-      tags: ['NOUVEAU'],
-      is_featured: false, is_new: true, is_spicy: false, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BURGER,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose', 'œuf'],
-    },
-    {
-      id: 1003, slug: 'chevre-miel', name: 'Chèvre Miel', category_id: 2,
-      price: 9.50, description: 'Smash beef, fromage de chèvre, miel, roquette.',
-      thumb: 'item-chevre', kiosk_emoji: '🍯', time: 12,
-      tags: [],
-      is_featured: false, is_new: false, is_spicy: false, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BURGER,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 1004, slug: 'big-smash', name: 'Big Smash', category_id: 2,
-      price: 11.50, description: 'Double steak smashé, double cheddar, sauce big.',
-      thumb: 'item-big-smash', kiosk_emoji: '💪', time: 14,
-      tags: ['TOP'],
-      is_featured: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BURGER,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose', 'œuf'],
-    },
-    {
-      id: 1005, slug: 'spicy-smash', name: 'Spicy Smash', category_id: 2,
-      price: 10.00, description: 'Smash beef, jalapeños, sauce piquante maison, cheddar.',
-      thumb: 'item-spicy', kiosk_emoji: '🌶️', time: 12,
-      tags: ['SPICY'],
-      is_spicy: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BURGER,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 1006, slug: 'veggie-smash', name: 'Veggie Smash', category_id: 2,
-      price: 9.00, description: 'Steak végétal smashé, cheddar, oignons frits, sauce maison.',
-      thumb: 'item-veggie', kiosk_emoji: '🌱', time: 12,
-      tags: [],
-      is_vegetarian: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BURGER.filter(e => !e.is_pork),
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose', 'soja'],
-    },
-  ];
-
-  // BOISSONS (cat 8)
-  const DRINKS = [
-    { id: 8001, slug: 'coca',        name: 'Coca-Cola 33cl',     category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-coca',     kiosk_emoji: '🥤', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8002, slug: 'coca-zero',   name: 'Coca Zero 33cl',     category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-cocazero', kiosk_emoji: '🥤', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8003, slug: 'fanta',       name: 'Fanta Orange 33cl',  category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-fanta',    kiosk_emoji: '🍊', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8004, slug: 'sprite',      name: 'Sprite 33cl',        category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-sprite',   kiosk_emoji: '🍋', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8005, slug: 'eau-plate',   name: 'Eau plate 50cl',     category_id: 8, price: 1.50, description: 'Bouteille 50cl', thumb: 'drink-eau',     kiosk_emoji: '💧', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8006, slug: 'ice-tea',     name: 'Ice Tea pêche 33cl', category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-icetea',   kiosk_emoji: '🍑', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-    { id: 8007, slug: 'oasis',       name: 'Oasis tropical 33cl', category_id: 8, price: 2.50, description: 'Canette 33cl', thumb: 'drink-oasis',   kiosk_emoji: '🌴', time: 0, tags: [], variations: [], extras: [], addons: [], wizard_profile: null, allergens: [] },
-  ];
-
-  // SIDES (cat 7) — frites & accompagnements
-  const SIDES = [
-    {
-      id: 7001, slug: 'frite', name: 'Frites maison', category_id: 7,
-      price: 3.50, description: 'Frites fraîches maison, croustillantes.',
-      thumb: 'side-frite', kiosk_emoji: '🍟', time: 5, tags: [],
-      variations: [
-        { id: 70011, name: 'M (medium)',  price: 3.50, attribute_id: 1, sort: 1 },
-        { id: 70012, name: 'L (large)',   price: 4.50, attribute_id: 1, sort: 2 },
-        { id: 70013, name: 'XXL',         price: 6.00, attribute_id: 1, sort: 3 },
-      ],
-      itemAttributes: [{ id: 1, name: 'Taille', min_select: 1, max_select: 1, allow_repeat: false }],
-      extras: [
-        { id: 701, name: 'Cheddar fondu sauce', price: 1.50, group_label: 'Topping' },
-        { id: 702, name: 'Bacon émietté',       price: 1.50, group_label: 'Topping', is_pork: true },
-        { id: 703, name: 'Cheddar + bacon',     price: 2.50, group_label: 'Topping', is_pork: true },
-      ],
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten'],
-    },
-    {
-      id: 7002, slug: 'frite-cheddar', name: 'Frites cheddar', category_id: 7,
-      price: 5.50, description: 'Frites maison, cheddar fondu coulant.',
-      thumb: 'side-frite-cheddar', kiosk_emoji: '🧀', time: 5, tags: ['TOP'],
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 7003, slug: 'tenders-x6', name: 'Tenders × 6', category_id: 7,
-      price: 7.50, description: '6 tenders panés croustillants, sauce au choix.',
-      thumb: 'side-tenders', kiosk_emoji: '🍗', time: 8, tags: [],
-      variations: [],
-      extras: [],
-      addons: [
-        { id: 70031, role: 'side', addon_item_id: 9001, name: 'Sauce' },
-      ],
-      wizard_profile: null,
-      allergens: ['gluten'],
-    },
-    {
-      id: 7004, slug: 'wings-x6', name: 'Wings × 6', category_id: 7,
-      price: 7.50, description: '6 wings sauce piquante BBQ ou nashville.',
-      thumb: 'side-wings', kiosk_emoji: '🥢', time: 8, tags: ['SPICY'], is_spicy: true,
-      variations: [
-        { id: 70041, name: 'BBQ',       price: 7.50, attribute_id: 1, sort: 1 },
-        { id: 70042, name: 'Nashville', price: 7.50, attribute_id: 1, sort: 2 },
-      ],
-      itemAttributes: [{ id: 1, name: 'Sauce', min_select: 1, max_select: 1, allow_repeat: false }],
-      extras: [],
-      addons: [],
-      wizard_profile: null,
-      allergens: [],
-    },
-    {
-      id: 7005, slug: 'nuggets-x6', name: 'Nuggets × 6', category_id: 7,
-      price: 5.50, description: '6 nuggets de poulet panés, sauce au choix.',
-      thumb: 'side-nuggets', kiosk_emoji: '🍗', time: 6, tags: [],
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten'],
-    },
-  ];
-
-  // BUCKETS (cat 6)
-  const BUCKETS = [
-    {
-      id: 6001, slug: 'bucket-tenders', name: 'Bucket Tenders', category_id: 6,
-      price: 14.00, description: '12 tenders panés, 2 sauces au choix.',
-      thumb: 'bucket-tenders', kiosk_emoji: '🪣', time: 12, tags: ['TOP'],
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten'],
-    },
-    {
-      id: 6002, slug: 'bucket-wings', name: 'Bucket Wings', category_id: 6,
-      price: 14.00, description: '12 wings BBQ ou Nashville, 2 sauces.',
-      thumb: 'bucket-wings', kiosk_emoji: '🔥', time: 12, tags: ['SPICY'], is_spicy: true,
-      variations: [
-        { id: 60021, name: 'BBQ',       price: 14.00, attribute_id: 1, sort: 1 },
-        { id: 60022, name: 'Nashville', price: 14.00, attribute_id: 1, sort: 2 },
-        { id: 60023, name: 'Mixte',     price: 14.00, attribute_id: 1, sort: 3 },
-      ],
-      itemAttributes: [{ id: 1, name: 'Sauce', min_select: 1, max_select: 1, allow_repeat: false }],
-      extras: [],
-      addons: [],
-      wizard_profile: null,
-      allergens: [],
-    },
-  ];
-
-  // BOWLS (cat 4)
-  const BOWLS = [
-    {
-      id: 4001, slug: 'bowl-cheesy', name: 'Bowl Cheesy', category_id: 4,
-      price: 11.50, description: 'Riz, poulet croustillant, cheddar fondu, mayo épicée.',
-      thumb: 'bowl-cheesy', kiosk_emoji: '🥣', time: 10, tags: ['NOUVEAU'],
-      is_new: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BOWL,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 4002, slug: 'bowl-gratine', name: 'Bowl Gratiné', category_id: 4,
-      price: 11.50, description: 'Riz, viande hachée, mozzarella et cheddar gratinés.',
-      thumb: 'bowl-gratine', kiosk_emoji: '🧀', time: 10, tags: [],
-      is_halal: true,
-      variations: [],
-      extras: EXTRAS_BOWL,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['lactose'],
-    },
-    {
-      id: 4003, slug: 'bowl-veggie', name: 'Bowl Veggie', category_id: 4,
-      price: 10.50, description: 'Riz, falafels, avocat, sauce yaourt-menthe.',
-      thumb: 'bowl-veggie', kiosk_emoji: '🥑', time: 10, tags: [],
-      is_vegetarian: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_BOWL,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-  ];
-
-  // WRAPS (cat 5)
-  const WRAPS = [
-    {
-      id: 5001, slug: 'wrap-poulet', name: 'Wrap Poulet', category_id: 5,
-      price: 8.50, description: 'Tortilla, poulet pané, cheddar, salade, sauce maison.',
-      thumb: 'wrap-poulet', kiosk_emoji: '🌯', time: 8, tags: [],
-      is_halal: true,
-      variations: [],
-      extras: EXTRAS_TACOS,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 5002, slug: 'wrap-tex-mex', name: 'Wrap Tex-Mex', category_id: 5,
-      price: 9.00, description: 'Tortilla, viande hachée, haricots rouges, cheddar, sauce piquante.',
-      thumb: 'wrap-texmex', kiosk_emoji: '🌶️', time: 8, tags: ['SPICY'],
-      is_spicy: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_TACOS,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten'],
-    },
-    {
-      id: 5003, slug: 'wrap-veggie', name: 'Wrap Veggie', category_id: 5,
-      price: 8.00, description: 'Tortilla, falafels, salade, sauce yaourt-menthe.',
-      thumb: 'wrap-veggie', kiosk_emoji: '🌿', time: 8, tags: [],
-      is_vegetarian: true, is_halal: true,
-      variations: [],
-      extras: EXTRAS_TACOS,
-      addons: [],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-  ];
-
-  // TACOS (cat 3) — French Tacos avec variations de taille + viandes multiples
-  const TACOS = [
-    {
-      id: 3001, slug: 'tacos-1-viande', name: 'Tacos 1 viande', category_id: 3,
-      price: 7.50, description: 'Tortilla grillée, frites, fromage, 1 viande au choix, sauce maison.',
-      thumb: 'tacos-1', kiosk_emoji: '🌮', time: 10, tags: [],
-      is_halal: true,
-      variations: [
-        { id: 30011, name: 'M (medium)', price: 7.50,  attribute_id: 1, sort: 1 },
-        { id: 30012, name: 'L (large)',  price: 9.00,  attribute_id: 1, sort: 2 },
-        { id: 30013, name: 'XL',         price: 11.00, attribute_id: 1, sort: 3 },
-      ],
-      itemAttributes: [
-        { id: 1, name: 'Taille', min_select: 1, max_select: 1, allow_repeat: false },
-        { id: 3, name: 'Viande', min_select: 1, max_select: 1, allow_repeat: false },
-      ],
-      extras: EXTRAS_TACOS,
-      addons: [
-        { id: 30019, role: 'menu_component', addon_item_id: null, name: 'Viande au choix',
-          options: [
-            { id: 30015, name: 'Steak haché halal', price: 0 },
-            { id: 30016, name: 'Poulet pané',       price: 0 },
-            { id: 30017, name: 'Cordon bleu',       price: 0 },
-            { id: 30018, name: 'Merguez',           price: 0 },
-          ]
-        },
-      ],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 3002, slug: 'tacos-2-viandes', name: 'Tacos 2 viandes', category_id: 3,
-      price: 9.00, description: 'Tortilla grillée, frites, fromage, 2 viandes au choix.',
-      thumb: 'tacos-2', kiosk_emoji: '🌮', time: 10, tags: ['TOP'],
-      is_halal: true,
-      variations: [
-        { id: 30021, name: 'M (medium)', price: 9.00,  attribute_id: 1, sort: 1 },
-        { id: 30022, name: 'L (large)',  price: 10.50, attribute_id: 1, sort: 2 },
-        { id: 30023, name: 'XL',         price: 12.50, attribute_id: 1, sort: 3 },
-      ],
-      itemAttributes: [
-        { id: 1, name: 'Taille', min_select: 1, max_select: 1, allow_repeat: false },
-        { id: 3, name: 'Viandes', min_select: 2, max_select: 2, allow_repeat: true },
-      ],
-      extras: EXTRAS_TACOS,
-      addons: [
-        { id: 30029, role: 'menu_component', addon_item_id: null, name: 'Viandes au choix',
-          options: [
-            { id: 30025, name: 'Steak haché halal', price: 0 },
-            { id: 30026, name: 'Poulet pané',       price: 0 },
-            { id: 30027, name: 'Cordon bleu',       price: 0 },
-            { id: 30028, name: 'Merguez',           price: 0 },
-          ]
-        },
-      ],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 3003, slug: 'tacos-3-viandes', name: 'Tacos 3 viandes', category_id: 3,
-      price: 11.00, description: 'Tortilla grillée, frites, fromage, 3 viandes au choix. Le tacos king.',
-      thumb: 'tacos-3', kiosk_emoji: '🌮', time: 12, tags: ['SIGNATURE'],
-      is_halal: true, is_featured: true,
-      variations: [
-        { id: 30031, name: 'L (large)', price: 11.00, attribute_id: 1, sort: 1 },
-        { id: 30032, name: 'XL',        price: 13.50, attribute_id: 1, sort: 2 },
-      ],
-      itemAttributes: [
-        { id: 1, name: 'Taille', min_select: 1, max_select: 1, allow_repeat: false },
-        { id: 3, name: 'Viandes', min_select: 3, max_select: 3, allow_repeat: true },
-      ],
-      extras: EXTRAS_TACOS,
-      addons: [
-        { id: 30039, role: 'menu_component', addon_item_id: null, name: 'Viandes au choix',
-          options: [
-            { id: 30035, name: 'Steak haché halal', price: 0 },
-            { id: 30036, name: 'Poulet pané',       price: 0 },
-            { id: 30037, name: 'Cordon bleu',       price: 0 },
-            { id: 30038, name: 'Merguez',           price: 0 },
-          ]
-        },
-      ],
-      wizard_profile: null,
-      allergens: ['gluten', 'lactose'],
-    },
-  ];
-
-  // BOX (cat 1) — utilisent wizard_profile pour la composition
-  // Le wizard est la pièce maîtresse : choisir N burgers, 1 frite, N boissons.
-  const BOXES = [
-    {
-      id: 2001, slug: 'box-solo', name: 'Box Solo', category_id: 1,
-      price: 13.50, description: '1 smash + frite M + 1 boisson. Le combo malin.',
-      thumb: 'box-solo', kiosk_emoji: '📦', time: 12, tags: [],
-      is_halal: true,
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: {
-        id: 9001, version: 1, is_published: true,
-        steps: [
-          {
-            id: 90011, step_key: 'burger', label: 'Choisis ton smash',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 1,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90012, step_key: 'side', label: 'Frite',
-            source_type: 'addon', addon_role: 'side',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 2,
-            options: [
-              { id: 70011, name: 'Frite M', price: 0,    slug: 'frite-m',   kiosk_emoji: '🍟' },
-              { id: 70012, name: 'Frite L', price: 1.00, slug: 'frite-l',   kiosk_emoji: '🍟' },
-              { id: 70013, name: 'Frite XXL', price: 2.50, slug: 'frite-xxl', kiosk_emoji: '🍟' },
-            ],
-          },
-          {
-            id: 90013, step_key: 'drink', label: 'Choisis ta boisson',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 3,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-        ],
-      },
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 2002, slug: 'box-nashville', name: 'Box Nashville', category_id: 1,
-      price: 15.00, description: '2 tenders Nashville, frite, smash au choix et boisson.',
-      thumb: 'item-nashville', kiosk_emoji: '🌶️', time: 15, tags: ['SPICY','TOP'],
-      is_spicy: true, is_halal: true, is_featured: true,
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: {
-        id: 9002, version: 1, is_published: true,
-        steps: [
-          {
-            id: 90021, step_key: 'burger', label: 'Choisis ton smash',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 1,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90022, step_key: 'side', label: 'Frite',
-            source_type: 'addon', addon_role: 'side',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 2,
-            options: [
-              { id: 70011, name: 'Frite M', price: 0,    slug: 'frite-m',   kiosk_emoji: '🍟' },
-              { id: 70012, name: 'Frite L', price: 1.00, slug: 'frite-l',   kiosk_emoji: '🍟' },
-            ],
-          },
-          {
-            id: 90023, step_key: 'drink', label: 'Choisis ta boisson',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 3,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-        ],
-      },
-      allergens: ['gluten', 'lactose'],
-    },
-    {
-      id: 2003, slug: 'box-familiale', name: 'Box Familiale', category_id: 1,
-      price: 29.00, description: '4 smash, 5 wings, 5 tenders, frite XXL, 4 boissons.',
-      thumb: 'item-familiale', kiosk_emoji: '🍔🍔🍔🍔', time: 20, tags: ['SIGNATURE'],
-      is_featured: true, is_halal: true,
-      variations: [],
-      extras: [],
-      addons: [],
-      wizard_profile: {
-        id: 9003, version: 1, is_published: true,
-        steps: [
-          {
-            id: 90031, step_key: 'burger_1', label: 'Smash 1/4',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 1,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90032, step_key: 'burger_2', label: 'Smash 2/4',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 2,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90033, step_key: 'burger_3', label: 'Smash 3/4',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 3,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90034, step_key: 'burger_4', label: 'Smash 4/4',
-            source_type: 'addon', addon_role: 'menu_component',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 4,
-            options: SMASH.map(s => ({ id: s.id, name: s.name, price: 0, slug: s.slug, kiosk_emoji: s.kiosk_emoji })),
-          },
-          {
-            id: 90035, step_key: 'drink_1', label: 'Boisson 1/4',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 5,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-          {
-            id: 90036, step_key: 'drink_2', label: 'Boisson 2/4',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 6,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-          {
-            id: 90037, step_key: 'drink_3', label: 'Boisson 3/4',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 7,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-          {
-            id: 90038, step_key: 'drink_4', label: 'Boisson 4/4',
-            source_type: 'addon', addon_role: 'drink',
-            min_select: 1, max_select: 1, allow_repeat: false, position: 8,
-            options: DRINKS.map(d => ({ id: d.id, name: d.name, price: 0, slug: d.slug, kiosk_emoji: d.kiosk_emoji })),
-          },
-        ],
-      },
-      allergens: ['gluten', 'lactose'],
-    },
-  ];
-
-  // DESSERTS (cat 9)
-  const DESSERTS = [
-    { id: 9001, slug: 'brownie', name: 'Brownie chocolat', category_id: 9, price: 4.50, description: 'Brownie chocolat noir, fondant.',  thumb: 'dessert-brownie', kiosk_emoji: '🍫', time: 0, tags: [],            variations: [], extras: [], addons: [], wizard_profile: null, allergens: ['gluten', 'lactose', 'œuf'] },
-    { id: 9002, slug: 'cookie',  name: 'Cookie XL',        category_id: 9, price: 3.50, description: 'Gros cookie pépites de chocolat.', thumb: 'dessert-cookie',  kiosk_emoji: '🍪', time: 0, tags: ['NOUVEAU'], is_new: true, variations: [], extras: [], addons: [], wizard_profile: null, allergens: ['gluten', 'lactose', 'œuf'] },
-    { id: 9003, slug: 'glace',   name: 'Glace 2 boules',   category_id: 9, price: 4.00, description: 'Vanille, chocolat, fraise au choix.', thumb: 'dessert-glace', kiosk_emoji: '🍦', time: 0, tags: [],         variations: [
-      { id: 90031, name: 'Vanille',   price: 4.00, attribute_id: 1, sort: 1 },
-      { id: 90032, name: 'Chocolat',  price: 4.00, attribute_id: 1, sort: 2 },
-      { id: 90033, name: 'Fraise',    price: 4.00, attribute_id: 1, sort: 3 },
-      { id: 90034, name: '2 parfums', price: 4.50, attribute_id: 1, sort: 4 },
-    ], itemAttributes: [{ id: 1, name: 'Parfum', min_select: 1, max_select: 1, allow_repeat: false }], extras: [], addons: [], wizard_profile: null, allergens: ['lactose'] },
-  ];
-
-  // -------------------------------------------------------------------------
-  // ITEMS — assembly + helpers
-  // -------------------------------------------------------------------------
-  const ITEMS = [...BOXES, ...SMASH, ...TACOS, ...BOWLS, ...WRAPS, ...BUCKETS, ...SIDES, ...DRINKS, ...DESSERTS];
-
-  // Helper de calcul de prix (V0 simulation client-side ; en prod = PricingService backend)
-  function priceFor(item, opts) {
+  // Helper to build kiosk-aligned item
+  function mkItem(id, slug, category_id, name, price, description, opts) {
     opts = opts || {};
-    let base = item.price;
-    // variation override
-    if (opts.variationId && item.variations) {
-      const v = item.variations.find(x => x.id === opts.variationId);
-      if (v) base = v.price;
-    }
-    // extras
-    let extras = 0;
-    (opts.extraIds || []).forEach(id => {
-      const e = (item.extras || []).find(x => x.id === id);
-      if (e) extras += e.price;
-    });
-    // wizard step selections (addons price deltas)
-    let stepDeltas = 0;
-    if (opts.wizardSelections && item.wizard_profile) {
-      Object.keys(opts.wizardSelections).forEach(stepKey => {
-        const step = item.wizard_profile.steps.find(s => s.step_key === stepKey);
-        if (!step) return;
-        const selected = opts.wizardSelections[stepKey];
-        const ids = Array.isArray(selected) ? selected : [selected];
-        ids.forEach(optId => {
-          const opt = step.options.find(o => o.id === optId);
-          if (opt) stepDeltas += opt.price;
-        });
-      });
-    }
-    const qty = opts.qty || 1;
-    return (base + extras + stepDeltas) * qty;
+    return {
+      id, slug, category_id, name, price, description,
+      thumb: 'item-' + slug,
+      kiosk_emoji: opts.emoji || '',
+      time: opts.time !== undefined ? opts.time : 8,
+      tags: opts.tags || [],
+      is_featured: !!opts.is_featured,
+      is_new: !!opts.is_new,
+      is_spicy: !!opts.is_spicy,
+      is_halal: opts.is_halal !== false,    // default true
+      is_vegetarian: !!opts.is_vegetarian,
+      // Composition flags (cf. config/menu.php)
+      viandes: opts.viandes ?? 0,
+      has_sauce: opts.has_sauce !== false,
+      has_crudites: !!opts.has_crudites,
+      has_supplements: opts.has_supplements !== false,
+      has_menu_addon: !!opts.has_menu_addon,
+      // Allergens
+      allergens: opts.allergens || ['gluten', 'lactose'],
+    };
   }
 
-  // Default extras IDs (what's pre-toggled when opening the item detail screen)
-  function defaultExtraIds(item) {
-    return (item.extras || []).filter(e => e.default).map(e => e.id);
+  // ====== NOS TACOS (cat 1) ======
+  const TACOS = [
+    mkItem(101, 'tacos-m',   1, 'Tacos M (1 Viande)',  6.50, '1 Viande au choix · Sauce · Crudités',  { viandes: 1, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🌮' }),
+    mkItem(102, 'tacos-l',   1, 'Tacos L (2 Viandes)', 8.50, '2 Viandes au choix · Sauce · Crudités', { viandes: 2, has_crudites: true, has_menu_addon: true, time: 10, tags: ['TOP'],     emoji: '🌮' }),
+    mkItem(103, 'tacos-xl',  1, 'Tacos XL (3 Viandes)', 10.50, '3 Viandes au choix · Sauce · Crudités', { viandes: 3, has_crudites: true, has_menu_addon: true, time: 12, emoji: '🌮' }),
+    mkItem(104, 'tacos-xxl', 1, 'Tacos XXL (4 Viandes)', 12.50, '4 Viandes au choix · Sauce · Crudités', { viandes: 4, has_crudites: true, has_menu_addon: true, time: 14, tags: ['SPICY'], is_spicy: true, emoji: '🌮' }),
+  ];
+
+  // ====== NOS SANDWICHS (cat 2) ======
+  const SANDWICHS = [
+    mkItem(201, 'le-mega',          2, 'Le Méga',             8.00, '2 viandes au choix + Cheddar + Œuf',                                  { viandes: 2, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
+    mkItem(202, 'le-terminator',    2, 'Le Terminator',       9.00, '2 viandes au choix + 2 Cheddar + Œuf + Jambon de dinde',              { viandes: 2, has_crudites: true, has_menu_addon: true, time: 12, tags: ['TOP'], emoji: '💪' }),
+    mkItem(203, 'le-supreme',       2, 'Le Suprême',          7.00, 'Steak + Cordon Bleu + Cheddar',                                       { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
+    mkItem(204, 'le-cayenne',       2, 'Le Cayenne',          7.00, 'Viande hachée ou chicken + mozzarella + cheddar + crème fraîche',     { viandes: 1, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🥖' }),
+    mkItem(205, 'sandwich-froid',   2, 'Sandwich Froid',      4.50, 'Sandwich au Thon',                                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 5,  emoji: '🥪' }),
+    mkItem(206, 'panini',           2, 'Panini',              5.00, 'Thon · Jambon · Viande hachée · Fromage de chèvre · Saumon · Escalope', { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8,  emoji: '🥪' }),
+    mkItem(207, 'sandwich-pain',    2, 'Sandwich Classique (Pain)',    6.50, '1 Viande au choix dans un pain classique', { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8, emoji: '🥖' }),
+    mkItem(208, 'sandwich-galette', 2, 'Sandwich Classique (Galette)', 6.50, '1 Viande au choix dans une galette',       { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8, emoji: '🌯' }),
+  ];
+
+  // ====== NOS BURGERS (cat 3) ======
+  const BURGERS = [
+    mkItem(301, 'burger-poulet',   3, 'Burger Poulet',  6.00, 'Poulet pané + Cheddar',                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🍔' }),
+    mkItem(302, 'cheese-burger',   3, 'Cheese Burger',  6.00, '1 Steak + 1 Cheddar',                                      { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🍔' }),
+    mkItem(303, 'fish-burger',     3, 'Fish Burger',    6.00, 'Poisson pané + Cheddar',                                   { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🐟' }),
+    mkItem(304, 'double-cheese',   3, 'Double Cheese',  7.00, '2 Steaks + 2 Cheddars',                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 12, tags: ['TOP'], emoji: '🍔' }),
+    mkItem(305, 'big-burger',      3, 'Big Burger',     9.00, '3 Steaks + 3 Cheddar + 2 Jambon de dinde',                 { viandes: 0, has_crudites: true, has_menu_addon: true, time: 14, tags: ['TOP'], emoji: '💪' }),
+    mkItem(306, 'grill-burger',    3, 'Grill Burger',   8.00, '2 Steaks + 2 Cheddars + Jambon de dinde',                  { viandes: 0, has_crudites: true, has_menu_addon: true, time: 12, emoji: '🔥' }),
+  ];
+
+  // ====== NOS ASSIETTES (cat 4) ======
+  const ASSIETTES = [
+    mkItem(401, 'assiette-poulet',  4, 'Assiette Poulet',  12.50, 'Poulet (Nature · Curry · Paprika) + Frites + Salade + Pain + Sauce', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 14, emoji: '🍽️' }),
+    mkItem(402, 'assiette-kefta',   4, 'Assiette Kefta',   12.50, 'Kefta + Frites + Salade + Pain + Sauce',                             { viandes: 0, has_crudites: false, has_menu_addon: false, time: 14, emoji: '🍽️' }),
+    mkItem(403, 'assiette-merguez', 4, 'Assiette Merguez', 12.50, 'Merguez + Frites + Salade + Pain + Sauce',                           { viandes: 0, has_crudites: false, has_menu_addon: false, time: 14, tags: ['SPICY'], is_spicy: true, emoji: '🌶️' }),
+    mkItem(404, 'assiette-mixte',   4, 'Assiette Mixte',   14.50, 'Poulet · Kefta · Merguez + Frites + Salade + Pain + Sauce',          { viandes: 0, has_crudites: false, has_menu_addon: false, time: 16, tags: ['TOP'],   emoji: '🍽️' }),
+  ];
+
+  // ====== OJJA (cat 5) ======
+  const OJJA = [
+    mkItem(501, 'ojja-boeuf',   5, 'Ojja Bœuf',         13.50, 'Ojja avec Bœuf + Frites + Pain',         { viandes: 0, has_crudites: false, has_menu_addon: false, time: 15, emoji: '🍳' }),
+    mkItem(502, 'ojja-poulet',  5, 'Ojja Poulet',       13.50, 'Ojja avec Poulet + Frites + Pain',       { viandes: 0, has_crudites: false, has_menu_addon: false, time: 15, emoji: '🍳' }),
+    mkItem(503, 'ojja-hachee',  5, 'Ojja Viande Hachée', 13.50, 'Ojja avec Viande Hachée + Frites + Pain', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 15, emoji: '🍳' }),
+    mkItem(504, 'ojja-merguez', 5, 'Ojja Merguez',      13.50, 'Ojja avec Merguez + Frites + Pain',      { viandes: 0, has_crudites: false, has_menu_addon: false, time: 15, tags: ['SPICY'], is_spicy: true, emoji: '🌶️' }),
+  ];
+
+  // ====== OMELETTES (cat 6) ======
+  const OMELETTES = [
+    mkItem(601, 'omelette-nature',   6, 'Omelette Nature',              7.50, 'Omelette classique + Frites + Pain',           { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🥚' }),
+    mkItem(602, 'omelette-fromage',  6, 'Omelette Fromage',             8.50, 'Omelette avec Fromage + Frites + Pain',        { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🧀' }),
+    mkItem(603, 'omelette-champi',   6, 'Omelette Champignons Fromage', 9.50, 'Omelette avec Champignons et Fromage + Frites + Pain', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 10, emoji: '🍄' }),
+  ];
+
+  // ====== NOS SALADES (cat 7) ======
+  const SALADES = [
+    mkItem(701, 'salade-chevre',    7, 'Salade Chèvre',    7.50, 'Laitue · Tomate · Chèvre · Croûtons · Vinaigrette · Maïs', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗', is_vegetarian: true }),
+    mkItem(702, 'salade-royale',    7, 'Salade Royale',    7.50, 'Laitue · Tomate · Maïs · Poulet · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
+    mkItem(703, 'salade-saumon',    7, 'Salade Saumon',    7.50, 'Laitue · Tomate · Maïs · Saumon · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
+    mkItem(704, 'salade-tunisienne', 7, 'Salade Tunisienne', 7.50, 'Concombre · Tomate · Oignon · Poivrons · Thon · Olives · Huile d\'Olive', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
+  ];
+
+  // ====== POULET CROUSTILLANT (cat 8) ======
+  const SNACKING = [
+    mkItem(801, 'wings-6',   8, 'Ailes de poulet (6 pièces)',    6.00, '6 ailes de poulet croustillantes',  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🍗' }),
+    mkItem(802, 'wings-12',  8, 'Ailes de poulet (12 pièces)',   10.50, '12 ailes de poulet croustillantes', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 10, emoji: '🍗', tags: ['TOP'] }),
+    mkItem(803, 'tenders-6', 8, 'Filets de poulet croustillants (6 pièces)',  7.50, '6 filets de poulet croustillants',  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🍗' }),
+    mkItem(804, 'tenders-12', 8, 'Filets de poulet croustillants (12 pièces)', 13.50, '12 filets de poulet croustillants', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 10, emoji: '🍗' }),
+  ];
+
+  // ====== MENUS ENFANTS (cat 9) ======
+  const MENUS_ENFANTS = [
+    mkItem(901, 'menu-cheese-enfant',  9, 'Menu Cheese Burger (Enfant)', 6.00, '1 steak + 1 cheddar + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
+    mkItem(902, 'menu-nuggets-enfant', 9, 'Menu Nuggets (Enfant)',       6.00, '6 Nuggets de poulet + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
+  ];
+
+  // ====== FRITES & ACCOMPAGNEMENTS (cat 10) ======
+  const SIDES = [
+    mkItem(1001, 'frites-moyenne', 10, 'Frites Moyenne', 2.50, 'Portion moyenne de frites', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 4, emoji: '🍟' }),
+    mkItem(1002, 'frites-grande',  10, 'Frites Grande',  4.00, 'Grande portion de frites',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 5, emoji: '🍟' }),
+  ];
+
+  // ====== DESSERTS (cat 11) ======
+  const DESSERTS = [
+    mkItem(1101, 'glace',      11, 'Glace',      3.80, 'Glace artisanale', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍦' }),
+    mkItem(1102, 'tarte-daim', 11, 'Tarte Daim', 3.80, 'Tarte au Daim',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰' }),
+    mkItem(1103, 'tiramisu',   11, 'Tiramisu',   3.80, 'Tiramisu maison',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰' }),
+  ];
+
+  // ====== BOISSONS (cat 12) — pas de wizard, ajout direct ======
+  const DRINKS = [
+    mkItem(1201, 'coca',        12, 'Coca-Cola 33cl',       1.50, 'Coca-Cola original',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥤' }),
+    mkItem(1202, 'coca-zero',   12, 'Coca-Cola Zero 33cl',  1.50, 'Coca-Cola sans sucre',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥤' }),
+    mkItem(1203, 'fanta',       12, 'Fanta Orange 33cl',    1.50, 'Fanta Orange',          { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍊' }),
+    mkItem(1204, 'sprite',      12, 'Sprite 33cl',          1.50, 'Sprite',                { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍋' }),
+    mkItem(1205, 'oasis',       12, 'Oasis Tropical 33cl',  1.50, 'Oasis Tropical',        { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🌴' }),
+    mkItem(1206, 'orangina',    12, 'Orangina 33cl',        1.50, 'Orangina',              { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍊' }),
+    mkItem(1207, 'eau-plate',   12, 'Eau Plate 50cl',       1.00, 'Eau minérale',          { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '💧' }),
+    mkItem(1208, 'capri-sun',   12, 'Capri-Sun',            1.50, 'Capri-Sun 20cl',        { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧃' }),
+  ];
+
+  // ====== SUPPLÉMENTS (cat 13) — items commandables seuls ======
+  const SUPPLEMENTS_ITEMS = [
+    mkItem(1301, 'item-sauce-sup', 13, 'Sauce supplémentaire',     0.50, 'Sauce au choix en supplément', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥫' }),
+    mkItem(1302, 'item-fromage',   13, 'Fromage supplémentaire',   1.00, 'Fromage en supplément',         { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
+    mkItem(1303, 'item-jambon',    13, 'Jambon de dinde',          1.00, 'Supplément jambon de dinde',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥓' }),
+    mkItem(1304, 'item-boursin',   13, 'Boursin',                  1.00, 'Supplément Boursin',            { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
+    mkItem(1305, 'item-raclette',  13, 'Fromage à raclette',       1.00, 'Supplément fromage à raclette', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
+    mkItem(1306, 'item-oeuf',      13, 'Œuf',                       1.00, 'Supplément œuf',                { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥚' }),
+    mkItem(1307, 'item-galette',   13, 'Galette pommes de terre',   1.00, 'Supplément galette pommes de terre', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥔' }),
+    mkItem(1308, 'item-salade',    13, 'Salade verte',              2.00, 'Salade verte en accompagnement',     { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥗', is_vegetarian: true }),
+  ];
+
+  // -------------------------------------------------------------------------
+  // ALL ITEMS (47 produits Le Cayenne)
+  // -------------------------------------------------------------------------
+  const ITEMS = [
+    ...TACOS, ...SANDWICHS, ...BURGERS, ...ASSIETTES, ...OJJA, ...OMELETTES,
+    ...SALADES, ...SNACKING, ...MENUS_ENFANTS, ...SIDES, ...DESSERTS, ...DRINKS,
+    ...SUPPLEMENTS_ITEMS,
+  ];
+
+  // -------------------------------------------------------------------------
+  // PRICE CALCULATOR (V0 client-side ; en prod = PricingService backend)
+  // -------------------------------------------------------------------------
+  function priceFor(item, opts) {
+    opts = opts || {};
+    let total = item.price;
+    // Sauces : 1 gratuite, sup 0.50€ chacune au-delà
+    if (Array.isArray(opts.sauceIds) && opts.sauceIds.length > 1) {
+      total += (opts.sauceIds.length - 1) * 0.50;
+    }
+    // Suppléments
+    (opts.supplementIds || []).forEach(id => {
+      const s = SUPPLEMENTS.find(x => x.id === id);
+      if (s) total += s.price;
+    });
+    // Formule (menu/frites/boisson)
+    if (opts.formuleId) {
+      const f = FORMULES.find(x => x.id === opts.formuleId);
+      if (f) total += f.price;
+    }
+    return total * (opts.qty || 1);
+  }
+
+  function defaultCruditeIds() {
+    return CRUDITES.filter(c => c.default).map(c => c.id);
+  }
+
+  function defaultSauceId() {
+    // 1 sauce par défaut au choix utilisateur (V0 = "Sans Sauce" pour ne pas forcer)
+    return null;
   }
 
   // -------------------------------------------------------------------------
@@ -648,8 +302,12 @@
   window.LC.menu = {
     branch: BRANCH,
     categories: CATEGORIES,
-    attributes: ATTRIBUTES,
     items: ITEMS,
+    meats: MEATS,
+    sauces: SAUCES,
+    crudites: CRUDITES,
+    supplements: SUPPLEMENTS,
+    formules: FORMULES,
     findItem(idOrSlug) {
       return ITEMS.find(i => i.id === idOrSlug || i.slug === idOrSlug);
     },
@@ -660,11 +318,11 @@
       return ITEMS.filter(i => i.category_id === categoryId);
     },
     priceFor,
-    defaultExtraIds,
+    defaultCruditeIds,
+    defaultSauceId,
   };
 
-  // Backwards-compat globals used by existing screens-main.jsx
-  // (mapping vers le format simplifié original : { id, name, cat, price, desc, tags, slot, time })
+  // Backwards-compat globals (utilisés par screens existants)
   window.ITEMS = ITEMS.map(i => ({
     ...i,
     cat: (CATEGORIES.find(c => c.id === i.category_id) || {}).slug || 'other',
@@ -677,5 +335,7 @@
     icon: c.icon,
     sort: c.sort,
     backendId: c.id,
+    wizard_template: c.wizard_template,
+    has_menu: c.has_menu,
   }));
 })();

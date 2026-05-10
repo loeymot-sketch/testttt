@@ -7,7 +7,10 @@
 
 ## §0 — TL;DR
 
-L'app mobile actuelle est **100% fonctionnelle en standalone** (15 écrans, navigation, wizard composition box, panier, loyalty UI). Toutes les données viennent de `mobile/data/*.js`. L'architecture est **prête au branchement** : chaque module data décrit son mapping vers le backend cible (commentaires en tête de fichier).
+L'app mobile actuelle est **100% fonctionnelle en standalone** et **alignée 1:1 avec le kiosk Le Cayenne** (cf. `config/menu.php` SSOT) :
+- 13 catégories réelles + 60 produits + 9 viandes + 15 sauces + 3 crudités + 7 suppléments + 3 formules
+- Logique de prise de commande **identique au kiosk** : pick viandes selon item.viandes, sauce 1 gratuite (sup 0,50 €), crudités toggle (default ON), suppléments à 1 €, formule menu/frites/boisson en addon
+- **Aucune box inventée** : items réels Tacos M/L/XL/XXL, Sandwichs Méga/Terminator/Suprême/Cayenne, Burgers Cheese/Fish/Double/Big/Grill, Assiettes, Ojja, Omelettes, Salades, Wings/Tenders, Menus enfants, Frites, Desserts, Boissons
 
 **Deux chemins possibles** :
 - **Chemin A — Supabase** (recommandé pour mobile B2C).
@@ -22,14 +25,39 @@ Les deux sont compatibles avec la data layer actuelle (même schéma).
 ### Fichiers data (à remplacer par appels API)
 | Fichier | Contenu | Endpoint cible |
 |---|---|---|
-| `mobile/data/menu.js` | branch + 9 catégories + 35 items + variations + extras + addons + wizard_profiles | `GET /menu` |
+| `mobile/data/menu.js` | branch + 13 catégories Le Cayenne + 60 items + meats[9] + sauces[15] + crudites[3] + supplements[7] + formules[3] (cf. `config/menu.php` SSOT) | `GET /menu` |
 | `mobile/data/loyalty.js` | config + 6 rewards + balance + 7 history | `GET /loyalty/balance`, `/history`, `/rewards` |
 | `mobile/data/orders.js` | 1 active + 5 history | `GET /order?status=...` |
 | `mobile/data/user.js` | profil mock | `GET /profile` |
 | `mobile/api/storage.js` | localStorage helpers (auth/cart/onboarding) | **conserve** (cache local + offline) |
 
-### Schéma data layer = schéma backend
-Le schéma JSON utilisé par la mobile app **est aligné** avec les modèles Eloquent FoodKing (cf. `app/Models/Item.php`, `ItemCategory`, `ItemVariation`, `ItemExtra`, `ItemAddon`, `ItemWizardProfile/Step`). La projection produite par `App\Services\Kiosk\KioskMenuService::build()` est consommable telle quelle par la mobile app. **Aucune transformation côté client** n'est nécessaire.
+### Schéma data layer = schéma backend (kiosk-aligned)
+Le schéma JSON utilisé par la mobile app **est aligné 1:1 avec le kiosk** (cf. `config/menu.php` Single Source Of Truth + `KioskWizardComponent.vue`). Chaque item porte les flags qui pilotent l'UI :
+
+```js
+{
+  id, slug, category_id, name, description, price, time, kiosk_emoji, tags,
+  is_featured, is_new, is_spicy, is_halal, is_vegetarian,
+  // Composition flags (cf. config/menu.php)
+  viandes,            // 0-4 → si > 0, étape "Choisis N viandes" obligatoire
+  has_sauce,          // bool → étape "Sauce" (1 gratuite, sup 0,50 €/sauce additionnelle)
+  has_crudites,       // bool → étape "Crudités" (Salade/Tomate/Oignon toggle, default ON)
+  has_supplements,    // bool → suppléments toggleable (jambon/œuf/raclette/galette/etc.)
+  has_menu_addon,     // bool → étape "Faire un menu" (Menu+3€ / Frites+2€ / Boisson+2€)
+  allergens,
+}
+```
+
+**Mapping vers le backend Eloquent** :
+- `Item.is_featured` → projection JSON
+- `Item.is_halal/is_spicy/is_vegetarian/is_gluten_free` → flags diététiques (déjà dans `KioskMenuService::projectItems`)
+- `viandes` → `ItemAttribute(name='Viande', min_select=N, max_select=N, allow_repeat=true)` + `ItemVariation` lié
+- `has_sauce` → `ItemAttribute(name='Sauce', min_select=1, max_select=1, allow_repeat=false)`
+- `has_crudites` → `ItemAttribute(name='Crudités', min_select=0, max_select=3, allow_repeat=false)`
+- `supplements[]` → `ItemExtra` (group_label, price)
+- `formules[]` → `ItemAddon(role='menu_component')`
+
+**Pas de wizard composition box** — la mobile app reproduit exactement le flow kiosk : produit → suppléments en page produit → ajout panier direct.
 
 ---
 
