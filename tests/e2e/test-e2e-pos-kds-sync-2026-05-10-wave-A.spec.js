@@ -161,16 +161,17 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       // Switch back to "All" by clicking the first pill (index 0) so DIRECT_ADD_ITEM_ID
       // (cat 315) is reachable in the grid.
       if (pillCount >= 1) {
-        await categoryPills.nth(0).click({ timeout: 5_000 }).catch(() => {});
+        // [test-e2e fix A-005 round-2] log instead of silent swallow — category-pill click is a state-transition
+        await categoryPills.nth(0).click({ timeout: 5_000 }).catch((e) => observations.push(`state05: category-pill[0] click threw ${e.message}`));
         await page.waitForTimeout(800);
       }
       const tileLocator = page.locator('button.pos-item-tile').first();
       const tileExists = await tileLocator.count();
       if (tileExists > 0) {
-        await tileLocator.hover({ timeout: 5_000 }).catch(() => {});
+        await tileLocator.hover({ timeout: 5_000 }).catch(() => {});  // [test-e2e fix A-005 round-2] best-effort hover, headless may not honor :hover
         await page.waitForTimeout(300);
         // Force keyboard focus too — a11y check
-        await tileLocator.focus().catch(() => {});
+        await tileLocator.focus().catch(() => {});  // [test-e2e fix A-005 round-2] best-effort focus, headless may not honor :focus-visible
         await page.waitForTimeout(200);
         const hoverState = await page.evaluate(() => {
           const t = document.querySelector('button.pos-item-tile:hover, button.pos-item-tile:focus-visible');
@@ -227,7 +228,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       // We snap ONLY after modal close (no wizard interaction visible).
       // ---------------------------------------------------------------
       const directTile = page.locator(`button[data-pos-item-id="${DIRECT_ADD_ITEM_ID}"]`);
-      const directTileVisible = await directTile.isVisible({ timeout: 5_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives critical add-to-cart branch — log throw via observations
+      const directTileVisible = await directTile.isVisible({ timeout: 5_000 }).catch((e) => { observations.push(`state07: directTile isVisible threw ${e.message}`); return false; });
       observations.push(`state07: tile_${DIRECT_ADD_ITEM_ID}_visible=${directTileVisible}`);
       if (directTileVisible) {
         await directTile.click({ timeout: 5_000 });
@@ -249,7 +251,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
         let clicked = false;
         for (let i = 0; i < addBtnTotal; i++) {
           const candidate = addToCartBtn.nth(i);
-          if (await candidate.isVisible({ timeout: 1_000 }).catch(() => false)) {
+          // [test-e2e fix A-005 round-2] isVisible probe drives critical add-to-cart selection — log throw via observations
+          if (await candidate.isVisible({ timeout: 1_000 }).catch((e) => { observations.push(`state07: add_btn[${i}] isVisible threw ${e.message}`); return false; })) {
             await candidate.click({ timeout: 5_000 });
             clicked = true;
             observations.push(`state07: clicked add_btn index=${i}`);
@@ -277,13 +280,15 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
         const fallbackTile = page.locator('button.pos-item-tile').first();
         if (await fallbackTile.count() > 0) {
           await fallbackTile.click({ timeout: 5_000 });
-          await page.locator('#item-variation-modal').waitFor({ state: 'attached', timeout: 5_000 }).catch(() => {});
+          // [test-e2e fix A-005 round-2] modal waitFor failure is critical — log via observations
+          await page.locator('#item-variation-modal').waitFor({ state: 'attached', timeout: 5_000 }).catch((e) => observations.push(`state07-fallback: variation modal waitFor threw ${e.message}`));
           await page.waitForTimeout(800);
           const addBtns = page.locator('#item-variation-modal button').filter({ hasText: /Ajouter au panier|Add to cart/i });
           const total = await addBtns.count();
           for (let i = 0; i < total; i++) {
-            if (await addBtns.nth(i).isVisible({ timeout: 1_000 }).catch(() => false)) {
-              await addBtns.nth(i).click({ timeout: 5_000 }).catch(() => {});
+            // [test-e2e fix A-005 round-2] isVisible probe + click on fallback add path — log throws
+            if (await addBtns.nth(i).isVisible({ timeout: 1_000 }).catch((e) => { observations.push(`state07-fallback: add_btn[${i}] isVisible threw ${e.message}`); return false; })) {
+              await addBtns.nth(i).click({ timeout: 5_000 }).catch((e) => observations.push(`state07-fallback: add_btn[${i}] click threw ${e.message}`));
               break;
             }
           }
@@ -440,12 +445,14 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       // pile.
       // ---------------------------------------------------------------
       const trackerBtn = page.locator('[data-testid="pos-tracker-open"]');
-      const trackerVisible = await trackerBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives tracker open branch — log throw via observations
+      const trackerVisible = await trackerBtn.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state10: trackerBtn isVisible threw ${e.message}`); return false; });
       observations.push(`state10: tracker_btn_visible=${trackerVisible}`);
       if (trackerVisible) {
         await trackerBtn.click({ timeout: 5_000 });
         // Tracker SPA route — wait for the shell to mount.
-        await page.locator('[data-pos-tracker-shell]').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+        // [test-e2e fix A-005 round-2] tracker shell waitFor failure is critical — log
+        await page.locator('[data-pos-tracker-shell]').waitFor({ state: 'visible', timeout: 15_000 }).catch((e) => observations.push(`state10: tracker shell waitFor threw ${e.message}`));
         await page.waitForTimeout(1_000);
       }
       const trackerState = await page.evaluate(() => {
@@ -472,7 +479,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       await page.waitForTimeout(1_500);
       // Re-add the same direct-item.
       const directTile2 = page.locator(`button[data-pos-item-id="${DIRECT_ADD_ITEM_ID}"]`);
-      const tileBack = await directTile2.isVisible({ timeout: 5_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives re-add branch — log throw via observations
+      const tileBack = await directTile2.isVisible({ timeout: 5_000 }).catch((e) => { observations.push(`state11: directTile2 isVisible threw ${e.message}`); return false; });
       if (tileBack) {
         await directTile2.click({ timeout: 5_000 });
         const variationModal = page.locator('#item-variation-modal');
@@ -482,7 +490,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
         const total = await addBtns.count();
         let clicked = false;
         for (let i = 0; i < total; i++) {
-          if (await addBtns.nth(i).isVisible({ timeout: 1_000 }).catch(() => false)) {
+          // [test-e2e fix A-005 round-2] isVisible probe drives re-add btn selection — log
+          if (await addBtns.nth(i).isVisible({ timeout: 1_000 }).catch((e) => { observations.push(`state11: re-add btn[${i}] isVisible threw ${e.message}`); return false; })) {
             await addBtns.nth(i).click({ timeout: 5_000 });
             clicked = true;
             break;
@@ -504,7 +513,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       observations.push(`state11: cart_lines_pre_pay=${cartReadyForPay}`);
       // Click pay
       const payBtn = page.locator('[data-testid="pos-v5-pay"]');
-      const payVisible = await payBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives pay-modal open branch — log throw via observations
+      const payVisible = await payBtn.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state11: payBtn isVisible threw ${e.message}`); return false; });
       observations.push(`state11: pay_btn_visible=${payVisible}`);
       if (payVisible) {
         await payBtn.click({ timeout: 5_000 });
@@ -535,7 +545,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       // the line (cancel ≠ confirm).
       // ---------------------------------------------------------------
       const closePayBtn = page.locator('#orderpayment .pos-v5-payment-close');
-      const closeVisible = await closePayBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives payment cancel branch — log throw via observations
+      const closeVisible = await closePayBtn.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state12: closePayBtn isVisible threw ${e.message}`); return false; });
       if (closeVisible) {
         await closePayBtn.click({ timeout: 5_000 });
         await page.waitForTimeout(600);
@@ -569,12 +580,13 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       await page.waitForTimeout(800);
       // Open tracker
       const trackerBtn2 = page.locator('[data-testid="pos-tracker-open"]');
-      if (await trackerBtn2.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      // [test-e2e fix A-005 round-2] isVisible + history-link probes drive receipt-baseline navigation — log throws
+      if (await trackerBtn2.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state13: trackerBtn2 isVisible threw ${e.message}`); return false; })) {
         await trackerBtn2.click({ timeout: 5_000 });
         await page.waitForTimeout(1_500);
         // Click history link
         const historyLink = page.locator('[data-testid="pos-tracker-history"]');
-        if (await historyLink.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        if (await historyLink.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state13: historyLink isVisible threw ${e.message}`); return false; })) {
           await historyLink.click({ timeout: 5_000 });
           await page.waitForTimeout(1_500);
         }
@@ -611,12 +623,14 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       // ParkedOrders trigger button — text "Commandes en attente" (FR) or
       // "Parked orders" (EN). Use case-insensitive partial match.
       const parkedBtn = page.locator('button:has-text("Commandes en attente"), button:has-text("Parked")').first();
-      const parkedBtnVisible = await parkedBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+      // [test-e2e fix A-005 round-2] isVisible probe drives parked-orders open branch — log throw via observations
+      const parkedBtnVisible = await parkedBtn.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state14: parkedBtn isVisible threw ${e.message}`); return false; });
       observations.push(`state14: parked_btn_visible=${parkedBtnVisible}`);
       if (parkedBtnVisible) {
         await parkedBtn.click({ timeout: 5_000 });
         // Drawer opens — wait for .parked-orders-drawer
-        await page.locator('.parked-orders-drawer').waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+        // [test-e2e fix A-005 round-2] drawer waitFor failure is critical — log
+        await page.locator('.parked-orders-drawer').waitFor({ state: 'visible', timeout: 8_000 }).catch((e) => observations.push(`state14: parked-orders-drawer waitFor threw ${e.message}`));
         await page.waitForTimeout(700);
       }
       const parkedState = await page.evaluate(() => {
@@ -637,8 +651,9 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       await snap('14-pos-parked-orders');
       // Close drawer if still open (don't pollute state 15)
       const closeParked = page.locator('.parked-orders-close').first();
-      if (await closeParked.isVisible({ timeout: 1_500 }).catch(() => false)) {
-        await closeParked.click({ timeout: 3_000 }).catch(() => {});
+      // [test-e2e fix A-005 round-2] isVisible + click probes drive drawer-cleanup branch — log throws
+      if (await closeParked.isVisible({ timeout: 1_500 }).catch((e) => { observations.push(`state14: closeParked isVisible threw ${e.message}`); return false; })) {
+        await closeParked.click({ timeout: 3_000 }).catch((e) => observations.push(`state14: closeParked click threw ${e.message}`));
         await page.waitForTimeout(400);
       }
 
@@ -677,7 +692,8 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       await page.waitForTimeout(800);
       if (!/\/login/.test(page.url())) {
         // Fallback: clear cookies/storage + goto /login.
-        await ctx.clearCookies().catch(() => {});
+        // [test-e2e fix A-005 round-2] clearCookies failure would mean state 15 captures authenticated stale page — log
+        await ctx.clearCookies().catch((e) => observations.push(`state15: clearCookies threw ${e.message}`));
         await page.evaluate(() => {
           try { localStorage.clear(); } catch (_e) {}
           try { sessionStorage.clear(); } catch (_e) {}
@@ -700,7 +716,7 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       expect(written.length, `Wave A expects 15 PNGs, got ${written.length}`).toBeGreaterThanOrEqual(15);
     } finally {
       try { dispose(); } catch (_e) { /* ignore */ }
-      await ctx.close().catch(() => {});
+      await ctx.close().catch(() => {});  // [test-e2e fix A-005 round-2] best-effort teardown — finally{} block, no observations array reachable here
     }
   });
 });
