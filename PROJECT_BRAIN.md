@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `24188a371` (mobile/CONNECTION_PLAN.md livré post-V0 mobile validée)
-- **Last update** : 2026-05-10 (livraison V0 mobile app Le Cayenne — 18 surfaces audited)
+- **HEAD** : `9b86e1e73` (mobile wizard multi-page refactor + E2E suite 12/12 GO)
+- **Last update** : 2026-05-10 (refactor wizard kiosk-aligned + 12/12 catégories E2E green)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,56 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Mobile wizard multi-page kiosk-aligned 2026-05-10** (HEAD `9b86e1e73`,
+branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Audit cross-agent YC GStack 6 sub-agents** read-only (Architect / DBA /
+  UX / Tester / A11y / Adversarial) — 8 fichiers `reports/review/mobile-audit-2026-05-10/`
+  (~2190 lignes md + 449 lignes raw tinker DB extraction). Adversarial
+  cross-validation : 15 contestations, 13 SURVIVES / 1 FAILS / 1 NEEDS-RECONCILE.
+  3/4 user-prompt assertions invalidées (U2 wings BBQ/Nashville, U3 salades
+  no-wizard, U4 assiette cooking style — toutes FAUSSES vs DB+kiosk évidence).
+- **Owner-gate cleared** (4 décisions critiques par AskUserQuestion) :
+  D1 salades = wizard simplifié (sauce + suppléments) ; D2 menus enfants
+  has_sauce flip false→true ; U2 wings = 15 sauces génériques (Nashville
+  rejected) ; U4 assiette poulet = description text (no wizard step).
+- **Refactor wizard multi-page** : nouveau `mobile/screens-item-steps.jsx`
+  (~900 lignes) avec 8 ScreenStep* (Viandes/Sauce/Crudités/Suppléments/Menu/
+  Drink/FritesStyle/FritesSauce) + ScreenStepRecap + state machine
+  `computeActiveSteps(item, selections)` mirror kiosk template-driven
+  (8 templates : tacos/sandwich/burger/assiette/omelette/salade/snacking/simple).
+  Cascade formule menu : full → drink + frites_style + frites_sauce, frites
+  → frites_style + frites_sauce, boisson → drink. ScreenItem rewriten
+  comme thin wrapper délégant à ScreenItemWizard.
+- **A11y baseline WCAG 2.1 AA** : ChoiceCard avec role=radio/checkbox +
+  tabindex=0 + onKeyDown.Enter/Space ; step heading h1 tabindex=-1 focus
+  on transition ; aria-live counter "0/4" + total ; aria-disabled CTA
+  + aria-describedby hint ; styles `:focus-visible` outline orange 3px ;
+  prefers-reduced-motion override. Mobile/styles.css updated `--gray-3`
+  contrast fix (#6F6A60 4.7:1 vs `#8A857B` 3.05:1) + nouveau `--green-dark`.
+- **Data alignment 1:1 backend** : Cat 5 Ojja + Cat 9 Menus Enfants
+  wizard_template `simple` → `omelette` (DB-aligned V3.8) ; Cat 9 items
+  901/902 has_sauce false → true ; Cat 10 Frites items 1001/1002 nouveau
+  flag `has_frites_style: true` ; nouvelle constante `FRITES_STYLES` 3
+  options (Nature default / Cheddar fondu +1€ / Cheddar+Oignons croustillants
+  +1.50€) cf. migration 040000 ; nouvelle constante `FORMULE_DRINKS` 8
+  boissons cascade ; `priceFor()` étendue avec `fritesStyleId` + `fritesSauceIds`.
+- **Hooks + components ajoutés** (parallel work merged) : `mobile/hooks/`
+  (useCountdown.js + useLoyaltyQR.js) + `mobile/components/` (BarcodeMock.jsx
+  + LoyaltyQR.jsx) + `mobile/data/loyaltyRewardState.js` + `mobile/data/dev-helpers.js`.
+- **Tests E2E mobile suite** (`reports/test-e2e/mobile-vs-kiosk-2026-05-10/`) :
+  Playwright 390×844 sur 12 catégories — **12/12 GO** ✓. 38 PNGs captures,
+  0 raw label hit (Label.X / kiosk.X / 0undefined / NaN€), 0 white-on-white
+  offender (alpha-blending sweep <95%), 0 page error, 0 console error
+  (filtré 404 image-slots.state.json bruit pré-existant). Pricing combo
+  Tacos XXL complet validé : 12,50 + 0,50 sauce + 1,00 Œuf + 3,00 Menu +
+  1,00 Cheddar fondu = **18,00 €**.
+- Frozen-zones intactes (KioskWizard / KioskApp / KioskUpsell / pos-wizard.js
+  / FiscalSequence / BranchScope / PricingService / OrderState : 0 ligne diff).
+- 6 décisions techniques différées orchestrateur : D3 Ojja/Omelettes
+  frites_style dormant (leave dormant) ; D4 Cheddar fondu duplicate items
+  402/403 (backend cycle hors scope mobile) ; D5 cat IDs 1..13 → 306..318
+  (Phase 6 wireup) ; D6 addon.role NULL backfill (backend cycle).
 
 **Mobile app Le Cayenne V0 standalone livrée 2026-05-10** (HEAD `24188a371`,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
