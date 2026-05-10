@@ -1,22 +1,25 @@
 // screens-main.jsx — Home, Menu, Item, Cart, Confirmation, Orders, Profile, Loyalty
+//
+// Données : alimentées par mobile/data/menu.js (window.LC.menu) qui crée les
+// globals window.ITEMS / window.CATS. Si la data layer n'est pas chargée
+// (mode prototype isolé), on fall-back sur un stub minimal.
 const { useState: uS, useEffect: uE } = React;
 
-const CATS = [
-  { id: 'maison', label: 'Fait maison', icon: '🔥' },
-  { id: 'smash', label: 'Smash burgers', icon: '🍔' },
-  { id: 'tacos', label: 'Tacos', icon: '🌮' },
-  { id: 'bowls', label: 'Bowls', icon: '🥣' },
-  { id: 'wraps', label: 'Wraps', icon: '🌯' },
-  { id: 'buckets', label: 'Buckets', icon: '🍗' },
-];
-const ITEMS = [
-  { id: 'cheese', name: 'Le Cheese Smash', cat: 'smash', price: 9.50, desc: 'Pain brioché smashé, double cheddar fondant, sauce maison.', tags: ['SIGNATURE'], slot: 'item-cheese', time: 12 },
-  { id: 'nashville', name: 'Box Nashville', cat: 'buckets', price: 15.00, desc: '2 tenders nashville, frite, burger au choix et boisson.', tags: ['SPICY','TOP'], slot: 'item-nashville', time: 15 },
-  { id: 'familiale', name: 'Box Familiale', cat: 'maison', price: 29.00, desc: '4 smash burgers, 5 wings, 5 tenders, frite XXL, 4 boissons.', tags: ['SIGNATURE'], slot: 'item-familiale', time: 20 },
-  { id: 'gourmet', name: 'Le Gourmet', cat: 'smash', price: 10.00, desc: 'Smash beef, oignon caramélisé, raclette, sauce truffe.', tags: ['NOUVEAU'], slot: 'item-gourmet', time: 14 },
-  { id: 'chevre', name: 'Chèvre Miel', cat: 'smash', price: 9.00, desc: 'Smash beef, fromage de chèvre, miel, roquette.', tags: [], slot: 'item-chevre', time: 12 },
-  { id: 'bowl', name: 'Bowl Cheesy', cat: 'bowls', price: 12.00, desc: 'Riz, poulet croustillant, cheddar fondu, mayo épicée.', tags: ['NOUVEAU'], slot: 'item-bowl', time: 10 },
-];
+if (!window.LC || !window.LC.menu) {
+  console.warn('[Le Cayenne] data/menu.js non chargé — fallback stub');
+  window.LC = window.LC || {};
+  window.LC.menu = {
+    branch: { name: 'Le Cayenne', city: 'Hénin-Beaumont', zip: '62210' },
+    items: [], categories: [],
+    findItem: () => null, findCategory: () => null, itemsForCategory: () => [],
+    priceFor: (item) => (item && item.price) || 0,
+    defaultExtraIds: () => [],
+  };
+  window.ITEMS = window.ITEMS || [];
+  window.CATS = window.CATS || [];
+}
+const CATS = window.CATS;
+const ITEMS = window.ITEMS;
 
 // Tag pill
 const Tag = ({ t }) => {
@@ -225,33 +228,84 @@ function ScreenMenu({ go, cart, addToCart }) {
   );
 }
 
-// ITEM DETAIL
-const SUPS = [
-  { id: 'oignon', name: 'Oignon caramélisé', price: 0, default: true },
-  { id: 'frits', name: 'Oignons frits', price: 0, default: true },
-  { id: 'jala', name: 'Jalapeños', price: 1.00 },
-  { id: 'galette', name: 'Galette de pomme de terre', price: 1.50 },
-  { id: 'cheddar', name: 'Cheddar fondu', price: 1.00 },
-  { id: 'chevre', name: 'Fromage de chèvre', price: 1.00 },
-  { id: 'raclette', name: 'Raclette', price: 1.00 },
-  { id: 'viande', name: 'Viande hachée', price: 2.00 },
-  { id: 'pastrami', name: 'Pastrami', price: 2.00 },
-];
+// ITEM DETAIL — wizard complet (variations + addons + extras + composition steps)
+//
+// Schéma supporté (cf. data/menu.js + KioskMenuService backend) :
+//  - item.variations[]                          taille / déclinaison (radio min=max=1)
+//  - item.itemAttributes[]                      contraintes (min/max, allow_repeat)
+//  - item.addons[].options[]                    choix viande / sauces (custom V0)
+//  - item.extras[]                              suppléments (toggleable, groupés)
+//  - item.wizard_profile.steps[]                composition box (radio par étape)
+//
+// Validation pre-cart : chaque step et attribute doit satisfaire min_select.
 
 function ScreenItem({ go, itemId, addToCart }) {
-  const item = ITEMS.find(i => i.id === itemId) || ITEMS[1];
-  const [sups, setSups] = uS(SUPS.filter(s => s.default).map(s => s.id));
+  const lcMenu = window.LC.menu;
+  const item = lcMenu.findItem(itemId) || lcMenu.findItem('cheese-smash') || ITEMS[0];
+  if (!item) {
+    return <div data-screen-label="09 Item Detail" style={{ padding: 40, textAlign: 'center' }}>Plat introuvable.</div>;
+  }
+
+  // -- State -----------------------------------------------------------------
+  const variations = item.variations || [];
+  const [variationId, setVariationId] = uS(variations[0] ? variations[0].id : null);
+
+  const addonsWithOptions = (item.addons || []).filter(a => a.options && a.options.length);
+  const initAddon = {};
+  addonsWithOptions.forEach(a => { initAddon[a.id] = a.options[0] ? a.options[0].id : null; });
+  const [addonChoices, setAddonChoices] = uS(initAddon);
+
+  const [extraIds, setExtraIds] = uS(lcMenu.defaultExtraIds(item));
+
+  const wizardSteps = (item.wizard_profile && item.wizard_profile.steps) || [];
+  const initWizard = {};
+  wizardSteps.forEach(s => {
+    initWizard[s.step_key] = s.max_select === 1 ? (s.options[0] ? s.options[0].id : null) : [];
+  });
+  const [wizard, setWizard] = uS(initWizard);
+
   const [qty, setQty] = uS(1);
-  const toggle = (id) => setSups(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const supTotal = sups.reduce((s,id) => s + (SUPS.find(x=>x.id===id)?.price || 0), 0);
-  const total = (item.price + supTotal) * qty;
+
+  // -- Helpers ---------------------------------------------------------------
+  const toggleExtra = (id) => setExtraIds(arr => arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
+
+  const setWizardChoice = (stepKey, optId) => {
+    const step = wizardSteps.find(s => s.step_key === stepKey);
+    if (!step) return;
+    setWizard(w => {
+      if (step.max_select === 1) return { ...w, [stepKey]: optId };
+      const cur = Array.isArray(w[stepKey]) ? w[stepKey] : [];
+      return { ...w, [stepKey]: cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur, optId] };
+    });
+  };
+
+  // Validation: each wizard step satisfies min_select
+  const wizardComplete = wizardSteps.every(s => {
+    const sel = wizard[s.step_key];
+    const count = Array.isArray(sel) ? sel.length : (sel ? 1 : 0);
+    return count >= s.min_select;
+  });
+
+  // Group extras by group_label for nicer UI
+  const extrasGrouped = {};
+  (item.extras || []).forEach(e => {
+    const g = e.group_label || 'Suppléments';
+    extrasGrouped[g] = extrasGrouped[g] || [];
+    extrasGrouped[g].push(e);
+  });
+
+  // Compute total via priceFor (V0 client-side ; en prod = PricingService backend)
+  const total = lcMenu.priceFor(item, { variationId, extraIds, wizardSelections: wizard, qty });
+  const unitPrice = lcMenu.priceFor(item, { variationId, extraIds, wizardSelections: wizard, qty: 1 });
+
+  // -- Render ---------------------------------------------------------------
   return (
     <div data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 110 }}>
+      <div className="lc-screen" style={{ paddingBottom: 110, paddingTop: 0 }}>
         {/* hero photo */}
-        <div style={{ position: 'relative', height: 320, background: 'var(--ink)' }}>
-          <Slot id={item.slot} h="100%" radius={0} placeholder={item.name}/>
-          <div style={{ position: 'absolute', top: 14, left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
+        <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
+          <Slot id={item.thumb || item.slot} h="100%" radius={0} placeholder={item.name}/>
+          <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Back size={20}/></IconBtn>
             <div style={{ display: 'flex', gap: 8 }}>
               <IconBtn bg="rgba(255,255,255,0.95)"><I.Heart size={20}/></IconBtn>
@@ -259,71 +313,207 @@ function ScreenItem({ go, itemId, addToCart }) {
             </div>
           </div>
           <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', gap: 8 }}>
-            <span className="lc-pill lc-pill--yellow" style={{ fontSize: 12, padding: '8px 14px' }}>{item.price.toFixed(2).replace('.', ',')} €</span>
+            <span className="lc-pill lc-pill--yellow" style={{ fontSize: 12, padding: '8px 14px' }}>{unitPrice.toFixed(2).replace('.', ',')} €</span>
           </div>
           <div style={{ position: 'absolute', bottom: 14, right: 14 }}>
             <span className="lc-pill" style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', backdropFilter: 'blur(8px)', padding: '8px 12px' }}>
-              <I.Clock size={12}/> {item.time} min
+              <I.Clock size={12} stroke="#fff"/> {item.time} min
             </span>
           </div>
         </div>
+
         {/* content */}
         <div style={{ padding: '24px 20px 0' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center' }}>
-            {item.tags.map(t => <Tag key={t} t={t}/>)}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {(item.tags || []).map(t => <Tag key={t} t={t}/>)}
+            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>HALAL</span>}
+            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray-4)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
-              <I.StarFilled size={14} stroke="var(--orange)"/> 4.8 · 124 avis
+              <I.StarFilled size={14} stroke="var(--orange)"/> 4.8
             </span>
           </div>
-          <h1 className="lc-display" style={{ margin: 0, fontSize: 38, lineHeight: 0.95 }}>{item.name}</h1>
-          <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.desc}</p>
-          {/* info chips */}
+          <h1 className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.95 }}>{item.name}</h1>
+          <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description || item.desc}</p>
+
           <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--cream)', borderRadius: 999, fontSize: 12, fontWeight: 600 }}><I.Clock size={14}/> Prêt en {item.time} min</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--cream)', borderRadius: 999, fontSize: 12, fontWeight: 600 }}><I.Store size={14}/> Retrait sur place</span>
           </div>
-          {/* suppléments */}
-          <div style={{ marginTop: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h3 className="lc-display" style={{ margin: 0, fontSize: 22 }}>Suppléments</h3>
-              <span style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 600 }}>Optionnel</span>
+
+          {/* VARIATIONS (taille / déclinaison) */}
+          {variations.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>{(item.itemAttributes || [])[0]?.name || 'Taille'}</h3>
+                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Obligatoire</span>
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {variations.map(v => {
+                  const on = variationId === v.id;
+                  return (
+                    <div key={v.id} onClick={() => setVariationId(v.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 14, border: on ? '2px solid var(--orange)' : '2px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{v.name}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: on ? 'var(--orange)' : 'var(--gray-4)', fontSize: 13 }}>{v.price.toFixed(2).replace('.', ',')} €</span>
+                        <span style={{ width: 20, height: 20, borderRadius: 999, border: on ? '6px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff', flexShrink: 0 }}/>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div style={{ background: 'var(--cream)', borderRadius: 16, overflow: 'hidden' }}>
-              {SUPS.map((s, i) => {
-                const on = sups.includes(s.id);
-                return (
-                  <div key={s.id} className="lc-toggle-row" onClick={() => toggle(s.id)}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</div>
-                      {s.price > 0 && <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>}
+          )}
+
+          {/* ADDON CHOICES (e.g. tacos viande) */}
+          {addonsWithOptions.map(addon => (
+            <div key={addon.id} style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>{addon.name}</h3>
+                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Choix</span>
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {addon.options.map(opt => {
+                  const on = addonChoices[addon.id] === opt.id;
+                  return (
+                    <div key={opt.id} onClick={() => setAddonChoices(c => ({ ...c, [addon.id]: opt.id }))} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 14, border: on ? '2px solid var(--orange)' : '2px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{opt.name}</span>
+                      {opt.price > 0 ? (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>+ {opt.price.toFixed(2).replace('.', ',')} €</span>
+                      ) : (
+                        <span style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
+                      )}
                     </div>
-                    <div className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
-                      {on && <I.Check size={14} stroke="#fff" sw={3}/>}
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* WIZARD STEPS (composition box) */}
+          {wizardSteps.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                <h3 className="lc-display" style={{ margin: 0, fontSize: 22 }}>Composition</h3>
+                <span style={{ fontSize: 10, color: 'var(--orange)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{wizardSteps.length} étapes</span>
+              </div>
+              <div style={{ display: 'grid', gap: 14 }}>
+                {wizardSteps.map((step, idx) => {
+                  const sel = wizard[step.step_key];
+                  return (
+                    <div key={step.step_key} style={{ background: 'var(--cream)', borderRadius: 16, padding: 14, border: '1.5px solid var(--gray-1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{idx + 1}</div>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{step.label}</span>
+                        </div>
+                        <span style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em' }}>{step.min_select}/{step.max_select === step.min_select ? step.min_select : step.max_select}</span>
+                      </div>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {step.options.map(opt => {
+                          const on = step.max_select === 1 ? sel === opt.id : (Array.isArray(sel) && sel.includes(opt.id));
+                          return (
+                            <div key={opt.id} onClick={() => setWizardChoice(step.step_key, opt.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, background: on ? 'var(--ink)' : '#fff', color: on ? 'var(--yellow)' : 'var(--ink)', cursor: 'pointer' }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {opt.kiosk_emoji && <span>{opt.kiosk_emoji}</span>}
+                                {opt.name}
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {opt.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: on ? 'var(--orange)' : 'var(--orange)' }}>+ {opt.price.toFixed(2).replace('.', ',')} €</span>}
+                                <span style={{ width: 16, height: 16, borderRadius: step.max_select === 1 ? 999 : 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {on && <I.Check size={10} stroke="#fff" sw={3}/>}
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* EXTRAS (suppléments groupés par group_label) */}
+          {Object.keys(extrasGrouped).length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                <h3 className="lc-display" style={{ margin: 0, fontSize: 22 }}>Suppléments</h3>
+                <span style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 600 }}>Optionnel</span>
+              </div>
+              {Object.keys(extrasGrouped).map(group => (
+                <div key={group} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)', marginBottom: 6, paddingLeft: 4 }}>{group}</div>
+                  <div style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
+                    {extrasGrouped[group].map(e => {
+                      const on = extraIds.includes(e.id);
+                      return (
+                        <div key={e.id} className="lc-toggle-row" onClick={() => toggleExtra(e.id)}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{e.name}</div>
+                            {e.price > 0 && <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange)', fontWeight: 700, marginTop: 2 }}>+ {e.price.toFixed(2).replace('.', ',')} €</div>}
+                          </div>
+                          <div className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+                            {on && <I.Check size={12} stroke="#fff" sw={3}/>}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
-          </div>
+          )}
+
           {/* qty */}
           <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <button onClick={() => setQty(q => Math.max(1, q-1))} style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff' }}><I.Minus size={14}/></button>
+              <button onClick={() => setQty(q => Math.max(1, q-1))} style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Minus size={14} stroke="#fff"/></button>
               <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff' }}><I.Plus size={14}/></button>
+              <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Plus size={14} stroke="#fff"/></button>
             </div>
           </div>
         </div>
       </div>
+
       {/* sticky CTA */}
       <div style={{ position: 'absolute', left: 16, right: 16, bottom: 24 }}>
-        <button onClick={() => { addToCart({ ...item, sups, qty }); go('cart'); }} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
+        <button
+          disabled={!wizardComplete}
+          onClick={() => {
+            if (!wizardComplete) return;
+            // Build payload aligned with FoodKing OrderItem composition_snapshot
+            const lineItem = {
+              ...item,
+              variationId,
+              variationLabel: variationId ? (variations.find(v => v.id === variationId) || {}).name : null,
+              addonChoices,
+              wizardSelections: wizard,
+              extraIds,
+              extraLabels: extraIds.map(id => ((item.extras || []).find(e => e.id === id) || {}).name).filter(Boolean),
+              sups: extraIds,                   // backwards-compat with cart UI
+              qty,
+              unitPrice,
+              lineTotal: total,
+            };
+            addToCart(lineItem);
+            go('cart');
+          }}
+          className="lc-btn"
+          style={{
+            background: wizardComplete ? 'var(--ink)' : 'var(--gray-2)',
+            color: wizardComplete ? '#fff' : 'var(--gray-4)',
+            width: '100%', height: 60,
+            justifyContent: 'space-between', padding: '0 24px',
+            cursor: wizardComplete ? 'pointer' : 'not-allowed',
+          }}
+        >
           <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <I.Bag size={18} stroke="var(--yellow)"/>
-            Ajouter au panier
+            <I.Bag size={18} stroke={wizardComplete ? 'var(--yellow)' : 'var(--gray-4)'}/>
+            {wizardComplete ? 'Ajouter au panier' : 'Termine ta composition'}
           </span>
-          <span style={{ color: 'var(--yellow)' }}>{total.toFixed(2).replace('.', ',')} €</span>
+          <span style={{ color: wizardComplete ? 'var(--yellow)' : 'var(--gray-4)' }}>{total.toFixed(2).replace('.', ',')} €</span>
         </button>
       </div>
     </div>
