@@ -5,9 +5,12 @@
 
 @layer base {
     :root {
-        --primary: 255 0 107;
-        --primary-slate: 255 59 142;
-        --primary-light: 255 237 244;
+        /* [test-e2e round-2 cluster-2 A-002] Migration palette legacy pink
+           (255 0 107 / #FF006B) → Cayenne primary (244 80 30 / #F4501E)
+           per owner gate 2026-05-10. Aligns with tailwind.config.js primary. */
+        --primary: 244 80 30;
+        --primary-slate: 220 69 23;
+        --primary-light: 255 232 221;
         --client-font: 'Rubik', sans-serif;
         --admin-font: 'Public Sans', sans-serif;
     }
@@ -66,10 +69,20 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     color: #FFFFFF;
 }
 
-.Vue-Toastification__toast--success .Vue-Toastification__toast-body,
-.Vue-Toastification__toast--error .Vue-Toastification__toast-body {
-    color: #FFFFFF;
-}
+/*
+ * [test-e2e round-2 cluster-5 — B-003 2026-05-10]
+ * Removed forced `color: #FFFFFF` on success/error toast bodies.
+ * The pos-v5.css cascade (imported below) sets the toast root color to
+ * `--pos-v5-success-dark` (#126B2A) on `--pos-v5-success-soft` (#ECFDF5)
+ * background — soft theme intent. The body white-color override killed
+ * inheritance, producing white-on-light-green = invisible title.
+ * Note (finding mis-attribution): B-003 calls the toast `.swal2-toast`
+ * / SweetAlert2 — the actual library is vue-toastification
+ * (.Vue-Toastification__toast). Visual signature matched because both
+ * use a green container + check icon + close X.
+ * Body now inherits the dark color from the toast root (success: dark
+ * green on soft green; error: dark red on soft pink) — WCAG-fine.
+ */
 
 @layer components {
     .container { @apply max-w-6xl mx-auto px-2.5 sm:px-4 }
@@ -289,7 +302,7 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .thin-scrolling::-webkit-scrollbar { @apply w-[3px] }
     .thin-scrolling::-webkit-scrollbar { @apply rounded-2xl bg-transparent }
     .thin-scrolling {
-        scrollbar-color: rgb(255 0 107);
+        scrollbar-color: rgb(244 80 30);
     }
 
     /* OTHER */
@@ -650,8 +663,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 .btnr { @apply py-1.5 px-2 shadow-[0px_3px_8px_rgba(0,0,0,0.24)] bg-white rounded-md cursor-pointer w-full flex items-center justify-center}
 #cursor { @apply text-3xl inline-block pt-2.5}
 .btnr:active{@apply bg-[rgb(177,176,176)]}
-.btnr:hover{@apply bg-[#ff006b0d]}
-.num:hover{@apply bg-[#ff006b0d]}
+.btnr:hover{@apply bg-[#f4501e0d]}
+.num:hover{@apply bg-[#f4501e0d]}
 .btnr::selection {
     user-select: none;
 }
