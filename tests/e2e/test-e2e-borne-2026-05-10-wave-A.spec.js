@@ -207,9 +207,19 @@ test.describe('Borne audit Wave A — Idle + Welcome + Categories visual tour', 
       });
       const paletteSerialized = JSON.stringify(palette).slice(0, 400);
       const cayenneOk = /244,\s*80,\s*30/.test(paletteSerialized) || /#F4501E/i.test(paletteSerialized);
-      const pinkPresent = /232,\s*0,\s*28/.test(paletteSerialized) || /#E8001C/i.test(paletteSerialized);
-      expect.soft(pinkPresent, 'Pink #E8001C must NOT be present (owner gate)').toBe(false);
-      observations.push(`state04: theme=${themeAttrAfter} sidebar=${sidebarCount} cayenne_in_palette=${cayenneOk} pink_present=${pinkPresent}`);
+      // [A-012 P0 — audit_integrity 2026-05-10] Replace the 400-char string slice
+      // with a DOM-wide regex grep. The slice approach silently missed 33+ pink
+      // instances elsewhere in the captured DOM. Match #E8001C/#e8001c as well as
+      // rgb()/rgba(...) using 232,0,28 with any alpha — this is the same regex used
+      // for offline grep verification, so spec & manual checks agree.
+      const pinkCount = await page.evaluate(() => {
+        const html = document.documentElement.outerHTML;
+        const matches = html.match(/#[Ee]8001[Cc]|rgba?\(\s*232\s*,\s*0\s*,\s*28\b/g) || [];
+        return matches.length;
+      });
+      const pinkPresent = pinkCount > 0;
+      expect.soft(pinkCount, `Pink legacy palette must NOT appear in DOM — found ${pinkCount} instances of #E8001C or rgb(232,0,28)`).toBe(0);
+      observations.push(`state04: theme=${themeAttrAfter} sidebar=${sidebarCount} cayenne_in_palette=${cayenneOk} pink_present=${pinkPresent} pink_count=${pinkCount}`);
 
       // Optional debug : count broken sidebar thumbnails (img naturalWidth=0
       // signals 404 / decode failure). Best-effort, not a hard fail.

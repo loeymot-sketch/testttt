@@ -2338,7 +2338,7 @@ export default {
   --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);
   --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);
   --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);
-  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-cta: 0 10px 24px rgba(244, 80, 30, 0.28);
   --kiosk-focus-ring: #2563EB;
 
   display: flex;
@@ -2368,7 +2368,7 @@ export default {
   width: 48px;
   height: 48px;
   border: 4px solid var(--kiosk-border, #e0e0e0);
-  border-top-color: var(--kiosk-primary, #e8001c);
+  border-top-color: var(--kiosk-primary, #f4501e);
   border-radius: 50%;
   animation: kiosk-spin 0.9s linear infinite;
 }
@@ -2396,7 +2396,7 @@ export default {
   right: 28px;
   height: 3px;
   border-radius: 999px;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   opacity: 0.9;
 }
 
@@ -2518,12 +2518,12 @@ export default {
 }
 
 .kiosk-step-visual.active .kiosk-step-visual-icon {
-  border-color: var(--kiosk-primary, #e8001c);
-  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);
+  border-color: var(--kiosk-primary, #f4501e);
+  box-shadow: 0 0 0 6px rgba(244, 80, 30, 0.08), 0 10px 26px rgba(244, 80, 30, 0.16);
 }
 
 .kiosk-step-visual.done .kiosk-step-visual-icon {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   opacity: 0.78;
 }
 
@@ -2550,7 +2550,7 @@ export default {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   border: 2px solid #fff;
   color: #fff;
   font-size: 0;
@@ -2571,7 +2571,7 @@ export default {
 
 .kiosk-step-visual.active .kiosk-step-visual-index,
 .kiosk-step-visual.done .kiosk-step-visual-index {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   color: #fff;
 }
 
@@ -2587,7 +2587,7 @@ export default {
 }
 
 .kiosk-step-visual.active .kiosk-step-visual-label {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 
 .kiosk-progress-bar {
@@ -2666,12 +2666,12 @@ export default {
 }
 
 .kiosk-step-dot.active .kiosk-step-number {
-  background: var(--kiosk-primary, #e8001c);
-  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);
+  background: var(--kiosk-primary, #f4501e);
+  box-shadow: 0 0 0 4px rgba(244, 80, 30, 0.08);
 }
 
 .kiosk-step-dot.done .kiosk-step-number {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   opacity: 0.85;
 }
 
@@ -2725,7 +2725,7 @@ export default {
 
 .kiosk-live-composition-chip.is-product {
   max-width: 250px;
-  border-color: rgba(232, 0, 28, 0.18);
+  border-color: rgba(244, 80, 30, 0.18);
   background: linear-gradient(180deg, #fff, #fff5f6);
 }
 
@@ -2892,17 +2892,17 @@ export default {
 }
 
 .kiosk-btn-next {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
-  border-color: var(--kiosk-primary, #e8001c);
-  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));
+  border-color: var(--kiosk-primary, #f4501e);
+  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(244,80,30,0.28));
 }
 
 .kiosk-btn-next--cart {
   min-height: 58px;
   font-size: 14px;
   letter-spacing: 0.02em;
-  box-shadow: 0 18px 38px rgba(232,0,28,0.34);
+  box-shadow: 0 18px 38px rgba(244,80,30,0.34);
 }
 
 .kiosk-btn-abandon:focus-visible,
@@ -3038,7 +3038,7 @@ export default {
   min-height: 50px;
   border: none;
   border-radius: 12px;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
   font-size: 1rem;
   font-weight: 800;

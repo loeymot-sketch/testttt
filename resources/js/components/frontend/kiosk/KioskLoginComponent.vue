@@ -239,7 +239,7 @@ export default {
   outline: none;
   transition: border-color 0.2s;
 }
-.kiosk-login-input:focus { border-color: #e8001c; }
+.kiosk-login-input:focus { border-color: #f4501e; }
 .kiosk-login-input::placeholder { color: rgba(255,255,255,0.25); }
 .kiosk-login-input:disabled { opacity: 0.5; }
 .kiosk-login-hint {
@@ -268,8 +268,8 @@ export default {
 }
 .kiosk-login-error {
   margin: 0;
-  background: rgba(232,0,28,0.12);
-  border: 1px solid rgba(232,0,28,0.3);
+  background: rgba(244,80,30,0.12);
+  border: 1px solid rgba(244,80,30,0.3);
   border-radius: 10px;
   padding: 0.7rem 1rem;
   color: #ff6b7a;
@@ -277,7 +277,7 @@ export default {
   text-align: center;
 }
 .kiosk-login-btn {
-  background: #e8001c;
+  background: #f4501e;
   color: #fff;
   border: none;
   border-radius: 50px;

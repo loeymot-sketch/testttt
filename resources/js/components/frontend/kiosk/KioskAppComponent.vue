@@ -1042,11 +1042,11 @@ export default {
 <style>
 /* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend. */
 .kiosk-app {
-  --kiosk-primary:       #E8001C;
+  --kiosk-primary:       #F4501E;
   --kiosk-primary-dark:  #B8000F;
-  --kiosk-primary-soft:  rgba(232, 0, 28, 0.16);
-  --kiosk-primary-light: rgba(232, 0, 28, 0.10);
-  --kiosk-accent:        #E8001C;
+  --kiosk-primary-soft:  rgba(244, 80, 30, 0.16);
+  --kiosk-primary-light: rgba(244, 80, 30, 0.10);
+  --kiosk-accent:        #F4501E;
   --kiosk-success:       #22C55E;
   --kiosk-error:         #FF4961;
   --kiosk-warning:       #F59E0B;
@@ -1074,10 +1074,10 @@ export default {
   --kiosk-border-light:  rgba(255, 255, 255, 0.08);
 
   --kiosk-page-bg:
-    radial-gradient(circle at 20% 0%, rgba(232, 0, 28, 0.22), transparent 32%),
+    radial-gradient(circle at 20% 0%, rgba(244, 80, 30, 0.22), transparent 32%),
     linear-gradient(160deg, #050102 0%, #120407 42%, #2A070E 100%);
   --kiosk-idle-bg:
-    linear-gradient(180deg, #180205 0%, #E8001C 55%, #74000B 100%);
+    linear-gradient(180deg, #180205 0%, #F4501E 55%, #74000B 100%);
   --kiosk-idle-text: #FFFFFF;
   --kiosk-idle-muted: rgba(255, 255, 255, 0.88);
   --kiosk-idle-card-bg: rgba(255, 255, 255, 0.94);
@@ -1088,7 +1088,7 @@ export default {
   --kiosk-shadow:        0 10px 30px rgba(0, 0, 0, 0.24);
   --kiosk-shadow-card:   0 18px 48px rgba(0, 0, 0, 0.28);
   --kiosk-shadow-lift:   0 24px 64px rgba(0, 0, 0, 0.34);
-  --kiosk-shadow-cta:    0 18px 46px rgba(232, 0, 28, 0.34);
+  --kiosk-shadow-cta:    0 18px 46px rgba(244, 80, 30, 0.34);
   --kiosk-shadow-modal:  0 28px 74px rgba(0, 0, 0, 0.42);
   --kiosk-shadow-sticky: 0 -14px 34px rgba(0, 0, 0, 0.24);
   --kiosk-overlay-modal: rgba(0, 0, 0, 0.72);
@@ -1121,10 +1121,10 @@ export default {
 }
 
 .kiosk-app.kiosk-theme--light {
-  --kiosk-primary:       #E8001C;
+  --kiosk-primary:       #F4501E;
   --kiosk-primary-dark:  #A90014;
   --kiosk-primary-soft:  #FFF0F2;
-  --kiosk-primary-light: rgba(232, 0, 28, 0.08);
+  --kiosk-primary-light: rgba(244, 80, 30, 0.08);
   --kiosk-success:       #1B8A3A;
   --kiosk-error:         #C21E2F;
   --kiosk-warning:       #B8730B;
@@ -1153,7 +1153,7 @@ export default {
   --kiosk-page-bg:
     linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
   --kiosk-idle-bg:
-    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #E8001C 100%);
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%);
   --kiosk-idle-text: #210006;
   --kiosk-idle-muted: #4A2A2F;
   --kiosk-idle-card-bg: #111111;
@@ -1164,13 +1164,13 @@ export default {
   --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
   --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
   --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
-  --kiosk-shadow-cta:    0 14px 30px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28);
   --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
   --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
   --kiosk-overlay-modal: rgba(26, 26, 26, 0.55);
   --kiosk-focus-ring:    #2563EB;
   --kiosk-status-bg:     rgba(255, 255, 255, 0.94);
-  --kiosk-status-border: rgba(232, 0, 28, 0.18);
+  --kiosk-status-border: rgba(244, 80, 30, 0.18);
   --kiosk-status-offline:#A94700;
 }
 .kiosk-app *, .kiosk-app *::before, .kiosk-app *::after {
@@ -1223,7 +1223,7 @@ export default {
 }
 
 .kiosk-app.kiosk-theme--light .connection-status-banner__close {
-  background: rgba(232, 0, 28, 0.08);
+  background: rgba(244, 80, 30, 0.08);
   color: var(--kiosk-primary);
 }
 
@@ -1325,8 +1325,8 @@ export default {
   inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
-  background: rgba(232, 0, 28, 0.12);
-  border: 1px solid rgba(232, 0, 28, 0.45);
+  background: rgba(244, 80, 30, 0.12);
+  border: 1px solid rgba(244, 80, 30, 0.45);
   border-radius: 50px;
   padding: 6px 16px;
   display: flex;
@@ -1334,7 +1334,7 @@ export default {
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-primary, #F4501E);
   white-space: nowrap;
   max-width: calc(100vw - 32px);
 }
@@ -1357,11 +1357,11 @@ export default {
   border: none;
   border-radius: 999px;
   padding: 10px 20px;
-  background: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary, #F4501E);
   color: #fff;
   font: inherit;
   font-weight: 700;
-  box-shadow: 0 8px 20px rgba(232, 0, 28, 0.22);
+  box-shadow: 0 8px 20px rgba(244, 80, 30, 0.22);
 }
 
 .kiosk-offline-conflict-cta:focus-visible {
@@ -1384,7 +1384,7 @@ export default {
   background: var(--kiosk-primary);
   border-radius: 20px;
   padding: 16px 24px;
-  box-shadow: 0 8px 32px rgba(232, 0, 28, 0.4);
+  box-shadow: 0 8px 32px rgba(244, 80, 30, 0.4);
   cursor: pointer;
   gap: 16px;
   border: none;
@@ -1519,7 +1519,7 @@ export default {
   font-size: 1.2rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.4);
+  box-shadow: 0 8px 24px rgba(244,80,30,0.4);
   transition: transform 0.1s;
 }
 .kiosk-still-here-btn:active { transform: scale(0.96); }
@@ -1535,7 +1535,7 @@ export default {
 .kiosk-init-spinner {
   width: 48px; height: 48px;
   border: 4px solid #E0E0E0;
-  border-top-color: #E8001C;
+  border-top-color: #F4501E;
   border-radius: 50%;
   animation: kiosk-spin 0.9s linear infinite;
 }
@@ -1546,7 +1546,7 @@ export default {
 .kiosk-init-error-title { font-size: 1.4rem; font-weight: 700; margin: 0; color: #1A1A1A; }
 .kiosk-init-error-sub { font-size: 0.95rem; color: #555; margin: 0; text-align: center; max-width: 400px; }
 .kiosk-init-retry-btn {
-  background: #E8001C; color: #fff;
+  background: #F4501E; color: #fff;
   border: none; border-radius: 50px;
   padding: 0.85rem 2.5rem; font-size: 1.05rem; font-weight: 700;
   cursor: pointer; transition: background 0.2s;

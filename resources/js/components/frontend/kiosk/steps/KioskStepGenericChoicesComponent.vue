@@ -179,7 +179,7 @@ export default {
   border: 1px solid rgba(244, 80, 30, 0.18);
   border-radius: 8px;
   background: rgba(244, 80, 30, 0.06);
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 700;
@@ -210,7 +210,7 @@ export default {
 }
 
 .kiosk-generic-choice.selected {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.07));
 }
 
@@ -226,7 +226,7 @@ export default {
 .kiosk-generic-choice-count {
   min-width: 34px;
   border-radius: 999px;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: #fff;
   padding: 4px 8px;
   text-align: center;

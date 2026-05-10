@@ -525,7 +525,7 @@ export default {
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(244, 80, 30,0.09);
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   border: 1px solid rgba(244, 80, 30,0.12);
   font-size: 11px;
   font-weight: 900;
@@ -598,7 +598,7 @@ export default {
   padding: 0 16px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.18));
   font-size: 12px;
   font-weight: 900;

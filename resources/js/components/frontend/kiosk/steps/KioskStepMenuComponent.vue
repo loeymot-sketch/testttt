@@ -594,7 +594,7 @@ export default {
   margin: 0 12px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 10px 14px;
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
@@ -606,7 +606,7 @@ export default {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 10px 14px;
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
@@ -623,7 +623,7 @@ export default {
 .kiosk-info-badge {
   background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 6px 16px;
   border-radius: 50px;
   font-size: 12px;
@@ -633,7 +633,7 @@ export default {
 .kiosk-menu-price {
   font-size: 16px;
   font-weight: 800;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
   padding: 4px 12px;
   border-radius: 50px;
@@ -705,7 +705,7 @@ export default {
 }
 
 .kiosk-menu-card.selected {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
   box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
@@ -749,7 +749,7 @@ export default {
 }
 
 .kiosk-menu-card.selected .kiosk-menu-name {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 
 .kiosk-boisson-section {
@@ -810,7 +810,7 @@ export default {
 }
 
 .kiosk-boisson-card.selected {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
   box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
@@ -851,7 +851,7 @@ export default {
 }
 
 .kiosk-boisson-card.selected .kiosk-boisson-name {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 
 .kiosk-boisson-placeholder {

@@ -265,7 +265,7 @@ export default {
 }
 
 .kiosk-garniture-row.selected {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
   box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
 }

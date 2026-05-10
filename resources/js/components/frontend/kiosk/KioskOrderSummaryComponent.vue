@@ -628,8 +628,8 @@ export default {
   margin-inline-start: 6px;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary-soft, rgba(244,80,30,0.08));
+  color: var(--kiosk-primary, #f4501e);
   font-size: 11px;
 }
 

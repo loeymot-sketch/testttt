@@ -427,7 +427,7 @@ export default {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   font-size: 12px;
 }
 
@@ -453,7 +453,7 @@ export default {
   padding: 0 16px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.18));
   font-size: 12px;
   font-weight: 900;
@@ -478,8 +478,8 @@ export default {
 }
 
 .kiosk-supplement-qty-btn.active {
-  border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
   box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(244, 80, 30,0.24));
 }

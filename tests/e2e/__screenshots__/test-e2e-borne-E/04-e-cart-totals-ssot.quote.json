@@ -1,9 +1,9 @@
 {
   "status": true,
   "data": {
-    "quote_token": "979fd573-ef64-4012-9f15-14fd238705ab",
+    "quote_token": "4bf0eb8e-05bc-4f7a-811e-3c68604391d5",
     "signature": "41d660418f34f0ce82b1b62cddba92986ea155e650a5f030f503041473da8bfd",
-    "expires_at": "2026-05-10T21:01:02+02:00",
+    "expires_at": "2026-05-10T21:13:44+02:00",
     "ttl_seconds": 299,
     "subtotal": 23.7,
     "discount": 0,

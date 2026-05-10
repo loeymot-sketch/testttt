@@ -22,7 +22,7 @@
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
     <link rel="stylesheet" href="/css/app.css?id=5b630db6286a18b2efa2acb8f8927032">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778438180">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778440113">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -595,7 +595,7 @@
 /* =============================================================================
    FoodKing brand V2 (2026-05-10) — Cayenne globalization
    -----------------------------------------------------------------------------
-   Override les tokens legacy `--kiosk-*` (red #E8001C) vers Cayenne #F4501E
+   Override les tokens legacy `--kiosk-*` (red legacy) vers Cayenne #F4501E
    pour cohérence avec mobile app. KioskAppComponent.vue est FROZEN et
    définit ces tokens avec scoped-CSS (specificity [data-v-XXX]) — on utilise
    !important pour battre cette specificity sans toucher le frozen file.
@@ -624,7 +624,7 @@
     /* V3.1 (2026-05-10) : override les gradients legacy --kiosk-page-bg /
        --kiosk-idle-bg / --kiosk-idle-card-text définis dans le frozen
        KioskAppComponent (lignes 1088-1095) qui contiennent encore
-       #FFF0F2 (pink) et #E8001C (red legacy) — owner gate : 0 rouge legacy. */
+       le pink legacy et le red legacy — owner gate : 0 rouge legacy. */
     --kiosk-page-bg:        #FFFFFF !important;
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;
@@ -3003,7 +3003,7 @@ to { transform: rotate(360deg);
 }
 .kiosk-toast.success[data-v-60fd5967] { background: rgba(34, 197, 94, 0.92);
 }
-.kiosk-toast.error[data-v-60fd5967]   { background: rgba(232, 0, 28, 0.92);
+.kiosk-toast.error[data-v-60fd5967]   { background: rgba(244, 80, 30, 0.92);
 }
 .kiosk-toast.info[data-v-60fd5967]    { background: rgba(26, 26, 46, 0.92); border: 1px solid rgba(255,255,255,0.15);
 }
@@ -3128,7 +3128,7 @@ to { transform: rotate(360deg);
   cursor: pointer;
 }
 .kiosk-offline-conflict__btn--primary[data-v-7464ba78] {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: #fff;
 }
 .kiosk-offline-conflict__btn--ghost[data-v-7464ba78] {
@@ -3287,11 +3287,11 @@ to { transform: rotate(360deg);
 </style><style>
 /* Variables CSS kiosk — scopées à .kiosk-app pour ne pas polluer admin/frontend. */
 .kiosk-app {
-  --kiosk-primary:       #E8001C;
+  --kiosk-primary:       #F4501E;
   --kiosk-primary-dark:  #B8000F;
-  --kiosk-primary-soft:  rgba(232, 0, 28, 0.16);
-  --kiosk-primary-light: rgba(232, 0, 28, 0.10);
-  --kiosk-accent:        #E8001C;
+  --kiosk-primary-soft:  rgba(244, 80, 30, 0.16);
+  --kiosk-primary-light: rgba(244, 80, 30, 0.10);
+  --kiosk-accent:        #F4501E;
   --kiosk-success:       #22C55E;
   --kiosk-error:         #FF4961;
   --kiosk-warning:       #F59E0B;
@@ -3319,10 +3319,10 @@ to { transform: rotate(360deg);
   --kiosk-border-light:  rgba(255, 255, 255, 0.08);
 
   --kiosk-page-bg:
-    radial-gradient(circle at 20% 0%, rgba(232, 0, 28, 0.22), transparent 32%),
+    radial-gradient(circle at 20% 0%, rgba(244, 80, 30, 0.22), transparent 32%),
     linear-gradient(160deg, #050102 0%, #120407 42%, #2A070E 100%);
   --kiosk-idle-bg:
-    linear-gradient(180deg, #180205 0%, #E8001C 55%, #74000B 100%);
+    linear-gradient(180deg, #180205 0%, #F4501E 55%, #74000B 100%);
   --kiosk-idle-text: #FFFFFF;
   --kiosk-idle-muted: rgba(255, 255, 255, 0.88);
   --kiosk-idle-card-bg: rgba(255, 255, 255, 0.94);
@@ -3333,7 +3333,7 @@ to { transform: rotate(360deg);
   --kiosk-shadow:        0 10px 30px rgba(0, 0, 0, 0.24);
   --kiosk-shadow-card:   0 18px 48px rgba(0, 0, 0, 0.28);
   --kiosk-shadow-lift:   0 24px 64px rgba(0, 0, 0, 0.34);
-  --kiosk-shadow-cta:    0 18px 46px rgba(232, 0, 28, 0.34);
+  --kiosk-shadow-cta:    0 18px 46px rgba(244, 80, 30, 0.34);
   --kiosk-shadow-modal:  0 28px 74px rgba(0, 0, 0, 0.42);
   --kiosk-shadow-sticky: 0 -14px 34px rgba(0, 0, 0, 0.24);
   --kiosk-overlay-modal: rgba(0, 0, 0, 0.72);
@@ -3365,10 +3365,10 @@ to { transform: rotate(360deg);
   color: var(--kiosk-text);
 }
 .kiosk-app.kiosk-theme--light {
-  --kiosk-primary:       #E8001C;
+  --kiosk-primary:       #F4501E;
   --kiosk-primary-dark:  #A90014;
   --kiosk-primary-soft:  #FFF0F2;
-  --kiosk-primary-light: rgba(232, 0, 28, 0.08);
+  --kiosk-primary-light: rgba(244, 80, 30, 0.08);
   --kiosk-success:       #1B8A3A;
   --kiosk-error:         #C21E2F;
   --kiosk-warning:       #B8730B;
@@ -3397,7 +3397,7 @@ to { transform: rotate(360deg);
   --kiosk-page-bg:
     linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
   --kiosk-idle-bg:
-    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #E8001C 100%);
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%);
   --kiosk-idle-text: #210006;
   --kiosk-idle-muted: #4A2A2F;
   --kiosk-idle-card-bg: #111111;
@@ -3408,13 +3408,13 @@ to { transform: rotate(360deg);
   --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
   --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
   --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
-  --kiosk-shadow-cta:    0 14px 30px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28);
   --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
   --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
   --kiosk-overlay-modal: rgba(26, 26, 26, 0.55);
   --kiosk-focus-ring:    #2563EB;
   --kiosk-status-bg:     rgba(255, 255, 255, 0.94);
-  --kiosk-status-border: rgba(232, 0, 28, 0.18);
+  --kiosk-status-border: rgba(244, 80, 30, 0.18);
   --kiosk-status-offline:#A94700;
 }
 .kiosk-app *, .kiosk-app *::before, .kiosk-app *::after {
@@ -3461,7 +3461,7 @@ to { transform: rotate(360deg);
   background: rgba(255, 255, 255, 0.10);
 }
 .kiosk-app.kiosk-theme--light .connection-status-banner__close {
-  background: rgba(232, 0, 28, 0.08);
+  background: rgba(244, 80, 30, 0.08);
   color: var(--kiosk-primary);
 }
 .kiosk-app:has(.kiosk-wizard) .connection-status-banner {
@@ -3557,8 +3557,8 @@ to { transform: rotate(360deg);
   inset-inline-start: 50%;
   transform: translateX(-50%);
   z-index: 200;
-  background: rgba(232, 0, 28, 0.12);
-  border: 1px solid rgba(232, 0, 28, 0.45);
+  background: rgba(244, 80, 30, 0.12);
+  border: 1px solid rgba(244, 80, 30, 0.45);
   border-radius: 50px;
   padding: 6px 16px;
   display: flex;
@@ -3566,7 +3566,7 @@ to { transform: rotate(360deg);
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-primary, #F4501E);
   white-space: nowrap;
   max-width: calc(100vw - 32px);
 }
@@ -3586,11 +3586,11 @@ to { transform: rotate(360deg);
   border: none;
   border-radius: 999px;
   padding: 10px 20px;
-  background: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary, #F4501E);
   color: #fff;
   font: inherit;
   font-weight: 700;
-  box-shadow: 0 8px 20px rgba(232, 0, 28, 0.22);
+  box-shadow: 0 8px 20px rgba(244, 80, 30, 0.22);
 }
 .kiosk-offline-conflict-cta[data-v-6ffab5ed]:focus-visible {
   outline: 3px solid var(--kiosk-focus-ring, #2563eb);
@@ -3612,7 +3612,7 @@ to { transform: rotate(360deg);
   background: var(--kiosk-primary);
   border-radius: 20px;
   padding: 16px 24px;
-  box-shadow: 0 8px 32px rgba(232, 0, 28, 0.4);
+  box-shadow: 0 8px 32px rgba(244, 80, 30, 0.4);
   cursor: pointer;
   gap: 16px;
   border: none;
@@ -3741,7 +3741,7 @@ to { transform: rotate(360deg);
   font-size: 1.2rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.4);
+  box-shadow: 0 8px 24px rgba(244,80,30,0.4);
   transition: transform 0.1s;
 }
 .kiosk-still-here-btn[data-v-6ffab5ed]:active { transform: scale(0.96);
@@ -3758,7 +3758,7 @@ to { transform: rotate(360deg);
 .kiosk-init-spinner[data-v-6ffab5ed] {
   width: 48px; height: 48px;
   border: 4px solid #E0E0E0;
-  border-top-color: #E8001C;
+  border-top-color: #F4501E;
   border-radius: 50%;
   animation: kiosk-spin-6ffab5ed 0.9s linear infinite;
 }
@@ -3777,7 +3777,7 @@ to { transform: rotate(360deg);
 .kiosk-init-error-sub[data-v-6ffab5ed] { font-size: 0.95rem; color: #555; margin: 0; text-align: center; max-width: 400px;
 }
 .kiosk-init-retry-btn[data-v-6ffab5ed] {
-  background: #E8001C; color: #fff;
+  background: #F4501E; color: #fff;
   border: none; border-radius: 50px;
   padding: 0.85rem 2.5rem; font-size: 1.05rem; font-weight: 700;
   cursor: pointer; transition: background 0.2s;
@@ -4468,8 +4468,8 @@ to   { transform: translateY(0);
   margin-inline-start: 6px;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary-soft, rgba(244,80,30,0.08));
+  color: var(--kiosk-primary, #f4501e);
   font-size: 11px;
 }
 .kiosk-summary-tags[data-v-69099624] {
@@ -4596,7 +4596,7 @@ to   { transform: translateY(0);
   --kiosk-product-media-bg: radial-gradient(circle at 30% 22%, #FFFFFF, #F7F3EC 66%);
   --kiosk-shadow-card: 0 4px 18px rgba(20, 20, 20, 0.06);
   --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);
-  --kiosk-shadow-cta: 0 10px 24px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-cta: 0 10px 24px rgba(244, 80, 30, 0.28);
   --kiosk-focus-ring: #2563EB;
 
   display: flex;
@@ -4624,7 +4624,7 @@ to   { transform: translateY(0);
   width: 48px;
   height: 48px;
   border: 4px solid var(--kiosk-border, #e0e0e0);
-  border-top-color: var(--kiosk-primary, #e8001c);
+  border-top-color: var(--kiosk-primary, #f4501e);
   border-radius: 50%;
   animation: kiosk-spin-ccf7fd5e 0.9s linear infinite;
 }
@@ -4652,7 +4652,7 @@ to { transform: rotate(360deg);
   right: 28px;
   height: 3px;
   border-radius: 999px;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   opacity: 0.9;
 }
 .kiosk-item-info[data-v-ccf7fd5e] {
@@ -4762,11 +4762,11 @@ to { transform: rotate(360deg);
   box-shadow: 0 4px 18px rgba(20, 20, 20, 0.06);
 }
 .kiosk-step-visual.active .kiosk-step-visual-icon[data-v-ccf7fd5e] {
-  border-color: var(--kiosk-primary, #e8001c);
-  box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.08), 0 10px 26px rgba(232, 0, 28, 0.16);
+  border-color: var(--kiosk-primary, #f4501e);
+  box-shadow: 0 0 0 6px rgba(244, 80, 30, 0.08), 0 10px 26px rgba(244, 80, 30, 0.16);
 }
 .kiosk-step-visual.done .kiosk-step-visual-icon[data-v-ccf7fd5e] {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   opacity: 0.78;
 }
 .kiosk-step-visual-img[data-v-ccf7fd5e] {
@@ -4791,7 +4791,7 @@ to { transform: rotate(360deg);
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   border: 2px solid #fff;
   color: #fff;
   font-size: 0;
@@ -4809,7 +4809,7 @@ to { transform: rotate(360deg);
 }
 .kiosk-step-visual.active .kiosk-step-visual-index[data-v-ccf7fd5e],
 .kiosk-step-visual.done .kiosk-step-visual-index[data-v-ccf7fd5e] {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   color: #fff;
 }
 .kiosk-step-visual-label[data-v-ccf7fd5e] {
@@ -4823,7 +4823,7 @@ to { transform: rotate(360deg);
   letter-spacing: 0.04em;
 }
 .kiosk-step-visual.active .kiosk-step-visual-label[data-v-ccf7fd5e] {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 .kiosk-progress-bar[data-v-ccf7fd5e] {
   display: grid;
@@ -4892,11 +4892,11 @@ to { transform: rotate(360deg);
   font-weight: 800;
 }
 .kiosk-step-dot.active .kiosk-step-number[data-v-ccf7fd5e] {
-  background: var(--kiosk-primary, #e8001c);
-  box-shadow: 0 0 0 4px rgba(232, 0, 28, 0.08);
+  background: var(--kiosk-primary, #f4501e);
+  box-shadow: 0 0 0 4px rgba(244, 80, 30, 0.08);
 }
 .kiosk-step-dot.done .kiosk-step-number[data-v-ccf7fd5e] {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   opacity: 0.85;
 }
 .kiosk-live-composition[data-v-ccf7fd5e] {
@@ -4945,7 +4945,7 @@ to { transform: rotate(360deg);
 }
 .kiosk-live-composition-chip.is-product[data-v-ccf7fd5e] {
   max-width: 250px;
-  border-color: rgba(232, 0, 28, 0.18);
+  border-color: rgba(244, 80, 30, 0.18);
   background: linear-gradient(180deg, #fff, #fff5f6);
 }
 .kiosk-live-composition-thumb[data-v-ccf7fd5e] {
@@ -5093,16 +5093,16 @@ to { transform: rotate(360deg);
   border-color: var(--kiosk-border, #e3c2c7);
 }
 .kiosk-btn-next[data-v-ccf7fd5e] {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
-  border-color: var(--kiosk-primary, #e8001c);
-  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(232,0,28,0.28));
+  border-color: var(--kiosk-primary, #f4501e);
+  box-shadow: var(--kiosk-shadow-cta, 0 14px 30px rgba(244,80,30,0.28));
 }
 .kiosk-btn-next--cart[data-v-ccf7fd5e] {
   min-height: 58px;
   font-size: 14px;
   letter-spacing: 0.02em;
-  box-shadow: 0 18px 38px rgba(232,0,28,0.34);
+  box-shadow: 0 18px 38px rgba(244,80,30,0.34);
 }
 .kiosk-btn-abandon[data-v-ccf7fd5e]:focus-visible,
 .kiosk-btn-back[data-v-ccf7fd5e]:focus-visible,
@@ -5221,7 +5221,7 @@ to { transform: rotate(360deg);
   min-height: 50px;
   border: none;
   border-radius: 12px;
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
   font-size: 1rem;
   font-weight: 800;
@@ -7606,7 +7606,7 @@ to   { transform: scale(1);
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   font-size: 12px;
 }
 .kiosk-supplement-qty[data-v-5f8e5e58] {
@@ -7630,7 +7630,7 @@ to   { transform: scale(1);
   padding: 0 16px;
   border-radius: 999px;
   background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.18));
   font-size: 12px;
   font-weight: 900;
@@ -7653,8 +7653,8 @@ to   { transform: scale(1);
   touch-action: manipulation;
 }
 .kiosk-supplement-qty-btn.active[data-v-5f8e5e58] {
-  border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
+  background: var(--kiosk-primary, #f4501e);
   color: var(--kiosk-text-on-red, #fff);
   box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(244, 80, 30,0.24));
 }
@@ -7691,7 +7691,7 @@ to   { transform: scale(1);
   margin: 0 12px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 10px 14px;
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
@@ -7702,7 +7702,7 @@ to   { transform: scale(1);
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 10px 14px;
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
@@ -7717,7 +7717,7 @@ to   { transform: scale(1);
 .kiosk-info-badge[data-v-21dc92ce] {
   background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   padding: 6px 16px;
   border-radius: 50px;
   font-size: 12px;
@@ -7726,7 +7726,7 @@ to   { transform: scale(1);
 .kiosk-menu-price[data-v-21dc92ce] {
   font-size: 16px;
   font-weight: 800;
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
   padding: 4px 12px;
   border-radius: 50px;
@@ -7790,7 +7790,7 @@ to   { transform: scale(1);
   outline-offset: 3px;
 }
 .kiosk-menu-card.selected[data-v-21dc92ce] {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
   box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
@@ -7828,7 +7828,7 @@ to   { transform: scale(1);
   margin-top: 3px;
 }
 .kiosk-menu-card.selected .kiosk-menu-name[data-v-21dc92ce] {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 .kiosk-boisson-section[data-v-21dc92ce] {
   border-top: 1px solid var(--kiosk-border, #e0e0e0);
@@ -7882,7 +7882,7 @@ to {
   transform: scale(0.95);
 }
 .kiosk-boisson-card.selected[data-v-21dc92ce] {
-  border-color: var(--kiosk-primary, #e8001c);
+  border-color: var(--kiosk-primary, #f4501e);
   background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
   box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
@@ -7919,7 +7919,7 @@ to {
   text-transform: uppercase;
 }
 .kiosk-boisson-card.selected .kiosk-boisson-name[data-v-21dc92ce] {
-  color: var(--kiosk-primary, #e8001c);
+  color: var(--kiosk-primary, #f4501e);
 }
 .kiosk-boisson-placeholder[data-v-21dc92ce] {
   text-align: center;
@@ -9710,7 +9710,7 @@ to { transform: rotate(360deg);
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=8df9a5dca219da31cc2308442c560b66"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=4660aac139afa8c8e894d69a979ffb9d"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -9725,7 +9725,7 @@ to { transform: rotate(360deg);
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778438180"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778440113"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

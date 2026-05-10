@@ -216,7 +216,7 @@
 /* =============================================================================
    FoodKing brand V2 (2026-05-10) — Cayenne globalization
    -----------------------------------------------------------------------------
-   Override les tokens legacy `--kiosk-*` (red #E8001C) vers Cayenne #F4501E
+   Override les tokens legacy `--kiosk-*` (red legacy) vers Cayenne #F4501E
    pour cohérence avec mobile app. KioskAppComponent.vue est FROZEN et
    définit ces tokens avec scoped-CSS (specificity [data-v-XXX]) — on utilise
    !important pour battre cette specificity sans toucher le frozen file.
@@ -245,7 +245,7 @@
     /* V3.1 (2026-05-10) : override les gradients legacy --kiosk-page-bg /
        --kiosk-idle-bg / --kiosk-idle-card-text définis dans le frozen
        KioskAppComponent (lignes 1088-1095) qui contiennent encore
-       #FFF0F2 (pink) et #E8001C (red legacy) — owner gate : 0 rouge legacy. */
+       le pink legacy et le red legacy — owner gate : 0 rouge legacy. */
     --kiosk-page-bg:        #FFFFFF !important;
     --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
     --kiosk-idle-card-text: #FFFFFF !important;

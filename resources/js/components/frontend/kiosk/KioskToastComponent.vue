@@ -87,7 +87,7 @@ export default {
 }
 
 .kiosk-toast.success { background: rgba(34, 197, 94, 0.92); }
-.kiosk-toast.error   { background: rgba(232, 0, 28, 0.92); }
+.kiosk-toast.error   { background: rgba(244, 80, 30, 0.92); }
 .kiosk-toast.info    { background: rgba(26, 26, 46, 0.92); border: 1px solid rgba(255,255,255,0.15); }
 .kiosk-toast.warning { background: rgba(234, 179, 8, 0.92); color: #1a1a2e; }
 

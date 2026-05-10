@@ -154,7 +154,7 @@ export default {
 }
 
 .kiosk-offline-conflict__btn--primary {
-  background: var(--kiosk-primary, #e8001c);
+  background: var(--kiosk-primary, #f4501e);
   color: #fff;
 }
 
