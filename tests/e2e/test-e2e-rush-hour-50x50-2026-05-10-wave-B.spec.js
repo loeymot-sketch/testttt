@@ -837,7 +837,11 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
             item_id: itemId,
             order_id: result.orderId,
             order_serial_no: result.orderSerialNo,
-            queue_number: result.queueNumber,
+            // [test-e2e fix B-003 round-3.1 2026-05-11] queue_number is a STRING
+            // like "A0096" — helper coerces via Number() → NaN → JSON.stringify(NaN)
+            // becomes null. Read raw from result.order to preserve string identity
+            // (the KDS DOM matches against the same string).
+            queue_number: result.order?.queue_number ?? null,
             total_amount: result.totalAmount,
             transaction_id: paymentConfirmResult?.ok ? paymentConfirmResult.transaction_id : null,
             payment_confirm_status: paymentConfirmResult?.status ?? null,
@@ -858,9 +862,12 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
           // by queue_number (KDS DOM contains "N°{queue_number}" pill, not
           // order_id — order_id never appears in card text per
           // KitchenDisplaySystemComponent.vue lines 723-726).
-          if (seq % 5 === 0 && result.orderId && result.queueNumber) {
+          // [test-e2e fix B-003 round-3.1 2026-05-11] Use raw result.order.queue_number
+          // (string "A0096"). result.queueNumber is Number()-coerced → NaN → falsy,
+          // which silently skipped every probe in round-3.0 (samples:[], count:0).
+          if (seq % 5 === 0 && result.orderId && result.order?.queue_number) {
             try {
-              const targetQn = String(result.queueNumber).trim();
+              const targetQn = String(result.order.queue_number).trim();
               const timeoutMs = 12_000;
               const pollIntervalMs = 500;
               let latencyMs = null;
@@ -894,7 +901,7 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
                 probe_method: 'dom-scrape',
               });
             } catch (e) {
-              kdsLatencySamples.push({ seq, order_id: result.orderId, queue_number: result.queueNumber, error: String(e.message || e).slice(0, 200) });
+              kdsLatencySamples.push({ seq, order_id: result.orderId, queue_number: result.order?.queue_number ?? null, error: String(e.message || e).slice(0, 200) });
             }
           }
         } catch (err) {
