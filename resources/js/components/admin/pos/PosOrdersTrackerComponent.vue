@@ -276,7 +276,26 @@
                         class="pos-tracker-cancel-textarea"
                         data-testid="tracker-cancel-reason"
                     ></textarea>
-                    <p v-if="cancelDialog.error" class="pos-tracker-cancel-error">{{ cancelDialog.error }}</p>
+                    <!--
+                      [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]
+                      Persistent error banner inside the cancel dialog.
+                      Mirrors KDS C-001 pattern: toast fires for screen-reader
+                      attention, but the banner is the DURABLE visual evidence
+                      that survives adversarial capture timing (no fade).
+                      role="alert" + aria-live="assertive" forces SR announce;
+                      the banner stays visible until user dismisses or closes
+                      the dialog (closeCancelDialog clears `error`).
+                    -->
+                    <div
+                        v-if="cancelDialog.error"
+                        class="pos-tracker-cancel-error-banner"
+                        role="alert"
+                        aria-live="assertive"
+                        data-testid="tracker-cancel-error-banner"
+                    >
+                        <i class="fa-solid fa-circle-exclamation pos-tracker-cancel-error-icon" aria-hidden="true"></i>
+                        <span class="pos-tracker-cancel-error-msg">{{ cancelDialog.error }}</span>
+                    </div>
                 </div>
                 <footer class="pos-tracker-cancel-foot">
                     <button
@@ -1394,6 +1413,37 @@ export default {
     color: #991b1b;
     font-size: 12px;
     font-weight: 600;
+}
+/*
+ * [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]
+ * Persistent error banner — visually distinct from a transient toast.
+ * Stays inside the cancel dialog until the user dismisses or closes.
+ * Solid red left-border + icon + bold copy = unmistakable failure signal.
+ */
+.pos-tracker-cancel-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 12px 0 0 0;
+    padding: 12px 14px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+.pos-tracker-cancel-error-icon {
+    flex-shrink: 0;
+    color: #dc2626;
+    font-size: 16px;
+    line-height: 1.45;
+}
+.pos-tracker-cancel-error-msg {
+    flex: 1;
+    word-break: break-word;
 }
 .pos-tracker-cancel-foot {
     display: flex;

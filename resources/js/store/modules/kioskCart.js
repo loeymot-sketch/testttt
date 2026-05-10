@@ -697,6 +697,40 @@ export const kioskCart = {
                     commit('SET_ORDER_REF', { orderId, queueNumber });
                     resolve(res);
                 }).catch((err) => {
+                    // [test-e2e/pos-kds-sync round-4 F-008 P1 2026-05-10]
+                    // Kiosk-specific 429 visibility on /frontend/order. Before this
+                    // patch the only 429 handler in the kiosk surface was
+                    // KioskLoginComponent (err_rate_limited). When the order
+                    // placement endpoint was rate-limited (rapid double-tap on
+                    // "Payer", or backend rule that limits orders/branch/minute),
+                    // the kiosk fell through to `reject(err)` and the global axios
+                    // interceptor in bootstrap.js fired a generic `error.rate_limited`
+                    // toast (3s debounce per bucket) — but the toast could be
+                    // suppressed if another 429 happened in the same 3s window
+                    // (e.g. status poll + order submit racing). Now we ALSO surface
+                    // a kiosk-specific copy via alertService.error so the customer
+                    // immediately understands "wait, then retry" without leaving
+                    // them silently staring at a stuck Payer screen.
+                    const status = Number(err?.response?.status) || 0;
+                    if (status === 429) {
+                        try {
+                            const i18n = (typeof window !== 'undefined')
+                                ? (window.__appI18n
+                                    || window.app?.__VUE_DEVTOOLS_APP_RECORD__?.app?.config?.globalProperties?.$i18n)
+                                : null;
+                            const t = i18n?.global?.t || i18n?.t;
+                            const msg = (typeof t === 'function')
+                                ? t('error.kiosk_rate_limited')
+                                : 'Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes.';
+                            // Lazy dynamic import to avoid circular dep on the
+                            // store module graph (alertService uses vue-toastification).
+                            import('../../services/alertService').then((mod) => {
+                                try { mod?.default?.error?.(msg); } catch (_) { /* never break reject chain */ }
+                            }).catch(() => { /* defensive — toast missing must not swallow reject */ });
+                        } catch (_) { /* never break reject chain */ }
+                        reject(err);
+                        return;
+                    }
                     // [SPLASH OFFLINE MODE] If network is unavailable, queue locally.
                     // The order will be synced automatically when connectivity returns.
                     const isNetworkError = !err.response || err.response?.status >= 500;

@@ -1015,7 +1015,8 @@
         "network_issue": "Problème réseau — réessayez.",
         "kds_connection_lost": "⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.",
         "order_cancel_rejected": "Cette commande ne peut plus être annulée (statut avancé).",
-        "order_cancel_unauthorized": "Annulation refusée — droits insuffisants. Demande à un manager."
+        "order_cancel_unauthorized": "Annulation refusée — droits insuffisants. Demande à un manager.",
+        "kiosk_rate_limited": "Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes."
     },
     "message": {
         "permission_required": "Permission requise pour accéder à cette page : {permission}",
