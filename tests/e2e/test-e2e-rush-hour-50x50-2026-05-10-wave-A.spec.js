@@ -113,6 +113,38 @@ function fiscalBaseline() {
   }
 }
 
+// [test-e2e fix A-013 round-3 2026-05-11] Per-order DB confirmation,
+// keyed by idempotency_key. Bypasses the SPA stack entirely (artisan
+// tinker → DB) so the cluster-1 axios interceptor in pos-app.js cannot
+// influence the verification — this is the WHOLE point: round-2 finding
+// flagged that the SAME interceptor under audit might transform a 4xx
+// into a "resolved" promise, faking 38/38 ok. Going through artisan
+// closes that audit-integrity gap.
+//
+// Returns { fiscal_seq, branch, total, id } or { error: <reason> }.
+// SQL escaping: idempotency_key is generated locally as
+// `${ts}_${rand36}_${branchId}_A`, no quotes/backslashes/multibyte —
+// safe to inject as-is. We still wrap with single quotes.
+function dbConfirmByIdempotencyKey(idempotencyKey) {
+  try {
+    const rows = dbProbe(
+      `SELECT id, branch_id, total, fiscal_sequence_no FROM orders WHERE idempotency_key = '${idempotencyKey}' LIMIT 1`
+    );
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { fiscal_seq: null, branch: null, total: null, id: null, error: 'no_row_for_idempotency_key' };
+    }
+    const r = rows[0];
+    return {
+      fiscal_seq: r.fiscal_sequence_no === null || r.fiscal_sequence_no === undefined ? null : Number(r.fiscal_sequence_no),
+      branch: r.branch_id === null || r.branch_id === undefined ? null : Number(r.branch_id),
+      total: r.total === null || r.total === undefined ? null : Number(r.total),
+      id: r.id === null || r.id === undefined ? null : Number(r.id),
+    };
+  } catch (e) {
+    return { fiscal_seq: null, branch: null, total: null, id: null, error: String(e.message || e).slice(0, 200) };
+  }
+}
+
 function buildItemsJson({ itemId, qty = 1, branchId = BRANCH_ID, basePrice = 0, extras = [] }) {
   const item_extras = extras.map((e) => ({
     id: e.id,
@@ -246,10 +278,24 @@ async function postPosOrderViaAxios(posPage, payload) {
 // Round-1 round-2 fix — best-effort resilience for transient 429/401:
 // - 429 → clearFoodKingRateLimits + sleep 1500 → retry once
 // - 401 → re-login pos page (revokes-on-relogin is fine, we own the test) → retry once
-async function postPosOrderResilient(posPage, payload, observations) {
+//
+// [test-e2e fix A-002 round-3 2026-05-11] Optional `onRateLimit` callback
+// fires SYNCHRONOUSLY on the first 429 BEFORE clearFoodKingRateLimits() +
+// sleep + retry. This lets the caller snap the in-place 429 toast on the
+// catalog page, BEFORE any navigation OR rate-limit reset destroys it.
+// Round-2 evidence proved snapping from the burst loop after the call
+// returns is too late (3s toast debounce + 1500ms wait → toast gone).
+async function postPosOrderResilient(posPage, payload, observations, onRateLimit) {
   let resp = await postPosOrderViaAxios(posPage, payload);
   if (resp.ok) return { ...resp, retries: 0 };
   if (resp.status === 429) {
+    // [test-e2e fix A-002 round-3 2026-05-11] snap-before-retry: the toast
+    // is rendered by the global axios interceptor in pos-app.js IMMEDIATELY
+    // on the 4xx response. We capture it now, before clearFoodKingRateLimits
+    // and the 1500ms sleep + retry have a chance to dismiss it.
+    if (typeof onRateLimit === 'function') {
+      try { await onRateLimit(payload, resp); } catch (e) { observations.push(`a002_onRateLimit_threw: ${e.message}`); }
+    }
     try { clearFoodKingRateLimits(); } catch (_e) { /* ignore */ }
     await new Promise((r) => setTimeout(r, 1500));
     resp = await postPosOrderViaAxios(posPage, payload);
@@ -583,6 +629,23 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
         [rotation[i], rotation[j]] = [rotation[j], rotation[i]];
       }
 
+      // [test-e2e fix A-002 round-3 2026-05-11] Single-shot 429 toast snap.
+      // We only need ONE empirical capture of the rate-limit toast to close
+      // the silent_error finding (A-002 PARTIAL_PASS in round-2). After the
+      // first capture this becomes a no-op so we don't bloat the report.
+      let a002_429_toast_snapped = false;
+      const a002SnapOn429 = async (payload, resp) => {
+        if (a002_429_toast_snapped) return;
+        a002_429_toast_snapped = true;
+        observations.push(`a002: 429 detected idem=${payload.idempotency_key} status=${resp.status} — snapping IN PLACE before retry/clear`);
+        try {
+          await posRec.snap('mid-burst-429-toast');
+          observations.push('a002_429_toast_seen=true a002_429_state=mid-burst-429-toast');
+        } catch (e) {
+          observations.push(`a002_snap_threw: ${e.message}`);
+        }
+      };
+
       const startBurst1Idx = 0;
       const endBurst1Idx = 19;
       for (let i = startBurst1Idx; i < endBurst1Idx; i++) {
@@ -598,9 +661,25 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
           paymentMethod: PAY.CASH,
         });
         const t0 = Date.now();
-        const resp = await postPosOrderResilient(posPage, payload, observations);
+        const resp = await postPosOrderResilient(posPage, payload, observations, a002SnapOn429);
         const dt = Date.now() - t0;
-        apiResults.push({ seq, token, item: r.item.id, ok: resp.ok, status: resp.status, t_ms: dt, order_id: resp.data?.id || null });
+        // [test-e2e fix A-013 round-3 2026-05-11] Immediate per-order DB
+        // confirmation by idempotency_key (NOT by returned order.id —
+        // querying by idempotency_key proves the row was created by THIS
+        // request, not a cached idempotency-middleware replay). Goes
+        // through artisan/DB, fully bypassing the SPA's axios interceptor
+        // that round-2 flagged as the suspected source of the 38-vs-13
+        // false positive. We attach db_immediate to EVERY apiResults entry
+        // (including failures) so the adversarial reviewer can audit
+        // null fiscal_seq rows separately from "POST failed entirely".
+        const dbImmediate = dbConfirmByIdempotencyKey(payload.idempotency_key);
+        apiResults.push({
+          seq, token, item: r.item.id,
+          ok: resp.ok, status: resp.status, t_ms: dt,
+          order_id: resp.data?.id || null,
+          idempotency_key: payload.idempotency_key,
+          db_immediate: dbImmediate,
+        });
         if (resp.ok && firstApiSeq === null && resp.data?.id) firstApiSeq = resp.data.id;
         if (!resp.ok) observations.push(`api_burst1[${seq}]: FAIL status=${resp.status} body=${JSON.stringify(resp.body).slice(0, 200)}`);
         apiOrdersPosted += resp.ok ? 1 : 0;
@@ -897,9 +976,19 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
           paymentMethod: PAY.CASH,
         });
         const t0 = Date.now();
-        const resp = await postPosOrderResilient(posPage, payload, observations);
+        const resp = await postPosOrderResilient(posPage, payload, observations, a002SnapOn429);
         const dt = Date.now() - t0;
-        apiResults.push({ seq, token, item: r.item.id, ok: resp.ok, status: resp.status, t_ms: dt, order_id: resp.data?.id || null });
+        // [test-e2e fix A-013 round-3 2026-05-11] Same per-order DB
+        // confirmation as burst 1 — see header comment on burst 1 for
+        // rationale. Idempotency_key is the proof of THIS request's row.
+        const dbImmediate = dbConfirmByIdempotencyKey(payload.idempotency_key);
+        apiResults.push({
+          seq, token, item: r.item.id,
+          ok: resp.ok, status: resp.status, t_ms: dt,
+          order_id: resp.data?.id || null,
+          idempotency_key: payload.idempotency_key,
+          db_immediate: dbImmediate,
+        });
         if (!resp.ok) observations.push(`api_burst2[${seq}]: FAIL status=${resp.status} body=${JSON.stringify(resp.body).slice(0, 200)}`);
         apiOrdersPosted += resp.ok ? 1 : 0;
 
@@ -1169,6 +1258,56 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
       console.log(`[Wave A] PNG=${writtenPngs.length} DOM=${writtenDoms.length} console=${writtenConsoles.length} network=${writtenNets.length}`);
       // eslint-disable-next-line no-console
       console.log(`[Wave A] obs:\n  ${observations.join('\n  ')}`);
+      // [test-e2e fix A-002 round-3 2026-05-11] If no 429 fired naturally
+      // in this run, document explicitly so the adversarial reviewer
+      // doesn't see an undefined field — per brief, this is acceptable
+      // PARTIAL_PASS with code-review evidence (round-2 commit 95c2fd799
+      // already wired the toast interceptor in pos-app.js).
+      if (!a002_429_toast_snapped) {
+        observations.push('a002: n/a (toast verification deferred — bucket not exhausted in this run, no 429 fired naturally; relies on round-2 code-review evidence)');
+      }
+
+      // [test-e2e fix A-013 round-3 2026-05-11] Reconciliation summary —
+      // groups apiResults by status×db_immediate.fiscal_seq presence so
+      // the adversarial reviewer can read the 38-vs-N gap at a glance:
+      //   - reported_ok_with_fiscal_seq: API said ok AND DB has fiscal_seq → genuine success
+      //   - reported_ok_no_fiscal_seq:   API said ok BUT DB row has NULL fseq → fiscal alloc deferred (cron retry) — investigate
+      //   - reported_ok_no_db_row:       API said ok BUT NO DB row at all → audit-integrity defect (interceptor lied OR idempotency-replay)
+      //   - reported_fail_with_db_row:   API said fail BUT DB row exists → product silent partial success
+      //   - reported_fail_no_db_row:     API said fail AND no DB row → genuine failure
+      const a013Reconciliation = {
+        reported_ok_with_fiscal_seq: 0,
+        reported_ok_no_fiscal_seq: 0,
+        reported_ok_no_db_row: 0,
+        reported_fail_with_db_row: 0,
+        reported_fail_no_db_row: 0,
+        samples: { ok_no_fseq: [], ok_no_row: [], fail_with_row: [] },
+      };
+      for (const r of apiResults) {
+        const hasRow = r.db_immediate && r.db_immediate.id !== null && r.db_immediate.id !== undefined;
+        const hasFseq = hasRow && r.db_immediate.fiscal_seq !== null && r.db_immediate.fiscal_seq !== undefined;
+        if (r.ok && hasFseq) a013Reconciliation.reported_ok_with_fiscal_seq++;
+        else if (r.ok && hasRow && !hasFseq) {
+          a013Reconciliation.reported_ok_no_fiscal_seq++;
+          if (a013Reconciliation.samples.ok_no_fseq.length < 5) a013Reconciliation.samples.ok_no_fseq.push({ seq: r.seq, idem: r.idempotency_key, db: r.db_immediate });
+        }
+        else if (r.ok && !hasRow) {
+          a013Reconciliation.reported_ok_no_db_row++;
+          if (a013Reconciliation.samples.ok_no_row.length < 5) a013Reconciliation.samples.ok_no_row.push({ seq: r.seq, idem: r.idempotency_key, status: r.status, db: r.db_immediate });
+        }
+        else if (!r.ok && hasRow) {
+          a013Reconciliation.reported_fail_with_db_row++;
+          if (a013Reconciliation.samples.fail_with_row.length < 5) a013Reconciliation.samples.fail_with_row.push({ seq: r.seq, idem: r.idempotency_key, status: r.status, db: r.db_immediate });
+        }
+        else a013Reconciliation.reported_fail_no_db_row++;
+      }
+      observations.push(
+        `A-013_reconciliation: ok+fseq=${a013Reconciliation.reported_ok_with_fiscal_seq}/${apiResults.length} `
+        + `ok_no_fseq=${a013Reconciliation.reported_ok_no_fiscal_seq} ok_no_row=${a013Reconciliation.reported_ok_no_db_row} `
+        + `fail_with_row=${a013Reconciliation.reported_fail_with_db_row} fail_no_row=${a013Reconciliation.reported_fail_no_db_row}`
+      );
+      writeArtifact('a013-db-reconciliation.json', a013Reconciliation);
+
       writeArtifact('observations.json', {
         ts: TS,
         baseline_fiscal: baselineFiscal,
@@ -1179,6 +1318,8 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
           ok: apiResults.filter((r) => r.ok).length,
           failures: apiResults.filter((r) => !r.ok),
         },
+        a013_reconciliation: a013Reconciliation,
+        a002_429_toast_snapped,
         observations,
       });
       // Hard sanity: ≥ 18 PNGs (state 11b makes 18 total)
