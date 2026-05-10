@@ -108,7 +108,7 @@
                 </div>
                 <span class="w-full mb-4 text-center text-black">{{ $t('message.no_orders_found') }}</span>
                 <router-link :to="{ name: 'frontend.home' }"
-                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]">
+                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700">
                     {{ $t('button.go_home') }}
                 </router-link>
             </div>

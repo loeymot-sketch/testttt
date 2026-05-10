@@ -73034,7 +73034,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     to: {
       name: 'frontend.home'
     },
-    "class": "block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]"
+    "class": "block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.go_home')), 1 /* TEXT */)];
@@ -79276,7 +79276,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, null, 8 /* PROPS */, _hoisted_2), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.403_page')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.not_authorize')), 1 /* TEXT */), Object.keys($options.authDefaultPermission).length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
     key: 0,
     to: $data.type + '/' + $options.authDefaultPermission.url,
-    "class": "w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]"
+    "class": "w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.' + $options.authDefaultPermission.name)), 1 /* TEXT */)];
@@ -79320,7 +79320,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     to: {
       name: 'frontend.home'
     },
-    "class": "w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]"
+    "class": "w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.go_home')), 1 /* TEXT */)];
@@ -79528,7 +79528,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     to: {
       name: 'frontend.home'
     },
-    "class": "block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-[#B0004D] text-white transition hover:bg-[#8E003E]"
+    "class": "block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.go_home')), 1 /* TEXT */)];
@@ -80889,7 +80889,7 @@ var _hoisted_18 = {
   "class": "dropdown-group"
 };
 var _hoisted_19 = {
-  "class": "dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-[#B0004D] hover:bg-[#8E003E]"
+  "class": "dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary hover:bg-orange-700"
 };
 var _hoisted_20 = {
   "class": "whitespace-nowrap"
@@ -81090,7 +81090,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-bag-2 lab-font-size-17"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.subtotal, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$options.logged ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
     key: 3,
-    "class": "hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-[#B0004D] hover:bg-[#8E003E]",
+    "class": "hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary hover:bg-orange-700",
     to: {
       name: 'auth.login'
     }
@@ -81242,7 +81242,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     to: {
       path: '/admin/' + $data.orderNotification.url
     },
-    "class": "db-btn h-[38px] shadow-[0px_6px_10px_rgba(176,_0,_77,_0.24)] bg-[#B0004D] text-white hover:bg-[#8E003E]"
+    "class": "db-btn h-[38px] shadow-[0px_6px_10px_rgba(244,_80,_30,_0.24)] bg-primary text-white hover:bg-orange-700"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.let_me_check')), 1 /* TEXT */)];
