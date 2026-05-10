@@ -125,15 +125,28 @@ final class CompositionSnapshotBuilder
                     continue;
                 }
                 $qty = max(1, (int) ($addon->quantity ?? 1));
-                $unitPrice = (float) ($dbAddon->addonItem?->price ?? 0);
+                $catalogPrice = (float) ($dbAddon->addonItem?->price ?? 0);
+                // [test-e2e/borne E-001 fix 2026-05-10] NF525 SSOT —
+                // Snapshot the EFFECTIVE charged price, not the catalog price.
+                // The payload-level role drives the kiosk menu-formula ratio
+                // (see PricingService::menuRoleAdjustedAddonPrice). Persisting
+                // the ratio'd value here ensures the immutable composition
+                // snapshot (NF525 §V) matches the customer-facing line and
+                // the order_items.total_price column.
+                $payloadRole = (string) ($this->payloadValue($addon, 'role') ?? ($dbAddon->role ?? ''));
+                $effectiveRole = $payloadRole !== '' ? $payloadRole : (string) ($dbAddon->role ?? '');
+                $unitPrice = $this->menuRoleAdjustedAddonPrice($effectiveRole, $catalogPrice);
                 $addons[] = [
                     'addon_id'      => (int) $dbAddon->id,
                     'addon_item_id' => (int) $dbAddon->addon_item_id,
                     'addon_name'    => (string) ($dbAddon->addonItem?->name ?? ''),
-                    'role'          => $dbAddon->role,
+                    'role'          => $effectiveRole !== '' ? $effectiveRole : null,
                     'quantity'      => $qty,
                     'unit_price'    => round($unitPrice, 6),
                     'line_total'    => round($unitPrice * $qty, 6),
+                    // Persist the raw catalog price too so audits can trace
+                    // any ratio applied (NF525 reprint reconciliation).
+                    'catalog_price' => round($catalogPrice, 6),
                 ];
             }
         }
@@ -145,5 +158,48 @@ final class CompositionSnapshotBuilder
             'extras'         => $extras,
             'addons'         => $addons,
         ];
+    }
+
+    /**
+     * [test-e2e/borne E-001 fix 2026-05-10] Mirror of
+     * PricingService::menuRoleAdjustedAddonPrice — kept local to keep the
+     * snapshot builder a pure transformer (no PricingService dep). Same
+     * config source `config('kiosk.menu_pricing')` so frontend +
+     * PricingService + snapshot stay in lock-step. Any drift here would be
+     * an NF525 audit-chain mismatch (line_total ≠ recomputed addon price).
+     */
+    private function menuRoleAdjustedAddonPrice(string $role, float $fullPrice): float
+    {
+        $role = strtolower(trim($role));
+        if ($role === '' || ! str_starts_with($role, 'menu_')) {
+            return $fullPrice;
+        }
+
+        $ratios = (array) config('kiosk.menu_pricing', []);
+        $ratio = match ($role) {
+            'menu_full'    => (float) ($ratios['full_ratio']  ?? 1.0),
+            'menu_frites'  => (float) ($ratios['fries_ratio'] ?? 0.6),
+            'menu_boisson' => (float) ($ratios['drink_ratio'] ?? 0.4),
+            default        => 1.0,
+        };
+
+        if (! is_finite($ratio) || $ratio < 0.0) {
+            $ratio = 1.0;
+        }
+
+        return round($fullPrice * $ratio, 2);
+    }
+
+    private function payloadValue($payload, string $key)
+    {
+        if (is_array($payload)) {
+            return $payload[$key] ?? null;
+        }
+
+        if (is_object($payload)) {
+            return $payload->{$key} ?? null;
+        }
+
+        return null;
     }
 }

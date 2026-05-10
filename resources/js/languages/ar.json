@@ -1539,6 +1539,7 @@
             "loading_product": "جاري تحميل المنتج…",
             "product_not_found": "المنتج غير موجود.",
             "product_load_error": "تعذّر تحميل المنتج.",
+            "pricing_preview_offline": "تم تحديث السعر محلياً. سيُتحقق من المجموع عند الدفع.",
             "close_aria": "إغلاق التخصيص",
             "recap_order_title": "ملخص طلبك",
             "abandon_item": "إلغاء المنتج",

@@ -1705,6 +1705,7 @@
             "loading_product": "Loading product…",
             "product_not_found": "Product not found.",
             "product_load_error": "Unable to load product.",
+            "pricing_preview_offline": "Price refreshed locally. Total verified at payment.",
             "close_aria": "Close customization",
             "recap_order_title": "YOUR ORDER SUMMARY",
             "abandon_item": "CANCEL ITEM",

@@ -211,7 +211,21 @@ final class PricingService
                             );
                         }
                         $addonQuantity = max(1, (int) ($addon->quantity ?? 1));
-                        $addonTotal += (float) ($dbAddon->addonItem?->price ?? 0) * $addonQuantity;
+                        // [test-e2e/borne E-001 fix 2026-05-10] NF525 reconciliation —
+                        // The kiosk menu-formula upgrade (Salade Royale + Coca-Cola)
+                        // sends the parent item's "Menu (Frites + Boisson)" addon
+                        // (price 3.00€) but tagged with role='menu_full|menu_frites|
+                        // menu_boisson'. Frontend already shows the ratio'd price
+                        // (e.g. 3.00€ × 0.4 = 1.20€ for "boisson"). Backend was
+                        // charging 0€ because the role was ignored and the wizard
+                        // wasn't pushing the menu addon. With the wizard now pushing
+                        // the menu addon row + role, we apply the same ratio here
+                        // so SSOT matches the customer-facing total.
+                        $unitAddonPrice = $this->menuRoleAdjustedAddonPrice(
+                            (string) ($addon->role ?? ''),
+                            (float) ($dbAddon->addonItem?->price ?? 0)
+                        );
+                        $addonTotal += $unitAddonPrice * $addonQuantity;
                     }
                 }
 
@@ -747,5 +761,54 @@ final class PricingService
     private function choiceAvailabilityResolver(): ChoiceAvailabilityResolver
     {
         return $this->choiceAvailabilityResolver ?? app(ChoiceAvailabilityResolver::class);
+    }
+
+    /**
+     * [test-e2e/borne E-001 fix 2026-05-10] NF525 SSOT reconciliation —
+     * kiosk menu-formula ratio applied server-side.
+     *
+     * Background:
+     *  - Frontend `kioskPricing.js` displays the menu-formula upgrade using
+     *    `config('kiosk.menu_pricing')` ratios (full=1.0, fries=0.6, drink=0.4)
+     *    applied to the parent "Menu (Frites + Boisson)" addon item price.
+     *  - Previously this ratio existed ONLY on the frontend → backend charged
+     *    either 0€ (addon not in payload) or full addonItem.price (3.00€),
+     *    NEVER the ratio'd intermediate (1.20€ / 1.80€). Per-order leak of
+     *    up to 1.20€ on every Salade-with-Coca formule. Sealed under-priced
+     *    composition_snapshot ⇒ NF525 fiscal SSOT breach.
+     *
+     * Contract:
+     *  - The kiosk wizard now pushes the parent "menu" addon row when
+     *    menuChoice ∈ ('full','frites','boisson') with `role` set to
+     *    'menu_full' / 'menu_frites' / 'menu_boisson'.
+     *  - This helper recognizes those roles and returns
+     *    addonItem.price × matching ratio.
+     *  - Roles outside the menu_* family fall through to the unchanged
+     *    addonItem.price (legacy behavior preserved).
+     *
+     * Single source of truth: `config('kiosk.menu_pricing')` — the same
+     * config consumed by `kioskPricing.js` via `window.foodkingConfig.kioskMenuPricing`
+     * (master.blade.php exposes it). Frontend and backend cannot drift.
+     */
+    public function menuRoleAdjustedAddonPrice(string $role, float $fullPrice): float
+    {
+        $role = strtolower(trim($role));
+        if ($role === '' || ! str_starts_with($role, 'menu_')) {
+            return $fullPrice;
+        }
+
+        $ratios = (array) config('kiosk.menu_pricing', []);
+        $ratio = match ($role) {
+            'menu_full'    => (float) ($ratios['full_ratio']  ?? 1.0),
+            'menu_frites'  => (float) ($ratios['fries_ratio'] ?? 0.6),
+            'menu_boisson' => (float) ($ratios['drink_ratio'] ?? 0.4),
+            default        => 1.0, // unknown menu_* role — treat as full price
+        };
+
+        if (! is_finite($ratio) || $ratio < 0.0) {
+            $ratio = 1.0;
+        }
+
+        return round($fullPrice * $ratio, 2);
     }
 }

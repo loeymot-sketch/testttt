@@ -363,6 +363,15 @@ export default {
     KioskOrderSummary,
     KsAllergenBadge,
   },
+  // [test-e2e/borne C-001/E-005 fix 2026-05-10] Inject showToast from
+  // KioskAppComponent's provide() so the pricing-preview helper can surface
+  // network failures (e.g. /pricing/preview 401) to the customer instead of
+  // silently falling back to local arithmetic. Safe-fallback: when the
+  // wizard is mounted in isolation (tests / storybook) the inject default
+  // is null and the toast call becomes a no-op.
+  inject: {
+    showToast: { default: null },
+  },
   props: {
     item: { type: Object, default: null },
     onAddToCart: { type: Function, default: null },
@@ -1875,6 +1884,44 @@ export default {
         }
       });
 
+      // [test-e2e/borne E-001 fix 2026-05-10] NF525 SSOT reconciliation —
+      // Backend was charging 0€ for the kiosk menu-formula upgrade (Salade
+      // Royale + Coca formule) because the wizard never sent the parent
+      // "Menu (Frites + Boisson)" addon (price 3.00€). Frontend pricing
+      // showed 3.00€ × 0.4 = 1.20€ (drink ratio) on the cart, customer paid
+      // backend's 22.50€ instead of 23.70€ ⇒ owner lost 1.20€ per order
+      // AND composition_snapshot was sealed under-priced ⇒ NF525 breach.
+      //
+      // Fix: when menuChoice ∈ ('full','frites','boisson'), push the parent
+      // item's "menu" addon row (group/name match `/menu/i`) tagged with
+      // `role` = 'menu_full' / 'menu_frites' / 'menu_boisson'.
+      // PricingService::menuRoleAdjustedAddonPrice applies the matching
+      // ratio (config 'kiosk.menu_pricing') to the addon-item price so the
+      // backend total matches the cart total. CompositionSnapshotBuilder
+      // mirrors the same logic for NF525 reprint integrity.
+      const menuChoice = this.selections.menuChoice;
+      if (menuChoice === 'full' || menuChoice === 'frites' || menuChoice === 'boisson') {
+        const menuAddon = (item.addons || []).find((a) =>
+          /menu/i.test(String(a.addon_item_name || a.name || ''))
+        );
+        if (menuAddon?.id) {
+          const role = menuChoice === 'full' ? 'menu_full'
+            : (menuChoice === 'frites' ? 'menu_frites' : 'menu_boisson');
+          normalizedAddons.push({
+            id: parseInt(menuAddon.id, 10),
+            name: menuAddon.addon_item_name || menuAddon.name || '',
+            addon_item_id: menuAddon.item_addon_id || menuAddon.addon_item_id || null,
+            role,
+          });
+        }
+      }
+
+      // Legacy boisson-addon push (kept for items whose drink comes from
+      // `item.addons` instead of the global drink catalog). Today this block
+      // is a no-op for kiosk items because `_boissonMeta.addonId` resolves
+      // to null when the boisson is picked from globalBoissonCatalogRows,
+      // but we keep it for forward-compat with any item that ships its own
+      // boisson rows on `item.addons`.
       const boissonMeta = this.selections._boissonMeta || null;
       if (
         (this.selections.menuChoice === 'full' || this.selections.menuChoice === 'boisson') &&
@@ -2081,11 +2128,33 @@ export default {
     this.$nextTick(() => this.emitWizardStepEntered(this.currentStep?.type));
 
     // Kiosk Phase 9.1.3 — Initialise le debouncer SSOT (non-reactif pour éviter
-    // overhead Vue). `onError` silent en prod (fallback local prend le relais).
+    // overhead Vue).
+    //
+    // [test-e2e/borne C-001/E-005 fix 2026-05-10] On 401 / network failure
+    // we surface a non-blocking warning toast so the customer is informed
+    // the displayed total is provisional. Previously this was a silent
+    // fallback to `calculateKioskRunningTotal` which masked the SSOT being
+    // off. We rate-limit the toast to once per wizard mount (the helper
+    // debounce already throttles requests; even so a single hint is enough
+    // to nudge the customer without spamming notifications).
+    let _previewErrorToastShown = false;
     this._kioskPricingPreview = createKioskPricingPreview({
       onError: (err) => {
+        const msg = err && err.message ? err.message : err;
         if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-          console.warn('[kiosk] pricing preview failed:', err && err.message ? err.message : err);
+          console.warn('[kiosk] pricing preview failed:', msg);
+        }
+        if (!_previewErrorToastShown && this.showToast) {
+          _previewErrorToastShown = true;
+          try {
+            this.showToast(
+              this.$t
+                ? this.$t('kiosk.wizard.pricing_preview_offline')
+                : 'Tarif rafraîchi localement. Le total est vérifié au paiement.',
+              'warning',
+              4000,
+            );
+          } catch (_) { /* i18n key missing — soft fallback already used */ }
         }
       },
     });

@@ -1,15 +1,15 @@
 {
   "status": true,
   "data": {
-    "quote_token": "7f8bad68-8e74-48f2-a379-e0587031c726",
-    "signature": "4bf4d9bc3cd2fa7c44d4489ca73c51ae078ab4bd49ff0c0ffbe61f691701b0af",
-    "expires_at": "2026-05-10T20:41:30+02:00",
+    "quote_token": "979fd573-ef64-4012-9f15-14fd238705ab",
+    "signature": "41d660418f34f0ce82b1b62cddba92986ea155e650a5f030f503041473da8bfd",
+    "expires_at": "2026-05-10T21:01:02+02:00",
     "ttl_seconds": 299,
-    "subtotal": 22.5,
+    "subtotal": 23.7,
     "discount": 0,
-    "total_tax": 3.75,
+    "total_tax": 3.95,
     "delivery_charge": 0,
-    "total_ttc": 22.5,
+    "total_ttc": 23.7,
     "currency": "EUR",
     "consumed_at": null
   }

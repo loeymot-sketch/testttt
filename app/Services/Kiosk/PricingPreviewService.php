@@ -168,6 +168,13 @@ final class PricingPreviewService
                 fn ($a) => (object) [
                     'id' => (int) ($a['id'] ?? 0),
                     'quantity' => max(1, (int) ($a['quantity'] ?? 1)),
+                    // [test-e2e/borne E-001 fix 2026-05-10] Forward optional
+                    // role hint to PricingService for kiosk menu-formula
+                    // ratio resolution. PricingPreviewRequest already
+                    // whitelists this field (rules at line 47).
+                    'role' => isset($a['role']) && is_string($a['role'])
+                        ? substr($a['role'], 0, 32)
+                        : null,
                 ],
                 (array) ($line['item_addons'] ?? [])
             ),

@@ -46,6 +46,12 @@ class PricingPreviewRequest extends FormRequest
             'items.*.item_addons'                 => ['nullable', 'array', 'max:20'],
             'items.*.item_addons.*.id'            => ['required_with:items.*.item_addons', 'integer', 'min:1'],
             'items.*.item_addons.*.quantity'      => ['sometimes', 'nullable', 'integer', 'min:1'],
+            // [test-e2e/borne E-001 fix 2026-05-10] Addon role hint —
+            // 'drink', 'menu_full', 'menu_frites', 'menu_boisson' (kiosk),
+            // 'menu_component', 'side', 'dessert', 'upsell' (legacy).
+            // Backend uses the `menu_*` prefixes to apply the kiosk menu
+            // ratio (see PricingService::menuRoleAdjustedAddonPrice).
+            'items.*.item_addons.*.role'          => ['sometimes', 'nullable', 'string', 'max:32'],
 
             'coupon_code'                         => ['nullable', 'string', 'min:3', 'max:64'],
             'kiosk_promo_code'                    => ['nullable', 'string', 'min:3', 'max:64'],

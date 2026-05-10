@@ -1549,6 +1549,7 @@
             "loading_product": "Chargement du produit…",
             "product_not_found": "Produit introuvable.",
             "product_load_error": "Impossible de charger le produit.",
+            "pricing_preview_offline": "Tarif rafraîchi localement. Le total est vérifié au paiement.",
             "close_aria": "Fermer la personnalisation",
             "recap_order_title": "RÉCAPITULATIF DE VOTRE COMMANDE",
             "abandon_item": "ABANDONNER L'ARTICLE",
