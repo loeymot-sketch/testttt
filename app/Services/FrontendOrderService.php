@@ -205,7 +205,46 @@ class FrontendOrderService
                 $isCounterDeferredKioskCash = $isKioskOrderType
                     && (int) ($validatedRequest['payment_method'] ?? 0) === PaymentGateway::CASH_ON_DELIVERY;
                 $shouldAutoAcceptAfterCreate = $isCounterDeferredKioskCash;
+
+                // [F-002 round-3 2026-05-10] OrderCreated dispatch gate.
+                //
+                // Truth table — when does dispatchNewOrderSignals fire from this
+                // method (versus being deferred to finalizePaidKioskOrder)?
+                //
+                //   Surface             | order_type | pm    | gate | dispatched here?
+                //   ------------------- | ---------- | ----- | ---- | ----------------
+                //   Web/mobile (no km)  | DELIVERY   | any   | TRUE | YES
+                //   Kiosk + cash        | KIOSK      | CASH  | TRUE | YES (auto-accept,
+                //                                                       order goes
+                //                                                       PENDING_COUNTER
+                //                                                       — KDS query
+                //                                                       includes that
+                //                                                       status so
+                //                                                       kitchen starts
+                //                                                       prepping while
+                //                                                       customer queues
+                //                                                       at counter)
+                //   Kiosk + card        | KIOSK      | CARD  | FALSE| NO — deferred to
+                //                                                    finalizePaidKioskOrder
+                //                                                    after TPE confirms
+                //   Kiosk + ticket-resto| KIOSK      | TR    | FALSE| NO — same as card
+                //
+                // The gate is intentional: kiosk card/TR orders sit at PENDING +
+                // UNPAID until the TPE callback flips ps=PAID, then OrderCreated
+                // fires from finalizePaidKioskOrder line 1151. Firing earlier would
+                // expose ghost orders to KDS that may never be paid.
                 $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod;
+
+                Log::debug('[FrontendOrderService] dispatch gate decision', [
+                    'is_kiosk_machine_order'             => $isKioskMachineOrder,
+                    'is_kiosk_order_type'                => $isKioskOrderType,
+                    'is_kiosk_payment_method'            => $isKioskPaymentMethod,
+                    'is_counter_deferred_kiosk_cash'     => $isCounterDeferredKioskCash,
+                    'should_auto_accept_after_create'    => $shouldAutoAcceptAfterCreate,
+                    'should_dispatch_new_order_signals'  => $shouldDispatchNewOrderSignals,
+                    'payment_method'                     => (int) ($validatedRequest['payment_method'] ?? 0),
+                    'order_type'                         => (int) ($validatedRequest['order_type'] ?? 0),
+                ]);
 
                 // Attach idempotency key if provided by client
                 if ($idempotencyKey) {

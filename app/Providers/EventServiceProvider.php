@@ -120,19 +120,30 @@ class EventServiceProvider extends ServiceProvider
         SendOrderGotPush::class         => [
             SendOrderGotPushNotification::class
         ],
-        // [SPLASH LOYALTY] Auto-award points when order is delivered
+        // [SPLASH LOYALTY] Auto-award points when order is delivered.
+        // [F-002 round-3 2026-05-10] Listener order matters: Persist*ToOutbox MUST
+        // run BEFORE side-effect listeners (FCM, loyalty) because the outbox is the
+        // SSOT for KDS/Kiosk/POS sync. With QUEUE_CONNECTION=sync, an exception
+        // thrown by ShouldQueue listeners (e.g. FCM job throwing on missing creds)
+        // propagates through the event dispatcher and prevents downstream listeners
+        // from running — see F-002 evidence: 87 `order.created` rows persisted
+        // before id 733, then ZERO for kiosk orders 596+ once FCM started failing.
+        // Outbox-first guarantees the durable record is written even if a
+        // side-effect listener crashes; the FCM listener also wraps its body in
+        // try/catch (defense in depth) so it never throws upward.
         OrderStatusChanged::class => [
+            PersistOrderStatusChangedToOutbox::class,
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
-            PersistOrderStatusChangedToOutbox::class,
         ],
         // [PHASE-36-P1] FCM push notifications on new order
         OrderCreated::class => [
-            SendFcmOnOrderCreated::class,
+            // [F-002 round-3] Outbox SSOT first — see comment block above.
             PersistOrderCreatedToOutbox::class,
             DecrementItemAvailabilityOnOrder::class,
             DecrementStockOnOrderCreated::class,
+            SendFcmOnOrderCreated::class,
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,
