@@ -1648,6 +1648,11 @@
                 "boisson_line": "Boisson : {name}"
             },
             "step": {
+                "frites_style": {
+                    "title": "Personnalisez vos frites",
+                    "subtitle": "Choisissez votre style préféré",
+                    "nature": "Frites nature"
+                },
                 "pain": {
                     "title": "Choisissez votre type de pain",
                     "hint": "Sélectionnez un type de pain pour continuer",

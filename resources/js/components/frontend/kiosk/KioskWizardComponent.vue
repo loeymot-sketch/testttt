@@ -281,6 +281,11 @@ const KioskStepGarnitures = defineAsyncComponent(() =>
 const KioskStepSupplements = defineAsyncComponent(() =>
   import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepSupplementsComponent.vue')
 );
+// V3.6 (2026-05-10) — Frites Style Upgrade step (owner gate, FROZEN file
+// modification autorisée). Cf migration 2026_05_10_040000.
+const KioskStepFritesStyle = defineAsyncComponent(() =>
+  import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepFritesStyleComponent.vue')
+);
 const KioskStepMenu = defineAsyncComponent(() =>
   import(/* webpackChunkName: "kiosk-wizard-step" */ './steps/KioskStepMenuComponent.vue')
 );
@@ -352,6 +357,7 @@ export default {
     KioskStepSauce,
     KioskStepGarnitures,
     KioskStepSupplements,
+    KioskStepFritesStyle,
     KioskStepMenu,
     KioskStepGenericChoices,
     KioskOrderSummary,
@@ -389,6 +395,11 @@ export default {
         fritesSauce: null,
         fritesSauceOrder: [],
         composerChoices: {},
+        // V3.6 (2026-05-10) Owner gate — frites_style step :
+        // null = Nature (default, aucun extra ajouté à l'order),
+        // number = id de l'extra item_extras avec group_label='frites_style'
+        // (Cheddar fondu OU Cheddar+Oignons croustillants).
+        fritesStyleExtraId: null,
         quantity: 1,
         instruction: ''
       },
@@ -579,8 +590,11 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         default:
-          // simple + tout template non reconnu : afficher suppléments si présents, sinon recap direct
+          // simple + tout template non reconnu : afficher suppléments si présents, sinon recap direct.
+          // V3.6 (2026-05-10) Owner gate : si l'item a des extras frites_style
+          // (Cheddar / Cheddar+Oignons), insérer un step dédié AVANT supplements.
           return [
+            { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
@@ -688,6 +702,9 @@ export default {
       }
       if (step.type === 'sauce') return this.selections.sauceOrder.length > 0;
       if (step.type === 'pain') return this.selections.pain !== null;
+      // V3.6 — frites_style toujours OK (Nature = default valide, no selection
+      // requise. Si user pick Cheddar/Oignons, fritesStyleExtraId est setté).
+      if (step.type === 'frites_style') return true;
       // [AUDIT-P2] Taille step requires an explicit choice before proceeding
       if (step.type === 'taille') return this.selections.taille !== null;
       if (step.type === 'generic_choices') return this.canAdvanceComposerChoiceStep(step);
@@ -770,6 +787,7 @@ export default {
         supplements: 'KioskStepSupplements',
         menu: 'KioskStepMenu',
         generic_choices: 'KioskStepGenericChoices',
+        frites_style: 'KioskStepFritesStyle',
         recap: 'KioskOrderSummary',
       };
       return map[type] || 'KioskOrderSummary';
@@ -941,6 +959,13 @@ export default {
         return Array.isArray(list) && list.some(v => v && Number(v.status) !== 10);
       }
       if (type === 'taille') return this.shouldAskTacosTaille();
+      // V3.6 (2026-05-10) Owner gate : frites_style step affiche 3 cards
+      // (Nature/Cheddar/Cheddar+Oignons) si l'item a au moins une row
+      // item_extras avec group_label='frites_style'.
+      if (type === 'frites_style') {
+        const extras = Array.isArray(item.extras) ? item.extras : [];
+        return extras.some((e) => e?.group_label === 'frites_style');
+      }
       return true;
     },
     shouldAskTacosTaille() {
@@ -1713,6 +1738,20 @@ export default {
           normalizedExtras.push({ id: parseInt(id), name: extra?.name || '' });
         }
       });
+
+      // V3.6 (2026-05-10) Owner gate — frites_style upgrade extra :
+      // Si user a sélectionné Cheddar/Cheddar+Oignons, ajouter au payload
+      // pour que PricingService backend applique le prix (synchro POS).
+      const fritesStyleId = this.selections.fritesStyleExtraId;
+      if (fritesStyleId != null) {
+        const fritesExtra = item.extras?.find((e) =>
+          e.id === parseInt(fritesStyleId) && e.group_label === 'frites_style'
+        );
+        if (fritesExtra) {
+          normalizedExtras.push({ id: parseInt(fritesStyleId), name: fritesExtra.name || '' });
+          itemExtraTotal += parseFloat(fritesExtra.convert_price || fritesExtra.price || 0);
+        }
+      }
 
       Object.keys(this.selections.supplements).forEach(id => {
         const count = normalizeKioskSelectionCount(this.selections.supplements[id]);
