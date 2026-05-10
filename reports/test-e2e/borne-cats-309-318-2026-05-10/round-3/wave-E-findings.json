@@ -1,0 +1,140 @@
+{
+  "wave": "E",
+  "round": 3,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "ROUND 3 RE-VERIFIED CLOSED. Sidecar `04-e-cart-totals-ssot.delta.json` records `cart_displayed_total: 23.7`, `backend_quote_total_ttc: 23.7`, `backend_quote_subtotal: 23.7`, `backend_quote_total_tax: 3.95`, `absolute_delta: 0`, `verdict: GREEN`. Sidecar `10-e-confirmation-success.totals.json` records `cart_total_state_01: 23.7`, `cart_total_before_checkout: 23.7`, `backend_quote_total_ttc: 23.7`, `confirmation_total: 23.7`, `confirmation_number: #A0084`. State 01 PNG cart Total €23,70 (Assiette Poulet 12,50 + Salade Royale Formule 8,70 + Fromage à raclette 1,00 + Coca-Cola 33cl 1,50 = 23,70 ✓). Salade Royale Formule still server-priced at 8.70€ via PricingService role-aware drinkRatio. State 12 cash flow uses a separate 11.20€ cart (single Salade Royale Formule line); sidecar `12-e-cash-instruction-amount-display.totals.json` records `cart_total_cash: 11.2`, `cash_amount_displayed: 11.2` — cash leg internally consistent. C-001 mount-time /pricing/preview removal did NOT regress totals — the deep `selections` watcher still triggers refreshServerPreviewTotal() and the cart→quote SSOT alignment holds.",
+      "fix_hint": "Closed via commit 18dc7a29c. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "ROUND 3 RE-VERIFIED CLOSED. State 11 PNG shows ONLY ONE total on viewport: `Numéro de commande #A0086 — Montant à régler 11,20 €`. No floating cart-bar present. DOM grep on `11-e-cash-alt-branch-instruction.dom.html`: `class=\"kiosk-cart-bar\"` exact match count = 0. Same on state 12: 0. Sidecar `12-e-cash-instruction-amount-display.totals.json` confirms `cart_total_cash: 11.2` equals `cash_amount_displayed: 11.2`. Only one monetary value visible per surface, matching backend.",
+      "fix_hint": "Closed via commit 2084c0448. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-borne-E/06-e-loyalty-step-input.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "ROUND 3 RE-VERIFIED CLOSED. DOM grep on states 06/11/12: `class=\"kiosk-cart-bar\"` exact match count = 0 across all three. State 06 PNG shows loyalty number-pad fully accessible — no floating cart-bar overlapping the yellow `Pas encore membre ? S'inscrire` CTA. `KioskAppComponent.vue` `hiddenRoutes` still excludes `'kiosk.loyalty'` and `'kiosk.cash-instruction'` from cart-bar rendering.",
+      "fix_hint": "Closed via commit 2084c0448. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-borne-E/09-e-payment-tpe-result-ok.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "ROUND 3 REGRESSED — previously closed in round 2 on the basis 'all 14 network.json arrays are empty (length=0)'. That precondition is now FALSIFIED. `09-e-payment-tpe-result-ok.network.json` (round 3, HEAD efd9896a0 working tree) records THREE 4xx responses on `http://127.0.0.1:8000/api/frontend/order/383/payment-confirm`: status 401 @ ts=1778443396179, status 422 @ ts=1778443397000, status 401 @ ts=1778443397800. The same three failures are echoed in `09-e-payment-tpe-result-ok.console.json` as `Failed to load resource: the server responded with a status of 401/422/401`. `/payment-confirm` is a transactional NF525-adjacent endpoint, NOT in the protocol allowlist (allowlist for 401 covers only `/api/auth/logout`; allowlist for 422 covers form-validation submissions). Cross-wave check: `grep -l 'payment-confirm' tests/e2e/__screenshots__/test-e2e-borne-*/*.network.json` returns ONLY this Wave-E file — regression is Wave-E-scoped. The eventual retry succeeds (state 10 confirmation shows #A0084 / TOTAL PAYÉ 23,70 €), but the round-2 closure rationale (Sanctum token plumbing fix) no longer holds and the protocol category 10 'unexpected_4xx' definition is met.",
+      "fix_hint": "Likely side-effect of commit efd9896a0 (C-001 fix removed mount-time /pricing/preview POST from KioskWizardComponent.mounted). That POST previously warmed the kiosk:order Sanctum interceptor read of the Vuex store; without it, `/payment-confirm` is now the first authenticated POST and pays the cold-start race tax. Options: (a) restore a lighter warmup at wizard mount that does not duplicate the original 401 (e.g. a GET on an already-authenticated endpoint, or `Sanctum::token()->save()` priming), (b) await store-token propagation in the helper before the first POST, (c) add an explicit allowlist entry for `/payment-confirm` 401 with retry-success guarantee documented at the protocol level (slowest path — requires owner approval).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-borne-E/01-e-cart-multi-line.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "ROUND 3 RE-VERIFIED CLOSED. `01-e-cart-multi-line.network.json` length=0 — no `/pricing/preview` 401 on cart-display state. Backend SSOT delta is still 0 on state 04 (E-001 GREEN), independently proving `/pricing/preview` is succeeding when it does fire (post-interaction via the selections watcher). No `Failed to load resource: 401` in `01-e-cart-multi-line.console.json` — only allowlisted vendor.js Pusher noise.",
+      "fix_hint": "Closed via commit 18dc7a29c. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "ROUND 3 PERSISTS (unchanged from round 2). State 04 PNG still renders mostly white with only a mid-screen orange spinner during the cart→checkout transition window — no skeleton, no localized 'Vérification du paiement...' copy, no `[aria-busy=true]`. Sidecar `04-e-cart-totals-ssot.console.json` empty (no errors during the transition). Severity stays P2 (UX-quality, not loop-blocking per protocol).",
+      "fix_hint": "On cart→checkout transition (within ~300ms of route change to /kiosk/payment or /kiosk/upsell), render a localized loading state with `kiosk.cart.checking_out` copy + skeleton + `[aria-busy=\"true\"]` instead of dropping the cart body to a single spinner. Low-priority polish.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "E-007",
+      "state_artifact": "test-e2e-borne-E/06-e-loyalty-step-input.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 3 RE-VERIFIED. Sidecar `06-e-loyalty-step-input.register-btn.json` still records `found: true`, `visible: true`, `backgroundImage: 'linear-gradient(135deg, rgb(245, 197, 24) 0%, rgb(224, 178, 20) 100%)'`, `color: rgb(15, 15, 15)`, `fontWeight: 800`, text `Pas encore membre ? S'inscrire`. State 06 PNG visually confirms the yellow gradient button with dark legible text. No regression from C-001 / loyalty flow side-effects.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-008",
+      "state_artifact": "test-e2e-borne-E/08-e-payment-tpe-waiting-overlay.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 3 RE-VERIFIED. Sidecar `08-e-payment-tpe-waiting-overlay.probe.json` records `backgroundColor: rgb(255, 255, 255)`, `color: rgb(15, 15, 15)` — pure white TPE overlay, light mode. PNG shows white background, Cayenne orange accent ring around the terminal icon, dark legible heading 'Simulation du paiement (mode navigateur)…', supporting copy + 'Annuler le paiement' CTA. No dark-navy regression from C-001 side-effects.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-009",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND 3 RE-VERIFIED. State 11 PNG shows the cash-instruction screen with the order-card vertically centered above the bottom J'AI COMPRIS CTA. Layout unchanged from round 2. No regression. Logged for tracking only.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-010",
+      "state_artifact": "test-e2e-borne-E/09-e-payment-tpe-result-ok.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "ROUND 3 NEW (regression caught by adversarial review). Network sidecar records three 4xx on `/api/frontend/order/383/payment-confirm` (401→422→401 sandwich during the TPE-result transition, timestamps 1778443396179 / 1778443397000 / 1778443397800). DOM sidecar of the SAME state shows the `kiosk-toast-container` element has length-0 inner content (`<div ... class=\"kiosk-toast-container\" role=\"status\" aria-live=\"polite\" aria-relevant=\"additions text\"></div>` — empty). No `[role=alert]` element rendered. The 14 `pos-toast/toast-message/toast--` substring matches in this DOM are confined to inline scoped `<style>` CSS rule definitions (Vue-Toastification__toast--default/error/info/rtl), NOT rendered toasts. The retry-success interceptor silently re-played the request until it succeeded (state 10 confirms order A0084 / 23,70 €) — but per REVIEWER_PROTOCOL category 6 'silent_error' (status≥400 + no visible alert/toast/alert) and category 10 'unexpected_4xx' (4xx not in allowlist; allowlist for 401 covers only /api/auth/logout, allowlist for 422 covers form-validation submissions — /payment-confirm is neither), this is a P0 silent_error. The customer-visible flow appears fine; the hidden-failure-behind-eventual-success is exactly what this category exists to catch.",
+      "fix_hint": "Same root-cause as E-004 reopen (cold-start Sanctum race on the first authenticated POST after C-001 removed mount-time /pricing/preview warmup). Two-layer fix: (1) eliminate the 4xx at source per E-004 fix_hint, (2) belt-and-suspenders: make the kiosk-order axios helper's onError callback surface a transient warning toast on 401/422 from /payment-confirm before retrying, so even if the cold-start race recurs the protocol category 6 check still finds a visible alert. File pointers: `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` (mount logic), `resources/js/services/kioskOrderClient.js` or equivalent helper that POSTs /payment-confirm, `resources/js/components/frontend/kiosk/KioskToastComponent.vue` (extend role=alert to all severities not just error/warning).",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 3,
+    "P1": 3,
+    "P2": 1,
+    "P3": 3,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PASS",
+    "E-003": "PASS",
+    "E-004": "FAIL",
+    "E-005": "PASS",
+    "E-006": "PARTIAL_PASS",
+    "E-007": "PASS",
+    "E-008": "PASS",
+    "E-009": "PASS"
+  },
+  "verdict": "RED",
+  "notes": "Wave-E round-3 REGRESSED from round-2's effectively-green status. Numeric integrity holds across all four sidecars (E-001/E-002 still PASS: cart=23.7=backend=23.7=confirmation=23.7 #A0084; cash leg cart=11.2=cash=11.2 #A0086). Cart-bar overlap eradication still holds on all three sensitive routes (06/11/12: class=\"kiosk-cart-bar\" rendered count=0). Pink palette regression scan: 0 matches across all 14 DOM artifacts. Visual anti-regressions all PASS — loyalty yellow-gradient register button visible (state 06), TPE overlay pure-white light-mode with Cayenne accent (state 08), state 01 cart in Cayenne palette with 4 lines + €23,70 total. HOWEVER: the C-001 fix (commit efd9896a0 removed mount-time /pricing/preview POST in KioskWizardComponent.mounted) appears to have moved the Sanctum cold-start race from /pricing/preview to /payment-confirm. State 09 network sidecar shows three 4xx on /payment-confirm (401→422→401), all echoed in console.json. Per protocol, this is BOTH a regression of E-004 (round-2 closure rationale was 'all 14 network.json arrays empty' — falsified) AND a new P0 silent_error (E-010: 4xx + empty toast container = silent failure masked by retry-success). Verdict RED: open_P0=1, open_P1=1, open_P2=1. The customer-visible end state remains correct (confirmation A0084 / 23,70 €), but adversarial discipline says retry-success is not an exception to category 6 — that exception would gut the category. GStack team must either (a) re-warm the Sanctum token at wizard mount without the original 401 problem, (b) await token propagation before the first authenticated POST, or (c) surface a transient toast on the first 401/422 so even a recurrent race satisfies the protocol's visible-alert requirement. Cross-wave scan: grep -l 'payment-confirm' tests/e2e/__screenshots__/test-e2e-borne-*/*.network.json returns only this Wave-E file — regression is E-only, not system-wide."
+}

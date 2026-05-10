@@ -21,8 +21,8 @@
 
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
-    <link rel="stylesheet" href="/css/app.css?id=98d6dc50e323d2f7a7fa74f571a8684d">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778441123">
+    <link rel="stylesheet" href="/css/app.css?id=97e425dcc785f5b0ff8c49ce0887410f">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778443379">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -9602,6 +9602,196 @@ to { transform: rotate(360deg);
 }
 
 </style><style>
+.kiosk-login-screen[data-v-8fd6c936] {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.kiosk-login-card[data-v-8fd6c936] {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.kiosk-login-logo[data-v-8fd6c936] {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.kiosk-login-icon[data-v-8fd6c936] { font-size: 3rem;
+}
+.kiosk-login-title[data-v-8fd6c936] {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+.kiosk-login-sub[data-v-8fd6c936] {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.kiosk-login-form[data-v-8fd6c936] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.kiosk-login-auto[data-v-8fd6c936] {
+  align-items: stretch;
+}
+.kiosk-login-status[data-v-8fd6c936] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.kiosk-login-status-icon[data-v-8fd6c936] {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.kiosk-login-status-text[data-v-8fd6c936] {
+  margin: 0;
+  color: rgba(255,255,255,0.78);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.kiosk-login-field[data-v-8fd6c936] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kiosk-login-label[data-v-8fd6c936] {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.kiosk-login-input[data-v-8fd6c936] {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1rem;
+  padding: 0.85rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.kiosk-login-input[data-v-8fd6c936]:focus { border-color: #f4501e;
+}
+.kiosk-login-input[data-v-8fd6c936]::-moz-placeholder { color: rgba(255,255,255,0.25);
+}
+.kiosk-login-input[data-v-8fd6c936]::placeholder { color: rgba(255,255,255,0.25);
+}
+.kiosk-login-input[data-v-8fd6c936]:disabled { opacity: 0.5;
+}
+.kiosk-login-hint[data-v-8fd6c936] {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.38);
+}
+.kiosk-login-hint-center[data-v-8fd6c936] {
+  text-align: center;
+}
+.kiosk-login-hint strong[data-v-8fd6c936] { color: rgba(255,255,255,0.55); font-weight: 600;
+}
+.kiosk-login-devhint[data-v-8fd6c936] {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.32);
+  text-align: center;
+}
+.kiosk-login-devhint code[data-v-8fd6c936] {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.65);
+}
+.kiosk-login-error[data-v-8fd6c936] {
+  margin: 0;
+  background: rgba(244,80,30,0.12);
+  border: 1px solid rgba(244,80,30,0.3);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  color: #ff6b7a;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.kiosk-login-btn[data-v-8fd6c936] {
+  background: #f4501e;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+}
+.kiosk-login-btn[data-v-8fd6c936]:hover:not(:disabled) { background: #c0001a;
+}
+.kiosk-login-btn[data-v-8fd6c936]:disabled { opacity: 0.45; cursor: default;
+}
+.kiosk-login-secondary-btn[data-v-8fd6c936] {
+  background: transparent;
+  color: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 50px;
+  padding: 0.95rem 1rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kiosk-login-spinner[data-v-8fd6c936] {
+  width: 22px; height: 22px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: kspin-8fd6c936 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes kspin-8fd6c936 {
+to { transform: rotate(360deg);
+}
+}
+.kiosk-login-footer[data-v-8fd6c936] {
+  text-align: center;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.22);
+  margin: 0;
+}
+.fade-enter-active[data-v-8fd6c936], .fade-leave-active[data-v-8fd6c936] { transition: opacity 0.25s;
+}
+.fade-enter-from[data-v-8fd6c936], .fade-leave-to[data-v-8fd6c936] { opacity: 0;
+}
+</style><style>
 .kiosk-waiting[data-v-0f435cc1] {
   width: 100vw;
   height: 100vh;
@@ -10307,7 +10497,7 @@ body[data-v-255fc987] > * { display: none !important;
          Les écrans gardent leurs transitions locales (wizard, paniers, etc.). --><!--
         Ne pas inclure ?cat= dans la clé sur kiosk.categories : sinon chaque clic
         catégorie remonterait tout le shell. Les @listeners sont sur <component>.
-      --><div data-v-255fc987="" class="kiosk-confirmation" role="status" aria-live="polite" data-testid="kiosk-confirmation-root"><!-- Animated success checkmark (décoratif) --><div class="kiosk-confirmation-anim" aria-hidden="true" data-v-255fc987=""><svg class="kiosk-check-svg" viewBox="0 0 120 120" fill="none" data-v-255fc987=""><circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.1)" stroke-width="6" data-v-255fc987=""></circle><circle cx="60" cy="60" r="54" stroke="#2ECC71" stroke-width="6" stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="339" class="kiosk-ring-fill" data-v-255fc987=""></circle><path d="M36 60l18 18 30-30" stroke="#2ECC71" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="kiosk-check-path" data-v-255fc987=""></path></svg></div><h1 data-v-255fc987="" class="kiosk-confirmation-title" data-testid="kiosk-confirmation-title">Commande confirmée !</h1><div data-v-255fc987="" class="kiosk-confirmation-card" data-testid="kiosk-confirmation-card"><div data-v-255fc987="" class="kiosk-confirmation-row"><span data-v-255fc987="" class="kiosk-confirmation-label">Numéro de commande</span><span data-v-255fc987="" class="kiosk-confirmation-number" data-testid="kiosk-confirmation-number">#A0077</span></div><!-- [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly --><div data-v-255fc987="" class="kiosk-confirmation-row"><span data-v-255fc987="" class="kiosk-confirmation-label">Total payé</span><span data-v-255fc987="" class="kiosk-confirmation-price" data-testid="kiosk-confirmation-total">€23,70</span></div></div><!--v-if--><div data-v-255fc987="" class="kiosk-confirmation-message"><p data-v-255fc987="">Votre commande a été envoyée en cuisine.</p><p data-v-255fc987="">Présentez-vous au comptoir avec votre numéro.</p></div><!-- [GAP-35-7] Points fidélité gagnés — style Splash --><!--v-if--><!-- Progress timer --><div data-v-255fc987="" class="kiosk-confirmation-timer"><span data-v-255fc987="" class="kiosk-timer-label">Retour automatique dans 29s</span><div data-v-255fc987="" class="kiosk-timer-bar"><div data-v-255fc987="" class="kiosk-timer-fill" style="width: 96.6667%;"></div></div></div><button data-v-255fc987="" type="button" class="kiosk-btn-print" aria-busy="false" data-testid="kiosk-confirmation-cta-print"><span data-v-255fc987="">🖨️ Imprimer le ticket</span></button><button data-v-255fc987="" type="button" class="kiosk-btn-home" data-testid="kiosk-confirmation-cta-home">Nouvelle commande → </button></div><!-- Receipt zone (hidden unless print dialog / print-failed fallback) --><div data-v-255fc987="" id="kiosk-print-receipt" class="kiosk-receipt-zone" data-print-failed="false" data-testid="kiosk-print-receipt"><!--v-if--><div data-v-255fc987="" class="receipt-header"><p data-v-255fc987="" class="receipt-restaurant">Le Cayenne</p><p data-v-255fc987="" class="receipt-date">10/05/2026 21:25</p></div><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><div data-v-255fc987="" class="receipt-queue"><span data-v-255fc987="">NUMÉRO</span><span data-v-255fc987="" class="receipt-queue-number">#A0077</span></div><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><!-- [AUDIT-P2-C] Use index in key to prevent duplicate keys when same item_id appears multiple times --><div data-v-255fc987="" class="receipt-line"><span data-v-255fc987="">1x Assiette Poulet</span><span data-v-255fc987="">€12,50</span></div><div data-v-255fc987="" class="receipt-line"><span data-v-255fc987="">1x Salade Royale</span><span data-v-255fc987="">€8,70</span></div><div data-v-255fc987="" class="receipt-line"><span data-v-255fc987="">1x Fromage à raclette</span><span data-v-255fc987="">€1,00</span></div><div data-v-255fc987="" class="receipt-line"><span data-v-255fc987="">1x Coca-Cola 33cl</span><span data-v-255fc987="">€1,50</span></div><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><!--v-if--><div data-v-255fc987="" class="receipt-line receipt-total"><span data-v-255fc987="">TOTAL</span><span data-v-255fc987="">€23,70</span></div><!--v-if--><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><p data-v-255fc987="" class="receipt-footer">Merci de votre visite !</p><p data-v-255fc987="" class="receipt-footer">Présentez ce ticket au comptoir.</p></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
+      --><div data-v-255fc987="" class="kiosk-confirmation" role="status" aria-live="polite" data-testid="kiosk-confirmation-root"><!-- Animated success checkmark (décoratif) --><div class="kiosk-confirmation-anim" aria-hidden="true" data-v-255fc987=""><svg class="kiosk-check-svg" viewBox="0 0 120 120" fill="none" data-v-255fc987=""><circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.1)" stroke-width="6" data-v-255fc987=""></circle><circle cx="60" cy="60" r="54" stroke="#2ECC71" stroke-width="6" stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="339" class="kiosk-ring-fill" data-v-255fc987=""></circle><path d="M36 60l18 18 30-30" stroke="#2ECC71" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="kiosk-check-path" data-v-255fc987=""></path></svg></div><h1 data-v-255fc987="" class="kiosk-confirmation-title" data-testid="kiosk-confirmation-title">Commande confirmée !</h1><div data-v-255fc987="" class="kiosk-confirmation-card" data-testid="kiosk-confirmation-card"><div data-v-255fc987="" class="kiosk-confirmation-row"><span data-v-255fc987="" class="kiosk-confirmation-label">Numéro de commande</span><span data-v-255fc987="" class="kiosk-confirmation-number" data-testid="kiosk-confirmation-number">#A0084</span></div><!-- [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly --><div data-v-255fc987="" class="kiosk-confirmation-row"><span data-v-255fc987="" class="kiosk-confirmation-label">Total payé</span><span data-v-255fc987="" class="kiosk-confirmation-price" data-testid="kiosk-confirmation-total">€23,70</span></div></div><!--v-if--><div data-v-255fc987="" class="kiosk-confirmation-message"><p data-v-255fc987="">Votre commande a été envoyée en cuisine.</p><p data-v-255fc987="">Présentez-vous au comptoir avec votre numéro.</p></div><!-- [GAP-35-7] Points fidélité gagnés — style Splash --><!--v-if--><!-- Progress timer --><div data-v-255fc987="" class="kiosk-confirmation-timer"><span data-v-255fc987="" class="kiosk-timer-label">Retour automatique dans 30s</span><div data-v-255fc987="" class="kiosk-timer-bar"><div data-v-255fc987="" class="kiosk-timer-fill" style="width: 100%;"></div></div></div><button data-v-255fc987="" type="button" class="kiosk-btn-print" aria-busy="false" data-testid="kiosk-confirmation-cta-print"><span data-v-255fc987="">🖨️ Imprimer le ticket</span></button><button data-v-255fc987="" type="button" class="kiosk-btn-home" data-testid="kiosk-confirmation-cta-home">Nouvelle commande → </button></div><!-- Receipt zone (hidden unless print dialog / print-failed fallback) --><div data-v-255fc987="" id="kiosk-print-receipt" class="kiosk-receipt-zone" data-print-failed="false" data-testid="kiosk-print-receipt"><!--v-if--><div data-v-255fc987="" class="receipt-header"><p data-v-255fc987="" class="receipt-restaurant">Le Cayenne</p><p data-v-255fc987="" class="receipt-date">10/05/2026 22:03</p></div><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><div data-v-255fc987="" class="receipt-queue"><span data-v-255fc987="">NUMÉRO</span><span data-v-255fc987="" class="receipt-queue-number">#A0084</span></div><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><!-- [AUDIT-P2-C] Use index in key to prevent duplicate keys when same item_id appears multiple times --><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><!--v-if--><div data-v-255fc987="" class="receipt-line receipt-total"><span data-v-255fc987="">TOTAL</span><span data-v-255fc987="">€23,70</span></div><!--v-if--><div data-v-255fc987="" class="receipt-divider">- - - - - - - - - - - - - - - - - -</div><p data-v-255fc987="" class="receipt-footer">Merci de votre visite !</p><p data-v-255fc987="" class="receipt-footer">Présentez ce ticket au comptoir.</p></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
          Remplace le modal "Still here" simplifié par un overlay avec countdown
          + 2 CTA (Je suis là / Abandonner). Conforme WAI-ARIA 1.2 alertdialog. --><!--v-if--><!--v-if--><!-- Toast notifications globales --><div data-v-60fd5967="" data-v-6ffab5ed="" class="kiosk-toast-container" role="status" aria-live="polite" aria-relevant="additions text"></div></div></div>
 
@@ -10389,7 +10579,7 @@ body[data-v-255fc987] > * { display: none !important;
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=e29380fadbd350bf81abc7b3d893891d"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=9d082b21d85d2d2a064e4cec6e4059ed"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -10404,7 +10594,7 @@ body[data-v-255fc987] > * { display: none !important;
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778441123"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778443379"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

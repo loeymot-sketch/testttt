@@ -1,0 +1,116 @@
+{
+  "wave": "B",
+  "round": 3,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "ROUND-3 RE-VERIFICATION at HEAD efd9896a0. DOM grep 'Taille : 1 viande' returns 0/0 across 15-cart-after-add-309-310-311-314.dom.html and 16-cart-thumbnails-quartet.dom.html. Broader 'Taille' grep also 0/0. Recap numeric integrity intact: line totals €12,50 / €13,50 / €8,50 / €6,00 → kiosk-cart-subtotal=€40,50 and kiosk-cart-total=€40,50. The buildInstruction() taille-step guard introduced in commit 714d271b6 still in place; the unrelated C-001 fix in HEAD commit efd9896a0 (removal of mount-time refreshServerPreviewTotal in KioskWizardComponent.vue) did NOT regress this closure. Cart line notes (kiosk-cart-line-note) remain clean of phantom 'Taille : 1 viande' propagation for non-tacos items.",
+      "fix_hint": "Already closed by buildInstruction() taille-step guard in commit 714d271b6 (resources/js/components/frontend/kiosk/KioskWizardComponent.vue). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-borne-B/16-cart-thumbnails-quartet.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-3 RE-VERIFICATION: states 15 and 16 remain BYTE-IDENTICAL at HEAD efd9896a0. md5(15-cart-after-add-309-310-311-314.png)=e50b133e7320382b160c5ce7e27d497e, md5(16-cart-thumbnails-quartet.png)=e50b133e7320382b160c5ce7e27d497e (verified). The Wave B spec was not modified between Round-2 and Round-3 — no commit between 10456234c (Round-2 baseline) and HEAD efd9896a0 touches tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js or AUDIT_PLAN.md. State 16's planned distinct purpose (thumbnail close-up per AUDIT_PLAN.md L82-L83) remains unexercised; only 13 of 14 budgeted states yield unique evidence.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js L364 — replace the redundant `await snap('16-cart-thumbnails-quartet')` with a meaningful interaction (scroll to first cart line, click line edit/expand, or capture page.locator('[data-testid=\"kiosk-cart-item-options-0\"]').screenshot() as a per-line composition close-up). Update AUDIT_PLAN.md to clarify state 16 = thumbnail close-up vs state 15 = cart overview. P2: coverage gap, not loop-blocking.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-3 RE-VERIFICATION: cat 309 (Assiette Poulet) wizard pipeline still collapses to sauce + supplements + recap only. DOM grep 'kiosk-step-viande|kiosk-step-garnitures' across 309-01/02/03 returns 0/0/0; only kiosk-step-sauce + kiosk-step-supplements mount. AUDIT_PLAN.md remains untouched at HEAD efd9896a0 — no commit between Round-2 and Round-3 reconciles the plan-vs-catalog mismatch (4 separate Assiette SKUs encoding meat in item.name vs the planned single-parent assiette template with viande+garnitures pipeline). Wave B does NOT independently prove the assiette wizard's viande step renders correctly; it only proves the forbidden steps stay absent.",
+      "fix_hint": "Two-fork resolution still pending. Fork A (recommended for current catalog): edit AUDIT_PLAN.md L62-L65 to declare cat 309 expected pipeline = sauce + supplements + recap (meat encoded in SKU name). Fork B: seeder + admin migration to add a Viande parent attribute (Poulet/Kefta/Merguez/Mixte) + price=0 garnitures on a single Assiette SKU. Owner must pick before any code change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-3 RE-VERIFICATION at HEAD efd9896a0: cart line 3 (Menu Cheese Burger Enfant, item 400, €6,00) still resolves its thumbnail to /storage/55/item-default.svg (exact match in 15-cart-after-add-309-310-311-314.dom.html). Same pattern in 314 product grid (kiosk-product-card-400 → /storage/55/item-default.svg, kiosk-product-card-401 → /storage/56/item-default.svg) and in 314-03-step-recap kiosk-summary-main-item img. By contrast cat 309/310/311 cart lines bind correctly to /storage/36/assiette_poulet.png, /storage/40/ojja.png, /storage/45/omelette_fromage.png. No commit between Round-2 and Round-3 uploads photos for items 400 and 401.",
+      "fix_hint": "Catalog data: upload real photos for items 400 (Menu Cheese Burger Enfant) and 401 (Menu Nuggets Enfant) via admin → items → cat 314. No code change. Optionally KioskCartComponent / kiosk-product-card fallback could render an emoji ('🍔' / '🍗') until photos uploaded. Confirm cats 316/317/318 photos are present to avoid same pattern downstream.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-borne-B/310-02-step-supplements.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-3 RE-VERIFICATION: supplements step for cats 310/311/314 still exposes 'Fromage supplémentaire' and 'Salade verte' cards bound to kiosk-supplement-img src=http://127.0.0.1:8000/images/menu/item-default.svg. grep -c 'item-default.svg' returns 1 / 1 / 2 hits on 310-02 / 311-02 / 314-02 DOMs. Cat 309 supplements step still has only the 1 step-indicator fallback (cf. B-006) — its supplement_clone-group=NULL extras are correctly photographed.",
+      "fix_hint": "Catalog data: upload thumbnails for the 2 supplement_clone-group extras (item_extras id=826 Fromage supplémentaire, id=832 Salade verte) shared across items 385-391. Alternatively KioskStepSupplementsComponent could fall back to an emoji palette (pickEmojiForSupplement mirroring pickEmojiForViande). P3 — names + prices remain readable.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-borne-B/310-03-step-recap.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-3 RE-VERIFICATION: step-indicator middle circle (kiosk-step-visual-icon) still falls back to item-default.svg for cats 310/311/314. Direct evidence in 314-03-step-recap.dom.html: <img data-v-ccf7fd5e=\"\" src=\"/storage/55/item-default.svg\" alt=\"RÉCAP\" class=\"kiosk-step-visual-img\">. Same fallback observed in 310-02 and 311-02. Correlated with B-005 — resolver picks first-supplement.photo and falls back when null.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue — getStepIconSrc/equivalent should adopt a deterministic supplement-default asset (e.g. /images/menu/supplement_default.png) instead of bubbling up item-default.svg whenever the first supplement_clone-group extra has no thumbnail. Investigate partitionKioskExtras().supplements[0].photo resolution. Likely closes alongside B-005 once thumbnails uploaded.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "unexpected_4xx",
+      "severity": "P3",
+      "evidence": "ROUND-3 RE-VERIFICATION: 309-01 boot-time 401s are CLOSED at HEAD efd9896a0. 309-01-step-sauce.network.json now contains 0 entries (was 3 × 401 at Round-2: kiosk-event, menu, pricing/preview). 309-01-step-sauce.console.json shows only Pusher/WebSocket noise (allowlisted per REVIEWER_PROTOCOL §Allowlist) — no application 401 echoes. Commit efd9896a0 (Option C — remove the mount-time refreshServerPreviewTotal $nextTick call in KioskWizardComponent.vue) successfully eliminated the boot-time race. The boot-401 finding scope is genuinely closed; new mid-flow 401s on a similar surface tracked separately as B-008.",
+      "fix_hint": "Closed by commit efd9896a0 (kill mount-time preview call). No further action on B-007 scope.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-borne-B/311-01-step-sauce.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "NEW ROUND-3 FINDING at HEAD efd9896a0. Three states emit a POST /api/frontend/pricing/preview that returns 401 (Unauthorized) WITHOUT any role=\"alert\" / .toast / .alert-* rendered in the DOM, satisfying REVIEWER_PROTOCOL category 6 (silent_error → P0). Exact artifacts:\n  • 311-01-step-sauce.network.json: [{status:401, method:POST, url:http://127.0.0.1:8000/api/frontend/pricing/preview, ts:1778443343867}]\n  • 311-02-step-supplements.network.json: [{status:401, ..., ts:1778443345191}]\n  • 314-02-step-supplements.network.json: [{status:401, ..., ts:1778443350787}]\nMatching console.json entries surface 'Failed to load resource: the server responded with a status of 401 (Unauthorized)' in each of the 3 states (NOT pusher/ws noise — application fetch). DOM verification on 311-01-step-sauce.dom.html: grep 'role=\"alert\"' = 0, only 2 occurrences of role=\"status\" (kiosk-toast-container aria-live=\"polite\" + a screen-reader-only status node), both empty.\n\nAllowlist check (REVIEWER_PROTOCOL §Allowlist): the protocol allowlists 401 ONLY for /api/auth/logout. /api/frontend/pricing/preview is NOT allowlisted.\n\nROOT CAUSE: the C-001 fix in commit efd9896a0 removed the mount-time refreshServerPreviewTotal() $nextTick call, but the deep `selections` watcher still fires preview on every user mutation. When the user navigates to a *subsequent* wizard mount (cat 311 / cat 314 after the cat 309 / cat 310 wizards already executed), the deep watcher fires again BEFORE the Sanctum bearer is re-bound in the helper's interceptor read path, reproducing the original cold-start race window — now at interaction-time rather than mount-time. The retry interceptor (app.js L107) silently replays and succeeds → totals integrity preserved (12,50/13,50/8,50/6,00 = 40,50€) → but the toast helper onError NEVER fires → no role=alert renders → category 6 silent_error open.\n\nSCOPE CONFIRMATION: commit efd9896a0 verification block reads 'npx playwright test wave-C → 1 passed'. Wave B was NOT re-executed before declaring C-001 closed — the team's Wave-C-only re-test missed the Wave B regression.",
+      "fix_hint": "Two options, pick one or both (belt + suspenders):\n(A) Gate the deep `selections` watcher's refreshServerPreviewTotal call on token-bound state. In resources/js/components/frontend/kiosk/KioskWizardComponent.vue around the watch('selections', { deep:true, handler: ... }) block (after L1945 area where buildInstruction lives), add a guard: skip refreshServerPreviewTotal() until store.getters['kioskAuth/hasToken'] (or equivalent) is true, and re-fire one-shot when the token binds.\n(B) Wire the helper's onError callback to fire regardless of retry success. In resources/js/helpers/pricing-preview.js (or wherever refreshServerPreviewTotal is defined; see L28-L30 graceful-degradation path referenced in commit efd9896a0), emit a warning toast on the FIRST 401 before retry — current code only emits onError after final failure, which never happens because the retry succeeds. Either path makes the silent_error visible (role=alert) and closes B-008.\nOption A is cleaner (kills root cause). Option B is the audit-hygiene belt — recommended even if A is shipped, so any future cold-start race that fails terminally still surfaces.\nCRITICAL: re-run wave-B (not just wave-C) after the fix.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 3,
+    "P3": 3,
+    "open_P0": 1,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "FAIL",
+    "B-003": "FAIL",
+    "B-004": "FAIL",
+    "B-005": "FAIL",
+    "B-006": "FAIL",
+    "B-007": "PASS"
+  },
+  "verdict": "RED",
+  "notes": "Wave B regresses from GREEN (Round-2) to RED (Round-3) on category 6 silent_error. The C-001 fix in commit efd9896a0 correctly killed the Round-2 boot-time 401 root cause (B-007 boot 401s on /api/frontend/kiosk-event + menu + pricing/preview at state 309-01 are now zero), but the same cold-start race window reopens at interaction-time on subsequent wizard mounts (cat 311 sauce step, cat 311 supplements step, cat 314 supplements step) where the deep `selections` watcher fires refreshServerPreviewTotal() before the Sanctum bearer is re-bound. Three POST /api/frontend/pricing/preview → 401 entries surface in network.json + matching console errors, while the DOM shows zero role=alert (kiosk-toast-container remains empty: role=status aria-live=polite). Per REVIEWER_PROTOCOL category 6, 4xx + no visible alert = P0 silent_error. The commit's own verification block tested wave-C only ('npx playwright test wave-C → 1 passed') — wave-B was not re-run before declaring C-001 closed, so this regression slipped through.\n\nOther closures: B-001 stays closed (zero 'Taille' across cart DOMs, totals 40,50€ intact). Pink palette sentinel sweep (#E8001C / rgba(232,0,28)) returns 0 hits across all 14 Wave-B DOMs. Forbidden-step sentinel (kiosk-step-menu, kiosk-step-frites-style) returns 0 hits across all 14 DOMs. B-002 / B-003 / B-004 / B-005 / B-006 remain open exactly as Round-2 (no commits between 10456234c and efd9896a0 touch the Wave B spec, AUDIT_PLAN.md, or catalog photo data for items 400/401/826/832).\n\nFix required before next round: close B-008 by gating the selections-watcher preview call on token-bound state AND/OR surfacing the 401 via a role=alert toast even when retry succeeds. Re-run wave-B (not just wave-C) for verification."
+}

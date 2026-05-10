@@ -1,0 +1,94 @@
+{
+  "wave": "A",
+  "round": 3,
+  "states_reviewed": 13,
+  "findings": [
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-borne-A/13-cat-318-supplements.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Round 3 re-capture: placeholder count per state DOM (`grep -oE 'item-default\\.svg' | wc -l`) — 05-cat-309-assiettes 1, 10-cat-314-menus-enfants 2, 11-cat-316-desserts 2, 13-cat-318-supplements 8. Total 13 placeholders unchanged from round 1 and round 2. Visual confirmation in state 05 PNG: Assiette Mixte tile still renders the generic '+' placeholder card. Content data scope, not code — round-3 fix waves correctly did not touch.",
+      "fix_hint": "Two-pronged (unchanged from R1/R2): (1) data team uploads product photos for the 13 missing items (paths /storage/<id>/item-default.svg). (2) UX fallback — when item.image_url ends with item-default.svg, render a category-icon glyph or skeleton-with-name rather than the generic '+' card. resources/js/components/frontend/kiosk/KioskProductCardComponent.vue (or equivalent — verify path).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-borne-A/02-idle-language-fr.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 3 re-capture: 02-idle-language-fr.png and 03-idle-language-en.png both still render identical French copy 'Bienvenue !' + 'À emporter / Je récupère ma commande' — no English copy, no language toggle UI present. DOM grep on 01-idle-screen.dom.html still shows zero `kiosk-idle-lang-*` testids. DOM `diff -q 02 03` returns no output meaning byte-identical HTML (the FR vs EN states only differ by capture timing pixel-drift on the CTA pulse). Audit-plan acceptance for states 02/03 (FR + EN copy) remains unverifiable — env config kiosk_languages_enabled has not been enabled.",
+      "fix_hint": "Decision required from owner — either (a) configure kiosk_languages_enabled=['fr','en'] in branch config so the lang selector renders and the EN toggle actually flips i18n, OR (b) drop states 02 and 03 from AUDIT_PLAN.md to stop spending artifact budget on visually-redundant captures. Out-of-code-scope until owner decision.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Round 3: state 04 (welcome / first paint after takeaway tap) STILL auto-selects cat 317 BOISSONS. DOM regex confirms exactly the cat 317 sidebar button has the `active` class: `class=\"kiosk-sidebar-item active\" aria-current=\"page\" aria-label=\"Boissons\" data-testid=\"kiosk-categories-sidebar-item-317\"`. Round-3 cluster-A commit 59669f735 explicitly mis-attributed this ID — it claimed 'A-008 (raster theme-logo.png pink) already closed by 58d47ed2e' but A-008 in the round-2 findings is the auto-select Boissons defect; the raster fix is A-005. The actual Boissons auto-select behavior is unchanged in code and still visible in the capture.",
+      "fix_hint": "resources/js/store/modules/kioskCategories.js (or KioskCategoriesView.vue) — initial selectedCategoryId should be null on welcome paint, with a hero/welcome panel rendered until customer taps a category. If a default MUST be picked, choose a hero meal category (cat 309 Assiettes is the FoodKing positioning anchor) not boissons. Also: orchestrator must reconcile finding IDs before claiming closures — A-008 was conflated with A-005 in commit 59669f735.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-borne-A/05-cat-309-assiettes.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 3 re-capture of 05-cat-309-assiettes.png visually shows the four 'Assiette' product photos as bread-based items (Assiette Kefta, Assiette Merguez, Assiette Poulet visually read as sandwiches / bocadillos with bread + filling), not as plates with separate components. Image filenames are correctly named, so this is a content-photography mismatch, not a code-side bug. Note: commit 59669f735 'cluster-A inline Tailwind hex sweep' is unrelated to this finding — it touched CSS palette only, not photo content. A-009 remains a content-team concern.",
+      "fix_hint": "Content team verification. If photos are correct but mislead, consider category label rename to 'Plats Assiettes' or replace photos with plate-style hero shots. Out of code scope.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "Round 3: full sweep `jq '[.[] | select(.level==\"error\" and (.location.url|test(\"vendor|pusher|wss?:|6001\")|not))] | length'` returns 0 across every state (13/13). Pusher / Echo wss errors persist on idle states but are allowlisted per REVIEWER_PROTOCOL.md (vendor.js + wss + dev-mode Pusher unavailable). No application-code console.error entries detected anywhere. Filing as P3 informational.",
+      "fix_hint": "No fix required — allowlisted. Optional: gate Echo init via APP_DEBUG / Echo.connector === 'null' fallback in resources/js/bootstrap.js to silence dev-only noise.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-100",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 3: All 9 sidebar category thumbnails on every state (04..13) still point to the SAME placeholder image `/images/category/cover.png`. Verified by `grep -oE '/images/category/[^\"]+' 04-categories-welcome.dom.html | sort | uniq -c` returning '10 /images/category/cover.png' (9 sidebar + 1 hero/active card share the same asset). Visual confirmation across all category PNGs (05–13): sidebar shows nine identical small burger-style icons regardless of the actual category. Customers cannot navigate by visual cue — they must read each label. Content-data issue (categories.thumbnail_url defaulting to cover.png) but materially degrades kiosk UX.",
+      "fix_hint": "Two paths: (1) Backend/data — populate categories.thumbnail_path with category-specific images. Migration + content team upload. (2) Frontend fallback — when category.thumbnail equals the generic cover.png, replace with a category-emoji glyph or label-only chip. resources/js/components/frontend/kiosk/KioskCategoriesView.vue or KioskSidebar.vue.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 5,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 5,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "A-005": "PASS",
+    "A-004": "FAIL",
+    "A-006": "FAIL",
+    "A-008": "FAIL",
+    "A-009": "FAIL",
+    "A-007": "PASS",
+    "A-100": "FAIL"
+  },
+  "verdict": "GREEN",
+  "notes": "Wave A round 3 — 13 states reviewed against HEAD 59669f735 (also includes 58d47ed2e wordmark recolor + efd9896a0 silent-error fix). A-005 P1 CLOSED with high confidence: (a) asset-level inspection of public/images/theme/theme-logo.png via PIL — dominant color is #F4501E Cayenne (13,789 px), yellow crown #FFCE00 intact (2,083 px), zero strict-pink pixels (R>=200, G<=60, B>=80 returns 0; R>=240, G<=30, 80<=B<=140 returns 0), zero residual halo pixels — clean recolor with no banding or pixel mush; (b) multimodal vision of 01/02/03 idle-screen captures confirms the FoodKing wordmark renders in Cayenne orange consistent with primary palette, yellow crown above the K is intact, no pink remnants. Anti-regression CLEAN: cats 306/307/308/315 still absent from all 13 sidebars (only 309-314, 316-318 present), DOM grep `#[Ee]8001[Cc]|rgba?\\(232,0,28` returns 0 across all 13 dom.html files, zero application console errors anywhere, zero unexpected 4xx/5xx in network.json sinks. Carryover (P2/P3 unchanged from R2 — owner/content scope, not loop-blocking): A-004 (13 product placeholders), A-006 (no lang selector, env config), A-008 (Boissons still auto-selected on welcome — orchestrator's cluster-A commit 59669f735 mis-attributed A-008 to the raster fix; the actual auto-select code is untouched), A-009 (assiettes photos look like sandwiches — content scope), A-100 (all 9 sidebar thumbs share cover.png), A-007 P3 (allowlisted Pusher wss noise). Verdict GREEN: open_P0=0 AND open_P1=0. Wave A is shippable; remaining P2/P3 are owner-decision content/config items."
+}

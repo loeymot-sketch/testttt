@@ -1,0 +1,81 @@
+{
+  "wave": "D",
+  "round": 3,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "ROUND-3 STILL CLOSED. Both counters continue to display the same Sigma-quantity across all cart-bearing states. Top kiosk-categories-cart-indicator vs bottom kiosk-cart-bottom-sheet-count: state 01 = '0 article' / (no sheet rendered, cart empty); state 02 = '1 article' / '1 article'; state 03 = '3 articles' / '3 articles' (cart-total €11,40 = 3 desserts x 3,80); state 04 = '3 articles' / '3 articles'; state 05 = '4 articles' / '4 articles'; state 06 = '6 articles' / '6 articles' (cart-total €15,90 = 11,40 + Coca x3 line €4,50); state 07 = '6 articles' / '6 articles'; state 08 = '7 articles' / '7 articles'; state 09 = '7 articles' / '7 articles' (cart-total €16,90 = 15,90 + Fromage €1,00); state 10 = '7 articles' / '7 articles'. Bottom-sheet renders 5 distinct kiosk-cart-bottom-sheet-item-{0..4} cards across states 09/10. No regression from commit 2084c0448 across the post-C-001 re-capture (HEAD efd9896a0). PASS.",
+      "fix_hint": "Closed by commit 2084c0448. No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "ROUND-3 UNCHANGED. State 09 DOM still shows kiosk-cart-bottom-sheet-item-0..4 (5 cart lines), but the horizontal strip renders only ~3 of 5 cards in the visible viewport (PNG inspection confirms cards 0/1 — Glace + Tarte Daim — remain off-canvas left without affordance). Strip attributes re-checked: kiosk-cart-strip-list role='list', single aria-live region in DOM (count=1) — NO fade-mask, NO chevron, NO 'X autres' badge near the title. aria-label on kiosk-cart-strip is 'Aperçu de votre panier' — does not announce horizontal scroll or that hidden lines exist. Borderline P1 but correctly classified P2 because data is reachable via swipe and total/count are correct in the visible header.",
+      "fix_hint": "Unchanged — KsCartBottomSheet.vue line ~12 / ~212: add gradient-fade mask + chevron icon + 'X autres' badge (where X = items.length - 3). Add aria-live='polite' on count badge and aria-label on strip-list announcing horizontal scroll.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-borne-D/07-d-cat-318-baseline.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-3 UNCHANGED (data-side issue, not addressed by any round-3 commit). State 07 DOM dump shows /storage/{60,70..77}/item-default.svg referenced 10x (covers all 8 supplément items 415-422 + duplicated default refs for cart strip cards re-using same fallback). State 01 (cat 316 desserts) shows /storage/59/glace.png + 2x item-default.svg (Tarte Daim 405 + Tiramisu 406). State 03 PNG visually confirms Tarte Daim and Tiramisu render as grey '+' placeholder tiles next to the photographed Glace card. State 08 has 4 item-default.svg refs (cart strip propagates the fallback). The branch KIOSK-LC-001 seed continues to ship products without photo assets for items 405, 406, 415-422.",
+      "fix_hint": "Unchanged — DB seed for branch KIOSK-LC-001: upload product photos for items 405, 406, 415-422. Until photos exist, replace item-default.svg with a category-themed Cayenne tile + name typography fallback in the frontend item resource image fallback chain.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-borne-D/10-d-cart-totals-mixed.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND-3 PARTIAL_PASS_REGRESSED. PNG bytes for states 08/09/10 now differ from each other (md5: 473c2554..., cb10c439..., aab2d2da...) — pixel drift continues. HOWEVER the DOM dumps remain byte-identical: md5(08-d.dom.html) = md5(09-d.dom.html) = md5(10-d.dom.html) = 44084ac77b0f5d0e654d0cd1edd6f578 (single hash for all three states). The audit-waste pattern persists at the DOM level: states 09 and 10 sample identical DOM with no meaningful UI mutation, and state 08 also matches exactly. Spec re-asserts cart total at state 10 over the same DOM as state 09. Not a product defect; an audit-discipline issue. (Note: DOM md5 hash differs from round-2's reported 0bb7c6ae... because round-3 re-capture under commit efd9896a0 produced fresh DOM, but the three states still match each other byte-for-byte — the structural problem is identical to round-2.)",
+      "fix_hint": "Unchanged — tests/e2e/test-e2e-borne-2026-05-10-wave-D.spec.js: either (a) merge state 10 totals assertions into state 09 and drop state 10 capture, OR (b) introduce a horizontal scroll on the bottom-sheet strip between snaps so state 10 captures items 0/1 visible (would simultaneously produce D-002 evidence).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-borne-D/01-d-cat-316-baseline.network.json",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "NEW ROUND-3 FINDING — regression vs round-2 ('Network sidecars empty 10/10'). State 01 network.json now contains 2 unallowlisted 4xx: (1) POST http://127.0.0.1:8000/api/frontend/kiosk-event status=401 ts=1778443366420; (2) GET http://127.0.0.1:8000/api/frontend/menu status=401 ts=1778443366673. Same state 01 console.json contains the two matching 'Failed to load resource: ... 401 (Unauthorized)' entries (NON-allowlisted: location URL is /api/frontend/* not vendor.js/Pusher WS noise). DOM check on state 01: zero <[role=alert]> elements with content, zero kiosk-toast-container children other than <style>, no .alert-* visible — so the 4xx is NOT user-surfaced. PNG inspection confirms catalog DID render (Glace photo + Tarte Daim + Tiramisu placeholders all visible) — the retry succeeded after Sanctum kiosk:order token attached, but the FIRST request was captured as 401 in the network sidecar before the retry succeeded. Per REVIEWER_PROTOCOL Cat 6 'silent_error' = 4xx response in network.json AND DOM has no visible alert → P0 strict. Calibrated to P1 because: (a) single state of 10, (b) request was the very first kiosk bootstrap call (cold-start race window), (c) interceptor retry resolved within the same page-load, (d) end-user UX is unbroken. Round-2 cluster-1 commit 95c2fd799 explicitly excludes 401 from toast surfacing ('handled by surface-specific router redirects'), and round-3 commit efd9896a0 (C-001 fix) only addressed the wizard's mount-time /pricing/preview 401 — TWO MORE kiosk bootstrap endpoints (/api/frontend/kiosk-event and /api/frontend/menu) emit 401s in the same Sanctum cold-start race window and are not yet deferred. This is the SAME ROOT-CAUSE FAMILY as C-001 (Sanctum kiosk:order token attaches AFTER the first POST/GET fires from app boot), surfacing on TWO new endpoints. Other Waves A/B/C/E state-01 sidecars are empty 10/10, suggesting Wave D's spec opens kiosk via a route that hits these endpoints before the surrounding context flow (which the other waves likely chain from) had a chance to warm the token.",
+      "fix_hint": "Two-part fix tracking C-001's pattern. Part 1 (preferred): defer the first /api/frontend/kiosk-event POST and /api/frontend/menu GET until after the kiosk:order Bearer is materialised in axios defaults. Inspect resources/js/store/modules/frontend-* and resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN — needs LOCK doc) for the cold-start sequence — likely the menu fetch fires in app.js bootstrap / FrontendStoreModule.created() before the Sanctum kiosk-token-init resolves. Gate the first menu+event call on an awaitable token-ready promise. Part 2 (belt+suspenders, since 401 retry is silent-by-design): in the axios response interceptor (public/js/app.js or resources/js/app.js L107 region per commit 95c2fd799 / efd9896a0), surface a one-shot info toast IF the 401 fires on a kiosk bootstrap endpoint AND no token was yet present — so the sidecar reviewer never sees a silent 4xx again. Tests/e2e/test-e2e-borne-2026-05-10-wave-D.spec.js can be hardened with an awaitForToken helper before the state-01 snap.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 2,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "D-001": "PASS",
+    "D-002": "FAIL",
+    "D-003": "FAIL",
+    "D-004": "PARTIAL_PASS",
+    "D-005": "NEW"
+  },
+  "verdict": "AMBER",
+  "notes": "Round-3 wave-D verdict AMBER (was GREEN in round-2). open_P0=0 holds but open_P1=1 due to NEW finding D-005 (silent 4xx on kiosk bootstrap endpoints). D-001 remains PASS (top + bottom counters match across all 10 states with correct Sigma-qty values: 0/0, 1/1, 3/3, 3/3, 4/4, 6/6, 6/6, 7/7, 7/7, 7/7). Phase A direct-add anti-regression VERIFIED across states 02/05/08: zero rendered DOM elements with kiosk-wizard-overlay class (only CSS scoped definition in <style> blocks, count=1 per state — wizard component CSS is bundled but not rendered, consistent with hasOptions() short-circuit for cats 316/317/318). Pink palette DOM-wide regex (#E8001C / rgba(232,0,28) / #FF00xx / #E91E63 / hotpink / deeppink / magenta / fuchsia) returns ZERO hits across all 10 DOM dumps. Cayenne #F4501E positive sentinel present 45x per state (constant, no drift). Numeric integrity: cart-totals €11,40 (state 03, 3 desserts × 3,80), €15,90 (state 06, +Coca x3 line €4,50), €16,90 (states 09/10, +Fromage €1,00) — all match expected and match top kiosk-categories-cart-total. C-001 fix (commit efd9896a0 — removed mount-time /pricing/preview POST) has zero impact on Wave D flows (D never enters the wizard): grep across all 10 wave-D network sidecars finds 0 hits for /pricing/preview, confirming the wizard's pre-selection preview call no longer leaks into Wave D paths. Sidecar audit: 9 of 10 network sidecars empty (just '[]'); 9 of 10 console sidecars empty. State 01 alone carries the regression — 2x 401 in network.json + 2x non-allowlisted 401 'Failed to load resource' in console.json. State 01 console also contains 4x Pusher WS ERR_CONNECTION_REFUSED entries (allowlisted per protocol — vendor.js source). NO new defects beyond D-005. D-002/D-003 unchanged (P2 non-blocking, design/data issues respectively). D-004 unchanged (P3 audit-discipline). Wave D recapture timestamp 22:02 (post C-001 fix at 21:52) confirms artifacts are official round-3 evidence. The fact that Wave A/B/C/E state-01 sidecars are empty while Wave D's is not is itself a useful signal — Wave D's entry path bypasses the token-warming sequence the others rely on. Recommendation: cluster D-005 with any next round of bootstrap-race remediation, or surface a one-shot toast in the 401-on-kiosk-bootstrap path so REVIEWER_PROTOCOL Cat 6 stops biting on the same root-cause family."
+}

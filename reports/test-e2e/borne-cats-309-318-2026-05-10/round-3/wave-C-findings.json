@@ -1,0 +1,94 @@
+{
+  "wave": "C",
+  "round": 3,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-borne-C/09-313-wizard-step-sauce.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "CLOSED — root cause eliminated at source by commit efd9896a0. Verification: Python scan across all 14 *.network.json files in tests/e2e/__screenshots__/test-e2e-borne-C/ returns ZERO entries matching url contains '/pricing/preview' (round 2 had 1× POST /api/frontend/pricing/preview 401 at state 09). State 09 round-3 capture network.json now has 0 total entries (the mount-time $nextTick refreshServerPreviewTotal() call was removed from KioskWizardComponent.vue mounted lifecycle — confirmed in commit diff: 'refresh now triggers ONLY via the deep selections watcher post user mutation'). The narrow original finding scope (pricing/preview 401 burst at wizard mount) is fully resolved. The orchestrator also extended KioskToastComponent.vue role='alert' + aria-live='assertive' to warning toasts as belt-and-suspenders, so any future failure that DOES route through the helper's onError will satisfy REVIEWER_PROTOCOL [role=alert] selector.",
+      "fix_hint": "No further action required for C-001 itself. See new finding C-006 for a different endpoint pair exhibiting the same protocol-category-6 pattern.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0,
+      "closed_in_round": 3
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-borne-C/11-313-wizard-step-frites-style-cheddar-oignons.png",
+      "category": "visual_hash_drift",
+      "severity": "P1",
+      "evidence": "CLOSED — multimodal vision inspection of state 04 (Salade Royale) and state 11 (Filets de Poulet Croustillants) PNGs confirms 3 visually distinct frites_style cards: card 1 'Frites nature' renders a yellow fries-cone emoji (🍟) on a pale yellow gradient background, card 2 'Cheddar fondu' renders a cheese-wedge emoji (🧀) with cheese-toned yellow-orange gradient, card 3 'Cheddar + Oignons croustillants' renders an onion emoji (🧅) on a warm orange gradient. NO parent item image (tenders.png / salade_royale.png) bleeds into any of the 3 cards anymore. DOM grep across state 04 + state 11: zero <img> tags with parent-item src inside any kiosk-frites-style card wrapper. Cards remain coherent with the Cayenne palette (orange/red accent border on selected card, white card background, neutral text). Phase C marketing intent — '20% larger image for upgrade cards to drive +1/+2€ pickup' — is now visually achievable since each variant is distinguishable at a glance.",
+      "fix_hint": "No further action required. Optional future enhancement: replace emoji+gradient with brand-photographed frites/cheese/onions visuals when the content team produces them (extras[i].thumb migration path is wired per the fix-hint in round 1).",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0,
+      "closed_in_round": 3
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-borne-C/13-313-j2-step-menu-flip-to-none.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "NEW FINDING — strict REVIEWER_PROTOCOL category 6 (4xx in network.json + DOM lacks [role=alert] / .toast / .alert-*). State 13 round-3 network.json contains exactly 3 entries, ALL 401: 2× GET http://127.0.0.1:8000/api/frontend/menu + 1× POST http://127.0.0.1:8000/api/frontend/kiosk-event. State 13 dom.html: kiosk-toast-container is `role='status' aria-live='polite' aria-relevant='additions text'` with ZERO child nodes (empty container). DOM grep for `role=\"alert\"` returns 0 across the entire DOM, zero `.toast` class with content, zero `.alert-*` class. Visual PNG of state 13 ('QUEL MENU?' wizard step for Ailes de Poulet 6 pcs with 'SANS MENU' selected) shows clean wizard UI with no error banner, no toast, no warning chip — customer is given zero feedback that the menu reload + kiosk-event tracking POST failed. CRITICAL: git archaeology confirms this is a ROUND-3 REGRESSION — `git show 6f7e502b9:tests/e2e/__screenshots__/test-e2e-borne-C/13-313-j2-step-menu-flip-to-none.network.json` returns 0 total entries (round 2 state 13 had ZERO network calls during the capture window). Round 3 introduced 3× 401 in the same state. Round-3 wizard step rendered ('QUEL MENU?' kiosk-step-title) is IDENTICAL to round 2, so the traversal path is unchanged — the regression is in the auth/network behavior, not the spec. ROOT CAUSE: the silent re-login retry pattern documented in resources/js/app.js L99-130 (`__retry401Kiosk` flag → store.dispatch('kioskCart/kioskLogin') → axios.request retry) succeeds invisibly for the customer, but the FIRST 401 is recorded in the network log AND no toast is dispatched on the successful-retry path (onError of the helper is never invoked because the retry succeeded). The orchestrator's own commit message at efd9896a0 explicitly acknowledged this exact pattern: 'the retry succeeds, so onError is never invoked → P0 silent_error stays open'. They killed the symptom for /pricing/preview by removing the mount-time call, but did NOT generalize the fix to other endpoints that trigger the same retry path. Per strict protocol: this is a P0 silent_error.",
+      "fix_hint": "Two convergent options. Option A (recommended — generalized fix): in resources/js/app.js the 401 response interceptor (line 70-160) MUST dispatch a [role=alert] toast on ANY 401 capture even when the silent re-login retry succeeds — the customer's first call still failed and the protocol-category-6 evidence (4xx in network.json) is permanent. Suggested: after `__retry401Kiosk` is set and BEFORE the axios.request retry, fire `window.dispatchEvent(new CustomEvent('kiosk-auth-retry', { detail: { url: cfg.url, status: 401 } }))` which KioskAppComponent already listens on (cf. existing `kiosk-auth-failed` listener pattern) and routes through KioskToastComponent. Toast copy: 'Connexion sécurisée renouvelée' (info severity, 3s, role=status acceptable for retry-success path) — OR upgrade to role=alert if reviewer protocol enforcement is strict. Option B (narrow fix — kill the root cause at source like C-001): identify why GET /api/frontend/menu and POST /api/frontend/kiosk-event fire at state 13 (menu-flip-to-none transition for item 313) without a fresh token — likely the j2 (second-item) reset flow in KioskWizardComponent.vue resets the kiosk:order Bearer prematurely. Investigate: (1) which composable calls /api/frontend/menu at the menu-flip-to-none transition (KioskAppComponent.vue refreshMenu listener?), (2) why the kiosk-event POST fires twice in the burst (kiosk-event sender is fire-and-forget per KioskAppComponent.vue:990 and KioskPaymentComponent.vue:697-816 — it should not error). Both options need verification + a 4th capture round.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "STILL OPEN. Round 3 re-verified: state 04 + state 11 dom.html — `class=\"kiosk-frites-style-price\"` returns exactly 2 spans (price = '+€1,00' and '+€2,00'). Frites nature card has NO kiosk-frites-style-price span (no 'Incluses', no 'Standard', no '€0,00'). Visual PNG state 04 confirms: Cheddar fondu shows orange '+€1,00' chip + Cheddar+Oignons shows orange '+€2,00' chip, Frites nature card is bare. Customer may misread Nature as 'unknown price' / 'unavailable' instead of 'incluses dans le menu'. Round-3 fix waves did not touch this — out of cluster scope.",
+      "fix_hint": "Same as round 1/2: add a positive-affirmation chip on the Nature card. resources/js/components/frontend/kiosk/KioskStepFritesStyleComponent.vue (or the steps composable rendering frites_style cards) — for the extra with delta_price === 0, render `<span class='kiosk-frites-style-price kiosk-frites-style-price--free'>Incluses</span>` styled with green accent (#C6F6D5 background / #047857 text recommended for accessibility AA contrast on the white card background).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-borne-C/01-312-wizard-step-garnitures.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "STILL OPEN. Round 3 re-verified: state 01 filename is `01-312-wizard-step-garnitures` but the rendered first step is actually `sauce` (kiosk-step-title='QUELLE SAUCE ?' confirmed in DOM). Same misnomer applies to state 06 (`06-312-j2-step-menu-frites-cheddar` — rendered step is actually 'QUEL MENU ?'). Cosmetic / audit-plan attribution only.",
+      "fix_hint": "Same as rounds 1/2: either rename state 01 → `01-312-wizard-step-sauce` and state 06 → `06-312-j2-step-menu` in tests/e2e/test-e2e-borne-C.spec.ts (or AUDIT_PLAN.md), OR update the audit-plan acceptance descriptions to match the actual rendered first step (partitionKioskExtras filters out garnitures for cat 312 so 'sauce' is the legitimate first step).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-borne-C/12-313-wizard-recap-with-upgrade.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "STILL OPEN. Round 3 re-verified: state 12 (recap with Cheddar+Oignons upsell, total €12,50 confirming upsell active) shows composition strip with ONLY 'SAUCES Ketchup' + 'MENU Avec frites · Ketchup' chips. NO 'FRITES STYLE Cheddar + Oignons croustillants' chip despite the customer having selected that +€2,00 upgrade. Visual PNG of state 12 confirms only 2 chips in the kiosk-live-composition zone. DOM grep `data-testid=\"chip-frites-style\"` returns 0 in state 12. Phase C marketing principle 'live confirmation reinforces the upgrade' remains violated — the very screen where the upsell is presented for final confirmation does not visually mirror the upgrade in the running composition strip.",
+      "fix_hint": "Same as rounds 1/2: KioskWizardComponent.vue composition chip block — when `selections.fritesStyleExtraId != null AND menuChoice === 'with-fries'`, append a chip with `data-testid='chip-frites-style'` rendering the selected extra name (extras.find(e => e.id === selections.fritesStyleExtraId).name) AND its delta_price suffix (e.g. 'FRITES STYLE Cheddar + Oignons +€2,00'). Reuse the existing kiosk-live-composition-chip styling so it matches the other chips visually.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 0,
+    "P2": 1,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "FAIL",
+    "C-004": "FAIL",
+    "C-005": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Wave C round 3 — 14 states reviewed against HEAD efd9896a0 (also covers 58d47ed2e frites_style visuals). TWO genuine closures: (1) C-001 P0 root cause killed — Python scan of all 14 *.network.json files returns ZERO entries matching '/pricing/preview' (round 2 had 1× 401 at state 09); the mount-time $nextTick refreshServerPreviewTotal call was removed from KioskWizardComponent.vue mounted lifecycle per commit efd9896a0 diff; belt-and-suspenders KioskToastComponent role='alert' + aria-live='assertive' extended to warning toasts so any future onError-routed toast satisfies protocol selector. (2) C-002 P1 visually closed — multimodal vision of state 04 + state 11 PNGs confirms 3 distinct frites_style cards (🍟 yellow gradient, 🧀 cheese-toned gradient, 🧅 orange gradient); parent item image (tenders.png / salade_royale.png) no longer bleeds into any card; coherent with Cayenne palette. P0-1 ANTI-REGRESSION CLEAN: state 08 (Salade Tunisienne post-flip-to-none, item 395 cat 312) + state 14 (Ailes 6pcs post-flip-to-none, item 396 cat 313) sidecar payloads both show `pre_addToCart.selections.fritesStyleExtraId === null/absent`, `menuChoice === 'none'`, supplements 923/924 (state 08) + 932/933 (state 14) all false. No regression vs round 2's gold-standard sidecar evidence. NEW P0 DISCOVERED — C-006: state 13 round-3 network.json contains 3× 401 (GET /api/frontend/menu ×2 + POST /api/frontend/kiosk-event ×1), DOM kiosk-toast-container empty + role='status' (not role='alert'), zero visible UI feedback in the PNG. Git archaeology confirms this is a ROUND-3 REGRESSION: round-2 state 13 network.json was empty (0 entries). The orchestrator's commit message at efd9896a0 explicitly identified this exact protocol-category-6 pattern ('the retry succeeds, so onError is never invoked → P0 silent_error stays open') but only fixed it for /pricing/preview — the silent re-login retry path in resources/js/app.js L99-130 still records 401s + suppresses UI on /api/frontend/menu and /api/frontend/kiosk-event. C-006 is therefore the SAME defect class as C-001 reborn on different endpoints. Carryover P2/P3 unchanged from round 2 — C-003 (Nature card no price label, 'Incluses' chip missing), C-004 (state 01 / 06 filename misnomer 'garnitures' vs actual 'sauce' / 'menu' step), C-005 (no frites_style chip in composition strip at state 12 recap despite €12,50 upsell active). Pink residue: 0 (`grep -E '#[Ee]8001[Cc]|rgba?\\(232,0,28' returns 0 across all 14 dom.html). Console errors: only allowlisted Pusher wss noise on idle states. Verdict RED — driven by C-006 P0 silent_error (new in round 3). To declare GREEN in round 4: either kill the /api/frontend/menu + /kiosk-event 401 burst at source (preflight Sanctum token validity check before fire), OR generalize the toast dispatch so ANY 401 (even retry-success) surfaces a [role=alert] in DOM. P2/P3 (C-003/C-004/C-005) are NOT loop-blocking but should be addressed in a follow-up cluster for marketing-intent integrity."
+}
