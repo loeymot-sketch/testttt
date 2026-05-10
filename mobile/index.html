@@ -121,6 +121,18 @@ function App() {
     if (s === 'gain')   { setModal('gain');   return; }
     if (s === 'redeem') { setModal('redeem'); return; }
     if (s === 'link')   { setModal('link');   return; }
+    if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
+    if (s === 'logout') {
+      storage.clearAuth();
+      setCart([]);
+      setHistory(['login']);
+      setScreen('login');
+      return;
+    }
+    if (s === 'orderDetail' && ext) {
+      // ext = order id
+      setItemId(ext);
+    }
     if (s === 'item' && ext) setItemId(ext);
     setHistory(h => [...h, s]);
     setScreen(s);
@@ -154,7 +166,7 @@ function App() {
     case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
     case 'confirm': body = <ScreenConfirm go={go}/>; break;
     case 'orders':  body = <ScreenOrders go={go}/>; break;
-    case 'orderDetail': body = <ScreenOrderDetail go={go}/>; break;
+    case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
     case 'profile': body = <ScreenProfile go={go}/>; break;
     case 'loyalty': body = <ScreenLoyalty go={go}/>; break;
     default: body = <ScreenHome go={go}/>;

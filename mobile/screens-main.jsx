@@ -577,15 +577,15 @@ function ScreenCart({ go, cart, setCart }) {
             <span className="more">Notre conseil</span>
           </div>
           <div style={{ display: 'flex', gap: 10, padding: '0 20px', overflowX: 'auto' }}>
-            {ITEMS.slice(2,5).map(it => (
-              <div key={it.id} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8 }}>
+            {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
+              <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
-                  <button style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
+                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             ))}
@@ -737,7 +737,7 @@ function ScreenOrders({ go }) {
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {g.date}</div>
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => (
-                    <div key={o.id} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative' }}>
+                    <div key={o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -751,7 +751,7 @@ function ScreenOrders({ go }) {
                             <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{Math.round(o.total)} pts</span>
                           </div>
                         </div>
-                        <button style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
+                        <button onClick={(e) => { e.stopPropagation(); go('menu'); }} style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
                       </div>
                     </div>
                   ))}
@@ -781,7 +781,7 @@ function ScreenProfile({ go }) {
               <div style={{ fontSize: 17, fontWeight: 700 }}>Ikyes B.</div>
               <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>+33 6 42 79 98 84</div>
             </div>
-            <button style={{ background: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: 'var(--yellow)', letterSpacing: '0.08em' }}>MODIFIER</button>
+            <button onClick={() => go('toast', { msg: 'Édition profil — bientôt disponible', kind: 'info' })} style={{ background: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: 'var(--yellow)', letterSpacing: '0.08em' }}>MODIFIER</button>
           </div>
         </div>
         {/* loyalty preview card */}
@@ -826,7 +826,7 @@ function ScreenProfile({ go }) {
               </div>
             ))}
           </div>
-          <button style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
+          <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
       </div>
     </div>
@@ -902,7 +902,7 @@ function ScreenLoyalty({ go }) {
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{r.r}</div>
                     <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2 }}>{r.unlocked ? '✓ Disponible' : `${r.need} pts manquants`}</div>
                   </div>
-                  {r.unlocked && <button style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>}
+                  {r.unlocked && <button onClick={() => go('redeem')} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>}
                 </div>
               ))}
             </div>
@@ -921,7 +921,7 @@ function ScreenLoyalty({ go }) {
                     {r.locked && <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700 }}>🔒 -{r.need} PTS</span>}
                   </div>
                   <div className="lc-display" style={{ fontSize: 22 }}>{r.name}</div>
-                  <button disabled={r.locked} style={{ marginTop: 12, width: '100%', height: 44, borderRadius: 12, border: 0, background: r.locked ? 'var(--gray-2)' : 'var(--orange)', color: '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: r.locked ? 'not-allowed' : 'pointer' }}>{r.locked ? 'Verrouillé' : 'Échanger'}</button>
+                  <button onClick={() => !r.locked && go('redeem')} disabled={r.locked} style={{ marginTop: 12, width: '100%', height: 44, borderRadius: 12, border: 0, background: r.locked ? 'var(--gray-2)' : 'var(--orange)', color: '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: r.locked ? 'not-allowed' : 'pointer' }}>{r.locked ? 'Verrouillé' : 'Échanger'}</button>
                 </div>
               ))}
             </div>
@@ -955,7 +955,7 @@ function ScreenLoyalty({ go }) {
               <div style={{ fontSize: 13, fontWeight: 700 }}>Tu as une carte plastique ?</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Lie-la à ton compte pour cumuler partout.</div>
             </div>
-            <button style={{ background: 'var(--yellow)', color: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>LIER</button>
+            <button onClick={() => go('link')} style={{ background: 'var(--yellow)', color: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>LIER</button>
           </div>
         </div>
       </div>

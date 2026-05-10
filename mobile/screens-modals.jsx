@@ -166,12 +166,23 @@ function ModalCardLink({ onClose, onScan }) {
 
 // ---------- Order detail ----------
 function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
-  const items = [
-    { name: 'Box Nashville', sups: 'Oignon caramélisé, Cheddar', qty: 1, price: 17 },
-    { name: 'Bowl Gratiné', sups: 'Sauce maison', qty: 1, price: 12 },
-    { name: 'Frite XXL', sups: '', qty: 1, price: 4 },
-  ];
-  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+  // Pull real order from data layer (window.LC.orders.findById) when available.
+  const real = window.LC && window.LC.orders ? window.LC.orders.findById(orderId) : null;
+  const items = real
+    ? real.items.map(i => ({ name: i.name, sups: i.extras_summary || '', qty: i.qty, price: i.line_total / Math.max(1, i.qty) }))
+    : [
+        { name: 'Box Nashville', sups: 'Oignon caramélisé, Cheddar', qty: 1, price: 17 },
+        { name: 'Bowl Gratiné',  sups: 'Sauce maison',                qty: 1, price: 12 },
+        { name: 'Frite XXL',     sups: '',                            qty: 1, price: 4  },
+      ];
+  const total = real ? real.total : items.reduce((s, i) => s + i.price * i.qty, 0);
+  const dateLabel = real
+    ? new Date(real.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')
+    : '8 mai 2025 · 19h47';
+  const branch = real ? real.branch_city : 'Hénin-Beaumont';
+  const status = real ? real.status_label : 'Récupérée';
+  const isDelivered = !real || real.status === 'delivered';
+
   return (
     <div data-screen-label="12b Order detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 120 }}>
@@ -181,9 +192,9 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
           <div style={{ width: 36 }}/>
         </div>
         <div style={{ padding: '6px 20px 0' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--green)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>✓ Récupérée</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green)' : 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
           <h1 className="lc-display" style={{ margin: '8px 0 2px', fontSize: 38, lineHeight: 0.9, color: 'var(--ink)' }}>#{orderId}</h1>
-          <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>8 mai 2025 · 19h47 · Hénin-Beaumont</div>
+          <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{dateLabel} · {branch}</div>
         </div>
         <div style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 18, padding: 16 }}>
           {items.map((it, i) => (
