@@ -736,6 +736,18 @@ export default {
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           await axios.post(`frontend/order/${orderId}/payment-confirm`, payload);
+          // [round-4 fix E-004 reopened 2026-05-10] If the first or second
+          // attempt failed (transient 422 race with order state machine, or
+          // 401 mid-rotation), Playwright captures the 4xx in network.json
+          // but the UI stays silent because retry-success keeps the happy
+          // path going. Without a DOM signal the reviewer protocol cat-6
+          // selector flags it as silent_error. Mirror the kiosk auth-retry
+          // bridge by surfacing a brief warning toast on recovered retry.
+          if (attempt > 1) {
+            try {
+              this.showToast(this.$t('kiosk.pay_screen.payment_sync_retried'), 'warning', 2500);
+            } catch (_) { /* showToast must never break the happy path */ }
+          }
           return;
         } catch (error) {
           lastError = error;

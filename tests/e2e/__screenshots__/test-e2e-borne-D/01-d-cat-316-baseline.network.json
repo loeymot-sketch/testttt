@@ -1,16 +1,1 @@
-[
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
-    "method": "POST",
-    "status": 401,
-    "duration_ms": null,
-    "ts": 1778443366420
-  },
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/menu",
-    "method": "GET",
-    "status": 401,
-    "duration_ms": null,
-    "ts": 1778443366673
-  }
-]
+[]

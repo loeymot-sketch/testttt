@@ -1374,6 +1374,7 @@
             "invalid_order_response": "Réponse serveur incorrecte : commande introuvable. Veuillez réessayer.",
             "tpe_timeout": "Délai d'attente du terminal de paiement dépassé. Veuillez réessayer ou contacter un opérateur.",
             "payment_sync_failed": "Le paiement a été accepté mais la borne n'a pas pu confirmer la commande auprès du serveur. Merci d'appeler un membre du personnel.",
+            "payment_sync_retried": "Confirmation paiement renvoyée automatiquement",
             "payment_error_generic": "Une erreur est survenue. Veuillez réessayer.",
             "payment_declined": "Paiement refusé par l'appareil",
             "payment_cancelled": "Paiement annulé.",

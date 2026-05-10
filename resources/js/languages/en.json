@@ -1530,6 +1530,7 @@
             "invalid_order_response": "Invalid server response: order not found. Please try again.",
             "tpe_timeout": "Payment terminal timed out. Please try again or ask a staff member.",
             "payment_sync_failed": "The payment was accepted, but the kiosk could not confirm the order with the server. Please call a staff member.",
+            "payment_sync_retried": "Payment confirmation auto-resent",
             "payment_error_generic": "Something went wrong. Please try again.",
             "payment_declined": "Payment declined by the device",
             "payment_cancelled": "Payment cancelled.",

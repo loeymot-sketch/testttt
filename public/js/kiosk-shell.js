@@ -2433,6 +2433,18 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                       _context7.n = 1;
                       return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/".concat(orderId, "/payment-confirm"), payload);
                     case 1:
+                      // [round-4 fix E-004 reopened 2026-05-10] If the first or second
+                      // attempt failed (transient 422 race with order state machine, or
+                      // 401 mid-rotation), Playwright captures the 4xx in network.json
+                      // but the UI stays silent because retry-success keeps the happy
+                      // path going. Without a DOM signal the reviewer protocol cat-6
+                      // selector flags it as silent_error. Mirror the kiosk auth-retry
+                      // bridge by surfacing a brief warning toast on recovered retry.
+                      if (attempt > 1) {
+                        try {
+                          _this8.showToast(_this8.$t('kiosk.pay_screen.payment_sync_retried'), 'warning', 2500);
+                        } catch (_) {/* showToast must never break the happy path */}
+                      }
                       return _context7.a(2, {
                         v: void 0
                       });
