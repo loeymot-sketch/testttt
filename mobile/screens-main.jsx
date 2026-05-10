@@ -61,7 +61,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
 
         {/* featured signature card */}
         <div style={{ padding: '20px 20px 0' }}>
-          <div onClick={() => go('item', 'familiale')} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
+          <div onClick={() => go('item', 'box-familiale')} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
             <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <span className="lc-pill lc-pill--ink" style={{ fontSize: 9 }}>SIGNATURE</span>
@@ -816,7 +816,7 @@ function ScreenProfile({ go }) {
               { i: I.Phone, t: 'Nous contacter', d: '06 51 30 XX XX' },
               { i: I.Shield, t: 'CGU & Confidentialité' },
             ].map((row, i) => (
-              <div key={i} className="lc-toggle-row" style={{ cursor: 'pointer' }} onClick={() => row.go && go(row.go)}>
+              <div key={i} className="lc-toggle-row" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: row.accent || 'var(--ink)', color: row.accent ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}><row.i size={16}/></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{row.t}</div>
