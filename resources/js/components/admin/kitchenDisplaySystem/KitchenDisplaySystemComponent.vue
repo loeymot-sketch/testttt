@@ -2060,6 +2060,20 @@ export default {
   border-bottom: 1px solid #fecaca;
   font-weight: 600;
 }
+/* [test-e2e fix C-009 round-3 2026-05-10] Persistent KDS error banner sticky
+   to viewport top so a kitchen operator scrolled into the order list still
+   sees the 503-degraded signal after toast fade. Scoped to --danger to avoid
+   affecting bump-info neutral banner (which is allowed to scroll naturally).
+   The KDS view's scroll container is `<main class="db-main">` with
+   `h-screen overflow-auto` and top-padding accounting for the fixed navbar,
+   so `position: sticky; top: 0` pins at the scrollport's padding edge —
+   right below the fixed `.db-header` (z-30). z-index: 50 keeps it above
+   internal grid panels. */
+.kds-hint-banner--danger {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
 .kds-hint-banner--action {
   align-items: center;
   display: flex;
