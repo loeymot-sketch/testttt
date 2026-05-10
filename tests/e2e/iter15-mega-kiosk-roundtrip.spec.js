@@ -257,10 +257,14 @@ test.describe('iter15 mega — Wave C (kiosk roundtrip → KDS + POS suivi)', ()
           await productCard.click({ timeout: 5000 }).catch(() => {});
         }
 
+        // [iter15-mega-fix wave-C-spec round-8 2026-05-10] Wait for ACTUAL cart
+        // population, not just kiosk-cart-bottom-sheet element presence (it's
+        // a static container always in the DOM regardless of cart state).
+        // The robust signal is either the wizard summary opening OR the cart
+        // indicator showing N article(s) > 0.
         await kioskPage.waitForFunction(() => (
           document.querySelector('[data-testid="kiosk-order-summary-root"]')
-          || /\d+\s*article/i.test(document.querySelector('[data-testid="kiosk-categories-cart-indicator"]')?.textContent || '')
-          || document.querySelector('[data-testid="kiosk-cart-bottom-sheet"]')
+          || /[1-9]\d*\s*article/i.test(document.querySelector('[data-testid="kiosk-categories-cart-indicator"]')?.textContent || '')
         ), null, { timeout: 15_000 });
 
         // If recap surfaces, validate it; else the item went straight to cart.
@@ -276,10 +280,10 @@ test.describe('iter15 mega — Wave C (kiosk roundtrip → KDS + POS suivi)', ()
           kioskFlowNotes.push('wizard-skipped-direct-cart');
         }
 
-        // Cart bottom-sheet should now reflect the item — capture state.
+        // [iter15-mega-fix wave-C-spec round-8 2026-05-10] Wait for cart count
+        // > 0, NOT the bottom-sheet element (which is always in DOM).
         await kioskPage.waitForFunction(() => (
-          document.querySelector('[data-testid="kiosk-cart-bottom-sheet"]')
-          || /\d+\s*article/i.test(document.querySelector('[data-testid="kiosk-categories-cart-indicator"]')?.textContent || '')
+          /[1-9]\d*\s*article/i.test(document.querySelector('[data-testid="kiosk-categories-cart-indicator"]')?.textContent || '')
         ), null, { timeout: 8000 }).catch(() => {});
         await safeSnap(kioskRec.snap, '04-kiosk-cart-bottom-sheet', 'Bottom sheet panier visible');
         kioskFlowNotes.push('cart-bottom-sheet');
