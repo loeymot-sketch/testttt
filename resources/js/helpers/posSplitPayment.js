@@ -174,16 +174,31 @@ export function splitEquallyCents(totalCents, n) {
 /**
  * splitEqually(totalEur, n) → array of tranche stubs with EUR amounts.
  * Default mode is CASH (cashier will pick the actual mode per tranche).
+ *
+ * [iter15-BUG-multi-person 2026-05-10] Pre-fill `tendered = amount` for cash
+ * tranches so the freshly-split tranches are immediately VALID — otherwise
+ * `sumCoveredCents` excludes them (cash tranche without tendered = invalid),
+ * the cashier sees "Couvert: 0.00€" / "Reste dû: 2.00€" right after clicking
+ * "Diviser à parts égales", and the multi-person UX is effectively broken.
+ *
+ * Pre-filling exact-change tendered is the most natural default : the cashier
+ * sees the split correctly applied and overrides per-tranche tendered if the
+ * customer pays with a larger note. The amount-only tendered keeps
+ * `computeChangeCents` returning 0 (no change due) until override.
  */
 export function splitEqually(totalEur, n, defaultMode = posPaymentMethodEnum.CASH) {
     const partsCents = splitEquallyCents(toCents(totalEur), n);
-    return partsCents.map((cents, idx) => ({
-        id: makeTrancheId(idx),
-        mode: defaultMode,
-        amount: fromCents(cents),
-        tendered: null,
-        note: null,
-    }));
+    const cashDefault = isCashMode(defaultMode);
+    return partsCents.map((cents, idx) => {
+        const amountEur = fromCents(cents);
+        return {
+            id: makeTrancheId(idx),
+            mode: defaultMode,
+            amount: amountEur,
+            tendered: cashDefault ? amountEur : null,
+            note: null,
+        };
+    });
 }
 
 let _trancheCounter = 0;

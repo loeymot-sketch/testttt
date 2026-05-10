@@ -43,10 +43,22 @@ Pre-existing backend test suite already green (verified during this work — no 
 
 **E2E visual coverage** added in this work (`tests/e2e/iter15-split-payment-regression.spec.js`, 3 specs + 6 screenshots):
 1. `Multi-paiement` mode toggle reveals `[data-testid="pos-payment-split-block"]`
-2. `N=4 → "Diviser à parts égales"` produces 4 tranche rows in the list (multi-person affordance proven)
+2. `N=4 → "Diviser à parts égales"` produces 4 tranche rows AND
+   **Couvert = 2.00€ / Reste dû = 0.00€** — multi-person bill auto-splits (full UX, cashier zero-extra-clicks)
 3. Mixed cash + card structural support — 2 tranches present, UI accepts entry per tranche
 
-**Surface follow-up (non-blocking, documented for owner):** `splitEqually` helper math is correct (proven by unit suite), but tranche rows render with empty amount inputs after the click — `PosV5TrancheRow` prop→input wiring needs a small reactivity audit. Cashier can drive each tranche amount manually until it lands. Filed inline in the Wave-4 commit message.
+**Multi-person UX bug found + fixed during Wave 6 (advisor catch):** The first
+iteration of split-equally produced 4 tranche rows with `amount=0.50` each, but
+`Couvert: 0€` / `Reste dû: 2€` — i.e. nothing visibly happened. Root cause :
+`sumCoveredCents` excludes invalid tranches, and a cash tranche without
+`tendered` is invalid. `splitEqually` was creating cash tranches with
+`tendered=null`. Fix : `splitEqually` helper pre-fills `tendered = amount` on
+cash tranches (exact change, 0 monnaie à rendre by default). Cashier overrides
+per-tranche when the customer pays with a larger note. Vitest unit suite
+expanded (`splitEqually` returns CASH stubs with `tendered = amount`, plus a
+new "non-cash default keeps tendered null" guard) — 59/59 split-helper vitest
+green. Visual proof captured in `__screenshots__/iter15-split-payment/04-split-equally-applied.png`
+(LABEL.TOTAL_COVERED 2.00€, LABEL.REMAINING_DUE 0.00€).
 
 ---
 
@@ -78,6 +90,7 @@ fix_tax_misconfig_type_fixed_to_percentage  ← my own iter15 migration
 | Gate | Result |
 |------|--------|
 | Backend unit + feature tests | 14 pricing/fiscal + 11 split-unit + 6 split-feature + 3 split-sentinel + 2 POS-tax + 1 pricing-integrity + 1 SSoT + 3 order-flow = **41 green** in this verification window |
+| Frontend vitest (split-payment helper) | **59/59 green** (20 bidirectional + 39 validation/splitEqually) post multi-person fix |
 | Playwright E2E iter15 | **9 specs / 9 passed** across 3 spec files (3 bugs + 3 split + 3 cascade), 20 visual screenshots committed |
 | Migrations | All up to head (12 caught up) |
 | Frontend lint / vitest | unchanged from iter14 baseline (73/73 vitest still green per the `3b7077af7` verification) |
@@ -134,6 +147,5 @@ f230474e8 fix(rate-limit): iter15 admin-mutation throttle bypass for entire /api
 | MUST | Deploy: ensure `PRICING_TAX_INCLUSIVE` and `SPLIT_PAYMENT_ENABLED` env vars are present (or absent — they default `true` now). |
 | MUST | Run `php artisan migrate` on prod — same 12 pending migrations as dev DB if not already shipped. |
 | SHOULD | Review the historical orders that were fiscally corrupted before the Tax 13 fix (e.g. order #241 with 22€ total) — recovery via Z-report regenerate is a separate owner-level decision (documented in the migration's PHPdoc). |
-| NICE | Audit `PosV5TrancheRow` prop → input v-model wiring so `splitEquallyHandler` actually populates each tranche row's amount field (visible bug, not data-corrupting). |
 
 End of report.

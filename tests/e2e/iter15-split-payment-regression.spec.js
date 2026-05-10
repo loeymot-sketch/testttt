@@ -100,11 +100,11 @@ test.describe('iter15 — Split payment + multi-person', () => {
     const tranches = page.locator('.pos-v5-split-tranches > [role="listitem"]');
     await expect(tranches).toHaveCount(4, { timeout: 5_000 });
 
-    // Surface debug : log Vue reactive state to surface any seed-amount issue.
-    // (The unit/feature suite already proves split-equally helper math; the E2E
-    // confirms 4 tranches render — that's the visible "multi-personne" affordance.)
+    // [iter15-BUG-multi-person] Strong assertion : after split-equally, Couvert
+    // must equal order total and Reste dû must be ≈0. This requires the
+    // splitEqually helper to pre-fill tendered=amount on cash tranches so they
+    // are immediately VALID (sumCoveredCents excludes invalid tranches).
     const debug = await page.evaluate(() => {
-      // Best-effort introspection : try to read Vue reactive state via app
       const root = document.querySelector('#orderpayment');
       if (!root) return { found: false };
       return {
@@ -116,6 +116,9 @@ test.describe('iter15 — Split payment + multi-person', () => {
     });
     console.log(`[SPLIT-N4] reactive state = ${JSON.stringify(debug)}`);
     expect(debug.trancheRowCount).toBe(4);
+    // Couvert ≈ 2.00€  /  Reste dû ≈ 0.00€  (locale-tolerant)
+    expect(debug.coveredText).toMatch(/2[\s.,]00\s*€?/);
+    expect(debug.remainingText).toMatch(/0[\s.,]00\s*€?/);
   });
 
   test('Mixed cash + card : tranche 1 cash 1€ + tranche 2 card 1€ couvre 2€ total', async ({ page }) => {

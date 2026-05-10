@@ -218,14 +218,27 @@ describe('posSplitPayment — splitEquallyCents', () => {
 });
 
 describe('posSplitPayment — splitEqually (Eur API)', () => {
-    it('30 € / 3 returns 3 cash stubs of 10.00', () => {
+    it('30 € / 3 returns 3 cash stubs of 10.00 with tendered pre-filled (exact change)', () => {
+        // [iter15-BUG-multi-person 2026-05-10] cash tranches pre-fill tendered=amount
+        // so they're immediately VALID (sumCoveredCents counts them) — otherwise
+        // the cashier sees "Couvert: 0€" right after split-equally and the
+        // multi-person UX breaks.
         const parts = splitEqually(30, 3);
         expect(parts.length).toBe(3);
         parts.forEach((p) => {
             expect(p.mode).toBe(CASH);
             expect(p.amount).toBeCloseTo(10, 2);
-            expect(p.tendered).toBeNull();
+            expect(p.tendered).toBeCloseTo(10, 2);
             expect(typeof p.id).toBe('string');
+        });
+    });
+
+    it('non-cash default keeps tendered null', () => {
+        // CARD/MOBILE/etc never need tendered; pre-fill is cash-only.
+        const parts = splitEqually(30, 3, /* CARD */ 2);
+        parts.forEach((p) => {
+            expect(p.mode).toBe(2);
+            expect(p.tendered).toBeNull();
         });
     });
 
