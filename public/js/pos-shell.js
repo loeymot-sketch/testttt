@@ -2597,11 +2597,37 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   mounted: function mounted() {
+    var _this = this;
     // [CV1-POS-SPLIT-PAYMENT-001] Sync local paymentMode with parent's
     // pos_payment_method on mount so a re-opened modal with CARD-default
     // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
     // never inherited (single-tender re-open ⇒ never multi).
     this.syncPaymentModeFromForm();
+
+    // [iter12 2026-05-09] Auto-refresh quote every 60s while modal is
+    // open. Quote TTL bumped to 300s server-side (config quote.ttl_seconds)
+    // but cashier multi-paiement entry can still exceed it. Refresh keeps
+    // signature alive so confirm never sees "Order quote expired".
+    // 60000ms × 4 refreshes = 240s coverage; well under 300s TTL.
+    this._quoteRefreshTimer = setInterval(function () {
+      try {
+        var _this$loading;
+        if (_this.paymentMode !== 'multi') return;
+        if ((_this$loading = _this.loading) !== null && _this$loading !== void 0 && _this$loading.isActive) return;
+        if (typeof _this.refreshQuote === 'function') {
+          var _this$props$form, _this$props4;
+          _this.refreshQuote((_this$props$form = (_this$props4 = _this.props) === null || _this$props4 === void 0 ? void 0 : _this$props4.form) !== null && _this$props$form !== void 0 ? _this$props$form : {})["catch"](function () {});
+        }
+      } catch (_e) {}
+    }, 60000);
+  },
+  beforeUnmount: function beforeUnmount() {
+    // [iter12 2026-05-09] Clear quote-refresh timer to avoid leak +
+    // ghost POSTs after modal closes.
+    if (this._quoteRefreshTimer) {
+      clearInterval(this._quoteRefreshTimer);
+      this._quoteRefreshTimer = null;
+    }
   },
   watch: {
     // [CV1-POS-SPLIT-PAYMENT-001] String-path watcher (Vue 3 supports it for nested
@@ -2648,10 +2674,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }
     },
     resetPaymentInputs: function resetPaymentInputs() {
-      var _this = this;
+      var _this2 = this;
       Object.keys(this.$refs).forEach(function (refName) {
-        if (_this.$refs[refName].value !== undefined) {
-          _this.$refs[refName].value = "";
+        if (_this2.$refs[refName].value !== undefined) {
+          _this2.$refs[refName].value = "";
         }
       });
       this.cashReceivedRaw = 0;
@@ -2672,6 +2698,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       this.emitPaymentFormPatch({
         pos_payment_note: ""
       });
+      // [iter15-BUG-SESSION-EXPIRED 2026-05-10] Mirror beforeUnmount cleanup:
+      // clear zombie quote-refresh timer when cashier closes payment popup
+      // (e.g. switch CARD→CASH). Without this, refreshQuote() keeps firing
+      // every 60s; once the quote TTL elapses the POST hits 401 and the
+      // global axios handler boots the cashier to /login ("session expirée").
+      if (this._quoteRefreshTimer) {
+        clearInterval(this._quoteRefreshTimer);
+        this._quoteRefreshTimer = null;
+      }
       _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].modalHide('#orderpayment');
     },
     paymentMethod: function paymentMethod(method) {
@@ -2690,8 +2725,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     // local segmented control. CARD → 'card', anything else → 'cash'. Never
     // auto-promotes to 'multi' (multi is a deliberate user choice).
     syncPaymentModeFromForm: function syncPaymentModeFromForm() {
-      var _this$props4;
-      var m = (_this$props4 = this.props) === null || _this$props4 === void 0 || (_this$props4 = _this$props4.form) === null || _this$props4 === void 0 ? void 0 : _this$props4.pos_payment_method;
+      var _this$props5;
+      var m = (_this$props5 = this.props) === null || _this$props5 === void 0 || (_this$props5 = _this$props5.form) === null || _this$props5 === void 0 ? void 0 : _this$props5.pos_payment_method;
       if (m === this.posPaymentMethodEnum.CARD) {
         this.paymentMode = 'card';
         this.inputIdName = 'cardInput';
@@ -2747,6 +2782,27 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var totalEur = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.fromCents)(this.totalCents);
       this.tranches = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.splitEqually)(totalEur, n);
     },
+    /**
+     * [iter12 2026-05-09] Bidirectional split — auto-balance the
+     * non-edited tranche so the sum matches order total. Called by the
+     * "Équilibrer le reste" button. Owner reported manual balancing
+     * was slow and caused quote-expiry hangs.
+     */
+    autoBalanceFromIndex: function autoBalanceFromIndex(editedIndex) {
+      if (!Array.isArray(this.tranches) || this.tranches.length < 2) return;
+      var idx = typeof editedIndex === 'number' && editedIndex >= 0 ? editedIndex : 0;
+      var balanced = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.autoBalanceTranches)(this.tranches, this.totalCents, idx);
+      this.tranches = balanced;
+    },
+    /**
+     * [iter12 2026-05-09] Suggest tendered (cash received) values for
+     * every CASH tranche by rounding amount UP to next €5. User can
+     * still override per-tranche. Triggered by "Suggérer les rendus"
+     * button after a split-equal between people.
+     */
+    suggestCashTendered: function suggestCashTendered() {
+      this.tranches = (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.suggestTenderedForCashTranches)(this.tranches, 5);
+    },
     buildSplitPayload: function buildSplitPayload() {
       return (0,_helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__.serializeTranches)(this.tranches);
     },
@@ -2776,7 +2832,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return JSON.stringify((0,_store_modules_posCart__WEBPACK_IMPORTED_MODULE_12__.normalizeCartForApi)(itemsArray));
     },
     refreshQuote: function refreshQuote(form) {
-      var _this2 = this;
+      var _this3 = this;
       return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('admin/pos/quote', form).then(function (res) {
         var _res$data;
         var quote = res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data;
@@ -2791,8 +2847,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           delivery_charge: quote.delivery_charge,
           total: quote.total_ttc
         };
-        _this2.emitPaymentFormPatch(quotePatch);
-        return _this2.currentFormSnapshot(_objectSpread(_objectSpread({}, form), quotePatch));
+        _this3.emitPaymentFormPatch(quotePatch);
+        return _this3.currentFormSnapshot(_objectSpread(_objectSpread({}, form), quotePatch));
       });
     },
     /**
@@ -2840,15 +2896,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return new Error('Session expirée. Reconnectez-vous puis relancez le paiement.');
     },
     refreshPaymentAuth: function refreshPaymentAuth() {
-      var _this3 = this;
+      var _this4 = this;
       return this.$store.dispatch("authcheck").then(function (res) {
         var _res$data2;
         if ((res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.status) === false) {
-          throw _this3.sessionExpiredError();
+          throw _this4.sessionExpiredError();
         }
         return res;
       })["catch"](function () {
-        throw _this3.sessionExpiredError();
+        throw _this4.sessionExpiredError();
       });
     },
     confirmOrderWithAuthRetry: function () {
@@ -2901,7 +2957,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }(),
     runConfirmOrderAttempt: function () {
       var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var _this4 = this;
+        var _this5 = this;
         var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, preparedForm, quotedForm, saveForm, orderResponse;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
@@ -2925,7 +2981,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 }, null);
                 dominantMode = (_dominant$mode = dominant === null || dominant === void 0 ? void 0 : dominant.mode) !== null && _dominant$mode !== void 0 ? _dominant$mode : this.posPaymentMethodEnum.CASH;
                 cashTranche = breakdown.find(function (t) {
-                  return t.mode === _this4.posPaymentMethodEnum.CASH;
+                  return t.mode === _this5.posPaymentMethodEnum.CASH;
                 });
                 multiPatch = {
                   pos_payment_method: dominantMode,
@@ -8964,12 +9020,18 @@ var _hoisted_41 = {
 };
 var _hoisted_42 = ["aria-label"];
 var _hoisted_43 = ["disabled"];
-var _hoisted_44 = ["aria-label"];
-var _hoisted_45 = {
+var _hoisted_44 = {
+  key: 0,
+  "class": "pos-v5-split-divider__row"
+};
+var _hoisted_45 = ["title"];
+var _hoisted_46 = ["title"];
+var _hoisted_47 = ["aria-label"];
+var _hoisted_48 = {
   key: 0,
   "class": "pos-v5-split-empty"
 };
-var _hoisted_46 = ["disabled", "aria-busy", "aria-disabled"];
+var _hoisted_49 = ["disabled", "aria-busy", "aria-disabled"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_PosV5Numpad = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5Numpad");
@@ -8983,7 +9045,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.reset && $options.reset.apply($options, arguments);
     }),
     "aria-label": _ctx.$t('button.close')
-  }, _toConsumableArray(_cache[10] || (_cache[10] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, _toConsumableArray(_cache[12] || (_cache[12] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Hero \"À encaisser\" — moment de vérité "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($props.props.form.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Méthode de paiement "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "data-tab": "#cash",
@@ -8997,7 +9059,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $options.setPaymentMode('cash');
     })
-  }, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.cash")), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -9012,7 +9074,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[2] || (_cache[2] = function ($event) {
       return $options.setPaymentMode('card');
     })
-  }, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.card")) + " (TPE)", 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -9027,7 +9089,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[3] || (_cache[3] = function ($event) {
       return $options.setPaymentMode('multi');
     })
-  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "🔀", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_payment') || 'Multi-paiement'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_18)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash input + change due "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -9044,7 +9106,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.onCashInput && $options.onCashInput.apply($options, arguments);
     }),
     "class": "pos-v5-payment-input pos-v5-tabular"
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.change_due") || 'Monnaie à rendre'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.cashChange, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card input "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "card",
@@ -9065,7 +9127,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     role: "status",
     "aria-live": "polite",
     "data-testid": "pos-payment-remaining-due-row"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "splitCountInput",
@@ -9089,7 +9151,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.splitEquallyHandler && $options.splitEquallyHandler.apply($options, arguments);
     }),
     "data-testid": "pos-payment-split-equal"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_43)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_43)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter12 2026-05-09] Bidirectional split helpers "), $data.tranches.length >= 2 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-v5-split-divider__btn",
+    onClick: _cache[8] || (_cache[8] = function ($event) {
+      return $options.autoBalanceFromIndex(0);
+    }),
+    "data-testid": "pos-payment-auto-balance",
+    title: _ctx.$t('label.auto_balance_help') || 'Le reste s’équilibre automatiquement sur la 2ème tranche'
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.auto_balance') || 'Équilibrer le reste'), 9 /* TEXT, PROPS */, _hoisted_45), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-v5-split-divider__btn",
+    onClick: _cache[9] || (_cache[9] = function () {
+      return $options.suggestCashTendered && $options.suggestCashTendered.apply($options, arguments);
+    }),
+    "data-testid": "pos-payment-suggest-tendered",
+    title: _ctx.$t('label.suggest_tendered_help') || 'Arrondit les rendus monnaie au 5€ supérieur'
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.suggest_tendered') || 'Suggérer les rendus monnaie'), 9 /* TEXT, PROPS */, _hoisted_46)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-split-tranches",
     role: "list",
     "aria-label": _ctx.$t('label.split_tranches') || 'Tranches de paiement'
@@ -9106,17 +9184,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.removeTranche(idx);
       }
     }, null, 8 /* PROPS */, ["tranche", "index", "onUpdate", "onRemove"]);
-  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_44), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_47), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-add",
-    onClick: _cache[8] || (_cache[8] = function ($event) {
+    onClick: _cache[10] || (_cache[10] = function ($event) {
       return $options.addTranche();
     }),
     "data-testid": "pos-payment-tranche-add"
-  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "+", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_tranche') || 'Ajouter une tranche'), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] :disabled prevents a second click while the order is being submitted "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[9] || (_cache[9] = function () {
+    onClick: _cache[11] || (_cache[11] = function () {
       return $options.confirmOrder && $options.confirmOrder.apply($options, arguments);
     }),
     type: "button",
@@ -9125,9 +9203,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
     "class": "pos-v4-confirm-button pos-v5-payment-confirm w-full",
     "data-testid": "pos-payment-confirm"
-  }, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_46)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_49)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
     ref: "receiptRoot",
     order: $data.order
   }, null, 8 /* PROPS */, ["order"])], 64 /* STABLE_FRAGMENT */);
@@ -15140,8 +15218,10 @@ function receiptInstructionForPrint(item) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   autoBalanceTranches: () => (/* binding */ autoBalanceTranches),
 /* harmony export */   canConfirm: () => (/* binding */ canConfirm),
 /* harmony export */   computeChangeCents: () => (/* binding */ computeChangeCents),
+/* harmony export */   computeRemainderForNextTrancheCents: () => (/* binding */ computeRemainderForNextTrancheCents),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
 /* harmony export */   fromCents: () => (/* binding */ fromCents),
 /* harmony export */   isCashMode: () => (/* binding */ isCashMode),
@@ -15151,12 +15231,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   serializeTranches: () => (/* binding */ serializeTranches),
 /* harmony export */   splitEqually: () => (/* binding */ splitEqually),
 /* harmony export */   splitEquallyCents: () => (/* binding */ splitEquallyCents),
+/* harmony export */   suggestTenderedForCashTranches: () => (/* binding */ suggestTenderedForCashTranches),
 /* harmony export */   sumCoveredCents: () => (/* binding */ sumCoveredCents),
 /* harmony export */   toCents: () => (/* binding */ toCents),
 /* harmony export */   totalChangeCents: () => (/* binding */ totalChangeCents),
 /* harmony export */   validateTranche: () => (/* binding */ validateTranche)
 /* harmony export */ });
 /* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
@@ -15397,6 +15483,94 @@ function totalChangeCents(tranches) {
     return acc + computeChangeCents(t);
   }, 0);
 }
+
+/**
+ * [iter12 2026-05-09] Bidirectional split — auto-balance helper.
+ *
+ * Use case observed by owner : cashier wants "10€ on card + remainder
+ * in cash" or vice versa. Today the multi-paiement modal forces manual
+ * entry of every amount, which is slow and error-prone (forgetting to
+ * balance results in "Order quote expired" because cashier hesitates).
+ *
+ * This helper takes the current tranche set + total + the index of the
+ * tranche the cashier just edited, and returns a new tranche array
+ * where the OTHER tranche(s) absorb the remainder so the sum equals
+ * total exactly. Two policies :
+ *
+ *   - 'auto-pair' (default) : if exactly 2 tranches, the non-edited
+ *     one absorbs the entire remainder. Most common cash-card split.
+ *   - 'last-tranche'        : if >2 tranches, the LAST tranche absorbs
+ *     remainder (matching splitEqually's tail-carries-remainder rule).
+ *
+ * Returns a new array (no mutation). If the totals don't need
+ * rebalancing or the tranche set is invalid, returns the input as-is.
+ */
+function autoBalanceTranches(tranches, totalCents, editedIndex) {
+  var policy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'auto-pair';
+  if (!Array.isArray(tranches) || tranches.length < 2) return tranches;
+  if (typeof totalCents !== 'number' || totalCents <= 0) return tranches;
+  if (typeof editedIndex !== 'number' || editedIndex < 0 || editedIndex >= tranches.length) return tranches;
+  var editedAmountCents = toCents(tranches[editedIndex].amount);
+  if (editedAmountCents < 0 || editedAmountCents > totalCents) return tranches;
+  var remainderCents = totalCents - editedAmountCents;
+  var absorberIndex;
+  if (tranches.length === 2 || policy === 'auto-pair') {
+    absorberIndex = (editedIndex + 1) % tranches.length;
+  } else {
+    absorberIndex = tranches.length - 1;
+    if (absorberIndex === editedIndex) absorberIndex = tranches.length - 2;
+  }
+  return tranches.map(function (t, i) {
+    if (i !== absorberIndex) return _objectSpread({}, t);
+    var newAmountCents = remainderCents;
+    return _objectSpread(_objectSpread({}, t), {}, {
+      amount: fromCents(newAmountCents)
+    });
+  });
+}
+
+/**
+ * [iter12 2026-05-09] Compute remaining-due (cents) for a NEW tranche
+ * given current tranches + total. Used by "Add tranche" UI to pre-fill
+ * the next tranche amount with whatever's left.
+ *
+ * Returns 0 if already covered or overpaid.
+ */
+function computeRemainderForNextTrancheCents(totalCents, tranches) {
+  var remaining = remainingCents(totalCents, tranches);
+  return Math.max(0, remaining);
+}
+
+/**
+ * [iter12 2026-05-09] Suggest tendered for CASH tranches in a split.
+ *
+ * After splitEqually() (or any auto-fill) creates CASH tranches, this
+ * helper rounds each amount UP to the next €5 to suggest a realistic
+ * cash-received value (cashier scenario : 3 people pay 10€ each, each
+ * hands a 10€ note, OR each hands a 20€ and gets 10€ change).
+ *
+ * Default rounding step = 5€ (matches typical Euro denominations).
+ * Pass step=10 for round-up to next 10€ if preferred.
+ *
+ * Returns NEW array; only CASH tranches with null/0 tendered are
+ * touched. If tendered already set by user, never overwrite.
+ */
+function suggestTenderedForCashTranches(tranches) {
+  var step = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 5;
+  if (!Array.isArray(tranches)) return tranches;
+  var stepCents = Math.max(1, Math.round(Number(step) * 100));
+  return tranches.map(function (t) {
+    if (!isCashMode(t.mode)) return _objectSpread({}, t);
+    var tenderedCents = toCents(t.tendered);
+    if (tenderedCents > 0) return _objectSpread({}, t);
+    var amountCents = toCents(t.amount);
+    if (amountCents <= 0) return _objectSpread({}, t);
+    var suggested = Math.ceil(amountCents / stepCents) * stepCents;
+    return _objectSpread(_objectSpread({}, t), {}, {
+      tendered: fromCents(suggested)
+    });
+  });
+}
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   toCents: toCents,
   fromCents: fromCents,
@@ -15411,7 +15585,10 @@ function totalChangeCents(tranches) {
   splitEquallyCents: splitEquallyCents,
   serializeTranches: serializeTranches,
   totalChangeCents: totalChangeCents,
-  makeTrancheId: makeTrancheId
+  makeTrancheId: makeTrancheId,
+  autoBalanceTranches: autoBalanceTranches,
+  computeRemainderForNextTrancheCents: computeRemainderForNextTrancheCents,
+  suggestTenderedForCashTranches: suggestTenderedForCashTranches
 });
 
 /***/ }),

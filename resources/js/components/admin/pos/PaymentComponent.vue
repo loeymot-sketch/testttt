@@ -489,6 +489,15 @@ export default {
             this.splitCount = 2;
             this.paymentMode = 'cash';
             this.emitPaymentFormPatch({ pos_payment_note: "" });
+            // [iter15-BUG-SESSION-EXPIRED 2026-05-10] Mirror beforeUnmount cleanup:
+            // clear zombie quote-refresh timer when cashier closes payment popup
+            // (e.g. switch CARD→CASH). Without this, refreshQuote() keeps firing
+            // every 60s; once the quote TTL elapses the POST hits 401 and the
+            // global axios handler boots the cashier to /login ("session expirée").
+            if (this._quoteRefreshTimer) {
+                clearInterval(this._quoteRefreshTimer);
+                this._quoteRefreshTimer = null;
+            }
             appService.modalHide('#orderpayment');
         },
         paymentMethod: function (method, Idname = "") {
