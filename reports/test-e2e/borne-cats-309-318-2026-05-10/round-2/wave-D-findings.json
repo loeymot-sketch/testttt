@@ -1,0 +1,69 @@
+{
+  "wave": "D",
+  "round": 2,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "ROUND-2 CLOSED. Both counters now display the same Sigma-quantity value across all four cart-bearing states. State 03: kiosk-categories-cart-indicator='3 articles' AND kiosk-cart-bottom-sheet-count='3 articles' (cart-total €11,40 = 3 desserts x 3,80). State 06: indicator='6 articles' AND sheet-count='6 articles' (cart-total €15,90 = 11,40 + Coca x3 line €4,50). State 09: indicator='7 articles' AND sheet-count='7 articles' (cart-total €16,90 = 15,90 + Fromage €1,00). State 10: indicator='7 articles' AND sheet-count='7 articles'. Bottom-sheet structure confirms semantic: 5 distinct kiosk-cart-bottom-sheet-item-{0..4} cards, qtys [1,1,1,3,1] sum=7, matching both 'articles' counters. The round-1 divergence ('7 articles' top vs '5 articles' bottom on the same screen) is fully eliminated. Owner-gated commit 2084c0448 'fix(test-e2e/borne): cart-bar overlap on cash/loyalty routes + cart count semantics (E-002 P0, E-003 P1, D-001 P1)' lands the change. PASS.",
+      "fix_hint": "Closed by commit 2084c0448 — both indicator span and bottom-sheet header now bind to the same Vuex getter (Sigma-qty). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "ROUND-2 UNCHANGED (expected per task brief). State 09 PNG re-inspected: bottom-sheet horizontal strip still renders only ~3 of 5 cart cards in the visible viewport. DOM (kiosk-cart-bottom-sheet-item-0 .. -4 all present) confirms 5 lines exist, but cards 0/1 (Glace + Tarte Daim) remain off-canvas left without affordance. Re-checked attributes: kiosk-cart-strip-list role='list' only — NO aria-live='polite', NO chevron, NO fade-mask, NO 'X autres' badge near the title. Aria-label on kiosk-cart-strip is 'Aperçu de votre panier' — does not announce that the strip scrolls or that hidden lines exist. Borderline P1 (cannot see all paid lines) but correctly classified P2 because the data is reachable via swipe.",
+      "fix_hint": "Unchanged — per round-1: add gradient-fade mask, chevron, OR 'X autres' badge to KsCartBottomSheet.vue line ~12 / ~212. Add aria-live='polite' on count and aria-label on strip-list announcing horizontal scroll.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-borne-D/07-d-cat-318-baseline.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-2 UNCHANGED (expected per task brief — data-side issue). State 07 DOM dump shows item-default.svg referenced 10x (covers all 8 supplément items 415-422 + 2 cart strip placeholders re-using the same default for items already in cart). State 01 (cat 316 desserts) shows item-default.svg referenced 2x (Tarte Daim 405 + Tiramisu 406, while Glace 404 has /storage/59/glace.png). State 03 PNG visually confirms Tarte Daim and Tiramisu render as empty grey '+' tiles. Round-2 PNG inspection re-confirms: all 8 supplément cards in state 07 + state 08 still show grey '+' placeholders, and 2 of 3 dessert cards (state 01/02/03) still show placeholders.",
+      "fix_hint": "Unchanged — DB seed for branch KIOSK-LC-001: upload product photos for items 405, 406, 415-422. Until photos exist, replace item-default.svg with a category-themed Cayenne tile + name typography fallback in the frontend item resource image fallback chain.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-borne-D/10-d-cart-totals-mixed.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND-2 PARTIAL. PNG bytes now distinct across states 08/09/10 (md5 differs: 7c369969..., fc0f1d89..., acc5f37f...) — the round-1 byte-identical PNG triple is gone (likely subpixel/animation-frame drift between snaps). HOWEVER the DOM dumps are STILL byte-identical: md5(08-d.dom.html) = md5(09-d.dom.html) = md5(10-d.dom.html) = 0bb7c6aeefc5bef6354f83f1c99aebf8. The audit-waste pattern persists at the DOM level: states 09 and 10 capture identical DOM with no UI mutation between them, and state 08 also matches exactly. The spec at lines 291-298 still re-asserts cart total at state 10 over the same DOM as state 09. Not a product defect; an audit-discipline issue.",
+      "fix_hint": "Unchanged — tests/e2e/test-e2e-borne-2026-05-10-wave-D.spec.js: either (a) merge state 10 totals assertions into state 09, OR (b) introduce a horizontal scroll on the bottom-sheet strip between snaps to capture items 0/1 visible (which would simultaneously produce evidence on D-002). Round-to-round closure labelled PARTIAL_PASS because PNG bytes diverged this round (subpixel drift) but DOM remains byte-identical, so the underlying audit-waste pattern (3 states sampling identical DOM) still holds.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 2,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "D-001": "PASS",
+    "D-002": "FAIL",
+    "D-003": "FAIL",
+    "D-004": "PARTIAL_PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-2 verdict GREEN per FINDINGS_SCHEMA verdict semantics (open_P0 == 0 AND open_P1 == 0). D-001 P1 unanimously closed across cart states 03/06/09/10. Phase A direct-add anti-regression VERIFIED across states 02 (cat 316), 05 (cat 317), 08 (cat 318): only one CSS selector hit '.kiosk-wizard-overlay[data-v-9a1bc680]' in <style> per state, zero rendered DOM elements with the kiosk-wizard-overlay class — direct-add path intact, no wizard regression. Pink palette DOM-wide regex (#E8001C, #FF00xx, #E91E63, hotpink/deeppink/magenta/fuchsia) returns ZERO hits across all 10 states. Cayenne #F4501E positive sentinel present 45x per state (constant, no drift). Numeric integrity: €11,40 (state 03, 3 desserts x 3,80), €15,90 (state 06, +Coca x3 line €4,50), €16,90 (state 09/10, +Fromage €1,00) — all match expected. Console sidecars empty across 9/10 states; state 01 contains 3 vendor.js Pusher WS connection-refused entries (allowlisted). Network sidecars empty 10/10 (no 4xx/5xx). Cat 315 (frites_style) absent from sidebar in all 10 states (commit b39ea4b16 holds). Cross-wave bonus observation: cats 306/307/308 (round-1 Wave A scope, owner-gated) are NOT present in the kiosk sidebar in any of the 10 Wave-D DOM dumps — Wave A commit 714d271b6 fix verified from Wave D evidence (sidebar = 309..314 + 316..318 only). Visual inspection of all 10 PNGs: bottom-sheet horizontal compact strip rendered correctly, cart count badges and Pay button toggle to Cayenne when cart non-empty (states 02..10), grey when cart empty (state 01/04/07), 'Mon compte' top-right Cayenne pill consistent. D-002 still bites visually (only 3 of 5 cart cards visible without scroll affordance) but is non-blocking (P2). D-003 still data-side (placeholders for ungilded products). D-004 partially closed (PNGs now diverge, DOMs still identical). NO new defects discovered in round-2."
+}

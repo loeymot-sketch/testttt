@@ -1,0 +1,104 @@
+{
+  "wave": "B",
+  "round": 2,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "ROUND-2 RE-VERIFICATION (HEAD 10456234c, fix landed in 714d271b6 cluster `owner gate cats 306/307/308 + wizard instruction leak`). DOM grep `Taille : 1 viande` returns 0 occurrences in 15-cart-after-add-309-310-311-314.dom.html AND in 16-cart-thumbnails-quartet.dom.html (both 0). Broader grep `Taille` (any context) also returns 0/0 across both cart DOMs. Recap totals integrity preserved: line totals 12.50€/13.50€/8.50€/6.00€ match cart-grand-total kiosk-cart-total=€40,50 and kiosk-cart-subtotal=€40,50. The buildInstruction() guard at KioskWizardComponent.vue line ~1945 now mirrors the compositionSummaryChips() shouldShowCompositionStep('taille') gate, so non-tacos items no longer have phantom 'Taille : 1 viande' propagated to instruction → cart line note → kitchen ticket → NF525 receipt. Customer-facing leak resolved.",
+      "fix_hint": "Closed by buildInstruction() taille-step guard in commit 714d271b6 (resources/js/components/frontend/kiosk/KioskWizardComponent.vue). No further action.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-borne-B/16-cart-thumbnails-quartet.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-2 RE-VERIFICATION: states 15 and 16 remain BYTE-IDENTICAL. md5(15.png)=e50b133e7320382b160c5ce7e27d497e, md5(16.png)=e50b133e7320382b160c5ce7e27d497e. md5(15.dom.html)=43f16f54531cd6bb11b51b740127c283, md5(16.dom.html)=43f16f54531cd6bb11b51b740127c283. The Wave B spec was intentionally untouched (cluster-4 commit 10456234c body line: `A-005 (P2) and Wave B spec are intentionally untouched per task scope`). State 16's intended distinct purpose per AUDIT_PLAN.md L82-L83 ('verify thumbnails specifically: pain/viande/sauce/garniture/supplement render in cart') is therefore still not exercised — only 13 of 14 budgeted states yield unique evidence.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js L364 — replace the redundant `await snap('16-cart-thumbnails-quartet')` with a meaningful interaction (scroll to first cart line, click the line edit/expand affordance, or capture page.locator('[data-testid=\"kiosk-cart-item-options-0\"]').screenshot() as a per-line composition close-up). Update AUDIT_PLAN.md to clarify state 16 = thumbnail close-up (option/composition badges) vs state 15 = cart overview. P2: not loop-blocking but coverage gap.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "ROUND-2 RE-VERIFICATION: cat 309 wizard pipeline still collapses to sauce + supplements + recap. DOM grep `kiosk-step-viande|kiosk-step-garnitures` across 309-01/02/03 DOMs returns 0/0/0. Step-label extraction confirms only kiosk-step-sauce + kiosk-step-supplements mount. AUDIT_PLAN.md was NOT reconciled (no commit touches reports/test-e2e/borne-cats-309-318-2026-05-10/AUDIT_PLAN.md between Round-1 and HEAD). The catalog-vs-plan mismatch (4 separate Assiette SKUs encoding meat in item.name vs the planned single-parent assiette template viande+garnitures pipeline) remains unresolved. Wave B does NOT independently prove the assiette wizard's viande step renders correctly; it only proves NO-MENU/NO-FRITES_STYLE forbidden steps stay absent.",
+      "fix_hint": "Two-fork resolution still pending. Fork A (recommended product-correct given current catalog): edit AUDIT_PLAN.md L62-L65 to declare cat 309 expected pipeline = sauce + supplements + recap (with viande encoded in SKU name). Fork B: seeder + admin migration to add a `Viande` parent attribute (Poulet/Kefta/Merguez/Mixte) on a single Assiette SKU with price=0 garnitures (Tomates/Salade/Oignons), THEN the assiette template's viande step would render. Owner must pick before any code change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-2 RE-VERIFICATION: cart line 3 (Menu Cheese Burger Enfant, item 400, 6.00€) still resolves its thumbnail to /storage/55/item-default.svg. Same pattern in cat 314 product grid (kiosk-product-card-400 src=`/storage/55/item-default.svg`, kiosk-product-card-401 src=`/storage/56/item-default.svg`) and in 314-03-step-recap kiosk-summary-main-item img. By contrast cat 309/310/311 cart lines correctly bind to /storage/36/assiette_poulet.png, /storage/40/ojja.png, /storage/45/omelette_fromage.png. Note: the cluster-4 commit message 10456234c lists 'Closes findings C-002, D-003, D-004, B-004' but explicitly tags those closures to the OTHER run (`pos-kds-sync-2026-05-10 round-1`), not borne-cats wave-B. The borne-cats B-004 (catalog data gap for items 400+401) is unaddressed at HEAD.",
+      "fix_hint": "Catalog data: upload a real photo for items 400 (Menu Cheese Burger Enfant) and 401 (Menu Nuggets Enfant) via admin panel → items → cat 314. No code change. Optionally KioskCartComponent / kiosk-product-card fallback could render an emoji ('🍔' / '🍗') instead of the generic plus-icon SVG until photos are uploaded. Confirm cats 316/317/318 photos are present to avoid same pattern in Wave D.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-borne-B/310-02-step-supplements.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-2 RE-VERIFICATION: supplements step for cat 310/311 still exposes 'Fromage supplémentaire' and 'Salade verte' cards bound to `kiosk-supplement-img src=http://127.0.0.1:8000/images/menu/item-default.svg`. Confirmed via byte-offset grep on 310-02-step-supplements.dom.html (3 hits: 1 step-indicator label-icon and 2 card thumbnails). Same pattern in 311-02 (3 hits) and 314-02 (3 hits). Cat 309 supplements step has only 1 fallback (the step-indicator icon, see B-006), since its supplement_clone-group=NULL extras (Jambon de dinde, Boursin, Fromage à raclette, Œuf, Fromage, Galette pommes de terre) are correctly photographed.",
+      "fix_hint": "Catalog data: upload thumbnails for the 2 supplement_clone-group extras (item_extras id=826 Fromage supplémentaire and id=832 Salade verte) shared across items 385-391. Alternatively KioskStepSupplementsComponent could fall back to an emoji palette (pickEmojiForSupplement, mirror pickEmojiForViande). P3 — names + prices remain readable.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-borne-B/310-03-step-recap.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-2 RE-VERIFICATION: step-indicator middle circle (kiosk-step-visual-icon for the supplements/recap stage) still falls back to item-default.svg for cats 310/311/314. Direct evidence in 314-03-step-recap.dom.html: `<img data-v-ccf7fd5e=\"\" src=\"/storage/55/item-default.svg\" alt=\"RÉCAP\" class=\"kiosk-step-visual-img\">`. Same fallback observed in 310-02 (`alt=\"QUEL SUPPLÉMENT ?\"`) and 311-02. Cat 309 step-indicator correctly resolves to /images/menu/supplement_jambon_dinde.png (its first supplement has a real photo). Likely correlated with B-005 — the resolver picks the first-supplement.photo and falls back when null.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue — getStepIconSrc/equivalent should adopt a deterministic supplement-default asset (e.g. '/images/menu/supplement_default.png') instead of bubbling up the item-default.svg whenever the first supplement_clone-group extra has no thumbnail. Investigate partitionKioskExtras().supplements[0].photo resolution. Likely closes alongside B-005 once thumbnails are uploaded.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "unexpected_4xx",
+      "severity": "P3",
+      "evidence": "NEW ROUND-2 FINDING: 309-01-step-sauce.network.json contains 3 boot-time 401s on critical kiosk endpoints — POST /api/frontend/kiosk-event @ ts=1778440399428, GET /api/frontend/menu @ ts=1778440399446, POST /api/frontend/pricing/preview @ ts=1778440404556. Same 401s also surface as console errors (`Failed to load resource: the server responded with a status of 401 (Unauthorized)`) in the matching console.json. The cluster-1 commit 95c2fd799 explicitly excluded 401 from the new axios toast interceptor (`Excludes 401 (handled by surface-specific router redirects)`); kiosk-toast-container exists in DOM but stays empty (innerText empty across 7 toast container divs). UX impact is negligible — wizard renders correctly, all items load, recap totals match (12.50€ etc.) — because the kiosk SPA acquires its Sanctum token shortly after these failed boot calls and the menu/pricing requests are retried successfully. However: per REVIEWER_PROTOCOL.md category 10 the 401 is NOT in the allowlist (allowlist only covers 401 on /api/auth/logout). Treating as P3 audit hygiene rather than P0 silent_error because (a) functional outcome correct, (b) totals integrity preserved, (c) no customer-visible breakage observed.",
+      "fix_hint": "Two angles: (1) Boot ordering: defer the initial /api/frontend/kiosk-event + /api/frontend/menu + /api/frontend/pricing/preview calls until after the kiosk Sanctum token is bound (await token before first dispatch in resources/js/store/modules/kioskMenu.js — investigate kioskMenu.fetchMenu() and any mounted() hook in KioskAppComponent.vue). (2) Allowlist update: add `'/api/frontend/kiosk-event','/api/frontend/menu','/api/frontend/pricing/preview' boot 401` to the protocol allowlist if the boot-401 is by-design and the eventual retry succeeds. Either path closes this finding; (1) is cleaner.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 3
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "FAIL",
+    "B-003": "FAIL",
+    "B-004": "FAIL",
+    "B-005": "FAIL",
+    "B-006": "FAIL"
+  },
+  "verdict": "GREEN",
+  "notes": "Wave B flips AMBER → GREEN: open_P0=0 AND open_P1=0. The single Round-1 P1 (B-001 customer-facing 'Taille : 1 viande' note leak) is CLOSED — verified by zero 'Taille' occurrences across both cart DOMs and preserved numeric integrity (line totals 12.50/13.50/8.50/6.00 = grand-total 40.50€). The 5 Round-1 P2/P3 findings (B-002 duplicate state, B-003 plan-vs-catalog mismatch, B-004/B-005/B-006 catalog photo gaps) are ALL still open at HEAD because (a) the cluster-4 commit explicitly scoped its B-004 closure to the pos-kds-sync run (NOT borne-cats wave-B) and (b) Wave B spec / AUDIT_PLAN / catalog data were intentionally untouched per cluster-4 scope. One NEW finding emerged on Round-2 inspection (B-007 P3): kiosk boot fires 3 silent 401s on /api/frontend/kiosk-event + /api/frontend/menu + /api/frontend/pricing/preview before the Sanctum token is bound; the retries succeed and the wizard/cart UX is fully functional, but the protocol allowlist does not cover this pattern — recommend boot-ordering fix or explicit allowlist update. Forbidden-step assertions still PASS: zero kiosk-step-menu and zero kiosk-step-frites-style mounts across all 14 Wave-B states. Pink palette sweep (#E8001C / rgba(232,0,28)) returns zero hits in all 14 DOMs. Console errors are exclusively Pusher WS ERR_CONNECTION_REFUSED + the 3 boot-401 echoes (B-007). Verdict GREEN per schema (open_P0=0, open_P1=0); polish work remains in P2/P3 backlog."
+}
