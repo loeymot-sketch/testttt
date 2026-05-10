@@ -327,7 +327,14 @@ export default {
   justify-content: center;
   overflow: hidden;
   cursor: pointer;
-  background: #1A1410;
+  /* [iter15-mega-fix C-042 round-8 2026-05-10] Was hardcoded `#1A1410` (dark
+     brown) which ignored the `--kiosk-idle-bg` light-theme override defined in
+     tokens-bold.css (white → #FFE8DD → Cayenne #F4501E gradient under
+     `.kiosk-app.kiosk-theme--light`). The body class is now correct
+     (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
+     consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
+     mandate (black/red Cayenne/yellow/white — no warm browns). */
+  background: var(--kiosk-idle-bg, #FFFFFF);
   /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
      vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
      en dark mode) — on fixe la couleur claire en dur. */

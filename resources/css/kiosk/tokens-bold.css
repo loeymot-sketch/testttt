@@ -251,3 +251,25 @@
     --kiosk-idle-card-text: #FFFFFF !important;
     --kiosk-product-media-bg: #FAFAFA !important;
 }
+
+/* [iter15-mega-fix C-042 round-8 2026-05-10] Light-mode neutralization of the
+   warm-dark layered backgrounds inside KioskIdleScreenComponent. The
+   `.kiosk-idle--bold` base now consumes `var(--kiosk-idle-bg)` (round-8 fix in
+   the .vue file), but two absolute-positioned siblings stack on top with
+   hardcoded dark tones :
+     - `.kiosk-idle-fallback` :  linear-gradient #1A1410 → #0E0A07 (z=0)
+     - `.kiosk-idle-overlay`  :  rgba(26,20,16, .20–.85) (z=1)
+   These were intentional for the original dark warm aesthetic. Owner V2
+   palette mandate (black/red Cayenne/yellow/white only) requires a clean
+   light surface, so we neutralize them in light mode while preserving the
+   dark variant. We use !important to beat the scoped `[data-v-672293fc]`
+   selector specificity from the Vue SFC, matching the existing pattern in
+   the block above. */
+.kiosk-app.kiosk-theme--light .kiosk-idle-fallback,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-fallback {
+    background: var(--kiosk-idle-bg, #FFFFFF) !important;
+}
+.kiosk-app.kiosk-theme--light .kiosk-idle-overlay,
+.kiosk-app:not(.kiosk-theme--dark) .kiosk-idle-overlay {
+    background: transparent !important;
+}

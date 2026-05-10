@@ -1745,6 +1745,7 @@
                 "garnitures": "CHOOSE TOPPINGS?",
                 "supplements": "ANY EXTRAS?",
                 "menu": "CHOOSE YOUR MEAL DEAL?",
+                "frites_style": "CHOOSE YOUR FRY STYLE?",
                 "recap": "SUMMARY"
             },
             "frites_sauce": {

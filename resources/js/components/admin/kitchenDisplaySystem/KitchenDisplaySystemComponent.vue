@@ -277,8 +277,8 @@
                     :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(dineinOrder.order_datetime) }}</span>
                     <div
-                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
-                      <i class="icon text-primary fa-solid fa-chevron-down"></i>
+                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]">
+                      <i class="icon text-[#F4501E] fa-solid fa-chevron-down"></i>
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
@@ -323,14 +323,14 @@
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(dineinOrder.id, item.id)" type="button"
-                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
                           :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
                           @click.prevent.stop="kdsBump(dineinOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(dineinOrder.id, item.id)" type="button"
-                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(dineinOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
@@ -346,10 +346,19 @@
                   <!-- [iter15-mega-fix B-002 2026-05-10] State-transition CTAs
                        moved OUT of the accordion. Always rendered so the chef
                        reaches them in 1 tap on a busy kitchen tablet. -->
+                  <!-- [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind
+                       theme.colors.primary resolves to rgb(255 0 107) (=
+                       #FF006B, hot pink/magenta) and clashes with the owner's
+                       Cayenne brand palette. Replace with arbitrary hex
+                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app
+                       and `--kiosk-bold-primary` token) on the KDS surface
+                       only, scoped to this iter15-mega Wave C round-8 fix —
+                       global Tailwind override is out of scope for this
+                       round. -->
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(dineinOrder, enums.orderStatusEnum.PREPARING)"
-                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.PREPARING" type="button"
@@ -424,8 +433,8 @@
                     :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(onlineOrder.order_datetime) }}</span>
                     <div
-                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
-                      <i class="icon text-primary fa-solid fa-chevron-down"></i>
+                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]">
+                      <i class="icon text-[#F4501E] fa-solid fa-chevron-down"></i>
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
@@ -469,14 +478,14 @@
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(onlineOrder.id, item.id)" type="button"
-                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
                           :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
                           @click.prevent.stop="kdsBump(onlineOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(onlineOrder.id, item.id)" type="button"
-                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(onlineOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
@@ -493,7 +502,7 @@
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(onlineOrder, enums.orderStatusEnum.PREPARING)"
-                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.PREPARING" type="button"
@@ -569,8 +578,8 @@
                     :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(takeawayOrder.order_datetime) }}</span>
                     <div
-                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
-                      <i class="icon text-primary fa-solid fa-chevron-down"></i>
+                      class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]">
+                      <i class="icon text-[#F4501E] fa-solid fa-chevron-down"></i>
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
@@ -615,14 +624,14 @@
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(takeawayOrder.id, item.id)" type="button"
-                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
                           :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
                           @click.prevent.stop="kdsBump(takeawayOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(takeawayOrder.id, item.id)" type="button"
-                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(takeawayOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
@@ -639,7 +648,7 @@
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(takeawayOrder, enums.orderStatusEnum.PREPARING)"
-                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white">
                       {{ $t("label.start_preparing") }}
                     </button>
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.PREPARING" type="button"
@@ -711,8 +720,8 @@
                     :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span v-if="kioskOrder.queue_number" class="text-xs font-medium text-heading">N° file: {{ kioskOrder.queue_number }}</span>
                     <span>{{ kdsDisplayDateTime(kioskOrder.order_datetime) }}</span>
-                    <div class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
-                      <i class="icon text-primary fa-solid fa-chevron-down"></i>
+                    <div class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]">
+                      <i class="icon text-[#F4501E] fa-solid fa-chevron-down"></i>
                     </div>
                   </button>
                   <div style="height: 0px" class="overflow-hidden transition-all duration-500">
@@ -764,14 +773,14 @@
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
                         <button v-if="!kdsIsBumped(kioskOrder.id, item.id)" type="button"
-                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5"
                           :title="$t('button.kds_bump')"
                           :aria-label="`${$t('button.kds_bump')} — ${item.item_name}`"
                           @click.prevent.stop="kdsBump(kioskOrder, item)">
                           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button v-else-if="kdsCanRecall(kioskOrder.id, item.id)" type="button"
-                          class="text-[11px] font-semibold text-primary underline decoration-primary/50"
+                          class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(kioskOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
@@ -788,7 +797,7 @@
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(kioskOrder, enums.orderStatusEnum.PREPARING)"
-                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
+                      class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white">
                       {{ $t('label.start_preparing') }}
                     </button>
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.PREPARING" type="button"

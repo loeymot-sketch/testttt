@@ -264,13 +264,78 @@ test.describe('iter15 mega — Wave C (kiosk roundtrip → KDS + POS suivi)', ()
         // indicator showing N article(s) > 0.
         await kioskPage.waitForFunction(() => (
           document.querySelector('[data-testid="kiosk-order-summary-root"]')
+          || document.querySelector('[data-testid="kiosk-step-frites-style"]')
+          || document.querySelector('[data-testid^="kiosk-step-"]')
           || /[1-9]\d*\s*article/i.test(document.querySelector('[data-testid="kiosk-categories-cart-indicator"]')?.textContent || '')
         ), null, { timeout: 15_000 });
 
-        // If recap surfaces, validate it; else the item went straight to cart.
+        // [iter15-mega-fix C-039 round-8 2026-05-10] Frites Seules (item 361)
+        // n'est PAS un produit "simple sans wizard". Il ouvre un wizard multi-
+        // étapes : `kiosk-step-frites-style` (3 cards : nature + 2 upgrades)
+        // → recap (`kiosk-order-summary-root`). Avant le round-8, ce spec
+        //   présumait un saut direct au cart ce qui laissait `cart=0` et le
+        //   bouton `kiosk-categories-pay` désactivé → bail à state 05.
+        //
+        // Stratégie : boucle bornée qui (a) détecte la step active, (b) clique
+        //   la première option disponible (nature pour frites_style, ou
+        //   premier .kiosk-frites-style-* / extra), (c) avance via
+        //   .kiosk-wizard .kiosk-btn-next. Sortie : kiosk-order-summary-root
+        //   visible OU cart-indicator > 0 (cas item simple).
+        //
+        // Wizard testids confirmés via grep resources/js/components/frontend/
+        //   kiosk/steps/KioskStepFritesStyleComponent.vue :
+        //   • kiosk-step-frites-style (root du step)
+        //   • kiosk-frites-style-nature (default option, clic suffit pour
+        //     valider canAdvance=true)
+        //   • kiosk-frites-style-upgrade-{extraId} (Cheddar fondu, Cheddar+Oignons)
+        const MAX_WIZARD_STEPS = 6; // safety cap (sauce+menu+frites+supp+garn+recap = 6)
+        for (let stepGuard = 0; stepGuard < MAX_WIZARD_STEPS; stepGuard++) {
+          const summaryNow = await kioskPage.getByTestId('kiosk-order-summary-root').isVisible({ timeout: 500 }).catch(() => false);
+          if (summaryNow) break;
+
+          // Detect current step type. frites_style is the only one Frites
+          // Seules expose en V1, mais on garde la détection ouverte pour
+          // robustesse cross-item (autres items = autres steps).
+          const fritesStyleVisible = await kioskPage.getByTestId('kiosk-step-frites-style').isVisible({ timeout: 500 }).catch(() => false);
+          if (fritesStyleVisible) {
+            const natureCard = kioskPage.getByTestId('kiosk-frites-style-nature');
+            if (await natureCard.isVisible({ timeout: 1000 }).catch(() => false)) {
+              await natureCard.click({ timeout: 3000 }).catch(() => {});
+              kioskFlowNotes.push(`wizard-step-${stepGuard}-frites-style-nature`);
+            }
+          } else {
+            // Generic fallback : tout autre step (sauce/garnitures/...) —
+            // clique première option visible scoped au wizard pour permettre
+            // l'avancement. Ce path n'est pas exercé par Frites Seules en V1
+            // mais protège le spec si l'item de référence change.
+            const firstOption = kioskPage.locator('.kiosk-wizard [role="radio"], .kiosk-wizard [role="button"]').first();
+            if (await firstOption.isVisible({ timeout: 500 }).catch(() => false)) {
+              await firstOption.click({ timeout: 2000 }).catch(() => {});
+              kioskFlowNotes.push(`wizard-step-${stepGuard}-generic-first-option`);
+            }
+          }
+
+          // Advance : .kiosk-wizard .kiosk-btn-next bascule entre nextStep()
+          // et addToCart() selon currentStepIndex (cf. KioskWizardComponent.vue
+          // line 177). Un seul bouton existe à la fois — pas besoin de .last().
+          const nextBtn = kioskPage.locator('.kiosk-wizard .kiosk-btn-next').first();
+          const nextVisible = await nextBtn.isVisible({ timeout: 1500 }).catch(() => false);
+          if (nextVisible) {
+            const disabled = await nextBtn.getAttribute('disabled').catch(() => null);
+            if (disabled === null || disabled === 'false') {
+              await nextBtn.click({ timeout: 3000 }).catch(() => {});
+            }
+          }
+          await kioskPage.waitForTimeout(400); // transition between steps
+        }
+
+        // Recap state : ajoute au panier si on y est arrivé.
         const summaryVisible = await kioskPage.getByTestId('kiosk-order-summary-root').isVisible({ timeout: 1000 }).catch(() => false);
         if (summaryVisible) {
-          const addBtn = kioskPage.locator('.kiosk-wizard .kiosk-btn-next').last();
+          // Final CTA = même bouton .kiosk-btn-next mais en mode addToCart()
+          // (currentStepIndex === activeSteps.length-1). Il a la classe
+          // .kiosk-btn-next--cart en plus.
+          const addBtn = kioskPage.locator('.kiosk-wizard .kiosk-btn-next').first();
           if (await addBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
             await addBtn.click({ timeout: 5000 }).catch(() => {});
           }
