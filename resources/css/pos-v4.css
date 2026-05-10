@@ -21,15 +21,16 @@
 
 /* === 1. Namespace racine === */
 /* W0+ — concrétise ADR couleur (option C draft, défaut FoodKing #0084FF).
- * Tenant override par inline style: <body class="fk-pos-v4" style="--fk-pos-primary: #FF006B">.
+ * [test-e2e round-2 cluster-2 A-002 2026-05-10] Migré sur palette Cayenne
+ * (#F4501E primary, #FFB800 accent jaune) per owner directive.
  * Tech Lead sign-off pending sur ADR_POS_V4_COULEUR.md §5 — variables initiales et révisables sans
  * cascade backend. Ne PAS cabler de logique métier sur ces variables.
  */
 .fk-pos-v4 {
-    --fk-pos-primary:        #0084FF;
-    --fk-pos-primary-hover:  #0066CC;
-    --fk-pos-primary-active: #004D99;
-    --fk-pos-accent:         #FF006B;
+    --fk-pos-primary:        #F4501E;
+    --fk-pos-primary-hover:  #DC4517;
+    --fk-pos-primary-active: #B33A12;
+    --fk-pos-accent:         #FFB800;
     --fk-pos-text:           #1A1F36;
     --fk-pos-text-muted:     #5A6075;
     --fk-pos-bg:             #FFFFFF;

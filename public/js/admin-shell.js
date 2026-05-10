@@ -28469,7 +28469,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.add && $options.add.apply($options, arguments);
     }),
     "data-modal": "#modal",
-    "class": "flex items-center gap-1.5 time-slot-gap h-7 px-3 rounded-2xl bg-[#FFEDF4] text-primary"
+    "class": "flex items-center gap-1.5 time-slot-gap h-7 px-3 rounded-2xl bg-[#FFE8DD] text-primary"
   }, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-plus"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.add")), 1 /* TEXT */)]);
@@ -57840,7 +57840,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-location text-xs leading-none mt-1.5 flex-shrink-0 lab-font-size-14"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderBranch.address), 1 /* TEXT */)]), parseInt($options.order.status) !== parseInt($data.enums.orderStatusEnum.REJECTED) && parseInt($options.order.status) !== parseInt($data.enums.orderStatusEnum.CANCELED) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", {
     href: 'tel:' + $options.orderBranch.phone,
-    "class": "w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]"
+    "class": "w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]"
   }, _toConsumableArray(_cache[1] || (_cache[1] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-call-calling font-fill-primary lab-font-size-16"
   }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_20)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), parseInt($options.order.status) === parseInt($data.enums.orderStatusEnum.REJECTED) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.reason")) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.reason), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), parseInt($options.order.status) !== parseInt($data.enums.orderStatusEnum.REJECTED) && parseInt($options.order.status) !== parseInt($data.enums.orderStatusEnum.CANCELED) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.payment_info")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.method")) + ":", 1 /* TEXT */), $options.order.transaction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.transaction.payment_method) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.transaction.transaction_no) + ") ", 1 /* TEXT */)) : $options.paymentMethod === 'digitalPayment' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.digital_payment')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.paymentTypeEnumArray[$options.order.payment_method]), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.status")) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
@@ -58406,7 +58406,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.allCategory(category);
               }, ["prevent"]),
-              "class": "w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFEDF4] bg-[#F7F7FC] overflow-hidden"
+              "class": "w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFE8DD] bg-[#F7F7FC] overflow-hidden"
             }, {
               "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
                 return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
@@ -58422,7 +58422,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.setCategory(category.id, category.slug);
               }, ["prevent"]),
-              "class": "w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFEDF4] bg-[#F7F7FC] overflow-hidden"
+              "class": "w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFE8DD] bg-[#F7F7FC] overflow-hidden"
             }, {
               "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
                 return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {

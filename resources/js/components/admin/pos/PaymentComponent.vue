@@ -1141,7 +1141,7 @@ export default {
 .pos-v5-payment-confirm:hover:not(:disabled),
 .pos-v4-confirm-button:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);
+    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);
 }
 .pos-v5-payment-confirm:disabled,
 .pos-v4-confirm-button:disabled {

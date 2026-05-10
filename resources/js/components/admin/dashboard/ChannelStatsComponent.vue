@@ -40,7 +40,7 @@ export default {
         },
         getColor(name) {
             if(name === 'Web') return 'bg-blue-500';
-            if(name === 'Kiosk/App') return 'bg-pink-500';
+            if(name === 'Kiosk/App') return 'bg-orange-500';
             if(name === 'POS') return 'bg-purple-500';
             return 'bg-gray-500';
         }

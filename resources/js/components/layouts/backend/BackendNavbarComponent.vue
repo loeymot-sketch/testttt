@@ -42,7 +42,7 @@
                     <div class="relative dropdown-group"
                         v-if="$route.path.includes('kitchen-display-system') || $route.path.includes('order-status-screen')">
                         <router-link :to="{ path: '/admin/' + kdsHeaderMenu.url }" @click="closeFullScreen"
-                            class="flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]">
+                            class="flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
                             <i class="lab-font-size-17 text-primary" :class="kdsHeaderMenu.icon"></i>
                             <span
                                 class=" md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">{{
@@ -52,7 +52,7 @@
                     <div class="flex items-center justify-between md:justify-center gap-4">
                         <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
                             class="dropdown-group relative">
-                            <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFEDF4]">
+                            <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
                                 <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
                                 <span
                                     class="hidden md:block whitespace-nowrap text-xs font-medium capitalize text-heading">

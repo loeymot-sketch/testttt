@@ -21,7 +21,7 @@
                         {{ formattedClosedAt }}
                     </p>
                 </template>
-                <router-link :to="{ name: 'admin.transactions.list' }" class="text-sm font-medium text-pink-700"
+                <router-link :to="{ name: 'admin.transactions.list' }" class="text-sm font-medium text-orange-700"
                     data-testid="last-z-report-link">
                     {{ $t('label.view_all_alerts') }}
                 </router-link>

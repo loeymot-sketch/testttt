@@ -150,12 +150,12 @@
                     </div>
                     <div class="flex gap-4">
                         <router-link @click.prevent="closeModal"
-                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]"
+                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]"
                             :to="{ name: 'frontend.chat', query: { id: order.branch.id } }">
                             <i class="lab lab-messages-2 font-fill-primary lab-font-size-16"></i>
                         </router-link>
                         <a @click="closeModal" :href="'tel:' + order.branch.phone"
-                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]">
+                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]">
                             <i class="lab lab-call-calling font-fill-primary lab-font-size-16"></i>
                         </a>
                     </div>

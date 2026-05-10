@@ -35,12 +35,14 @@
    ============================================================================= */
 
 :root {
-    /* === BRAND (héritage kiosk — single source of truth FoodKing) =========== */
-    --pos-v5-brand-red:        #E8001C;  /* CTA primaire pay/order             */
-    --pos-v5-brand-red-dark:   #B8000F;  /* Hover/active CTA                    */
-    --pos-v5-brand-red-soft:   #FFF0F2;  /* Fond sélection tinted               */
-    --pos-v5-brand-red-faint:  #FFF8F9;  /* Hover row très subtil               */
-    --pos-v5-brand-red-ghost:  rgba(232, 0, 28, 0.08);
+    /* === BRAND (héritage kiosk — single source of truth FoodKing) ===========
+       [test-e2e round-2 cluster-2 A-002] Migration palette legacy red
+       (#E8001C) → Cayenne primary (#F4501E) per owner gate 2026-05-10. */
+    --pos-v5-brand-red:        #F4501E;  /* CTA primaire pay/order (Cayenne)   */
+    --pos-v5-brand-red-dark:   #DC4517;  /* Hover/active CTA                    */
+    --pos-v5-brand-red-soft:   #FFE8DD;  /* Fond sélection tinted               */
+    --pos-v5-brand-red-faint:  #FFF4EE;  /* Hover row très subtil               */
+    --pos-v5-brand-red-ghost:  rgba(244, 80, 30, 0.08);
 
     /* === SURFACES warm (héritage kiosk-wizard) ============================= */
     --pos-v5-bg-app:           #FFFBF5;  /* Fond global crème appétissant       */
@@ -52,7 +54,7 @@
     /* === BORDERS warm ===================================================== */
     --pos-v5-border:           #EEE6D9;  /* Bordure standard                   */
     --pos-v5-border-strong:    #D9C9B8;  /* Bordure renforcée                  */
-    --pos-v5-border-emphasis:  #E8001C;  /* Bordure focus rouge brand          */
+    --pos-v5-border-emphasis:  #F4501E;  /* Bordure focus brand Cayenne        */
     --pos-v5-border-dashed-print: #444444; /* Print receipt only — fiscal      */
 
     /* === TEXTE (contraste AA renforcé sur surfaces warm) ================== */
@@ -143,8 +145,8 @@
     --pos-v5-shadow-md:        0 4px 14px rgba(26, 26, 26, 0.06);
     --pos-v5-shadow-lift:      0 10px 28px rgba(26, 26, 26, 0.10);
     --pos-v5-shadow-modal:     0 24px 48px rgba(26, 26, 26, 0.20);
-    --pos-v5-shadow-cta:       0 8px 20px rgba(232, 0, 28, 0.24);
-    --pos-v5-shadow-cta-soft:  0 4px 12px rgba(232, 0, 28, 0.16);
+    --pos-v5-shadow-cta:       0 8px 20px rgba(244, 80, 30, 0.24);
+    --pos-v5-shadow-cta-soft:  0 4px 12px rgba(244, 80, 30, 0.16);
     --pos-v5-shadow-success:   0 8px 20px rgba(27, 138, 58, 0.20);
     --pos-v5-shadow-inset:     inset 0 1px 2px rgba(26, 26, 26, 0.05);
     --pos-v5-shadow-sticky-top: 0 -8px 20px rgba(26, 26, 26, 0.05);

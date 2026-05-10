@@ -42,12 +42,12 @@
                                     v-if="parseInt(order.status) !== parseInt(enums.orderStatusEnum.REJECTED) && parseInt(order.status) !== parseInt(enums.orderStatusEnum.CANCELED)">
                                     <OrderDetailsMapComponent :order="order" :branch="orderBranch" />
                                     <router-link
-                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]"
+                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]"
                                         :to="{ name: 'frontend.chat', query: { id: orderBranch.id } }">
                                         <i class="lab lab-messages-2 font-fill-primary lab-font-size-16"></i>
                                     </router-link>
                                     <a :href="'tel:' + orderBranch.phone"
-                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFEDF4]">
+                                        class="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFE8DD]">
                                         <i class="lab lab-call-calling font-fill-primary lab-font-size-16"></i>
                                     </a>
                                 </div>

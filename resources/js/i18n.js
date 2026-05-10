@@ -49,7 +49,24 @@ function isAdminPath() {
 }
 
 /**
- * Locale initiale : KIOSK_LOCALE sur /kiosk, FR forcée sur /admin (POS NF525),
+ * [test-e2e round-2 cluster-2 A-003 2026-05-10] Surfaces auth (login,
+ * forget-password, signup, verify-email) : Le Cayenne V1 est FR-only, donc
+ * `detectLocale()` doit retourner FR sur ces routes pour éviter la FOUC i18n.
+ * Cause initiale du flash : `detectLocale()` tombait sur `navigator.language`
+ * (souvent EN sur Playwright headless), peignait l'écran en EN, puis
+ * `FrontendNavBarComponent.mounted()` réécrivait `$i18n.locale = 'fr'` après
+ * la requête `frontendSetting/lists` (~300-700 ms plus tard). Le verrou FR
+ * boot supprime entièrement la fenêtre de flash visible côté client.
+ */
+function isAuthPath() {
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname || '';
+    return /^\/(login|forget-password|signup|verify-email|reset-password)(\/|$)/.test(p);
+}
+
+/**
+ * Locale initiale : KIOSK_LOCALE sur /kiosk, FR forcée sur /admin (POS NF525)
+ * et sur les surfaces auth (login/signup/forget — V1 FR-only Le Cayenne),
  * sinon langue du navigateur. On ne lit PAS localStorage — une valeur "en"
  * persistée ne doit jamais forcer l'anglais sur la borne ni en caisse.
  */
@@ -59,6 +76,10 @@ function detectLocale() {
     }
     // [BLUE 2026-05-08 / B5-UX P1] FR forcée pour les surfaces admin (POS NF525 = FR obligatoire).
     if (isAdminPath()) {
+        return 'fr';
+    }
+    // [test-e2e round-2 A-003] FR forcée pour /login & co. — supprime la FOUC EN→FR.
+    if (isAuthPath()) {
         return 'fr';
     }
     if (typeof navigator !== 'undefined') {

@@ -436,8 +436,8 @@
                                     v-for="(s, idx) in deliveryInline.suggestions"
                                     :key="s.place_id"
                                     @mousedown.prevent="selectDeliverySuggestion(s)"
-                                    class="flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-[#FFEDF4] text-sm text-heading transition"
-                                    :class="idx === deliveryInline.activeIdx ? 'bg-[#FFEDF4]' : ''"
+                                    class="flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-[#FFE8DD] text-sm text-heading transition"
+                                    :class="idx === deliveryInline.activeIdx ? 'bg-[#FFE8DD]' : ''"
                                 >
                                     <i class="fa-solid fa-location-dot text-primary mt-0.5 flex-shrink-0 text-xs"></i>
                                     <span class="leading-tight">{{ s.description }}</span>

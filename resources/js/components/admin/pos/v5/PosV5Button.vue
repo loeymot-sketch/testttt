@@ -258,7 +258,7 @@ export default {
     letter-spacing: var(--pos-v5-tracking-tight);
 }
 .pos-v5-btn--primary-pay:hover:not(.is-disabled):not(:disabled) {
-    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);
+    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);
     transform: translateY(-1px);
 }
 
@@ -367,8 +367,8 @@ export default {
     color: var(--pos-v5-brand-red);
 }
 @keyframes pos-v5-btn-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 0, 28, 0); }
-    50%      { box-shadow: 0 0 0 6px rgba(232, 0, 28, 0.18); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244, 80, 30, 0); }
+    50%      { box-shadow: 0 0 0 6px rgba(244, 80, 30, 0.18); }
 }
 @media (prefers-reduced-motion: reduce) {
     .pos-v5-btn--kiosk-cash { animation: none; }

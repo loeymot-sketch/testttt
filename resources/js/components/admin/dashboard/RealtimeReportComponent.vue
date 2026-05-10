@@ -1,6 +1,6 @@
 <template>
     <div class="col-12 sm:col-12 xl:col-12 mb-6">
-        <h4 class="font-semibold text-[22px] leading-[34px] mb-3 text-pink-700">Suivi en direct</h4>
+        <h4 class="font-semibold text-[22px] leading-[34px] mb-3 text-orange-700">Suivi en direct</h4>
         <div class="row">
             <div class="col-12 sm:col-4">
                 <div class="p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-gradient-to-br from-green-400 to-green-600 text-white transform transition-transform hover:scale-105">

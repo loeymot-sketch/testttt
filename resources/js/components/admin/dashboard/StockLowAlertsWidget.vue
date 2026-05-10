@@ -4,7 +4,7 @@
         <div class="db-card">
             <div class="db-card-header flex items-center justify-between flex-wrap gap-2">
                 <h3 class="db-card-title mb-0">{{ $t('label.stock_low_alerts') }}</h3>
-                <router-link to="/admin/stock/rupture" class="text-sm font-medium text-pink-700" data-testid="stock-low-alerts-view-all">
+                <router-link to="/admin/stock/rupture" class="text-sm font-medium text-orange-700" data-testid="stock-low-alerts-view-all">
                     {{ $t('label.view_all_alerts') }}
                 </router-link>
             </div>

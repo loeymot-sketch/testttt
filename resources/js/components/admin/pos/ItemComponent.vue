@@ -131,7 +131,7 @@
                                     <label v-if="!isMultiAttribute(itemAttribute)"
                                         :title="modifierUnavailableReason(variation)"
                                         :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
-                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFEDF4]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
+                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
                                         class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
                                         :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <div class="custom-radio sm flex-shrink-0">
@@ -1737,7 +1737,7 @@ export default {
 }
 .pos-v5-item-add-cta:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(232, 0, 28, 0.32);
+    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);
 }
 
 /* Attribute / variation cards within the modal body */

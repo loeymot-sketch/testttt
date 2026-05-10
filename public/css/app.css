@@ -3044,7 +3044,7 @@ body {
   background-color: transparent;
 }
 .db-sidebar {
-        scrollbar-color: rgb(255 0 107);
+        scrollbar-color: rgb(244 80 30);
         position: fixed;
         top: 0px;
         z-index: 39;
@@ -3996,7 +3996,7 @@ body {
   background-color: transparent;
 }
 .thin-scrolling {
-        scrollbar-color: rgb(255 0 107);
+        scrollbar-color: rgb(244 80 30);
     }
 /* OTHER */
 .db-image {
