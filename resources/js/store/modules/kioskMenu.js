@@ -75,7 +75,11 @@ export const kioskMenu = {
             // supplément cliqué standalone ne sait à quel produit il s'attache).
             // On la cache du welcome screen mais les items restent au catalog
             // pour POS staff + addons backend (360-403)."
-            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([315]);
+            // [A-001 round-2] Owner gate étendu : cats 306 (Tacos), 307 (Sandwichs),
+            // 308 (Burgers) doivent être masquées de la borne (audit owner
+            // 2026-05-10 — "scape les sandwich, burger et tacos"). Items restent
+            // au catalog pour POS staff + addons backend.
+            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([306, 307, 308, 315]);
             const filtered = (s.categories || []).filter((c) =>
                 !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10))
             );

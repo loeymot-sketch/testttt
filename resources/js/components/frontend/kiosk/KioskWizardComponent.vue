@@ -1942,7 +1942,12 @@ export default {
       const parts = [];
       const ti = (key, values) => this.$t(`kiosk.wizard.instruction.${key}`, values);
 
-      if (this.selections._tailleMeta?.label) {
+      // [B-001 round-2] guard taille emission per shouldShowCompositionStep
+      // (mirrors compositionSummaryChips() at line ~653). Évite que le fallback
+      // de `inferTacosPresetMeta()` ("1 viande") fuite dans l'instruction des
+      // items qui n'exposent pas l'étape taille (Assiette, Ojja, Omelette,
+      // Menu Enfant, etc.) vers le ticket cuisine + reçu NF525.
+      if (this.shouldShowCompositionStep('taille') && this.selections._tailleMeta?.label) {
         parts.push(ti('taille', { label: this.selections._tailleMeta.label }));
       }
 
