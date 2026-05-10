@@ -48,7 +48,12 @@ aea80b52b  feat(mobile/loyalty): data layer aligned backend SSOT — earn method
 900de52d9  feat(mobile/loyalty): hooks + LoyaltyQR + BarcodeMock + a11y WCAG AA
 8793ef235  feat(mobile/loyalty): Wallet V0 boutons + ModalWalletV0Notice + WALLET_PLAN Phase 6
 4c937155e  feat(mobile/loyalty): WizardRedeem 3-step + idempotency 10min-window + ModalOptOutConfirm RGPD
-8b63e678d  test(mobile-loyalty): 20 E2E specs (15 functional + 5 adversarial) — 20/20 GREEN
+8b63e678d  test(test-e2e A-013/A-002 round-3): wave-A spec hardening
+             ^^ NB: ce commit a été créé par l'agent parallèle qui a bundlé
+                mes 20 specs E2E loyalty (tests/mobile-e2e/) avec son propre
+                travail wave-A sous son message. Les specs loyalty SONT dans
+                ce commit malgré le subject trompeur. grep --grep="loyalty"
+                trouvera les 6 commits explicites mais PAS celui-ci.
 ```
 
 ---

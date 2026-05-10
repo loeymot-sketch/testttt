@@ -7,6 +7,12 @@ test('S01 — Earn via purchase_app updates balance + history entry visible', as
   await waitForLoyaltyReady(page, { seedAccount: { balance: 100, lifetime_earned: 100 } });
   await gotoLoyaltyScreen(page);
 
+  // DEC-02 rate guard — earn_ratio MUST match backend default (10 pt/€).
+  // Reverting this back to 1 (the original mock drift) would silently
+  // 10x under-display points without breaking the rest of the suite.
+  const earnRatio = await page.evaluate(() => window.LC.loyalty.config.earn_ratio);
+  expect(earnRatio).toBe(10);
+
   const before = await page.locator('[data-testid="loyalty-balance"]').innerText();
   expect(before).toBe('100');
 
