@@ -579,14 +579,14 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'omelette':
-          // V3.7 — Omelettes : owner gate "wizard simple : Page 1 menu + Page 2
-          // suppléments". Garde sauce car items ont vars=15. Step menu activé
-          // si has_menu=true (migration v3.7). Step frites_style apparaît si
-          // user choisi 'frites' ou 'full' menu choice.
+          // V3.8 (2026-05-10) Owner audit : Omelettes + Ojja contiennent DÉJÀ
+          // des frites dans le prix base ("+ Frites + Pain" en description DB).
+          // Phase D's menu+frites_style étaient FAUX (offre redondante).
+          // → revert : sauce + garnitures + supplements + recap (no menu).
+          // L'upsell boisson est géré post-cart via KioskUpsellComponent.
           return [
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
-            { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
-            { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
+            { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));

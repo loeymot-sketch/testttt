@@ -69,7 +69,17 @@ export const kioskMenu = {
         sidebarCategories: (s) => {
             const split = getKioskSandwichSplitConfig();
             const coldSlugs = split?.cold_item_slugs || [];
-            return expandKioskSidebarCategories(s.categories, {
+            // V3.8 (2026-05-10) Owner gate : exclure cat "Frites & Accompagnements"
+            // (id 315) de la sidebar kiosk. Owner : "tout accompagnement vient
+            // avec le produit lui-même ; cette catégorie crée confusion (un
+            // supplément cliqué standalone ne sait à quel produit il s'attache).
+            // On la cache du welcome screen mais les items restent au catalog
+            // pour POS staff + addons backend (360-403)."
+            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([315]);
+            const filtered = (s.categories || []).filter((c) =>
+                !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10))
+            );
+            return expandKioskSidebarCategories(filtered, {
                 parentSlug: split?.parent_category_slug || 'nos-sandwichs',
                 coldSlugs,
                 coldLabel: split?.cold_sidebar_label || 'Sandwich froid',
