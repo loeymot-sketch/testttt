@@ -169,17 +169,34 @@ test.describe('iter15 — 3 P0 bugs régression visuelle', () => {
       await snap(page, '08-payment-mode-cash');
     }
 
-    // Fermer modal (X / overlay / Echap)
-    const closeBtn = page.locator(
-      '#orderpayment .btn-close, #orderpayment .close, #orderpayment [data-bs-dismiss="modal"]'
-    ).first();
-    if (await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await closeBtn.click({ timeout: 3_000 });
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    // Fermer modal via la VRAIE X (button.pos-v5-payment-close → @click="reset")
+    // Le bouton "reset" contient le fix clearInterval _quoteRefreshTimer (commit 3b7077af7)
+    const closeBtn = page.locator('#orderpayment button.pos-v5-payment-close').first();
+    await expect(closeBtn).toBeVisible({ timeout: 5_000 });
+    await closeBtn.click({ timeout: 5_000, force: true });
     await page.waitForTimeout(2_500);
     await snap(page, '09-modal-closed');
+
+    // STRONG ASSERTION : modal DOIT être dismiss (display:none ou .modal-open removed)
+    // Cela exerce vraiment reset() — qui contient le fix clearInterval _quoteRefreshTimer.
+    const modalState = await page.evaluate(() => {
+      const modal = document.querySelector('#orderpayment');
+      if (!modal) return { exists: false };
+      const cs = window.getComputedStyle(modal);
+      return {
+        exists: true,
+        display: cs.display,
+        visibility: cs.visibility,
+        hasShowClass: modal.classList.contains('show'),
+        bodyHasModalOpen: document.body.classList.contains('modal-open'),
+      };
+    });
+    console.log(`[BUG-3] modal state after close: ${JSON.stringify(modalState)}`);
+    // Modal must be hidden (display:none) OR not have .show class
+    expect(
+      modalState.display === 'none' || !modalState.hasShowClass,
+      `Modal still open after close: ${JSON.stringify(modalState)}`
+    ).toBeTruthy();
 
     // ASSERTION CRITIQUE : URL doit rester /admin/pos, PAS /login ni /dashboard
     const finalUrl = page.url();
@@ -190,6 +207,11 @@ test.describe('iter15 — 3 P0 bugs régression visuelle', () => {
     // Pas de toast "session expirée"
     const visibleText = await page.locator('body').innerText();
     expect(visibleText).not.toMatch(/session\s+expir/i);
-    console.log('[BUG-3] no session-expired toast, URL stayed on /admin/pos — close-modal fix confirmed');
+
+    // Bonus : attendre 3s supplémentaires — si timer zombie était présent, il aurait fired
+    // entre-temps et déclenché redirect /login. On revérifie URL.
+    await page.waitForTimeout(3_000);
+    expect(page.url()).toMatch(/\/admin\/pos/);
+    console.log('[BUG-3] modal dismissed, URL stayed on /admin/pos after extra wait — clearInterval _quoteRefreshTimer fix confirmed');
   });
 });

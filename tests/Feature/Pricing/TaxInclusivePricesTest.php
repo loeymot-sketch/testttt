@@ -200,17 +200,28 @@ class TaxInclusivePricesTest extends TestCase
         $this->assertSame(3.60, $out->total);
     }
 
-    public function test_config_default_is_false_for_backward_compat(): void
+    public function test_config_default_is_true_for_nf525_compliance(): void
     {
-        // Production overrides via PRICING_TAX_INCLUSIVE=true env, but the FILE
-        // default must remain false so the existing test suite passes unmodified
-        // and CI on a fresh checkout reproduces the legacy contract.
-        $config = require base_path('config/pricing.php');
-        $this->assertArrayHasKey('tax_inclusive_prices', $config);
-        $this->assertFalse(
-            $config['tax_inclusive_prices'],
-            'Default config must be FALSE; production opts in via PRICING_TAX_INCLUSIVE=true'
-        );
+        // iter15-BUG-NF525 hardening (2026-05-10): the file default flipped
+        // from FALSE → TRUE so a missing PRICING_TAX_INCLUSIVE env line in prod
+        // cannot silently re-enable HT-add semantics. Legacy fixture-bound
+        // tests must explicitly set config(['pricing.tax_inclusive_prices' => false]).
+        // (Helper note: the env() resolution happens once at boot, so we re-require
+        // the file directly to assert the static default and avoid env-cache surprises.)
+        $defaultEnv = getenv('PRICING_TAX_INCLUSIVE');
+        putenv('PRICING_TAX_INCLUSIVE');
+        try {
+            $config = require base_path('config/pricing.php');
+            $this->assertArrayHasKey('tax_inclusive_prices', $config);
+            $this->assertTrue(
+                $config['tax_inclusive_prices'],
+                'Default config MUST be TRUE (NF525 mandate). Set PRICING_TAX_INCLUSIVE=false explicitly to opt into legacy HT-add semantics.'
+            );
+        } finally {
+            if ($defaultEnv !== false) {
+                putenv("PRICING_TAX_INCLUSIVE={$defaultEnv}");
+            }
+        }
     }
 
     /* -----------------------------------------------------------------
