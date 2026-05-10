@@ -568,24 +568,36 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'snacking':
-          // Chicken, tenders, nuggets — sauce + suppléments si configurés, puis récap
+          // V3.7 (2026-05-10) Owner gate — Poulet croustillant : wizard simple
+          // 2 pages = formule (menu Y/N) + supplements + frites_style si menu
+          // → recap. Garde sauce step car items ont vars=15 sauces.
           return [
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
+            { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'omelette':
-          // Omelettes — garnitures (ingrédients) + suppléments si configurés
+          // V3.7 — Omelettes : owner gate "wizard simple : Page 1 menu + Page 2
+          // suppléments". Garde sauce car items ont vars=15. Step menu activé
+          // si has_menu=true (migration v3.7). Step frites_style apparaît si
+          // user choisi 'frites' ou 'full' menu choice.
           return [
-            { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
+            { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
+            { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'salade':
-          // Salades — garnitures (ingrédients) + sauce + suppléments si configurés
+          // V3.7 — Salades : owner gate menu + suppléments. Garde sauce et
+          // garnitures (existants). Step menu + frites_style ajoutés.
           return [
             { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
+            { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
@@ -874,7 +886,10 @@ export default {
       if (name.includes('burger') || category.includes('burger')) return 'burger';
       if (name.includes('assiette') || category.includes('assiette')) return 'assiette';
       // [P5] Alignement heuristique ↔ wizard_template catalogue (snacking / omelette / salade)
+      // V3.7 (2026-05-10) Owner gate : Ojja → template omelette (même flow simple
+      // : sauce + menu + frites_style + supplements + recap).
       if (name.includes('omelette') || name.includes('omelet') || category.includes('omelette')) return 'omelette';
+      if (name.includes('ojja') || category.includes('ojja')) return 'omelette';
       if (name.includes('salade') || category.includes('salade')) return 'salade';
       if (
         name.includes('nugget') ||
@@ -962,9 +977,21 @@ export default {
       // V3.6 (2026-05-10) Owner gate : frites_style step affiche 3 cards
       // (Nature/Cheddar/Cheddar+Oignons) si l'item a au moins une row
       // item_extras avec group_label='frites_style'.
+      // V3.7 (2026-05-10) : si item.has_menu, le step frites_style ne doit
+      // apparaître QUE si user a pris menuChoice='frites' ou 'full' (sinon
+      // on affiche un Cheddar pour quelqu'un qui ne prend même pas frites).
       if (type === 'frites_style') {
         const extras = Array.isArray(item.extras) ? item.extras : [];
-        return extras.some((e) => e?.group_label === 'frites_style');
+        const hasFritesStyleExtras = extras.some((e) => e?.group_label === 'frites_style');
+        if (!hasFritesStyleExtras) return false;
+        // Si l'item a un menu choice : conditionner sur la sélection actuelle.
+        if (item.has_menu === true) {
+          const mc = this.selections?.menuChoice;
+          return mc === 'frites' || mc === 'full';
+        }
+        // Items qui sont des frites eux-mêmes (Frites Moyenne/Grande/Seules/Menu) :
+        // afficher toujours.
+        return true;
       }
       return true;
     },
