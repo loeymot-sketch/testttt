@@ -81,6 +81,12 @@
 <script type="text/babel" src="icons.jsx"></script>
 <script type="text/babel" src="shared.jsx"></script>
 
+<!-- Hooks & components (must load BEFORE screens that consume them) -->
+<script src="hooks/useCountdown.js"></script>
+<script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
+<script type="text/babel" src="components/BarcodeMock.jsx"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx"></script>
+
 <!-- Screens -->
 <script type="text/babel" src="screens-onboarding.jsx"></script>
 <script type="text/babel" src="screens-item-steps.jsx"></script>

@@ -838,7 +838,7 @@ function ScreenProfile({ go }) {
         <div style={{ padding: '24px 20px 0' }}>
           <div style={{ background: 'var(--cream)', borderRadius: 18, overflow: 'hidden' }}>
             {[
-              { i: I.Gift, t: 'Ma carte fidélité', d: '347 pts', go: 'loyalty', accent: 'var(--orange)' },
+              { i: I.Gift, t: 'Ma carte fidélité', d: (window.LC.loyalty.account.balance + ' pts'), go: 'loyalty', accent: 'var(--orange)' },
               { i: I.Card, t: 'Moyens de paiement', d: 'Visa ····4242' },
               { i: I.Bell, t: 'Notifications', d: 'Activées' },
               { i: I.Pepper, t: 'Allergènes & préférences', d: '2 actives' },
