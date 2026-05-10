@@ -234,10 +234,10 @@ function Toast({ message, kind = 'info', onClose }) {
   useEffect_m(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
   const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
   return (
-    <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
+    <div data-testid="toast" data-kind={kind} role="status" aria-live="polite" style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
       <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{message}</span>
-      <button onClick={onClose} style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 16, cursor: 'pointer', opacity: 0.7 }}>×</button>
+      <button onClick={onClose} aria-label="Fermer le toast" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 16, cursor: 'pointer', opacity: 0.7 }}>×</button>
     </div>
   );
 }
