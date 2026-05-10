@@ -55,7 +55,7 @@ class TaxTypeMisconfigDetectionTest extends TestCase
             'name' => 'TVA 20%',
             'tax_rate' => 20.000000,
             'type' => TaxType::PERCENTAGE,
-            'tax_code' => 'TVA20-TEST',
+            'code' => 'TVA20-TEST',
         ]);
 
         $verifiedTotalPrice = 2.00;
@@ -82,7 +82,7 @@ class TaxTypeMisconfigDetectionTest extends TestCase
             'name' => 'Éco-tax fixe',
             'tax_rate' => 0.50,
             'type' => TaxType::FIXED,
-            'tax_code' => 'ECO-FIXED-TEST',
+            'code' => 'ECO-FIXED-TEST',
         ]);
 
         $verifiedTotalPrice = 100.00;
@@ -109,7 +109,7 @@ class TaxTypeMisconfigDetectionTest extends TestCase
             'name' => 'Forfait fiscal',
             'tax_rate' => 500.00,
             'type' => TaxType::FIXED,
-            'tax_code' => 'FORFAIT-TEST',
+            'code' => 'FORFAIT-TEST',
         ]);
 
         $misconfigured = Tax::query()
