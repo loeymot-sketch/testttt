@@ -61,11 +61,15 @@
 <div id="root"></div>
 
 <!-- Data layer (vanilla JS, attaches to window.LC.*) -->
+<!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
+<script src="api/storage.js"></script>
 <script src="data/menu.js"></script>
 <script src="data/loyalty.js"></script>
+<script src="data/loyaltyRewardState.js"></script>
 <script src="data/orders.js"></script>
 <script src="data/user.js"></script>
-<script src="api/storage.js"></script>
+<!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
+<script src="data/dev-helpers.js"></script>
 
 <!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
