@@ -176,7 +176,16 @@ async function confirmKioskPayment(kioskPage, orderId, totalAmount, idemKeyBase)
  * the rateLimitIncidents buffer for adversarial CATALOG-B5 evidence.
  */
 async function postKioskOrderWithRetry(kioskPage, itemId, seq, rateLimitIncidents) {
-  const idemKey = `${INSTRUCTION_PREFIX}-${seq}-${TS}-IDK-${crypto.randomUUID()}`;
+  // [test-e2e fix B-005 round-2 2026-05-10] IdempotencyKeyMiddleware regex
+  // /^[A-Za-z0-9._\-]{8,64}$/ caps at 64 chars. Previous shape
+  // `${INSTRUCTION_PREFIX}-${seq}-${TS}-IDK-${randomUUID()}` = 69 chars
+  // exceeded the cap and produced MISSING_IDEMPOTENCY_KEY 422 for every burst
+  // order under round-2 (env F-001/D-009 turned IDEMPOTENCY_MIDDLEWARE_ENABLED=true).
+  // Compact form keeps human readability (seq+TS suffix for traceability) under 64.
+  // Length budget: WAVE-B-{seq}-{TS_lo}-{8 hex} = 6+1+3+1+7+1+8 = ~30 chars.
+  const tsShort = String(TS).slice(-7); // last 7 digits = sub-second precision
+  const idemSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  const idemKey = `WAVE-B-${seq}-${tsShort}-${idemSuffix}`;
   const orderToken = `${INSTRUCTION_PREFIX}-${seq}-${TS}`;
   const items = buildKioskItems(itemId, seq);
 
