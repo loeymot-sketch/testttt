@@ -1,6 +1,6 @@
 {
   "pre_addToCart": {
-    "ts": 1778434968167,
+    "ts": 1778440366105,
     "wizardFound": true,
     "storeFound": true,
     "selections": {
@@ -70,10 +70,18 @@
             "name": "Cheddar + Oignons croustillants"
           }
         ],
+        "item_addons": [
+          {
+            "id": 148,
+            "name": "Menu (Frites + Boisson)",
+            "addon_item_id": 360,
+            "role": "menu_frites"
+          }
+        ],
         "item_variation_total": 1.8,
         "item_extra_total": 2,
         "total": 11.3,
-        "instruction": "Taille : 1 viande. Formule : Avec frites. Sauce frites : Ketchup",
+        "instruction": "Formule : Avec frites. Sauce frites : Ketchup",
         "_wizardSelections": {
           "pain": null,
           "taille": "1 viande",
@@ -113,7 +121,7 @@
     ]
   },
   "post_addToCart": {
-    "ts": 1778434970558,
+    "ts": 1778440367685,
     "wizardFound": false,
     "storeFound": true,
     "cartItems": [
@@ -139,10 +147,18 @@
             "name": "Cheddar + Oignons croustillants"
           }
         ],
+        "item_addons": [
+          {
+            "id": 148,
+            "name": "Menu (Frites + Boisson)",
+            "addon_item_id": 360,
+            "role": "menu_frites"
+          }
+        ],
         "item_variation_total": 1.8,
         "item_extra_total": 2,
         "total": 11.3,
-        "instruction": "Taille : 1 viande. Formule : Avec frites. Sauce frites : Ketchup",
+        "instruction": "Formule : Avec frites. Sauce frites : Ketchup",
         "_wizardSelections": {
           "pain": null,
           "taille": "1 viande",
@@ -199,7 +215,7 @@
         "item_variation_total": 0,
         "item_extra_total": 0,
         "total": 7.5,
-        "instruction": "Taille : 1 viande",
+        "instruction": null,
         "_wizardSelections": {
           "pain": null,
           "taille": "1 viande",
