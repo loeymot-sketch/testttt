@@ -245,7 +245,15 @@ function ScreenMenu({ go, cart, addToCart }) {
 //
 // Validation pre-cart : viandesCount === item.viandes (si > 0).
 
+// ScreenItem — thin wrapper delegating to the multi-page wizard
+// (mobile/screens-item-steps.jsx exposes window.ScreenItemWizard).
+// Refactor 2026-05-10 post-audit cross-agent. Single-scroll legacy preserved
+// only as fallback if the wizard module fails to load.
 function ScreenItem({ go, itemId, addToCart }) {
+  if (typeof window.ScreenItemWizard === 'function') {
+    return <window.ScreenItemWizard go={go} itemId={itemId} addToCart={addToCart}/>;
+  }
+  // Fallback : single-scroll (kept for safety if wizard module fails to load)
   const lcMenu = window.LC.menu;
   const item = lcMenu.findItem(itemId);
   if (!item) {
@@ -793,26 +801,39 @@ function ScreenProfile({ go }) {
             <button onClick={() => go('toast', { msg: 'Édition profil — bientôt disponible', kind: 'info' })} style={{ background: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: 'var(--yellow)', letterSpacing: '0.08em' }}>MODIFIER</button>
           </div>
         </div>
-        {/* loyalty preview card */}
-        <div style={{ padding: '14px 20px 0' }}>
-          <div onClick={() => go('loyalty')} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
-            <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.18 }}/>
-            <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.18 }}/>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <I.Gift size={18} stroke="var(--yellow)"/>
-              <span className="lc-eyebrow" style={{ color: 'var(--yellow)' }}>Carte fidélité</span>
+        {/* loyalty preview card — bound to LC.loyalty per DEC-11 */}
+        {(() => {
+          const lAcc = window.LC.loyalty.account;
+          const lProg = window.LC.loyalty.progressToNext(lAcc.balance);
+          const lProgPct = lProg.target ? lProg.pct : 100;
+          return (
+            <div style={{ padding: '14px 20px 0' }}>
+              <div onClick={() => go('loyalty')} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
+                <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.18 }}/>
+                <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.18 }}/>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <I.Gift size={18} stroke="var(--yellow)"/>
+                  <span className="lc-eyebrow" style={{ color: 'var(--yellow)' }}>Carte fidélité</span>
+                </div>
+                <div className="lc-display" style={{ fontSize: 56, lineHeight: 0.9 }}>{lAcc.balance}<span style={{ fontSize: 18, color: 'var(--orange)' }}> PTS</span></div>
+                {lProg.target && lProg.remaining > 0 ? (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
+                    Plus que <b style={{ color: 'var(--orange)' }}>{lProg.remaining} pts</b> pour <b style={{ color: 'var(--yellow)' }}>{lProg.target.name}</b> {lProg.target.icon}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>🎉 Toutes les récompenses débloquées</div>
+                )}
+                <div style={{ marginTop: 14, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ width: lProgPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+                </div>
+                <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>
+                  <span>VOIR MON QR →</span>
+                  <I.QR size={18}/>
+                </div>
+              </div>
             </div>
-            <div className="lc-display" style={{ fontSize: 56, lineHeight: 0.9 }}>347<span style={{ fontSize: 18, color: 'var(--orange)' }}> PTS</span></div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>Plus que <b style={{ color: 'var(--orange)' }}>153 pts</b> pour ton burger gratuit 🍔</div>
-            <div style={{ marginTop: 14, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ width: '69%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
-            </div>
-            <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>
-              <span>VOIR MON QR →</span>
-              <I.QR size={18}/>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
         {/* menu items */}
         <div style={{ padding: '24px 20px 0' }}>
           <div style={{ background: 'var(--cream)', borderRadius: 18, overflow: 'hidden' }}>
@@ -843,130 +864,315 @@ function ScreenProfile({ go }) {
 }
 
 // LOYALTY DETAIL
+// LOYALTY — multi-section refactor (DEC-11 in 99_VERDICT.md §2)
+// Sections : HERO (LoyaltyQR + member badge + countdown + toggle) →
+// POINTS (balance + progress) → ACTIONS RAPIDES (wallet pills come in commit-4) →
+// TABS (Mes points / Récompenses / Historique) → INFOS (rules + RGPD opt-out).
 function ScreenLoyalty({ go }) {
   const [tab, setTab] = uS('points');
-  const points = 347;
-  const goal = 500;
-  const pct = (points / goal) * 100;
+  const [qrMode, setQrMode] = uS((window.LC.storage && window.LC.storage.getQRPreference) ? window.LC.storage.getQRPreference() : 'qr');
+  const [filterSource, setFilterSource] = uS('all');
+  const [, force] = uS(0);
+
+  // Re-render on data layer changes (earn / redeem / refund / consent)
+  uE(() => {
+    const handler = () => force(t => t + 1);
+    window.addEventListener('lc:loyalty-changed', handler);
+    return () => window.removeEventListener('lc:loyalty-changed', handler);
+  }, []);
+
+  // Render-counter for perf tests (Agent-6 §6.3)
+  uE(() => {
+    if (window.LC.dev && window.LC.dev.notifyRender) {
+      window.LC.dev.notifyRender('ScreenLoyalty');
+    }
+  });
+
+  // Bind to data layer — zero hardcoded values
+  const account = window.LC.loyalty.account;
+  const historyAll = window.LC.loyalty.history;
+  const config = window.LC.loyalty.config;
+  const rewards = window.LC.loyalty.rewards;
+  const consent = (window.LC.storage && window.LC.storage.getConsent) ? window.LC.storage.getConsent() : 'opted_in';
+  const isOptedOut = consent === 'opted_out';
+  const userFirstName = (window.LC.user && window.LC.user.current && window.LC.user.current.first_name) || '';
+  const userLastInit = (window.LC.user && window.LC.user.current && window.LC.user.current.last_name) || '';
+  const memberDisplayName = (userFirstName + (userLastInit ? ' ' + userLastInit : '')).toUpperCase().trim();
+
+  const balance = account.balance;
+  const isEmpty = balance === 0 && (account.lifetime_earned || 0) === 0;
+  const discountValue = window.LC.loyalty.pointsToDiscount(balance);
+  const progress = window.LC.loyalty.progressToNext(balance);
+
+  const onQRToggle = () => {
+    const newMode = qrMode === 'qr' ? 'barcode' : 'qr';
+    setQrMode(newMode);
+    if (window.LC.storage && window.LC.storage.setQRPreference) {
+      window.LC.storage.setQRPreference(newMode);
+    }
+  };
+
+  // History filter chips
+  const filteredHistory = filterSource === 'all'
+    ? historyAll
+    : historyAll.filter(h => {
+        if (filterSource === 'mobile') {
+          // Group all mobile_* variants (welcome, referral, birthday) with mobile
+          return h.source_surface === 'mobile' || (h.source_surface || '').startsWith('mobile');
+        }
+        return h.source_surface === filterSource;
+      });
+
   return (
-    <div data-screen-label="14 Loyalty" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div data-screen-label="14 Loyalty" data-testid="loyalty-screen" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 40 }}>
-        {/* yellow top */}
+        {/* HERO — yellow top with QR/Barcode + member badge + countdown */}
         <div style={{ background: 'var(--yellow)', padding: '0 0 28px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle at 18% 22%, rgba(0,0,0,0.5) 0 2px, transparent 2px), radial-gradient(circle at 78% 65%, rgba(0,0,0,0.5) 0 2px, transparent 2px)', backgroundSize: '60px 60px' }}/>
-          <ScreenHeader left={<IconBtn onClick={() => go('back')} bg="var(--ink)" color="#fff"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Carte fidélité</div>} right={<IconBtn bg="var(--ink)" color="#fff"><I.Settings size={18}/></IconBtn>}/>
-          {/* QR card — centered */}
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 20px 0' }}>
-            <div style={{ background: '#fff', borderRadius: 22, padding: 18, boxShadow: '0 12px 32px rgba(0,0,0,0.14)', display: 'inline-block' }}>
-              <div className="lc-pulse" style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
-                <QRMock size={208}/>
-              </div>
-              <div style={{ marginTop: 10, textAlign: 'center' }}>
-                <div className="lc-eyebrow" style={{ color: 'var(--gray-3)' }}>LE CAYENNE FIDÉLITÉ</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--gray-3)', marginTop: 2 }}>#FK-12345 · IKYES B.</div>
-              </div>
+          <ScreenHeader
+            left={<IconBtn onClick={() => go('back')} bg="var(--ink)" color="#fff" aria-label="Retour"><I.Back size={20}/></IconBtn>}
+            center={<div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Carte fidélité</div>}
+            right={<button data-testid="qr-mode-toggle" onClick={onQRToggle} aria-label={'Basculer vers ' + (qrMode === 'qr' ? 'code-barres' : 'QR')} style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--ink)', color: '#fff', border: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>{qrMode === 'qr' ? 'III' : '▦'}</button>}
+          />
+          {isOptedOut ? (
+            <div style={{ padding: '16px 24px', textAlign: 'center' }}>
+              <div className="lc-display" style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>Programme désactivé</div>
+              <div style={{ fontSize: 13, color: 'var(--ink)', marginBottom: 16 }}>Tu ne cumules plus de points. Tes points existants restent valides.</div>
+              <button onClick={() => { if (window.LC.dev) window.LC.dev.setConsent('opted_in'); }} className="lc-btn lc-btn--ink" style={{ height: 48 }}>Réactiver mon compte</button>
             </div>
-          </div>
-          <div style={{ marginTop: 14, textAlign: 'center', fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>Présente ce code à la caisse pour ajouter ou utiliser tes points</div>
+          ) : (
+            <>
+              {/* LoyaltyQR card — centered, memoized */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 20px 0' }}>
+                <div style={{ background: '#fff', borderRadius: 22, padding: 18, boxShadow: '0 12px 32px rgba(0,0,0,0.14)' }}>
+                  <window.LoyaltyQR loyaltyCode={account.loyalty_code} memberNumber={account.member_number} name={memberDisplayName} mode={qrMode}/>
+                </div>
+              </div>
+              <div style={{ marginTop: 14, textAlign: 'center', fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>
+                Présente ce code à la caisse pour ajouter ou utiliser tes points
+              </div>
+            </>
+          )}
         </div>
-        {/* points card black */}
+
+        {/* POINTS — black card with balance + progress */}
         <div style={{ margin: '-20px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 22, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.2 }}/>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <div className="lc-display" style={{ fontSize: 64, lineHeight: 1 }}>{points}</div>
+            <div className="lc-display" data-testid="loyalty-balance" style={{ fontSize: 64, lineHeight: 1 }}>{balance}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>POINTS</div>
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>Soit {(points/100).toFixed(2).replace('.', ',')} € de réduction disponible</div>
-          <div style={{ marginTop: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 6 }}>
-              <span>{points} / {goal} pts</span>
-              <span style={{ color: 'var(--yellow)' }}>BURGER OFFERT</span>
-            </div>
-            <div style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-              <div style={{ width: pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
-            </div>
-            <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>153 pts</span> pour ton prochain <b style={{ color: 'var(--yellow)' }}>BURGER GRATUIT</b> 🍔</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+            Soit {discountValue.toFixed(2).replace('.', ',')} € de réduction disponible
           </div>
-        </div>
-        {/* tabs */}
-        <div style={{ display: 'flex', gap: 6, padding: '20px 20px 0' }}>
-          {[{ id: 'points', label: 'Mes points' }, { id: 'rewards', label: 'Récompenses' }, { id: 'history', label: 'Historique' }].map(t => {
-            const a = tab === t.id;
-            return <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 0', borderRadius: 999, border: 0, background: a ? 'var(--ink)' : 'var(--cream)', color: a ? 'var(--yellow)' : 'var(--ink)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>{t.label}</button>;
-          })}
-        </div>
-        {/* tab content */}
-        <div style={{ padding: '16px 20px 0' }}>
-          {tab === 'points' && (
-            <div style={{ display: 'grid', gap: 8 }}>
-              {[
-                { p: 100, r: '-1 € de réduction', unlocked: true },
-                { p: 500, r: '-5 € sur ta commande', need: 153 },
-                { p: 1000, r: 'Burger gratuit 🍔', need: 653 },
-                { p: 2000, r: 'Box Familiale -50%', need: 1653 },
-              ].map((r, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: r.unlocked ? '#E8F8ED' : 'var(--cream)', borderRadius: 14, border: r.unlocked ? '1.5px solid var(--green)' : '1.5px solid transparent' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: r.unlocked ? 'var(--green)' : 'var(--ink)', color: r.unlocked ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 14, flexShrink: 0 }}>{r.p}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>{r.r}</div>
-                    <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2 }}>{r.unlocked ? '✓ Disponible' : `${r.need} pts manquants`}</div>
-                  </div>
-                  {r.unlocked && <button onClick={() => go('redeem')} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>}
-                </div>
-              ))}
+          {progress.target && progress.remaining > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div data-testid="loyalty-progress-text" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
+                <span>{balance} / {progress.target.points_cost} pts</span>
+                <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
+              </div>
+              <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
+                Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progress.remaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{progress.target.name}</b> {progress.target.icon}
+              </div>
             </div>
           )}
-          {tab === 'rewards' && (
-            <div style={{ display: 'grid', gap: 10 }}>
-              {[
-                { name: 'Frites offertes', pts: 100, unlocked: true },
-                { name: '-5€ sur ta commande', pts: 500, locked: true, need: 153 },
-                { name: 'Burger gratuit', pts: 1000, locked: true, need: 653 },
-                { name: 'Box Familiale -50%', pts: 2000, locked: true, need: 1653 },
-              ].map((r, i) => (
-                <div key={i} style={{ padding: 16, background: 'var(--cream)', borderRadius: 16, position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span className="lc-pill lc-pill--ink" style={{ fontSize: 10 }}>{r.pts} PTS</span>
-                    {r.locked && <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700 }}>🔒 -{r.need} PTS</span>}
-                  </div>
-                  <div className="lc-display" style={{ fontSize: 22 }}>{r.name}</div>
-                  <button onClick={() => !r.locked && go('redeem')} disabled={r.locked} style={{ marginTop: 12, width: '100%', height: 44, borderRadius: 12, border: 0, background: r.locked ? 'var(--gray-2)' : 'var(--orange)', color: '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: r.locked ? 'not-allowed' : 'pointer' }}>{r.locked ? 'Verrouillé' : 'Échanger'}</button>
-                </div>
-              ))}
-            </div>
-          )}
-          {tab === 'history' && (
-            <div style={{ display: 'grid', gap: 8 }}>
-              {[
-                { d: '8 mai', a: '+25', r: 'Box Nashville', good: true },
-                { d: '5 mai', a: '+12', r: 'Smash Cheese', good: true },
-                { d: '2 mai', a: '−500', r: 'Burger gratuit utilisé', good: false },
-                { d: '30 avril', a: '+22', r: 'Wrap Poulet · Bowl', good: true },
-                { d: '28 avril', a: '+15', r: 'Le Gourmet', good: true },
-              ].map((h, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--cream)', borderRadius: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: h.good ? 'var(--green)' : 'var(--red)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{h.good ? <I.Plus size={16}/> : <I.Minus size={16}/>}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{h.r}</div>
-                    <div style={{ fontSize: 11, color: 'var(--gray-3)' }}>{h.d}</div>
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: h.good ? 'var(--green)' : 'var(--red)' }}>{h.a}</div>
-                </div>
-              ))}
+          {progress.remaining === 0 && progress.target && (
+            <div style={{ marginTop: 16, padding: 10, background: 'rgba(31,166,83,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: 'var(--yellow)', textAlign: 'center' }}>
+              🎉 Tu as débloqué toutes les récompenses
             </div>
           )}
         </div>
-        {/* link physical card */}
-        <div style={{ padding: '20px 20px 0' }}>
-          <div style={{ background: 'var(--ink)', color: '#fff', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--orange)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Card size={20}/></div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Tu as une carte plastique ?</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Lie-la à ton compte pour cumuler partout.</div>
-            </div>
-            <button onClick={() => go('link')} style={{ background: 'var(--yellow)', color: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>LIER</button>
+
+        {/* ACTIONS RAPIDES — wallet pills (filled in commit-4) + plastic card */}
+        {!isOptedOut && (
+          <div style={{ padding: '14px 20px 0', display: 'flex', gap: 8, overflowX: 'auto' }}>
+            {/* commit-4 will insert wallet-apple-btn + wallet-google-btn pills here */}
+            <button
+              data-testid="link-plastic-card-btn"
+              onClick={() => go('link')}
+              style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--ink)', color: '#fff', border: 0, borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              <I.Card size={14}/>
+              {account.plastic_card_linked ? 'Carte liée ✓' : 'Lier carte plastique'}
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* TABS */}
+        {!isOptedOut && (
+          <div role="tablist" aria-label="Sections fidélité" style={{ display: 'flex', gap: 6, padding: '20px 20px 0' }}>
+            {[{ id: 'points', label: 'Mes points' }, { id: 'rewards', label: 'Récompenses' }, { id: 'history', label: 'Historique' }].map(t => {
+              const a = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  data-testid={'loyalty-tab-' + t.id}
+                  role="tab"
+                  aria-selected={a}
+                  aria-controls={'loyalty-tabpanel-' + t.id}
+                  onClick={() => setTab(t.id)}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 999, border: 0, background: a ? 'var(--ink)' : 'var(--cream)', color: a ? 'var(--yellow)' : 'var(--ink)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* TAB CONTENT */}
+        {!isOptedOut && (
+          <div style={{ padding: '16px 20px 0' }}>
+            {/* Empty state — new user 0 pts */}
+            {isEmpty && tab === 'points' && (
+              <div data-testid="loyalty-empty-state" style={{ padding: 24, background: 'var(--cream)', borderRadius: 16, textAlign: 'center' }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
+                <div className="lc-display" style={{ fontSize: 26, marginBottom: 4 }}>Bienvenue dans le club</div>
+                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginBottom: 16 }}>Tu n'as pas encore de points. Commande pour la 1ʳᵉ fois et reçois <b>{config.welcome_bonus} pts offerts</b>.</div>
+                <button data-testid="cta-first-order" onClick={() => go('menu')} className="lc-btn lc-btn--orange" style={{ height: 48 }}>Commencer ma commande →</button>
+                <div style={{ marginTop: 20, fontSize: 11, color: 'var(--gray-4)', textAlign: 'left' }}>
+                  <div className="lc-eyebrow" style={{ marginBottom: 6, color: 'var(--ink)' }}>Aperçu des récompenses</div>
+                  {rewards.slice(0, 3).map(r => (
+                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--gray-1)' }}>
+                      <span>{r.icon} {r.name}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.points_cost} pts</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mes points — tier progression */}
+            {tab === 'points' && !isEmpty && (
+              <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
+                {config.tiers.map(tier => {
+                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '💶', points_cost: tier };
+                  const unlocked = balance >= tier;
+                  const missing = unlocked ? 0 : tier - balance;
+                  return (
+                    <div key={tier} data-testid={'reward-row-' + tier} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: unlocked ? '#E8F8ED' : 'var(--cream)', borderRadius: 14, border: unlocked ? '1.5px solid var(--green)' : '1.5px solid transparent' }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, background: unlocked ? 'var(--green)' : 'var(--ink)', color: unlocked ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 14, flexShrink: 0 }}>{tier}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{matchingReward.icon} {matchingReward.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{unlocked ? '✓ Disponible' : missing + ' pts manquants'}</div>
+                      </div>
+                      {unlocked && (
+                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Récompenses — catalog with locked state */}
+            {tab === 'rewards' && (
+              <div id="loyalty-tabpanel-rewards" role="tabpanel" style={{ display: 'grid', gap: 10 }}>
+                {rewards.map(r => {
+                  const locked = balance < r.points_cost;
+                  const missing = locked ? r.points_cost - balance : 0;
+                  return (
+                    <div key={r.id} data-testid={'reward-row-' + r.id} style={{ padding: 16, background: 'var(--cream)', borderRadius: 16, position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span className="lc-pill lc-pill--ink" style={{ fontSize: 10 }}>{r.points_cost} PTS</span>
+                        {locked && (
+                          <span data-testid={'reward-locked-tooltip-' + r.id} style={{ fontSize: 10, color: 'var(--gray-4)', fontWeight: 700 }}>🔒 −{missing} pts manquants</span>
+                        )}
+                      </div>
+                      <div className="lc-display" style={{ fontSize: 22 }}>{r.icon} {r.name}</div>
+                      <button
+                        data-testid={'reward-redeem-btn-' + r.id}
+                        onClick={() => !locked && go('redeem', { reward: r.id })}
+                        disabled={locked}
+                        aria-disabled={locked}
+                        aria-label={locked ? r.name + ' verrouillé, ' + missing + ' points manquants' : 'Échanger ' + r.name + ' contre ' + r.points_cost + ' points'}
+                        style={{ marginTop: 12, width: '100%', height: 44, borderRadius: 12, border: 0, background: locked ? 'var(--gray-2)' : 'var(--orange)', color: locked ? 'var(--gray-4)' : '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: locked ? 'not-allowed' : 'pointer' }}
+                      >
+                        {locked ? 'Verrouillé' : 'Échanger'}
+                      </button>
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: 10, color: 'var(--gray-4)', textAlign: 'center', marginTop: 4, padding: '0 12px' }}>
+                  ⓘ Récompenses indicatives — confirmation à la caisse
+                </div>
+              </div>
+            )}
+
+            {/* Historique — filterable + paginated */}
+            {tab === 'history' && (
+              <div id="loyalty-tabpanel-history" role="tabpanel">
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto' }}>
+                  {[
+                    { id: 'all', label: 'Tout' },
+                    { id: 'mobile', label: '📱 App' },
+                    { id: 'kiosk', label: '🖥 Kiosk' },
+                    { id: 'pos', label: '🛍 Caisse' },
+                  ].map(f => {
+                    const active = filterSource === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        data-testid={'history-filter-' + f.id}
+                        data-active={active}
+                        onClick={() => setFilterSource(f.id)}
+                        style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 999, border: '1.5px solid ' + (active ? 'var(--ink)' : 'var(--gray-2)'), background: active ? 'var(--ink)' : 'transparent', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.06em' }}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div data-testid="history-list" style={{ display: 'grid', gap: 8 }}>
+                  {filteredHistory.length === 0 && (
+                    <div style={{ padding: 18, textAlign: 'center', color: 'var(--gray-4)', fontSize: 12 }}>Aucune transaction pour ce filtre</div>
+                  )}
+                  {filteredHistory.map(h => {
+                    const positive = h.points > 0;
+                    const surfaceIcon = (h.source_surface || '').startsWith('mobile')
+                      ? '📱'
+                      : h.source_surface === 'kiosk' ? '🖥'
+                      : h.source_surface === 'pos' ? '🛍'
+                      : h.source_surface === 'admin' ? '👤'
+                      : '★';
+                    return (
+                      <div key={h.id} data-testid={'history-entry-' + h.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--cream)', borderRadius: 12 }}>
+                        <div data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')} style={{ width: 36, height: 36, borderRadius: 10, background: positive ? 'var(--green)' : 'var(--ink)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>
+                          {surfaceIcon}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600 }}>{h.description}</div>
+                          <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>{h.date} · {h.source_surface || '—'}</div>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: positive ? 'var(--green)' : 'var(--ink)' }}>{positive ? '+' : ''}{h.points}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* INFOS — rules + RGPD opt-out (modal in commit-5) */}
+        {!isOptedOut && (
+          <div style={{ padding: '24px 20px 0' }}>
+            <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
+            <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
+              {config.earn_ratio} pt par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
+            </div>
+            <button
+              data-testid="loyalty-opt-out-btn"
+              onClick={() => go('optOut')}
+              style={{ width: '100%', padding: '12px 14px', background: 'transparent', border: '1.5px solid var(--gray-2)', borderRadius: 12, fontSize: 12, fontWeight: 700, color: 'var(--gray-4)', cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+            >
+              Désactiver mon compte fidélité
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

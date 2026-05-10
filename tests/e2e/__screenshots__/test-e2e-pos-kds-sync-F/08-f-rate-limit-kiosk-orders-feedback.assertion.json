@@ -16,7 +16,7 @@
       "retry_after": 60,
       "message": "Trop de commandes. Veuillez patienter."
     },
-    "toast_visible_on_kiosk_surface": true
+    "toast_visible_on_kiosk_surface": false
   },
   "expected": {
     "status_counts": {
@@ -24,6 +24,6 @@
     },
     "toast_visible": true
   },
-  "verdict": "PASS",
+  "verdict": "PARTIAL_429_SILENT_ON_KIOSK",
   "evidence": "first429=60 counts={\"ok\":60,\"s429\":5}"
 }

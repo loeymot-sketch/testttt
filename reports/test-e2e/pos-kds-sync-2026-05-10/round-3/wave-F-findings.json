@@ -1,0 +1,113 @@
+{
+  "wave": "F",
+  "round": 3,
+  "states_reviewed": 12,
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3 RECLASSIFIED P0→P2 spec-methodology. The original P0 'middleware DISABLED' root cause is FIXED: state00 runtime config shows `idempotency_enabled: true`. The middleware is now active globally. The state01 spec STILL FAILS but with a DIFFERENT root cause — a spec helper methodology bug. placeKioskOrderTwice() helper calls placeKioskOrder() twice; placeKioskOrder() does a 3-step flow (quote→store→payment-confirm). Each invocation does a NEW quote request, getting a NEW quote_token. So the FIRST call's store-body contains quote_token=A and the SECOND call's store-body contains quote_token=B (different bytes). The middleware correctly detects this as a payload-hash mismatch and returns HTTP 409 IDEMPOTENCY_KEY_CONFLICT — `{\"success\":false,\"message\":\"Idempotency key reused with different payload.\",\"code\":\"IDEMPOTENCY_KEY_CONFLICT\"}` per the state01 assertion observed.body. The MIDDLEWARE BEHAVIOR IS CORRECT. The SPEC ASSERTION IS WRONG (treats two store-payloads with different quote_tokens as 'byte-identical'). Fix: re-architect placeKioskOrderTwice to share a single quote response across both store calls, OR send byte-identical raw payload bytes via low-level fetch instead of the in-browser axios helper.",
+      "fix_hint": "Rewrite tests/e2e/helpers/kiosk-order.js placeKioskOrderTwice() to call quote ONCE then call store TWICE with the same quote_token+signature+X-Idempotency-Key. Alternative: bypass helper and fire two identical fetch() calls to /api/frontend/order with hard-coded body bytes.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2,
+      "severity_change": "P0→P2 (root cause shift: middleware now ENABLED, spec methodology now the gap)"
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "test-e2e-pos-kds-sync-F/05-f-outbox-retry-curve.assertion.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-3 PASS. The round-3 listener-ordering fix (PersistOrderCreatedToOutbox runs FIRST before SendFcmOnOrderCreated) is verified WORKING. State05 assertion (outbox retry curve): verdict=PASS, evidence='order_id=850 domain_event={\"id\":950,\"event_type\":\"order.created\",\"aggregate_id\":850,\"dispatched_at\":null,\"attempts\":1,\"channel\":\"[\\\"private-branch.1\\\"]\",\"broadcast_as\":\"OrderCreated\",\"correlation_id\":...'. The domain_events row DOES exist for the kiosk-created order — the round-2 failure 'PersistOrderCreatedToOutbox does NOT fire for kiosk orders' is closed. Corroborated by state10 (correlation_id trace): verdict=PASS, evidence='sent=AUDIT-CORR-F10-... got=AUDIT-CORR-F10-...' — correlation_id from POST body propagates to domain_events row. Also corroborated by Wave E afterAll cleanup: domain_events=7 rows persisted for 2 wave E kiosk orders (3.5 rows/order, includes order.created + order.status_changed + payment events).",
+      "fix_hint": "Already landed. Listener-ordering fix in app/Providers/EventServiceProvider.php OR app/Providers/EventListenerOrderingServiceProvider verified working end-to-end.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "test-e2e-pos-kds-sync-F/03-f-idempotency-pos-double-tap-actually-exercised.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3 UNCHANGED. State03 verdict=DEFERRED. POS wizard double-tap from Playwright still doesn't reliably reach the network layer because the in-popup hand-rolled vanilla wizard handles its own debounce. Spec methodology gap, not a code defect. Wave D state17 (POS double-tap via UI confirm button, not wizard) successfully exercised the path and verified 1 order = invariant held.",
+      "fix_hint": "Defer — methodology refinement only. Wave D state17 covers the POS double-tap functionality via a different surface.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "F-004",
+      "state_artifact": "test-e2e-pos-kds-sync-F/04-f-concurrent-kiosk-pos-same-branch.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3 UNCHANGED. State04 verdict=PARTIAL. posResult.ok=false posResult.status=401 — same Sanctum/CSRF helper gap from round-2 (page.evaluate(axios.post(admin/pos)) doesn't propagate POS session cookies through to the admin endpoint). kioskResult.ok=true (id=849). orders_delta=1 not 2. This is a SPEC helper methodology defect, not a backend concurrency bug. The backend concurrent-write path (kiosk-paid vs POS-paid same-branch) is exercised in production-comparable form across Wave D + Wave E.",
+      "fix_hint": "Defer or rewrite the POS leg to use a proper session-bearing flow (login through UI first OR use Sanctum admin-session token from spec setup).",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "F-005",
+      "state_artifact": "test-e2e-pos-kds-sync-F/06-f-version-gating-replay.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3 UNCHANGED. State06 verdict=FAIL_DISPATCH, evidence='dispatch={\"error\":\"Class \\\\\"App\\\\\\\\Events\\\\\\\\OrderUpdated\\\\\" not found\",\"class\":\"Error\"}'. Spec still references the non-existent App\\Events\\OrderUpdated class. The actual event class in the codebase is OrderStatusChanged (per AUDIT_PLAN documentation). The spec was not patched between round-2 and round-3.",
+      "fix_hint": "Edit the Wave F spec PHASE 6 tinker script to dispatch new \\\\App\\\\Events\\\\OrderStatusChanged(...) instead of OrderUpdated. Verify the dispatch path against app/Events/OrderStatusChanged.php for the correct constructor signature.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "F-006",
+      "state_artifact": "test-e2e-pos-kds-sync-F/12-f-kds-version-map-lru-eviction.assertion.json",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round-3 UNCHANGED. State12 verdict=DEFERRED. LRU instrumentation gap as per AUDIT_PLAN risk register.",
+      "fix_hint": "Defer.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "F-007",
+      "state_artifact": "test-e2e-pos-kds-sync-F/01-f-idempotency-replay-same-payload.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "evidence": "Round-3 UNCHANGED observational. /api/frontend/order/quote 401 still appears in early-state network.json before the kiosk bearer is fully attached. Same auto-retry interceptor (see Wave E state04) recovers via 'Session rafraîchie automatiquement' toast on the kiosk surface — non-silent in production.",
+      "fix_hint": "Same recommendation as E-002: implement explicit pre-flight token validity check in kioskCart.js to skip the 401 entirely.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "F-008",
+      "state_artifact": "test-e2e-pos-kds-sync-F/08-f-rate-limit-kiosk-orders-feedback.assertion.json",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "NEW round-3 finding. State08 verdict=PARTIAL_429_SILENT_ON_KIOSK, evidence='first429=60 counts={\"ok\":60,\"s429\":5}'. Kiosk fired 65 order POSTs; 60 succeeded then 5 returned HTTP 429. The kiosk-shell.js bundle line 1198 handles 429 ONLY on the login-screen surface (`if (status === 429) { msg = this.$t('kiosk.login_screen.err_rate_limited'); }`). Kiosk ORDER-PLACEMENT endpoints have NO 429 interceptor — the 429s on /api/frontend/order are SILENT on the kiosk UI (no toast, no retry banner). Operator at the kiosk would see the order placement spinner just spin / time out with no actionable feedback. The POS-side toast interceptor (pos-app.js line 103547+ TOAST_STATUSES with 429) does not apply to kiosk-shell.js (separate Vue app bundle). This is a kiosk-surface-specific silent_error.",
+      "fix_hint": "Add a global axios interceptor in kioskCart.js (or wherever the kiosk order axios instance is built) that toasts on 429 with key 'kiosk.error.rate_limited' (or similar). Mirror the POS toast pattern: `if (TOAST_STATUSES.has(status)) { kioskAlertService.error(...) }` with 3s debounce.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1,
+      "new_in_round_3": true
+    }
+  ],
+  "summary": {
+    "P0": 2, "P1": 1, "P2": 5, "P3": 1,
+    "open_P0": 0, "open_P1": 1, "open_P2": 5, "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "F-001": "RECLASSIFIED_P0_TO_P2",
+    "F-002": "PASS",
+    "F-003": "UNCHANGED_DEFERRED",
+    "F-004": "UNCHANGED_PARTIAL",
+    "F-005": "UNCHANGED_FAIL",
+    "F-006": "UNCHANGED_DEFERRED",
+    "F-007": "UNCHANGED",
+    "F-008": "NEW_ROUND_3"
+  },
+  "verdict": "AMBER",
+  "notes": "Round-3 verdict AMBER (was RED round-2). Round-3 environment fixes verified: state00 runtime config shows idempotency_enabled=true (env IDEMPOTENCY_MIDDLEWARE_ENABLED=true applied). Both round-2 P0s have major changes: F-002 PASSES (state05 + state10 both verify domain_events row persists for kiosk orders — listener-ordering fix works end-to-end), F-001 RECLASSIFIES P0→P2 (middleware now enabled and CORRECTLY returns 409 IDEMPOTENCY_KEY_CONFLICT, but the spec helper placeKioskOrderTwice generates new quote_tokens between retries so the store payloads are NOT byte-identical — middleware behavior is correct, spec assertion is wrong). New round-3 finding F-008 (P1): kiosk-shell.js has 429 handler only on login surface, not on /api/frontend/order endpoint — kiosk-side 429 during order placement is silent. State04 (concurrent) STILL PARTIAL — posResult 401 same Sanctum/CSRF spec helper gap. State06 (version-gating) STILL FAIL_DISPATCH — spec references non-existent App\\\\Events\\\\OrderUpdated class (was not patched). State07/09/10/11 PASS. State08 PARTIAL (new F-008 finding). State12 DEFERRED (LRU). State03 DEFERRED (POS wizard methodology). Wave F overall: 0 open P0 (down from 2), 1 open P1 NEW (F-008 kiosk 429 silent), 5 open P2 (F-001 reclassified + F-003/F-004/F-005/F-007 unchanged), 1 open P3 (F-006). Set-equality vs round-2: round-3 has F-001..F-007 same IDs + F-008 NEW = superset. Verdict AMBER not GREEN because F-001 (now P2) and F-008 (new P1) remain open. Both have actionable spec/code fix paths. The previously P0-blocking idempotency+outbox subsystem is now genuinely functional in code; the remaining open items are spec-methodology gaps + one real kiosk-side 429 UX gap (F-008)."
+}

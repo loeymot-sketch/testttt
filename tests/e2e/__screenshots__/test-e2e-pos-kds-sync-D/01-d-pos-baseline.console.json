@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444427401
+    "ts": 1778446986322
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444432159
+    "ts": 1778446991058
   },
   {
     "level": "error",
@@ -27,16 +27,16 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444432165
+    "ts": 1778446991062
   },
   {
     "level": "info",
     "text": "[PosSyncService] fallback polling disabled.",
     "location": {
       "url": "http://127.0.0.1:8000/js/pos-shell.js",
-      "lineNumber": 15934,
+      "lineNumber": 15966,
       "columnNumber": 16
     },
-    "ts": 1778444432678
+    "ts": 1778446991554
   }
 ]

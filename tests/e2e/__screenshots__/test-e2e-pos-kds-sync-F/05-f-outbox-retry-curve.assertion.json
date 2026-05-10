@@ -4,15 +4,27 @@
   "when": "placeKioskOrder() + wait 2.5s for inline DispatchDomainEventsJob",
   "then": "a domain_events row exists for OrderCreated; dispatched_at semantics record truthful pipeline behavior",
   "observed": {
-    "order_id": 600,
+    "order_id": 850,
     "total": 2,
-    "domain_event": null,
-    "domain_events_count": 0
+    "domain_event": {
+      "id": 950,
+      "event_type": "order.created",
+      "aggregate_id": 850,
+      "dispatched_at": null,
+      "attempts": 1,
+      "channel": "[\"private-branch.1\"]",
+      "broadcast_as": "OrderCreated",
+      "correlation_id": "11550036-c22a-4f94-bbfa-298b851612d5",
+      "idempotency_key": "304602d917343ac83930eb9fa2c43ef60703b86f",
+      "last_error": "Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778448029&auth_version=1.0&body_md5=b6e627ad2ea0f566e236e25cbeb1a785&auth_signature=250445b1fc69b29b525d5ebd318c2b1429f7b2728f45e8e94da9a044ed71d901.",
+      "occurred_at": "2026-05-10 23:20:29.000"
+    },
+    "domain_events_count": 1
   },
   "expected": {
     "domain_events_count_min": 1,
     "event_type": "order.created"
   },
-  "verdict": "FAIL_NO_OUTBOX_ROW",
-  "evidence": "order_id=600 domain_event=null"
+  "verdict": "PASS",
+  "evidence": "order_id=850 domain_event={\"id\":950,\"event_type\":\"order.created\",\"aggregate_id\":850,\"dispatched_at\":null,\"attempts\":1,\"channel\":\"[\\\"private-branch.1\\\"]\",\"broadcast_as\":\"OrderCreated\",\"correlation_id\":\"11550036-c22a-4f94-bbfa-298b851612d5\",\"idempotency_key\":\"304602d917343ac83930eb9fa2c43ef60703b86f\",\"last_error\":\"Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778448029&auth_version=1.0&body_md5=b6e627ad2ea0f566e236e25cbeb1a785&auth_signature=250445b1fc69b29b525d5ebd318c2b1429f7b2728f45e8e94da9a044ed71d901.\",\"occurred_at\":\"2026-05-10 23:20:29.000\"}"
 }

@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444474136
+    "ts": 1778447974415
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444478205
+    "ts": 1778447977838
   },
   {
     "level": "error",
@@ -27,6 +27,16 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778444478227
+    "ts": 1778447977924
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 409 (Conflict)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778447978329
   }
 ]

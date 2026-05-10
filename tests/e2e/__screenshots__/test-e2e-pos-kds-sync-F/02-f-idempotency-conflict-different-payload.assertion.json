@@ -5,174 +5,22 @@
   "then": "second response HTTP 409 Conflict + only 1 DB row sharing the key",
   "observed": {
     "first": {
-      "orderId": 597,
+      "orderId": 847,
       "total": 2,
       "replayed": false
     },
     "second": {
-      "status": 200,
+      "status": 409,
       "body": {
-        "orderId": 597,
-        "orderSerialNo": "100526597",
-        "queueNumber": null,
-        "idempotencyKey": "73ce73d1-b784-40a8-a0bb-21eb762a7e02",
-        "totalAmount": 2,
-        "replayed": false,
-        "quote": {
-          "quote_token": "9fa6a918-f100-469c-af97-9ae7d111a9f3",
-          "signature": "031dd73af134a08bca02dc90e58a6865988a2f12212b8fd93fa6b7829b225df0",
-          "expires_at": "2026-05-10T22:23:45+02:00",
-          "ttl_seconds": 142,
-          "subtotal": 4,
-          "discount": 0,
-          "total_tax": 0.67,
-          "delivery_charge": 0,
-          "total_ttc": 4,
-          "currency": "EUR",
-          "consumed_at": null
-        },
-        "order": {
-          "id": 597,
-          "order_serial_no": "100526597",
-          "queue_number": "A0124",
-          "token": "AUDIT-KIOSK-WAVE-E-1778444480646-347809",
-          "subtotal": 2,
-          "discount": 0,
-          "total_tax": 0.33,
-          "total": 2,
-          "subtotal_currency_price": "2.00€",
-          "subtotal_without_tax_currency_price": "1.67€",
-          "discount_currency_price": "0.00€",
-          "delivery_charge_currency_price": "0.00€",
-          "total_currency_price": "2.00€",
-          "total_tax_currency_price": "0.33€",
-          "order_type": 10,
-          "created_at": "2026-05-10T22:21:22+02:00",
-          "order_datetime": "10:21 PM, 10-05-2026",
-          "order_date": "10-05-2026",
-          "order_time": "10:21 PM",
-          "delivery_date": "10-05-2026",
-          "delivery_time": "",
-          "payment_method": 1,
-          "payment_status": 15,
-          "payment_pending_counter": true,
-          "is_advance_order": 10,
-          "preparation_time": 15,
-          "status": 4,
-          "status_name": "Acceptée",
-          "reason": null,
-          "user": {
-            "id": 15,
-            "name": "Admin Le Cayenne",
-            "first_name": "Admin",
-            "last_name": "Le Cayenne",
-            "phone": "0600000000",
-            "email": "admin@lecayenne.fr",
-            "username": "admin",
-            "balance": "0.00",
-            "currency_balance": "0.00€",
-            "image": "http://127.0.0.1:8000/images/default/profile.png",
-            "role_id": 73,
-            "country_code": "+33",
-            "create_date": "05-05-2026",
-            "update_date": "09-05-2026"
-          },
-          "order_address": null,
-          "branch": {
-            "id": 1,
-            "name": "Le Cayenne (principal)",
-            "email": "contact@lecayenne.fr",
-            "phone": "+33600000000",
-            "latitude": "48.8566",
-            "longitude": "2.3522",
-            "city": "Paris",
-            "state": "Île-de-France",
-            "zip_code": "75000",
-            "address": "Paris, France",
-            "status": 1,
-            "zone": ""
-          },
-          "delivery_boy": null,
-          "coupon": null,
-          "transaction": null,
-          "order_items": [
-            {
-              "id": 696,
-              "order_id": 597,
-              "branch_id": 1,
-              "item_id": 361,
-              "item_name": "Frites Seules",
-              "item_image": "/storage/16/frites.png",
-              "quantity": 1,
-              "discount": "0.00€",
-              "price": "2.00€",
-              "item_variations": [],
-              "item_extras": [],
-              "item_addons": [],
-              "composition_snapshot": {
-                "lines": [],
-                "addons": [],
-                "extras": [],
-                "captured_at": "2026-05-10T22:21:22+02:00",
-                "schema_version": 1
-              },
-              "allergens_snapshot": [],
-              "item_variation_currency_total": "0.00€",
-              "item_extra_currency_total": "0.00€",
-              "total_convert_price": 2,
-              "total_currency_price": "2.00€",
-              "instruction": null,
-              "kds_station": "none",
-              "tax_type": "%",
-              "tax_rate": "20.000000",
-              "tax_currency_rate": "20.00",
-              "tax_name": "TVA 20%",
-              "tax_currency_amount": "0.33€",
-              "total_without_tax_currency_price": "1.67€"
-            }
-          ],
-          "table_name": null,
-          "pos_payment_method": 6,
-          "pos_payment_note": null,
-          "source": 5,
-          "pos_received_amount": "0.000000",
-          "pos_received_currency_amount": "0.00€",
-          "cash_back_amount": -2,
-          "cash_back_currency_amount": "-2.00€",
-          "tax_lines": [
-            {
-              "tax_name": "TVA 20%",
-              "tax_rate": "20",
-              "tax_type": 10,
-              "base_ht": 1.67,
-              "base_ht_currency": "1.67€",
-              "tax": 0.33,
-              "tax_currency": "0.33€"
-            }
-          ],
-          "fiscal_sequence_no": null,
-          "audit_chain_fingerprint": null,
-          "pos_register_id": null,
-          "pos_siret": null,
-          "pos_vat_intra": null,
-          "pos_legal_footer": null,
-          "operator_name": "Admin Le Cayenne",
-          "payments_breakdown": [
-            {
-              "method": 6,
-              "amount": 2,
-              "currency_amount": "0.00€",
-              "change_amount": 0,
-              "reference": null
-            }
-          ]
-        },
-        "paymentConfirm": null
-      }
+        "success": false,
+        "message": "Idempotency key reused with different payload.",
+        "code": "IDEMPOTENCY_KEY_CONFLICT"
+      },
+      "stage": "store"
     },
     "db_rows_count": 1,
     "distinct_order_ids": [
-      597
+      847
     ]
   },
   "expected": {
@@ -181,6 +29,6 @@
     },
     "db_rows_count": 1
   },
-  "verdict": "FAIL_NO_PAYLOAD_CONFLICT_DETECTION_MIDDLEWARE_DISABLED",
-  "evidence": "idempotency_key=73ce73d1-b784-40a8-a0bb-21eb762a7e02"
+  "verdict": "PASS",
+  "evidence": "idempotency_key=f58bc54a-e4e9-4ff8-9b32-12b09c97c7f0"
 }

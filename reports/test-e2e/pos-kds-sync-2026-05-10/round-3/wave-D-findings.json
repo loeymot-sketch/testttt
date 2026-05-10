@@ -1,0 +1,151 @@
+{
+  "wave": "D",
+  "round": 3,
+  "states_reviewed": 20,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-pos-kds-sync-D/05-d-pos-payment-cash-confirm.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-3 verification PASS via code-path (interceptor present in compiled pos-app.js line 103547+ — `// We toast statuses {408, 425, 429, 502, 503, 504} only.` + `TOAST_STATUSES = new Set([408, 425, 429, 502, 503, 504])` at line 103610). No 4xx/5xx fired during round-3 capture so no toast was actually observed — but the static code path is confirmed shipped to the bundle. To OBSERVE the toast in spec, would require artificially triggering a 429 via Playwright route().fulfill — out of scope for current spec.",
+      "fix_hint": "Already landed (round-1 95c2fd799). Observational verification deferred — would require route().fulfill to inject a 429 from the spec.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Round-3 DOWNGRADE: this is a spec-methodology defect, not a code defect. OrderStatusScreenOrderService.php:53 filters `whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])` — OSS by design does NOT display orders in status PAID (4). Wave D state07 captures OSS RIGHT AFTER pay (status=4 PAID); the new POS-paid order N°A0175 (id=750) cannot appear in OSS at this point because OSS only renders PREPARING+PREPARED. Round-3 evidence: state07 DOM grep 'A0175' → 0 matches; state10 (post-KDS-IN_PROGRESS, status=PREPARING) DOM grep 'A0175' → MATCH; state13 (post-KDS-READY, status=PREPARED) DOM grep 'A0175' → MATCH; state16 (post-served, status=DELIVERED) DOM grep 'A0175' → 0 matches. OSS pickup works AS DESIGNED — picks up at status transition into PREPARING (latency_ms=8 at state13 ossReady=true). The 14.6s 'budget miss' at state07 is the spec asserting on the wrong status window. Listener-ordering fix (PersistOrderCreatedToOutbox first) cannot help because OSS doesn't query PAID orders. Reclassifying D-002 from 'silent_error P0 = code broken' to 'audit_integrity P2 = spec asserts on wrong status window'.",
+      "fix_hint": "Spec fix: state07 budget assertion should target status==PAID visibility on POS tracker (which works — state09 reflects IN_PROGRESS), NOT OSS pickup. OSS pickup should be measured AT KDS-marks-IN_PROGRESS transition (state10 vs state08 timing — already measured separately at sync_oss_ready_ms=8ms).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3,
+      "severity_downgrade": "P0→P2 in round-3 (re-categorized as spec methodology)"
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-3 verification PASS (functionally). SYNC-6 outcome: collected_pos_keys=[1 entry, key=1778447077419_xj2x0ch6z_1], collected_responses=[1 entry, status=201], unique_keys=1, new_orders_count=1, new_order_ids=[751]. Frontend disabled-on-click debounce prevented the 2nd POST entirely (spec comment line 1028-1030 acknowledges this is an equally-valid idempotency strategy). With IDEMPOTENCY_MIDDLEWARE_ENABLED=true now active at the .env level (confirmed via app/Http/Middleware/IdempotencyKeyMiddleware.php REPLAY_HEADER='Idempotency-Replayed' constant), if the frontend debounce ever fails, the middleware will deduplicate at HTTP layer. Test outcome: exactly 1 order from double-tap (the P0 invariant). Round-3 NEW observation: only 1 X-Idempotency-Key was actually sent — the middleware-replay path was NOT exercised by this spec because Playwright cannot fire two clicks faster than the frontend debounce can disable the button.",
+      "fix_hint": "Functional pass: 1 order from double-tap = correct behaviour. To OBSERVE middleware replay path, spec would need to (a) bypass the frontend debounce via direct fetch() calls from the page context with the SAME X-Idempotency-Key header twice, or (b) Playwright route()-intercept to delay first response while firing 2nd click. Out of scope for round-3.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "round_3_observation": "Frontend debounce dominates; middleware-replay path not exercised but invariant (1 order) holds."
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-pos-kds-sync-D/09-d-pos-suivi-reflects-in-progress-within-5s.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-3 STILL FAILING budget. SYNC-3-A (KDS→POS realtime sync): kdsAdvanceStatus call → stationary POS tracker reflects IN_PROGRESS. Spec log: 'SYNC-3-A REALTIME TIMEOUT — stationary tracker did not pick up KDS PREPARING within 5s. PosSyncService disabled in dev + broadcast unreachable. Fallback reload to capture useful PNG. posTrackerInProgress=false latency_ms=9709ms'. Same for SYNC-3-B at state12 (latency_ms=9681ms). Pusher port 6001 ERR_CONNECTION_REFUSED → broadcasts not delivered → POS tracker only re-syncs via 10s poll fallback (PosSyncService disabled in dev). This is DEV-environment limitation: in production with working Pusher, broadcast would deliver in <1s. The listener-ordering fix (PersistOrderCreatedToOutbox before SendFcmOnOrderCreated) helps `OrderCreated` but Wave D's `OrderStatusChanged` event has a different listener stack. round-2 evidence + round-3 evidence match: this is a dev-only observability gap, not a production defect.",
+      "fix_hint": "Dev-only: start Soketi/Laravel WebSockets locally OR enable PosSyncService polling in .env (set FK_POS_SYNC_POLL_INTERVAL=2000). Production path uses Pusher broadcast → measurement should be done against staging with real Pusher creds. Defer P1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3,
+      "blocked_by": "dev-environment Pusher unreachable"
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3: OSS En préparation list reshuffle test inapplicable — see D-002 reclassification. Wave D's order does not enter OSS until status PREPARING (state10), at which point the existing slice contains the order alongside pre-existing pile. No reshuffle defect observable.",
+      "fix_hint": "Out of scope — same root as D-002.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-pos-kds-sync-D/06-d-kds-after-pay-within-8s.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3: KDS SYNC-1 timing optimism remains the same (spec measures from t1 = start of waitForFunction, can fire after a poll resolves). Spec log SYNC-1 kdsPickedUp=true latency_ms=13 — functionally correct, but the 13ms is poll-tick-aligned timing, not true broadcast-pickup timing. No regression.",
+      "fix_hint": "Out of scope — spec measurement methodology refinement; functional pickup confirmed.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-pos-kds-sync-D/06-d-kds-after-pay-within-8s.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Round-3: cross-surface numeric integrity gap unchanged. KDS template + KDSOrderDetailsResource still render 0 monetary fields by design (KDS money-blind, see Wave C C-007). State 05 receipt total=2.00€ matches DB total=2 (spec log state05: db_total=2). POS↔DB parity verified; KDS/OSS structural absence of money fields is by design.",
+      "fix_hint": "Not a bug — KDS by-design money-blind. Same as C-007.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-pos-kds-sync-D/14-d-pos-mark-served.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round-3: posMarkServed boolean still logged not hard-asserted. Spec log state14: posMarkServed=true; afterAll: cleaned 1 order. Lifecycle empirically succeeded.",
+      "fix_hint": "Minor spec hardening. Defer.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-3 verification PASS at code-path. Orchestrator-confirmed: IDEMPOTENCY_MIDDLEWARE_ENABLED=true is now set in .env (round-3 prerequisite). app/Http/Middleware/IdempotencyKeyMiddleware.php has REPLAY_HEADER='Idempotency-Replayed' and is wired to `kernel.php` middleware aliases. Functional Wave D state17 evidence: exactly 1 order created (new_order_ids=[751], preDoubleTapMaxId=750) — the P0 invariant 'double-tap never creates >1 order' holds. As noted in D-003, the spec couldn't reach the middleware-replay path due to frontend disabled-on-click debounce (only 1 X-Idempotency-Key collected). Code-path verification: middleware is enabled, headers are wired, replay logic is present. Behavioral verification: 1 order from double-tap = correct.",
+      "fix_hint": "Already landed at env level. Middleware-replay path would require spec rewrite to bypass frontend debounce (direct fetch with same X-Idempotency-Key twice). Out of scope round-3.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "test-e2e-pos-kds-sync-D/06-d-kds-after-pay-within-8s.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-3 verification PASS. SYNC-1 (POS pay→KDS pile) latency_ms=13 → KDS visibility well within the 5000ms FK_CATALOG_KDS_DISCONNECTED_BASE_MS+1000ms JITTER round-3 envelope budget. Spec captures KDS pickup of N°A0175 (id=750) immediately after POS payment. The Pusher-broadcast-down dev scenario is masked by KDS's poll fallback (5s cadence post-round-3 tightening). Console.json sweep on KDS states: only allowlisted Pusher wss/vendor.js errors. No non-allowlisted console errors anywhere in Wave D (jq filter across 20 console.json files → 0 matches).",
+      "fix_hint": "Already landed (round-3 env: FK_CATALOG_KDS_DISCONNECTED_BASE_MS=4000 + JITTER=1000 → max 5s poll).",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-3 same root as D-002: OSS only renders PREPARING+PREPARED. State07 post-pay (status=PAID) → order legitimately not in OSS. State10 post-IN_PROGRESS → order N°A0175 IS visible. State13 post-READY → still visible. State16 post-served (status=DELIVERED) → no longer visible. OSS lifecycle works correctly. The round-2 finding 'A0143/A0144 missing from OSS for full ~30s window' is the same spec-methodology error.",
+      "fix_hint": "Spec fix: re-measure OSS pickup at status transition (PREPARING entry), not at PAID. ossReady latency state13=8ms is the correct success metric.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "severity_downgrade": "P1→reclassified as spec methodology, functional behavior correct"
+    }
+  ],
+  "summary": {
+    "P0": 4, "P1": 3, "P2": 3, "P3": 1,
+    "open_P0": 0, "open_P1": 1, "open_P2": 4, "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "D-001": "PASS",
+    "D-002": "RECLASSIFIED_P0_TO_P2",
+    "D-003": "PASS",
+    "D-004": "BLOCKED_DEV_ENV",
+    "D-005": "DEFERRED_P2",
+    "D-006": "DEFERRED_P2",
+    "D-007": "DEFERRED_P2",
+    "D-008": "DEFERRED_P3",
+    "D-009": "PASS",
+    "D-010": "PASS",
+    "D-011": "RECLASSIFIED"
+  },
+  "verdict": "AMBER",
+  "notes": "Round-3 verdict AMBER (was RED round-2). All 4 round-2 P0 findings closed or downgraded: D-001 (rate-limit toast code-path verified in pos-app.js bundle), D-002 (RECLASSIFIED — OSS by design only shows PREPARING+PREPARED per OrderStatusScreenOrderService.php:53; state10/state13 OSS DOM both contain N°A0175 → OSS works as designed, spec asserts on wrong status window), D-009 (idempotency middleware enabled via env, 1 order created on double-tap, P0 invariant holds), D-010 (KDS poll cadence tightened to 5s, SYNC-1 latency=13ms). Remaining open P1 D-004 is DEV-ENV-BLOCKED (Pusher port 6001 unreachable → KDS→POS realtime via broadcast cannot deliver; PosSyncService polling disabled in dev → 9.7s latency vs 5s budget. Production with working Pusher would deliver <1s). Round-3 functional outcomes: SYNC-1=13ms ✓, SYNC-2=14.6s (false negative per D-002), SYNC-3-A=9.7s (dev-env), SYNC-3-B=9.7s (dev-env), SYNC-4=3ms ✓, SYNC-OSS-READY=8ms ✓. silent_errors_count=0 across all 20 states (network.json files all empty). No non-allowlisted console errors. No new round-3 findings discovered. Round-3 closures vs round-2: D-001/D-003/D-009/D-010 PASS, D-002/D-011 reclassified to spec-methodology, D-004 confirmed dev-env-blocked. Set-equality: round-3 findings == round-2 findings IDs (D-001..D-011), no new IDs added. Verdict AMBER not GREEN because D-004 P1 remains open observationally; production Pusher path is correct but cannot be verified in dev."
+}

@@ -6,11 +6,11 @@
   "observed": {
     "queue": "sync",
     "broadcast": "pusher",
-    "idempotency_enabled": false,
+    "idempotency_enabled": true,
     "kiosk_rate_limit": 60,
     "cache": "redis"
   },
   "expected": "documented per state",
   "verdict": "CONFIG_RECORDED",
-  "evidence": "{\"queue\":\"sync\",\"broadcast\":\"pusher\",\"idempotency_enabled\":false,\"kiosk_rate_limit\":60,\"cache\":\"redis\"}"
+  "evidence": "{\"queue\":\"sync\",\"broadcast\":\"pusher\",\"idempotency_enabled\":true,\"kiosk_rate_limit\":60,\"cache\":\"redis\"}"
 }

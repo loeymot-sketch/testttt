@@ -2,57 +2,36 @@
   {
     "url": "http://127.0.0.1:8000/api/frontend/order/quote",
     "method": "POST",
-    "status": 401,
+    "status": 429,
     "duration_ms": null,
-    "ts": 1778444555210
-  },
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
-    "method": "POST",
-    "status": 401,
-    "duration_ms": null,
-    "ts": 1778444556083
-  },
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
-    "method": "POST",
-    "status": 401,
-    "duration_ms": null,
-    "ts": 1778444556762
+    "ts": 1778448053985
   },
   {
     "url": "http://127.0.0.1:8000/api/frontend/order/quote",
     "method": "POST",
     "status": 429,
     "duration_ms": null,
-    "ts": 1778444557833
+    "ts": 1778448054020
   },
   {
     "url": "http://127.0.0.1:8000/api/frontend/order/quote",
     "method": "POST",
     "status": 429,
     "duration_ms": null,
-    "ts": 1778444557983
+    "ts": 1778448054041
   },
   {
     "url": "http://127.0.0.1:8000/api/frontend/order/quote",
     "method": "POST",
     "status": 429,
     "duration_ms": null,
-    "ts": 1778444558002
+    "ts": 1778448054061
   },
   {
     "url": "http://127.0.0.1:8000/api/frontend/order/quote",
     "method": "POST",
     "status": 429,
     "duration_ms": null,
-    "ts": 1778444558021
-  },
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
-    "method": "POST",
-    "status": 429,
-    "duration_ms": null,
-    "ts": 1778444558040
+    "ts": 1778448054081
   }
 ]

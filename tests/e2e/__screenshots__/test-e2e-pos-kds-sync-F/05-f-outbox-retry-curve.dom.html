@@ -22,7 +22,7 @@
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
     <link rel="stylesheet" href="/css/app.css?id=97e425dcc785f5b0ff8c49ce0887410f">
-    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778444473">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1778447973">
     <!-- PAGE TITLE -->
     <title>Le Cayenne</title>
 
@@ -7279,7 +7279,7 @@ input[readonly] {
           Reads pos_dine_in_enabled (default FALSE for V1 per
           feedback_v1_dine_in_disabled_2026-05-06). The "Sur place" tile must
           stay hidden until floorplan ships.
-        --><!--v-if--><button data-v-672293fc="" type="button" class="kiosk-order-type-card kiosk-order-type-card--takeaway" data-testid="kiosk-order-type-takeaway"><span data-v-672293fc="" class="kiosk-order-type-icon" aria-hidden="true"><svg data-v-672293fc="" viewBox="0 0 32 32" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path data-v-672293fc="" d="M7 12h18l-2 16H9z M11 12V8a5 5 0 0110 0v4 M14 18v6 M18 18v6"></path></svg></span><span data-v-672293fc="" class="kiosk-order-type-text"><span data-v-672293fc="" class="kiosk-order-type-title kiosk-display-m">À emporter</span><span data-v-672293fc="" class="kiosk-order-type-subtitle">Je récupère ma commande</span></span></button></div><p data-v-672293fc="" class="kiosk-idle-tap-hint">Choisissez une option pour commencer</p></div><!-- Footer dots animés --><div data-v-672293fc="" class="kiosk-idle-footer" aria-hidden="true"><div data-v-672293fc="" class="kiosk-idle-footer-dot"></div><div data-v-672293fc="" class="kiosk-idle-footer-dot"></div><div data-v-672293fc="" class="kiosk-idle-footer-dot active"></div></div></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
+        --><!--v-if--><button data-v-672293fc="" type="button" class="kiosk-order-type-card kiosk-order-type-card--takeaway" data-testid="kiosk-order-type-takeaway"><span data-v-672293fc="" class="kiosk-order-type-icon" aria-hidden="true"><svg data-v-672293fc="" viewBox="0 0 32 32" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path data-v-672293fc="" d="M7 12h18l-2 16H9z M11 12V8a5 5 0 0110 0v4 M14 18v6 M18 18v6"></path></svg></span><span data-v-672293fc="" class="kiosk-order-type-text"><span data-v-672293fc="" class="kiosk-order-type-title kiosk-display-m">À emporter</span><span data-v-672293fc="" class="kiosk-order-type-subtitle">Je récupère ma commande</span></span></button></div><p data-v-672293fc="" class="kiosk-idle-tap-hint">Choisissez une option pour commencer</p></div><!-- Footer dots animés --><div data-v-672293fc="" class="kiosk-idle-footer" aria-hidden="true"><div data-v-672293fc="" class="kiosk-idle-footer-dot active"></div><div data-v-672293fc="" class="kiosk-idle-footer-dot"></div><div data-v-672293fc="" class="kiosk-idle-footer-dot"></div></div></div><!-- Feedback tactile visuel --><!--v-if--><!-- Phase 8.7 — KioskInactivityOverlayComponent (Écran 13 DESIGN_BRIEF).
          Remplace le modal "Still here" simplifié par un overlay avec countdown
          + 2 CTA (Je suis là / Abandonner). Conforme WAI-ARIA 1.2 alertdialog. --><!--v-if--><!--v-if--><!-- Toast notifications globales --><div data-v-60fd5967="" data-v-6ffab5ed="" class="kiosk-toast-container" role="status" aria-live="polite" aria-relevant="additions text"></div></div></div>
 
@@ -7311,10 +7311,10 @@ input[readonly] {
             kdsFallbackPolling: {
                 highActivityBaseMs: 3000,
                 highActivityJitterMs: 1000,
-                degradedBaseMs: 5000,
-                degradedJitterMs: 2000,
-                disconnectedBaseMs: 10000,
-                disconnectedJitterMs: 3000,
+                degradedBaseMs: 2000,
+                degradedJitterMs: 500,
+                disconnectedBaseMs: 4000,
+                disconnectedJitterMs: 1000,
             },
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: true,
@@ -7361,7 +7361,7 @@ input[readonly] {
     
     <script src="/js/manifest.js?id=05c96563d83e5b8085d089ef8b7155f9"></script>
     <script src="/js/vendor.js?id=81384d02e45361bd595b2088801fcd13"></script>
-    <script src="/js/app.js?id=9d082b21d85d2d2a064e4cec6e4059ed"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
+    <script src="/js/app.js?id=c8c98f85d23a0695d2b1e13c07ed10e5"></script><div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div>
     <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
     <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
@@ -7376,7 +7376,7 @@ input[readonly] {
             fritesCheddarPrice: 1
         };
     </script>
-    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444473"></script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447973"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

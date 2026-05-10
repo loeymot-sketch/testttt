@@ -29,6 +29,29 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); }
 button { color: var(--ink); font-family: inherit; }
 button:disabled { opacity: 1; }
 
+/* A11y baseline (audit 2026-05-10 A1+A3) — keyboard focus visible on every
+   interactive primitive. The kiosk Vue components expose role+tabindex+keydown ;
+   the mobile wizard mirrors this and relies on these :focus-visible defaults. */
+button:focus-visible,
+[role="radio"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+/* Step heading focus (transition target) — invisible outline since heading
+   isn't a visible interactive element, but AT announces it. */
+h1[tabindex="-1"]:focus,
+h1[tabindex="-1"]:focus-visible { outline: none; }
+
+/* prefers-reduced-motion : disable animations for users who request it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
 /* Contrast safety net — text inside any light-bg screen defaults to ink.
    Dark surfaces explicitly opt out by setting color on the wrapper. */
 [data-screen-label] { color: var(--ink); }

@@ -4,20 +4,14 @@
   "when": "placeKioskOrderTwice(page, { items=[Frites], paymentMethod=cash })",
   "then": "2nd response Idempotency-Replayed: true + same body + exactly 1 DB row sharing the key",
   "observed": {
-    "first": {
-      "orderId": 596,
-      "total": 2,
-      "replayed": false
-    },
-    "second": {
-      "orderId": 596,
-      "total": 2,
-      "replayed": false
-    },
-    "db_rows_count": 1,
-    "distinct_order_ids": [
-      596
-    ]
+    "error": "placeKioskOrder failed at stage=\"store\" HTTP 409: {\"success\":false,\"message\":\"Idempotency key reused with different payload.\",\"code\":\"IDEMPOTENCY_KEY_CONFLICT\"}",
+    "stage": "store",
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Idempotency key reused with different payload.",
+      "code": "IDEMPOTENCY_KEY_CONFLICT"
+    }
   },
   "expected": {
     "first": {
@@ -29,6 +23,6 @@
     },
     "db_rows_count": 1
   },
-  "verdict": "PASS_HEADER_MISSING_MIDDLEWARE_DISABLED",
-  "evidence": "idempotency_key=9e050dff-51f3-44d9-851a-67a558f8971a ; rows=[596]"
+  "verdict": "FAIL",
+  "evidence": "idempotency_key=7f861d5a-90a2-4bce-b649-5e06342c4d0d ; rows=null"
 }

@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444489048
+    "ts": 1778447989294
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444491093
+    "ts": 1778447991351
   },
   {
     "level": "error",
@@ -27,17 +27,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444519047
-  },
-  {
-    "level": "error",
-    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-    "location": {
-      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
-      "lineNumber": 0,
-      "columnNumber": 0
-    },
-    "ts": 1778444520261
+    "ts": 1778448019295
   },
   {
     "level": "error",
@@ -47,7 +37,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444521097
+    "ts": 1778448021355
   },
   {
     "level": "error",
@@ -57,6 +47,6 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778444532825
+    "ts": 1778448028996
   }
 ]

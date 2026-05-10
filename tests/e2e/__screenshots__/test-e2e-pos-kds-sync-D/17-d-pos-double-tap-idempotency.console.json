@@ -7,7 +7,17 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444516349
+    "ts": 1778447069643
+  },
+  {
+    "level": "info",
+    "text": "[PosSyncService] fallback polling disabled.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-shell.js",
+      "lineNumber": 15966,
+      "columnNumber": 16
+    },
+    "ts": 1778447070350
   },
   {
     "level": "error",
@@ -17,7 +27,27 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444519751
+    "ts": 1778447070350
+  },
+  {
+    "level": "log",
+    "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447066",
+      "lineNumber": 337,
+      "columnNumber": 16
+    },
+    "ts": 1778447074422
+  },
+  {
+    "level": "log",
+    "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447066",
+      "lineNumber": 337,
+      "columnNumber": 16
+    },
+    "ts": 1778447074422
   },
   {
     "level": "error",
@@ -27,46 +57,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444529061
-  },
-  {
-    "level": "info",
-    "text": "[PosSyncService] fallback polling disabled.",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/pos-shell.js",
-      "lineNumber": 15934,
-      "columnNumber": 16
-    },
-    "ts": 1778444530171
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778444531454
-  },
-  {
-    "level": "log",
-    "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444525",
-      "lineNumber": 337,
-      "columnNumber": 16
-    },
-    "ts": 1778444534375
-  },
-  {
-    "level": "log",
-    "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444525",
-      "lineNumber": 337,
-      "columnNumber": 16
-    },
-    "ts": 1778444534375
+    "ts": 1778447083071
   }
 ]

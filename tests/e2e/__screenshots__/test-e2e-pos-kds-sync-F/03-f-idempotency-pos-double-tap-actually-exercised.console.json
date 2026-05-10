@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444485166
+    "ts": 1778447981365
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444487089
+    "ts": 1778447983289
   },
   {
     "level": "error",
@@ -27,7 +27,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444490242
+    "ts": 1778447986383
   },
   {
     "level": "error",
@@ -37,37 +37,37 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444490250
+    "ts": 1778447986391
   },
   {
     "level": "info",
     "text": "[PosSyncService] fallback polling disabled.",
     "location": {
       "url": "http://127.0.0.1:8000/js/pos-shell.js",
-      "lineNumber": 15934,
+      "lineNumber": 15966,
       "columnNumber": 16
     },
-    "ts": 1778444490749
+    "ts": 1778447986960
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444487",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447983",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778444493157
+    "ts": 1778447989050
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444487",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447983",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778444493158
+    "ts": 1778447989050
   },
   {
     "level": "error",
@@ -77,27 +77,27 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444502388
+    "ts": 1778447998472
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: tacos",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444487",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447983",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1778444505200
+    "ts": 1778448001401
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: tacos",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778444487",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447983",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1778444505200
+    "ts": 1778448001402
   },
   {
     "level": "error",
@@ -107,6 +107,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778444505281
+    "ts": 1778448001421
   }
 ]

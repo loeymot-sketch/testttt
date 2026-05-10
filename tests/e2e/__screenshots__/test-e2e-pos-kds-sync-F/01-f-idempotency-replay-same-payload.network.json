@@ -4,6 +4,13 @@
     "method": "POST",
     "status": 401,
     "duration_ms": null,
-    "ts": 1778444478227
+    "ts": 1778447977924
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/order",
+    "method": "POST",
+    "status": 409,
+    "duration_ms": null,
+    "ts": 1778447978329
   }
 ]
