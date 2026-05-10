@@ -66790,10 +66790,23 @@ function resolveExplicitStepType(step) {
         }
       }
     });
-    // Premier appel pour initialiser le total serveur dès que l'item est connu.
-    this.$nextTick(function () {
-      return _this15.refreshServerPreviewTotal();
-    });
+    // [test-e2e/borne C-001 fix round-3 2026-05-10] PAS d'appel preview à
+    // l'entrée du wizard. Avant ce fix, on déclenchait un POST /pricing/preview
+    // dès $nextTick(mounted) — mais à cet instant le wizard n'a aucune
+    // sélection utilisateur (seulement le base item), donc le serveur renvoie
+    // strictement le `runningTotalLocal` que le helper calcule déjà
+    // gratuitement côté client. Aucune valeur ajoutée. Pire, dans certains
+    // race-conditions de cold-start (Bearer kiosk:order pas encore propagé
+    // sur le premier request si le wizard mount avant que l'interceptor
+    // axios n'ait lu la dernière version du token Vuex), ce premier appel
+    // 401-ait → silent_error catégorie 6 du REVIEWER_PROTOCOL (C-001 P0
+    // round-2). Le watcher `selections` (deep) déclenche déjà
+    // `refreshServerPreviewTotal` à CHAQUE mutation utilisateur (pain,
+    // viande, sauce, menu, frites_style…) ; le total SSOT serveur est donc
+    // récupéré dès qu'il a un sens (= après la 1ère interaction). Si le
+    // client valide le wizard sans aucune sélection (item base pure, 0
+    // modifier), `serverPreviewTotal` reste null → fallback documenté
+    // `runningTotalLocal` (cf. computed `runningTotal` L415).
 
     // [RED-R2 BLUE] Wizard root a11y — sauvegarde le focus de retour, focus le
     // wrapper dialog après transition, installe un Tab-trap au document. Mirror
@@ -77932,7 +77945,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
-var _hoisted_1 = ["role"];
+var _hoisted_1 = ["role", "aria-live"];
 var _hoisted_2 = {
   "class": "kiosk-toast-icon",
   "aria-hidden": "true"
@@ -77955,7 +77968,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: toast.id,
           "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-toast", toast.type]),
-          role: toast.type === 'error' ? 'alert' : null
+          role: toast.type === 'error' || toast.type === 'warning' ? 'alert' : null,
+          "aria-live": toast.type === 'error' || toast.type === 'warning' ? 'assertive' : null
         }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.ICONS[toast.type] || 'ℹ️'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(toast.message), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           type: "button",
           "class": "kiosk-toast-close",

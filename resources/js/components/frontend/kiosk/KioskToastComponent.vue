@@ -12,7 +12,8 @@
       :key="toast.id"
       class="kiosk-toast"
       :class="toast.type"
-      :role="toast.type === 'error' ? 'alert' : null"
+      :role="(toast.type === 'error' || toast.type === 'warning') ? 'alert' : null"
+      :aria-live="(toast.type === 'error' || toast.type === 'warning') ? 'assertive' : null"
     >
       <span class="kiosk-toast-icon" aria-hidden="true">{{ ICONS[toast.type] || 'ℹ️' }}</span>
       <span class="kiosk-toast-msg">{{ toast.message }}</span>

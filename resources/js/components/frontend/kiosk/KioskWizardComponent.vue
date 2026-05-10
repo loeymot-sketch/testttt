@@ -2158,8 +2158,23 @@ export default {
         }
       },
     });
-    // Premier appel pour initialiser le total serveur dès que l'item est connu.
-    this.$nextTick(() => this.refreshServerPreviewTotal());
+    // [test-e2e/borne C-001 fix round-3 2026-05-10] PAS d'appel preview à
+    // l'entrée du wizard. Avant ce fix, on déclenchait un POST /pricing/preview
+    // dès $nextTick(mounted) — mais à cet instant le wizard n'a aucune
+    // sélection utilisateur (seulement le base item), donc le serveur renvoie
+    // strictement le `runningTotalLocal` que le helper calcule déjà
+    // gratuitement côté client. Aucune valeur ajoutée. Pire, dans certains
+    // race-conditions de cold-start (Bearer kiosk:order pas encore propagé
+    // sur le premier request si le wizard mount avant que l'interceptor
+    // axios n'ait lu la dernière version du token Vuex), ce premier appel
+    // 401-ait → silent_error catégorie 6 du REVIEWER_PROTOCOL (C-001 P0
+    // round-2). Le watcher `selections` (deep) déclenche déjà
+    // `refreshServerPreviewTotal` à CHAQUE mutation utilisateur (pain,
+    // viande, sauce, menu, frites_style…) ; le total SSOT serveur est donc
+    // récupéré dès qu'il a un sens (= après la 1ère interaction). Si le
+    // client valide le wizard sans aucune sélection (item base pure, 0
+    // modifier), `serverPreviewTotal` reste null → fallback documenté
+    // `runningTotalLocal` (cf. computed `runningTotal` L415).
 
     // [RED-R2 BLUE] Wizard root a11y — sauvegarde le focus de retour, focus le
     // wrapper dialog après transition, installe un Tab-trap au document. Mirror
