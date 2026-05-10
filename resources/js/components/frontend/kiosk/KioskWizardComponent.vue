@@ -1254,6 +1254,12 @@ export default {
           this.selections.fritesSauceOrder = [];
           this.selections.fritesSauce = null;
           this.selections._fritesSauceMeta = null;
+          // V3.7.1 (2026-05-10) Adversarial fix P0-1 : si user retire les frites
+          // de sa formule, on doit aussi clear le frites_style upgrade choisi
+          // (Cheddar/Oignons). Sinon ghost €1-2 charge silencieuse au cart
+          // build (kioskPricing/buildCartItem injectent la price même quand
+          // le step Frites Style ne s'affiche plus visuellement).
+          this.selections.fritesStyleExtraId = null;
         }
       }
       if (key === 'boissonChoice') {
