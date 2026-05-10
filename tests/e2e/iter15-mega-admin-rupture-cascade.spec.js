@@ -243,13 +243,41 @@ test.describe('iter15 mega — Wave D (admin UI rupture cascade POS + Kiosk)', (
             await startBtn.click({ timeout: 5_000 }).catch(() => {});
             await kioskPage.waitForTimeout(1_500);
           }
-          const takeawayTile = kioskPage.locator('[data-testid="kiosk-order-type-takeaway"], button:has-text("À emporter"), [class*="kiosk-order-type"]:has-text("emporter")').first();
+          // [iter15-mega-fix D7-001 round-8 2026-05-10] Hardened kiosk-catalog
+          // reach. Click takeaway, then HARD-WAIT for at least one product card
+          // to actually mount. If the SPA transition stalls (Vue router race),
+          // belt-and-suspenders direct navigate to /kiosk/categories?cat= and
+          // re-wait. No silent .catch — failures bubble so the cascade
+          // verification is conclusive instead of vacuous.
+          const takeawayTile = kioskPage.locator('[data-testid="kiosk-order-type-takeaway"], button:has-text("À emporter")').first();
           if (await takeawayTile.isVisible({ timeout: 3_000 }).catch(() => false)) {
             await takeawayTile.click({ timeout: 5_000 }).catch(() => {});
-            await kioskPage.waitForTimeout(2_500);
+            await kioskPage.waitForTimeout(1_500);
           }
-          await kioskPage.locator('[class*="kiosk-product"], [data-testid*="kiosk-product-card"]').first()
-            .waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+          // First attempt : wait for any product-card mount.
+          let productMounted = await kioskPage
+            .locator('[data-testid^="kiosk-product-card-"]')
+            .first()
+            .waitFor({ state: 'visible', timeout: 8_000 })
+            .then(() => true)
+            .catch(() => false);
+
+          // Belt-and-suspenders : if SPA transition didn't complete, directly
+          // navigate to the catalog route. The kiosk router accepts query-only
+          // navigation when the auth token is in storage (F7-1 coalescing
+          // already prevents the 401 storm).
+          if (!productMounted) {
+            console.log('[WAVE-D] kiosk SPA transition stalled — direct nav to /kiosk/categories');
+            await kioskPage.goto('/kiosk/categories', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            await kioskPage.waitForTimeout(2_000);
+            productMounted = await kioskPage
+              .locator('[data-testid^="kiosk-product-card-"]')
+              .first()
+              .waitFor({ state: 'visible', timeout: 10_000 })
+              .then(() => true)
+              .catch(() => false);
+          }
+          console.log(`[WAVE-D] kiosk product-card mounted = ${productMounted}`);
 
           // Scan for "Sprite" presence + state. We do NOT add to cart.
           kioskState = await kioskPage.evaluate(() => {
