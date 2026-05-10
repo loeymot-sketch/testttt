@@ -596,7 +596,7 @@ export default {
   font-weight: 600;
   color: var(--kiosk-primary, #e8001c);
   padding: 10px 14px;
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.06));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
 }
 
@@ -608,7 +608,7 @@ export default {
   font-weight: 600;
   color: var(--kiosk-primary, #e8001c);
   padding: 10px 14px;
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.06));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.06));
   border-radius: 12px;
 }
 
@@ -621,8 +621,8 @@ export default {
 }
 
 .kiosk-info-badge {
-  background: var(--kiosk-primary-soft, rgba(232, 0, 28, 0.06));
-  border: 1px solid var(--kiosk-border, rgba(232, 0, 28, 0.2));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));
   color: var(--kiosk-primary, #e8001c);
   padding: 6px 16px;
   border-radius: 50px;
@@ -634,7 +634,7 @@ export default {
   font-size: 16px;
   font-weight: 800;
   color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary-soft, rgba(232, 0, 28, 0.06));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
   padding: 4px 12px;
   border-radius: 50px;
 }
@@ -700,14 +700,14 @@ export default {
 /* [AUDIT 2026-04-17 C6] Keyboard focus ring — cards are role=radio / radiogroup. */
 .kiosk-menu-card:focus-visible,
 .kiosk-boisson-card:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 3px;
 }
 
 .kiosk-menu-card.selected {
   border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.02));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232, 0, 28, 0.08)), var(--kiosk-shadow-card, none);
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
+  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-menu-emoji {
@@ -811,8 +811,8 @@ export default {
 
 .kiosk-boisson-card.selected {
   border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.02));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232, 0, 28, 0.08)), var(--kiosk-shadow-card, none);
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
+  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-boisson-visual {

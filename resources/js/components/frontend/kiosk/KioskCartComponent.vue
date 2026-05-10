@@ -1054,7 +1054,7 @@ export default {
   min-height: 44px;
 }
 .kiosk-cart-promo-input:focus {
-  border-color: var(--kiosk-primary, #E8001C);
+  border-color: var(--kiosk-primary, #F4501E);
   outline: none;
 }
 .kiosk-cart-promo-input[aria-invalid="true"] {
@@ -1065,7 +1065,7 @@ export default {
   padding: 0 18px;
   border-radius: 10px;
   border: none;
-  background: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary, #F4501E);
   color: #fff;
   font-weight: 700;
   font-size: 14px;

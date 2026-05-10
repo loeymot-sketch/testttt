@@ -548,7 +548,7 @@ export default {
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  border: 2px solid rgba(232,0,28,0.18);
+  border: 2px solid rgba(244, 80, 30,0.18);
   animation: waveExpand 2s ease-out infinite;
 }
 
@@ -588,7 +588,7 @@ export default {
   color: var(--kiosk-primary);
   line-height: 1;
   letter-spacing: -4px;
-  text-shadow: 0 6px 24px rgba(232,0,28,0.12);
+  text-shadow: 0 6px 24px rgba(244, 80, 30,0.12);
 }
 
 .kiosk-waiting.ready .kiosk-waiting-number {
@@ -699,7 +699,7 @@ export default {
   font-size: 22px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(232,0,28,0.2);
+  box-shadow: 0 6px 24px rgba(244, 80, 30,0.2);
   transition: all 0.15s ease;
 }
 

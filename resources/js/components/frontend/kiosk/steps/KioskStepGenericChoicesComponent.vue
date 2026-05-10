@@ -176,9 +176,9 @@ export default {
 .kiosk-validation-hint {
   margin: 0 auto 14px;
   max-width: 520px;
-  border: 1px solid rgba(232, 0, 28, 0.18);
+  border: 1px solid rgba(244, 80, 30, 0.18);
   border-radius: 8px;
-  background: rgba(232, 0, 28, 0.06);
+  background: rgba(244, 80, 30, 0.06);
   color: var(--kiosk-primary, #e8001c);
   padding: 10px 14px;
   font-size: 13px;
@@ -211,7 +211,7 @@ export default {
 
 .kiosk-generic-choice.selected {
   border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.07));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.07));
 }
 
 .kiosk-generic-choice.unavailable {

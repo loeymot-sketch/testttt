@@ -87,8 +87,8 @@ export default {
 
 .ks-filter-chip--active {
     background: var(--kiosk-primary-soft, #FFF0F2);
-    border-color: var(--kiosk-primary, #E8001C);
-    color: var(--kiosk-primary, #E8001C);
+    border-color: var(--kiosk-primary, #F4501E);
+    color: var(--kiosk-primary, #F4501E);
 }
 
 .ks-filter-chip--disabled {

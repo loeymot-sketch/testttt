@@ -260,9 +260,9 @@ export default {
 }
 
 .kiosk-info-badge {
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.2));
-  color: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.06));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.2));
+  color: var(--kiosk-primary, #F4501E);
   padding: 6px 16px;
   border-radius: 50px;
   font-size: 12px;
@@ -272,8 +272,8 @@ export default {
 .kiosk-supplements-price {
   font-size: 16px;
   font-weight: 800;
-  color: var(--kiosk-primary, #E8001C);
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.06));
+  color: var(--kiosk-primary, #F4501E);
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.06));
   padding: 4px 12px;
   border-radius: 50px;
 }
@@ -324,14 +324,14 @@ export default {
 .kiosk-supplement-row:active { transform: scale(0.99); }
 
 .kiosk-supplement-row:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
 .kiosk-supplement-row.selected {
-  border: 2px solid var(--kiosk-primary, #E8001C);
-  background: var(--kiosk-primary-light, rgba(232, 0, 28, 0.05));
-  box-shadow: 0 0 0 3px var(--kiosk-primary-light, rgba(232, 0, 28, 0.1)), var(--kiosk-shadow-card, none);
+  border: 2px solid var(--kiosk-primary, #F4501E);
+  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.05));
+  box-shadow: 0 0 0 3px var(--kiosk-primary-light, rgba(244, 80, 30, 0.1)), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-supplement-row.kiosk-variation--disabled {
@@ -353,9 +353,9 @@ export default {
   margin-top: 2px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
-  color: var(--kiosk-primary, #E8001C);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.1));
+  color: var(--kiosk-primary, #F4501E);
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.25));
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -426,7 +426,7 @@ export default {
   min-width: 34px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
   color: var(--kiosk-primary, #e8001c);
   font-size: 12px;
 }
@@ -452,9 +452,9 @@ export default {
   margin-top: auto;
   padding: 0 16px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
   color: var(--kiosk-primary, #e8001c);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.18));
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -481,7 +481,7 @@ export default {
   border-color: var(--kiosk-primary, #e8001c);
   background: var(--kiosk-primary, #e8001c);
   color: var(--kiosk-text-on-red, #fff);
-  box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(232,0,28,0.24));
+  box-shadow: var(--kiosk-shadow-cta, 0 10px 20px rgba(244, 80, 30,0.24));
 }
 
 .kiosk-supplement-qty-btn:disabled {
@@ -490,7 +490,7 @@ export default {
 }
 
 .kiosk-supplement-qty-btn:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 

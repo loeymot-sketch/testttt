@@ -1,0 +1,70 @@
+{
+  "wave": "A",
+  "run_n": 3,
+  "findings": [
+    {
+      "id": "A-005",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "01-dashboard-default.console.json contains 1 entry with level=warning text \"[intlify] Not found 'button.menu' key in 'fr' locale messages.\" (ts 1778379314615, location js/app.js line 11012). Same intlify warning that was scored P1 in run-1 A-005 and reported as 0 occurrences (PASS) in run-2. Now reappears on the dashboard-default state — regression vs run-2. Note: protocol category #9 strictly requires level=error, so this is graded P1 to preserve consistency with run-1's grading of identical text; the reviewer flags this so the owner sees the regression rather than letting set-equality drift silently. Other 5 console.json files have 0 intlify warnings; the issue is currently localised to 1280×800 dashboard.",
+      "fix_hint": "Add 'button.menu' key to lang/fr.json + lang/en.json + lang/ar.json, OR remove the t('button.menu') call if obsolete. Same fix as run-1 A-005 — verify the regression is not a build-cache / locale-bundle issue (run-2 may have rebuilt locale bundles that have since been reverted)."
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown still renders 'Bonjour Admin Le Cayenn..' with literal '..' suffix on every captured admin state (01-dashboard-default, 01-dashboard-1920, 02-items-list-default, 03-items-toggle-row-visible, 04-order-status-screen-default, 05-observability-default — 6/6 DOMs contain 'Cayenn..'). Hard-coded JS slice still chops trailing 'e' and appends '..'. No title attribute. Screenshot of items-list visually confirms. Identical to run-1 / run-2 A-009.",
+      "fix_hint": "Same as run-1 — remove the substring slice in the shared AppHeader user-display computed prop or replace with CSS text-overflow: ellipsis + title attribute."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (DOM contains <small>indisponibles</small> at line 7319, displayed via text-transform: uppercase) still visually clipped to 'INDISPONIB(' in the PNG — closing letters cut by next tile bounding box. Same clipping appears identically in 03-items-toggle-row-visible.png. No title attribute on the <small>. Identical to run-1 / run-2 A-010.",
+      "fix_hint": "Same as run-1 — increase metric tile min-width (catalog-control-plane__metric class) or shorten label, plus add title attribute fallback."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "'Prêt' column on customer-facing order-status-screen still renders empty <ul></ul> followed by <p class=\"text-center text-[#A0A3BD] text-base mt-8\">—</p> (literal em-dash). 0 occurrences of 'Aucune commande' empty-state copy. No illustration <img>, no copy >=20 chars, no primary CTA. 'En préparation' column correctly populated with 7 orders (N°A0020, N°A0019, N°A0023, N°A0004, N°A0022, N°A0015, N°A0017). Identical UX miss as run-1 / run-2 A-011.",
+      "fix_hint": "Replace '—' placeholder with small illustration + copy 'Aucune commande prête pour le moment.' so customers immediately understand the screen is alive and waiting."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown on customer-facing order-status-screen still renders 'Admin Le Cayenn..' with same hard-coded chop as A-009. Truncation propagates to all 6 captured states sharing AppHeader. Identical to run-1 / run-2 A-012.",
+      "fix_hint": "Same fix as A-009 — fix the shared AppHeader once."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 1, "P2": 4, "P3": 0 },
+  "states_reviewed": 6,
+  "run_1_p0_p1_verification": [
+    { "id": "A-001", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "05-observability-default.dom.html contains 9 occurrences of 'outbox' / 'websockets:serve' / 'queue:work' (real dashboard rendering). 0 occurrences of '404.gif' or 'Page non trouvée' in any of the 6 DOMs. Screenshot confirms real 'Pipeline outbox & événements' dashboard with 278 queued events." },
+    { "id": "A-002", "category": "i18n_leak", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of '/admin/undefined' or 'menu.undefined' in any of the 6 DOMs (matches run-2)." },
+    { "id": "A-003", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of class='ws-reconnect-banner' as rendered DOM. 2 textual matches in 04-order-status-screen-default.dom.html are inside a CSS comment ('CSS removed') and an HTML comment ('Local ws-reconnect-banner removed') documenting the run-2 fix. 'Connexion temps réel perdue' string appears only inside an inline JS comment in foodkingConfig (appEnv='local' gate). Customer screen shows 7 real orders in 'En préparation', no banner. Run-2 fix C-016/F2.3 holds — no cross-impact in Wave A." },
+    { "id": "A-004", "category": "i18n_leak", "severity": "P1", "verdict": "PASS", "note": "Same root-cause as A-002 — fixed and stable." },
+    { "id": "A-005", "category": "console_error", "severity": "P1", "verdict": "FAIL", "note": "REGRESSION vs run-2: 'button.menu' intlify warning re-appeared on 01-dashboard-default.console.json (1× level=warning). Run-2 reported 0 intlify warnings. Other 5 states are clean. See A-005 finding above." },
+    { "id": "A-006", "category": "unexpected_4xx", "severity": "P1", "verdict": "PASS", "note": "All 6 network.json files are empty arrays []. CSP-report endpoint no longer emitting 400/429. Run-2 fix holds." },
+    { "id": "A-007", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "02-items-list-default.console.json has only 1 generic Vue feature-flag warning + 2 allowlisted Pusher WS errors (ws + wss). 0 csp-report 400/429 noise." },
+    { "id": "A-008", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "04-order-status-screen-default.console.json has only 1 generic Vue feature-flag warning + 2 allowlisted Pusher WS errors. 0 csp-report 429 noise." }
+  ],
+  "run_2_p2_p3_set_equality": {
+    "run_2_residuals": ["A-009", "A-010", "A-011", "A-012"],
+    "run_3_residuals_match": ["A-009", "A-010", "A-011", "A-012"],
+    "set_equality": true,
+    "note": "All 4 run-2 P2 findings carry over identically. No new P2/P3 introduced."
+  },
+  "convergence_verdict": "AMBER — set-equality on P2/P3 holds (4 identical residuals), but A-005 P1 regressed: 'button.menu' intlify warning that run-2 marked PASS reappeared on dashboard-default (1× level=warning). Per strict protocol category #9 (level=error required), this is sub-threshold and could arguably be downgraded to P2; reviewer preserves run-1's P1 grading for the same warning to surface the regression honestly. Recommended: rebuild locale bundles + verify 'button.menu' is in lang/fr.json before merging. P0+P1+P2+P3 strict-strict count: 1 P1 regression + 4 P2 carryover. No new P0 issues. No new P2/P3 introduced.",
+  "new_issues_introduced": [],
+  "run-2_fix_verifications": [
+    { "fix": "C-016 (customer screen public /api/frontend/oss-order)", "verdict": "HOLDS", "note": "04-order-status-screen-default.network.json is empty (no 401s). Customer screen rendered 7 active orders correctly." },
+    { "fix": "F2.3 (pos-tracker-rt-warn banner gated to local)", "verdict": "HOLDS — no Wave A cross-impact", "note": "0 occurrences of 'pos-tracker-rt-warn' in any of the 6 Wave A DOMs. The local-only gating did not surface unexpectedly in admin captures." }
+  ]
+}

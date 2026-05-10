@@ -832,8 +832,8 @@ export default {
   height: auto;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border: 2px solid var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 900;
@@ -973,8 +973,8 @@ export default {
 }
 
 .kiosk-sidebar-item.active {
-  border-color: var(--kiosk-primary-dark, #B8000F);
-  background: var(--kiosk-primary-dark, #B8000F);
+  border-color: var(--kiosk-primary-dark, #DC4517);
+  background: var(--kiosk-primary-dark, #DC4517);
   box-shadow: var(--kiosk-shadow-card);
 }
 
@@ -1381,8 +1381,8 @@ export default {
 
 /* TOP CHIP — compte client */
 .kiosk-top-chip {
-  border-color: var(--kiosk-bold-primary-dark, #B8000F);
-  background: var(--kiosk-bold-primary-dark, #B8000F);
+  border-color: var(--kiosk-bold-primary-dark, #DC4517);
+  background: var(--kiosk-bold-primary-dark, #DC4517);
   color: #FFFFFF;
   font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
   font-weight: var(--kiosk-font-weight-bold, 700);
@@ -1475,7 +1475,7 @@ export default {
               background var(--kiosk-duration-tap, 120ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-product-add:hover:not(:disabled) {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: scale(1.08);
 }
 .kiosk-product-add:active:not(:disabled) {
@@ -1546,7 +1546,7 @@ export default {
               box-shadow var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .kiosk-bottom-pay:not(:disabled):hover {
-  background: var(--kiosk-bold-primary-hover, #C82333);
+  background: var(--kiosk-bold-primary-hover, #DC4517);
   transform: translateY(-2px);
   box-shadow: var(--kiosk-shadow-cta-bold-hover, 0 16px 40px rgba(230, 57, 70, 0.42));
 }

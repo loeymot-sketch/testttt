@@ -7,7 +7,7 @@
       "lineNumber": 29004,
       "columnNumber": 12
     },
-    "ts": 1778383530763
+    "ts": 1778383636190
   },
   {
     "level": "error",
@@ -17,6 +17,16 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778383530778
+    "ts": 1778383636204
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778383638163
   }
 ]

@@ -1,0 +1,85 @@
+{
+  "wave": "B",
+  "run_n": 1,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 1,
+    "P1": 3,
+    "P2": 5,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "iter15-mega-lifecycle/06-pos-tracker-shows-preparing.png, 08-pos-tracker-shows-ready.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "POS tracker cards (data-testid=\"tracker-order-248\" / N°A0009 and ALL siblings A0001/A0002/A0004/A0007/A0008) consistently render '0,00 €' as the order amount. State 03 receipt for the same A0009 order showed an actual non-zero total (Frites Seules 2.00€ TTC, plus a payment with rendu/monnaie line — final paid amount visible on the printed ticket). Cart->receipt->KDS flow established a real charge, but the cashier-facing pos-tracker zeros every total. Cashier loses the ability to verify what was charged for an order they're delivering.",
+      "fix_hint": "Audit the pos-tracker DTO: the field providing the amount to PosTrackerCard.vue (data-v-551500c8 .pos-tracker-card-amount or equivalent) is either nulled, formatted with the wrong decimals, or reads order.subtotal without taxes/extras. Backend should expose the same total_amount used on the receipt, and the frontend should treat 0/null as 'amount unknown — do NOT silently render 0,00 €' (show — or hide the line). Cross-check with /api/pos/tracker/orders payload and PosV5TrackerCard amount binding."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.png, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 09-kds-livree-or-final.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "KDS card primary action 'Démarrer la préparation' (full-width red CTA) AND per-item 'Prêt' bump arrow AND 'Imprimer ticket' button all render INSIDE a collapsed accordion: <div class=\"overflow-hidden transition-all duration-500\" style=\"height: 0px;\">. The chef has to discover and tap a chevron-down before any state-progression button is reachable. The screenshot of state 04 confirms only the chevron is visible on the A0009 card; the 'Démarrer' CTA from the DOM is offscreen/clipped (height:0 hides it). Cat 8 (Aria/keyboard) — primary action is keyboard-/touch-unreachable without an extra discovery step that has zero affordance signaling 'expand to act'. Spec author correctly suspected this; my read disagrees only on which buttons (it is the action CTAs, not just the item rows).",
+      "fix_hint": "Either (a) keep the primary state-transition CTA always visible at the card footer outside the accordion (the accordion should only collapse the per-item list, not the action buttons), or (b) render the card auto-expanded when status == 'CONFIRMED/EN_ATTENTE' and only collapse after the chef explicitly bumps. Add aria-expanded + aria-controls on the toggle and announce the change via the existing kds-aria-live region. KDS-cards Vue file: search for `style=\"height: 0px;\"` near `Démarrer la préparation`."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.png, 06-pos-tracker-shows-preparing.png, 08-pos-tracker-shows-ready.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "State 04 PNG: a fixed full-width orange/yellow banner 'Reconnexion en cours…' renders at the very top of the KDS surface, partially overlapping the FoodKing logo (the 'F' is clipped) and the 'Bonjour Chef Cuisine' header avatar/label. The banner has a close 'x' but the chef cannot dismiss the underlying connection problem; the banner re-renders on every reconnect attempt in dev. Source: <div class=\"connection-status-banner connection-status-banner--reconnecting\" role=\"alert\" aria-live=\"polite\">. POS tracker (state 06, 08) shows the same problem in a different style: 'Connexion temps réel perdue — actualisation automatique en cours...' yellow banner pushes the column grid down, reducing visible cards by ~40px. The SAME information is also shown via 'Mode secours actif' banner immediately below — duplicate signaling stacked on top of each other.",
+      "fix_hint": "Pick ONE banner. The KDS already has 'Mode secours actif — actualisation automatique toutes les 5s' which conveys the same fact more usefully. Suppress connection-status-banner--reconnecting when the polling fallback is healthy, OR position it as a small toast in a corner (z-index above content, but not full-width) so it doesn't clip the logo. Add z-index audit: connection-status-banner currently overlays the db-header."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.png, 01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 09-kds-livree-or-final.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cleanup leak: KDS baseline (state 01) and KDS final (state 09) BOTH show an orphaned card with N° Commande 'AUDIT-CYCLE4-9bb11124' and another card whose order id renders as just '#' (empty header) in 'À emporter' lane. The afterAll hook cancels only the current cycle's order, so prior runs accumulate. Visible to a real chef: a card with no readable order id and a card with a synthetic 'AUDIT-CYCLE4' name pollute the production pile. Not a P0 (test artefact), but it embarrasses the product if any QA run leaks into a real environment.",
+      "fix_hint": "Strengthen the afterAll teardown to bulk-cancel any order whose external_id begins with 'AUDIT-' or whose customer name = 'Client Comptoir Test'. Also: KDS card with empty order id ('#') indicates a backend allowing creation without external_id — add a NOT NULL or fallback in OrderResource so the card never renders just '#'."
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.console.json, 01-pos-empty.console.json, 06-pos-tracker-shows-preparing.console.json",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Console contains repeated [intlify] warnings: 'Not found menu.undefined key in fr locale messages.' and 'Not found button.menu key in fr locale messages.' (states 01 KDS, 01 POS, 06 POS). 'menu.undefined' in particular indicates a v-bind / computed key that resolved to the literal string 'undefined' — a code-path bug, not just a missing translation. While the rendered DOM did not surface a raw 'menu.undefined' label (Vue-i18n falls back), the warning means a localisation lookup is being driven by a falsy variable; in EN locale or any non-fr locale it could surface the raw key. Cat 1 (i18n leak) — incipient regression even though current FR install hides it.",
+      "fix_hint": "Grep the codebase for `t('menu.' + ` and `t('button.' + ` constructs near sidebar/header components. The undefined branch usually comes from a computed sidebar item where label is missing. Add a guard `if (!key) return ''` or default to a stable fallback like `menu.unknown`. Add a fallback locale to vue-i18n config so an EN user never sees 'menu.undefined' as text."
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "After payment, the receipt modal renders via a Vue Teleport / portal that is NOT captured in page.content() — the DOM artifact has zero references to the receipt body (no 'MODE TEST', no 'Commande #', no 'A0009' inside a receipt-modal container) even though the screenshot clearly shows the modal. This is not a UI defect per se, BUT it means automated DOM inspection cannot validate receipt content (Cat 11 cross-check 'receipt total = cart total = payment-modal total = KDS total' is impossible from artifacts alone). For a fiscal-sensitive screen (NF525), the printed ticket should be reachable via the Playwright DOM dump. Risk: future regressions to receipt total amount could pass review undetected.",
+      "fix_hint": "Either (a) render the receipt modal in-place (no Teleport to body) so page.content() captures it, or (b) make the spec capture the receipt with a separate page.locator('#receipt-modal-portal').innerHTML() side-channel and emit it as a sibling artifact. Update the iter15 reviewer protocol to require receipt.html alongside dom.html when state name contains 'after-pay'."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Per-item 'Prêt' (bump-ready) button is icon-only: <button title=\"Prêt\"><i class=\"fa-solid fa-arrow-right\"></i></button>. There is no aria-label and no visible text. Title attribute provides hover help on desktop, but on a kitchen tablet (touch only, no hover) the chef sees only a right-arrow icon with zero context. Cat 8 — non-discoverable for touch users; non-screen-reader-friendly for any accessibility audit.",
+      "fix_hint": "Add aria-label=\"Marquer cet article comme prêt — {item name}\" and either visible micro-text (e.g. 'PRÊT ➡' on a chip) or a tooltip alternative that fires on touch via long-press. Same fix applied across all KDS card icon-only actions."
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 01-pos-empty.dom.html",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "evidence": "Network artifacts contain large bursts of POST /api/frontend/csp-report responses with status 400 (state 01 POS-empty, ~17 entries) and 429 (state 01 POS-empty + 02, ~50+ entries each). The 400s mean the server is REJECTING CSP report payloads as malformed; the 429s mean the server is then rate-limiting them. While the 429 alone is intentional throttling, the 400 indicates a legitimate CSP report-only payload is being rejected by the backend validator (not a noisy attacker — these come from the dashboard image-load CSP violation reports). Already present in Wave A per spec author's note, so allowlisted at the protocol level — recording as P2 for visibility, not for loop blocking.",
+      "fix_hint": "Audit App\\Http\\Controllers\\Frontend\\CspReportController validation rules. Either accept the report-only payload format Chrome sends, or document why 400 is intentional and silence the client-side fetch on a 400 to prevent log noise."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.png, 03-pos-after-pay.dom.html",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "Post-pay receipt modal renders centered on top of the catalogue grid (visible in screenshot). The pos-grand-total in the underlying cart panel is reset to 0.00€ AT THE SAME MOMENT the receipt modal is shown (DOM data-testid=\"pos-grand-total\" reads 0.00€ in state 03). For ~1 second a cashier glancing at the cart sidebar could see 'Total 0,00 €' while the receipt modal still claims a non-zero charge. Adversarial Cat 11-adjacent: visual conflict between two surfaces showing the same business fact with opposite values. Mitigated because the modal is on top, but if a cashier dismisses the modal before re-checking the receipt, they have no second path to see the amount.",
+      "fix_hint": "Defer the cart reset until AFTER the receipt modal is dismissed (or until 'Nouvelle commande' is clicked). Alternatively, show the just-paid amount in a 'Dernière commande: 2,00 €' chip in the sidebar as a memory aid for the cashier. This also fixes B-001's downstream symptom for the cashier."
+    }
+  ]
+}

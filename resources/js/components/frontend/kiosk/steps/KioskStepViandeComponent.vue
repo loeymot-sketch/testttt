@@ -423,7 +423,7 @@ export default {
 .kiosk-viande-card:active { transform: scale(0.97); }
 
 .kiosk-viande-card:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
@@ -454,10 +454,10 @@ export default {
 }
 
 .kiosk-viande-card.active {
-  border-color: var(--kiosk-primary, #E8001C);
+  border-color: var(--kiosk-primary, #F4501E);
   background:
     linear-gradient(180deg, rgba(255,255,255,1), rgba(255,245,247,0.98));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);
+  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30,0.08)), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-viande-card.is-selectable::after {
@@ -513,7 +513,7 @@ export default {
   overflow-wrap: anywhere;
 }
 
-.kiosk-viande-card.active .kiosk-viande-name { color: var(--kiosk-primary, #E8001C); }
+.kiosk-viande-card.active .kiosk-viande-name { color: var(--kiosk-primary, #F4501E); }
 
 .kiosk-viande-meta {
   justify-self: start;
@@ -524,9 +524,9 @@ export default {
   margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(232,0,28,0.09);
+  background: rgba(244, 80, 30,0.09);
   color: var(--kiosk-primary, #e8001c);
-  border: 1px solid rgba(232,0,28,0.12);
+  border: 1px solid rgba(244, 80, 30,0.12);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -566,9 +566,9 @@ export default {
   margin-top: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
-  color: var(--kiosk-primary, #E8001C);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.1));
+  color: var(--kiosk-primary, #F4501E);
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.25));
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -597,17 +597,17 @@ export default {
   margin-top: 0;
   padding: 0 16px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
   color: var(--kiosk-primary, #e8001c);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.18));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.18));
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .kiosk-viande-card.active .kiosk-viande-controls {
-  border-color: var(--kiosk-primary, #E8001C);
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.04));
+  border-color: var(--kiosk-primary, #F4501E);
+  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.04));
 }
 
 .kiosk-viande-qty-btn {
@@ -630,7 +630,7 @@ export default {
 }
 
 .kiosk-viande-qty-btn:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
@@ -639,10 +639,10 @@ export default {
   color: var(--kiosk-text, #1A1A1A);
 }
 
-.kiosk-viande-qty-btn.plus { color: var(--kiosk-primary, #E8001C); }
+.kiosk-viande-qty-btn.plus { color: var(--kiosk-primary, #F4501E); }
 
 .kiosk-viande-qty-btn.plus:active:not(:disabled) {
-  background: var(--kiosk-primary, #E8001C);
+  background: var(--kiosk-primary, #F4501E);
   color: var(--kiosk-text-on-red, #fff);
 }
 
@@ -659,16 +659,16 @@ export default {
   text-align: center;
 }
 
-.kiosk-viande-card.active .kiosk-viande-qty-value { color: var(--kiosk-primary, #E8001C); }
+.kiosk-viande-card.active .kiosk-viande-qty-value { color: var(--kiosk-primary, #F4501E); }
 
 .kiosk-validation-hint {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-primary, #F4501E);
   font-weight: 500;
   padding: 10px 20px;
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
   border-radius: 10px;
 }
 

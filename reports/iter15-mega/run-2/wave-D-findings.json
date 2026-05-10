@@ -1,0 +1,144 @@
+{
+  "wave": "D",
+  "run_n": 2,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410) — re-score after run-1 fixes",
+  "run1_verification": [
+    {
+      "run1_id": "D-001",
+      "run1_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS",
+      "evidence": "05-kiosk-after-rupture.network.json is now [] (zero 4xx). DOM no longer contains 'Request failed with status code 429' or any 'kiosk-login' 429 echo. Kiosk surface renders the welcome screen ('Bienvenue !', 'Sur place', 'À emporter') with 9 product-card stubs in DOM. The named limiter `kiosk-login` (30/min) is in place: kiosk auto-reconnect bursts no longer 429. Note that the welcome screen replaced the prior connection-error card — the spec captures /kiosk/idle and never advances into the catalog (no Sprite product node found in DOM), so cascade observability on kiosk is still indirect, but the 429 storm is resolved."
+    },
+    {
+      "run1_id": "D-002",
+      "run1_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PARTIAL",
+      "evidence": "WS realtime banner is now gated: no `connection-status-banner--offline` element rendered in the live DOM (only CSS rules + a code comment 'can suppress the banner in dev/local'). However, the underlying WS path is still REFUSED — every state console contains `WebSocket connection to 'ws(s)://127.0.0.1:6001/app/app-key' failed: ERR_CONNECTION_REFUSED`. The spec STILL captures state 04 via `posPage.goto('/admin/pos')` (line 189 of the spec), proving the rupture cascade only propagates via reload, not via realtime broadcast. Banner-gating in dev is a cosmetic fix — it does NOT validate that AvailabilityChannel actually pushes. The owner's question on real-time-sync is therefore still unproven; the banner is only suppressed because the env is local. Treat as P1 hidden risk: production/staging behaviour with WS up cannot be inferred from these artifacts."
+    },
+    {
+      "run1_id": "D-003",
+      "run1_severity": "P0",
+      "category": "silent_error",
+      "verdict": "PASS",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html contains: `<div role=\"alert\" aria-live=\"polite\" class=\"pos-availability-banner\" data-testid=\"pos-availability-banner\">…<span class=\"pos-availability-banner__label\">Article indisponible : Sprite 33cl</span>…</div>`. The PNG renders the banner as a red alert at the top of the POS shell (light red bg #fff4f4, dark red text #991b1b, fa-circle-exclamation icon, dismiss button labelled 'Fermer'). A real cashier would now see and hear (SR aria-live=polite) the rupture event."
+    },
+    {
+      "run1_id": "D-004",
+      "run1_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "FAIL",
+      "evidence": "Run-2 still renders the broken DataTables footer 'Affichering 1 to 1 of 1 entries' in 02-admin-row-found.png, 03-admin-toggle-clicked-now-unavailable.png AND 06-admin-row-restored.png/dom.html. Same i18n bug as run-1. This was not in the run-1 fix list explicitly but the finding is unresolved."
+    },
+    {
+      "run1_id": "D-005",
+      "run1_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS",
+      "evidence": "01-pos-with-sprite-available.network.json is `[]` — zero 403/429/4xx entries. No `/api/admin/stock/low-alerts` and no `/api/admin/fiscal/z-report` requests captured at all on the cashier session. Widgets are now perm-gated, no admin-only XHRs leak from the POS bootstrap."
+    },
+    {
+      "run1_id": "D-006",
+      "run1_severity": "P1",
+      "category": "unexpected_4xx",
+      "verdict": "PASS",
+      "evidence": "All 7 network.json captures contain ZERO `csp-report` 429 entries. The previous 14–17/state storm is gone. Combined with relocation, CSP-report ingest no longer drops reports silently."
+    },
+    {
+      "run1_id": "D-007",
+      "run1_severity": "P1",
+      "category": "i18n_leak",
+      "verdict": "PASS",
+      "evidence": "05-kiosk-after-rupture.dom.html contains zero matches for 'Request failed with status', 'axios', 'too many requests', or '429'. The error card surface is gone (kiosk now reaches /kiosk/idle cleanly). Raw English axios message no longer leaks to end users."
+    },
+    {
+      "run1_id": "D-008",
+      "run1_severity": "P1",
+      "category": "console_error",
+      "verdict": "PASS",
+      "evidence": "01-pos-with-sprite-available.console.json (and all subsequent POS state consoles) no longer contain the 5x 'Failed to load resource: 400 (Bad Request)' entries. Only the allowlisted WS-refused noise remains. POS first paint is clean."
+    },
+    {
+      "run1_id": "D-009",
+      "run1_severity": "P2",
+      "category": "console_error",
+      "verdict": "FAIL",
+      "evidence": "Vue feature-flag warning was not in the run-2 captured consoles for these 7 states (consoles only contain WS-refused noise + 1 CSP-meta error on kiosk). Cannot reproduce — the warning may have been suppressed via vite.config.js `define:` injection, or simply did not fire on these page lifecycles. Marking PASS as no longer observed."
+    },
+    {
+      "run1_id": "D-010",
+      "run1_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "FAIL",
+      "evidence": "04-pos-sprite-shows-rupture.dom.html still has `<button … class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" disabled=\"\" aria-label=\"Ajouter Sprite 33cl, 1.50€\" data-pos-item-id=\"410\">`. The `aria-label` still says 'Ajouter Sprite 33cl, 1.50€' which is now misleading (adding is impossible). The overlay span `pos-item-86-badge` carries no `role=\"status\"`. The grid container has no `aria-live`. SR users get a misleading announce. Note the new banner partially compensates with its own role=alert + aria-live=polite, but the tile itself is still unannotated."
+    },
+    {
+      "run1_id": "D-011",
+      "run1_severity": "P2",
+      "category": "aria_keyboard",
+      "verdict": "PARTIAL",
+      "evidence": "03-admin-toggle-clicked-now-unavailable.png clearly renders a 'RUPTURE' pill on the row + button label flips to 'Marquer Disponible' (visual feedback exists). However the captured DOM contains only swal2 CSS, no rendered swal2-toast/notification element, and no `role=\"status\"` aria-live region. A toast may have auto-dismissed before snap, so the cue is non-deterministic. P2 cosmetic-UX gap remains."
+    },
+    {
+      "run1_id": "D-012",
+      "run1_severity": "P3",
+      "category": "visual_hash_drift",
+      "verdict": "PASS",
+      "evidence": "Informational — restore path remains clean (Sprite tile in 07 has no is-unavailable class, no overlay)."
+    },
+    {
+      "run1_id": "D-013",
+      "run1_severity": "P2",
+      "category": "silent_error",
+      "verdict": "FAIL",
+      "evidence": "Network capture filter (status>=400 OR duration>2000ms) means the 200-OK availability toggle XHR is still invisible; no `/availability/snapshot` or broadcast-id evidence. The cascade observation still relies on the spec's `posPage.goto()` reload (line 189). Same gap as run-1: in production with WS down, the cascade only works on navigate. Spec instrumentation unchanged."
+    }
+  ],
+  "findings": [
+    {
+      "id": "D2-001",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "Kiosk console contains an error: 'The report-only Content Security Policy was delivered via a <meta> element, which is disallowed. The policy has been ignored.' Source: http://127.0.0.1:8000/kiosk/idle line 22. This means the kiosk surface ships a CSP-report-only meta tag that the browser refuses, so CSP enforcement and reporting on the kiosk are entirely silently disabled. Combined with D-006 fixing the report endpoint storm, CSP signal on kiosk is now structurally lost.",
+      "fix_hint": "Move the CSP report-only directive from a `<meta http-equiv=\"Content-Security-Policy-Report-Only\" …>` tag in the kiosk Blade template to a real HTTP response header (e.g. `Content-Security-Policy-Report-Only: …` set by Laravel middleware or the web server). The `report-uri` directive is not allowed in <meta>, browsers will keep ignoring it. Audit other surfaces (admin/POS) for the same anti-pattern."
+    },
+    {
+      "id": "D2-002",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.png + 05-kiosk-after-rupture.dom.html",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "The kiosk surface in run-2 renders /kiosk/idle (Bienvenue !, Sur place, À emporter, FoodKing crown logo). DOM shows 9 `product-card` references but ZERO 'Sprite' substring matches. The spec at line 229–248 attempts to advance past the idle screen by clicking a button matching /commander|start|commencer|order/i, but the idle PNG shows only 'Sur place' / 'À emporter' as primary CTAs. The cascade observation on kiosk is therefore inconclusive — we cannot verify Sprite is actually rendered as épuisé on the borne catalog because the kiosk never reaches it. Run-1 D-001 is fixed (no 429), but the cascade cannot be visually confirmed on kiosk without further navigation.",
+      "fix_hint": "Spec: extend the idle-bypass click pattern to cover 'Sur place|À emporter|Commander|Commencer'. Also assert the catalog mounts (locator for kiosk-product-card with at least N tiles) before snapping 05. Until the kiosk reaches catalog, the cascade contract on borne remains untested in this environment."
+    },
+    {
+      "id": "D2-003",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Even with the new pos-availability-banner alerting on rupture, the affected tile still carries `aria-label=\"Ajouter Sprite 33cl, 1.50€\"` while being `aria-disabled=true disabled`. Screen readers will announce 'Ajouter Sprite 33cl, button, dimmed' which is misleading — the action is no longer 'Ajouter'. The overlay span 'Épuisé' has no role.",
+      "fix_hint": "When `is-unavailable` is true, swap aria-label to 'Sprite 33cl, épuisé' (drop the 'Ajouter' verb and the price). Add `role=\"status\"` to the overlay span. Optional: aria-describedby pointing to the overlay so SRs read 'Sprite 33cl, épuisé' on focus."
+    },
+    {
+      "id": "D2-004",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.console.json (+ 01,03,06,07)",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "All 7 states still emit `WebSocket connection to 'ws://127.0.0.1:6001/app/app-key' failed: ERR_CONNECTION_REFUSED` (and `wss://`). Allowlist explicitly mentions `wss://127.0.0.1:6001` only — `ws://` is technically NOT allowlisted, but is the same class of dev-env noise. Flagging as P2 for allowlist hygiene + reminder that WS down means the cascade is reload-only (see verification of D-002).",
+      "fix_hint": "Either (a) start laravel-websockets locally so WS comes up, or (b) extend the reviewer allowlist to include `ws://127.0.0.1:6001` to match the actual dev-env behaviour. Do not silently assume realtime works in prod."
+    },
+    {
+      "id": "D2-005",
+      "state_artifact": "iter15-mega-rupture/02-admin-row-found.dom.html / 03-admin-toggle-clicked-now-unavailable.dom.html / 06-admin-row-restored.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Admin DataTables footer renders 'Affichering 1 to 1 of 1 entries' (concatenation of FR 'Afficher' + EN 'ing 1 to 1 of 1 entries'). Same as run-1 D-004 — still present in 3 states.",
+      "fix_hint": "Update the DataTables FR locale: `\"sInfo\": \"Affichage de _START_ à _END_ sur _TOTAL_ entrées\"` (and `sInfoEmpty`, `sInfoFiltered`). Audit lang/fr.json + any datatables.fr.json bundle for the broken `Affichering` substring."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 3, "P2": 2, "P3": 0 },
+  "states_reviewed": 7,
+  "verdict": "AMBER — major run-1 P0s (D-001 kiosk 429, D-003 POS rupture silent, D-005 cashier 403, D-006 csp-report storm, D-007 raw axios, D-008 first-paint 400s) are PASS. The owner's critical question is now answered YES on POS: a real cashier sees a red alert banner with role=alert + aria-live='Article indisponible : Sprite 33cl' the moment the cascade lands. D-002 is only PARTIALLY resolved: the visible reconnect banner is gated in local env, but the WS path is still REFUSED on every state and the spec still captures the rupture via `posPage.goto('/admin/pos')` reload — meaning real-time-sync via AvailabilityChannel is still unverified. D-004 'Affichering' i18n leak persists. New finding D2-001: kiosk's CSP report-only is delivered via a `<meta>` tag and silently ignored by the browser, so CSP reporting on kiosk is structurally dead. New finding D2-002: kiosk never advances past /kiosk/idle in this run, so cascade visibility on borne remains indirect. Aria-label on the rupture tile is still misleading. Convergence: GO on the user-visible cascade silent-failure; HOLD on real-time WS verification + admin i18n + kiosk catalog reachability before declaring iter15 fully green.",
+  "answer_to_owner_question": "YES on POS, partial on kiosk. The POS rupture cascade now provides visible, accessible feedback: a red banner at the top of the shell with `role=\"alert\"`, `aria-live=\"polite\"`, copy 'Article indisponible : Sprite 33cl', a dismiss button, and clear visual styling (red on light-red bg). A real cashier would absolutely notice it. The Sprite tile also flips to `is-unavailable` with the 'Épuisé' overlay. CAVEAT: this run was captured AFTER `posPage.goto('/admin/pos')` reload — the websocket connection to :6001 is still refused on every state, so we cannot prove the same banner appears via AvailabilityChannel push without a navigation. In a real restaurant where the cashier never reloads, the banner only fires if the WS path actually delivers — that is still unverified end-to-end. Block iter15 sign-off until WS broadcast is asserted on a non-reloading POS context."
+}

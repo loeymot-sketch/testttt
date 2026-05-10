@@ -253,7 +253,7 @@ export default {
 .kiosk-garniture-row:active { transform: scale(0.99); }
 
 .kiosk-garniture-row:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
@@ -266,8 +266,8 @@ export default {
 
 .kiosk-garniture-row.selected {
   border-color: var(--kiosk-primary, #e8001c);
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));
-  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(232,0,28,0.06));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
+  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
 }
 
 .kiosk-garniture-row.kiosk-variation--disabled {
@@ -288,9 +288,9 @@ export default {
   margin-top: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
-  color: var(--kiosk-primary, #E8001C);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.1));
+  color: var(--kiosk-primary, #F4501E);
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.25));
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;

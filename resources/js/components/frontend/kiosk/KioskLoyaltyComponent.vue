@@ -641,12 +641,14 @@ export default {
 </script>
 
 <style scoped>
+/* FoodKing brand V2 (2026-05-10) — Loyalty page light mode (was navy gradient).
+   Owner gate : palette uniforme black + Cayenne + yellow + white. */
 .kiosk-loyalty-screen {
   min-height: 100vh;
-  background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 60%, #16213e 100%);
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
-  color: #fff;
+  color: #0F0F0F;
   padding-bottom: 2rem;
 }
 
@@ -655,12 +657,12 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem 2rem 1rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid #E5E5E5;
 }
 
 .kiosk-back-btn {
-  background: rgba(255,255,255,0.08);
-  border: none;
+  background: #F7F7F7;
+  border: 1px solid #E5E5E5;
   border-radius: 12px;
   width: 52px;
   height: 52px;
@@ -668,15 +670,16 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #fff;
+  color: #0F0F0F;
   transition: background 0.2s;
 }
-.kiosk-back-btn:hover { background: rgba(255,255,255,0.14); }
+.kiosk-back-btn:hover { background: #FFE8DD; color: #F4501E; }
 
 .kiosk-loyalty-title {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: #0F0F0F;
 }
 
 .kiosk-loyalty-step {
@@ -690,10 +693,11 @@ export default {
 .kiosk-loyalty-card {
   width: 100%;
   max-width: 540px;
-  background: rgba(255,255,255,0.04);
+  background: #FFFFFF;
   border-radius: 24px;
   padding: 2rem;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1.5px solid #E5E5E5;
+  box-shadow: 0 4px 16px rgba(15, 15, 15, 0.06);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -701,7 +705,7 @@ export default {
 
 .kiosk-loyalty-subtitle {
   font-size: 1.1rem;
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   text-align: center;
 }
 
@@ -711,12 +715,12 @@ export default {
 
 .kiosk-loyalty-input {
   width: 100%;
-  background: rgba(255,255,255,0.08);
-  border: 2px solid rgba(255,255,255,0.15);
+  background: #FFFFFF;
+  border: 2px solid #E5E5E5;
   border-radius: 14px;
   padding: 1rem 3rem 1rem 1.25rem;
   font-size: 1.5rem;
-  color: #fff;
+  color: #0F0F0F;
   text-align: center;
   letter-spacing: 0.1em;
   outline: none;
@@ -725,9 +729,9 @@ export default {
 }
 .kiosk-loyalty-input:focus,
 .kiosk-loyalty-input--active {
-  border-color: #FFD700;
+  border-color: #F4501E;
 }
-.kiosk-loyalty-input::placeholder { color: rgba(255,255,255,0.3); }
+.kiosk-loyalty-input::placeholder { color: #8A8A8A; }
 
 .kiosk-btn-clear {
   position: absolute;
@@ -736,7 +740,7 @@ export default {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 1.2rem;
   cursor: pointer;
   padding: 0.25rem;
@@ -750,44 +754,52 @@ export default {
 }
 
 .kiosk-numpad-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #FFFFFF;
+  border: 1.5px solid #E5E5E5;
   border-radius: 14px;
   height: 64px;
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
+  font-weight: 700;
+  color: #0F0F0F;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, border-color 0.15s;
   user-select: none;
 }
+.kiosk-numpad-btn:hover {
+  background: #FAFAFA;
+  border-color: #F4501E;
+}
 .kiosk-numpad-btn:active {
-  background: rgba(255,215,0,0.2);
+  background: #FFE8DD;
+  border-color: #F4501E;
+  color: #F4501E;
   transform: scale(0.95);
 }
 .kiosk-numpad-btn.wide {
-  background: rgba(255,100,100,0.15);
+  background: #FAFAFA;
+  color: #5A5A5A;
 }
 .kiosk-numpad-btn.wide:active {
-  background: rgba(255,100,100,0.3);
+  background: #FFE8DD;
+  color: #F4501E;
 }
 
 .kiosk-loyalty-error {
-  background: rgba(220,38,38,0.15);
+  background: rgba(220,38,38,0.08);
   border: 1px solid rgba(220,38,38,0.4);
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  color: #fca5a5;
+  color: #C21E2F;
   text-align: center;
   font-size: 0.95rem;
 }
 
 .kiosk-btn-primary {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #000;
+  background: #F4501E;
+  color: #FFFFFF;
   border: none;
   border-radius: 16px;
   padding: 1rem 2rem;
@@ -810,7 +822,7 @@ export default {
 .kiosk-loyalty-skip {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
+  color: #8A8A8A;
   font-size: 0.95rem;
   text-decoration: underline;
   cursor: pointer;
@@ -847,7 +859,7 @@ export default {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.45);
+  color: #8A8A8A;
 }
 
 .kiosk-spinner-inline {
@@ -886,7 +898,7 @@ export default {
   margin: 0;
 }
 .kiosk-loyalty-member-since {
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 0.85rem;
   margin: 0.15rem 0 0;
 }
@@ -909,7 +921,7 @@ export default {
   line-height: 1;
 }
 .kiosk-loyalty-points-label {
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   font-size: 0.9rem;
 }
 .kiosk-loyalty-points-equiv {
@@ -927,7 +939,7 @@ export default {
 }
 .kiosk-loyalty-progress-bar {
   height: 8px;
-  background: rgba(255,255,255,0.1);
+  background: #F7F7F7;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -939,7 +951,7 @@ export default {
 }
 .kiosk-loyalty-progress-label {
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.4);
+  color: #8A8A8A;
   text-align: center;
   margin: 0;
 }
@@ -955,13 +967,13 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
+  background: #FAFAFA;
+  border: 1.5px solid #E5E5E5;
   border-radius: 16px;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.2s, background 0.2s;
-  color: #fff;
+  color: #0F0F0F;
   width: 100%;
 }
 .kiosk-loyalty-option.selected {
@@ -978,22 +990,22 @@ export default {
   flex-shrink: 0;
 }
 .kiosk-loyalty-option-icon.green { background: rgba(74,222,128,0.15); color: #4ade80; }
-.kiosk-loyalty-option-icon.gray  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+.kiosk-loyalty-option-icon.gray  { background: #F7F7F7; color: #8A8A8A; }
 .kiosk-loyalty-option-text {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 .kiosk-loyalty-option-text strong { font-size: 1rem; font-weight: 700; }
-.kiosk-loyalty-option-text span   { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+.kiosk-loyalty-option-text span   { font-size: 0.85rem; color: #8A8A8A; }
 .kiosk-loyalty-option.selected .kiosk-loyalty-option-text span { color: rgba(255,215,0,0.7); }
 
 .kiosk-loyalty-not-enough {
-  background: rgba(255,255,255,0.04);
+  background: #FAFAFA;
   border-radius: 12px;
   padding: 1rem;
   font-size: 0.95rem;
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   text-align: center;
   line-height: 1.6;
 }
@@ -1020,7 +1032,7 @@ export default {
   margin: 0.5rem 0;
 }
 .kiosk-loyalty-confirm-sub {
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 1rem;
   margin-bottom: 1rem;
 }

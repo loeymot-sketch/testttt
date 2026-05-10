@@ -1,0 +1,65 @@
+{
+  "wave": "B",
+  "run_n": 2,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-003",
+      "state_artifact": "iter15-mega-lifecycle/06-pos-tracker-shows-preparing.png, 06-pos-tracker-shows-preparing.dom.html, 08-pos-tracker-shows-ready.png, 08-pos-tracker-shows-ready.dom.html",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "Run-1 fix #6 (WS reconnect banner gated by app_env=local) was applied to the GLOBAL ConnectionStatusBanner (the orange/yellow connection-status-banner--reconnecting component). KDS state 04 confirms that fix landed: the connection-status-banner Vue component is no longer instantiated; only the cyan 'Mode secours actif — actualisation automatique toutes les 5s' info banner is rendered. HOWEVER the POS tracker has its OWN separate banner: <div data-v-022c4396 class=\"pos-tracker-rt-warn\" role=\"status\">Connexion temps réel perdue — actualisation automatique en cours…</div> — present in states 06 and 08 (pos-tracker-rt-warn appears 2x in each DOM, confirmed visible in PNGs as a yellow full-width band immediately below the 'Suivi commandes' header that pushes the tracker grid down by ~40px). The POS tracker banner was NOT gated by app_env, so the run-1 fix only half-landed. The KDS-style 'Mode secours actif' message is NOT rendered on the POS tracker, so the chef sees one banner on KDS while the cashier sees a different (more alarming) banner on POS — inconsistent dev-noise UX between the two surfaces.",
+      "fix_hint": "Apply the same APP_ENV gate to the pos-tracker-rt-warn component. Either (a) hide the banner when app_env=='local' so dev WS noise doesn't surface, or (b) replace it with the same 'Mode secours actif — polling toutes les Xs' info-style banner used on KDS so the messaging is consistent across surfaces. Search the POS tracker Vue component (data-v-022c4396) for the v-if controlling the rt-warn render and add the env guard."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.dom.html, 09-kds-livree-or-final.dom.html",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Run-1 cleanup leak partially fixed: the empty '#' card (an order with no external_id) is no longer present in this run's pile (KDS baseline now lists ['2', 'En ligne', 'AUDIT-CYCLE4-9bb11124'] instead of ['2', '#', 'AUDIT-CYCLE4-9bb11124']) — the En ligne card now correctly displays its order tag instead of empty '#'. BUT the synthetic 'AUDIT-CYCLE4-9bb11124' card from a prior audit run STILL leaks into the production pile: visible in DOM as <span class=\"text-heading font-medium\">AUDIT-CYCLE4-9bb11124</span> inside an 'À emporter' lane card. Present on every KDS state in this run (01, 04, 05, 07, 09) — 1 instance per state. Below the screenshot viewport but DOM-confirmed. Same root cause as run-1 (afterAll teardown bulk-cancels current cycle's order only). Real chef would see this orphan card if they scrolled or if more orders were active.",
+      "fix_hint": "Strengthen KDS test teardown to bulk-cancel any order whose external_id begins with 'AUDIT-' or whose customer name = 'Client Comptoir Test'. One-off DB cleanup pass needed too: DELETE/cancel the AUDIT-CYCLE* orders currently sitting in 'À emporter' state on this branch's database."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Per-item 'Prêt' (bump-ready) button still icon-only and unchanged from run-1: <button type=\"button\" class=\"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5\" title=\"Prêt\"><i class=\"fa-solid fa-arrow-right\"></i></button>. No aria-label, no visible text, no touch-friendly long-press handler. Title attribute provides hover help on desktop only — useless on a kitchen tablet. Run-1 finding not addressed in run-2. Cat 8 (Aria/keyboard).",
+      "fix_hint": "Add aria-label=\"Marquer cet article comme prêt — {item.name}\" and either visible micro-text ('PRÊT ➡' chip) or a touch-friendly tooltip alternative. Apply the same fix to all KDS card icon-only actions (look for siblings with title-only patterns)."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "Receipt modal IS now captured in DOM (run-1 B-006 PASS — receipt body visible in DOM with 'A0018', '#100526257', 'Espèces: 5.00€', 'Rendu : 3.00€', 'TVA' lines). However the run-1 B-009 numeric-conflict bug remains: at the same moment the receipt modal renders the paid amount (effective total 2.00€), the underlying cart sidebar pos-grand-total reads <span class=\"pos-v5-total-row__amount pos-v5-tabular\">0.00€</span>. So a cashier glancing at the cart sidebar after pay sees Total 0.00€ while the receipt overlay claims a non-zero charge. Cat 11-adjacent (visual conflict between two surfaces showing the same fact with opposite values).",
+      "fix_hint": "Defer the cart reset until AFTER the receipt modal is dismissed (or until 'Nouvelle commande' is clicked). Alternative: surface the just-paid amount in a 'Dernière commande: 2,00 €' chip in the sidebar as a memory aid for the cashier."
+    }
+  ],
+  "run1_findings_status": {
+    "B-001_POS_tracker_zero_euro": "PASS — tracker cards in states 06 and 08 now display real € totals. State 06 evidence: card N°A0002=22,00 €, N°A0001=21,00 €, N°A0018=2,00 €, N°A0017=2,00 €, N°A0015=2,00 €, N°A0016=2,00 €, N°A0014=2,00 €, N°A0013=2,00 €, N°A0012=2,00 €. State 08 same pattern. The '0,00 €' regression is gone — the pos-tracker DTO is now correctly bound to total_amount_price.",
+    "B-002_KDS_CTA_hidden_in_accordion": "PASS — 'Démarrer la préparation' is now rendered as a full-width pink (bg-primary) button DIRECTLY inside <div class=\"kds-card-cta mt-2\" data-testid=\"kds-card-cta\">, NOT inside the overflow-hidden height:0 accordion. Visible on every À-emporter card in state 04 PNG (#100526257/A0018, #100526241/A0002). Chef can act with one tap, no chevron-expand discovery step required.",
+    "B-003_reconnect_banner_overlap": "PARTIAL FAIL — fix landed for KDS (no connection-status-banner rendered on state 04, only cyan 'Mode secours actif' info banner) but POS tracker keeps its own pos-tracker-rt-warn yellow banner on states 06/08. Re-filed as new B-003.",
+    "B-004_orphan_AUDIT_cards": "PARTIAL — empty '#' card fixed (En ligne now shows tag); AUDIT-CYCLE4-9bb11124 still leaks (DOM-confirmed on all KDS states). Re-filed as new B-004.",
+    "B-005_intlify_menu_undefined_warnings": "PASS — zero [intlify] warnings in console.json across all 10 states. Console contains only allowlisted ws://127.0.0.1:6001 ERR_CONNECTION_REFUSED entries plus benign info logs ([POS-WIZARD] detectCategory, [PosSyncService] fallback polling).",
+    "B-006_receipt_not_captured_in_DOM": "PASS — state 03 DOM now contains the receipt body (Le Cayenne / Paris / Frites Seules 2.00€ / Rendu / N°A0018 / order #100526257). Future regressions to receipt content can now be DOM-validated.",
+    "B-007_pret_button_icon_only": "FAIL — unchanged from run-1, still icon-only with title-attr only. Re-filed as new B-007.",
+    "B-008_csp_report_400_429_storms": "PASS — zero csp-report entries in any of the 10 network.json files. CSP-report endpoint relocation/204 filter landed cleanly. All network.json arrays are empty (no responses with status>=400 and no responses with duration>2000ms).",
+    "B-009_cart_resets_to_zero_during_receipt": "FAIL — pos-grand-total still shows 0.00€ in state 03 DOM while receipt modal still claims the real charge. Re-filed as new B-009."
+  },
+  "spot_check_evidence": {
+    "B-001_tracker_card_amount_state_06": "N°A0002 → 22,00 € (À envoyer lane), N°A0001 → 21,00 € (À envoyer), N°A0018 → 2,00 € (En préparation, target order), N°A0017/A0015 → 2,00 € (En préparation), N°A0016/A0014/A0013/A0012 → 2,00 € (Livrés)",
+    "B-001_tracker_card_amount_state_08": "Identical totals (N°A0002=22,00 €, N°A0001=21,00 €) plus N°A0018=2,00 € now in 'Prêts à servir' lane with green 'Livré' bump CTA",
+    "B-002_DOM_path": "<div class=\"kds-card-cta mt-2\" data-testid=\"kds-card-cta\"><button class=\"rounded-lg w-full h-9 ... bg-primary text-white\">Démarrer la préparation</button></div> — sibling of, NOT child of, the 0-height accordion",
+    "csp_report_count_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "i18n_visible_leaks_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "console_errors_excluding_ws_allowlist": "0/0/0/0/0/0/0/0/0/0"
+  },
+  "convergence_verdict": "MAJOR PROGRESS — 6 of 9 run-1 findings closed cleanly (B-001 P0, B-002 P1, B-005 P1, B-006 P2, B-008 P2, plus the empty-'#' half of B-004). Run-2 has ZERO P0 findings (run-1 had 1). Re-filed: 1 P1 (B-003 partial fix — POS-tracker rt-warn banner not gated), 3 P2 (B-004 AUDIT orphan, B-007 icon-only Prêt, B-009 cart-resets-to-zero). No new categories or hidden regressions detected. Wave B is GREEN on the loop-blocking gate (P0=0; P1=1 and is a half-applied fix, not a fresh regression). Recommend ONE more heal cycle to apply the app_env gate to pos-tracker-rt-warn, address AUDIT-CYCLE orphans, add aria-label to icon-only Prêt button, and defer cart reset until receipt dismiss — then declare Wave B converged."
+}

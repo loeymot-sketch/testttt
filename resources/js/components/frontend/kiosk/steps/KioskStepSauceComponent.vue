@@ -300,12 +300,12 @@ export default {
 
 .kiosk-sauce-extra {
   font-size: 12px;
-  color: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-primary, #F4501E);
   font-weight: 600;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.08));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.08));
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.12));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.12));
 }
 
 .kiosk-sauce-grid {
@@ -340,14 +340,14 @@ export default {
 
 /* [AUDIT 2026-04-17 C6] Keyboard focus ring — tactile cards are now role=checkbox. */
 .kiosk-option-card:focus-visible {
-  outline: 3px solid rgba(232, 0, 28, 0.55);
+  outline: 3px solid rgba(244, 80, 30, 0.55);
   outline-offset: 2px;
 }
 
 .kiosk-option-card.selected {
-  border-color: var(--kiosk-primary, #E8001C);
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.025));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(232,0,28,0.08)), var(--kiosk-shadow-card, none);
+  border-color: var(--kiosk-primary, #F4501E);
+  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
+  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30,0.08)), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-option-card.kiosk-variation--disabled {
@@ -368,9 +368,9 @@ export default {
   margin-top: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--kiosk-primary-soft, rgba(232,0,28,0.1));
-  color: var(--kiosk-primary, #E8001C);
-  border: 1px solid var(--kiosk-border, rgba(232,0,28,0.25));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30,0.1));
+  color: var(--kiosk-primary, #F4501E);
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.25));
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -470,10 +470,10 @@ export default {
   text-align: center;
   margin-top: 16px;
   font-size: 13px;
-  color: var(--kiosk-primary, #E8001C);
+  color: var(--kiosk-primary, #F4501E);
   font-weight: 600;
   padding: 8px 14px;
-  background: var(--kiosk-primary-light, rgba(232,0,28,0.06));
+  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
   border-radius: 10px;
 }
 </style>
