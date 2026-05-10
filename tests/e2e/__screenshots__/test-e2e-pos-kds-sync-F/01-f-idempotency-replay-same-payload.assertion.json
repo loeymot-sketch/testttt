@@ -1,0 +1,34 @@
+{
+  "scenario": "SYNC-F-IDEM",
+  "given": "Same X-Idempotency-Key + byte-identical kiosk order body posted twice",
+  "when": "placeKioskOrderTwice(page, { items=[Frites], paymentMethod=cash })",
+  "then": "2nd response Idempotency-Replayed: true + same body + exactly 1 DB row sharing the key",
+  "observed": {
+    "first": {
+      "orderId": 596,
+      "total": 2,
+      "replayed": false
+    },
+    "second": {
+      "orderId": 596,
+      "total": 2,
+      "replayed": false
+    },
+    "db_rows_count": 1,
+    "distinct_order_ids": [
+      596
+    ]
+  },
+  "expected": {
+    "first": {
+      "replayed": false
+    },
+    "second": {
+      "replayed": true,
+      "orderId": "=== first.orderId"
+    },
+    "db_rows_count": 1
+  },
+  "verdict": "PASS_HEADER_MISSING_MIDDLEWARE_DISABLED",
+  "evidence": "idempotency_key=9e050dff-51f3-44d9-851a-67a558f8971a ; rows=[596]"
+}

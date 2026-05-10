@@ -1,0 +1,18 @@
+{
+  "scenario": "SYNC-F-IDEM (POS)",
+  "given": "POS wizard \"Frites Seules\" → Pay cash → DOUBLE-tap pos-payment-confirm",
+  "when": "two rapid clicks on the confirm CTA",
+  "then": "either ONE shared X-Idempotency-Key (middleware dedup) OR two keys (frontend bug P1); ALWAYS exactly 1 order persisted",
+  "observed": {
+    "requests_observed": 0,
+    "outgoing_keys": [],
+    "unique_keys_count": 0,
+    "responses": [],
+    "orders_delta": 0
+  },
+  "expected": {
+    "orders_delta": 1
+  },
+  "verdict": "DEFERRED",
+  "evidence": "keys=[] responses=[]"
+}

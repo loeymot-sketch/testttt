@@ -1,0 +1,17 @@
+{
+  "scenario": "SYNC-F-CORR",
+  "given": "kiosk order with axios request interceptor setting X-Correlation-ID",
+  "when": "placeKioskOrder + tinker query on domain_events",
+  "then": "domain_events.correlation_id === sent X-Correlation-ID (top-level column, not metadata JSON)",
+  "observed": {
+    "correlation_id_sent": "AUDIT-CORR-F10-1778444566886",
+    "order_id": 605,
+    "domain_event_correlation_id": null,
+    "domain_event_id": null
+  },
+  "expected": {
+    "domain_event_correlation_id": "=== sent"
+  },
+  "verdict": "FAIL_NOT_PROPAGATED",
+  "evidence": "sent=AUDIT-CORR-F10-1778444566886 got=null"
+}

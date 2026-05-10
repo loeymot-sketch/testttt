@@ -1,0 +1,18 @@
+{
+  "scenario": "SYNC-F-OUTBOX",
+  "given": "kiosk order placed under BROADCAST_DRIVER=pusher with Pusher unreachable + QUEUE_CONNECTION=sync",
+  "when": "placeKioskOrder() + wait 2.5s for inline DispatchDomainEventsJob",
+  "then": "a domain_events row exists for OrderCreated; dispatched_at semantics record truthful pipeline behavior",
+  "observed": {
+    "order_id": 600,
+    "total": 2,
+    "domain_event": null,
+    "domain_events_count": 0
+  },
+  "expected": {
+    "domain_events_count_min": 1,
+    "event_type": "order.created"
+  },
+  "verdict": "FAIL_NO_OUTBOX_ROW",
+  "evidence": "order_id=600 domain_event=null"
+}

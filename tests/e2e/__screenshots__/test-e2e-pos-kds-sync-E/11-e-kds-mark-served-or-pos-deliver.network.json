@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/admin/pos-order/change-status/514",
+    "method": "POST",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1778444104837
+  }
+]

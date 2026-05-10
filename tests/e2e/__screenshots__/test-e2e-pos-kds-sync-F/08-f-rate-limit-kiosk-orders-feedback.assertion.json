@@ -1,0 +1,29 @@
+{
+  "scenario": "SYNC-F-RATE-LIMIT-UI",
+  "given": "KIOSK_ORDER_RATE_LIMIT=60/min; 65 sequential POST /api/frontend/order/quote calls (same throttle bucket as /order)",
+  "when": "burst of 65 calls — bucket exhausts past index ~59",
+  "then": "at least 1 call returns 429 with body { message, retry_after } AND kiosk surface toasts a visible feedback",
+  "observed": {
+    "total_calls": 65,
+    "status_counts": {
+      "ok": 60,
+      "s429": 5
+    },
+    "first_429_index": 60,
+    "sample_429_body": {
+      "i": 60,
+      "status": 429,
+      "retry_after": 60,
+      "message": "Trop de commandes. Veuillez patienter."
+    },
+    "toast_visible_on_kiosk_surface": true
+  },
+  "expected": {
+    "status_counts": {
+      "s429": ">=1"
+    },
+    "toast_visible": true
+  },
+  "verdict": "PASS",
+  "evidence": "first429=60 counts={\"ok\":60,\"s429\":5}"
+}

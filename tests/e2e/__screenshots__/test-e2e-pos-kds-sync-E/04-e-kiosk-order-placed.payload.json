@@ -1,0 +1,9 @@
+{
+  "orderId": 514,
+  "orderSerialNo": "100526514",
+  "queueNumber": null,
+  "totalAmount": 2,
+  "idempotencyKey": "1032258d-e1c8-4fc6-860d-77772b755260",
+  "replayed": false,
+  "t_kiosk_paid_ms": 784
+}

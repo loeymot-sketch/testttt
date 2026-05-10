@@ -1,0 +1,17 @@
+{
+  "scenario": "SYNC-F-LRU",
+  "given": "KdsSyncService._versionMap is module-private — not observable from page.evaluate",
+  "when": "no test executed — would require instrumentation patch (frozen-zone class)",
+  "then": "assertion would be that map.size caps at 256 after 260 distinct OrderUpdated events",
+  "observed": {
+    "kds_sync_service_export": "default singleton; _versionMap is module-private (no window export)",
+    "instrumentation_required": "would need a code patch in resources/js/services/KdsSyncService.js to expose `window.__kdsVersionMapSize` for non-invasive audit",
+    "risk_register_reference": "AUDIT_PLAN.md Wave F state 12 — orchestrator explicitly allows DEFERRED for this state",
+    "note": "No state mutation made. No tinker calls made."
+  },
+  "expected": {
+    "observable_from_browser": false
+  },
+  "verdict": "DEFERRED",
+  "evidence": "Per AUDIT_PLAN risk register: state 12 may DEFER without instrumentation; flagged P3"
+}

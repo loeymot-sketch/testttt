@@ -1,0 +1,33 @@
+{
+  "scenario": "SYNC-F-CONCURRENT",
+  "given": "kiosk + POS contexts targeting the SAME branch (id=1)",
+  "when": "Promise.all([placeKioskOrder, posPage.evaluate(axios.post(admin/pos))])",
+  "then": "2 distinct rows in `orders`, distinct ids, distinct source codes — no merge, no broadcast race",
+  "observed": {
+    "kioskResult": {
+      "ok": true,
+      "orderId": 599,
+      "status": null
+    },
+    "posResult": {
+      "ok": false,
+      "status": 401,
+      "orderId": null
+    },
+    "orders_delta": 1,
+    "recent_orders": [
+      {
+        "id": 599,
+        "source": "5",
+        "order_type": 10,
+        "total": "2.000000",
+        "token": "AUDIT-KIOSK-WAVE-E-1778444520214-417190"
+      }
+    ]
+  },
+  "expected": {
+    "orders_delta": 2
+  },
+  "verdict": "PARTIAL",
+  "evidence": "recent=[{\"id\":599,\"source\":\"5\",\"order_type\":10,\"total\":\"2.000000\",\"token\":\"AUDIT-KIOSK-WAVE-E-1778444520214-417190\"}]"
+}
