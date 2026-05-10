@@ -69,7 +69,11 @@ return [
         // This hardens the "orders in preparation/ready" display during WS drift.
         'enabled' => env('FK_CATALOG_OSS_FALLBACK_POLLING_ENABLED', true),
         'interval_ms_when_connected' => env('FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS', 60_000),
-        'interval_ms_when_disconnected' => env('FK_CATALOG_OSS_FALLBACK_DISCONNECTED_INTERVAL_MS', 5_000),
+        // [test-e2e round-2 cluster-6 D-002 2026-05-10] 5000 → 2000 so the
+        // SYNC-2 8s budget (POS pay → OSS visible) is met by polling alone in
+        // dev where broadcast/queue may be idle. Production keeps Echo live;
+        // this only kicks in during transient WS disconnects.
+        'interval_ms_when_disconnected' => env('FK_CATALOG_OSS_FALLBACK_DISCONNECTED_INTERVAL_MS', 2_000),
     ],
 
     'kds_fallback_polling' => [

@@ -854,10 +854,23 @@ var STATE = Object.freeze({
 });
 var DEFAULTS = Object.freeze({
   intervalMsWhenConnected: 60000,
-  intervalMsWhenDisconnected: 5000,
+  // [test-e2e round-2 cluster-6 D-002 2026-05-10] Tightened from 5000 → 2000
+  // so that the SYNC-2 8s budget (POS pay → OSS visible) is met by the
+  // polling fallback alone when the broadcast queue is idle in dev
+  // (BROADCAST_DRIVER=pusher + WS port 6001 down + no queue worker).
+  // Production still uses Echo/Pusher live so this fallback is essentially
+  // unused there; tightening it costs nothing in prod and saves ~3s in dev.
+  intervalMsWhenDisconnected: 2000,
   backoffStartMs: 5000,
   backoffCapMs: 30000,
-  jitterMaxMs: 500
+  jitterMaxMs: 500,
+  // [test-e2e round-2 cluster-6 D-002 2026-05-10] Visibility burst-poll
+  // throttle. When the tab regains visibility, OssSyncService fires an
+  // immediate poll unless one fired within this window — protects against
+  // a stream of focus/blur events spamming the backend.
+  visibilityBurstMinIntervalMs: 1000,
+  // Sustained-disconnect dev warning threshold (silent in prod).
+  devWarnAfterDisconnectMs: 10000
 });
 var OssSyncService = /*#__PURE__*/function () {
   function OssSyncService() {
@@ -873,6 +886,11 @@ var OssSyncService = /*#__PURE__*/function () {
     this._opts = _objectSpread({}, DEFAULTS);
     this._currentBackoffMs = DEFAULTS.backoffStartMs;
     this._lastScheduledDelayMs = null;
+    // [test-e2e round-2 cluster-6 D-002 2026-05-10] Burst-poll plumbing.
+    this._visibilityHandler = null;
+    this._lastBurstPollAt = 0;
+    this._disconnectedSinceMs = null;
+    this._devWarnedDisconnected = false;
   }
   return _createClass(OssSyncService, [{
     key: "start",
@@ -902,6 +920,7 @@ var OssSyncService = /*#__PURE__*/function () {
       this._started = true;
       this._state = STATE.POLLING;
       this._bindWebSocketState();
+      this._bindVisibility();
       this._scheduleNext(this._jitter());
     }
   }, {
@@ -948,6 +967,11 @@ var OssSyncService = /*#__PURE__*/function () {
       var ws = this._webSocketService;
       if (!ws || typeof ws.on !== 'function') {
         this._wsState = 'disconnected';
+        // [test-e2e round-2 cluster-6 D-002 2026-05-10] Seed disconnect
+        // timestamp so the dev-only warn triggers when WS is never wired
+        // (most common case in local dev: BROADCAST_DRIVER=pusher, port
+        // 6001 down, _wsService never reaches 'connected').
+        this._disconnectedSinceMs = Date.now();
         return;
       }
       var unsubscribers = [];
@@ -964,12 +988,29 @@ var OssSyncService = /*#__PURE__*/function () {
         }
       };
       var handleState = function handleState(next) {
+        var previousWsState = _this._wsState;
         _this._wsState = next || 'unknown';
         _this._emit('ws_state', {
           state: _this._wsState
         });
         _this._state = STATE.POLLING;
         _this._currentBackoffMs = _this._opts.backoffStartMs;
+        // [test-e2e round-2 cluster-6 D-002 2026-05-10] Track sustained
+        // disconnect for the dev-only console warn (see _maybeWarnDisconnect).
+        var isConnectedNow = String(_this._wsState).toLowerCase() === 'connected';
+        if (isConnectedNow) {
+          _this._disconnectedSinceMs = null;
+          _this._devWarnedDisconnected = false;
+        } else if (!_this._disconnectedSinceMs) {
+          _this._disconnectedSinceMs = Date.now();
+        }
+        // If we just transitioned from disconnected → connected, fire an
+        // immediate poll so the OSS catches up with whatever piled up
+        // during the WS outage instead of waiting for the next tick.
+        if (isConnectedNow && previousWsState && String(previousWsState).toLowerCase() !== 'connected') {
+          _this._burstPoll('ws_reconnected');
+          return;
+        }
         _this._scheduleNormalCadence();
       };
       listen('connected', function () {
@@ -995,6 +1036,77 @@ var OssSyncService = /*#__PURE__*/function () {
           } catch (_) {/* ignore cleanup errors */}
         });
       };
+    }
+
+    // [test-e2e round-2 cluster-6 D-002 2026-05-10] Burst-poll on tab visibility.
+    // Spec captures showed POS pay → OSS lag of 14.4s when the OSS tab was
+    // backgrounded between actions: setTimeout intervals throttle to ~1s when a
+    // tab is hidden, but visibilitychange fires immediately on focus regain.
+    // Triggering an instant fetch on `visible` collapses worst-case lag to one
+    // round-trip + render. Throttled by visibilityBurstMinIntervalMs.
+  }, {
+    key: "_bindVisibility",
+    value: function _bindVisibility() {
+      var _this2 = this;
+      if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+        return;
+      }
+      this._visibilityHandler = function () {
+        if (!_this2._started) return;
+        if (document.visibilityState !== 'visible') return;
+        _this2._burstPoll('visibility');
+      };
+      try {
+        document.addEventListener('visibilitychange', this._visibilityHandler);
+      } catch (_) {/* never block start on listener wiring */}
+    }
+  }, {
+    key: "_unbindVisibility",
+    value: function _unbindVisibility() {
+      if (this._visibilityHandler && typeof document !== 'undefined') {
+        try {
+          document.removeEventListener('visibilitychange', this._visibilityHandler);
+        } catch (_) {/* noop */}
+      }
+      this._visibilityHandler = null;
+    }
+  }, {
+    key: "_burstPoll",
+    value: function _burstPoll() {
+      var reason = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'manual';
+      if (!this._started) return;
+      var now = Date.now();
+      var minGap = this._opts.visibilityBurstMinIntervalMs || 0;
+      if (this._lastBurstPollAt && now - this._lastBurstPollAt < minGap) {
+        return;
+      }
+      this._lastBurstPollAt = now;
+      // Maybe-warn here too: the user just brought the tab forward and the
+      // WS has been down for a while → surface a dev-only diagnostic.
+      this._maybeWarnDisconnect();
+      // Cancel the scheduled timer and trigger an immediate fetch. _poll()
+      // re-schedules normal cadence on completion.
+      this._clearTimer();
+      this._poll()["catch"](function () {});
+    }
+  }, {
+    key: "_maybeWarnDisconnect",
+    value: function _maybeWarnDisconnect() {
+      var _window$foodkingConfi2;
+      if (this._devWarnedDisconnected) return;
+      if (!this._disconnectedSinceMs) return;
+      var threshold = this._opts.devWarnAfterDisconnectMs || 0;
+      if (threshold <= 0) return;
+      var elapsed = Date.now() - this._disconnectedSinceMs;
+      if (elapsed < threshold) return;
+      var isDev = typeof window !== 'undefined' && ((_window$foodkingConfi2 = window.foodkingConfig) === null || _window$foodkingConfi2 === void 0 ? void 0 : _window$foodkingConfi2.appEnv) && window.foodkingConfig.appEnv !== 'production';
+      if (!isDev) return;
+      this._devWarnedDisconnected = true;
+      try {
+        // Single warn per disconnect window so the console isn't spammed.
+        // eslint-disable-next-line no-console
+        console.warn('[OSS] Realtime broadcast unavailable for ' + Math.round(elapsed / 1000) + 's — polling fallback active. SYNC latency may exceed live cadence.');
+      } catch (_) {/* noop */}
     }
   }, {
     key: "_poll",
@@ -1102,12 +1214,17 @@ var OssSyncService = /*#__PURE__*/function () {
       var state = this._readWsState();
       var isConnected = String(state || '').toLowerCase() === 'connected';
       var base = isConnected ? this._opts.intervalMsWhenConnected : this._opts.intervalMsWhenDisconnected;
+
+      // [test-e2e round-2 cluster-6 D-002 2026-05-10] Surface sustained
+      // disconnect once we've been polling in fallback long enough — this
+      // hooks into the normal cadence path so even backgrounded tabs warn.
+      this._maybeWarnDisconnect();
       this._scheduleNext(base + this._jitter());
     }
   }, {
     key: "_scheduleNext",
     value: function _scheduleNext(delayMs) {
-      var _this2 = this;
+      var _this3 = this;
       this._clearTimer();
       if (!this._started) {
         return;
@@ -1115,8 +1232,8 @@ var OssSyncService = /*#__PURE__*/function () {
       var delay = Math.max(0, this._positiveInt(delayMs, 0));
       this._lastScheduledDelayMs = delay;
       this._timer = setTimeout(function () {
-        _this2._timer = null;
-        _this2._poll()["catch"](function () {});
+        _this3._timer = null;
+        _this3._poll()["catch"](function () {});
       }, delay);
     }
   }, {
@@ -1133,6 +1250,12 @@ var OssSyncService = /*#__PURE__*/function () {
         this._wsUnsubscribe();
         this._wsUnsubscribe = null;
       }
+      // [test-e2e round-2 cluster-6 D-002 2026-05-10] Always tear down the
+      // visibility listener — leaking it would burst-poll a stopped service.
+      this._unbindVisibility();
+      this._disconnectedSinceMs = null;
+      this._devWarnedDisconnected = false;
+      this._lastBurstPollAt = 0;
     }
   }, {
     key: "_clearTimer",

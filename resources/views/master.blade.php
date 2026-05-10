@@ -121,7 +121,10 @@
             ossFallbackPolling: {
                 enabled: @json((bool) config('catalog_v15.oss_fallback_polling.enabled', true)),
                 intervalMsWhenConnected: @json((int) config('catalog_v15.oss_fallback_polling.interval_ms_when_connected', 60000)),
-                intervalMsWhenDisconnected: @json((int) config('catalog_v15.oss_fallback_polling.interval_ms_when_disconnected', 5000)),
+                // [test-e2e round-2 cluster-6 D-002 2026-05-10] Fallback aligned
+                // with catalog_v15.php (2000ms) so the polling cadence meets the
+                // SYNC-2 8s budget when WS is down.
+                intervalMsWhenDisconnected: @json((int) config('catalog_v15.oss_fallback_polling.interval_ms_when_disconnected', 2000)),
             },
             kdsFallbackPolling: {
                 highActivityBaseMs: @json((int) config('catalog_v15.kds_fallback_polling.high_activity_base_ms', 3000)),
