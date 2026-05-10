@@ -428,7 +428,13 @@ class OrderService
                             $taxName  = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate  = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
+                            if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                    ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
+                            } else {
+                                $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
                             $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
@@ -481,7 +487,14 @@ class OrderService
                     $this->order->subtotal        = $realSubtotal;
                     $this->order->total_tax       = $totalTax;
                     $this->order->discount        = $calculatedDiscount;
-                    $this->order->total           = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                    // [TTC-MODE] In TTC mode, $realSubtotal already contains tax (sum of TTC lines).
+                    // Adding $totalTax again would double-count → produce the user-visible
+                    // "3€ display becomes 3.60€ payment" bug.
+                    if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                        $this->order->total = max(0, $realSubtotal + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                    } else {
+                        $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                    }
                 }, 'web');
 
                 if ($request->address_id) {
@@ -770,7 +783,13 @@ class OrderService
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
+                            if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                    ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
+                            } else {
+                                $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            }
                             
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
                             $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
@@ -846,7 +865,12 @@ class OrderService
                         $this->order->total_tax = round($totalTax, 2);
                         $this->order->subtotal = round($realSubtotal, 2);
                         $this->order->discount = $calculatedDiscount;
-                        $this->order->total = round(max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
+                        // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
+                        if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                            $this->order->total = round(max(0, $realSubtotal + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
+                        } else {
+                            $this->order->total = round(max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount), 2);
+                        }
                     }
 
                     app(OrderQuoteService::class)->sealForCommit(
@@ -1190,7 +1214,13 @@ class OrderService
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
+                            if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                    ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
+                            } else {
+                                $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
                             $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
@@ -1257,7 +1287,12 @@ class OrderService
                         $this->order->subtotal = $realSubtotal;
                         $this->order->discount = $calculatedDiscount;
                         // [BUG-H1 FIX] null-coalescing + max(0) guard — prevents negative total with large coupons or null delivery_charge
-                        $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                        // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
+                        if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                            $this->order->total = max(0, $realSubtotal + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                        } else {
+                            $this->order->total = max(0, $realSubtotal + $totalTax + ($this->order->delivery_charge ?? 0) - $calculatedDiscount);
+                        }
                     }
 
                     $currentTime = Carbon::now();

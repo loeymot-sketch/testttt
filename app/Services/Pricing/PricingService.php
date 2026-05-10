@@ -230,12 +230,24 @@ final class PricingService
                 $taxRate = $taxObj ? (float) $taxObj->tax_rate : 0.0;
                 $taxType = $taxObj ? (int) $taxObj->type : TaxType::FIXED;
 
-                $taxPrice = $this->taxCalculator->lineTaxAmount(
-                    $verifiedTotalPrice,
-                    $taxType,
-                    $taxRate,
-                    $req->roundLineTax
-                );
+                // [TTC-MODE] When `pricing.tax_inclusive_prices=true`, item.price is
+                // TTC: extract tax from the line total instead of adding it on top.
+                // Otherwise legacy HT behavior (tax added on top).
+                if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                    $taxPrice = $this->taxCalculator->lineTaxAmountFromTTC(
+                        $verifiedTotalPrice,
+                        $taxType,
+                        $taxRate,
+                        $req->roundLineTax
+                    );
+                } else {
+                    $taxPrice = $this->taxCalculator->lineTaxAmount(
+                        $verifiedTotalPrice,
+                        $taxType,
+                        $taxRate,
+                        $req->roundLineTax
+                    );
+                }
 
                 // [T07 SSOT] Build the immutable composition_snapshot at order creation
                 // time. NF525 contract: this snapshot must NEVER be re-written and is
@@ -318,7 +330,14 @@ final class PricingService
         }
 
         $delivery = $req->deliveryCharge;
-        $rawTotal = $realSubtotal + $totalTax + $delivery - $calculatedDiscount;
+        // [TTC-MODE] In tax-inclusive mode, `$realSubtotal` is already the sum of TTC line
+        // totals (tax is INSIDE each line). Adding `$totalTax` again would double-count.
+        // Legacy HT mode keeps the original `subtotal_HT + tax + delivery - discount` formula.
+        if ((bool) config('pricing.tax_inclusive_prices', false)) {
+            $rawTotal = $realSubtotal + $delivery - $calculatedDiscount;
+        } else {
+            $rawTotal = $realSubtotal + $totalTax + $delivery - $calculatedDiscount;
+        }
         $finalTotal = $req->roundFinalOrderTotal ? round(max(0.0, $rawTotal), 2) : max(0.0, $rawTotal);
 
         $displaySubtotal = $req->roundSubtotal ? round($realSubtotal, 2) : $realSubtotal;

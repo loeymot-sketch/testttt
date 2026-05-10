@@ -375,7 +375,13 @@ class FrontendOrderService
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
-                            $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
+                            if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                    ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
+                            } else {
+                                $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
+                            }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
                             $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
@@ -448,7 +454,12 @@ class FrontendOrderService
                     $this->frontendOrder->total_tax = round($totalTax, 2);
                     $this->frontendOrder->subtotal = round($realSubtotal, 2);
                     $this->frontendOrder->discount = $calculatedDiscount;
-                    $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
+                    if ((bool) config('pricing.tax_inclusive_prices', false)) {
+                        $this->frontendOrder->total = round(max(0, $realSubtotal + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    } else {
+                        $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
+                    }
                     if ($isKioskMachineOrder) {
                         app(OrderQuoteService::class)->sealForCommit(
                             $request,
