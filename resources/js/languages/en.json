@@ -34,6 +34,7 @@
         "decrease_qty": "Diminuer la quantité de {item}",
         "remove_item": "Retirer {item} du panier",
         "add_item": "Add {item}, {price}",
+        "unavailable_item": "Unavailable: {item}",
         "loading_items": "Loading menu items",
         "cart_updated": "Cart updated"
     },
@@ -1804,6 +1805,11 @@
                 "boisson_line": "Drink: {name}"
             },
             "step": {
+                "frites_style": {
+                    "title": "Customize your fries",
+                    "subtitle": "Choose your favourite style",
+                    "nature": "Plain fries"
+                },
                 "pain": {
                     "title": "Choose your bread type",
                     "hint": "Select a bread type to continue",

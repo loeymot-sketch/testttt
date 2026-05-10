@@ -34,6 +34,7 @@
         "decrease_qty": "تقليل الكمية — {item}",
         "remove_item": "إزالة {item} من السلة",
         "add_item": "إضافة {item}، {price}",
+        "unavailable_item": "غير متاح: {item}",
         "loading_items": "جاري تحميل عناصر القائمة",
         "cart_updated": "تم تحديث السلة"
     },
@@ -1634,6 +1635,11 @@
                 "boisson_line": "مشروب: {name}"
             },
             "step": {
+                "frites_style": {
+                    "title": "خصّص بطاطسك",
+                    "subtitle": "اختر النمط المفضّل لديك",
+                    "nature": "بطاطس عادية"
+                },
                 "pain": {
                     "title": "اختر نوع الخبز",
                     "hint": "اختر نوع الخبز للمتابعة",

@@ -286,7 +286,11 @@
 
     <transition name="slide-up">
       <div v-if="activeItem" class="kiosk-wizard-overlay">
+        <!-- V3.6.1 (2026-05-10) Adversarial fix P1-8 : :key force remount sur
+             changement d'item, garantit selections fresh (pas de ghost
+             fritesStyleExtraId carried-over d'un produit précédent). -->
         <KioskWizardComponent
+          :key="activeItem.id"
           :item="activeItem"
           :on-add-to-cart="addToCartAndClose"
           :on-close="closeWizard"
@@ -595,8 +599,17 @@ export default {
       // V3.6 (2026-05-10) Owner gate : la catégorie "Suppléments" doit toujours
       // s'ajouter direct, même si extras techniques présents en DB.
       // Detail API expose `category_name` (string flat) — pas `category.name`.
-      const catName = (detail.category_name || detail.category?.name || '').toLowerCase().trim();
-      const isSupplementCategory = catName === 'suppléments' || catName === 'supplements';
+      // V3.6.1 adversarial fix P0-1 : check robuste via normalize+startsWith
+      // + fallback ID 318. Tolère "Supplément"/"Supplements"/"SUPPLÉMENT".
+      const catName = (detail.category_name || detail.category?.name || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '') // strip diacritics: "suppléments" → "supplements"
+        .trim();
+      const catId = parseInt(detail.item_category_id, 10);
+      const isSupplementCategory =
+        catName.startsWith('supplement') || // catches "supplement", "supplements", "supplément(s)"
+        catId === 318;
       if (isSupplementCategory) return false;
       return (detail.itemAttributes?.length > 0) ||
              (detail.extras?.length > 0) ||

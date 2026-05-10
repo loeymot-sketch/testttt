@@ -112,6 +112,21 @@ export function calculateKioskRunningTotal(item, selections = {}) {
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);
 
+  // V3.6.1 (2026-05-10) Owner gate — frites_style upgrade :
+  // Si user a sélectionné Cheddar/Cheddar+Oignons (group_label='frites_style'),
+  // ajouter le prix de l'extra au running total. Les frites_style extras sont
+  // exclus de la boucle .supplements ci-dessus car leur group_label les fait
+  // partir dans la partition fritesUpgrades (cf. kioskExtrasPartition).
+  const fritesStyleId = selections.fritesStyleExtraId;
+  if (fritesStyleId != null && Array.isArray(item.extras)) {
+    const fritesExtra = item.extras.find(
+      (e) => e && Number(e.id) === Number(fritesStyleId) && e.group_label === 'frites_style'
+    );
+    if (fritesExtra) {
+      total += parseFloat(fritesExtra.convert_price || fritesExtra.price || 0) || 0;
+    }
+  }
+
   // [PHASE9 W-P0-1 FIX] Surplus viandes marquées `source='extra'` — produites
   // par le helper kioskViandeCatalog et remontées par KioskStepViande dans
   // selections._viandeMeta (underscore = contrat officiel wizard). Précédemment

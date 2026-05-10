@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Status;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -33,30 +34,41 @@ return new class extends Migration {
     public function up(): void
     {
         $now = now();
-        foreach (self::TARGET_ITEM_IDS as $itemId) {
-            // Idempotence : si une row identique existe déjà, on skip.
-            foreach (self::UPGRADES as $upgrade) {
-                $exists = DB::table('item_extras')
-                    ->where('item_id', $itemId)
-                    ->where('name', $upgrade['name'])
-                    ->where('group_label', self::GROUP)
-                    ->exists();
-                if ($exists) {
-                    continue;
+        // V3.6.1 (2026-05-10) Adversarial audit fix P0-2 + P1-5 :
+        //  - Use Status::ACTIVE enum (was hardcoded 5).
+        //  - Wrap in transaction + use insertOrIgnore for idempotence under
+        //    parallel deployment (no double-insert race condition).
+        DB::transaction(function () use ($now) {
+            $rows = [];
+            foreach (self::TARGET_ITEM_IDS as $itemId) {
+                foreach (self::UPGRADES as $upgrade) {
+                    $exists = DB::table('item_extras')
+                        ->where('item_id', $itemId)
+                        ->where('name', $upgrade['name'])
+                        ->where('group_label', self::GROUP)
+                        ->exists();
+                    if ($exists) {
+                        continue;
+                    }
+                    $rows[] = [
+                        'item_id'        => $itemId,
+                        'name'           => $upgrade['name'],
+                        'price'          => $upgrade['price'],
+                        'status'         => Status::ACTIVE,
+                        'group_label'    => self::GROUP,
+                        'is_available'   => true,
+                        'visible_on'     => null,
+                        'created_at'     => $now,
+                        'updated_at'     => $now,
+                    ];
                 }
-                DB::table('item_extras')->insert([
-                    'item_id'        => $itemId,
-                    'name'           => $upgrade['name'],
-                    'price'          => $upgrade['price'],
-                    'status'         => 5, // ACTIVE
-                    'group_label'    => self::GROUP,
-                    'is_available'   => true,
-                    'visible_on'     => null,
-                    'created_at'     => $now,
-                    'updated_at'     => $now,
-                ]);
             }
-        }
+            if (! empty($rows)) {
+                // insertOrIgnore : si une row collide via UNIQUE constraint
+                // (race deploy), MySQL skip silencieusement.
+                DB::table('item_extras')->insertOrIgnore($rows);
+            }
+        });
     }
 
     public function down(): void
