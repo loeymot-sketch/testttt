@@ -1163,16 +1163,16 @@ export default {
   box-shadow: var(--kiosk-shadow-card);
 }
 
-/* TPE terminal waiting overlay — fond sombre volontaire (focus haptique sur CB).
-   Les teintes sombres #0a0a1a/#121228 sont des neutres hors palette brand
-   (pas de token dédié overlay) ; si besoin AAA, overrides dans tokens-aaa.css. */
+/* TPE terminal waiting overlay — V3.4 owner gate (2026-05-10) :
+   ramené en light mode pour cohérence avec rest of kiosk flow. Le focus
+   haptique sur CB reste assuré par l'animation pulse + spinner Cayenne. */
 .kiosk-tpe-overlay {
   position: fixed; inset: 0; z-index: 100;
-  background: linear-gradient(160deg, #0a0a1a 0%, #121228 100%);
+  background: #FFFFFF;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 1.5rem; text-align: center; padding: 2rem;
-  color: var(--kiosk-text-on-red, #fff);
+  color: #0F0F0F;
 }
 .kiosk-tpe-card-anim {
   position: relative;
@@ -1192,30 +1192,31 @@ export default {
 }
 .kiosk-tpe-card-icon {
   position: relative; z-index: 2;
-  background: rgba(255,255,255,0.06);
-  border: 2px solid rgba(255,255,255,0.15);
+  background: #FFE8DD;
+  border: 2px solid #F4501E;
   border-radius: 50%;
   width: 100px; height: 100px;
   display: flex; align-items: center; justify-content: center;
+  color: #F4501E;
 }
 .kiosk-tpe-title {
-  font-size: 1.8rem; font-weight: 800; color: var(--kiosk-text-on-red, #fff); margin: 0;
+  font-size: 1.8rem; font-weight: 800; color: #0F0F0F; margin: 0;
 }
 .kiosk-tpe-help {
   margin: 0.5rem 0 0;
   font-size: 0.95rem;
   line-height: 1.35;
-  opacity: 0.95;
+  color: #5A5A5A;
   max-width: 22rem;
   text-align: center;
 }
 .kiosk-tpe-sub {
-  font-size: 1rem; color: rgba(255,255,255,0.5); margin: 0; max-width: 340px;
+  font-size: 1rem; color: #5A5A5A; margin: 0; max-width: 340px;
 }
 .kiosk-tpe-spinner {
   width: 64px; height: 64px;
-  border: 5px solid rgba(255,255,255,0.1);
-  border-top-color: var(--kiosk-primary);
+  border: 5px solid #FFE8DD;
+  border-top-color: #F4501E;
   border-radius: 50%;
   animation: tpe-spin 0.8s linear infinite;
 }
@@ -1224,16 +1225,16 @@ export default {
 .kiosk-tpe-cancel {
   margin-top: 8px;
   padding: 14px 40px;
-  background: rgba(255,255,255,0.08);
-  border: 1.5px solid rgba(255,255,255,0.2);
+  background: #FFFFFF;
+  border: 1.5px solid #E5E5E5;
   border-radius: 14px;
-  color: rgba(255,255,255,0.7);
+  color: #5A5A5A;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
-.kiosk-tpe-cancel:hover { background: rgba(255,255,255,0.14); color: var(--kiosk-text-on-red, #fff); }
+.kiosk-tpe-cancel:hover { background: #FFE8DD; color: #F4501E; border-color: #F4501E; }
 
 /* Focus visible WCAG 2.4.7 — méthodes paiement navigables au clavier */
 .kiosk-pay-method:focus-visible {

@@ -14,20 +14,31 @@
 
     <!-- Sélections -->
     <div class="kiosk-summary-sections" role="list">
+      <!-- V3.4 (2026-05-10) Owner gate : ajout image/emoji devant chaque ligne récap
+           pour scan visuel rapide (pas obligation de tout lire). -->
+
       <!-- Pain -->
       <div v-if="selections.pain" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
         <div class="kiosk-summary-row">
-          <span>{{ getPainName() }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <img v-if="getPainImage()" :src="getPainImage()" alt="" />
+            <span v-else>🥖</span>
+          </span>
+          <span class="kiosk-summary-row-name">{{ getPainName() }}</span>
           <span class="kiosk-free">{{ $t('kiosk.wizard.summary.included') }}</span>
         </div>
       </div>
-      
+
       <!-- Viandes (variations gratuites + extras payants : prix affiché par ligne) -->
       <div v-if="selections.totalViandes > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
         <div v-for="row in viandeDisplayRows" :key="row.key" class="kiosk-summary-row">
-          <span v-if="row.count > 0">{{ row.label }} ×{{ row.count }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <img v-if="row.thumb" :src="row.thumb" alt="" />
+            <span v-else>{{ row.emoji || '🥩' }}</span>
+          </span>
+          <span v-if="row.count > 0" class="kiosk-summary-row-name">{{ row.label }} ×{{ row.count }}</span>
           <span v-if="row.count > 0 && row.unitPrice > 0" class="kiosk-price">
             +{{ formatPrice(row.unitPrice * row.count) }}
           </span>
@@ -35,56 +46,78 @@
         </div>
       </div>
 
-      <!-- Sauces (filtre _skip défensif : ne jamais afficher comme sauce) -->
+      <!-- Sauces -->
       <div v-if="visibleSauceOrder.length > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ visibleSauceOrder.length }})</h4>
         <div v-for="(sauceId, index) in visibleSauceOrder" :key="sauceId" class="kiosk-summary-row">
-          <span>{{ getSauceName(sauceId) }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <img v-if="getSauceImage(sauceId)" :src="getSauceImage(sauceId)" alt="" />
+            <span v-else>🥫</span>
+          </span>
+          <span class="kiosk-summary-row-name">{{ getSauceName(sauceId) }}</span>
           <span v-if="index === 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.free') }}</span>
           <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
         </div>
       </div>
-      
+
       <!-- Garnitures -->
       <div v-if="selectedGarnituresCount > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.garnishes') }} ({{ selectedGarnituresCount }})</h4>
         <div class="kiosk-summary-tags">
           <span v-for="id in selectedGarnitureIds" :key="id" class="kiosk-tag">
+            <span class="kiosk-tag-thumb" aria-hidden="true">
+              <img v-if="getGarnitureImage(id)" :src="getGarnitureImage(id)" alt="" />
+              <span v-else>🥬</span>
+            </span>
             {{ getGarnitureName(id) }}
           </span>
         </div>
       </div>
-      
+
       <!-- Suppléments -->
       <div v-if="selectedSupplements.length > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplementsTotalCount }})</h4>
         <div v-for="supplement in selectedSupplements" :key="supplement.id" class="kiosk-summary-row">
-          <span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <img v-if="supplement.thumb" :src="supplement.thumb" alt="" />
+            <span v-else>🍴</span>
+          </span>
+          <span class="kiosk-summary-row-name">
             {{ displaySupplementName(supplement) }}
             <strong v-if="supplement.count > 1" class="kiosk-summary-count">×{{ supplement.count }}</strong>
           </span>
           <span class="kiosk-price">+{{ formatPrice(supplement.linePrice) }}</span>
         </div>
       </div>
-      
+
       <!-- Menu -->
       <div v-if="selections.menuChoice && selections.menuChoice !== 'none'" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.menu') }}</h4>
         <div class="kiosk-summary-row">
-          <span>{{ getMenuLabel() }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <span>{{ getMenuEmoji() }}</span>
+          </span>
+          <span class="kiosk-summary-row-name">{{ getMenuLabel() }}</span>
           <span v-if="menuPrice > 0" class="kiosk-price">+{{ formatPrice(menuPrice) }}</span>
           <span v-else class="kiosk-free">{{ $t('kiosk.wizard.summary.included') }}</span>
         </div>
         <div v-if="selections.boissonChoice" class="kiosk-summary-row boisson">
-          <span>{{ $t('kiosk.wizard.summary.boisson_line', { name: getBoissonName() }) }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <img v-if="getBoissonImage()" :src="getBoissonImage()" alt="" />
+            <span v-else>🥤</span>
+          </span>
+          <span class="kiosk-summary-row-name">{{ $t('kiosk.wizard.summary.boisson_line', { name: getBoissonName() }) }}</span>
         </div>
       </div>
 
-      <!-- Sauces frites (aligné wizard : 1 gratuite, suivantes au prix sauce supp.) -->
+      <!-- Sauces frites -->
       <div v-if="fritesSauceRows.length > 0" class="kiosk-summary-section">
         <h4>{{ $t('kiosk.wizard.summary.fry_sauces') }} ({{ fritesSauceRows.length }})</h4>
         <div v-for="(row, index) in fritesSauceRows" :key="row.key" class="kiosk-summary-row">
-          <span>{{ row.label }}</span>
+          <span class="kiosk-summary-row-thumb" aria-hidden="true">
+            <span>🍟</span>
+          </span>
+          <span class="kiosk-summary-row-name">{{ row.label }}</span>
           <span v-if="index === 0" class="kiosk-free">{{ $t('kiosk.wizard.summary.free') }}</span>
           <span v-else class="kiosk-price">+{{ formatPrice(extraSaucePrice) }}</span>
         </div>
@@ -171,6 +204,7 @@ export default {
         .map(e => ({
           id: e.id,
           name: e.name,
+          thumb: e.thumb || e.image || e.cover || null,
           count: normalizeKioskSelectionCount(this.selections.supplements?.[e.id]),
           price: parseFloat(e.convert_price || e.price || 0),
           linePrice: parseFloat(e.convert_price || e.price || 0) * normalizeKioskSelectionCount(this.selections.supplements?.[e.id])
@@ -189,6 +223,8 @@ export default {
             label: sanitizeKioskCustomerFacingText(m.name || ''),
             count: m.count,
             unitPrice: parseFloat(m.price || 0) || 0,
+            thumb: m.thumb || m.image || null,
+            emoji: m.emoji || '🥩',
           }))
           .filter((r) => r.label);
       }
@@ -199,6 +235,8 @@ export default {
           label: this.formatViandeName(key),
           count,
           unitPrice: 0,
+          thumb: null,
+          emoji: this.guessViandeEmoji(key),
         }));
     },
     // [AUDIT 2026-04-17 C13] Filtre défensif : la sentinelle '_skip' émise
@@ -234,6 +272,64 @@ export default {
     },
     displaySupplementName(supplement) {
       return sanitizeKioskCustomerFacingText(supplement?.name || '');
+    },
+    /* V3.4 (2026-05-10) Image resolvers per row — fallback emoji si pas d'image. */
+    getSauceImage(sauceId) {
+      const sauceAttr = this.item.itemAttributes?.find(a =>
+        (a.name || '').toLowerCase().includes('sauce')
+      );
+      const vars = sauceAttr
+        ? (this.item.variations?.[String(sauceAttr.id)] || this.item.variations?.[sauceAttr.id])
+        : null;
+      if (Array.isArray(vars)) {
+        const sauce = vars.find(v => String(v.id) === String(sauceId));
+        return sauce?.thumb || sauce?.image || sauce?.cover || null;
+      }
+      return null;
+    },
+    getGarnitureImage(id) {
+      const garniture = this.item.extras?.find(e => e.id === parseInt(id));
+      return garniture?.thumb || garniture?.image || garniture?.cover || null;
+    },
+    getPainImage() {
+      const painId = this.selections.pain;
+      if (!painId) return null;
+      const painAttr = this.item.itemAttributes?.find(a =>
+        (a.name || '').toLowerCase().includes('pain')
+      );
+      if (painAttr && this.item.variations?.[painAttr.id]) {
+        const pain = this.item.variations[painAttr.id].find(v => v.id === painId);
+        return pain?.thumb || pain?.image || pain?.cover || null;
+      }
+      return null;
+    },
+    getBoissonImage() {
+      const boissonId = this.selections.boissonChoice;
+      if (!boissonId) return null;
+      if (this.selections._boissonMeta?.boissonImage || this.selections._boissonMeta?.thumb) {
+        return this.selections._boissonMeta.boissonImage || this.selections._boissonMeta.thumb;
+      }
+      const boisson = this.item.addons?.find(a => {
+        const linked = a.item_addon_id ?? a.addon_item_id;
+        return linked === boissonId
+          || String(linked) === String(boissonId)
+          || a.id === boissonId;
+      });
+      return boisson?.thumb || boisson?.image || boisson?.cover || null;
+    },
+    getMenuEmoji() {
+      const mc = this.selections.menuChoice;
+      const map = { full: '🍔', frites: '🍟', boisson: '🥤', none: '🍽️' };
+      return map[mc] || '🍽️';
+    },
+    guessViandeEmoji(key) {
+      const k = (key || '').toLowerCase();
+      if (k.includes('poulet') || k.includes('chicken') || k.includes('escalope')) return '🍗';
+      if (k.includes('nugget') || k.includes('tender')) return '🍗';
+      if (k.includes('merguez') || k.includes('saucisse')) return '🌭';
+      if (k.includes('cordon') || k.includes('bleu')) return '🍳';
+      if (k.includes('haché') || k.includes('hache') || k.includes('mexicain') || k.includes('kefta')) return '🥩';
+      return '🥩';
     },
     // formatPrice() provided by kioskPriceMixin
     getPainName() {
@@ -450,6 +546,60 @@ export default {
 .kiosk-summary-row > span:first-child {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* V3.4 (2026-05-10) Owner gate : thumbnail produit devant chaque ligne récap
+   pour scan visuel rapide. Image produit OU emoji fallback selon disponibilité. */
+.kiosk-summary-row-thumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FAFAFA;
+  border: 1px solid #EFEFEF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.kiosk-summary-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.kiosk-summary-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.kiosk-tag-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  margin-right: 6px;
+  overflow: hidden;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.kiosk-tag-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.kiosk-tag {
+  display: inline-flex;
+  align-items: center;
 }
 
 .kiosk-summary-row.boisson {

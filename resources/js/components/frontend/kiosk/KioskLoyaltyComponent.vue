@@ -839,29 +839,41 @@ export default {
 .kiosk-btn-primary.full { width: 100%; }
 .kiosk-btn-primary:not(:disabled):active { transform: scale(0.97); }
 
+/* V3.4 (2026-05-10) — Owner gate: bouton skip + register invisibles
+   (couleurs trop pâles sur fond blanc). Renforcement contraste accessibilité. */
 .kiosk-loyalty-skip {
   background: none;
   border: none;
-  color: #8A8A8A;
-  font-size: 0.95rem;
+  color: #5A5A5A;
+  font-size: 1rem;
+  font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
   text-align: center;
-  padding: 0.5rem;
+  padding: 0.75rem;
 }
+.kiosk-loyalty-skip:hover { color: #F4501E; }
 
 .kiosk-loyalty-register-btn {
-  background: none;
-  border: 1px solid rgba(255,215,0,0.25);
-  border-radius: 12px;
-  color: rgba(255,215,0,0.6);
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #F5C518 0%, #E0B214 100%);
+  border: none;
+  border-radius: 14px;
+  color: #0F0F0F;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.85rem 1.25rem;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.2s, color 0.2s;
+  letter-spacing: 0.2px;
+  box-shadow: 0 4px 12px rgba(245, 197, 24, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
-.kiosk-loyalty-register-btn:hover { border-color: rgba(255,215,0,0.5); color: #FFD700; }
+.kiosk-loyalty-register-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.42);
+}
+.kiosk-loyalty-register-btn:active { transform: translateY(0); }
 
 .kiosk-register-fields {
   display: flex;
