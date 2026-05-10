@@ -238,9 +238,48 @@ class OrderController extends Controller
                 return response(['status' => false, 'message' => 'Payment confirmation is no longer accepted for this order.'], 422);
             }
 
-            $promoted = $this->frontendOrderService->finalizePaidKioskOrder(
-                $frontendOrder->fresh()
-            );
+            // [test-e2e fix B-001 round-2 2026-05-10] Payment is already persisted at
+            // this point (DB::transaction above committed payment_status=PAID +
+            // transaction_id at lines 215-220 / 198-202). The remaining work in
+            // finalizePaidKioskOrder() is fiscal_sequence allocation + post-commit
+            // event dispatch (OrderCreated → SendFcmOnOrderCreated → FCM job).
+            // Under QUEUE_CONNECTION=sync, any FCM dispatch failure
+            // (RuntimeException 'FCM send failed — will retry') propagates up
+            // through the event dispatcher into our outer catch(Exception) and
+            // returns 422 to the kiosk — even though the payment IS committed.
+            // Wave B audit (rush-hour-50x50-2026-05-10/round-1) observed 35/35
+            // 422 responses on this code path with payment_status=PAID +
+            // transaction_id persisted server-side. Result: silent error in
+            // kiosk-toast-container (empty), kiosk retries 3× then queues a
+            // reconcile-event despite payment already being final.
+            //
+            // FCM and other post-commit side-effects are best-effort: their
+            // failure MUST NOT invalidate the HTTP success contract that
+            // payment_status=PAID + transaction_id are committed. The
+            // fiscal_sequence_no allocation path inside finalizePaidKioskOrder
+            // is already protected (see FrontendOrderService:1132-1167 which
+            // sets fiscal_alloc_error_at and returns promoted=false WITHOUT
+            // throwing). So catching Throwable here is safe — the only
+            // observable behaviour change is: the response is now 200 (was
+            // 422) when a post-commit side-effect throws.
+            $promoted = false;
+            try {
+                $promoted = $this->frontendOrderService->finalizePaidKioskOrder(
+                    $frontendOrder->fresh()
+                );
+            } catch (\Throwable $sideEffectException) {
+                \Illuminate\Support\Facades\Log::warning('[Kiosk Payment] finalizePaidKioskOrder side-effect failed (non-blocking)', [
+                    'order_id'       => $frontendOrder->id,
+                    'transaction_id' => $request->input('transaction_id'),
+                    'error'          => $sideEffectException->getMessage(),
+                    'gate'           => 'test-e2e-fix-B-001-round-2',
+                ]);
+                // Do not bubble — payment is persisted. The retry cron
+                // (foodking:fiscal:retry-alloc) plus the outbox SSOT
+                // (PersistOrderCreatedToOutbox runs FIRST in the listener
+                // chain per EventServiceProvider:142) ensure eventual
+                // consistency for KDS/Kiosk/POS sync and Z aggregation.
+            }
 
             if ($alreadyPaid && !$promoted) {
                 return response([
